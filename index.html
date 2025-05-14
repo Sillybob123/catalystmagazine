@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            scroll-behavior: smooth; /* Added for smooth anchor link scrolling */
+            scroll-behavior: smooth;
         }
 
         /* Enhanced Nav Link Styling & Transitions */
@@ -19,7 +19,7 @@
         .nav-link:hover {
             @apply bg-gray-200 text-gray-900 transform scale-105;
         }
-        .nav-link.active-nav-link { /* Renamed for clarity */
+        .nav-link.active-nav-link {
             @apply bg-gray-800 text-white shadow-md;
         }
         .nav-link.active-nav-link:hover {
@@ -49,12 +49,7 @@
             @apply bg-gray-700 transform scale-105;
         }
 
-        /* Placeholder for card images */
-        .card-img-placeholder {
-            background-color: #e0e0e0;
-        }
-
-        /* Basic fade-in animation (optional, can be applied with JS) */
+        /* Basic fade-in animation */
         .fade-in-section {
             opacity: 0;
             transform: translateY(20px);
@@ -70,10 +65,10 @@
             transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
             max-height: 0;
             opacity: 0;
-            overflow: hidden; /* Prevent content from showing during collapse */
+            overflow: hidden;
         }
         #mobile-menu.show {
-            max-height: 500px; /* Adjust as needed for menu content */
+            max-height: 500px;
             opacity: 1;
         }
 
@@ -86,17 +81,14 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex-shrink-0">
                     <a href="#home" class="flex items-center space-x-2 group">
-                        <svg class="h-8 w-auto text-gray-800 group-hover:text-indigo-600 transition-colors duration-300" viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" clip-rule="evenodd" d="M50 0C22.3858 0 0 22.3858 0 50C0 77.6142 22.3858 100 50 100C77.6142 100 100 77.6142 100 50C100 22.3858 77.6142 0 50 0ZM50 10C27.9086 10 10 27.9086 10 50C10 72.0914 27.9086 90 50 90C72.0914 90 90 72.0914 90 50C90 27.9086 72.0914 10 50 10ZM45 30H55V45L70 50L65 55L50 47.5V70H45V30Z" />
-                        </svg>
+                        <img src="images/logo.png" alt="The Catalyst Logo" class="h-8 w-auto">
                         <span class="text-2xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors duration-300">The Catalyst</span>
                     </a>
                 </div>
                 <nav class="hidden md:flex space-x-1">
                     <a href="#home" class="nav-link active-nav-link">Home</a>
                     <a href="#recent-posts" class="nav-link">Recent Posts</a>
-                    <a href="#article-example" class="nav-link">Article</a>
-                    <a href="#about" class="nav-link">About Us</a> {/* Assuming About Us might be in footer or a new section */}
+                    <a href="#about" class="nav-link">About Us</a>
                 </nav>
                 <div class="md:hidden">
                     <button id="mobile-menu-button" aria-label="Open mobile menu" class="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 p-2 rounded-md">
@@ -111,7 +103,6 @@
         <div id="mobile-menu" class="md:hidden bg-white shadow-lg">
             <a href="#home" class="block px-4 py-3 text-base text-gray-700 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 mobile-nav-link">Home</a>
             <a href="#recent-posts" class="block px-4 py-3 text-base text-gray-700 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 mobile-nav-link">Recent Posts</a>
-            <a href="#article-example" class="block px-4 py-3 text-base text-gray-700 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 mobile-nav-link">Article</a>
             <a href="#about" class="block px-4 py-3 text-base text-gray-700 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 mobile-nav-link">About Us</a>
         </div>
     </header>
@@ -127,7 +118,7 @@
                         <p class="text-gray-700 text-lg sm:text-xl mb-8">
                             In an era of growing skepticism and polarized discourse, clear science communication is more vital than ever. We sat down with Holden Thorp to explore how one of the world's leading science journals navigates this challenge.
                         </p>
-                        <a href="#article-example" class="hero-button">
+                        <a href="posts/science-editor-interview.html" class="hero-button">
                             Read The Interview
                         </a>
                         <div class="mt-10 flex justify-center md:justify-start space-x-2.5">
@@ -137,7 +128,7 @@
                         </div>
                     </div>
                     <div class="hero-image-col">
-                        <img src="https://placehold.co/600x450/e0e7ff/3730a3?text=Science+Interview+Concept" alt="Science Magazine Interview Illustration" class="rounded-xl shadow-2xl mx-auto w-full max-w-lg md:max-w-full transform hover:scale-105 transition-transform duration-500 ease-out">
+                         <img src="https://placehold.co/600x450/e0e7ff/3730a3?text=Science+Interview+Concept" alt="Science Magazine Interview Illustration" class="rounded-xl shadow-2xl mx-auto w-full max-w-lg md:max-w-full transform hover:scale-105 transition-transform duration-500 ease-out">
                     </div>
                 </div>
             </div>
@@ -148,80 +139,41 @@
                 <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-14">RECENT POSTS</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
                     <div class="article-card">
-                        <img src="https://placehold.co/400x250/dbeafe/1e40af?text=Editor+Interview" alt="Article illustration" class="w-full h-52 object-cover">
+                        <img src="images/post1-cover.jpg" alt="Editor Interview" class="w-full h-52 object-cover">
                         <div class="p-6 flex flex-col flex-grow">
                             <p class="text-sm text-indigo-600 font-semibold mb-1 tracking-wider">INTERVIEW</p>
                             <h3 class="text-xl font-semibold text-gray-900 mb-2">Editor-in-Chief of Science Magazine</h3>
                             <p class="text-sm text-gray-600 mb-4">Alex Carter & Aidan Schurr - May 08</p>
                             <div class="mt-auto pt-4">
-                                <a href="#article-example" class="card-button">Read More</a>
+                                <a href="posts/science-editor-interview.html" class="card-button">Read More</a>
                             </div>
                         </div>
                     </div>
 
                     <div class="article-card">
-                        <img src="https://placehold.co/400x250/ccfbf1/0f766e?text=Science+Paradoxes" alt="Article illustration" class="w-full h-52 object-cover">
+                        <img src="images/post2-cover.jpg" alt="Science Paradoxes" class="w-full h-52 object-cover">
                         <div class="p-6 flex flex-col flex-grow">
                             <p class="text-sm text-teal-600 font-semibold mb-1 tracking-wider">OP-ED</p>
                             <h3 class="text-xl font-semibold text-gray-900 mb-2">Paradoxes in Science: Models Breaking</h3>
                             <p class="text-sm text-gray-600 mb-4">Lori Preci - Apr 29</p>
                             <div class="mt-auto pt-4">
-                                <a href="#" class="card-button">Read More</a>
+                                <a href="posts/paradoxes-in-science.html" class="card-button">Read More</a>
                             </div>
                         </div>
                     </div>
 
                     <div class="article-card">
-                        <img src="https://placehold.co/400x250/f3e8ff/5b21b6?text=Hidden+Pollutants" alt="Article illustration" class="w-full h-52 object-cover">
+                        <img src="images/post3-cover.jpg" alt="Hidden Pollutants" class="w-full h-52 object-cover">
                         <div class="p-6 flex flex-col flex-grow">
                             <p class="text-sm text-purple-600 font-semibold mb-1 tracking-wider">FEATURE</p>
                             <h3 class="text-xl font-semibold text-gray-900 mb-2">Dr. Gao's Crusade on Pollutants</h3>
                             <p class="text-sm text-gray-600 mb-4">Naama Ben-Dor - Apr 20</p>
                             <div class="mt-auto pt-4">
-                                <a href="#" class="card-button">Read More</a>
+                                <a href="posts/hidden-pollutants-crusade.html" class="card-button">Read More</a>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <section id="article-example" class="py-16 lg:py-24 bg-gray-50 fade-in-section">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
-                <div class="mb-8 text-center">
-                    <p class="text-indigo-600 font-semibold">INTERVIEW</p>
-                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 my-3 leading-tight">
-                        Sitting Down with the Editor-in-Chief of Science Magazine, to Talk About the Future of Scientific Communication
-                    </h1>
-                    <p class="text-gray-500 text-sm">By Alex Carter and Aidan Schurr | Published on May 8, 2025</p>
-                </div>
-
-                <img src="https://placehold.co/700x400/bfdbfe/1d4ed8?text=Holden+Thorp+Concept" alt="Holden Thorp Illustration" class="rounded-lg shadow-xl my-8 mx-auto w-full max-w-2xl">
-
-                <article class="prose prose-lg lg:prose-xl max-w-none mx-auto text-gray-700">
-                    <p class="lead text-xl text-gray-800">
-                        In an era of growing skepticism and polarized discourse, clear science communication is more vital than ever. We sat down with Holden Thorp to explore how one of the world's leading science journals navigates this challenge. Join us as he reflects on his journey and the evolving role of scientific storytelling.
-                    </p>
-                    
-                    <hr class="my-10 border-gray-300">
-
-                    <h2 class="text-2xl font-semibold text-gray-900 mt-10 mb-4">Background</h2>
-                    <p>
-                        In a time where trust in science is eroding and public discourse grows more polarized, accurately and effectively communicating new discoveries is becoming increasingly important for progress. Science communication is not only essential to spread information in a way that excites and informs people on the world around us, but to maintain a collaborative, interdisciplinary, and innovative scientific environment. Holden Thorp, the editor-in-chief of Science Magazine, has taken on the role to mediate the efflux of such discovery, giving him a unique perspective on how science and related communication can be approached.
-                    </p>
-                    <p>
-                        Career trajectories can evolve unexpectedly—rather than following an idealized course, Dr. Thorp notes that he "didn't set out to be an editor in chief at Science." His career has spanned academia and leadership, first, as a laboratory researcher and associate professor at North Carolina State University, later, as Chancellor of the University of North Carolina at Chapel Hill, and today, as both a professor at George Washington University and head of one of the highest impact science journals in the world.
-                    </p>
-                    
-                    <blockquote class="border-l-4 border-indigo-500 pl-6 py-2 my-8 text-gray-600 italic">
-                        "I didn't set out to be an editor in chief at Science. My path was a series of interesting opportunities that I decided to pursue." - Holden Thorp (Paraphrased)
-                    </blockquote>
-                   
-                    <p>
-                        [Additional paragraphs and content for the article would go here...]
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                    </p>
-                </article>
             </div>
         </section>
         
@@ -258,7 +210,6 @@
                 <div>
                     <h3 class="text-lg font-semibold text-white mb-3">Connect</h3>
                     <p class="text-sm">Follow us on social media (links TBD).</p>
-                    {/* Placeholder for social icons */}
                 </div>
             </div>
             <hr class="border-gray-700 my-8">
@@ -279,85 +230,87 @@
 
         if (mobileMenuButton && mobileMenu && menuOpenIcon && menuCloseIcon) {
             mobileMenuButton.addEventListener('click', () => {
-                mobileMenu.classList.toggle('show'); // Toggles opacity and max-height
+                mobileMenu.classList.toggle('show');
                 menuOpenIcon.classList.toggle('hidden');
                 menuCloseIcon.classList.toggle('hidden');
-                // ARIA attribute for accessibility
                 const isExpanded = mobileMenu.classList.contains('show');
                 mobileMenuButton.setAttribute('aria-expanded', isExpanded.toString());
             });
 
-            // Close mobile menu when a link is clicked
             mobileNavLinks.forEach(link => {
                 link.addEventListener('click', () => {
-                    mobileMenu.classList.remove('show');
-                    menuOpenIcon.classList.remove('hidden');
-                    menuCloseIcon.classList.add('hidden');
-                    mobileMenuButton.setAttribute('aria-expanded', 'false');
+                    // Only close if it's a link within the same page for smooth scroll
+                    if (link.getAttribute('href').startsWith('#')) {
+                        mobileMenu.classList.remove('show');
+                        menuOpenIcon.classList.remove('hidden');
+                        menuCloseIcon.classList.add('hidden');
+                        mobileMenuButton.setAttribute('aria-expanded', 'false');
+                    }
+                    // For links to other pages, the page will reload anyway.
                 });
             });
         }
 
-        // --- Smooth Scroll for Anchor Links (already in body style, but JS can be more robust) ---
+        // --- Smooth Scroll for Anchor Links on the current page ---
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 const href = this.getAttribute('href');
-                // Ensure it's a valid ID selector and not just "#"
                 if (href.length > 1 && href.startsWith('#')) {
                     const targetElement = document.querySelector(href);
                     if (targetElement) {
                         e.preventDefault();
                         targetElement.scrollIntoView({
                             behavior: 'smooth',
-                            block: 'start' // Aligns the top of the target element to the top of the viewport
+                            block: 'start'
                         });
                     }
                 }
             });
         });
 
-        // --- Active Navigation Link Highlighting on Scroll ---
+        // --- Active Navigation Link Highlighting on Scroll (for single page sections) ---
         const sections = document.querySelectorAll('main section[id]');
-        const navLinks = document.querySelectorAll('nav a.nav-link');
+        const navLinks = document.querySelectorAll('header nav a.nav-link'); // Target desktop nav
 
         function changeNav() {
             let index = sections.length;
-
-            while(--index && window.scrollY + 100 < sections[index].offsetTop) {} // 100 is an offset
+            while(--index && window.scrollY + 100 < sections[index].offsetTop) {} 
             
             navLinks.forEach((link) => link.classList.remove('active-nav-link'));
-            // Check if the corresponding navLink exists before trying to add class
-            if (navLinks[index]) {
-                 // Ensure the link being targeted is for the current section based on href
+            
+            if (sections[index]) { // Check if sections[index] exists
                 const activeSectionId = sections[index].id;
-                const activeNavLink = document.querySelector(`nav a.nav-link[href="#${activeSectionId}"]`);
+                const activeNavLink = document.querySelector(`header nav a.nav-link[href="#${activeSectionId}"]`);
                 if (activeNavLink) {
                     activeNavLink.classList.add('active-nav-link');
-                } else if (activeSectionId === 'home' && navLinks[0]) { // Default to home if no specific match
-                    navLinks[0].classList.add('active-nav-link');
+                } else if (navLinks.length > 0 && activeSectionId === 'home') { // Default to home if no specific match
+                     navLinks[0].classList.add('active-nav-link'); // Assuming first link is Home
                 }
-            } else if (navLinks.length > 0) { // Fallback to the first link if index is out of bounds
+            } else if (window.scrollY < sections[0].offsetTop && navLinks.length > 0) { // If above all sections, highlight Home
                  navLinks[0].classList.add('active-nav-link');
             }
         }
-        // Initial call to set active link on page load
-        changeNav();
-        window.addEventListener('scroll', changeNav);
+        
+        // Only run scroll-based nav highlighting if there are sections to track
+        if (sections.length > 0 && navLinks.length > 0) {
+            changeNav(); // Initial call
+            window.addEventListener('scroll', changeNav);
+        }
 
 
         // --- Fade-in Sections on Scroll ---
         const fadeInSections = document.querySelectorAll('.fade-in-section');
         const observerOptions = {
-            root: null, // relative to document viewport
+            root: null, 
             rootMargin: '0px',
-            threshold: 0.1 // 10% of the item is visible
+            threshold: 0.1 
         };
 
         const observer = new IntersectionObserver((entries, observerRef) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('is-visible');
-                    observerRef.unobserve(entry.target); // Stop observing once it's visible
+                    observerRef.unobserve(entry.target); 
                 }
             });
         }, observerOptions);
@@ -368,7 +321,6 @@
 
         // --- Update Footer Year ---
         document.getElementById('currentYear').textContent = new Date().getFullYear();
-
     </script>
 
 </body>
