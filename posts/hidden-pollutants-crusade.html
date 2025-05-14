@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Article Title | The Catalyst Clone</title>
+    <title>Pollution to Solution: Dr. Song Gao | The Catalyst Clone</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -13,17 +13,20 @@
         .nav-link {
             @apply px-3 py-2 rounded-md text-sm font-medium text-gray-700 transition-all duration-300 ease-in-out hover:bg-gray-200 hover:text-gray-900 hover:transform hover:scale-105;
         }
-        /* Style for prose content if needed, Tailwind's typography plugin is great but not included by default with CDN */
-        .article-content h1 { @apply text-3xl sm:text-4xl font-bold text-gray-900 mb-6 leading-tight; }
-        .article-content h2 { @apply text-2xl sm:text-3xl font-semibold text-gray-900 mt-10 mb-4; }
-        .article-content p { @apply text-gray-700 text-lg mb-6 leading-relaxed; }
-        .article-content blockquote { @apply border-l-4 border-indigo-500 pl-6 py-2 my-8 text-gray-600 italic text-lg; }
+        .article-content h1 { @apply text-3xl sm:text-4xl font-bold text-gray-900 mb-4 leading-tight; }
+        .article-content h2 { @apply text-2xl sm:text-3xl font-semibold text-gray-900 mt-8 mb-4; }
+        .article-content h3 { @apply text-xl sm:text-2xl font-semibold text-gray-900 mt-6 mb-3; }
+        .article-content p { @apply text-gray-700 text-lg mb-5 leading-relaxed; }
+        .article-content blockquote { @apply border-l-4 border-indigo-500 pl-6 py-2 my-6 text-gray-600 italic text-lg; }
         .article-content ul { @apply list-disc list-inside mb-6 pl-4 text-lg text-gray-700; }
         .article-content ol { @apply list-decimal list-inside mb-6 pl-4 text-lg text-gray-700; }
         .article-content a { @apply text-indigo-600 hover:text-indigo-800 underline; }
-        .article-content img { @apply rounded-lg shadow-lg my-8 mx-auto; }
-
-        /* Mobile menu transition */
+        .article-content figure { @apply my-8; }
+        .article-content figcaption { @apply text-sm text-gray-500 text-center mt-2; }
+        .article-content img { @apply rounded-lg shadow-lg mx-auto; }
+        .skip-link {
+            @apply sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:p-3 focus:bg-white focus:text-indigo-600 focus:shadow-md;
+        }
         #mobile-menu {
             transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
             max-height: 0;
@@ -37,6 +40,7 @@
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
+    <a href="#main-content" class="skip-link">Skip to Main Content</a>
 
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,8 +54,8 @@
                 <nav class="hidden md:flex space-x-1">
                     <a href="../index.html#home" class="nav-link">Home</a>
                     <a href="../index.html#recent-posts" class="nav-link">Recent Posts</a>
-                    <a href="../index.html#about" class="nav-link">About Us</a> 
-                    </nav>
+                    <a href="../index.html#about" class="nav-link">About Us</a>
+                </nav>
                 <div class="md:hidden">
                     <button id="mobile-menu-button" aria-label="Open mobile menu" class="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 p-2 rounded-md">
                         <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
@@ -69,45 +73,105 @@
         </div>
     </header>
 
-    <main class="py-12 md:py-16">
+    <main id="main-content" class="py-12 md:py-16">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
             <article class="article-content">
                 <div class="mb-8 text-center">
-                    <p class="text-indigo-600 font-semibold tracking-wider">INTERVIEW</p>
-                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 my-3 leading-tight">
-                        Sitting Down with the Editor-in-Chief of Science Magazine, to Talk About the Future of Scientific Communication
-                    </h1>
-                    <p class="text-gray-500 text-sm">By Alex Carter and Aidan Schurr | Published on May 8, 2025</p>
+                    <p class="text-purple-600 font-semibold tracking-wider">FEATURE</p> <h1>Pollution to Solution: Dr. Song Gao on Science, Policy, and Environmental Sustainability</h1>
+                    <p class="text-gray-500 text-sm">By Naama Ben-Dor | Apr 20</p>
                 </div>
 
-                <img src="https://placehold.co/700x400/bfdbfe/1d4ed8?text=Article+Main+Image" alt="Descriptive alt text for article image" class="rounded-lg shadow-xl my-8 mx-auto w-full max-w-2xl">
+                <p class="lead text-xl !text-gray-800 !mb-8">
+                    Dr. Song Gao of Georgetown University reveals how bridging atmospheric chemistry and environmental policy can drive real-world sustainability. In this article, Gao discusses his transformative journey from synthetic chemistry to investigating the impacts of aerosols on climate change and the ozone layer. Drawing on lessons from the Montreal Protocol and its innovative integration of science with policy, he highlights the critical need for interdisciplinary collaboration. Gao’s insights underscore that only by aligning scientific breakthroughs with pragmatic, flexible policies can we effectively combat the escalating challenges of global environmental degradation.
+                </p>
+                <hr class="my-10 border-gray-300">
+                
+                <figure>
+                    <img src="https://placehold.co/700x400/e2e8f0/334155?text=Forest+Fire" alt="Forest Fire, Wildfire burning tree in red and orange color." class="max-w-xl">
+                    <figcaption>Forest Fire, Wildfire burning tree in red and orange color. Photo by yelantsevv</figcaption>
+                </figure>
+                <p>
+                    From fires and floods to unprecedented scalding temperatures in worldwide locations, global climate change is becoming an increasingly pressing issue. The scientific community must find ways to address it. Despite the already-palpable implications, factors such as technological advances, convenience, and political motives all impede on the ability to mitigate the accumulating damage to the environment. While societal change can be idealized at the individual level, the urgency of global climate change demands pragmatic initiative and creativity to implement structural changes.
+                </p>
+                <p>
+                    In recent years, Professor Song Gao from Georgetown University’s Department of Chemistry has worked to battle environmental systems’ damage and promote sustainability on a broader scale: international policy.
+                </p>
 
-                <p class="lead text-xl text-gray-800 !mb-8">
-                    In an era of growing skepticism and polarized discourse, clear science communication is more vital than ever. We sat down with Holden Thorp to explore how one of the world's leading science journals navigates this challenge. Join us as he reflects on his journey and the evolving role of scientific storytelling.
+                <h2>From Synthetic Chemistry to Atmospheric Chemistry</h2>
+                <p>
+                    Throughout his undergraduate studies, Dr. Gao was primarily focused on synthetic chemistry. With a long-held passion for the environment, though, he pursued polymer synthesis, seeking to develop cleaner materials for energy storage. When he began his search for a graduate program, though, his interests drew him to PhD advisors at the University of Washington, and later his postdoctoral mentors at Caltech, to work on broader environmental science issues — in particular, atmospheric chemistry. There, Dr. Gao began researching the effects of aerosols on air pollution and the climate. While scientists had understood some of their harmful effects on air quality, they were just beginning to decipher the climate impacts of organic aerosols, especially, in both reflecting sunlight (a direct impact) and influencing the formation of clouds (an indirect impact).
+                </p>
+                
+                <h2>The Montreal Protocol and Policy Influence</h2>
+                <p>
+                    While Dr. Gao’s focus on air pollution and climate change has remained strong, a pivotal encounter in 2016 inspired him to consider incorporating a new angle to his work. A group of science-based policy makers asked Dr. Gao to write a review article on stratospheric ozone depletion and its implications on the regulation of chlorofluorocarbons, better known as CFCs. These molecules, which have been widely used as refrigerants, coolants and fire extinguishers since the 1940s, were discovered to play a massive role in the destruction of the ozone layer in the 1970s — a finding so consequential that it won Crutzen, Molina, and Rowland, the 1995 Nobel Prize in Chemistry. Due to their stable C-F and C-Cl bonds, CFCs are mostly inert in the lower atmosphere and resistant to degradation efforts. Upon traveling to the upper atmosphere, however, the sun’s ultraviolet radiation breaks these covalent bonds. The resulting Cl and Br radicals deplete the earth’s ozone layer, inhibiting its function of filtering the most cancerous and dangerous wavelengths of ultraviolet light from reaching biological life on earth’s surface.
+                </p>
+                <figure>
+                    <img src="https://placehold.co/600x300/e2e8f0/334155?text=Ozone+Depletion+Theory" alt="The Rowland-Molina theory of ozone depletion." class="max-w-md">
+                    <figcaption>The Rowland-Molina theory of ozone depletion.</figcaption>
+                </figure>
+                <p>
+                    As awareness of their harm grew, the United Nations signed the Montreal Protocol in 1987 to phase out the use of CFCs. Often considered the UN’s most successful international agreement, the Montreal Protocol has eliminated approximately 99% of ozone-depleting substances in the environment. 
+                </p>
+                <p>
+                    Following that initial collaboration with science policymakers, Dr. Gao became aware of the massive potential for widespread influence by incorporating clever policy into scientific work. 
+                </p>
+                <blockquote>
+                    “I realized that for science to truly improve society and safeguard the environment, it must interface with policy effectively,” he said. “That realization has influenced my approach ever since.”
+                </blockquote>
+                <p>
+                    Although rooted in science, environmental policy — as with everything related to government affairs — is strongly influenced by politics. In Chemical Transformations in the Environment, a course Dr. Gao teaches at Georgetown, he highlights “the three Ps” that underlie effective environmental policy: people, planet, and profit. 
+                </p>
+                <blockquote>
+                    “If one aspect is ignored, the entire system becomes unworkable. If policies or solutions negatively impact people’s livelihoods or cause economic losses, they won’t be accepted. If, however, the focus is solely on profits and politics while polluting the environment, that’s unsustainable. And if we protect the environment but ignore economic or social factors, the approach is too naïve to be effective,” he said. “Sustainability requires integrating all three.”
+                </blockquote>
+                <p>
+                    The ingenious approach of the Montreal Protocol, according to Dr. Gao, was its unprecedented flexibility and consideration for the “three Ps.” Since its initial ratification, it has been amended more than 20 times to incorporate new scientific findings and the differing on-the-ground realities that various countries face. Other international agreements like the Paris Agreement, which demanded rigid, often-quantified commitments, and imposed higher economic costs, have shown much less success.  
+                </p>
+                
+                <h2>Current Work</h2>
+                <figure>
+                     <img src="https://placehold.co/600x400/e2e8f0/334155?text=Wastewater+Treatment" alt="Nitrous oxide emissions from wastewater treatment systems." class="max-w-lg">
+                    <figcaption>Nitrous oxide emissions from wastewater treatment systems.</figcaption>
+                </figure>
+                <p>
+                    Although highly successful at eliminating ozone depletion, the Montreal Protocol showed an unexpected outcome. While the ozone layer was showing signs of replenishment, some of the replacements for CFCs — particular HFCs and HCFCs — posed a separate issue: climate warming. In light of this discovery, 163 parties signed the 2016 Kigali Amendment to the Montreal Protocol, agreeing to phase out HFCs as well.
+                </p>
+                <p>
+                    Despite these efforts, however, air quality data from recent years has shown increasing concentrations of certain CFCs and HFCs in the environment pointing to undisclosed, potentially illicit use. Continued emissions of these substances seriously hinder the ongoing efforts to combat climate change and ozone depletion. Consequently, in 2021, Dr. Gao took action and partnered with Dr. Stephen Anderson — one of the founders of the famous Montreal Protocol and a prominent figure in environmental policy — on a highly influential paper addressing this issue.
+                </p>
+                <p>
+                    Through extensive research, Dr. Gao and his collaborators revealed a potential loophole in the Protocol that allows exemptions of ozone-depleting substances (ODSs) for “critical uses” in medicine, manufacturing, and other applications. Growing evidence indicates misuse and overuse of these exemptions for non-critical purposes, which also may include plastics production. In their work, Dr. Gao and Dr. Anderson identified multiple pathways by which some ODSs and HFCs may be converted into fluoropolymers, like Teflon. In their paper they offer actionable recommendations for further amending the Montreal Protocol in order to more effectively prevent exploitation of its exemptions and to maximize its success at battling multiple and inter-linking environmental damages. 
+                </p>
+                
+                <h2>Bringing Science into Action: The Role of Policy in Environmental Research</h2>
+                <p>
+                    Dr. Gao’s work highlights a key but often overlooked application for science-oriented work. Although most discoveries are made in the lab, there is vast potential for wider influence through interdisciplinary work. There exists a problematic gap in science communication that limits the accessibility of breakthrough research to people outside the field, and prevents widespread implementation of crucial scientific developments. 
+                </p>
+                <blockquote>
+                    “Understanding policy has influenced the kinds of scientific questions I pursue. If you want your research to have real-world impacts, it’s important to study science that is relevant to policy and societal needs,” Dr. Gao said.
+                </blockquote>
+                
+                <h2>Takeaways For Students</h2>
+                <p>
+                    To the readers here, at the heart of the nation’s capital, consider Dr. Gao’s message:
+                </p>
+                <blockquote>
+                    “Right now, science and policy are not as integrated as they should be. Scientists and policymakers are often curious about each other’s fields, but there aren’t many structured pathways for collaboration,” he said. “That’s why I encourage students to study both. A strong foundation in chemistry, ecology, mathematics and atmospheric science is essential. But it’s equally important to develop skills in scientific communication and environmental policy. Having expertise in both allows for an effective convergence of the two.”
+                </blockquote>
+                <p>
+                    As is made clearer every day, the worsening condition of the environment demands scientific minds to collaborate towards discovering innovative solutions, and often tweak existing solutions. While climate change is an undoubtedly urgent issue, environmental science is one of many fields in STEM that can benefit from interdisciplinary collaboration and communication. This field allows for a positive impact on the world through science and a wide scope of influence, even if the means are unconventional. 
                 </p>
                 
                 <hr class="my-10 border-gray-300">
-
-                <h2>Background</h2>
-                <p>
-                    In a time where trust in science is eroding and public discourse grows more polarized, accurately and effectively communicating new discoveries is becoming increasingly important for progress. Science communication is not only essential to spread information in a way that excites and informs people on the world around us, but to maintain a collaborative, interdisciplinary, and innovative scientific environment. Holden Thorp, the editor-in-chief of Science Magazine, has taken on the role to mediate the efflux of such discovery, giving him a unique perspective on how science and related communication can be approached.
-                </p>
-                <p>
-                    Career trajectories can evolve unexpectedly—rather than following an idealized course, Dr. Thorp notes that he "didn't set out to be an editor in chief at Science." His career has spanned academia and leadership, first, as a laboratory researcher and associate professor at North Carolina State University, later, as Chancellor of the University of North Carolina at Chapel Hill, and today, as both a professor at George Washington University and head of one of the highest impact science journals in the world.
-                </p>
-                
-                <blockquote>
-                    "I didn't set out to be an editor in chief at Science. My path was a series of interesting opportunities that I decided to pursue." - Holden Thorp (Paraphrased)
-                </blockquote>
-               
-                <h2>Bridging the Publication Gap</h2>
-                <p>
-                    To move forward, it's incredibly important to maintain the flow of information through engagement with platforms that expand science communication. Broader access to science is achieved through publishers such as Science, PNAS, Cell, and more. The role that these publishers play has never been to serve as mass communicators to the general public; instead, they were built to validate, archive, and advance scientific discovery, taking on immense responsibility to facilitate communication between researchers.
-                </p>
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-                </p>
-                </article>
+                <h3>References</h3>
+                <ul>
+                    <li>Molina, M., Rowland, F. Stratospheric sink for chlorofluoromethanes: chlorine atom-catalysed destruction of ozone. Nature 249, 810–812 (1974). https://doi.org/10.1038/249810a0 </li>
+                    <li>Stanley, K.M., Say, D., Mühle, J. et al. Increase in global emissions of HFC-23 despite near-total expected reductions. Nat Commun 11, 397 (2020). https://doi.org/10.1038/s41467-019-13899-4</li>
+                    <li>S.O. Andersen, S. Gao, S. Carvalho, T. Ferris, M. Gonzalez, N.J. Sherman, Y. Wei, & D. Zaelke, Narrowing feedstock exemptions under the Montreal Protocol has multiple environmental benefits, Proc. Natl. Acad. Sci. U.S.A. 118 (49) e2022668118, https://doi.org/10.1073/pnas.2022668118 (2021).</li>
+                    <li>The Nobel Prize in Chemistry 1995. NobelPrize.org. Nobel Prize Outreach 2025. Thu. 3 Apr 2025. https://www.nobelprize.org/prizes/chemistry/1995/summary/ </li>
+                </ul>
+            </article>
 
             <div class="mt-12 text-center">
                 <a href="../index.html#recent-posts" class="text-indigo-600 hover:text-indigo-800 font-semibold text-lg">
@@ -145,39 +209,19 @@
     </footer>
 
     <script>
-        // --- Mobile Menu Toggle ---
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
         const menuOpenIcon = document.getElementById('menu-open-icon');
         const menuCloseIcon = document.getElementById('menu-close-icon');
-        const mobileNavLinks = mobileMenu.querySelectorAll('.mobile-nav-link');
-
         if (mobileMenuButton && mobileMenu && menuOpenIcon && menuCloseIcon) {
             mobileMenuButton.addEventListener('click', () => {
                 mobileMenu.classList.toggle('show');
                 menuOpenIcon.classList.toggle('hidden');
                 menuCloseIcon.classList.toggle('hidden');
-                const isExpanded = mobileMenu.classList.contains('show');
-                mobileMenuButton.setAttribute('aria-expanded', isExpanded.toString());
-            });
-
-            mobileNavLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    // For links to other pages (like ../index.html), the menu will close on page load.
-                    // If it's an anchor link on the same page (not typical for article pages), it would close.
-                     if (link.getAttribute('href').startsWith('#')) {
-                        mobileMenu.classList.remove('show');
-                        menuOpenIcon.classList.remove('hidden');
-                        menuCloseIcon.classList.add('hidden');
-                        mobileMenuButton.setAttribute('aria-expanded', 'false');
-                    }
-                });
+                mobileMenuButton.setAttribute('aria-expanded', mobileMenu.classList.contains('show').toString());
             });
         }
-
-        // --- Update Footer Year ---
         document.getElementById('currentYear').textContent = new Date().getFullYear();
     </script>
-
 </body>
 </html>
