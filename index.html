@@ -3,57 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Catalyst Clone - Enhanced</title>
+    <title>The Catalyst - Modern Tech Magazine</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lucide-static@latest/lucide.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
             scroll-behavior: smooth;
+            background-color: #0F172A; /* Dark blue-gray background for a techy feel */
+            color: #E2E8F0; /* Light gray text for contrast */
         }
 
-        /* Enhanced Nav Link Styling & Transitions */
+        /* --- Global Techy Enhancements --- */
         .nav-link {
-            @apply px-3 py-2 rounded-md text-sm font-medium text-gray-700 transition-all duration-300 ease-in-out;
+            @apply px-3 py-2 rounded-md text-sm font-medium text-slate-300 transition-all duration-300 ease-in-out;
         }
         .nav-link:hover {
-            @apply bg-gray-200 text-gray-900 transform scale-105;
+            @apply bg-slate-700 text-white transform scale-105;
         }
         .nav-link.active-nav-link {
-            @apply bg-gray-800 text-white shadow-md;
+            @apply bg-indigo-600 text-white shadow-lg;
         }
-        .nav-link.active-nav-link:hover {
-            @apply bg-gray-700 text-white;
-        }
-
-
-        /* Hero Section Button Enhancement */
-        .hero-button {
-            @apply inline-block bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-300 ease-in-out;
-        }
-        .hero-button:hover {
-            @apply bg-gray-700 shadow-lg transform -translate-y-0.5;
+         .nav-link.active-nav-link:hover {
+            @apply bg-indigo-500;
         }
 
-        /* Card Enhancements */
+        .hero-button, .card-button {
+            @apply inline-flex items-center justify-center bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-all duration-300 ease-in-out;
+        }
+        .hero-button:hover, .card-button:hover {
+            @apply bg-indigo-500 shadow-lg transform -translate-y-0.5 scale-105;
+        }
+        .hero-button .lucide, .card-button .lucide {
+            @apply ml-2 h-5 w-5;
+        }
+
         .article-card {
-            @apply bg-white rounded-lg shadow-lg overflow-hidden flex flex-col transition-all duration-300 ease-in-out;
+            @apply bg-slate-800 rounded-xl shadow-2xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out border border-slate-700;
         }
         .article-card:hover {
-            @apply shadow-xl transform -translate-y-1;
+            @apply shadow-indigo-500/30 transform -translate-y-2 border-indigo-500;
         }
-        .card-button {
-            @apply inline-block bg-gray-800 text-white text-sm font-medium py-2 px-4 rounded-md transition-all duration-300 ease-in-out;
+        .article-card img {
+            transition: transform 0.3s ease-in-out;
         }
-        .card-button:hover {
-            @apply bg-gray-700 transform scale-105;
+        .article-card:hover img {
+            transform: scale(1.05);
         }
 
-        /* Basic fade-in animation */
+
+        /* --- Slideshow Styles --- */
+        .slideshow-container {
+            position: relative;
+            width: 100%;
+            height: 70vh; /* Adjust height as needed */
+            min-height: 400px;
+            max-height: 600px;
+            overflow: hidden;
+            border-radius: 0 0 20px 20px; /* Rounded bottom corners */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .slide {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            transition: opacity 1s ease-in-out;
+        }
+        .slide.active {
+            display: block;
+            opacity: 1;
+        }
+        .slide-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.1) 0%, rgba(15, 23, 42, 0.8) 100%); /* Darker overlay at bottom */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            text-align: center;
+            padding: 2rem 1rem; /* More padding */
+        }
+        .slide-content {
+            max-width: 800px;
+            color: white;
+        }
+        .slide-content h2 {
+            font-size: 2.5rem; /* Larger title */
+            font-weight: 800; /* Bolder title */
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .slide-content p {
+            font-size: 1.1rem; /* Slightly larger excerpt */
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* Slideshow Navigation Dots */
+        .slideshow-dots {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .dot.active {
+            background-color: #6366F1; /* Indigo */
+        }
+        /* Slideshow Navigation Arrows */
+        .slideshow-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(15, 23, 42, 0.5); /* Darker semi-transparent */
+            color: white;
+            border: none;
+            padding: 1rem;
+            cursor: pointer;
+            z-index: 10;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .slideshow-arrow:hover {
+            background-color: rgba(71, 85, 105, 0.8); /* Slate 700 */
+        }
+        .prev { left: 20px; }
+        .next { right: 20px; }
+
+
+        /* Fade-in animation */
         .fade-in-section {
             opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
         }
         .fade-in-section.is-visible {
             opacity: 1;
@@ -62,114 +162,144 @@
 
         /* Mobile menu transition */
         #mobile-menu {
-            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
-            max-height: 0;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            transform: translateY(-100%);
             opacity: 0;
-            overflow: hidden;
+            pointer-events: none; /* Prevent interaction when hidden */
         }
         #mobile-menu.show {
-            max-height: 500px;
+            transform: translateY(0);
             opacity: 1;
+            pointer-events: auto;
         }
-
+        .section-title {
+            @apply text-4xl md:text-5xl font-extrabold text-center mb-16;
+            background: linear-gradient(90deg, #818cf8, #c084fc); /* Indigo to Purple gradient */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
     </style>
 </head>
-<body class="bg-white text-gray-800">
+<body class="bg-slate-900 text-slate-200">
 
-    <header class="bg-white shadow-sm sticky top-0 z-50">
+    <header class="bg-slate-800/80 shadow-xl sticky top-0 z-50 backdrop-blur-md">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
+            <div class="flex items-center justify-between h-20">
                 <div class="flex-shrink-0">
-                    <a href="#home" class="flex items-center space-x-2 group">
-                        <img src="images/logo.png" alt="The Catalyst Logo" class="h-8 w-auto">
-                        <span class="text-2xl font-bold text-gray-800 group-hover:text-indigo-600 transition-colors duration-300">The Catalyst</span>
+                    <a href="#home" class="flex items-center space-x-3 group">
+                        <img src="images/logo.png" alt="The Catalyst Logo" class="h-10 w-auto transition-transform duration-300 group-hover:rotate-[15deg]">
+                        <span class="text-3xl font-bold text-slate-100 group-hover:text-indigo-400 transition-colors duration-300">The Catalyst</span>
                     </a>
                 </div>
-                <nav class="hidden md:flex space-x-1">
+                <nav class="hidden md:flex space-x-2">
                     <a href="#home" class="nav-link active-nav-link">Home</a>
                     <a href="#recent-posts" class="nav-link">Recent Posts</a>
                     <a href="#about" class="nav-link">About Us</a>
                 </nav>
                 <div class="md:hidden">
-                    <button id="mobile-menu-button" aria-label="Open mobile menu" class="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 p-2 rounded-md">
-                        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                            <path id="menu-open-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-                            <path id="menu-close-icon" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
+                    <button id="mobile-menu-button" aria-label="Open mobile menu" class="text-slate-300 hover:text-white focus:outline-none p-2 rounded-md">
+                        <svg id="menu-open-icon" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                        <svg id="menu-close-icon" class="h-7 w-7 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
             </div>
         </div>
-        <div id="mobile-menu" class="md:hidden bg-white shadow-lg">
-            <a href="#home" class="block px-4 py-3 text-base text-gray-700 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 mobile-nav-link">Home</a>
-            <a href="#recent-posts" class="block px-4 py-3 text-base text-gray-700 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 mobile-nav-link">Recent Posts</a>
-            <a href="#about" class="block px-4 py-3 text-base text-gray-700 hover:bg-gray-100 hover:text-indigo-600 transition-colors duration-200 mobile-nav-link">About Us</a>
+        <div id="mobile-menu" class="md:hidden bg-slate-800 absolute w-full shadow-xl">
+            <a href="#home" class="block px-6 py-4 text-lg text-slate-200 hover:bg-slate-700 hover:text-indigo-400 transition-colors duration-200 mobile-nav-link">Home</a>
+            <a href="#recent-posts" class="block px-6 py-4 text-lg text-slate-200 hover:bg-slate-700 hover:text-indigo-400 transition-colors duration-200 mobile-nav-link">Recent Posts</a>
+            <a href="#about" class="block px-6 py-4 text-lg text-slate-200 hover:bg-slate-700 hover:text-indigo-400 transition-colors duration-200 mobile-nav-link">About Us</a>
         </div>
     </header>
 
     <main>
-        <section id="home" class="py-16 md:py-24 bg-slate-100 fade-in-section">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
-                    <div class="text-center md:text-left">
-                        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                            Sitting Down with the Editor-in-Chief of <span class="text-indigo-600">Science Magazine</span>
-                        </h1>
-                        <p class="text-gray-700 text-lg sm:text-xl mb-8">
-                            In an era of growing skepticism and polarized discourse, clear science communication is more vital than ever. We sat down with Holden Thorp to explore how one of the world's leading science journals navigates this challenge.
-                        </p>
+        <section id="home" class="slideshow-container fade-in-section">
+            <div class="slide active" style="background-image: url('images/post1-cover.jpg');">
+                <img src="images/post1-cover.jpg" alt="Background for Science Editor Interview" style="display:none;" onerror="this.parentElement.style.backgroundImage='url(https://placehold.co/1200x600/1e293b/94a3b8?text=Science+Editor+Interview)'; this.style.display='none';">
+                <div class="slide-overlay">
+                    <div class="slide-content">
+                        <h2>Editor-in-Chief of Science Magazine</h2>
+                        <p class="hidden sm:block">In an era of growing skepticism, clear science communication is vital. We explore how a leading journal navigates this challenge.</p>
                         <a href="posts/science-editor-interview.html" class="hero-button">
-                            Read The Interview
+                            Read The Interview <i data-lucide="arrow-right-circle"></i>
                         </a>
-                        <div class="mt-10 flex justify-center md:justify-start space-x-2.5">
-                            <span class="block w-3 h-3 bg-indigo-600 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors"></span>
-                            <span class="block w-3 h-3 bg-gray-400 rounded-full cursor-pointer hover:bg-gray-500 transition-colors"></span>
-                            <span class="block w-3 h-3 bg-gray-400 rounded-full cursor-pointer hover:bg-gray-500 transition-colors"></span>
-                        </div>
-                    </div>
-                    <div class="hero-image-col">
-                         <img src="images/post1-cover.jpg" alt="Science Magazine Interview Illustration" class="rounded-xl shadow-2xl mx-auto w-full max-w-lg md:max-w-full transform hover:scale-105 transition-transform duration-500 ease-out">
                     </div>
                 </div>
             </div>
+            <div class="slide" style="background-image: url('images/post2-cover.jpg');">
+                <img src="images/post2-cover.jpg" alt="Background for Paradoxes in Science" style="display:none;" onerror="this.parentElement.style.backgroundImage='url(https://placehold.co/1200x600/1e293b/94a3b8?text=Paradoxes+in+Science)'; this.style.display='none';">
+                <div class="slide-overlay">
+                    <div class="slide-content">
+                        <h2>Paradoxes in Science: Models Breaking</h2>
+                        <p class="hidden sm:block">When trusted models no longer explain observations, paradoxes guide us toward more accurate scientific frameworks.</p>
+                        <a href="posts/paradoxes-in-science.html" class="hero-button">
+                            Explore Paradoxes <i data-lucide="arrow-right-circle"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="slide" style="background-image: url('images/post3-cover.jpg');">
+                 <img src="images/post3-cover.jpg" alt="Background for Dr. Gao on Pollutants" style="display:none;" onerror="this.parentElement.style.backgroundImage='url(https://placehold.co/1200x600/1e293b/94a3b8?text=Dr.+Gao+on+Pollutants)'; this.style.display='none';">
+                <div class="slide-overlay">
+                    <div class="slide-content">
+                        <h2>Dr. Gao's Crusade on Pollutants</h2>
+                        <p class="hidden sm:block">Bridging atmospheric chemistry and environmental policy to drive real-world sustainability and combat global degradation.</p>
+                        <a href="posts/hidden-pollutants-crusade.html" class="hero-button">
+                            Learn About Solutions <i data-lucide="arrow-right-circle"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <button class="slideshow-arrow prev" onclick="plusSlides(-1)"><i data-lucide="chevron-left"></i></button>
+            <button class="slideshow-arrow next" onclick="plusSlides(1)"><i data-lucide="chevron-right"></i></button>
+            <div class="slideshow-dots">
+                <span class="dot active" onclick="currentSlide(1)"></span>
+                <span class="dot" onclick="currentSlide(2)"></span>
+                <span class="dot" onclick="currentSlide(3)"></span>
+            </div>
         </section>
 
-        <section id="recent-posts" class="py-16 lg:py-24 bg-white fade-in-section">
+        <section id="recent-posts" class="py-20 lg:py-32 bg-slate-900 fade-in-section">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-14">RECENT POSTS</h2>
+                <h2 class="section-title">Recent Insights</h2>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
                     <div class="article-card">
-                        <img src="images/post1-cover.jpg" alt="Editor Interview" class="w-full h-52 object-cover">
+                        <a href="posts/science-editor-interview.html" class="block">
+                            <img src="images/post1-cover.jpg" alt="Editor Interview" class="w-full h-60 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x250/1e293b/94a3b8?text=Science+Editor+Interview';">
+                        </a>
                         <div class="p-6 flex flex-col flex-grow">
-                            <p class="text-sm text-indigo-600 font-semibold mb-1 tracking-wider">INTERVIEW</p>
-                            <h3 class="text-xl font-semibold text-gray-900 mb-2">Editor-in-Chief of Science Magazine</h3>
-                            <p class="text-sm text-gray-600 mb-4">Alex Carter & Aidan Schurr - May 08</p>
+                            <p class="text-sm text-indigo-400 font-semibold mb-2 tracking-wider">INTERVIEW</p>
+                            <h3 class="text-2xl font-semibold text-slate-100 mb-3">Editor-in-Chief of Science Magazine</h3>
+                            <p class="text-sm text-slate-400 mb-5 line-clamp-3">Alex Carter & Aidan Schurr - May 08. Exploring the future of scientific communication in an era of skepticism.</p>
                             <div class="mt-auto pt-4">
-                                <a href="posts/science-editor-interview.html" class="card-button">Read More</a>
+                                <a href="posts/science-editor-interview.html" class="card-button">Read More <i data-lucide="book-open"></i></a>
                             </div>
                         </div>
                     </div>
 
                     <div class="article-card">
-                        <img src="images/post2-cover.jpg" alt="Science Paradoxes" class="w-full h-52 object-cover">
+                         <a href="posts/paradoxes-in-science.html" class="block">
+                            <img src="images/post2-cover.jpg" alt="Science Paradoxes" class="w-full h-60 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x250/1e293b/94a3b8?text=Paradoxes+in+Science';">
+                        </a>
                         <div class="p-6 flex flex-col flex-grow">
-                            <p class="text-sm text-teal-600 font-semibold mb-1 tracking-wider">OP-ED</p>
-                            <h3 class="text-xl font-semibold text-gray-900 mb-2">Paradoxes in Science: Models Breaking</h3>
-                            <p class="text-sm text-gray-600 mb-4">Lori Preci - Apr 29</p>
+                            <p class="text-sm text-teal-400 font-semibold mb-2 tracking-wider">OP-ED</p>
+                            <h3 class="text-2xl font-semibold text-slate-100 mb-3">Paradoxes in Science: Models Breaking</h3>
+                            <p class="text-sm text-slate-400 mb-5 line-clamp-3">Lori Preci - Apr 29. How contradictions in science push the boundaries of our understanding and lead to breakthroughs.</p>
                             <div class="mt-auto pt-4">
-                                <a href="posts/paradoxes-in-science.html" class="card-button">Read More</a>
+                                <a href="posts/paradoxes-in-science.html" class="card-button">Read More <i data-lucide="book-open"></i></a>
                             </div>
                         </div>
                     </div>
 
                     <div class="article-card">
-                        <img src="images/post1-cover.jpg" alt="Hidden Pollutants" class="w-full h-52 object-cover">
+                        <a href="posts/hidden-pollutants-crusade.html" class="block">
+                            <img src="images/post3-cover.jpg" alt="Hidden Pollutants" class="w-full h-60 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x250/1e293b/94a3b8?text=Dr.+Gao+on+Pollutants';">
+                        </a>
                         <div class="p-6 flex flex-col flex-grow">
-                            <p class="text-sm text-purple-600 font-semibold mb-1 tracking-wider">FEATURE</p>
-                            <h3 class="text-xl font-semibold text-gray-900 mb-2">Dr. Gao's Crusade on Pollutants</h3>
-                            <p class="text-sm text-gray-600 mb-4">Naama Ben-Dor - Apr 20</p>
+                            <p class="text-sm text-purple-400 font-semibold mb-2 tracking-wider">FEATURE</p>
+                            <h3 class="text-2xl font-semibold text-slate-100 mb-3">Dr. Gao's Crusade on Pollutants</h3>
+                            <p class="text-sm text-slate-400 mb-5 line-clamp-3">Naama Ben-Dor - Apr 20. A deep dive into the fight against hidden environmental threats and policy solutions.</p>
                             <div class="mt-auto pt-4">
-                                <a href="posts/hidden-pollutants-crusade.html" class="card-button">Read More</a>
+                                <a href="posts/hidden-pollutants-crusade.html" class="card-button">Read More <i data-lucide="book-open"></i></a>
                             </div>
                         </div>
                     </div>
@@ -177,29 +307,28 @@
             </div>
         </section>
         
-        <section id="about" class="py-16 lg:py-24 bg-indigo-700 text-white fade-in-section">
+        <section id="about" class="py-20 lg:py-32 bg-slate-800 fade-in-section border-t border-slate-700">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                <h2 class="text-3xl md:text-4xl font-bold mb-6">About The Catalyst</h2>
-                <p class="text-lg md:text-xl max-w-3xl mx-auto mb-8 text-indigo-100">
-                    The Catalyst is dedicated to exploring the forefront of scientific discovery and communication. We aim to bridge the gap between complex research and public understanding, fostering a more informed and engaged society.
+                <h2 class="section-title">About The Catalyst</h2>
+                <p class="text-lg md:text-xl max-w-3xl mx-auto mb-10 text-slate-300">
+                    The Catalyst is dedicated to exploring the forefront of scientific discovery and communication. We aim to bridge the gap between complex research and public understanding, fostering a more informed and engaged society through compelling storytelling and insightful analysis.
                 </p>
-                <a href="#" class="inline-block bg-white text-indigo-700 font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-indigo-50 transition-colors duration-300">
-                    Learn More About Us
+                <a href="#" class="hero-button"> {/* This could link to a dedicated about.html page */}
+                    Discover Our Mission <i data-lucide="users"></i>
                 </a>
             </div>
         </section>
-
     </main>
 
-    <footer class="bg-gray-900 text-gray-400 py-12">
+    <footer class="bg-slate-900 text-slate-400 py-16 border-t border-slate-700">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10 text-center md:text-left">
                 <div>
-                    <h3 class="text-lg font-semibold text-white mb-3">The Catalyst</h3>
-                    <p class="text-sm">Igniting curiosity through science.</p>
+                    <h3 class="text-xl font-semibold text-white mb-4">The Catalyst</h3>
+                    <p class="text-sm">Igniting curiosity, sparking change through science.</p>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold text-white mb-3">Quick Links</h3>
+                    <h3 class="text-xl font-semibold text-white mb-4">Quick Links</h3>
                     <ul class="space-y-2">
                         <li><a href="#home" class="hover:text-indigo-400 transition-colors">Home</a></li>
                         <li><a href="#recent-posts" class="hover:text-indigo-400 transition-colors">Recent Posts</a></li>
@@ -208,45 +337,52 @@
                     </ul>
                 </div>
                 <div>
-                    <h3 class="text-lg font-semibold text-white mb-3">Connect</h3>
-                    <p class="text-sm">Follow us on social media (links TBD).</p>
+                    <h3 class="text-xl font-semibold text-white mb-4">Connect With Us</h3>
+                    <p class="text-sm">Stay updated with the latest in science communication.</p>
+                    {/* Placeholder for social icons - e.g., using Lucide icons or SVGs */}
+                    <div class="flex justify-center md:justify-start space-x-4 mt-4">
+                        <a href="#" class="text-slate-400 hover:text-indigo-400"><i data-lucide="twitter"></i></a>
+                        <a href="#" class="text-slate-400 hover:text-indigo-400"><i data-lucide="linkedin"></i></a>
+                        <a href="#" class="text-slate-400 hover:text-indigo-400"><i data-lucide="facebook"></i></a>
+                    </div>
                 </div>
             </div>
-            <hr class="border-gray-700 my-8">
+            <hr class="border-slate-700 my-8">
             <div class="text-center text-sm">
                 <p>&copy; <span id="currentYear"></span> The Catalyst Clone. All rights reserved. For demonstration purposes.</p>
-                <p class="text-xs mt-1">This is a clone created based on user-provided screenshots and is not affiliated with the original website.</p>
+                <p class="text-xs mt-1">This is a clone inspired by user-provided screenshots and is not affiliated with the original website.</p>
             </div>
         </div>
     </footer>
 
     <script>
+        // --- Lucide Icons Activation ---
+        lucide.createIcons();
+
         // --- Mobile Menu Toggle ---
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
         const menuOpenIcon = document.getElementById('menu-open-icon');
         const menuCloseIcon = document.getElementById('menu-close-icon');
-        const mobileNavLinks = mobileMenu.querySelectorAll('.mobile-nav-link');
-
+        
         if (mobileMenuButton && mobileMenu && menuOpenIcon && menuCloseIcon) {
             mobileMenuButton.addEventListener('click', () => {
-                mobileMenu.classList.toggle('show');
-                menuOpenIcon.classList.toggle('hidden');
-                menuCloseIcon.classList.toggle('hidden');
-                const isExpanded = mobileMenu.classList.contains('show');
-                mobileMenuButton.setAttribute('aria-expanded', isExpanded.toString());
+                const isShown = mobileMenu.classList.toggle('show');
+                menuOpenIcon.classList.toggle('hidden', isShown);
+                menuCloseIcon.classList.toggle('hidden', !isShown);
+                mobileMenuButton.setAttribute('aria-expanded', isShown.toString());
             });
 
-            mobileNavLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    // Only close if it's a link within the same page for smooth scroll
+            // Close mobile menu when a link is clicked (for same-page anchors)
+            mobileMenu.querySelectorAll('.mobile-nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
                     if (link.getAttribute('href').startsWith('#')) {
                         mobileMenu.classList.remove('show');
                         menuOpenIcon.classList.remove('hidden');
                         menuCloseIcon.classList.add('hidden');
                         mobileMenuButton.setAttribute('aria-expanded', 'false');
                     }
-                    // For links to other pages, the page will reload anyway.
+                    // For links to other pages, default behavior will navigate.
                 });
             });
         }
@@ -267,34 +403,94 @@
                 }
             });
         });
+        
+        // --- Slideshow Logic ---
+        let slideIndex = 1;
+        let slideInterval;
 
-        // --- Active Navigation Link Highlighting on Scroll (for single page sections) ---
-        const sections = document.querySelectorAll('main section[id]');
-        const navLinks = document.querySelectorAll('header nav a.nav-link'); // Target desktop nav
+        showSlides(slideIndex);
 
-        function changeNav() {
-            let index = sections.length;
-            while(--index && window.scrollY + 100 < sections[index].offsetTop) {} 
+        function plusSlides(n) {
+            showSlides(slideIndex += n);
+            resetSlideInterval();
+        }
+
+        function currentSlide(n) {
+            showSlides(slideIndex = n);
+            resetSlideInterval();
+        }
+
+        function showSlides(n) {
+            let i;
+            const slides = document.getElementsByClassName("slide");
+            const dots = document.getElementsByClassName("dot");
+            if (slides.length === 0 || dots.length === 0) return; // Exit if no slides/dots
+
+            if (n > slides.length) {slideIndex = 1}
+            if (n < 1) {slideIndex = slides.length}
             
-            navLinks.forEach((link) => link.classList.remove('active-nav-link'));
-            
-            if (sections[index]) { // Check if sections[index] exists
-                const activeSectionId = sections[index].id;
-                const activeNavLink = document.querySelector(`header nav a.nav-link[href="#${activeSectionId}"]`);
-                if (activeNavLink) {
-                    activeNavLink.classList.add('active-nav-link');
-                } else if (navLinks.length > 0 && activeSectionId === 'home') { // Default to home if no specific match
-                     navLinks[0].classList.add('active-nav-link'); // Assuming first link is Home
-                }
-            } else if (window.scrollY < sections[0].offsetTop && navLinks.length > 0) { // If above all sections, highlight Home
-                 navLinks[0].classList.add('active-nav-link');
+            for (i = 0; i < slides.length; i++) {
+                slides[i].style.display = "none";
+                slides[i].classList.remove("active");
             }
+            for (i = 0; i < dots.length; i++) {
+                dots[i].classList.remove("active");
+            }
+            
+            slides[slideIndex-1].style.display = "block";
+            // Add a slight delay for the opacity transition to take effect
+            setTimeout(() => {
+                slides[slideIndex-1].classList.add("active");
+            }, 10);
+            dots[slideIndex-1].classList.add("active");
+        }
+
+        function autoPlaySlides() {
+            plusSlides(1);
+        }
+
+        function startSlideInterval() {
+            slideInterval = setInterval(autoPlaySlides, 5000); // Change image every 5 seconds
+        }
+
+        function resetSlideInterval() {
+            clearInterval(slideInterval);
+            startSlideInterval();
         }
         
-        // Only run scroll-based nav highlighting if there are sections to track
+        // Start autoplay only if slides exist
+        if (document.getElementsByClassName("slide").length > 0) {
+            startSlideInterval();
+        }
+
+
+        // --- Active Navigation Link Highlighting on Scroll ---
+        const sections = document.querySelectorAll('main section[id]');
+        const navLinks = document.querySelectorAll('header nav a.nav-link');
+
+        function changeNavActiveState() {
+            let currentSectionId = 'home'; // Default to home
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                // Adjust offset if header is sticky and has height
+                if (window.scrollY >= sectionTop - (document.querySelector('header').offsetHeight + 20)) {
+                    currentSectionId = section.id;
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active-nav-link');
+                if (link.getAttribute('href') === `#${currentSectionId}`) {
+                    link.classList.add('active-nav-link');
+                }
+            });
+        }
+        
         if (sections.length > 0 && navLinks.length > 0) {
-            changeNav(); // Initial call
-            window.addEventListener('scroll', changeNav);
+            window.addEventListener('scroll', changeNavActiveState);
+            changeNavActiveState(); // Initial call
         }
 
 
@@ -302,11 +498,11 @@
         const fadeInSections = document.querySelectorAll('.fade-in-section');
         const observerOptions = {
             root: null, 
-            rootMargin: '0px',
-            threshold: 0.1 
+            rootMargin: '0px 0px -100px 0px', // Trigger a bit earlier
+            threshold: 0.1
         };
 
-        const observer = new IntersectionObserver((entries, observerRef) => {
+        const intersectionObserver = new IntersectionObserver((entries, observerRef) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('is-visible');
@@ -316,12 +512,11 @@
         }, observerOptions);
 
         fadeInSections.forEach(section => {
-            observer.observe(section);
+            intersectionObserver.observe(section);
         });
 
         // --- Update Footer Year ---
         document.getElementById('currentYear').textContent = new Date().getFullYear();
     </script>
-
 </body>
 </html>
