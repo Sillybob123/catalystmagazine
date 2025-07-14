@@ -6,16 +6,15 @@
     <title>The Catalyst Map of D.C. Science</title>
     <style>
         /* --- Basic Setup & Fonts --- */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400&family=Inter:wght@400;600;700&display=swap');
 
         :root {
             --bg-color: #0a0c10;
-            --map-stroke-color: #30363d;
-            --map-land-color: #161b22;
             --text-color: #c9d1d9;
-            --accent-color: #58a6ff;
-            --glow-color: rgba(88, 166, 255, 0.75);
-            --card-bg: rgba(22, 27, 34, 0.95);
+            --accent-color: #00f2ea; /* Switched to a vibrant teal */
+            --glow-color: rgba(0, 242, 234, 0.75);
+            --card-bg: rgba(22, 27, 34, 0.85);
+            --border-color: rgba(0, 242, 234, 0.3);
         }
 
         * {
@@ -25,7 +24,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             overflow: hidden;
@@ -41,7 +40,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-image: url('https://static.wixstatic.com/media/11b1c4_1ac7cb7757a54e8cb72d6a4b1ae1dbb6~mv2.jpeg'); /* High-quality, dark map of DC */
+            background-image: url('https://static.wixstatic.com/media/11b1c4_1ac7cb7757a54e8cb72d6a4b1ae1dbb6~mv2.jpeg');
             background-size: cover;
             background-position: center;
         }
@@ -52,8 +51,17 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, rgba(10, 12, 16, 0.3) 0%, rgba(10, 12, 16, 0.9) 70%);
+            background: radial-gradient(circle, rgba(10, 12, 16, 0.4) 0%, rgba(10, 12, 16, 0.95) 80%);
             z-index: 2;
+        }
+        
+        #animation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
         }
 
         #map-nodes-wrapper {
@@ -64,60 +72,83 @@
             height: 100%;
             z-index: 5;
         }
+        
+        /* --- High-Tech Scanline Effect --- */
+        #scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(to bottom, rgba(0, 242, 234, 0) 0%, rgba(0, 242, 234, 0.3) 50%, rgba(0, 242, 234, 0) 100%);
+            animation: scan 8s linear infinite;
+            z-index: 4;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-10px); }
+            100% { transform: translateY(100vh); }
+        }
 
         /* --- Article Nodes --- */
         .article-node {
             position: absolute;
-            width: 16px;
-            height: 16px;
+            width: 12px;
+            height: 12px;
             background-color: var(--accent-color);
-            border: 2px solid #fff;
             border-radius: 50%;
             cursor: pointer;
             z-index: 10;
             transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
-            box-shadow: 0 0 8px var(--glow-color);
+            box-shadow: 0 0 10px var(--glow-color);
             animation: pulse 3s infinite ease-in-out;
+            transform: scale(0); /* Start scaled down for entry animation */
+            opacity: 0;
+        }
+        
+        .article-node.visible {
+            transform: scale(1);
+            opacity: 1;
         }
 
         .article-node:hover {
-            transform: scale(2.2);
-            box-shadow: 0 0 20px var(--glow-color), 0 0 30px var(--glow-color);
+            transform: scale(2.5) !important;
+            box-shadow: 0 0 25px var(--glow-color), 0 0 35px var(--glow-color);
             animation-play-state: paused;
         }
         
         /* --- Filtering Logic --- */
         #catalyst-map-container.filtered .article-node {
             opacity: 0.1;
-            transform: scale(0.6);
+            transform: scale(0.6) !important;
             animation: none;
         }
 
         #catalyst-map-container.filtered .article-node.active {
             opacity: 1;
-            transform: scale(1.3);
+            transform: scale(1.5) !important;
             animation: pulse-active 2.5s infinite ease-in-out;
         }
         
         #catalyst-map-container.filtered .article-node.active:hover {
-            transform: scale(2.5);
+            transform: scale(2.8) !important;
         }
 
         /* --- Animations --- */
         @keyframes pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 8px var(--glow-color); }
-            50% { transform: scale(1.2); box-shadow: 0 0 16px var(--glow-color); }
+            0%, 100% { box-shadow: 0 0 10px var(--glow-color); }
+            50% { box-shadow: 0 0 20px var(--glow-color); }
         }
         
         @keyframes pulse-active {
-            0%, 100% { transform: scale(1.3); box-shadow: 0 0 12px var(--glow-color); }
-            50% { transform: scale(1.5); box-shadow: 0 0 24px var(--glow-color); }
+            0%, 100% { transform: scale(1.5); box-shadow: 0 0 15px var(--glow-color); }
+            50% { transform: scale(1.7); box-shadow: 0 0 25px var(--glow-color); }
         }
 
         /* --- Tooltip on Hover --- */
         .node-tooltip {
             position: absolute;
-            bottom: 160%; 
+            bottom: 180%; 
             left: 50%;
             transform: translateX(-50%);
             background-color: var(--card-bg);
@@ -125,14 +156,14 @@
             padding: 8px 14px;
             border-radius: 6px;
             font-size: 13px;
-            font-weight: 500;
+            font-family: 'Roboto Mono', monospace;
             white-space: nowrap;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.2s, visibility 0.2s;
             pointer-events: none;
             z-index: 100;
-            border: 1px solid var(--map-stroke-color);
+            border: 1px solid var(--border-color);
         }
 
         .article-node:hover .node-tooltip {
@@ -147,19 +178,28 @@
             left: 20px;
             background-color: var(--card-bg);
             backdrop-filter: blur(10px);
-            border: 1px solid var(--map-stroke-color);
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 15px;
             z-index: 50;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            opacity: 0;
+            transform: translateX(-30px);
+            animation: fadeIn 0.5s ease-out 0.5s forwards;
+        }
+        
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateX(0); }
         }
 
         #filter-menu h2 {
             margin: 0 0 15px 0;
             font-size: 16px;
-            font-weight: 600;
-            border-bottom: 1px solid var(--map-stroke-color);
+            font-weight: 400;
+            font-family: 'Roboto Mono', monospace;
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
+            color: var(--accent-color);
         }
 
         #filter-menu button {
@@ -171,20 +211,22 @@
             background-color: transparent;
             color: var(--text-color);
             text-align: left;
+            font-family: 'Roboto Mono', monospace;
             font-size: 14px;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.2s, border-color 0.2s;
+            transition: background-color 0.2s, color 0.2s;
         }
 
         #filter-menu button:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: var(--border-color);
+            color: #fff;
         }
 
         #filter-menu button.active {
             background-color: var(--accent-color);
             color: var(--bg-color);
-            font-weight: 600;
+            font-weight: 700;
         }
         
         /* --- Info Card --- */
@@ -197,7 +239,7 @@
             max-width: 480px;
             background-color: var(--card-bg);
             backdrop-filter: blur(12px);
-            border: 1px solid var(--map-stroke-color);
+            border: 1px solid var(--border-color);
             border-radius: 16px;
             z-index: 100;
             opacity: 0;
@@ -225,7 +267,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-bottom: 1px solid var(--map-stroke-color);
+            border-bottom: 1px solid var(--border-color);
         }
 
         #card-content {
@@ -258,7 +300,7 @@
             padding: 12px 18px;
             border-radius: 8px;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
         
@@ -282,39 +324,21 @@
             line-height: 30px;
             text-align: center;
             transition: background-color 0.2s;
+            z-index: 110;
         }
         #close-card-btn:hover {
             background-color: rgba(255,255,255,0.2);
         }
         
-        /* --- Responsive Design for Mobile --- */
         @media (max-width: 768px) {
             #filter-menu {
-                top: auto;
-                bottom: 10px;
-                left: 10px;
-                right: 10px;
-                width: auto;
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                padding: 5px;
+                top: auto; bottom: 10px; left: 10px; right: 10px;
+                width: auto; display: flex; flex-wrap: wrap; justify-content: center; padding: 5px;
             }
-            #filter-menu h2 {
-                display: none;
-            }
-            #filter-menu button {
-                font-size: 12px;
-                padding: 6px 10px;
-                margin: 4px;
-            }
-            .article-node {
-                width: 12px;
-                height: 12px;
-            }
-            #info-card {
-                max-width: 95%;
-            }
+            #filter-menu h2 { display: none; }
+            #filter-menu button { font-size: 12px; padding: 6px 10px; margin: 4px; }
+            .article-node { width: 12px; height: 12px; }
+            #info-card { max-width: 95%; }
             #card-content h3 { font-size: 18px; }
             #card-content p.summary { font-size: 14px; }
         }
@@ -324,14 +348,13 @@
 
     <div id="catalyst-map-container">
         <div id="map-overlay"></div>
-        <div id="map-nodes-wrapper">
-            <!-- Article nodes will be injected here by JavaScript -->
-        </div>
+        <canvas id="animation-canvas"></canvas>
+        <div id="scanline"></div>
+        <div id="map-nodes-wrapper"></div>
 
         <div id="filter-menu">
-            <h2>Explore by Field</h2>
-            <button id="filter-all" class="active">Show All</button>
-            <!-- Filter buttons will be injected here -->
+            <h2>// EXPLORE BY FIELD</h2>
+            <button id="filter-all" class="active">./show_all</button>
         </div>
 
         <div id="info-card">
@@ -374,14 +397,68 @@
             { "id": "art21", "title": "Everything Sings: The Science of Systems ", "author": "Aidan Schurr", "summary": "With the ever growing amount of information in the world, our understanding of the most complex systems can be enhanced...", "link": "https://www.catalyst-magazine.com/post/everything-sings-the-science-of-systems", "category": "Science & Policy", "coords": { "x": 43, "y": 43 }, "image": "https://static.wixstatic.com/media/11b1c4_b73ead9ded89474ea6a93856a97b81b4~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" }
         ];
 
-        // --- DOM Elements ---
+        // --- DOM Elements & Canvas Setup ---
         const mapContainer = document.getElementById('catalyst-map-container');
         const nodesWrapper = document.getElementById('map-nodes-wrapper');
         const filterMenu = document.getElementById('filter-menu');
         const infoCard = document.getElementById('info-card');
         const closeCardBtn = document.getElementById('close-card-btn');
+        const canvas = document.getElementById('animation-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let activeConnections = [];
 
-        // --- Create and Place Nodes ---
+        // --- Canvas & Animation Functions ---
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function createParticles() {
+            const particleCount = 50;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    radius: Math.random() * 1.5 + 0.5
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw and update particles
+            ctx.fillStyle = 'rgba(0, 242, 234, 0.5)';
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Draw active connections
+            ctx.strokeStyle = 'rgba(0, 242, 234, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.shadowColor = 'rgba(0, 242, 234, 1)';
+            ctx.shadowBlur = 10;
+            activeConnections.forEach(conn => {
+                ctx.beginPath();
+                ctx.moveTo(conn.x1, conn.y1);
+                ctx.lineTo(conn.x2, conn.y2);
+                ctx.stroke();
+            });
+            ctx.shadowBlur = 0;
+
+            requestAnimationFrame(animate);
+        }
+
+        // --- Main Application Logic ---
         function initializeMap() {
             const categories = [...new Set(articleData.map(article => article.category))];
             const filterAllBtn = document.getElementById('filter-all');
@@ -389,18 +466,19 @@
             categories.sort().forEach(category => {
                 const btn = document.createElement('button');
                 btn.id = `filter-${category.replace(/[^a-zA-Z0-9]/g, '')}`;
-                btn.textContent = category;
+                btn.textContent = `./${category.toLowerCase().replace(/\s/g, '_')}`;
                 btn.dataset.category = category;
                 btn.addEventListener('click', () => handleFilterClick(category, btn));
                 filterMenu.appendChild(btn);
             });
 
-            articleData.forEach(article => {
+            articleData.forEach((article, index) => {
                 const node = document.createElement('div');
                 node.className = 'article-node';
                 node.style.left = `${article.coords.x}%`;
                 node.style.top = `${article.coords.y}%`;
                 node.dataset.category = article.category;
+                node.style.animationDelay = `${index * 0.05}s`; // Staggered entry
 
                 const tooltip = document.createElement('div');
                 tooltip.className = 'node-tooltip';
@@ -409,23 +487,40 @@
 
                 node.addEventListener('click', () => showInfoCard(article));
                 nodesWrapper.appendChild(node);
+                
+                // Trigger entry animation
+                setTimeout(() => node.classList.add('visible'), 100 + index * 50);
             });
             
             filterAllBtn.addEventListener('click', () => handleFilterClick('all', filterAllBtn));
         }
 
-        // --- Interactivity Functions ---
         function handleFilterClick(category, clickedButton) {
             document.querySelectorAll('#filter-menu button').forEach(btn => btn.classList.remove('active'));
             clickedButton.classList.add('active');
+            
+            activeConnections = []; // Clear previous connections
 
             if (category === 'all') {
                 mapContainer.classList.remove('filtered');
                 document.querySelectorAll('.article-node').forEach(node => node.classList.remove('active'));
             } else {
                 mapContainer.classList.add('filtered');
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
                 document.querySelectorAll('.article-node').forEach(node => {
-                    node.classList.toggle('active', node.dataset.category === category);
+                    const isActive = node.dataset.category === category;
+                    node.classList.toggle('active', isActive);
+                    if (isActive) {
+                        const rect = node.getBoundingClientRect();
+                        activeConnections.push({
+                            x1: centerX,
+                            y1: centerY,
+                            x2: rect.left + rect.width / 2,
+                            y2: rect.top + rect.height / 2
+                        });
+                    }
                 });
             }
         }
@@ -453,8 +548,13 @@
             }
         });
 
+        window.addEventListener('resize', resizeCanvas);
+
         // --- Initialize ---
+        resizeCanvas();
+        createParticles();
         initializeMap();
+        animate();
 
     </script>
 </body>
