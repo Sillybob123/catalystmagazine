@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Catalyst Web of Science</title>
-    <style>
-        /* --- Basic Setup & Fonts --- */
-        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400&family=Inter:wght@400;600;700&display=swap');
 
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Animate.css for entrance animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+    <style>
         :root {
             --bg-color: #02040a;
             --text-color: #e6f1ff;
@@ -15,178 +20,130 @@
             --glow-color: rgba(0, 242, 234, 0.75);
             --card-bg: rgba(13, 17, 23, 0.85);
             --border-color: rgba(0, 242, 234, 0.3);
+            --transition: 0.3s ease;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+            background: var(--bg-color);
             color: var(--text-color);
             overflow: hidden;
-            height: 100vh;
-            width: 100vw;
         }
 
-        /* --- Main Container & Canvas Layers --- */
-        #catalyst-map-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        
-        .animation-canvas {
+        /* --- UI Components --- */
+        #ui-container {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        #map-nodes-wrapper {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 5;
-        }
-        
-        /* --- Article Nodes --- */
-        .article-node {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background-color: #fff;
-            border-radius: 50%;
-            cursor: pointer;
-            z-index: 10;
-            transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
-            box-shadow: 0 0 8px #fff, 0 0 12px var(--glow-color);
-            animation: pulse-star 4s infinite ease-in-out;
-            transform: scale(0);
-            opacity: 0;
-        }
-        
-        .article-node.visible {
-            transform: scale(1);
-            opacity: 1;
-        }
-
-        .article-node:hover {
-            transform: scale(2.8) !important;
-            animation-play-state: paused;
-        }
-        
-        /* --- Filtering Logic --- */
-        #catalyst-map-container.filtered .article-node {
-            opacity: 0.1;
-            transform: scale(0.5) !important;
-            animation: none;
-        }
-
-        #catalyst-map-container.filtered .article-node.active {
-            opacity: 1;
-            transform: scale(1.5) !important;
-            animation: pulse-star 2s infinite ease-in-out;
-        }
-        
-        /* --- Animations --- */
-        @keyframes pulse-star {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 8px #fff, 0 0 12px var(--glow-color); }
-            50% { transform: scale(1.2); box-shadow: 0 0 16px #fff, 0 0 24px var(--glow-color); }
-        }
-
-        /* --- Tooltip on Hover --- */
-        .node-tooltip {
-            position: absolute;
-            bottom: 180%; 
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--card-bg);
-            color: var(--text-color);
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: 'Roboto Mono', monospace;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
             z-index: 100;
-            border: 1px solid var(--border-color);
+        }
+        #ui-container > * {
+            pointer-events: auto;
         }
 
-        .article-node:hover .node-tooltip {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        /* --- Filter Menu UI --- */
-        #filter-menu {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background-color: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 15px;
-            z-index: 50;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            opacity: 0;
-            transform: translateX(-30px);
-            animation: fadeIn 0.5s ease-out 0.5s forwards;
-        }
-        
-        @keyframes fadeIn {
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        #filter-menu h2 {
-            margin: 0 0 15px 0;
-            font-size: 16px;
-            font-weight: 400;
-            font-family: 'Roboto Mono', monospace;
+        /* Navbar */
+        nav {
+            position: absolute; top: 0; left: 0; width: 100%;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            background: rgba(13, 17, 23, 0.75);
+            backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            color: var(--accent-color);
         }
-
-        #filter-menu button {
-            display: block;
-            width: 100%;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-            border: 1px solid transparent;
-            background-color: transparent;
-            color: var(--text-color);
-            text-align: left;
-            font-family: 'Roboto Mono', monospace;
-            font-size: 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s, color 0.2s;
-        }
-
-        #filter-menu button:hover {
-            background-color: var(--border-color);
-            color: #fff;
-        }
-
-        #filter-menu button.active {
-            background-color: var(--accent-color);
-            color: var(--bg-color);
+        nav .logo {
             font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--accent-color);
+            text-shadow: 0 0 8px var(--glow-color);
         }
+        nav .logo i { margin-right: 8px; }
+
+        /* Sidebar */
+        #sidebar {
+            position: absolute;
+            top: 61px; /* Navbar height + border */
+            left: 0;
+            width: 280px;
+            height: calc(100% - 61px);
+            background: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(8px);
+            padding: 20px;
+            overflow-y: auto;
+            transition: transform var(--transition);
+            border-right: 1px solid var(--border-color);
+        }
+        #sidebar.collapsed { transform: translateX(-100%); }
+
+        #sidebar h2 {
+            font-family: 'Roboto Mono', monospace;
+            color: var(--accent-color);
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+        #sidebar .filter-group { margin-bottom: 24px; }
+        #sidebar label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        #sidebar label:hover { color: var(--accent-color); }
+        #sidebar input { margin-right: 8px; accent-color: var(--accent-color); }
         
-        /* --- Info Card --- */
+        #toggle-sidebar {
+            position: absolute;
+            top: 75px;
+            left: 280px;
+            width: 28px;
+            height: 40px;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 0 8px 8px 0;
+            color: var(--bg-color);
+            cursor: pointer;
+            z-index: 95;
+            transition: transform var(--transition), left var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #sidebar.collapsed + #toggle-sidebar { left: 0; }
+
+        /* Graph & Canvas */
+        #graph-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+        }
+        #graph-container canvas {
+            position: absolute;
+            top: 0; left: 0;
+        }
+
+        /* D3 Node Styling */
+        .node {
+            transition: r 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
+            cursor: pointer;
+        }
+        .node:hover {
+            filter: drop-shadow(0 0 10px var(--accent-color));
+        }
+        .node.selected {
+            stroke: #FFD700 !important;
+            stroke-width: 4px !important;
+            filter: drop-shadow(0 0 12px #FFD700);
+        }
+        .node.faded {
+            opacity: 0.1;
+        }
+
+        /* Info Card */
         #info-card {
             position: absolute;
             top: 50%;
@@ -194,128 +151,79 @@
             transform: translate(-50%, -50%) scale(0.95);
             width: 90%;
             max-width: 480px;
-            background-color: var(--card-bg);
+            background: var(--card-bg);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
             border-radius: 16px;
-            z-index: 100;
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s ease, transform 0.3s ease;
-            box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5);
+            z-index: 200;
             display: flex;
             flex-direction: column;
         }
-
         #info-card.visible {
             opacity: 1;
             visibility: visible;
             transform: translate(-50%, -50%) scale(1);
         }
-
         #card-image-container {
             width: 100%;
             height: 200px;
-            border-radius: 15px 15px 0 0;
             overflow: hidden;
+            border-radius: 15px 15px 0 0;
         }
-
         #card-image {
             width: 100%;
             height: 100%;
             object-fit: cover;
             border-bottom: 1px solid var(--border-color);
         }
-
-        #card-content {
-            padding: 25px;
-        }
-
-        #card-content h3 {
-            font-size: 22px;
-            color: var(--accent-color);
-            margin: 0 0 8px 0;
-        }
-
-        #card-content p.author {
-            font-size: 14px;
-            font-style: italic;
-            color: #8b949e;
-            margin-bottom: 16px;
-        }
-
-        #card-content p.summary {
-            font-size: 15px;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-
+        #card-content { padding: 25px; position: relative; }
+        #card-content h3 { font-size: 22px; color: var(--accent-color); margin-bottom: 8px; }
+        #card-content p.author { font-size: 14px; font-style: italic; color: #8b949e; margin-bottom: 16px; }
+        #card-content p.summary { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
         #card-content a.read-more {
-            display: inline-block;
-            background-color: var(--accent-color);
-            color: var(--bg-color);
-            padding: 12px 18px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 700;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: inline-block; padding: 12px 18px;
+            background: var(--accent-color); color: var(--bg-color);
+            border-radius: 8px; text-decoration: none;
+            font-weight: 700; transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        
-        #card-content a.read-more:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px var(--glow-color);
-        }
-
+        #card-content a.read-more:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--glow-color); }
         #close-card-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
+            position: absolute; top: 15px; right: 15px;
+            width: 32px; height: 32px; border: none;
             background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            color: var(--text-color);
-            font-size: 20px;
-            cursor: pointer;
-            line-height: 30px;
-            text-align: center;
-            transition: background-color 0.2s;
-            z-index: 110;
+            border-radius: 50%; color: var(--text-color);
+            font-size: 20px; cursor: pointer;
+            line-height: 30px; text-align: center;
+            transition: background 0.2s;
         }
-        #close-card-btn:hover {
-            background-color: rgba(255,255,255,0.2);
-        }
-        
-        @media (max-width: 768px) {
-            #filter-menu {
-                top: auto; bottom: 10px; left: 10px; right: 10px;
-                width: auto; display: flex; flex-wrap: wrap; justify-content: center; padding: 5px;
-            }
-            #filter-menu h2 { display: none; }
-            #filter-menu button { font-size: 12px; padding: 6px 10px; margin: 4px; }
-            .article-node { width: 10px; height: 10px; }
-            #info-card { max-width: 95%; }
-            #card-content h3 { font-size: 18px; }
-            #card-content p.summary { font-size: 14px; }
-        }
+        #close-card-btn:hover { background: rgba(255,255,255,0.2); }
+
     </style>
 </head>
 <body>
+    <div id="graph-container"></div>
 
-    <div id="catalyst-map-container">
-        <canvas id="bg-canvas" class="animation-canvas"></canvas>
-        <canvas id="fg-canvas" class="animation-canvas"></canvas>
-        <div id="map-nodes-wrapper"></div>
+    <div id="ui-container">
+        <nav class="animate__animated animate__fadeInDown">
+            <div class="logo"><i class="fas fa-atom"></i> The Catalyst Web</div>
+        </nav>
 
-        <div id="filter-menu">
-            <h2>// EXPLORE BY FIELD</h2>
-            <button id="filter-all" class="active">./show_all</button>
-        </div>
+        <aside id="sidebar" class="animate__animated animate__fadeInLeft">
+            <div class="filter-group">
+                <h2>// CATEGORIES</h2>
+                <div id="category-filters"></div>
+            </div>
+        </aside>
+        <button id="toggle-sidebar" class="animate__animated animate__fadeInLeft" title="Toggle Filters">
+            <i class="fas fa-chevron-left"></i>
+        </button>
 
         <div id="info-card">
             <div id="card-image-container">
-                <img id="card-image" src="" alt="Article Cover Art">
+                <img id="card-image" src="" alt="Article Cover Art" />
             </div>
             <div id="card-content">
                 <button id="close-card-btn">&times;</button>
@@ -327,7 +235,12 @@
         </div>
     </div>
 
+    <!-- External Libraries -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
     <script>
+    document.addEventListener('DOMContentLoaded', () => {
         const articleData = [
             { "id": "art0", "title": "The Road From Academia to Forensic Applications of Chemistry", "author": "Naama Ben-Dor", "summary": "While many scientific pursuits involve structured pre-professional programs...", "link": "https://www.catalyst-magazine.com/post/the-road-from-academia-to-forensic-applications-of-chemistry", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_9737d25c5ad74ba7829973eb7513f61a~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
             { "id": "art1", "title": "How One Engineer is Changing Sustainable Fuels", "author": "Aidan Schurr", "summary": "Tyler Wyka bridges engineering, sustainability, and global collaboration...", "link": "https://www.catalyst-magazine.com/post/how-one-engineer-is-changing-sustainable-fuels", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11b1c4_4491d15e55c94d058d2a63eedf3cfc42~mv2.png/v1/fill/w_780,h_452,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.png" },
@@ -353,185 +266,133 @@
             { "id": "art21", "title": "Everything Sings: The Science of Systems ", "author": "Aidan Schurr", "summary": "With the ever growing amount of information in the world, our understanding of the most complex systems can be enhanced...", "link": "https://www.catalyst-magazine.com/post/everything-sings-the-science-of-systems", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_b73ead9ded89474ea6a93856a97b81b4~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" }
         ];
 
-        // --- DOM Elements & Canvas Setup ---
-        const mapContainer = document.getElementById('catalyst-map-container');
-        const nodesWrapper = document.getElementById('map-nodes-wrapper');
-        const filterMenu = document.getElementById('filter-menu');
+        // --- DOM Elements & D3 Setup ---
+        const container = d3.select("#graph-container");
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const svg = container.append("svg").attr("width", width).attr("height", height);
+        
         const infoCard = document.getElementById('info-card');
         const closeCardBtn = document.getElementById('close-card-btn');
-        const bgCanvas = document.getElementById('bg-canvas');
-        const fgCanvas = document.getElementById('fg-canvas');
-        const bgCtx = bgCanvas.getContext('2d');
-        const fgCtx = fgCanvas.getContext('2d');
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar');
         
-        let regions = {};
-        let activeConnections = [];
-        let catalystHub = {};
+        const categories = [...new Set(articleData.map(a => a.category))].sort();
+        const colorScale = d3.scaleOrdinal()
+            .domain(categories)
+            .range(['#8A2BE2', '#00BFFF', '#228B22', '#FF4500', '#FFD700']);
 
-        // --- Canvas & Animation Functions ---
-        function resizeCanvas() {
-            bgCanvas.width = window.innerWidth;
-            bgCanvas.height = window.innerHeight;
-            fgCanvas.width = window.innerWidth;
-            fgCanvas.height = window.innerHeight;
-            catalystHub = { x: fgCanvas.width / 2, y: fgCanvas.height / 2, radius: 20 };
-            setupRegions();
+        // --- D3 Force Simulation ---
+        const nodes = articleData.map(d => ({...d, radius: 10, group: categories.indexOf(d.category)}));
+        const links = [];
+        nodes.forEach(n1 => {
+            nodes.forEach(n2 => {
+                if (n1.id !== n2.id && n1.category === n2.category && Math.random() > 0.8) {
+                    links.push({ source: n1.id, target: n2.id });
+                }
+            });
+        });
+        
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(100).strength(0.1))
+            .force("charge", d3.forceManyBody().strength(-150))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(d => d.radius + 5));
+
+        const link = svg.append("g")
+            .attr("stroke", "var(--border-color)")
+            .attr("stroke-opacity", 0.4)
+            .selectAll("line")
+            .data(links)
+            .join("line")
+            .attr("stroke-width", 1.5);
+
+        const node = svg.append("g")
+            .selectAll("circle")
+            .data(nodes)
+            .join("circle")
+            .attr("r", d => d.radius)
+            .attr("fill", d => colorScale(d.category))
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 2)
+            .style("cursor", "pointer")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended))
+            .on("click", (event, d) => showInfoCard(d))
+            .on("mouseover", (event, d) => {
+                d3.select(event.currentTarget).transition().duration(200).attr("r", d.radius * 1.5);
+            })
+            .on("mouseout", (event, d) => {
+                d3.select(event.currentTarget).transition().duration(200).attr("r", d.radius);
+            });
+
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+            node
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+        });
+
+        // --- Drag Functions ---
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
         }
 
-        function setupRegions() {
-            const categories = [...new Set(articleData.map(article => article.category))];
-            const numRegions = categories.length;
-            const angleIncrement = (2 * Math.PI) / numRegions;
-            const mainRadius = Math.min(bgCanvas.width, bgCanvas.height) * 0.3;
+        // --- UI & Filtering ---
+        function initializeUI() {
+            const filterContainer = document.getElementById('category-filters');
+            filterContainer.innerHTML = ''; // Clear previous
             
-            const colors = {
-                "Neuroscience & Cognition": "rgba(138, 43, 226, 0.3)", // BlueViolet
-                "Health & Medicine": "rgba(0, 191, 255, 0.3)", // DeepSkyBlue
-                "Environmental Science": "rgba(34, 139, 34, 0.3)", // ForestGreen
-                "Tech & Engineering": "rgba(255, 69, 0, 0.3)", // OrangeRed
-                "Science & Policy": "rgba(255, 215, 0, 0.3)" // Gold
-            };
+            const allLabel = document.createElement('label');
+            allLabel.innerHTML = `<input type="checkbox" id="filter-all" checked> Show All`;
+            filterContainer.appendChild(allLabel);
 
-            regions = {}; // Clear and rebuild
-            categories.sort().forEach((category, i) => {
-                const angle = i * angleIncrement;
-                regions[category] = {
-                    x: bgCanvas.width / 2 + Math.cos(angle) * mainRadius,
-                    y: bgCanvas.height / 2 + Math.sin(angle) * mainRadius,
-                    radius: Math.min(bgCanvas.width, bgCanvas.height) * 0.15,
-                    color: colors[category] || "rgba(128, 128, 128, 0.3)",
-                    label: category
-                };
+            categories.forEach(category => {
+                const label = document.createElement('label');
+                label.innerHTML = `<input type="checkbox" class="category-filter" value="${category}" checked> ${category}`;
+                filterContainer.appendChild(label);
             });
-        }
-
-        function animate() {
-            // --- Animate Foreground (Connections & Hub) ---
-            fgCtx.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
             
-            // Draw Catalyst Hub
-            const hubGradient = fgCtx.createRadialGradient(catalystHub.x, catalystHub.y, 0, catalystHub.x, catalystHub.y, catalystHub.radius);
-            hubGradient.addColorStop(0, 'rgba(0, 242, 234, 1)');
-            hubGradient.addColorStop(1, 'rgba(0, 242, 234, 0)');
-            fgCtx.fillStyle = hubGradient;
-            fgCtx.beginPath();
-            fgCtx.arc(catalystHub.x, catalystHub.y, catalystHub.radius * (1 + Math.sin(Date.now() * 0.002) * 0.2), 0, Math.PI * 2);
-            fgCtx.fill();
-
-            // Draw active connections
-            fgCtx.strokeStyle = 'rgba(0, 242, 234, 0.6)';
-            fgCtx.lineWidth = 1.5;
-            fgCtx.shadowColor = 'rgba(0, 242, 234, 1)';
-            fgCtx.shadowBlur = 10;
-            activeConnections.forEach(conn => {
-                ctx.beginPath();
-                ctx.moveTo(conn.x1, conn.y1);
-                ctx.lineTo(conn.x2, conn.y2);
-                ctx.stroke();
+            document.getElementById('filter-all').addEventListener('change', (e) => {
+                document.querySelectorAll('.category-filter').forEach(cb => cb.checked = e.target.checked);
+                updateNodeVisibility();
             });
-            fgCtx.shadowBlur = 0;
 
-            requestAnimationFrame(animate);
+            document.querySelectorAll('.category-filter').forEach(cb => {
+                cb.addEventListener('change', updateNodeVisibility);
+            });
+            
+            toggleSidebarBtn.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
         }
         
-        function drawBackground() {
-            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-            let activeCategory = document.querySelector('#filter-menu button.active')?.dataset.category;
-
-            Object.values(regions).forEach(region => {
-                const isActive = region.label === activeCategory || !mapContainer.classList.contains('filtered');
-                const gradient = bgCtx.createRadialGradient(region.x, region.y, 0, region.x, region.y, region.radius);
-                const baseColor = region.color.replace(/, 0.3\)/, '');
-                
-                gradient.addColorStop(0, `${baseColor}, ${isActive ? 0.4 : 0.1})`);
-                gradient.addColorStop(1, `${baseColor}, 0)`);
-
-                bgCtx.fillStyle = gradient;
-                bgCtx.beginPath();
-                bgCtx.arc(region.x, region.y, region.radius, 0, Math.PI * 2);
-                bgCtx.fill();
-                
-                bgCtx.fillStyle = `rgba(230, 241, 255, ${isActive ? 0.8 : 0.4})`;
-                bgCtx.font = "14px 'Roboto Mono', monospace";
-                bgCtx.textAlign = 'center';
-                bgCtx.fillText(region.label, region.x, region.y);
-            });
-        }
-
-        // --- Main Application Logic ---
-        function initializeMap() {
-            const categories = [...new Set(articleData.map(article => article.category))];
-            const filterAllBtn = document.getElementById('filter-all');
-
-            categories.sort().forEach(category => {
-                const btn = document.createElement('button');
-                btn.id = `filter-${category.replace(/[^a-zA-Z0-9]/g, '')}`;
-                btn.textContent = `./${category.toLowerCase().replace(/[ &]/g, '_')}`;
-                btn.dataset.category = category;
-                btn.addEventListener('click', () => handleFilterClick(category, btn));
-                filterMenu.appendChild(btn);
-            });
-
-            articleData.forEach((article, index) => {
-                const node = document.createElement('div');
-                node.className = 'article-node';
-                
-                const region = regions[article.category];
-                const angle = Math.random() * 2 * Math.PI;
-                const radius = Math.random() * (region.radius * 0.8);
-                const x = region.x + Math.cos(angle) * radius;
-                const y = region.y + Math.sin(angle) * radius;
-                
-                node.style.left = `${x}px`;
-                node.style.top = `${y}px`;
-                node.style.transformOrigin = 'center';
-
-                node.dataset.category = article.category;
-                node.style.animationDelay = `${index * 0.05}s`;
-
-                const tooltip = document.createElement('div');
-                tooltip.className = 'node-tooltip';
-                tooltip.textContent = article.title;
-                node.appendChild(tooltip);
-
-                node.addEventListener('click', () => showInfoCard(article));
-                nodesWrapper.appendChild(node);
-                
-                setTimeout(() => node.classList.add('visible'), 100 + index * 50);
-            });
+        function updateNodeVisibility() {
+            const activeCategories = new Set(
+                [...document.querySelectorAll('.category-filter:checked')].map(cb => cb.value)
+            );
             
-            filterAllBtn.addEventListener('click', () => handleFilterClick('all', filterAllBtn));
-        }
-
-        function handleFilterClick(category, clickedButton) {
-            document.querySelectorAll('#filter-menu button').forEach(btn => btn.classList.remove('active'));
-            clickedButton.classList.add('active');
-            
-            activeConnections = [];
-
-            if (category === 'all') {
-                mapContainer.classList.remove('filtered');
-                document.querySelectorAll('.article-node').forEach(node => node.classList.remove('active'));
-            } else {
-                mapContainer.classList.add('filtered');
-                const centerX = fgCanvas.width / 2;
-                const centerY = fgCanvas.height / 2;
-
-                document.querySelectorAll('.article-node').forEach(node => {
-                    const isActive = node.dataset.category === category;
-                    node.classList.toggle('active', isActive);
-                    if (isActive) {
-                        const rect = node.getBoundingClientRect();
-                        activeConnections.push({
-                            x1: centerX,
-                            y1: centerY,
-                            x2: rect.left + rect.width / 2,
-                            y2: rect.top + rect.height / 2
-                        });
-                    }
-                });
-            }
-            drawBackground(); // Redraw background to update highlights
+            node.transition().duration(500)
+                .attr("opacity", d => activeCategories.has(d.category) ? 1 : 0.1)
+                .attr("r", d => activeCategories.has(d.category) ? d.radius : d.radius * 0.5);
+                
+            link.transition().duration(500)
+                .attr("stroke-opacity", d => activeCategories.has(d.source.category) && activeCategories.has(d.target.category) ? 0.4 : 0.05);
         }
 
         function showInfoCard(article) {
@@ -548,26 +409,29 @@
             infoCard.classList.remove('visible');
         }
 
-        // --- Event Listeners ---
         closeCardBtn.addEventListener('click', hideInfoCard);
         
-        mapContainer.addEventListener('click', (e) => {
-            if (e.target === mapContainer) {
-                hideInfoCard();
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            resizeCanvas();
-            drawBackground();
-        });
-
         // --- Initialize ---
-        resizeCanvas();
-        initializeMap();
-        drawBackground();
-        animate();
+        initializeUI();
+        
+        // Particles.js background
+        particlesJS("graph-container", {
+            "particles": {
+                "number": { "value": 60, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#00f2ea" },
+                "shape": { "type": "circle" },
+                "opacity": { "value": 0.2, "random": true, "anim": { "enable": true, "speed": 0.5, "opacity_min": 0.05, "sync": false } },
+                "size": { "value": 2, "random": true },
+                "line_linked": { "enable": false },
+                "move": { "enable": true, "speed": 0.5, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
+            },
+            "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": false }, "onclick": { "enable": false } } },
+            "retina_detect": true
+        });
+        // Make sure the particles canvas is behind the D3 svg
+        document.querySelector('#graph-container .particles-js-canvas-el').style.zIndex = -1;
 
+    });
     </script>
 </body>
 </html>
