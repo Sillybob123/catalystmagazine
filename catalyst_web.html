@@ -14,12 +14,12 @@
 
     <style>
         :root {
-            --bg-color: #02040a;
-            --text-color: #e6f1ff;
-            --accent-color: #00f2ea;
-            --glow-color: rgba(0, 242, 234, 0.75);
-            --card-bg: rgba(13, 17, 23, 0.85);
-            --border-color: rgba(0, 242, 234, 0.3);
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --accent-color: #007bff;
+            --glow-color: rgba(0, 123, 255, 0.5);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --border-color: #dee2e6;
             --transition: 0.3s ease;
         }
 
@@ -50,7 +50,7 @@
             padding: 12px 24px;
             display: flex;
             align-items: center;
-            background: rgba(13, 17, 23, 0.75);
+            background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--border-color);
         }
@@ -58,7 +58,6 @@
             font-weight: 700;
             font-size: 1.3rem;
             color: var(--accent-color);
-            text-shadow: 0 0 8px var(--glow-color);
         }
         nav .logo i { margin-right: 8px; }
 
@@ -69,7 +68,7 @@
             left: 0;
             width: 280px;
             height: calc(100% - 61px);
-            background: rgba(13, 17, 23, 0.85);
+            background: rgba(248, 249, 250, 0.85);
             backdrop-filter: blur(8px);
             padding: 20px;
             overflow-y: auto;
@@ -104,7 +103,7 @@
             background: var(--accent-color);
             border: none;
             border-radius: 0 8px 8px 0;
-            color: var(--bg-color);
+            color: #fff;
             cursor: pointer;
             z-index: 95;
             transition: transform var(--transition), left var(--transition);
@@ -113,6 +112,8 @@
             justify-content: center;
         }
         #sidebar.collapsed + #toggle-sidebar { left: 0; }
+        #toggle-sidebar .fa-chevron-left { transition: transform 0.3s; }
+        #sidebar.collapsed + #toggle-sidebar .fa-chevron-left { transform: rotate(180deg); }
 
         /* Graph & Canvas */
         #graph-container {
@@ -121,9 +122,16 @@
             width: 100vw; height: 100vh;
             z-index: 1;
         }
-        #graph-container canvas {
-            position: absolute;
-            top: 0; left: 0;
+        
+        /* Flying Logo */
+        #flying-logo {
+            position: fixed;
+            width: 100px;
+            height: auto;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
         }
 
         /* D3 Node Styling */
@@ -133,11 +141,6 @@
         }
         .node:hover {
             filter: drop-shadow(0 0 10px var(--accent-color));
-        }
-        .node.selected {
-            stroke: #FFD700 !important;
-            stroke-width: 4px !important;
-            filter: drop-shadow(0 0 12px #FFD700);
         }
         .node.faded {
             opacity: 0.1;
@@ -161,6 +164,7 @@
             z-index: 200;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
         #info-card.visible {
             opacity: 1;
@@ -181,11 +185,11 @@
         }
         #card-content { padding: 25px; position: relative; }
         #card-content h3 { font-size: 22px; color: var(--accent-color); margin-bottom: 8px; }
-        #card-content p.author { font-size: 14px; font-style: italic; color: #8b949e; margin-bottom: 16px; }
+        #card-content p.author { font-size: 14px; font-style: italic; color: #6c757d; margin-bottom: 16px; }
         #card-content p.summary { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
         #card-content a.read-more {
             display: inline-block; padding: 12px 18px;
-            background: var(--accent-color); color: var(--bg-color);
+            background: var(--accent-color); color: #fff;
             border-radius: 8px; text-decoration: none;
             font-weight: 700; transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
@@ -193,18 +197,19 @@
         #close-card-btn {
             position: absolute; top: 15px; right: 15px;
             width: 32px; height: 32px; border: none;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.1);
             border-radius: 50%; color: var(--text-color);
             font-size: 20px; cursor: pointer;
             line-height: 30px; text-align: center;
             transition: background 0.2s;
         }
-        #close-card-btn:hover { background: rgba(255,255,255,0.2); }
+        #close-card-btn:hover { background: rgba(0,0,0,0.2); }
 
     </style>
 </head>
 <body>
     <div id="graph-container"></div>
+    <img id="flying-logo" src="https://static.wixstatic.com/media/11b1c4_942df37d2d1e49429d7fd08d4bf1fac3~mv2.png" alt="Catalyst Logo">
 
     <div id="ui-container">
         <nav class="animate__animated animate__fadeInDown">
@@ -237,7 +242,7 @@
 
     <!-- External Libraries -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -379,7 +384,10 @@
                 cb.addEventListener('change', updateNodeVisibility);
             });
             
-            toggleSidebarBtn.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+            toggleSidebarBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                toggleSidebarBtn.querySelector('i').classList.toggle('fa-chevron-right');
+            });
         }
         
         function updateNodeVisibility() {
@@ -411,24 +419,71 @@
 
         closeCardBtn.addEventListener('click', hideInfoCard);
         
+        // --- Flying Logo ---
+        const flyingLogo = document.getElementById('flying-logo');
+        function flyLogo() {
+            const startSide = Math.floor(Math.random() * 4);
+            let startX, startY, endX, endY;
+
+            switch(startSide) {
+                case 0: // Top
+                    startX = Math.random() * width;
+                    startY = -100;
+                    endX = Math.random() * width;
+                    endY = height + 100;
+                    break;
+                case 1: // Right
+                    startX = width + 100;
+                    startY = Math.random() * height;
+                    endX = -100;
+                    endY = Math.random() * height;
+                    break;
+                case 2: // Bottom
+                    startX = Math.random() * width;
+                    startY = height + 100;
+                    endX = Math.random() * width;
+                    endY = -100;
+                    break;
+                case 3: // Left
+                    startX = -100;
+                    startY = Math.random() * height;
+                    endX = width + 100;
+                    endY = Math.random() * height;
+                    break;
+            }
+
+            gsap.fromTo(flyingLogo, 
+                { x: startX, y: startY, rotation: Math.random() * 360, opacity: 0 },
+                { 
+                    x: endX, 
+                    y: endY, 
+                    rotation: Math.random() * 720, 
+                    opacity: 1, 
+                    duration: 8 + Math.random() * 4, 
+                    ease: "power1.inOut",
+                    onComplete: () => { gsap.set(flyingLogo, { opacity: 0 }); }
+                }
+            );
+        }
+
         // --- Initialize ---
         initializeUI();
+        setInterval(flyLogo, 12000); // Fly logo every 12 seconds
         
         // Particles.js background
         particlesJS("graph-container", {
             "particles": {
-                "number": { "value": 60, "density": { "enable": true, "value_area": 800 } },
-                "color": { "value": "#00f2ea" },
+                "number": { "value": 40, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#888888" },
                 "shape": { "type": "circle" },
-                "opacity": { "value": 0.2, "random": true, "anim": { "enable": true, "speed": 0.5, "opacity_min": 0.05, "sync": false } },
+                "opacity": { "value": 0.5, "random": true },
                 "size": { "value": 2, "random": true },
                 "line_linked": { "enable": false },
-                "move": { "enable": true, "speed": 0.5, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
+                "move": { "enable": true, "speed": 0.4, "direction": "none", "random": true, "out_mode": "out" }
             },
-            "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": false }, "onclick": { "enable": false } } },
+            "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": false } } },
             "retina_detect": true
         });
-        // Make sure the particles canvas is behind the D3 svg
         document.querySelector('#graph-container .particles-js-canvas-el').style.zIndex = -1;
 
     });
