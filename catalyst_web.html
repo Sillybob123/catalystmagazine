@@ -1,620 +1,619 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Catalyst Web</title>
+    <title>The Catalyst Map of D.C. Science</title>
     <style>
-        /* General Setup */
-        body {
+        /* --- Basic Setup & Fonts --- */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #0d1117;
+            --map-stroke-color: #30363d;
+            --map-land-color: #161b22;
+            --text-color: #c9d1d9;
+            --accent-color: #58a6ff;
+            --glow-color: rgba(88, 166, 255, 0.75);
+            --card-bg: rgba(22, 27, 34, 0.9);
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #111;
         }
 
-        /* Container styles */
-        #catalyst-web-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background-color: #111;
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             overflow: hidden;
+            height: 100vh;
+            width: 100vw;
         }
 
-        #catalyst-web {
+        /* --- Main Container --- */
+        #catalyst-map-container {
             position: relative;
             width: 100%;
             height: 100%;
-        }
-
-        /* Style for the nodes */
-        .node {
-            position: absolute;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
-            color: white;
-            background-color: #333;
-            border: 2px solid #00BFFF; /* Accent color */
-            border-radius: 50%;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            z-index: 10;
-            padding: 5px;
-            box-sizing: border-box; /* Important for padding */
         }
 
-        .node:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 25px #00BFFF;
-        }
-        
-        .node span {
-            max-width: 90%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .node.main-hub {
-            width: 140px;
-            height: 140px;
-            background-color: #00BFFF;
-            color: black;
-            font-weight: bold;
-            font-size: 18px;
-            z-index: 20;
-        }
-
-        .node.topic {
-            width: 120px;
-            height: 120px;
-            font-size: 16px;
-        }
-
-        .node.article {
-            width: 100px;
-            height: 100px;
-            font-size: 12px;
-            border-color: #FFFFFF;
-        }
-
-        .node.article:hover {
-           box-shadow: 0 0 20px #FFFFFF;
-        }
-        
-        /* Lines connecting nodes */
-        .line {
-            position: absolute;
-            background-color: #444;
-            height: 1px;
-            transform-origin: 0 0;
-            z-index: 1;
-            transition: background-color 0.3s ease, height 0.3s ease;
-        }
-
-        .line.active {
-            background-color: #00BFFF;
-            height: 2px;
-        }
-
-        /* Info card styles */
-        #catalyst-info-card {
+        /* --- D.C. Map SVG --- */
+        #dc-map-svg {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
-            width: 90%;
-            max-width: 500px;
-            background-color: #222;
-            color: white;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-            opacity: 0;
-            visibility: hidden;
-            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.4s ease;
-            z-index: 100;
-            border-radius: 10px;
-            border-top: 4px solid #00BFFF;
+            transform: translate(-50%, -50%);
+            width: 95%;
+            height: 95%;
+            max-width: 1200px;
+            max-height: 1200px;
+            opacity: 0.7;
+            z-index: 1;
         }
 
-        #catalyst-info-card.visible {
-            transform: translate(-50%, -50%) scale(1);
+        /* --- Article Nodes --- */
+        .article-node {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
+            box-shadow: 0 0 0px var(--glow-color);
+            animation: pulse 2.5s infinite ease-in-out;
+        }
+
+        .article-node:hover {
+            transform: scale(1.8);
+            box-shadow: 0 0 15px var(--glow-color);
+            animation-play-state: paused;
+        }
+        
+        /* --- Filtering Logic --- */
+        #catalyst-map-container.filtered .article-node {
+            opacity: 0.15;
+            transform: scale(0.7);
+        }
+
+        #catalyst-map-container.filtered .article-node.active {
+            opacity: 1;
+            transform: scale(1.2);
+            animation: pulse-active 2s infinite ease-in-out;
+        }
+        
+        #catalyst-map-container.filtered .article-node.active:hover {
+            transform: scale(2);
+        }
+
+        /* --- Animations --- */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 5px var(--glow-color); }
+            50% { transform: scale(1.1); box-shadow: 0 0 10px var(--glow-color); }
+        }
+        
+        @keyframes pulse-active {
+            0%, 100% { transform: scale(1.2); box-shadow: 0 0 8px var(--glow-color); }
+            50% { transform: scale(1.4); box-shadow: 0 0 18px var(--glow-color); }
+        }
+
+        /* --- Tooltip on Hover --- */
+        .node-tooltip {
+            position: absolute;
+            bottom: 150%; 
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .article-node:hover .node-tooltip {
             opacity: 1;
             visibility: visible;
+        }
+        
+        /* --- Filter Menu UI --- */
+        #filter-menu {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--map-stroke-color);
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 50;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        #filter-menu h2 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--map-stroke-color);
+            padding-bottom: 10px;
+        }
+
+        #filter-menu button {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border: 1px solid transparent;
+            background-color: transparent;
+            color: var(--text-color);
+            text-align: left;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        #filter-menu button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #filter-menu button.active {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            font-weight: 600;
+        }
+        
+        /* --- Info Card --- */
+        #info-card {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: 90%;
+            max-width: 450px;
+            background-color: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--map-stroke-color);
+            border-radius: 12px;
+            padding: 25px;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        #info-card.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        #info-card h3 {
+            font-size: 20px;
+            color: var(--accent-color);
+            margin: 0 0 8px 0;
+        }
+
+        #info-card p.author {
+            font-size: 14px;
+            font-style: italic;
+            color: #8b949e;
+            margin-bottom: 16px;
+        }
+
+        #info-card p.summary {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        #info-card a.read-more {
+            display: inline-block;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            padding: 10px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+        
+        #info-card a.read-more:hover {
+            transform: scale(1.05);
         }
 
         #close-card-btn {
             position: absolute;
-            top: 10px;
+            top: 15px;
             right: 15px;
             background: none;
             border: none;
-            color: white;
-            font-size: 28px;
+            color: var(--text-color);
+            font-size: 24px;
             cursor: pointer;
             line-height: 1;
         }
         
-        #close-card-btn:hover {
-            color: #00BFFF;
-        }
-
-        #card-title { font-size: 22px; margin-top: 10px; color: #FFFFFF; }
-        #card-author { font-style: italic; color: #ccc; margin-top: 5px; margin-bottom: 15px;}
-        #card-summary { color: #ddd; }
-        #card-link {
-            display: inline-block;
-            margin-top: 20px;
-            padding: 12px 18px;
-            background-color: #00BFFF;
-            color: #111;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        #card-link:hover {
-            background-color: #fff;
+        /* --- Responsive Design for Mobile --- */
+        @media (max-width: 768px) {
+            #filter-menu {
+                top: auto;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                width: auto;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                padding: 5px;
+            }
+            #filter-menu h2 {
+                display: none;
+            }
+            #filter-menu button {
+                font-size: 12px;
+                padding: 6px 10px;
+                margin: 4px;
+            }
+            .article-node {
+                width: 12px;
+                height: 12px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div id="catalyst-web-container">
-        <div id="catalyst-web"></div>
-        <div id="catalyst-info-card">
+    <div id="catalyst-map-container">
+        <!-- The interactive map area -->
+        <div id="map-nodes-wrapper">
+            <!-- Article nodes will be injected here by JavaScript -->
+        </div>
+
+        <!-- The SVG map of Washington D.C. -->
+        <svg id="dc-map-svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+            <style>
+                .land { fill: var(--map-land-color); }
+                .water { fill: var(--bg-color); }
+                .stroke { stroke: var(--map-stroke-color); stroke-width: 1.5; fill: none; }
+            </style>
+            <rect width="800" height="600" fill="var(--bg-color)" />
+            <path class="land" d="M0,0 H800 V600 H0 Z" />
+            <path class="water stroke" d="M362,600V420 Q360,380 340,350 L310,300 Q290,260 300,200 L320,150 Q330,100 350,0" />
+            <path class="water stroke" d="M410,600V450 Q415,400 430,380 L450,350 Q480,300 470,250 L450,200 Q440,150 420,0" />
+            <path class="stroke" d="M0,300 Q150,280 300,310 L310,300" />
+            <path class="stroke" d="M800,250 Q650,260 480,280 L470,250" />
+            <circle class="stroke" cx="400" cy="300" r="150" fill="none" opacity="0.2"/>
+            <line class="stroke" x1="400" y1="150" x2="400" y2="450" opacity="0.2"/>
+            <line class="stroke" x1="250" y1="300" x2="550" y2="300" opacity="0.2"/>
+        </svg>
+
+        <!-- The filter menu -->
+        <div id="filter-menu">
+            <h2>Explore by Field</h2>
+            <button id="filter-all" class="active">Show All</button>
+            <!-- Filter buttons will be injected here -->
+        </div>
+
+        <!-- The pop-up info card -->
+        <div id="info-card">
             <button id="close-card-btn">&times;</button>
-            <h2 id="card-title"></h2>
-            <p id="card-author"></p>
-            <p id="card-summary"></p>
-            <a id="card-link" href="#" target="_blank">Read Full Article</a>
+            <h3 id="card-title"></h3>
+            <p class="author" id="card-author"></p>
+            <p class="summary" id="card-summary"></p>
+            <a href="#" id="card-link" class="read-more" target="_blank" rel="noopener noreferrer">Read Full Article</a>
         </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const webData = {
-    "nodes": [
-        {
-            "id": "hub",
-            "label": "The Catalyst",
-            "type": "main-hub"
-        },
-        {
-            "id": "interviews",
-            "label": "Interviews",
-            "type": "topic"
-        },
-        {
-            "id": "profiles",
-            "label": "Profiles",
-            "type": "topic"
-        },
-        {
-            "id": "oped",
-            "label": "Op-Ed",
-            "type": "topic"
-        },
-        {
-            "id": "features",
-            "label": "Features",
-            "type": "topic"
-        },
-        {
-            "id": "editorials",
-            "label": "Editorials",
-            "type": "topic"
-        },
-        {
-            "id": "art0",
-            "label": "Elucidating the Brain\u2019s...",
-            "type": "article",
-            "parent": "features",
-            "data": {
-                "title": "Elucidating the Brain\u2019s Language Circuitry with Dr. Michael Ullman ",
-                "author": "d5b2a595-2a79-4d01-a44c-ebd6c9150f12",
-                "summary": "Georgetown neuroscientist Dr. Michael T. Ullman's Declarative/Procedural (DP) model posits language relies on two core brain memory systems. Developed at MIT, his widely cited theory links our mental lexicon (words) to declarative memory (facts/events) and mental grammar (rules) to procedural memory (skills). This framework, derived from studying neurological patients, offers key insights into language processing, disorders, and learning.",
-                "link": "/post/elucidating-the-brain-s-language-circuitry-with-dr-michael-ullman"
-            }
-        },
-        {
-            "id": "art1",
-            "label": "Science\u2019s Silly Lexicon:...",
-            "type": "article",
-            "parent": "profiles",
-            "data": {
-                "title": "Science\u2019s Silly Lexicon: Wacky Words to Brighten Your Day (and Casually Drop Into Conversation)",
-                "author": "d3fb945e-63a3-4d11-92db-ec490e968a02",
-                "summary": "Science is serious, but its words don\u2019t have to be! From habenula perforata to Tribbles, explore the wackiest terms in scientific jargon.",
-                "link": "/post/science-s-silly-lexicon-wacky-words-to-brighten-your-day-and-casually-drop-into-conversation"
-            }
-        },
-        {
-            "id": "art2",
-            "label": "An Ode to...",
-            "type": "article",
-            "parent": "oped",
-            "data": {
-                "title": "An Ode to Microglia",
-                "author": "d3fb945e-63a3-4d11-92db-ec490e968a02",
-                "summary": "Meet the microglia: the brain\u2019s unsung hero, tirelessly defending neurons, clearing debris, and fine-tuning connections for peak performance",
-                "link": "/post/an-ode-to-microglia"
-            }
-        },
-        {
-            "id": "art3",
-            "label": "From Music to...",
-            "type": "article",
-            "parent": "interviews",
-            "data": {
-                "title": "From Music to Nuclear Policy: Professor Christopher Cahill\u2019s unexpected Journey in Science and Policy",
-                "author": "966b0b45-cd1f-437d-be06-927587e60866",
-                "summary": "From music to materials science, Professor Christopher Cahill\u2019s journey shows how unexpected turns spark curiosity, innovation, and impact.",
-                "link": "/post/from-music-to-nuclear-policy-professor-christopher-cahill-s-unexpected-journey-in-science-and-polic"
-            }
-        },
-        {
-            "id": "art4",
-            "label": "The Electric Romance...",
-            "type": "article",
-            "parent": "profiles",
-            "data": {
-                "title": "The Electric Romance of Electricity and Magnetism",
-                "author": "d5b2a595-2a79-4d01-a44c-ebd6c9150f12",
-                "summary": "They say opposites attract, but when it comes to electric and magnetic fields, it\u2019s more like two halves of an amazing whole...",
-                "link": "/post/the-electric-romance-of-electricity-and-magnetism"
-            }
-        },
-        {
-            "id": "art5",
-            "label": "How One Engineer...",
-            "type": "article",
-            "parent": "oped",
-            "data": {
+        // --- Article Data with Categories and Coordinates ---
+        // This data is processed from your CSVs to include thematic categories and map locations.
+        const articleData = [
+            {
+                "id": "art0",
+                "title": "The Road From Academia to Forensic Applications of Chemistry",
+                "author": "Naama Ben-Dor",
+                "summary": "While many scientific pursuits involve structured pre-professional programs and a clear long-term vision of your desired end goal, there...",
+                "link": "https://www.catalyst-magazine.com/post/the-road-from-academia-to-forensic-applications-of-chemistry",
+                "category": "Science & Policy",
+                "coords": { "x": 55, "y": 48 }
+            },
+            {
+                "id": "art1",
                 "title": "How One Engineer is Changing Sustainable Fuels",
-                "author": "6af471d4-11bc-4756-9354-4f80a992a7ec",
+                "author": "Aidan Schurr",
                 "summary": "Tyler Wyka bridges engineering, sustainability, and global collaboration to drive real-world solutions for a changing planet.",
-                "link": "/post/how-one-engineer-is-changing-sustainable-fuels"
-            }
-        },
-        {
-            "id": "art6",
-            "label": "Paradoxes in Science:...",
-            "type": "article",
-            "parent": "editorials",
-            "data": {
-                "title": "Paradoxes in Science: Where Models Go to Break",
-                "author": "e77106fc-691d-4a11-88e4-5ed5d71e0261",
-                "summary": "If you\u2019re curious about anything, you\u2019ve already stepped into paradox\u2014that moment when our trusted models no longer explain what we observe. In science, paradoxes aren\u2019t tripwires to be avoided but navigational beacons that guide us toward more accurate frameworks.",
-                "link": "/post/paradoxes-in-science-where-models-go-to-break"
-            }
-        },
-        {
-            "id": "art7",
-            "label": "How Coastal Trees...",
-            "type": "article",
-            "parent": "interviews",
-            "data": {
-                "title": "How Coastal Trees Adapt Amid Rising Seas",
-                "author": "5648f50e-d360-4ed6-8b44-1405f043d0d6",
-                "summary": "With rising seas and worsening droughts, coastal forests face an uncertain future. Scientist Riley Leff dives deep into the hidden strategies trees use to survive extreme stress, from strategic growth spurts to surprising water-handling tactics. Could understanding trees\u2019 secret survival playbook help protect entire ecosystems, and even our planet?",
-                "link": "/post/how-coastal-trees-adapt-amid-rising-seas"
-            }
-        },
-        {
-            "id": "art8",
-            "label": "How The World...",
-            "type": "article",
-            "parent": "interviews",
-            "data": {
-                "title": "How The World of Genetics Shapes Evolution",
-                "author": "38606e21-76bd-4dc7-aedf-eb9697beda1f",
-                "summary": "Evolution shapes life, but its genetic origins remain a mystery. How do tiny DNA changes create stunning adaptations? The answers lie in...",
-                "link": "/post/how-the-world-of-genetics-shapes-evolution"
-            }
-        },
-        {
-            "id": "art9",
-            "label": "A Universe of...",
-            "type": "article",
-            "parent": "features",
-            "data": {
-                "title": "A Universe of Plasma: How one Scientist Connects his World from Satellites to Cells. ",
-                "author": "6af471d4-11bc-4756-9354-4f80a992a7ec",
-                "summary": "Scientists often start with one focus, but paths evolve. Prof. Michael Keidar\u2019s career spans cancer therapy, satellites, and plasma research",
-                "link": "/post/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells"
-            }
-        },
-        {
-            "id": "art10",
-            "label": "Serendipity and Science:...",
-            "type": "article",
-            "parent": "features",
-            "data": {
-                "title": "Serendipity and Science: The Journey of Dr. John Hawdon",
-                "author": "e77106fc-691d-4a11-88e4-5ed5d71e0261",
-                "summary": "Dr. John Hawdon's journey to parasitology was unexpected, from rejection letters to a greyhound's stubborn infection.",
-                "link": "/post/serendipity-and-science-the-journey-of-dr-john-hawdon"
-            }
-        },
-        {
-            "id": "art11",
-            "label": "From Battling a...",
-            "type": "article",
-            "parent": "features",
-            "data": {
-                "title": "From Battling a Rare Bioweapon Pathogen to Pioneering Global Health Security",
-                "author": "6af471d4-11bc-4756-9354-4f80a992a7ec",
-                "summary": "Rebecca Katz\u2019s plan to volunteer in India was unraveled by a severe illness that doctors in the U.S. struggled to diagnose. After eight months, they found the cause: a rare pathogen once weaponized by the U.S. military. The surreal experience would change everything, leading her to become an expert on her own disease and discover a new calling at the intersection of public health and national security.",
-                "link": "/post/reframing-health-as-a-national-security-issue"
-            }
-        },
-        {
-            "id": "art12",
-            "label": "Pollution to Solution:...",
-            "type": "article",
-            "parent": "features",
-            "data": {
-                "title": "Pollution to Solution: Dr. Song Gao on Science, Policy, and Environmental Sustainability",
-                "author": "d3fb945e-63a3-4d11-92db-ec490e968a02",
+                "link": "https://www.catalyst-magazine.com/post/how-one-engineer-is-changing-sustainable-fuels",
+                "category": "Tech & Engineering",
+                "coords": { "x": 48, "y": 55 }
+            },
+            {
+                "id": "art2",
+                "title": "From Music to Nuclear Policy: Dr. Cahill’s Journey in Science and Policy",
+                "author": "Lori Preci and Yair Ben-Dor",
+                "summary": "From music to materials science, Professor Christopher Cahill’s journey shows how unexpected turns spark curiosity, innovation, and impact.",
+                "link": "https://www.catalyst-magazine.com/post/from-music-to-nuclear-policy-professor-christopher-cahill-s-unexpected-journey-in-science-and-polic",
+                "category": "Science & Policy",
+                "coords": { "x": 45, "y": 50 }
+            },
+            {
+                "id": "art3",
+                "title": "Dr. Song Gao’s Chemistry‑Policy Crusade Against Hidden Pollutants",
+                "author": "Naama Ben-Dor",
                 "summary": "Dr. Song Gao bridges science and policy to tackle climate change, ozone depletion, and environmental sustainability.",
-                "link": "/post/pollution-to-solution-dr-song-gao-on-science-policy-and-environmental-sustainability"
-            }
-        },
-        {
-            "id": "art13",
-            "label": "Designing a Sustainable...",
-            "type": "article",
-            "parent": "features",
-            "data": {
+                "link": "https://www.catalyst-magazine.com/post/pollution-to-solution-dr-song-gao-on-science-policy-and-environmental-sustainability",
+                "category": "Environmental Science",
+                "coords": { "x": 38, "y": 42 }
+            },
+            {
+                "id": "art4",
                 "title": "Designing a Sustainable Future with Sun, Wind, and Water",
-                "author": "6e2eb0a9-247d-445d-87bd-e41580ac8ee1",
-                "summary": "For innovator Scott Sklar, renewable energy is about more than climate\u2014it\u2019s about human survival. From powering life-saving medical...",
-                "link": "/post/designing-a-sustainable-future-with-sun-wind-and-water"
-            }
-        },
-        {
-            "id": "art14",
-            "label": "Everything Sings: The...",
-            "type": "article",
-            "parent": "features",
-            "data": {
-                "title": "Everything Sings: The Science of Systems ",
-                "author": "6af471d4-11bc-4756-9354-4f80a992a7ec",
-                "summary": "Expand your understanding of complex systems with Complexity Science, collaborations, and tips to grow your systems thinking skills.",
-                "link": "/post/everything-sings-the-science-of-systems"
-            }
-        },
-        {
-            "id": "art15",
-            "label": "Understanding Science to...",
-            "type": "article",
-            "parent": "editorials",
-            "data": {
-                "title": "Understanding Science to Learn Science: Dopamine and Why You Should Care",
-                "author": "d3fb945e-63a3-4d11-92db-ec490e968a02",
-                "summary": "Unlock success with dopamine insights! Learn strategies to master studying, boost efficiency, and free up time.",
-                "link": "/post/understanding-science-to-learn-science-dopamine-and-why-you-should-care"
-            }
-        },
-        {
-            "id": "art16",
-            "label": "How Cutting-Edge Research...",
-            "type": "article",
-            "parent": "oped",
-            "data": {
-                "title": "How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine",
-                "author": "fb7d2bdd-b83f-45b2-bdb8-bd61473126ea",
-                "summary": "Researchers in Washington D.C. are revolutionizing AI, MS treatments, and cancer therapies\u2014pushing science forward with groundbreaking work.",
-                "link": "/post/how-cutting-edge-research-in-washington-d-c-is-reshaping-science-and-medicine"
-            }
-        },
-        {
-            "id": "art17",
-            "label": "The Significance of...",
-            "type": "article",
-            "parent": "profiles",
-            "data": {
-                "title": "The Significance of Genetics in Insect Coloration and Evolution",
-                "author": "38606e21-76bd-4dc7-aedf-eb9697beda1f",
-                "summary": "How do insects get their colors? Gene regulation drives patterns, mimicry, and behavior in evolution\u2019s most vibrant creatures.",
-                "link": "/post/the-significance-of-genetics-in-insect-coloration-and-evolution"
-            }
-        },
-        {
-            "id": "art18",
-            "label": "From Fluorine to...",
-            "type": "article",
-            "parent": "features",
-            "data": {
-                "title": "From Fluorine to Forensics: The Road From Academia to Forensic Chemistry",
-                "author": "d3fb945e-63a3-4d11-92db-ec490e968a02",
-                "summary": "Explore how Dr. Lucas Kane navigated from grad studies to forensics, finding his path and pursuing a fulfilling career in chemistry.",
-                "link": "/post/the-road-from-academia-to-forensic-applications-of-chemistry"
-            }
-        },
-        {
-            "id": "art19",
-            "label": "Chromatic Chemistry: Transition...",
-            "type": "article",
-            "parent": "features",
-            "data": {
-                "title": "Chromatic Chemistry: Transition Metals and Nature\u2019s Hidden Color Palette",
-                "author": "e77106fc-691d-4a11-88e4-5ed5d71e0261",
-                "summary": "Transition metals color our world, from Van Gogh\u2019s art to oxygen-transporting pigments, bridging the beauty of science and art through light",
-                "link": "/post/transition-metals-the-capacity-of-the-d-block-to-color-our-world"
-            }
-        },
-        {
-            "id": "art20",
-            "label": "Sitting Down with...",
-            "type": "article",
-            "parent": "interviews",
-            "data": {
-                "title": "Sitting Down with the Editor\u2011in\u2011Chief of Science Magazine, to Talk About the Future of Scientific Communication",
-                "author": "49685452-57e8-4a40-846f-afc82ce23e5c",
-                "summary": "In an era of growing skepticism and polarized discourse, clear science communication is more vital than ever. We sat down with Holden Thorp to explore how one of the world\u2019s leading science journals navigates this challenge. Join us as he reflects on his journey and the evolving role of scientific storytelling.",
-                "link": "/post/sitting-down-with-the-editor-in-chief-of-science-magazine-to-talk-about-the-future-of-scientific-co"
-            }
-        },
-        {
-            "id": "art21",
-            "label": "From Brain to...",
-            "type": "article",
-            "parent": "interviews",
-            "data": {
-                "title": "From Brain to Bench to Bedside and Beyond: How a DC Neuroscientist is Changing Brain Disease Research",
-                "author": "6af471d4-11bc-4756-9354-4f80a992a7ec",
+                "author": "Ginger Taurek",
+                "summary": "For innovator Scott Sklar, renewable energy is about more than climate—it’s about human survival. From powering life-saving medical clinics...",
+                "link": "https://www.catalyst-magazine.com/post/designing-a-sustainable-future-with-sun-wind-and-water",
+                "category": "Environmental Science",
+                "coords": { "x": 65, "y": 60 }
+            },
+            {
+                "id": "art5",
+                "title": "Dr. Brent Harris’ Brain Bank Revolution",
+                "author": "Aidan Schurr",
                 "summary": "Working in DC lets Dr. Brent Harris drive medical changes. His neuropathology, ALS research, and advocacy significantly help countless lives",
-                "link": "/post/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-researc"
+                "link": "https://www.catalyst-magazine.com/post/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-researc",
+                "category": "Health & Medicine",
+                "coords": { "x": 35, "y": 45 }
+            },
+            {
+                "id": "art6",
+                "title": "How The World of Genetics Shapes Evolution",
+                "author": "Alex Carter",
+                "summary": "Evolution shapes life, but its genetic origins remain a mystery. How do tiny DNA changes create stunning adaptations? The answers lie in...",
+                "link": "https://www.catalyst-magazine.com/post/how-the-world-of-genetics-shapes-evolution",
+                "category": "Health & Medicine",
+                "coords": { "x": 42, "y": 58 }
+            },
+            {
+                "id": "art7",
+                "title": "Serendipity and Science: The Journey of Dr. John Hawdon",
+                "author": "Lori Preci",
+                "summary": "Dr. Hawdon’s Winding Path to Parasitology Dr. John Hawdon (photo from The Hawdon Lab ) As a young boy with a love for animals and...",
+                "link": "https://www.catalyst-magazine.com/post/serendipity-and-science-the-journey-of-dr-john-hawdon",
+                "category": "Health & Medicine",
+                "coords": { "x": 49, "y": 65 }
+            },
+            {
+                "id": "art8",
+                "title": "Elucidating the Brain’s Language Circuitry with Dr. Michael Ullman ",
+                "author": "Yair Ben-Dor",
+                "summary": "Georgetown neuroscientist Dr. Michael T. Ullman's Declarative/Procedural (DP) model posits language relies on two core brain memory systems.",
+                "link": "https://www.catalyst-magazine.com/post/elucidating-the-brain-s-language-circuitry-with-dr-michael-ullman",
+                "category": "Neuroscience & Cognition",
+                "coords": { "x": 33, "y": 40 }
+            },
+            {
+                "id": "art9",
+                "title": "How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine",
+                "author": "Yair Ben-Dor",
+                "summary": "Researchers in Washington D.C. are revolutionizing AI, MS treatments, and cancer therapies—pushing science forward with groundbreaking work.",
+                "link": "https://www.catalyst-magazine.com/post/how-cutting-edge-research-in-washington-d-c-is-reshaping-science-and-medicine",
+                "category": "Health & Medicine",
+                "coords": { "x": 50, "y": 40 }
+            },
+            {
+                "id": "art10",
+                "title": "From Battling a Rare Bioweapon Pathogen to Pioneering Global Health Security",
+                "author": "Aidan Schurr",
+                "summary": "Rebecca Katz’s plan to volunteer in India was unraveled by a severe illness that doctors in the U.S. struggled to diagnose.",
+                "link": "https://www.catalyst-magazine.com/post/reframing-health-as-a-national-security-issue",
+                "category": "Science & Policy",
+                "coords": { "x": 60, "y": 35 }
+            },
+            {
+                "id": "art11",
+                "title": "Sitting Down with the Editor‑in‑Chief of Science Magazine",
+                "author": "Alex Carter and Aidan Schurr",
+                "summary": "In an era of growing skepticism and polarized discourse, clear science communication is more vital than ever.",
+                "link": "https://www.catalyst-magazine.com/post/sitting-down-with-the-editor-in-chief-of-science-magazine-to-talk-about-the-future-of-scientific-co",
+                "category": "Science & Policy",
+                "coords": { "x": 58, "y": 52 }
+            },
+            {
+                "id": "art12",
+                "title": "How Coastal Trees Adapt Amid Rising Seas",
+                "author": "Aidan Brown",
+                "summary": "With rising seas and worsening droughts, coastal forests face an uncertain future. Scientist Riley Leff dives deep into the hidden strategies...",
+                "link": "https://www.catalyst-magazine.com/post/how-coastal-trees-adapt-amid-rising-seas",
+                "category": "Environmental Science",
+                "coords": { "x": 70, "y": 45 }
+            },
+            {
+                "id": "art13",
+                "title": "A Universe of Plasma: How One Scientist Connects His World From Satellites to Cells",
+                "author": "Aidan Schurr",
+                "summary": "Every scientist begins their journey with a general sense of direction, attempting to become an expert in one field. However, it is not...",
+                "link": "https://www.catalyst-magazine.com/post/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells",
+                "category": "Tech & Engineering",
+                "coords": { "x": 46, "y": 60 }
+            },
+            {
+                "id": "art14",
+                "title": "The Electric Romance of Electricity and Magnetism",
+                "author": "Yair Ben-Dor",
+                "summary": "They say opposites attract, but when it comes to electric and magnetic fields, it’s more like two halves of an amazing whole...",
+                "link": "https://www.catalyst-magazine.com/post/the-electric-romance-of-electricity-and-magnetism",
+                "category": "Tech & Engineering",
+                "coords": { "x": 52, "y": 38 }
+            },
+            {
+                "id": "art15",
+                "title": "The Significance of Genetics in Insect Coloration and Evolution",
+                "author": "Alex Cater",
+                "summary": "How do insects get their colors? Gene regulation drives patterns, mimicry, and behavior in evolution’s most vibrant creatures.",
+                "link": "https://www.catalyst-magazine.com/post/the-significance-of-genetics-in-insect-coloration-and-evolution",
+                "category": "Health & Medicine",
+                "coords": { "x": 39, "y": 53 }
+            },
+            {
+                "id": "art16",
+                "title": "Cheers to Microglia: Unsung Heroes of the Nervous System",
+                "author": "Naama Ben-Dor",
+                "summary": "Amid the nervous system’s intricate cast, microglia are the tireless unsung heroes. Beyond just cleanup, these small yet mighty…",
+                "link": "https://www.catalyst-magazine.com/post/an-ode-to-microglia",
+                "category": "Neuroscience & Cognition",
+                "coords": { "x": 30, "y": 48 }
+            },
+            {
+                "id": "art17",
+                "title": "Science’s Silly Lexicon: Wacky Words to Brighten Your Day (and Casually Drop Into Conversation)",
+                "author": "Naama Ben-Dor",
+                "summary": "Science is serious, but its words don’t have to be! From habenula perforata to Tribbles, explore the wackiest terms in scientific jargon.",
+                "link": "https://www.catalyst-magazine.com/post/science-s-silly-lexicon-wacky-words-to-brighten-your-day-and-casually-drop-into-conversation",
+                "category": "Science & Policy",
+                "coords": { "x": 62, "y": 42 }
+            },
+            {
+                "id": "art18",
+                "title": "Understanding Science to Learn Science: Dopamine and...",
+                "author": "Naama Ben-Dor",
+                "summary": "STEM studies demand a uniquely high level of rigorous dedication and studiousness, achievable only with efficient studying and learning...",
+                "link": "https://www.catalyst-magazine.com/post/understanding-science-to-learn-science-dopamine-and-why-you-should-care",
+                "category": "Neuroscience & Cognition",
+                "coords": { "x": 36, "y": 38 }
+            },
+            {
+                "id": "art19",
+                "title": "Paradoxes in Science: Where Models Go to Break",
+                "author": "Lori Preci",
+                "summary": "If you’re curious about anything, you’ve already stepped into paradox—that moment when our trusted models no longer explain what we observe.",
+                "link": "https://www.catalyst-magazine.com/post/paradoxes-in-science-where-models-go-to-break",
+                "category": "Science & Policy",
+                "coords": { "x": 55, "y": 58 }
+            },
+            {
+                "id": "art20",
+                "title": "Transition Metals and How They Color Our World",
+                "author": "Lori Preci",
+                "summary": "Transition metals are responsible for some of the most dazzling colors we encounter every day. These elements impart life to art...",
+                "link": "https://www.catalyst-magazine.com/post/transition-metals-the-capacity-of-the-d-block-to-color-our-world",
+                "category": "Tech & Engineering",
+                "coords": { "x": 68, "y": 50 }
+            },
+            {
+                "id": "art21",
+                "title": "Everything Sings: The Science of Systems ",
+                "author": "Aidan Schurr",
+                "summary": "With the ever growing amount of information in the world, our understanding of the most complex systems can be enhanced through...",
+                "link": "https://www.catalyst-magazine.com/post/everything-sings-the-science-of-systems",
+                "category": "Science & Policy",
+                "coords": { "x": 43, "y": 43 }
+            }
+        ];
+
+        // --- DOM Elements ---
+        const mapContainer = document.getElementById('catalyst-map-container');
+        const nodesWrapper = document.getElementById('map-nodes-wrapper');
+        const filterMenu = document.getElementById('filter-menu');
+        const infoCard = document.getElementById('info-card');
+        const closeCardBtn = document.getElementById('close-card-btn');
+
+        // --- Create and Place Nodes ---
+        function initializeMap() {
+            // 1. Create unique categories and filter buttons
+            const categories = [...new Set(articleData.map(article => article.category))];
+            const filterAllBtn = document.getElementById('filter-all');
+
+            categories.forEach(category => {
+                const btn = document.createElement('button');
+                btn.id = `filter-${category.replace(/[^a-zA-Z0-9]/g, '')}`;
+                btn.textContent = category;
+                btn.dataset.category = category;
+                btn.addEventListener('click', () => handleFilterClick(category, btn));
+                filterMenu.appendChild(btn);
+            });
+
+            // 2. Create article nodes
+            articleData.forEach(article => {
+                const node = document.createElement('div');
+                node.className = 'article-node';
+                node.style.left = `${article.coords.x}%`;
+                node.style.top = `${article.coords.y}%`;
+                node.dataset.category = article.category;
+
+                // Create tooltip
+                const tooltip = document.createElement('div');
+                tooltip.className = 'node-tooltip';
+                tooltip.textContent = article.title;
+                node.appendChild(tooltip);
+
+                // Add click event to show info card
+                node.addEventListener('click', () => showInfoCard(article));
+                
+                nodesWrapper.appendChild(node);
+            });
+            
+            // 3. Add event listener for the 'Show All' button
+            filterAllBtn.addEventListener('click', () => handleFilterClick('all', filterAllBtn));
+        }
+
+        // --- Interactivity Functions ---
+        function handleFilterClick(category, clickedButton) {
+            // Update active state on buttons
+            document.querySelectorAll('#filter-menu button').forEach(btn => btn.classList.remove('active'));
+            clickedButton.classList.add('active');
+
+            if (category === 'all') {
+                mapContainer.classList.remove('filtered');
+                document.querySelectorAll('.article-node').forEach(node => node.classList.remove('active'));
+            } else {
+                mapContainer.classList.add('filtered');
+                document.querySelectorAll('.article-node').forEach(node => {
+                    if (node.dataset.category === category) {
+                        node.classList.add('active');
+                    } else {
+                        node.classList.remove('active');
+                    }
+                });
             }
         }
-    ]
-};
 
-            const webContainer = document.getElementById('catalyst-web');
-            const card = document.getElementById('catalyst-info-card');
-            const closeBtn = document.getElementById('close-card-btn');
-            
-            const nodeElements = {};
-            const lineElements = {};
+        function showInfoCard(article) {
+            document.getElementById('card-title').textContent = article.title;
+            document.getElementById('card-author').textContent = `By ${article.author}`;
+            document.getElementById('card-summary').textContent = article.summary;
+            document.getElementById('card-link').href = article.link;
+            infoCard.classList.add('visible');
+        }
 
-            function drawWeb() {
-                const containerRect = webContainer.getBoundingClientRect();
-                const centerX = containerRect.width / 2;
-                const centerY = containerRect.height / 2;
+        function hideInfoCard() {
+            infoCard.classList.remove('visible');
+        }
 
-                const positions = {};
-
-                // Set positions for hub and topics first
-                webData.nodes.forEach(nodeData => {
-                    if (nodeData.type === 'main-hub') {
-                        positions[nodeData.id] = { x: centerX, y: centerY };
-                    } else if (nodeData.type === 'topic') {
-                        const angle = Math.random() * 2 * Math.PI;
-                        const radius = Math.min(centerX, centerY) * 0.65;
-                        positions[nodeData.id] = { x: centerX + radius * Math.cos(angle), y: centerY + radius * Math.sin(angle) };
-                    }
-                });
-                
-                // Set positions for articles relative to their parent topic
-                webData.nodes.forEach(nodeData => {
-                    if (nodeData.type === 'article') {
-                         const parentPos = positions[nodeData.parent];
-                         if (parentPos) {
-                            const angle = Math.random() * 2 * Math.PI;
-                            const radius = 130 + Math.random() * 30; // Randomize distance slightly
-                            positions[nodeData.id] = { x: parentPos.x + radius * Math.cos(angle), y: parentPos.y + radius * Math.sin(angle) };
-                         }
-                    }
-                });
-
-                // Create Node DOM Elements
-                webData.nodes.forEach(nodeData => {
-                    const nodeEl = document.createElement('div');
-                    nodeEl.id = nodeData.id;
-                    nodeEl.className = `node ${nodeData.type}`;
-                    nodeEl.innerHTML = `<span>${nodeData.label}</span>`;
-                    
-                    const pos = positions[nodeData.id];
-                    if(pos) {
-                        const size = parseInt(window.getComputedStyle(nodeEl).width);
-                        nodeEl.style.left = `${pos.x - size / 2}px`;
-                        nodeEl.style.top = `${pos.y - size / 2}px`;
-                        webContainer.appendChild(nodeEl);
-                        nodeElements[nodeData.id] = nodeEl;
-                    }
-                });
-
-                // Create Line DOM Elements
-                webData.nodes.forEach(nodeData => {
-                    const parentId = nodeData.parent || (nodeData.type === 'topic' ? 'hub' : null);
-                    if (parentId && nodeElements[nodeData.id] && nodeElements[parentId]) {
-                        const line = createLine(nodeElements[parentId], nodeElements[nodeData.id]);
-                        const lineId = `line-${parentId}-to-${nodeData.id}`;
-                        line.id = lineId;
-                        webContainer.appendChild(line);
-                        lineElements[lineId] = line;
-                    }
-                });
+        // --- Event Listeners ---
+        closeCardBtn.addEventListener('click', hideInfoCard);
+        
+        // Close card if clicking outside of it
+        mapContainer.addEventListener('click', (e) => {
+            if (e.target.id === 'catalyst-map-container') {
+                hideInfoCard();
             }
-
-            function createLine(el1, el2) {
-                const rect1 = el1.getBoundingClientRect();
-                const rect2 = el2.getBoundingClientRect();
-                const containerRect = webContainer.getBoundingClientRect();
-
-                const x1 = rect1.left - containerRect.left + rect1.width / 2;
-                const y1 = rect1.top - containerRect.top + rect1.height / 2;
-                const x2 = rect2.left - containerRect.left + rect2.width / 2;
-                const y2 = rect2.top - containerRect.top + rect2.height / 2;
-
-                const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-                const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
-
-                const line = document.createElement('div');
-                line.className = 'line';
-                line.style.width = `${length}px`;
-                line.style.left = `${x1}px`;
-                line.style.top = `${y1}px`;
-                line.style.transform = `rotate(${angle}deg)`;
-                return line;
-            }
-
-            function setupInteractions() {
-                Object.values(nodeElements).forEach(nodeEl => {
-                    nodeEl.addEventListener('mouseenter', () => {
-                        const nodeData = webData.nodes.find(n => n.id === nodeEl.id);
-                        if (!nodeData) return;
-
-                        // Highlight direct parent line
-                        if (nodeData.parent) {
-                            const lineToParent = document.getElementById(`line-${nodeData.parent}-to-${nodeData.id}`);
-                            if (lineToParent) lineToParent.classList.add('active');
-                        }
-                        // Highlight line from topic to hub
-                        if (nodeData.type === 'topic'){
-                             const lineToHub = document.getElementById(`line-hub-to-${nodeData.id}`);
-                             if(lineToHub) lineToHub.classList.add('active');
-                        }
-                    });
-
-                    nodeEl.addEventListener('mouseleave', () => {
-                         document.querySelectorAll('.line').forEach(l => l.classList.remove('active'));
-                    });
-                    
-                    const nodeData = webData.nodes.find(n => n.id === nodeEl.id);
-                    if (nodeData && nodeData.type === 'article') {
-                        nodeEl.addEventListener('click', (e) => {
-                            e.stopPropagation(); // Prevents click from bubbling to the container
-                            document.getElementById('card-title').textContent = nodeData.data.title;
-                            document.getElementById('card-author').textContent = `By ${nodeData.data.author}`;
-                            document.getElementById('card-summary').textContent = nodeData.data.summary;
-                            document.getElementById('card-link').href = nodeData.data.link;
-                            card.classList.add('visible');
-                        });
-                    }
-                });
-
-                closeBtn.addEventListener('click', () => {
-                    card.classList.remove('visible');
-                });
-
-                // Close card if clicking outside of it
-                document.getElementById('catalyst-web-container').addEventListener('click', (e) => {
-                    if (e.target.id === 'catalyst-web-container' || e.target.id === 'catalyst-web'){
-                         card.classList.remove('visible');
-                    }
-                });
-            }
-
-            drawWeb();
-            setupInteractions();
         });
+
+        // --- Initialize the application ---
+        initializeMap();
+
     </script>
 </body>
 </html>
