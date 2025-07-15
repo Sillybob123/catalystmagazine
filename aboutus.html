@@ -1,0 +1,241 @@
+<style>
+  /* Import Poppins font from Google Fonts */
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
+
+  /* Basic reset and font for the HTML embed */
+  body, html {
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f8f9fa; 
+  }
+
+  /* Main container */
+  .main-container {
+    width: 90%; /* Changed from 58% to better match previous request */
+    max-width: 1140px;
+    margin: 40px auto;
+    box-sizing: border-box;
+  }
+  
+  /* --- ✨ Aesthetic Tab Navigation Styles --- */
+  .tabs-nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Space between tab buttons */
+    margin-bottom: 20px;
+    padding: 8px;
+    background-color: #e9ecef; /* Light container for the tabs */
+    border-radius: 50px; /* Fully rounded container */
+  }
+
+  .tab-button {
+    padding: 12px 25px;
+    cursor: pointer;
+    font-size: 1.0em; /* Refined font size */
+    font-weight: 500;
+    color: #495057;
+    background-color: transparent;
+    border: none;
+    border-radius: 50px; /* Pill shape */
+    transition: all 0.3s ease;
+  }
+
+  .tab-button:not(.active):hover {
+    background-color: #dee2e6; /* Hover effect for inactive tabs */
+  }
+
+  .tab-button.active {
+    color: white;
+    background-color: #2c3e50; /* Elegant dark active state */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  /* --- Tab Panel Styles --- */
+  .tab-panel {
+    display: none;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+  
+  /* ✨ Container for the team cards with reduced top padding */
+  .team-section {
+    padding: 100px 0 200px 0; /* Reduced top padding, kept bottom padding for scroll */
+  }
+
+  .team-section h2 {
+    text-align: center;
+    font-size: 2.2em;
+    font-weight: 700;
+    margin-bottom: 40px;
+    color: #2c3e50;
+  }
+
+  .team-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .team-member-card {
+    display: flex;
+    align-items: center;
+    padding: 30px;
+    border-radius: 40px;
+    box-shadow: 0 10px 40px rgba(44, 62, 80, 0.12);
+    color: white;
+    gap: 35px;
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .team-member-photo {
+    flex-shrink: 0;
+    width: 140px;
+    height: 161px;
+  }
+
+  .team-member-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .team-member-info { flex-grow: 1; }
+  .team-member-info h3 { font-size: 1.7em; font-weight: 700; margin: 0 0 4px 0; }
+  .team-member-info h4 { font-size: 1.0em; font-weight: 500; margin: 0 0 12px 0; opacity: 0.9; font-style: normal; }
+  .team-member-info p { font-size: 0.95em; line-height: 1.6; margin: 0; font-weight: 400;}
+
+  /* ---- Custom Color Classes ---- */
+  .card-1 { background-color: rgb(37, 65, 91); }
+  .card-2 { background-color: rgb(59, 76, 121); }
+  .card-3 { background-color: rgb(97, 82, 142); }
+  .card-4 { background-color: rgb(141, 81, 145); }
+  .card-5 { background-color: rgb(185, 81, 132); }
+  .card-6 { background-color: rgb(218, 94, 105); }
+  .card-7 { background-color: rgb(226, 123, 72); }
+  .card-8 { background-color: rgb(222, 155, 43); }
+  .card-9 { background-color: rgb(102, 173, 101); }
+  .card-adviser { background-color: rgb(37, 65, 91); }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .main-container { width: 95%; }
+    .tabs-nav { flex-wrap: wrap; } /* Allow tabs to wrap on mobile */
+    .tab-button { font-size: 0.9em; padding: 10px 18px; }
+    .team-section { padding: 120px 0; }
+    .team-member-card { flex-direction: column; text-align: center; padding: 25px 20px; border-radius: 30px; }
+    .team-member-photo { width: 120px; height: 138px; }
+    .team-member-info h3 { font-size: 1.4em; }
+    .team-member-info h4 { font-size: 0.85em; }
+    .team-member-info p { font-size: 0.85em; }
+  }
+</style>
+
+<div class="main-container">
+
+  <div class="tabs-nav">
+    <button class="tab-button active" data-target="team-panel">The Team</button>
+    <button class="tab-button" data-target="advisers-panel">Faculty and Advisers</button>
+  </div>
+
+  <div id="team-panel" class="tab-panel active">
+    <section class="team-section">
+      <h2>Meet The Team</h2>
+      <div class="team-container">
+        <div class="team-member-card card-1">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_0c29ddcee02c4a84a5183b902ad64754~mv2.png" alt="Profile picture of Yair Ben-Dor"></div>
+          <div class="team-member-info"><h3>Yair Ben-Dor</h3><h4>Co-Founder, Editor-in-Chief, Website Developer</h4><p>Yair is a George Washington University student majoring in biology and chemistry, and he also brings extensive experience in website design and coding to The Catalyst Magazine. In addition to guiding the magazine’s editorial vision, he designed and developed the publication’s website and newsletter. Yair collaborates closely with fellow contributors to highlight STEM research throughout Washington, D.C., and hopes to foster greater engagement between academic discoveries and the broader community.</p></div>
+        </div>
+        <div class="team-member-card card-2">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_a45b039185914a64a7b333a51e60505f~mv2.png" alt="Profile picture of Aidan Schurr"></div>
+          <div class="team-member-info"><h3>Aidan Schurr</h3><h4>Co-Founder, Editor-in-Chief</h4><p>Aidan is a Biomedical Engineering student and Presidential Scholar at The George Washington University, focusing on sustainable innovation, healthcare, and environmental research. As a co-founder of The Catalyst Magazine, he spearheads collaborative efforts between professors, Ph.D. candidates, and student researchers. Aidan also writes editorials and features on topics spanning engineering, healthcare, neuroscience, and renewable energy solutions.</p></div>
+        </div>
+        <div class="team-member-card card-3">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_d1ca129e646f424285a84de442ece5d4~mv2.png" alt="Profile picture of Lori Preci"></div>
+          <div class="team-member-info"><h3>Lori Preci</h3><h4>Co-Founder, Senior Writer</h4><p>Lori co-founded The Catalyst Magazine and serves as both a managing editor and one of its senior writers. She is a George Washington University student with hands-on experience in molecular biology and chemistry research. Lori’s articles delve into emerging scientific discoveries, while her editorial oversight helps maintain the publication’s high standard of scientific integrity.</p></div>
+        </div>
+        <div class="team-member-card card-4">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_2dce7b9e28f54b2c8c06868197e27c26~mv2.png" alt="Profile picture of Naama Ben-Dor"></div>
+          <div class="team-member-info"><h3>Naama Ben-Dor</h3><h4>Managing Editor, Senior Writer, Media Specialist</h4><p>Naama is the creative spark behind The Catalyst Magazine. A Georgetown University student, she handles interviews, digital content, and outreach, all while writing some of the magazine’s most unexpected and entertaining pieces. From deep dives into environmental policy to playful explorations of strange science terms, her work adds humor, personality, and a refreshing twist to every topic she touches.</p></div>
+        </div>
+        <div class="team-member-card card-5">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_d71a86021ce842c08d7780e0fa011ca9~mv2.png" alt="Profile picture of Stephanie Solomon"></div>
+          <div class="team-member-info"><h3>Stephanie Solomon</h3><h4>Managing Editor, Fact Checker</h4><p>Stephanie is a Georgetown University student with a strong background in journalism, policy, and editorial work. At The Catalyst Magazine, she ensures every piece meets high standards for accuracy and clarity, drawing on her experience in investigative writing, political communications, and media strategy. Her sharp editorial eye keeps the magazine grounded in both integrity and impact.</p></div>
+        </div>
+        <div class="team-member-card card-6">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_0cb976c90e5c4c87bc8b4b7fdaef5784~mv2.png" alt="Profile picture of Alex Carter"></div>
+          <div class="team-member-info"><h3>Alex Carter</h3><h4>Writer</h4><p>Alex is a George Washington University student whose work explores the genetic basis of evolution and adaptation. At The Catalyst Magazine, he covers topics like gene regulation and butterfly coloration, drawing from his research in GWU’s Martin Lab. Alex excels at making complex genetics approachable and engaging for a broad audience.</p></div>
+        </div>
+        <div class="team-member-card card-7">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_63a6c28d8c134c3483f6f9c8f0f5f0fb~mv2.png" alt="Profile picture of Ginger Taurek"></div>
+          <div class="team-member-info"><h3>Ginger Taurek</h3><h4>Writer</h4><p>Ginger is a writer for The Catalyst and a student at The George Washington University School of Business, where she focuses on entrepreneurship, marketing, and sustainability. She draws on her experience co-founding The Organic Candy Factory and her work in sustainable marketing to offer a unique business perspective on current issues. Her entrepreneurial mindset and dedication to sustainability drive her focus on impactful global change.</p></div>
+        </div>
+        <div class="team-member-card card-8">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_c9d302866f194b8796146ff30753f974~mv2.png" alt="Profile picture of Aidan Brown"></div>
+          <div class="team-member-info"><h3>Aidan Brown</h3><h4>Writer</h4><p>Aidan is a writer for The Catalyst and a student at The George Washington University specializing in environmental research, with deep experience in data analysis and coastal ecology. He contributes to The Catalyst by applying his research background—particularly in coastal ecology and remote sensing—to the development of data-driven articles on complex environmental issues.</p></div>
+        </div>
+        <div class="team-member-card card-9">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_79b209d3517a4712b123bd9f20e6889c~mv2.png" alt="Profile picture of Rachel Lee"></div>
+          <div class="team-member-info"><h3>Rachel Lee</h3><h4>Photographer, Media Specialist</h4><p>Rachel is a sophomore at George Washington University majoring in Communications and Business, after initially exploring a Biology track. She brings her love of STEM to The Catalyst Magazine through visual storytelling, using photography to illuminate each article’s key insights and engage readers at a deeper level. Balancing an eye for artistic design with a strong grounding in science, Rachel captures vibrant moments that underscore the magazine’s mission to spark curiosity and creativity in the STEM community.</p></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+  <div id="advisers-panel" class="tab-panel">
+    <section class="team-section">
+      <h2>Faculty and Advisers</h2>
+      <div class="team-container">
+        <div class="team-member-card card-adviser">
+          <div class="team-member-photo"><img src="https://static.wixstatic.com/media/11b1c4_550f7f05f61c4263820a36019190ecc1~mv2.png" alt="Profile picture of Eli Kintisch"></div>
+          <div class="team-member-info">
+            <h3>Eli Kintisch</h3>
+            <h4>Ted Turner Professor of Environmental Media</h4>
+            <p>Guiding The Catalyst with a wealth of experience, Eli Kintisch serves as a key faculty adviser. As the Ted Turner Professor of Environmental Media at George Washington University, his expertise in climate journalism and environmental science provides invaluable mentorship to our student writers. Eli's distinguished career includes work as a contributing correspondent for <i>Science</i> magazine and creating impactful video series for PBS and Vox that explore critical environmental issues. His innovative approach to science communication—from developing augmented reality apps on sea-level rise to authoring the acclaimed book <i>Hack the Planet</i>—inspires our team to tackle complex topics with creativity and rigor. Eli’s guidance is instrumental in helping The Catalyst bridge the gap between academic research and compelling public storytelling.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabPanels.forEach(panel => panel.classList.remove('active'));
+        button.classList.add('active');
+        document.getElementById(button.dataset.target).classList.add('active');
+        handleScroll();
+      });
+    });
+
+    const handleScroll = () => {
+      const activePanel = document.querySelector('.tab-panel.active');
+      if (!activePanel) return;
+      const cards = activePanel.querySelectorAll('.team-member-card');
+      if (cards.length === 0) return;
+
+      const viewportHeight = window.innerHeight;
+      for (const card of cards) {
+        const rect = card.getBoundingClientRect();
+        const cardCenter = rect.top + rect.height / 2;
+        const viewportCenter = viewportHeight / 2;
+        const distance = Math.abs(viewportCenter - cardCenter);
+        const scale = Math.max(0.8, 1 - (distance / viewportHeight) * 0.4);
+        card.style.transform = `scale(${scale})`;
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+  });
+</script>
