@@ -11,151 +11,87 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Custom styles for a modern look */
-        html, body {
-            font-family: 'Inter', sans-serif;
-            background: transparent; /* Makes html and body transparent */
-        }
-        /* Custom scrollbar */
-        #messages-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        #messages-container::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-        #messages-container::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-        }
-        #messages-container::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
-        }
-        .action-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 2px;
-            border-radius: 50%;
-            transition: background-color 0.2s, color 0.2s;
-        }
-        .action-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        .like-btn.liked svg {
-            fill: #ef4444; /* red-500 */
-            color: #ef4444;
-        }
-        /* Fade-in animation for new messages */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .message-item {
-            animation: fadeIn 0.5s ease-out;
-        }
+        html, body { font-family: 'Inter', sans-serif; background: transparent; }
+        #messages-container::-webkit-scrollbar { width: 6px; }
+        #messages-container::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+        #messages-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 3px; }
+        .action-btn { background: transparent; border: none; cursor: pointer; padding: 2px; border-radius: 50%; transition: all 0.2s; }
+        .action-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .like-btn.liked svg { fill: #ef4444; color: #ef4444; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message-item { animation: fadeIn 0.5s ease-out; }
     </style>
 </head>
 <body class="bg-transparent flex items-center justify-center min-h-screen p-4">
 
     <div class="w-full max-w-2xl mx-auto bg-black/20 backdrop-blur-lg rounded-2xl shadow-2xl p-6 md:p-8 border border-white/20">
-        <!-- Header -->
         <div class="text-center mb-6">
-            <h1 class="text-2xl md:text-3xl font-bold text-white/90" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                Public Chat Room
-            </h1>
+            <h1 class="text-2xl md:text-3xl font-bold text-white/90" style="text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Public Chat Room</h1>
             <p class="text-white/70 mt-1">Leave a comment for everyone to see!</p>
         </div>
-
-        <!-- Messages Display -->
         <div id="messages-container" class="h-96 bg-black/20 rounded-lg p-4 space-y-4 overflow-y-auto">
-            <!-- Loading indicator -->
-            <div id="loading" class="flex items-center justify-center h-full">
-                <p class="text-white/60">Loading messages...</p>
-            </div>
-            <!-- Messages will be dynamically inserted here -->
+            <div id="loading" class="flex items-center justify-center h-full"><p class="text-white/60">Connecting to chat...</p></div>
         </div>
-
-        <!-- Message Input Form -->
         <div class="mt-6">
             <form id="message-form" class="space-y-4">
                 <input id="username" type="text" placeholder="Your name" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/20 transition" required>
                 <textarea id="message" placeholder="Leave a message..." rows="3" class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 focus:bg-white/20 transition" required></textarea>
-                <button type="submit" id="submit-button" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black/20 focus:ring-blue-500 transition-all duration-300 shadow-lg hover:shadow-blue-500/50">
-                    Send Message
-                </button>
+                <button type="submit" id="submit-button" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-black/20 focus:ring-blue-500 transition-all duration-300 shadow-lg hover:shadow-blue-500/50">Send Message</button>
             </form>
         </div>
-        
-        <!-- User ID display for reference -->
-        <div class="text-center mt-4">
-            <p class="text-xs text-white/50">Your User ID: <span id="user-id-display">Connecting...</span></p>
-        </div>
+        <div class="text-center mt-4"><p class="text-xs text-white/50">Your User ID: <span id="user-id-display">Connecting...</span></p></div>
     </div>
 
-    <!-- Firebase SDK -->
     <script type="module">
-        // Import necessary Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, setLogLevel, doc, deleteDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // --- IMPORTANT: OWNER CONFIGURATION ---
+        // --- Your Personal Firebase Configuration ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDx9Z_2YQLdYurs-OR1SmzMJTHxp63S0EM",
+            authDomain: "catalystmagazine-6555d.firebaseapp.com",
+            projectId: "catalystmagazine-6555d",
+            storageBucket: "catalystmagazine-6555d.appspot.com",
+            messagingSenderId: "460060848977",
+            appId: "1:460060848977:web:42c43d344c541540165970"
+        };
+
+        // --- (Optional) SET YOUR OWNER ID FOR DELETING MESSAGES ---
+        // After the chat is working, find your User ID at the bottom and paste it here.
         const OWNER_USER_ID = "REPLACE_WITH_YOUR_USER_ID"; 
 
-        // --- Firebase Configuration ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "AIzaSyDx9Z_2YQLdYurs-OR1SmzMJTHxp63S0EM", authDomain: "catalystmagazine-6555d.firebaseapp.com", projectId: "catalystmagazine-6555d" };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // --- Initialize Firebase ---
-        let db, auth;
-        let userId = null;
-
+        // --- Firebase Initialization ---
+        let db, auth, userId = null;
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
             setLogLevel('debug');
+            authenticateUser();
         } catch (e) {
-            console.error("Error initializing Firebase:", e);
-            document.getElementById('loading').innerText = "Error connecting to the chat service.";
+            console.error("Firebase initialization failed:", e);
+            document.getElementById('loading').innerText = "Error: Invalid Firebase configuration.";
         }
-
-        // --- Authentication ---
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                userId = user.uid;
-                document.getElementById('user-id-display').textContent = userId;
-            } else {
-                document.getElementById('user-id-display').textContent = "Anonymous (features limited)";
-            }
-            loadMessages();
-        });
 
         async function authenticateUser() {
-            try {
-                if (initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
-                else await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Authentication failed:", error);
-                document.getElementById('loading').innerText = "Could not connect to advanced features. Basic chat is available.";
-            }
+            try { await signInAnonymously(auth); } 
+            catch (error) { console.error("Anonymous sign-in failed:", error); }
         }
-        
-        if (typeof getAuth !== 'undefined') authenticateUser();
 
-        // --- DOM Elements & State ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) { userId = user.uid; document.getElementById('user-id-display').textContent = userId; } 
+            else { document.getElementById('user-id-display').textContent = "Anonymous"; }
+            loadMessages();
+        });
+        
         const messagesContainer = document.getElementById('messages-container');
         const messageForm = document.getElementById('message-form');
         const usernameInput = document.getElementById('username');
         const messageInput = document.getElementById('message');
-        const loadingIndicator = document.getElementById('loading');
         let likedMessages = new Set();
-
-        // --- Firestore Collection Reference ---
-        const messagesCollectionPath = `artifacts/${appId}/public/data/messages`;
-        const messagesCol = collection(db, messagesCollectionPath);
+        // Use a simple collection name, which will work with Firestore's test mode rules.
+        const messagesCol = collection(db, "messages");
 
         function formatTimeAgo(date) {
             if (!date) return '';
@@ -173,75 +109,50 @@
             const data = doc.data();
             const isOwner = userId === OWNER_USER_ID;
             const hasLiked = likedMessages.has(doc.id);
-
             const messageElement = document.createElement('div');
             messageElement.className = 'message-item flex items-start space-x-3';
             messageElement.dataset.id = doc.id;
-
             messageElement.innerHTML = `
-                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white/50" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg>
-                </div>
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center"><svg class="w-6 h-6 text-white/50" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg></div>
                 <div class="flex-1">
-                    <div class="flex items-baseline space-x-2">
-                        <p class="font-semibold text-white/90">${data.username || 'Anonymous'}</p>
-                        <p class="text-xs text-white/50">${formatTimeAgo(data.timestamp?.toDate())}</p>
-                    </div>
+                    <div class="flex items-baseline space-x-2"><p class="font-semibold text-white/90">${data.username || 'Anonymous'}</p><p class="text-xs text-white/50">${formatTimeAgo(data.timestamp?.toDate())}</p></div>
                     <p class="text-white/80 whitespace-pre-wrap py-1">${data.message || ''}</p>
                     <div class="flex items-center space-x-4 mt-1 text-white/60">
-                        <button class="like-btn action-btn flex items-center space-x-1 group ${hasLiked ? 'liked' : ''}" ${!userId ? 'disabled' : ''}>
-                            <svg class="w-4 h-4 group-hover:text-red-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 016.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"></path></svg>
-                            <span class="text-xs">${data.likes || 0}</span>
-                        </button>
+                        <button class="like-btn action-btn flex items-center space-x-1 group ${hasLiked ? 'liked' : ''}" ${!userId ? 'disabled' : ''}><svg class="w-4 h-4 group-hover:text-red-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 016.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"></path></svg><span class="text-xs">${data.likes || 0}</span></button>
                         ${isOwner ? `<button class="delete-btn action-btn text-xs text-red-400 hover:underline">Delete</button>` : ''}
                     </div>
-                </div>
-            `;
+                </div>`;
             return messageElement;
         }
 
         let unsubscribe = null;
         function loadMessages() {
             if (unsubscribe) unsubscribe();
-            
             const q = query(messagesCol);
             unsubscribe = onSnapshot(q, (snapshot) => {
                 const loadingEl = document.getElementById('loading');
                 if (loadingEl) loadingEl.remove();
-                
                 const sortedDocs = snapshot.docs.sort((a, b) => (a.data().timestamp?.toMillis() || 0) - (b.data().timestamp?.toMillis() || 0));
-
                 messagesContainer.innerHTML = '';
-                if (sortedDocs.length === 0) {
-                    messagesContainer.innerHTML = '<p class="text-center text-white/60">No messages yet. Be the first to post!</p>';
-                } else {
-                    sortedDocs.forEach(doc => messagesContainer.appendChild(renderMessage(doc)));
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-            }, (error) => {
-                console.error("Error fetching messages: ", error);
-                messagesContainer.innerHTML = '<p class="text-center text-red-400">Error loading messages.</p>';
-            });
+                if (sortedDocs.length === 0) { messagesContainer.innerHTML = '<p class="text-center text-white/60">No messages yet. Be the first to post!</p>'; } 
+                else { sortedDocs.forEach(doc => messagesContainer.appendChild(renderMessage(doc))); messagesContainer.scrollTop = messagesContainer.scrollHeight; }
+            }, (error) => { console.error("Error fetching messages: ", error); messagesContainer.innerHTML = '<p class="text-center text-red-400">Error loading messages.</p>'; });
         }
 
         messagesContainer.addEventListener('click', async (e) => {
             const likeButton = e.target.closest('.like-btn');
             const deleteButton = e.target.closest('.delete-btn');
             if (!likeButton && !deleteButton) return;
-
             const messageElement = e.target.closest('[data-id]');
             if (!messageElement) return;
-
             const docId = messageElement.dataset.id;
-            const docRef = doc(db, messagesCollectionPath, docId);
-
+            const docRef = doc(db, "messages", docId);
             if (likeButton && userId && !likedMessages.has(docId)) {
                 likedMessages.add(docId);
                 likeButton.classList.add('liked');
                 try { await updateDoc(docRef, { likes: increment(1) }); } 
                 catch (error) { console.error("Error liking message:", error); likedMessages.delete(docId); likeButton.classList.remove('liked'); }
             }
-
             if (deleteButton && userId === OWNER_USER_ID) {
                 try { await deleteDoc(docRef); } 
                 catch (error) { console.error("Error deleting message:", error); }
@@ -252,18 +163,9 @@
             e.preventDefault();
             const username = usernameInput.value.trim();
             const message = messageInput.value.trim();
-
             if (username && message) {
-                addDoc(messagesCol, {
-                    username: username,
-                    message: message,
-                    timestamp: serverTimestamp(),
-                    userId: userId || null,
-                    likes: 0
-                }).catch(error => {
-                    console.error("Error sending message: ", error);
-                });
-                
+                addDoc(messagesCol, { username, message, timestamp: serverTimestamp(), userId: userId || null, likes: 0 })
+                .catch(error => console.error("Error sending message: ", error));
                 messageInput.value = '';
                 messageInput.focus();
             }
