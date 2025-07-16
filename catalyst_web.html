@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Catalyst Web of Science</title>
+    <title>The Catalyst - Article Map</title>
 
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Leaflet CSS from CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    
     <!-- Animate.css for entrance animations -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
@@ -18,7 +21,7 @@
             --text-color: #212529;
             --accent-color: #007bff;
             --glow-color: rgba(0, 123, 255, 0.5);
-            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-bg: rgba(255, 255, 255, 0.9);
             --border-color: #dee2e6;
             --transition: 0.3s ease;
         }
@@ -29,7 +32,15 @@
             font-family: 'Inter', sans-serif;
             background: var(--bg-color);
             color: var(--text-color);
-            overflow: hidden;
+            overflow: hidden; /* Prevent scrollbars from the page itself */
+        }
+
+        /* --- Map Container --- */
+        #map {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
         }
 
         /* --- UI Components --- */
@@ -38,7 +49,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
-            z-index: 100;
+            z-index: 1000; /* Ensure UI is above the map */
         }
         #ui-container > * {
             pointer-events: auto;
@@ -115,101 +126,49 @@
         #toggle-sidebar .fa-chevron-left { transition: transform 0.3s; }
         #sidebar.collapsed + #toggle-sidebar .fa-chevron-left { transform: rotate(180deg); }
 
-        /* Graph & Canvas */
-        #graph-container {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 1;
-        }
-        
-        /* Flying Logo */
-        #flying-logo {
-            position: fixed;
-            width: 100px;
-            height: auto;
-            z-index: 50;
-            pointer-events: none;
-            opacity: 0;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-        }
-
-        /* D3 Node Styling */
-        .node {
-            transition: r 0.3s ease, filter 0.3s ease, opacity 0.3s ease;
-            cursor: pointer;
-        }
-        .node:hover {
-            filter: drop-shadow(0 0 10px var(--accent-color));
-        }
-        .node.faded {
-            opacity: 0.1;
-        }
-
-        /* Info Card */
-        #info-card {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.95);
-            width: 90%;
-            max-width: 480px;
+        /* Leaflet Popup Customization */
+        .custom-popup .leaflet-popup-content-wrapper {
             background: var(--card-bg);
             backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
+            border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 0;
         }
-        #info-card.visible {
-            opacity: 1;
-            visibility: visible;
-            transform: translate(-50%, -50%) scale(1);
+        .custom-popup .leaflet-popup-content {
+            margin: 0;
+            width: 300px !important; /* Set a fixed width */
         }
-        #card-image-container {
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
-            border-radius: 15px 15px 0 0;
+        .custom-popup-image-container {
+            width: 100%; height: 150px; overflow: hidden;
+            border-radius: 11px 11px 0 0;
         }
-        #card-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+        .custom-popup-image {
+            width: 100%; height: 100%; object-fit: cover;
             border-bottom: 1px solid var(--border-color);
         }
-        #card-content { padding: 25px; position: relative; }
-        #card-content h3 { font-size: 22px; color: var(--accent-color); margin-bottom: 8px; }
-        #card-content p.author { font-size: 14px; font-style: italic; color: #6c757d; margin-bottom: 16px; }
-        #card-content p.summary { font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
-        #card-content a.read-more {
-            display: inline-block; padding: 12px 18px;
+        .custom-popup-content-area { padding: 20px; }
+        .custom-popup-content-area h3 { font-size: 18px; color: var(--accent-color); margin-bottom: 5px; }
+        .custom-popup-content-area p.author { font-size: 12px; font-style: italic; color: #6c757d; margin-bottom: 12px; }
+        .custom-popup-content-area a.read-more {
+            display: inline-block; padding: 8px 14px;
             background: var(--accent-color); color: #fff;
             border-radius: 8px; text-decoration: none;
-            font-weight: 700; transition: transform 0.2s ease, box-shadow 0.2s ease;
+            font-weight: 600; font-size: 14px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        #card-content a.read-more:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--glow-color); }
-        #close-card-btn {
-            position: absolute; top: 15px; right: 15px;
-            width: 32px; height: 32px; border: none;
+        .custom-popup-content-area a.read-more:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--glow-color); }
+        .custom-popup .leaflet-popup-close-button {
+            top: 5px; right: 5px;
+            width: 28px; height: 28px;
             background: rgba(0,0,0,0.1);
             border-radius: 50%; color: var(--text-color);
-            font-size: 20px; cursor: pointer;
-            line-height: 30px; text-align: center;
-            transition: background 0.2s;
+            font-size: 18px; line-height: 28px; text-align: center;
         }
-        #close-card-btn:hover { background: rgba(0,0,0,0.2); }
-
+        .custom-popup .leaflet-popup-close-button:hover { background: rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
-    <div id="graph-container"></div>
-    <img id="flying-logo" src="https://static.wixstatic.com/media/11b1c4_942df37d2d1e49429d7fd08d4bf1fac3~mv2.png" alt="Catalyst Logo">
+    <div id="map"></div>
 
     <div id="ui-container">
         <nav class="animate__animated animate__fadeInDown">
@@ -225,142 +184,76 @@
         <button id="toggle-sidebar" class="animate__animated animate__fadeInLeft" title="Toggle Filters">
             <i class="fas fa-chevron-left"></i>
         </button>
-
-        <div id="info-card">
-            <div id="card-image-container">
-                <img id="card-image" src="" alt="Article Cover Art" />
-            </div>
-            <div id="card-content">
-                <button id="close-card-btn">&times;</button>
-                <h3 id="card-title"></h3>
-                <p class="author" id="card-author"></p>
-                <p class="summary" id="card-summary"></p>
-                <a href="#" id="card-link" class="read-more" target="_blank" rel="noopener noreferrer">Read Full Article</a>
-            </div>
-        </div>
     </div>
 
     <!-- External Libraries -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- Article Data with Geographic Coordinates ---
+        // I've added lat/lng to each article. You can adjust these as needed.
         const articleData = [
-            { "id": "art0", "title": "The Road From Academia to Forensic Applications of Chemistry", "author": "Naama Ben-Dor", "summary": "While many scientific pursuits involve structured pre-professional programs...", "link": "https://www.catalyst-magazine.com/post/the-road-from-academia-to-forensic-applications-of-chemistry", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_9737d25c5ad74ba7829973eb7513f61a~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art1", "title": "How One Engineer is Changing Sustainable Fuels", "author": "Aidan Schurr", "summary": "Tyler Wyka bridges engineering, sustainability, and global collaboration...", "link": "https://www.catalyst-magazine.com/post/how-one-engineer-is-changing-sustainable-fuels", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11b1c4_4491d15e55c94d058d2a63eedf3cfc42~mv2.png/v1/fill/w_780,h_452,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.png" },
-            { "id": "art2", "title": "From Music to Nuclear Policy: Dr. Cahill’s Journey in Science and Policy", "author": "Lori Preci and Yair Ben-Dor", "summary": "From music to materials science, Professor Christopher Cahill’s journey shows how unexpected turns spark curiosity...", "link": "https://www.catalyst-magazine.com/post/from-music-to-nuclear-policy-professor-christopher-cahill-s-unexpected-journey-in-science-and-polic", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_0c15687348b442c5ab1d0a2295571751~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art3", "title": "Dr. Song Gao’s Chemistry‑Policy Crusade Against Hidden Pollutants", "author": "Naama Ben-Dor", "summary": "Dr. Song Gao bridges science and policy to tackle climate change, ozone depletion, and environmental sustainability.", "link": "https://www.catalyst-magazine.com/post/pollution-to-solution-dr-song-gao-on-science-policy-and-environmental-sustainability", "category": "Environmental Science", "image": "https://static.wixstatic.com/media/11b1c4_0384c4b9d49545a3b2e708073485f11b~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art4", "title": "Designing a Sustainable Future with Sun, Wind, and Water", "author": "Ginger Taurek", "summary": "For innovator Scott Sklar, renewable energy is about more than climate—it’s about human survival...", "link": "https://www.catalyst-magazine.com/post/designing-a-sustainable-future-with-sun-wind-and-water", "category": "Environmental Science", "image": "https://static.wixstatic.com/media/11b1c4_0fe12e2d642740d6b58bbda1df751199~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art5", "title": "Dr. Brent Harris’ Brain Bank Revolution", "author": "Aidan Schurr", "summary": "Working in DC lets Dr. Brent Harris drive medical changes. His neuropathology, ALS research, and advocacy...", "link": "https://www.catalyst-magazine.com/post/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-researc", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_0790d57e5eef4d119d3c9497017df5ca~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art6", "title": "How The World of Genetics Shapes Evolution", "author": "Alex Carter", "summary": "Evolution shapes life, but its genetic origins remain a mystery. How do tiny DNA changes create stunning adaptations?", "link": "https://www.catalyst-magazine.com/post/how-the-world-of-genetics-shapes-evolution", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_9e5fcb3b2c194aba87fb93241ade3b8b~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art7", "title": "Serendipity and Science: The Journey of Dr. John Hawdon", "author": "Lori Preci", "summary": "Dr. Hawdon’s Winding Path to Parasitology...", "link": "https://www.catalyst-magazine.com/post/serendipity-and-science-the-journey-of-dr-john-hawdon", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/44031f_75620e6213e04a56b298580689208fce~mv2.jpeg/v1/fill/w_709,h_411,al_c,q_80,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art8", "title": "Elucidating the Brain’s Language Circuitry with Dr. Michael Ullman", "author": "Yair Ben-Dor", "summary": "Georgetown neuroscientist Dr. Michael T. Ullman's Declarative/Procedural (DP) model posits language relies on two core brain memory systems.", "link": "https://www.catalyst-magazine.com/post/elucidating-the-brain-s-language-circuitry-with-dr-michael-ullman", "category": "Neuroscience & Cognition", "image": "https://static.wixstatic.com/media/11b1c4_4d74a6206a0f43c9a38125c8bc03e28e~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art9", "title": "How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine", "author": "Yair Ben-Dor", "summary": "Researchers in Washington D.C. are revolutionizing AI, MS treatments, and cancer therapies...", "link": "https://www.catalyst-magazine.com/post/how-cutting-edge-research-in-washington-d-c-is-reshaping-science-and-medicine", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_aa825fc11e6740d0a40a12f2ea19bf56~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art10", "title": "From Battling a Rare Bioweapon Pathogen to Pioneering Global Health Security", "author": "Aidan Schurr", "summary": "Rebecca Katz’s plan to volunteer in India was unraveled by a severe illness...", "link": "https://www.catalyst-magazine.com/post/reframing-health-as-a-national-security-issue", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_47e7a044e37c4cceb9dd09977d590c30~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art11", "title": "Sitting Down with the Editor‑in‑Chief of Science Magazine", "author": "Alex Carter and Aidan Schurr", "summary": "In an era of growing skepticism and polarized discourse, clear science communication is more vital than ever.", "link": "https://www.catalyst-magazine.com/post/sitting-down-with-the-editor-in-chief-of-science-magazine-to-talk-about-the-future-of-scientific-co", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_548f96bc13fa4021b9b0c26e3f625fcc~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art12", "title": "How Coastal Trees Adapt Amid Rising Seas", "author": "Aidan Brown", "summary": "With rising seas and worsening droughts, coastal forests face an uncertain future...", "link": "https://www.catalyst-magazine.com/post/how-coastal-trees-adapt-amid-rising-seas", "category": "Environmental Science", "image": "https://static.wixstatic.com/media/11062b_cd21ba7620aa42098bfc60aa98d6ff52~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art13", "title": "A Universe of Plasma: How One Scientist Connects His World From Satellites to Cells", "author": "Aidan Schurr", "summary": "Every scientist begins their journey with a general sense of direction...", "link": "https://www.catalyst-magazine.com/post/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11b1c4_5623b55dcf734591a3d3feca82b1d76d~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art14", "title": "The Electric Romance of Electricity and Magnetism", "author": "Yair Ben-Dor", "summary": "They say opposites attract, but when it comes to electric and magnetic fields, it’s more like two halves of an amazing whole...", "link": "https://www.catalyst-magazine.com/post/the-electric-romance-of-electricity-and-magnetism", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11062b_518e16b449c74e648b16526713fc627b~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art15", "title": "Genetics Behind the Beauty: Insect Coloration and Evolution", "author": "Alex Carter", "summary": "How do insects get their colors? Gene regulation drives patterns, mimicry, and behavior...", "link": "https://www.catalyst-magazine.com/post/the-significance-of-genetics-in-insect-coloration-and-evolution", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_c36a2040d8584806b5c9e025f1736bc8~mv2.jpeg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art16", "title": "Cheers to Microglia: Unsung Heroes of the Nervous System", "author": "Naama Ben-Dor", "summary": "Amid the nervous system’s intricate cast, microglia are the tireless unsung heroes...", "link": "https://www.catalyst-magazine.com/post/an-ode-to-microglia", "category": "Neuroscience & Cognition", "image": "https://static.wixstatic.com/media/11b1c4_1dc1366839bf48af8acaeca849c198bd~mv2.jpeg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art17", "title": "Science’s Silly Lexicon: Wacky Words to Brighten Your Day", "author": "Naama Ben-Dor", "summary": "Science is serious, but its words don’t have to be! From habenula perforata to Tribbles...", "link": "https://www.catalyst-magazine.com/post/science-s-silly-lexicon-wacky-words-to-brighten-your-day-and-casually-drop-into-conversation", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_cbb1af6fc4d14f7e9234a01bd9d802ac~mv2.jpeg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art18", "title": "Understanding Science to Learn Science: Dopamine and...", "author": "Naama Ben-Dor", "summary": "STEM studies demand a uniquely high level of rigorous dedication and studiousness...", "link": "https://www.catalyst-magazine.com/post/understanding-science-to-learn-science-dopamine-and-why-you-should-care", "category": "Neuroscience & Cognition", "image": "https://static.wixstatic.com/media/11b1c4_c93db0b3162140a9a44f871d3ade2c83~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art19", "title": "Paradoxes in Science: Where Models Go to Break", "author": "Lori Preci", "summary": "If you’re curious about anything, you’ve already stepped into paradox...", "link": "https://www.catalyst-magazine.com/post/paradoxes-in-science-where-models-go-to-break", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_372453015cd14622890ac0740c9090a6~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art20", "title": "Transition Metals and How They Color Our World", "author": "Lori Preci", "summary": "Transition metals are responsible for some of the most dazzling colors we encounter every day...", "link": "https://www.catalyst-magazine.com/post/transition-metals-the-capacity-of-the-d-block-to-color-our-world", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11b1c4_26ae100a7205477c96367e1b126ffee5~mv2.jpeg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art21", "title": "Everything Sings: The Science of Systems ", "author": "Aidan Schurr", "summary": "With the ever growing amount of information in the world, our understanding of the most complex systems can be enhanced...", "link": "https://www.catalyst-magazine.com/post/everything-sings-the-science-of-systems", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_b73ead9ded89474ea6a93856a97b81b4~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" }
+            { "id": "art0", "title": "The Road From Academia to Forensic Applications of Chemistry", "author": "Naama Ben-Dor", "summary": "While many scientific pursuits involve structured pre-professional programs...", "link": "https://www.catalyst-magazine.com/post/the-road-from-academia-to-forensic-applications-of-chemistry", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_9737d25c5ad74ba7829973eb7513f61a~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": 38.905, "lng": -77.039 },
+            { "id": "art1", "title": "How One Engineer is Changing Sustainable Fuels", "author": "Aidan Schurr", "summary": "Tyler Wyka bridges engineering, sustainability, and global collaboration...", "link": "https://www.catalyst-magazine.com/post/how-one-engineer-is-changing-sustainable-fuels", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11b1c4_4491d15e55c94d058d2a63eedf3cfc42~mv2.png/v1/fill/w_780,h_452,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.png", "lat": 38.911, "lng": -77.045 },
+            { "id": "art2", "title": "From Music to Nuclear Policy: Dr. Cahill’s Journey in Science and Policy", "author": "Lori Preci and Yair Ben-Dor", "summary": "From music to materials science, Professor Christopher Cahill’s journey shows how unexpected turns spark curiosity...", "link": "https://www.catalyst-magazine.com/post/from-music-to-nuclear-policy-professor-christopher-cahill-s-unexpected-journey-in-science-and-polic", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_0c15687348b442c5ab1d0a2295571751~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": 38.895, "lng": -77.031 },
+            { "id": "art3", "title": "Dr. Song Gao’s Chemistry‑Policy Crusade Against Hidden Pollutants", "author": "Naama Ben-Dor", "summary": "Dr. Song Gao bridges science and policy to tackle climate change, ozone depletion, and environmental sustainability.", "link": "https://www.catalyst-magazine.com/post/pollution-to-solution-dr-song-gao-on-science-policy-and-environmental-sustainability", "category": "Environmental Science", "image": "https://static.wixstatic.com/media/11b1c4_0384c4b9d49545a3b2e708073485f11b~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg", "lat": 38.920, "lng": -77.050 },
+            { "id": "art5", "title": "Dr. Brent Harris’ Brain Bank Revolution", "author": "Aidan Schurr", "summary": "Working in DC lets Dr. Brent Harris drive medical changes. His neuropathology, ALS research, and advocacy...", "link": "https://www.catalyst-magazine.com/post/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-researc", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_0790d57e5eef4d119d3c9497017df5ca~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": 38.9076, "lng": -77.0722 },
+            { "id": "art7", "title": "Serendipity and Science: The Journey of Dr. John Hawdon", "author": "Lori Preci", "summary": "Dr. Hawdon’s Winding Path to Parasitology...", "link": "https://www.catalyst-magazine.com/post/serendipity-and-science-the-journey-of-dr-john-hawdon", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/44031f_75620e6213e04a56b298580689208fce~mv2.jpeg/v1/fill/w_709,h_411,al_c,q_80,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": 38.8997, "lng": -77.0486 },
+            { "id": "art8", "title": "Elucidating the Brain’s Language Circuitry with Dr. Michael Ullman", "author": "Yair Ben-Dor", "summary": "Georgetown neuroscientist Dr. Michael T. Ullman's Declarative/Procedural (DP) model posits language relies on two core brain memory systems.", "link": "https://www.catalyst-magazine.com/post/elucidating-the-brain-s-language-circuitry-with-dr-michael-ullman", "category": "Neuroscience & Cognition", "image": "https://static.wixstatic.com/media/11b1c4_4d74a6206a0f43c9a38125c8bc03e28e~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg", "lat": 38.915, "lng": -77.065 }
         ];
 
-        // --- DOM Elements & D3 Setup ---
-        const container = d3.select("#graph-container");
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        const svg = container.append("svg").attr("width", width).attr("height", height);
+        // --- Map Initialization ---
+        const map = L.map('map', {
+            center: [38.9072, -77.0369], // Washington D.C.
+            zoom: 14,
+            zoomControl: true 
+        });
+        map.zoomControl.setPosition('bottomright');
+
+        // --- Tile Layer ---
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
         
-        const infoCard = document.getElementById('info-card');
-        const closeCardBtn = document.getElementById('close-card-btn');
-        const sidebar = document.getElementById('sidebar');
-        const toggleSidebarBtn = document.getElementById('toggle-sidebar');
-        
+        // --- Store Markers ---
+        let markers = {};
+
+        // --- Create Markers and Popups ---
         const categories = [...new Set(articleData.map(a => a.category))].sort();
         const colorScale = d3.scaleOrdinal()
             .domain(categories)
-            .range(['#8A2BE2', '#00BFFF', '#228B22', '#FF4500', '#FFD700']);
+            .range(['#8A2BE2', '#00BFFF', '#228B22', '#FF4500', '#FFD700', '#D2691E', '#FF69B4']);
 
-        // --- D3 Force Simulation ---
-        const nodes = articleData.map(d => ({...d, radius: 10, group: categories.indexOf(d.category)}));
-        const links = [];
-        nodes.forEach(n1 => {
-            nodes.forEach(n2 => {
-                if (n1.id !== n2.id && n1.category === n2.category && Math.random() > 0.8) {
-                    links.push({ source: n1.id, target: n2.id });
-                }
+        articleData.forEach(article => {
+            const marker = L.marker([article.lat, article.lng]).addTo(map);
+
+            const popupContent = `
+                <div class="custom-popup-image-container">
+                    <img src="${article.image}" alt="${article.title}" class="custom-popup-image" onerror="this.src='https://placehold.co/300x150/0a0c10/c9d1d9?text=Image+Not+Found';">
+                </div>
+                <div class="custom-popup-content-area">
+                    <h3>${article.title}</h3>
+                    <p class="author">By ${article.author}</p>
+                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="read-more">Read Full Article</a>
+                </div>
+            `;
+
+            marker.bindPopup(popupContent, {
+                className: 'custom-popup',
+                minWidth: 300
             });
+            
+            // Store marker for filtering
+            markers[article.id] = marker;
         });
-        
-        const simulation = d3.forceSimulation(nodes)
-            .force("link", d3.forceLink(links).id(d => d.id).distance(100).strength(0.1))
-            .force("charge", d3.forceManyBody().strength(-150))
-            .force("center", d3.forceCenter(width / 2, height / 2))
-            .force("collision", d3.forceCollide().radius(d => d.radius + 5));
-
-        const link = svg.append("g")
-            .attr("stroke", "var(--border-color)")
-            .attr("stroke-opacity", 0.4)
-            .selectAll("line")
-            .data(links)
-            .join("line")
-            .attr("stroke-width", 1.5);
-
-        const node = svg.append("g")
-            .selectAll("circle")
-            .data(nodes)
-            .join("circle")
-            .attr("r", d => d.radius)
-            .attr("fill", d => colorScale(d.category))
-            .attr("stroke", "#fff")
-            .attr("stroke-width", 2)
-            .style("cursor", "pointer")
-            .call(d3.drag()
-                .on("start", dragstarted)
-                .on("drag", dragged)
-                .on("end", dragended))
-            .on("click", (event, d) => showInfoCard(d))
-            .on("mouseover", (event, d) => {
-                d3.select(event.currentTarget).transition().duration(200).attr("r", d.radius * 1.5);
-            })
-            .on("mouseout", (event, d) => {
-                d3.select(event.currentTarget).transition().duration(200).attr("r", d.radius);
-            });
-
-        simulation.on("tick", () => {
-            link
-                .attr("x1", d => d.source.x)
-                .attr("y1", d => d.source.y)
-                .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
-            node
-                .attr("cx", d => d.x)
-                .attr("cy", d => d.y);
-        });
-
-        // --- Drag Functions ---
-        function dragstarted(event, d) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = d.x;
-            d.fy = d.y;
-        }
-        function dragged(event, d) {
-            d.fx = event.x;
-            d.fy = event.y;
-        }
-        function dragended(event, d) {
-            if (!event.active) simulation.alphaTarget(0);
-            d.fx = null;
-            d.fy = null;
-        }
 
         // --- UI & Filtering ---
+        const sidebar = document.getElementById('sidebar');
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar');
+
         function initializeUI() {
             const filterContainer = document.getElementById('category-filters');
             filterContainer.innerHTML = ''; // Clear previous
@@ -377,115 +270,39 @@
             
             document.getElementById('filter-all').addEventListener('change', (e) => {
                 document.querySelectorAll('.category-filter').forEach(cb => cb.checked = e.target.checked);
-                updateNodeVisibility();
+                updateMarkerVisibility();
             });
 
             document.querySelectorAll('.category-filter').forEach(cb => {
-                cb.addEventListener('change', updateNodeVisibility);
+                cb.addEventListener('change', updateMarkerVisibility);
             });
             
             toggleSidebarBtn.addEventListener('click', () => {
                 sidebar.classList.toggle('collapsed');
-                toggleSidebarBtn.querySelector('i').classList.toggle('fa-chevron-right');
             });
         }
         
-        function updateNodeVisibility() {
+        function updateMarkerVisibility() {
             const activeCategories = new Set(
                 [...document.querySelectorAll('.category-filter:checked')].map(cb => cb.value)
             );
             
-            node.transition().duration(500)
-                .attr("opacity", d => activeCategories.has(d.category) ? 1 : 0.1)
-                .attr("r", d => activeCategories.has(d.category) ? d.radius : d.radius * 0.5);
-                
-            link.transition().duration(500)
-                .attr("stroke-opacity", d => activeCategories.has(d.source.category) && activeCategories.has(d.target.category) ? 0.4 : 0.05);
-        }
-
-        function showInfoCard(article) {
-            document.getElementById('card-image').src = article.image;
-            document.getElementById('card-image').onerror = function() { this.src = 'https://placehold.co/480x200/0a0c10/c9d1d9?text=Image+Not+Found'; };
-            document.getElementById('card-title').textContent = article.title;
-            document.getElementById('card-author').textContent = `By ${article.author}`;
-            document.getElementById('card-summary').textContent = article.summary;
-            document.getElementById('card-link').href = article.link;
-            infoCard.classList.add('visible');
-        }
-
-        function hideInfoCard() {
-            infoCard.classList.remove('visible');
-        }
-
-        closeCardBtn.addEventListener('click', hideInfoCard);
-        
-        // --- Flying Logo ---
-        const flyingLogo = document.getElementById('flying-logo');
-        function flyLogo() {
-            const startSide = Math.floor(Math.random() * 4);
-            let startX, startY, endX, endY;
-
-            switch(startSide) {
-                case 0: // Top
-                    startX = Math.random() * width;
-                    startY = -100;
-                    endX = Math.random() * width;
-                    endY = height + 100;
-                    break;
-                case 1: // Right
-                    startX = width + 100;
-                    startY = Math.random() * height;
-                    endX = -100;
-                    endY = Math.random() * height;
-                    break;
-                case 2: // Bottom
-                    startX = Math.random() * width;
-                    startY = height + 100;
-                    endX = Math.random() * width;
-                    endY = -100;
-                    break;
-                case 3: // Left
-                    startX = -100;
-                    startY = Math.random() * height;
-                    endX = width + 100;
-                    endY = Math.random() * height;
-                    break;
-            }
-
-            gsap.fromTo(flyingLogo, 
-                { x: startX, y: startY, rotation: Math.random() * 360, opacity: 0 },
-                { 
-                    x: endX, 
-                    y: endY, 
-                    rotation: Math.random() * 720, 
-                    opacity: 1, 
-                    duration: 8 + Math.random() * 4, 
-                    ease: "power1.inOut",
-                    onComplete: () => { gsap.set(flyingLogo, { opacity: 0 }); }
+            articleData.forEach(article => {
+                const marker = markers[article.id];
+                if (marker) {
+                    if (activeCategories.has(article.category)) {
+                        marker.setOpacity(1);
+                        marker.setZIndexOffset(100); // Bring to front
+                    } else {
+                        marker.setOpacity(0.2);
+                        marker.setZIndexOffset(0); // Send to back
+                    }
                 }
-            );
+            });
         }
 
         // --- Initialize ---
         initializeUI();
-        setInterval(flyLogo, 12000); // Fly logo every 12 seconds
-        
-        // Particles.js background
-        particlesJS("graph-container", {
-            "particles": {
-                "number": { "value": 40, "density": { "enable": true, "value_area": 800 } },
-                "color": { "value": "#888888" },
-                "shape": { "type": "circle" },
-                "opacity": { "value": 0.5, "random": true },
-                "size": { "value": 2, "random": true },
-                "line_linked": { "enable": false },
-                "move": { "enable": true, "speed": 0.4, "direction": "none", "random": true, "out_mode": "out" }
-            },
-            "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": false } } },
-            "retina_detect": true
-        });
-        document.querySelector('#graph-container .particles-js-canvas-el').style.zIndex = -1;
-
     });
     </script>
 </body>
