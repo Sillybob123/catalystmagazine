@@ -17,11 +17,11 @@
 
     <style>
         :root {
-            --bg-color: #f8f9fa;
+            --bg-color: #f4f6f9; /* A clean, light gray background */
             --text-color: #212529;
-            --accent-color: #007bff;
+            --accent-color: #007bff; /* Classic, professional blue */
             --glow-color: rgba(0, 123, 255, 0.5);
-            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-bg: rgba(255, 255, 255, 0.85); 
             --border-color: #dee2e6;
             --transition: 0.3s ease;
         }
@@ -32,37 +32,36 @@
             font-family: 'Inter', sans-serif;
             background: var(--bg-color);
             color: var(--text-color);
-            overflow: hidden; /* Prevent scrollbars from the page itself */
+            overflow: hidden;
         }
 
-        /* --- Map Container --- */
         #map {
             position: absolute;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
             z-index: 1;
+            background-color: var(--bg-color);
         }
 
-        /* --- UI Components --- */
         #ui-container {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
-            z-index: 1000; /* Ensure UI is above the map */
+            z-index: 1000;
         }
         #ui-container > * {
             pointer-events: auto;
         }
 
-        /* Navbar */
         nav {
             position: absolute; top: 0; left: 0; width: 100%;
             padding: 12px 24px;
             display: flex;
             align-items: center;
             background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--border-color);
         }
         nav .logo {
@@ -72,15 +71,15 @@
         }
         nav .logo i { margin-right: 8px; }
 
-        /* Sidebar */
         #sidebar {
             position: absolute;
-            top: 61px; /* Navbar height + border */
+            top: 61px;
             left: 0;
             width: 280px;
             height: calc(100% - 61px);
-            background: rgba(248, 249, 250, 0.85);
-            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             padding: 20px;
             overflow-y: auto;
             transition: transform var(--transition);
@@ -94,7 +93,6 @@
             margin-bottom: 16px;
             font-size: 1.1rem;
         }
-        #sidebar .filter-group { margin-bottom: 24px; }
         #sidebar label {
             display: block;
             margin-bottom: 10px;
@@ -126,17 +124,46 @@
         #toggle-sidebar .fa-chevron-left { transition: transform 0.3s; }
         #sidebar.collapsed + #toggle-sidebar .fa-chevron-left { transform: rotate(180deg); }
 
-        /* Leaflet Popup Customization */
+        /* --- Custom Marker Styling --- */
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+        }
+        .custom-div-icon {
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.8);
+            box-shadow: 0 0 8px var(--glow-color);
+            animation: pulse 2s infinite;
+        }
+        .custom-marker-wrapper {
+             transition: opacity 0.4s ease;
+        }
+
+        /* --- Custom Tooltip & Popup Styling --- */
+        .leaflet-tooltip {
+            background-color: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-color) !important;
+            border-radius: 6px !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
+        }
         .custom-popup .leaflet-popup-content-wrapper {
             background: var(--card-bg);
             backdrop-filter: blur(12px);
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             padding: 0;
+            border: 1px solid var(--border-color);
         }
         .custom-popup .leaflet-popup-content {
             margin: 0;
-            width: 300px !important; /* Set a fixed width */
+            width: 300px !important;
+        }
+        .custom-popup .leaflet-popup-tip {
+            background: var(--card-bg);
         }
         .custom-popup-image-container {
             width: 100%; height: 150px; overflow: hidden;
@@ -189,86 +216,151 @@
 
     <!-- External Libraries -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         
-        // --- Map Initialization ---
         const map = L.map('map', {
-            center: [38.8977, -77.0434], // Center on the DC address
-            zoom: 15, // Zoom in closer
+            center: [38.9072, -77.0369], // Start centered on DC
+            zoom: 13, // Start zoomed in
             zoomControl: true 
         });
         map.zoomControl.setPosition('bottomright');
 
-        // --- Tile Layer ---
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             subdomains: 'abcd',
             maxZoom: 20
         }).addTo(map);
         
-        // --- Static Article Data ---
-        const dcLat = 38.8977;
-        const dcLng = -77.0434;
-        const jitter = 0.0015; // How much to spread the markers
-
-        const articleData = [
-            // Catalyst in the Capital Articles
-            { "id": "art0", "title": "The Road From Academia to Forensic Applications of Chemistry", "author": "Naama Ben-Dor", "summary": "While many scientific pursuits involve structured pre-professional programs...", "link": "https://www.catalyst-magazine.com/post/the-road-from-academia-to-forensic-applications-of-chemistry", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_9737d25c5ad74ba7829973eb7513f61a~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art1", "title": "How One Engineer is Changing Sustainable Fuels", "author": "Aidan Schurr", "summary": "Tyler Wyka bridges engineering, sustainability, and global collaboration...", "link": "https://www.catalyst-magazine.com/post/how-one-engineer-is-changing-sustainable-fuels", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11b1c4_4491d15e55c94d058d2a63eedf3cfc42~mv2.png/v1/fill/w_780,h_452,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.png", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art2", "title": "From Music to Nuclear Policy: Dr. Cahill’s Journey in Science and Policy", "author": "Lori Preci and Yair Ben-Dor", "summary": "From music to materials science, Professor Christopher Cahill’s journey shows how unexpected turns spark curiosity...", "link": "https://www.catalyst-magazine.com/post/from-music-to-nuclear-policy-professor-christopher-cahill-s-unexpected-journey-in-science-and-polic", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_0c15687348b442c5ab1d0a2295571751~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art3", "title": "Dr. Song Gao’s Chemistry‑Policy Crusade Against Hidden Pollutants", "author": "Naama Ben-Dor", "summary": "Dr. Song Gao bridges science and policy to tackle climate change, ozone depletion, and environmental sustainability.", "link": "https://www.catalyst-magazine.com/post/pollution-to-solution-dr-song-gao-on-science-policy-and-environmental-sustainability", "category": "Environmental Science", "image": "https://static.wixstatic.com/media/11b1c4_0384c4b9d49545a3b2e708073485f11b~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art4", "title": "Designing a Sustainable Future with Sun, Wind, and Water", "author": "Ginger Taurek", "summary": "For innovator Scott Sklar, renewable energy is about more than climate—it’s about human survival...", "link": "https://www.catalyst-magazine.com/post/designing-a-sustainable-future-with-sun-wind-and-water", "category": "Environmental Science", "image": "https://static.wixstatic.com/media/11b1c4_0fe12e2d642740d6b58bbda1df751199~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art5", "title": "Dr. Brent Harris’ Brain Bank Revolution", "author": "Aidan Schurr", "summary": "Working in DC lets Dr. Brent Harris drive medical changes. His neuropathology, ALS research, and advocacy...", "link": "https://www.catalyst-magazine.com/post/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-researc", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_0790d57e5eef4d119d3c9497017df5ca~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art6", "title": "How The World of Genetics Shapes Evolution", "author": "Alex Carter", "summary": "Evolution shapes life, but its genetic origins remain a mystery. How do tiny DNA changes create stunning adaptations?", "link": "https://www.catalyst-magazine.com/post/how-the-world-of-genetics-shapes-evolution", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_9e5fcb3b2c194aba87fb93241ade3b8b~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art7", "title": "Serendipity and Science: The Journey of Dr. John Hawdon", "author": "Lori Preci", "summary": "Dr. Hawdon’s Winding Path to Parasitology...", "link": "https://www.catalyst-magazine.com/post/serendipity-and-science-the-journey-of-dr-john-hawdon", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/44031f_75620e6213e04a56b298580689208fce~mv2.jpeg/v1/fill/w_709,h_411,al_c,q_80,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art8", "title": "Elucidating the Brain’s Language Circuitry with Dr. Michael Ullman", "author": "Yair Ben-Dor", "summary": "Georgetown neuroscientist Dr. Michael T. Ullman's Declarative/Procedural (DP) model posits language relies on two core brain memory systems.", "link": "https://www.catalyst-magazine.com/post/elucidating-the-brain-s-language-circuitry-with-dr-michael-ullman", "category": "Neuroscience & Cognition", "image": "https://static.wixstatic.com/media/11b1c4_4d74a6206a0f43c9a38125c8bc03e28e~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art9", "title": "How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine", "author": "Yair Ben-Dor", "summary": "Researchers in Washington D.C. are revolutionizing AI, MS treatments, and cancer therapies...", "link": "https://www.catalyst-magazine.com/post/how-cutting-edge-research-in-washington-d-c-is-reshaping-science-and-medicine", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_aa825fc11e6740d0a40a12f2ea19bf56~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art10", "title": "From Battling a Rare Bioweapon Pathogen to Pioneering Global Health Security", "author": "Aidan Schurr", "summary": "Rebecca Katz’s plan to volunteer in India was unraveled by a severe illness...", "link": "https://www.catalyst-magazine.com/post/reframing-health-as-a-national-security-issue", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_47e7a044e37c4cceb9dd09977d590c30~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art11", "title": "Sitting Down with the Editor‑in‑Chief of Science Magazine", "author": "Alex Carter and Aidan Schurr", "summary": "In an era of growing skepticism and polarized discourse, clear science communication is more vital than ever.", "link": "https://www.catalyst-magazine.com/post/sitting-down-with-the-editor-in-chief-of-science-magazine-to-talk-about-the-future-of-scientific-co", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_548f96bc13fa4021b9b0c26e3f625fcc~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art12", "title": "How Coastal Trees Adapt Amid Rising Seas", "author": "Aidan Brown", "summary": "With rising seas and worsening droughts, coastal forests face an uncertain future...", "link": "https://www.catalyst-magazine.com/post/how-coastal-trees-adapt-amid-rising-seas", "category": "Environmental Science", "image": "https://static.wixstatic.com/media/11062b_cd21ba7620aa42098bfc60aa98d6ff52~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            { "id": "art13", "title": "A Universe of Plasma: How One Scientist Connects His World From Satellites to Cells", "author": "Aidan Schurr", "summary": "Every scientist begins their journey with a general sense of direction...", "link": "https://www.catalyst-magazine.com/post/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11b1c4_5623b55dcf734591a3d3feca82b1d76d~mv2.jpeg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg", "lat": dcLat + (Math.random() - 0.5) * jitter, "lng": dcLng + (Math.random() - 0.5) * jitter },
-            
-            // Editorials (No location, so no lat/lng)
-            { "id": "art14", "title": "The Electric Romance of Electricity and Magnetism", "author": "Yair Ben-Dor", "summary": "They say opposites attract, but when it comes to electric and magnetic fields, it’s more like two halves of an amazing whole...", "link": "https://www.catalyst-magazine.com/post/the-electric-romance-of-electricity-and-magnetism", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11062b_518e16b449c74e648b16526713fc627b~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art15", "title": "Genetics Behind the Beauty: Insect Coloration and Evolution", "author": "Alex Carter", "summary": "How do insects get their colors? Gene regulation drives patterns, mimicry, and behavior...", "link": "https://www.catalyst-magazine.com/post/the-significance-of-genetics-in-insect-coloration-and-evolution", "category": "Health & Medicine", "image": "https://static.wixstatic.com/media/11b1c4_c36a2040d8584806b5c9e025f1736bc8~mv2.jpeg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art16", "title": "Cheers to Microglia: Unsung Heroes of the Nervous System", "author": "Naama Ben-Dor", "summary": "Amid the nervous system’s intricate cast, microglia are the tireless unsung heroes...", "link": "https://www.catalyst-magazine.com/post/an-ode-to-microglia", "category": "Neuroscience & Cognition", "image": "https://static.wixstatic.com/media/11b1c4_1dc1366839bf48af8acaeca849c198bd~mv2.jpeg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art17", "title": "Science’s Silly Lexicon: Wacky Words to Brighten Your Day", "author": "Naama Ben-Dor", "summary": "Science is serious, but its words don’t have to be! From habenula perforata to Tribbles...", "link": "https://www.catalyst-magazine.com/post/science-s-silly-lexicon-wacky-words-to-brighten-your-day-and-casually-drop-into-conversation", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_cbb1af6fc4d14f7e9234a01bd9d802ac~mv2.jpeg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art18", "title": "Understanding Science to Learn Science: Dopamine and...", "author": "Naama Ben-Dor", "summary": "STEM studies demand a uniquely high level of rigorous dedication and studiousness...", "link": "https://www.catalyst-magazine.com/post/understanding-science-to-learn-science-dopamine-and-why-you-should-care", "category": "Neuroscience & Cognition", "image": "https://static.wixstatic.com/media/11b1c4_c93db0b3162140a9a44f871d3ade2c83~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art19", "title": "Paradoxes in Science: Where Models Go to Break", "author": "Lori Preci", "summary": "If you’re curious about anything, you’ve already stepped into paradox...", "link": "https://www.catalyst-magazine.com/post/paradoxes-in-science-where-models-go-to-break", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_372453015cd14622890ac0740c9090a6~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" },
-            { "id": "art20", "title": "Transition Metals and How They Color Our World", "author": "Lori Preci", "summary": "Transition metals are responsible for some of the most dazzling colors we encounter every day...", "link": "https://www.catalyst-magazine.com/post/transition-metals-the-capacity-of-the-d-block-to-color-our-world", "category": "Tech & Engineering", "image": "https://static.wixstatic.com/media/11b1c4_26ae100a7205477c96367e1b126ffee5~mv2.jpeg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg" },
-            { "id": "art21", "title": "Everything Sings: The Science of Systems ", "author": "Aidan Schurr", "summary": "With the ever growing amount of information in the world, our understanding of the most complex systems can be enhanced...", "link": "https://www.catalyst-magazine.com/post/everything-sings-the-science-of-systems", "category": "Science & Policy", "image": "https://static.wixstatic.com/media/11b1c4_b73ead9ded89474ea6a93856a97b81b4~mv2.jpg/v1/fill/w_780,h_436,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg" }
+        let articleData = [
+            { "id": "art0", "title": "The Road From Academia to Forensic Applications of Chemistry", "author": "Naama Ben-Dor", "summary": "...", "link": "...", "category": "Science & Policy", "image": "...", "locations": [{lat: 38.9076, lng: -77.0722}] },
+            { "id": "art1", "title": "How One Engineer is Changing Sustainable Fuels", "author": "Aidan Schurr", "summary": "...", "link": "...", "category": "Tech & Engineering", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art2", "title": "From Music to Nuclear Policy: Dr. Cahill’s Journey in Science and Policy", "author": "Lori Preci and Yair Ben-Dor", "summary": "...", "link": "...", "category": "Science & Policy", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art3", "title": "Dr. Song Gao’s Chemistry‑Policy Crusade Against Hidden Pollutants", "author": "Naama Ben-Dor", "summary": "...", "link": "...", "category": "Environmental Science", "image": "...", "locations": [{lat: 38.9079, lng: -77.0739}] },
+            { "id": "art4", "title": "Designing a Sustainable Future with Sun, Wind, and Water", "author": "Ginger Taurek", "summary": "...", "link": "...", "category": "Environmental Science", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art5", "title": "Dr. Brent Harris’ Brain Bank Revolution", "author": "Aidan Schurr", "summary": "...", "link": "...", "category": "Health & Medicine", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art6", "title": "How The World of Genetics Shapes Evolution", "author": "Alex Carter", "summary": "...", "link": "...", "category": "Health & Medicine", "image": "...", "locations": [{lat: 38.8997, lng: -77.0486}] },
+            { "id": "art7", "title": "Serendipity and Science: The Journey of Dr. John Hawdon", "author": "Lori Preci", "summary": "...", "link": "...", "category": "Health & Medicine", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art8", "title": "Elucidating the Brain’s Language Circuitry with Dr. Michael Ullman", "author": "Yair Ben-Dor", "summary": "...", "link": "...", "category": "Neuroscience & Cognition", "image": "...", "locations": [{lat: 38.9085, lng: -77.0745}] },
+            { "id": "art9", "title": "How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine", "author": "Yair Ben-Dor", "summary": "...", "link": "...", "category": "Health & Medicine", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art10", "title": "From Battling a Rare Bioweapon Pathogen to Pioneering Global Health Security", "author": "Aidan Schurr", "summary": "...", "link": "...", "category": "Science & Policy", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art11", "title": "Sitting Down with the Editor‑in‑Chief of Science Magazine", "author": "Alex Carter and Aidan Schurr", "summary": "...", "link": "...", "category": "Science & Policy", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art12", "title": "How Coastal Trees Adapt Amid Rising Seas", "author": "Aidan Brown", "summary": "...", "link": "...", "category": "Environmental Science", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}, {lat: 38.9473, lng: -76.2293}] },
+            { "id": "art13", "title": "A Universe of Plasma: How One Scientist Connects His World From Satellites to Cells", "author": "Aidan Schurr", "summary": "...", "link": "...", "category": "Tech & Engineering", "image": "...", "locations": [{lat: 38.8977, lng: -77.0434}] },
+            { "id": "art14", "title": "The Electric Romance of Electricity and Magnetism", "author": "Yair Ben-Dor", "summary": "...", "link": "...", "category": "Tech & Engineering", "image": "...", "locations": [] },
+            { "id": "art15", "title": "Genetics Behind the Beauty: Insect Coloration and Evolution", "author": "Alex Carter", "summary": "...", "link": "...", "category": "Health & Medicine", "image": "...", "locations": [] },
+            { "id": "art16", "title": "Cheers to Microglia: Unsung Heroes of the Nervous System", "author": "Naama Ben-Dor", "summary": "...", "link": "...", "category": "Neuroscience & Cognition", "image": "...", "locations": [] },
+            { "id": "art17", "title": "Science’s Silly Lexicon: Wacky Words to Brighten Your Day", "author": "Naama Ben-Dor", "summary": "...", "link": "...", "category": "Science & Policy", "image": "...", "locations": [] },
+            { "id": "art18", "title": "Understanding Science to Learn Science: Dopamine and...", "author": "Naama Ben-Dor", "summary": "...", "link": "...", "category": "Neuroscience & Cognition", "image": "...", "locations": [] },
+            { "id": "art19", "title": "Paradoxes in Science: Where Models Go to Break", "author": "Lori Preci", "summary": "...", "link": "...", "category": "Science & Policy", "image": "...", "locations": [] },
+            { "id": "art20", "title": "Transition Metals and How They Color Our World", "author": "Lori Preci", "summary": "...", "link": "...", "category": "Tech & Engineering", "image": "...", "locations": [] },
+            { "id": "art21", "title": "Everything Sings: The Science of Systems ", "author": "Aidan Schurr", "summary": "...", "link": "...", "category": "Science & Policy", "image": "...", "locations": [] }
         ];
 
-        // --- Main Application Logic ---
         const markers = {};
+        const connectionLines = {};
 
-        function createMarkers() {
+        function assignEditorialLocations() {
+            const gwuCampus = { lat: 38.8997, lng: -77.0486, radius: 0.005 };
+            const gtownCampus = { lat: 38.9076, lng: -77.0722, radius: 0.005 };
+            let campusToggle = true;
+
+            function getRandomCoords(center, radius) {
+                const y0 = center.lat;
+                const x0 = center.lng;
+                const rd = radius / 111300;
+                const u = Math.random();
+                const v = Math.random();
+                const w = rd * Math.sqrt(u);
+                const t = 2 * Math.PI * v;
+                const x = w * Math.cos(t);
+                const y = w * Math.sin(t);
+                return { lat: y + y0, lng: x + x0 };
+            }
+
             articleData.forEach(article => {
-                // Only create a marker if the article has coordinates
-                if (article.lat && article.lng) {
-                    const marker = L.marker([article.lat, article.lng]).addTo(map);
-
-                    const popupContent = `
-                        <div class="custom-popup-image-container">
-                            <img src="${article.image}" alt="${article.title}" class="custom-popup-image" onerror="this.src='https://placehold.co/300x150/0a0c10/c9d1d9?text=Image+Not+Found';">
-                        </div>
-                        <div class="custom-popup-content-area">
-                            <h3>${article.title}</h3>
-                            <p class="author">By ${article.author}</p>
-                            <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="read-more">Read Full Article</a>
-                        </div>
-                    `;
-
-                    marker.bindPopup(popupContent, {
-                        className: 'custom-popup',
-                        minWidth: 300
-                    });
-                    
-                    markers[article.id] = marker; 
+                if (!article.locations || article.locations.length === 0) {
+                    const campus = campusToggle ? gwuCampus : gtownCampus;
+                    article.locations = [getRandomCoords(campus, 300)];
+                    campusToggle = !campusToggle;
                 }
             });
+        }
+
+        function createMarkersAndLines() {
+            const categories = [...new Set(articleData.map(a => a.category).filter(Boolean))].sort();
+            const colorScale = d3.scaleOrdinal()
+                .domain(categories)
+                .range(['#39ff14', '#ff073a', '#00bfff', '#ff00ff', '#ffff00', '#ff9900', '#00ffff']);
+
+            const articlesByCategory = {};
+
+            articleData.forEach(article => {
+                markers[article.id] = [];
+                if (article.locations && article.locations.length > 0) {
+                    const color = colorScale(article.category) || '#ffffff';
+                    const iconHtml = `<div class="custom-div-icon" style="background-color: ${color}; box-shadow: 0 0 8px ${color}, 0 0 12px ${color};"></div>`;
+                    
+                    const customIcon = L.divIcon({
+                        html: iconHtml,
+                        className: 'custom-marker-wrapper',
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    });
+
+                    if (!articlesByCategory[article.category]) {
+                        articlesByCategory[article.category] = [];
+                    }
+
+                    article.locations.forEach(loc => {
+                        const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
+                        marker.bindTooltip(article.title);
+
+                        const popupContent = `
+                            <div class="custom-popup-image-container">
+                                <img src="${article.image.replace('~mv2.jpeg', '~mv2.jpg')}" alt="${article.title}" class="custom-popup-image" onerror="this.src='https://placehold.co/300x150/2c3038/e8e8e8?text=Image+Not+Found';">
+                            </div>
+                            <div class="custom-popup-content-area">
+                                <h3>${article.title}</h3>
+                                <p class="author">By ${article.author}</p>
+                                <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="read-more">Read Full Article</a>
+                            </div>
+                        `;
+
+                        marker.bindPopup(popupContent, {
+                            className: 'custom-popup',
+                            minWidth: 300
+                        });
+                        
+                        markers[article.id].push(marker);
+                        articlesByCategory[article.category].push(marker);
+                    });
+                }
+            });
+
+            // Create connecting lines
+            for (const category in articlesByCategory) {
+                const categoryMarkers = articlesByCategory[category];
+                connectionLines[category] = [];
+                if (categoryMarkers.length > 1) {
+                    for (let i = 0; i < categoryMarkers.length; i++) {
+                        for (let j = i + 1; j < categoryMarkers.length; j++) {
+                            const latlngs = [
+                                categoryMarkers[i].getLatLng(),
+                                categoryMarkers[j].getLatLng()
+                            ];
+                            const line = L.polyline(latlngs, {
+                                color: colorScale(category),
+                                weight: 2,
+                                opacity: 0.5
+                            }).addTo(map);
+                            connectionLines[category].push(line);
+                        }
+                    }
+                }
+            }
         }
 
         function initializeUI() {
@@ -292,11 +384,11 @@
             
             document.getElementById('filter-all').addEventListener('change', (e) => {
                 document.querySelectorAll('.category-filter').forEach(cb => cb.checked = e.target.checked);
-                updateMarkerVisibility();
+                updateVisibility();
             });
 
             document.querySelectorAll('.category-filter').forEach(cb => {
-                cb.addEventListener('change', updateMarkerVisibility);
+                cb.addEventListener('change', updateVisibility);
             });
             
             toggleSidebarBtn.addEventListener('click', () => {
@@ -304,28 +396,42 @@
             });
         }
         
-        function updateMarkerVisibility() {
+        function updateVisibility() {
             const activeCategories = new Set(
                 [...document.querySelectorAll('.category-filter:checked')].map(cb => cb.value)
             );
             
+            // Update marker visibility
             articleData.forEach(article => {
-                const marker = markers[article.id];
-                // Only try to update markers that actually exist
-                if (marker) {
-                    if (activeCategories.has(article.category)) {
-                        marker.setOpacity(1);
-                        marker.setZIndexOffset(100);
-                    } else {
-                        marker.setOpacity(0.2);
-                        marker.setZIndexOffset(0);
-                    }
+                const articleMarkers = markers[article.id];
+                if (articleMarkers && articleMarkers.length > 0) {
+                    articleMarkers.forEach(marker => {
+                        const markerElement = marker.getElement();
+                        if (activeCategories.has(article.category)) {
+                            if (markerElement) markerElement.style.opacity = '1';
+                            marker.setZIndexOffset(100);
+                        } else {
+                            if (markerElement) markerElement.style.opacity = '0.15';
+                            marker.setZIndexOffset(0);
+                        }
+                    });
                 }
             });
+
+            // Update line visibility
+            for (const category in connectionLines) {
+                const lines = connectionLines[category];
+                if (activeCategories.has(category)) {
+                    lines.forEach(line => map.addLayer(line));
+                } else {
+                    lines.forEach(line => map.removeLayer(line));
+                }
+            }
         }
 
         // --- Initialize ---
-        createMarkers();
+        assignEditorialLocations();
+        createMarkersAndLines();
         initializeUI();
     });
     </script>
