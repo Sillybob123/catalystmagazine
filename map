@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive US Map with Leaflet.js</title>
+    
+    <!-- Leaflet CSS - Updated path for your GitHub structure -->
+    <link rel="stylesheet" href="leaflet/leaflet.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* General body styling for a clean, modern look */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* The main container for the Leaflet map */
+        #map {
+            width: 100%;
+            height: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+        }
+
+        /* Custom popup styling to match the modern aesthetic */
+        .leaflet-popup-content-wrapper {
+            background-color: rgba(255, 255, 255, 0.85);
+            color: #1d1d1f;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .leaflet-popup-content {
+            margin: 14px 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        .leaflet-popup-tip-container {
+            width: 40px;
+            height: 20px;
+        }
+
+        .leaflet-popup-close-button {
+            top: 12px;
+            right: 12px;
+            color: #555;
+        }
+        .leaflet-popup-close-button:hover {
+            color: #000;
+        }
+
+        /* Styling for the attribution control */
+        .leaflet-control-attribution {
+            background: rgba(255, 255, 255, 0.7) !important;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 8px;
+            padding: 2px 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JavaScript - Updated path for your GitHub structure -->
+    <script src="leaflet/leaflet.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Map Initialization ---
+            // Initialize the map and set its view to Washington D.C. coordinates and a zoom level.
+            const map = L.map('map', {
+                center: [38.9072, -77.0369], // Washington D.C.
+                zoom: 13,
+                zoomControl: true // Use Leaflet's default zoom control
+            });
+            map.zoomControl.setPosition('bottomright');
+
+
+            // --- Tile Layer ---
+            // Add a tile layer to the map. This provides the base map imagery.
+            // Using CartoDB's "Positron" style for a clean, modern, and minimalist look.
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+
+            // --- Marker Data ---
+            // An array of location objects. You can easily add more locations here.
+            // I've found the lat/lng for your initial locations.
+            const locations = [
+                {
+                    lat: 38.9076,
+                    lng: -77.0722,
+                    title: 'Georgetown University',
+                    description: 'Article about Georgetown...'
+                },
+                {
+                    lat: 38.8997,
+                    lng: -77.0486,
+                    title: 'George Washington University',
+                    description: 'Article about GWU...'
+                },
+                {
+                    lat: 38.8893,
+                    lng: -77.0502,
+                    title: 'Lincoln Memorial',
+                    description: 'A historic landmark in D.C.'
+                },
+                {
+                    lat: 38.8895,
+                    lng: -77.0353,
+                    title: 'National Mall',
+                    description: 'The heart of Washington D.C.'
+                }
+            ];
+            
+
+            // --- Add Markers to Map ---
+            // Loop through the locations array and add a marker for each one.
+            locations.forEach(location => {
+                const marker = L.marker([location.lat, location.lng]).addTo(map);
+                
+                // Bind a popup to each marker with its title and description.
+                // The popup will appear when the marker is clicked.
+                marker.bindPopup(`<b>${location.title}</b><br>${location.description}`);
+            });
+
+
+            // --- Future Functionality: GeoJSON for State/Precinct Clicks ---
+            // The code below is a placeholder to show how you might add clickable state/precinct outlines.
+            // You would need to find a GeoJSON file for the areas you want to make interactive.
+            /*
+            async function addStateOutlines() {
+                try {
+                    // Example: Fetch GeoJSON data for US States
+                    const response = await fetch('path/to/your/us-states.geojson');
+                    const statesData = await response.json();
+
+                    L.geoJSON(statesData, {
+                        style: function(feature) {
+                            return {
+                                color: '#a2a2a2',
+                                weight: 1,
+                                opacity: 0.6,
+                                fillOpacity: 0.1
+                            };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            layer.on('click', function(e) {
+                                // Zoom to the state's bounds when clicked
+                                map.fitBounds(e.target.getBounds());
+                                // You could then load more detailed markers for this state
+                            });
+                            layer.on('mouseover', function(e) {
+                                e.target.setStyle({ weight: 2, color: '#007aff' });
+                            });
+                            layer.on('mouseout', function(e) {
+                                e.target.setStyle({ weight: 1, color: '#a2a2a2' });
+                            });
+                        }
+                    }).addTo(map);
+                } catch (error) {
+                    console.error('Error loading GeoJSON data:', error);
+                }
+            }
+            
+            // Call the function to load the outlines
+            // addStateOutlines();
+            */
+
+        });
+    </script>
+
+</body>
+</html>
