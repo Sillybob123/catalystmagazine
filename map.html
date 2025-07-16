@@ -88,6 +88,15 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
 
+            // --- FIX: Set default icon paths ---
+            // This explicitly tells Leaflet where to find the marker images in your repository.
+            L.Icon.Default.mergeOptions({
+                iconRetinaUrl: 'leaflet/images/marker-icon-2x.png',
+                iconUrl: 'leaflet/images/marker-icon.png',
+                shadowUrl: 'leaflet/images/marker-shadow.png'
+            });
+
+
             // --- Map Initialization ---
             // Initialize the map and set its view to Washington D.C. coordinates and a zoom level.
             const map = L.map('map', {
