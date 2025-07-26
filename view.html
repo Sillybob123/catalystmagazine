@@ -43,7 +43,7 @@
 
         .controls {
             display: flex;
-            gap: 16px;
+            gap: 12px; /* Adjusted gap */
             align-items: center;
             flex-wrap: wrap; /* Allow controls to wrap */
         }
@@ -60,6 +60,30 @@
             font-size: 14px;
         }
 
+        /* Custom size inputs */
+        .custom-size-inputs {
+            display: none;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .custom-size-inputs input {
+            width: 80px;
+            padding: 8px 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #1d1d1f;
+            font-size: 14px;
+            text-align: center;
+            outline: none;
+        }
+
+        .custom-size-inputs input:focus {
+            border-color: #007aff;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
         /* Form Elements & Buttons */
         select, button {
             padding: 8px 16px;
@@ -73,8 +97,14 @@
             transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             outline: none;
         }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-        select:hover, button:hover {
+        select:hover, button:not(:disabled):hover {
             background: rgba(255, 255, 255, 1);
             border-color: rgba(0, 0, 0, 0.2);
             transform: translateY(-1px);
@@ -91,56 +121,9 @@
             border-color: #007aff;
         }
 
-        button.primary:hover {
+        button.primary:not(:disabled):hover {
             background: #0056cc;
             border-color: #0056cc;
-        }
-
-        /* Toggle Switch */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 44px;
-            height: 24px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            border-radius: 24px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 20px;
-            width: 20px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        input:checked + .slider {
-            background-color: #007aff;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(20px);
         }
 
         /* Main Layout */
@@ -265,6 +248,7 @@
         .desktop-standard .preview-iframe-container { width: 1366px; height: 768px; max-width: 100%; max-height: 100%; }
         .desktop-small .preview-iframe-container { width: 1024px; height: 768px; max-width: 100%; max-height: 100%; }
         .mobile .preview-iframe-container { width: 375px; height: 667px; border-radius: 24px; border: 2px solid #1d1d1f; }
+        .custom .preview-iframe-container { border-radius: 12px; }
 
         .preview-iframe {
             width: 100%;
@@ -378,7 +362,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
 
         /* Responsive Design */
-        @media (max-width: 768px) {
+        @media (max-width: 860px) {
             .header {
                 padding: 12px 16px;
                 gap: 12px;
@@ -410,7 +394,13 @@
                     <option value="desktop-standard" selected>Desktop Standard (1366px)</option>
                     <option value="desktop-small">Desktop Small (1024px)</option>
                     <option value="mobile">Mobile (375px)</option>
+                    <option value="custom">Custom</option>
                 </select>
+            </div>
+            <div class="control-group custom-size-inputs" id="customSizeInputs">
+                <input type="number" id="customWidth" placeholder="Width" min="100" max="3840" value="800">
+                <span>×</span>
+                <input type="number" id="customHeight" placeholder="Height" min="100" max="2160" value="600">
             </div>
             <div class="control-group">
                 <label for="layoutMode">Layout:</label>
@@ -419,6 +409,8 @@
                     <option value="vertical">Top/Bottom</option>
                 </select>
             </div>
+            <button id="undoBtn">Undo</button>
+            <button id="redoBtn">Redo</button>
             <button id="clearBtn">Clear</button>
             <button id="fullscreenBtn" class="primary">Fullscreen Preview</button>
         </div>
@@ -434,98 +426,7 @@
             </div>
             <div class="editor-content">
                 <div class="line-numbers" id="lineNumbers">1</div>
-                <textarea id="htmlEditor" placeholder="Start typing your HTML code here..."><!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Professional Website</title>
-    <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 16px;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        h1 { 
-            font-size: 2.5rem;
-            font-weight: 600;
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        p {
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            opacity: 0.9;
-        }
-        .btn {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 12px 24px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
-        }
-        /* A non-blocking notification style */
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            pointer-events: none;
-        }
-        .notification.show {
-            opacity: 1;
-            transform: translate(-50%, -10px);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Professional Web Development</h1>
-        <p>Create beautiful, responsive websites with modern design principles.</p>
-        <!-- NOTE: Using alert() is not recommended. We've created a custom, non-blocking notification instead. -->
-        <button class="btn" onclick="showWelcomeMessage()">Get Started</button>
-    </div>
-    <div id="notification" class="notification"></div>
-    <script>
-        function showWelcomeMessage() {
-            const notification = document.getElementById('notification');
-            notification.textContent = 'Welcome to professional web development!';
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-    <\/script>
-</body>
-</html></textarea>
+                <textarea id="htmlEditor" placeholder="Start typing your HTML code here..."></textarea>
             </div>
             <div class="resize-handle horizontal" id="resizeHandle"></div>
         </div>
@@ -570,9 +471,12 @@
                 this.isFullscreen = false;
                 this.isResizing = false;
 
-                // --- FIX: Store bound event listeners to correctly remove them later ---
-                // This prevents a common bug where `removeEventListener` fails because it's
-                // given a new function instance from `.bind(this)` instead of the original one.
+                // History for Undo/Redo
+                this.history = [];
+                this.historyIndex = -1;
+                this.maxHistorySize = 100;
+
+                // Store bound event listeners to correctly remove them later
                 this.boundHandleResize = this.handleResize.bind(this);
                 this.boundStopResize = this.stopResize.bind(this);
                 this.boundHandleFullscreenEscape = this.handleFullscreenEscape.bind(this);
@@ -604,6 +508,11 @@
                 this.confirmModal = document.getElementById('confirmModal');
                 this.modalConfirmBtn = document.getElementById('modalConfirmBtn');
                 this.modalCancelBtn = document.getElementById('modalCancelBtn');
+                this.undoBtn = document.getElementById('undoBtn');
+                this.redoBtn = document.getElementById('redoBtn');
+                this.customSizeInputs = document.getElementById('customSizeInputs');
+                this.customWidth = document.getElementById('customWidth');
+                this.customHeight = document.getElementById('customHeight');
             }
 
             init() {
@@ -617,11 +526,64 @@
                 this.resizeHandle.addEventListener('mousedown', (e) => this.startResize(e));
                 this.editor.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
                 this.modalCancelBtn.addEventListener('click', () => this.closeConfirmModal());
+                this.undoBtn.addEventListener('click', () => this.undo());
+                this.redoBtn.addEventListener('click', () => this.redo());
+                this.customWidth.addEventListener('input', () => this.updateCustomSize());
+                this.customHeight.addEventListener('input', () => this.updateCustomSize());
 
                 // Initial setup
                 this.updatePreview();
                 this.updateDeviceInfo();
                 this.updateLineNumbers();
+                this.saveState(); // Save initial empty state
+                this.updateUndoRedoButtons();
+            }
+
+            // --- UNDO/REDO LOGIC ---
+            saveState() {
+                const currentCode = this.editor.value;
+                
+                // Don't save if the code is the same as the last state
+                if (this.history[this.historyIndex] === currentCode) {
+                    return;
+                }
+                
+                // If we've undone and now make a change, clear the "redo" history
+                if (this.historyIndex < this.history.length - 1) {
+                    this.history = this.history.slice(0, this.historyIndex + 1);
+                }
+                
+                this.history.push(currentCode);
+                this.historyIndex++;
+                
+                // Limit history size to prevent memory issues
+                if (this.history.length > this.maxHistorySize) {
+                    this.history.shift();
+                    this.historyIndex--;
+                }
+                
+                this.updateUndoRedoButtons();
+            }
+
+            undo() {
+                if (this.historyIndex > 0) {
+                    this.historyIndex--;
+                    this.editor.value = this.history[this.historyIndex];
+                    this.updateAll();
+                }
+            }
+
+            redo() {
+                if (this.historyIndex < this.history.length - 1) {
+                    this.historyIndex++;
+                    this.editor.value = this.history[this.historyIndex];
+                    this.updateAll();
+                }
+            }
+            
+            updateUndoRedoButtons() {
+                this.undoBtn.disabled = this.historyIndex <= 0;
+                this.redoBtn.disabled = this.historyIndex >= this.history.length - 1;
             }
 
             // --- RESIZE LOGIC ---
@@ -646,14 +608,12 @@
                     const dx = e.clientX - this.resizeStartX;
                     let newWidth = this.resizeStartWidth + dx;
                     const containerWidth = this.mainContainer.offsetWidth;
-                    // Clamp width to prevent panels from becoming too small
                     newWidth = Math.max(200, Math.min(newWidth, containerWidth - 200));
                     this.editorPanel.style.flex = `0 0 ${newWidth}px`;
                 } else {
                     const dy = e.clientY - this.resizeStartY;
                     let newHeight = this.resizeStartHeight + dy;
                     const containerHeight = this.mainContainer.offsetHeight;
-                    // Clamp height
                     newHeight = Math.max(150, Math.min(newHeight, containerHeight - 150));
                     this.editorPanel.style.flex = `0 0 ${newHeight}px`;
                 }
@@ -662,7 +622,6 @@
             stopResize() {
                 this.isResizing = false;
                 this.resizeHandle.classList.remove('dragging');
-                // Correctly remove the stored, bound event listeners
                 document.removeEventListener('mousemove', this.boundHandleResize);
                 document.removeEventListener('mouseup', this.boundStopResize);
             }
@@ -673,26 +632,34 @@
             }
 
             updateLineNumbers() {
-                const lineCount = this.editor.value.split('\n').length;
+                const lineCount = this.editor.value.split('\n').length || 1;
                 this.lineNumbers.innerHTML = Array.from({ length: lineCount }, (_, i) => i + 1).join('<br>');
                 this.syncScroll();
+            }
+
+            // Helper to update preview and line numbers together
+            updateAll() {
+                this.updatePreview();
+                this.updateLineNumbers();
+                this.updateUndoRedoButtons();
             }
 
             debounceUpdate() {
                 clearTimeout(this.debounceTimer);
                 this.updateLineNumbers();
-                this.debounceTimer = setTimeout(() => this.updatePreview(), 300);
+                this.debounceTimer = setTimeout(() => {
+                    this.updatePreview();
+                    this.saveState(); // Save state after user stops typing
+                }, 300);
             }
 
             updatePreview() {
                 const htmlContent = this.editor.value;
-                // Use a Blob to create a URL, which is safer and more reliable
                 const blob = new Blob([htmlContent], { type: 'text/html' });
                 const url = URL.createObjectURL(blob);
                 
                 this.preview.src = url;
 
-                // Clean up the object URL after a short delay
                 this.preview.onload = () => {
                     URL.revokeObjectURL(url);
                 };
@@ -701,8 +668,38 @@
             // --- UI CONTROLS ---
             updateDeviceSize() {
                 const size = this.deviceSize.value;
-                this.deviceFrame.className = `device-frame ${size}`;
-                this.updateDeviceInfo();
+                
+                // Show/hide custom size inputs
+                if (size === 'custom') {
+                    this.customSizeInputs.style.display = 'flex';
+                    this.updateCustomSize();
+                } else {
+                    this.customSizeInputs.style.display = 'none';
+                    this.deviceFrame.className = `device-frame ${size}`;
+                    this.updateDeviceInfo();
+                }
+            }
+
+            updateCustomSize() {
+                if (this.deviceSize.value === 'custom') {
+                    const width = parseInt(this.customWidth.value) || 800;
+                    const height = parseInt(this.customHeight.value) || 600;
+                    
+                    // Ensure values are within reasonable bounds
+                    const clampedWidth = Math.max(100, Math.min(width, 3840));
+                    const clampedHeight = Math.max(100, Math.min(height, 2160));
+                    
+                    this.customWidth.value = clampedWidth;
+                    this.customHeight.value = clampedHeight;
+                    
+                    this.deviceFrame.className = 'device-frame custom';
+                    const container = this.deviceFrame.querySelector('.preview-iframe-container');
+                    container.style.width = `${clampedWidth}px`;
+                    container.style.height = `${clampedHeight}px`;
+                    
+                    this.deviceInfo.textContent = `${clampedWidth} × ${clampedHeight}`;
+                    this.previewInfo.textContent = `Custom (${clampedWidth} × ${clampedHeight})`;
+                }
             }
 
             updateDeviceInfo() {
@@ -713,26 +710,26 @@
                     'desktop-small': { label: 'Desktop Small', dimensions: '1024 × 768' },
                     'mobile': { label: 'Mobile', dimensions: '375 × 667' }
                 };
-                this.deviceInfo.textContent = info[size].dimensions;
-                this.previewInfo.textContent = info[size].label;
+                
+                if (info[size]) {
+                    this.deviceInfo.textContent = info[size].dimensions;
+                    this.previewInfo.textContent = info[size].label;
+                }
             }
 
             updateLayout() {
                 const layout = this.layoutMode.value;
                 this.mainContainer.classList.toggle('vertical', layout === 'vertical');
                 this.resizeHandle.className = `resize-handle ${layout === 'vertical' ? 'vertical' : 'horizontal'}`;
-                // Reset flex basis on layout change
                 this.editorPanel.style.flex = '0 0 50%';
             }
 
-            // --- FIX: Replaced window.confirm with a custom, non-blocking modal ---
             confirmClearEditor() {
                 this.confirmModal.classList.add('show');
-                // Use .once to ensure the event listener is removed after firing
                 this.modalConfirmBtn.addEventListener('click', () => {
                     this.editor.value = '';
-                    this.updatePreview();
-                    this.updateLineNumbers();
+                    this.updateAll();
+                    this.saveState(); // Save the cleared state
                     this.editor.focus();
                     this.closeConfirmModal();
                 }, { once: true });
@@ -764,18 +761,30 @@
             }
             
             handleKeyboardShortcuts(e) {
-                // Tab to insert spaces
+                // Undo (Ctrl/Cmd + Z)
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.undo();
+                    return;
+                }
+                
+                // Redo (Ctrl/Cmd + Y or Ctrl/Cmd + Shift + Z)
+                if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+                    e.preventDefault();
+                    this.redo();
+                    return;
+                }
+
                 if (e.key === 'Tab') {
                     e.preventDefault();
                     const start = this.editor.selectionStart;
                     const end = this.editor.selectionEnd;
-                    const indent = '  '; // 2 spaces for indentation
+                    const indent = '  ';
                     this.editor.value = this.editor.value.substring(0, start) + indent + this.editor.value.substring(end);
                     this.editor.selectionStart = this.editor.selectionEnd = start + indent.length;
                     this.debounceUpdate();
                 }
 
-                // Auto-close brackets and quotes
                 const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
                 if (pairs[e.key]) {
                     e.preventDefault();
