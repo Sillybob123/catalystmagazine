@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Professional HTML Editor</title>
     <style>
+        /* General Styles */
         * {
             margin: 0;
             padding: 0;
@@ -16,8 +17,10 @@
             background: #f5f5f7;
             min-height: 100vh;
             color: #1d1d1f;
+            overflow: hidden; /* Prevent body scroll when panels are scrolled */
         }
 
+        /* Header Styles */
         .header {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20px) saturate(180%);
@@ -29,12 +32,12 @@
             position: sticky;
             top: 0;
             z-index: 1000;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
         }
 
         .logo {
             font-size: 20px;
             font-weight: 600;
-            color: #1d1d1f;
             letter-spacing: -0.022em;
         }
 
@@ -42,6 +45,7 @@
             display: flex;
             gap: 16px;
             align-items: center;
+            flex-wrap: wrap; /* Allow controls to wrap */
         }
 
         .control-group {
@@ -56,6 +60,7 @@
             font-size: 14px;
         }
 
+        /* Form Elements & Buttons */
         select, button {
             padding: 8px 16px;
             border: 1px solid rgba(0, 0, 0, 0.1);
@@ -91,6 +96,7 @@
             border-color: #0056cc;
         }
 
+        /* Toggle Switch */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -137,9 +143,10 @@
             transform: translateX(20px);
         }
 
+        /* Main Layout */
         .main-container {
             display: flex;
-            height: calc(100vh - 73px);
+            height: calc(100vh - 65px); /* Adjusted for header height */
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
@@ -149,7 +156,6 @@
 
         .editor-panel, .preview-panel {
             background: white;
-            border-radius: 0;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -168,11 +174,13 @@
         .main-container.vertical .editor-panel {
             border-right: none;
             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            height: 50%;
         }
 
+        /* Panel Headers */
         .panel-header {
             background: #fbfbfd;
-            padding: 16px 24px;
+            padding: 12px 24px;
             border-bottom: 1px solid rgba(0, 0, 0, 0.1);
             font-weight: 500;
             color: #1d1d1f;
@@ -180,6 +188,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-shrink: 0;
         }
 
         .panel-info {
@@ -188,10 +197,12 @@
             font-weight: 400;
         }
 
+        /* Editor Styles */
         .editor-content {
-            flex: 1;
+            flex-grow: 1;
             position: relative;
             display: flex;
+            overflow: hidden;
         }
 
         .line-numbers {
@@ -203,12 +214,13 @@
             line-height: 1.6;
             color: #86868b;
             user-select: none;
-            min-width: 50px;
             text-align: right;
+            overflow: hidden;
+            flex-shrink: 0;
         }
 
         #htmlEditor {
-            flex: 1;
+            flex-grow: 1;
             border: none;
             padding: 16px;
             font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
@@ -220,8 +232,9 @@
             color: #1d1d1f;
         }
 
+        /* Preview Styles */
         .preview-content {
-            flex: 1;
+            flex-grow: 1;
             position: relative;
             overflow: hidden;
         }
@@ -231,7 +244,7 @@
             height: 100%;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center; /* Center vertically and horizontally */
             padding: 24px;
             background: #f5f5f7;
             overflow: auto;
@@ -244,33 +257,14 @@
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             position: relative;
+            flex-shrink: 0; /* Prevent shrinking */
         }
 
         /* Device Sizes */
-        .desktop-wide .preview-iframe-container {
-            width: 100%;
-            max-width: 1920px;
-            height: calc(100vh - 200px);
-        }
-
-        .desktop-standard .preview-iframe-container {
-            width: 100%;
-            max-width: 1366px;
-            height: calc(100vh - 200px);
-        }
-
-        .desktop-small .preview-iframe-container {
-            width: 100%;
-            max-width: 1024px;
-            height: calc(100vh - 200px);
-        }
-
-        .mobile .preview-iframe-container {
-            width: 375px;
-            height: 667px;
-            border-radius: 24px;
-            border: 2px solid #1d1d1f;
-        }
+        .desktop-wide .preview-iframe-container { width: 1920px; height: 1080px; max-width: 100%; max-height: 100%; }
+        .desktop-standard .preview-iframe-container { width: 1366px; height: 768px; max-width: 100%; max-height: 100%; }
+        .desktop-small .preview-iframe-container { width: 1024px; height: 768px; max-width: 100%; max-height: 100%; }
+        .mobile .preview-iframe-container { width: 375px; height: 667px; border-radius: 24px; border: 2px solid #1d1d1f; }
 
         .preview-iframe {
             width: 100%;
@@ -281,26 +275,19 @@
 
         .device-info {
             position: absolute;
-            top: 12px;
+            bottom: 12px;
             right: 12px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 4px 8px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: 500;
             backdrop-filter: blur(10px);
+            z-index: 10;
         }
 
-        .error-message {
-            background: #ffebee;
-            color: #c62828;
-            padding: 16px 24px;
-            border-left: 4px solid #c62828;
-            display: none;
-            font-size: 14px;
-        }
-
+        /* Resize Handle */
         .resize-handle {
             position: absolute;
             background: transparent;
@@ -308,115 +295,111 @@
             transition: background-color 0.2s;
         }
 
-        .resize-handle.horizontal {
-            right: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            cursor: ew-resize;
-        }
+        .resize-handle.horizontal { right: -2px; top: 0; bottom: 0; width: 5px; cursor: ew-resize; }
+        .resize-handle.vertical { left: 0; right: 0; bottom: -2px; height: 5px; cursor: ns-resize; }
+        .resize-handle:hover, .resize-handle.dragging { background-color: rgba(0, 122, 255, 0.4); }
 
-        .resize-handle.vertical {
+        /* Modal for Confirm Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            height: 4px;
-            cursor: ns-resize;
-        }
-
-        .resize-handle:hover {
-            background-color: rgba(0, 122, 255, 0.3);
-        }
-
-        .resize-handle.dragging {
-            background-color: rgba(0, 122, 255, 0.5);
-        }
-
-        /* Learner Mode Styles */
-        .learner-highlight {
-            outline: 2px solid #007aff !important;
-            outline-offset: 2px;
-            background-color: rgba(0, 122, 255, 0.1) !important;
-            cursor: pointer !important;
-        }
-
-        .code-highlight {
-            background-color: rgba(0, 122, 255, 0.2) !important;
-            transition: background-color 0.2s;
-        }
-
-        .learner-tooltip {
-            position: absolute;
-            background: #1d1d1f;
-            color: white;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            z-index: 1000;
-            pointer-events: none;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
             opacity: 0;
-            transform: translateY(-10px);
-            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            pointer-events: none;
+            transition: opacity 0.2s ease;
         }
 
-        .learner-tooltip.show {
+        .modal-overlay.show {
             opacity: 1;
-            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.95);
+            transition: transform 0.2s ease;
+        }
+        
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 12px;
+            font-size: 18px;
+            color: #1d1d1f;
+        }
+
+        .modal-content p {
+            margin-bottom: 24px;
+            color: #86868b;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .modal-buttons button {
+            width: 120px;
+        }
+
+        .modal-buttons .danger {
+            background-color: #ff3b30;
+            border-color: #ff3b30;
+            color: white;
+        }
+
+        .modal-buttons .danger:hover {
+            background-color: #d92c23;
+            border-color: #d92c23;
         }
 
         /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a1a1a1;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
 
         /* Responsive Design */
         @media (max-width: 768px) {
             .header {
                 padding: 12px 16px;
-                flex-wrap: wrap;
                 gap: 12px;
             }
-            
             .controls {
                 width: 100%;
                 justify-content: center;
-                flex-wrap: wrap;
-                gap: 12px;
             }
-            
             .main-container {
                 flex-direction: column;
+                height: calc(100vh - 110px); /* Adjust for wrapped header */
             }
-            
-            .editor-panel {
+            .main-container.vertical .editor-panel, .editor-panel {
                 border-right: none;
                 border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            }
-            
-            .mobile .preview-iframe-container {
-                width: 100%;
-                max-width: 375px;
-                height: 500px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Header with global controls -->
     <div class="header">
         <div class="logo">HTML Editor Pro</div>
         <div class="controls">
@@ -436,26 +419,21 @@
                     <option value="vertical">Top/Bottom</option>
                 </select>
             </div>
-            <div class="control-group">
-                <label for="learnerMode">Learner Mode:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="learnerMode">
-                    <span class="slider"></span>
-                </label>
-            </div>
             <button id="clearBtn">Clear</button>
             <button id="fullscreenBtn" class="primary">Fullscreen Preview</button>
         </div>
     </div>
 
+    <!-- Main container for editor and preview -->
     <div class="main-container" id="mainContainer">
+        <!-- Editor Panel -->
         <div class="editor-panel" id="editorPanel">
             <div class="panel-header">
-                HTML Editor
+                <span>HTML Editor</span>
                 <span class="panel-info">Live editing enabled</span>
             </div>
             <div class="editor-content">
-                <div class="line-numbers" id="lineNumbers"></div>
+                <div class="line-numbers" id="lineNumbers">1</div>
                 <textarea id="htmlEditor" placeholder="Start typing your HTML code here..."><!DOCTYPE html>
 <html lang="en">
 <head>
@@ -486,7 +464,6 @@
             font-weight: 600;
             text-align: center;
             margin-bottom: 24px;
-            letter-spacing: -0.025em;
         }
         p {
             font-size: 1.1rem;
@@ -504,67 +481,59 @@
             font-weight: 500;
             transition: all 0.2s ease;
             cursor: pointer;
-            font-size: 16px;
         }
         .btn:hover {
             background: rgba(255, 255, 255, 0.3);
             transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-top: 40px;
+        /* A non-blocking notification style */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
         }
-        .feature {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 24px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        @media (max-width: 768px) {
-            body { padding: 20px; }
-            .container { padding: 24px; }
-            h1 { font-size: 2rem; }
-            .features { grid-template-columns: 1fr; }
+        .notification.show {
+            opacity: 1;
+            transform: translate(-50%, -10px);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Professional Web Development</h1>
-        <p>Create beautiful, responsive websites with modern design principles and clean code architecture.</p>
-        <p>This example demonstrates professional styling, responsive design, and interactive elements.</p>
-        
-        <button class="btn" onclick="alert('Welcome to professional web development!')">Get Started</button>
-        
-        <div class="features">
-            <div class="feature">
-                <h3>Responsive Design</h3>
-                <p>Adapts perfectly to any screen size</p>
-            </div>
-            <div class="feature">
-                <h3>Modern Styling</h3>
-                <p>Clean, professional appearance</p>
-            </div>
-            <div class="feature">
-                <h3>Interactive Elements</h3>
-                <p>Engaging user experience</p>
-            </div>
-        </div>
+        <p>Create beautiful, responsive websites with modern design principles.</p>
+        <!-- NOTE: Using alert() is not recommended. We've created a custom, non-blocking notification instead. -->
+        <button class="btn" onclick="showWelcomeMessage()">Get Started</button>
     </div>
+    <div id="notification" class="notification"></div>
+    <script>
+        function showWelcomeMessage() {
+            const notification = document.getElementById('notification');
+            notification.textContent = 'Welcome to professional web development!';
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    <\/script>
 </body>
 </html></textarea>
             </div>
-            <div class="error-message" id="errorMessage"></div>
             <div class="resize-handle horizontal" id="resizeHandle"></div>
         </div>
 
+        <!-- Preview Panel -->
         <div class="preview-panel" id="previewPanel">
             <div class="panel-header">
-                Live Preview
+                <span>Live Preview</span>
                 <span class="panel-info" id="previewInfo">Desktop Standard</span>
             </div>
             <div class="preview-content">
@@ -578,267 +547,158 @@
         </div>
     </div>
 
-    <div class="learner-tooltip" id="learnerTooltip"></div>
+    <!-- Custom Modal for Confirmation -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Are you sure?</h3>
+            <p id="modalMessage">This action cannot be undone.</p>
+            <div class="modal-buttons">
+                <button id="modalCancelBtn">Cancel</button>
+                <button id="modalConfirmBtn" class="danger">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         class ProfessionalHTMLEditor {
             constructor() {
+                // Cache all DOM elements
+                this.cacheDOMElements();
+                
+                // State variables
+                this.debounceTimer = null;
+                this.isFullscreen = false;
+                this.isResizing = false;
+
+                // --- FIX: Store bound event listeners to correctly remove them later ---
+                // This prevents a common bug where `removeEventListener` fails because it's
+                // given a new function instance from `.bind(this)` instead of the original one.
+                this.boundHandleResize = this.handleResize.bind(this);
+                this.boundStopResize = this.stopResize.bind(this);
+                this.boundHandleFullscreenEscape = this.handleFullscreenEscape.bind(this);
+
+                // For resizing logic
+                this.resizeStartX = 0;
+                this.resizeStartY = 0;
+                this.resizeStartWidth = 0;
+                this.resizeStartHeight = 0;
+
+                this.init();
+            }
+
+            cacheDOMElements() {
                 this.editor = document.getElementById('htmlEditor');
                 this.preview = document.getElementById('previewIframe');
                 this.deviceFrame = document.getElementById('deviceFrame');
                 this.deviceInfo = document.getElementById('deviceInfo');
                 this.previewInfo = document.getElementById('previewInfo');
-                this.errorMessage = document.getElementById('errorMessage');
                 this.mainContainer = document.getElementById('mainContainer');
                 this.deviceSize = document.getElementById('deviceSize');
                 this.layoutMode = document.getElementById('layoutMode');
-                this.learnerMode = document.getElementById('learnerMode');
                 this.clearBtn = document.getElementById('clearBtn');
                 this.fullscreenBtn = document.getElementById('fullscreenBtn');
                 this.lineNumbers = document.getElementById('lineNumbers');
                 this.resizeHandle = document.getElementById('resizeHandle');
                 this.editorPanel = document.getElementById('editorPanel');
                 this.previewPanel = document.getElementById('previewPanel');
-                this.learnerTooltip = document.getElementById('learnerTooltip');
-                
-                this.debounceTimer = null;
-                this.isFullscreen = false;
-                this.isResizing = false;
-                this.learnerModeActive = false;
-                this.highlightedElements = new Map();
-                
-                this.init();
+                this.confirmModal = document.getElementById('confirmModal');
+                this.modalConfirmBtn = document.getElementById('modalConfirmBtn');
+                this.modalCancelBtn = document.getElementById('modalCancelBtn');
             }
 
             init() {
-                // Event listeners
+                // Setup all event listeners
                 this.editor.addEventListener('input', () => this.debounceUpdate());
-                this.editor.addEventListener('scroll', () => this.updateLineNumbers());
+                this.editor.addEventListener('scroll', () => this.syncScroll());
                 this.deviceSize.addEventListener('change', () => this.updateDeviceSize());
                 this.layoutMode.addEventListener('change', () => this.updateLayout());
-                this.learnerMode.addEventListener('change', () => this.toggleLearnerMode());
-                this.clearBtn.addEventListener('click', () => this.clearEditor());
+                this.clearBtn.addEventListener('click', () => this.confirmClearEditor());
                 this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
-                
-                // Resize functionality
-                this.initializeResize();
-                
-                // Keyboard shortcuts
+                this.resizeHandle.addEventListener('mousedown', (e) => this.startResize(e));
                 this.editor.addEventListener('keydown', (e) => this.handleKeyboardShortcuts(e));
-                
-                // Initial render
+                this.modalCancelBtn.addEventListener('click', () => this.closeConfirmModal());
+
+                // Initial setup
                 this.updatePreview();
                 this.updateDeviceInfo();
                 this.updateLineNumbers();
             }
 
-            initializeResize() {
-                let startX, startY, startWidth, startHeight;
-                
-                this.resizeHandle.addEventListener('mousedown', (e) => {
-                    this.isResizing = true;
-                    this.resizeHandle.classList.add('dragging');
-                    
-                    if (this.layoutMode.value === 'horizontal') {
-                        startX = e.clientX;
-                        startWidth = parseInt(document.defaultView.getComputedStyle(this.editorPanel).width, 10);
-                    } else {
-                        startY = e.clientY;
-                        startHeight = parseInt(document.defaultView.getComputedStyle(this.editorPanel).height, 10);
-                    }
-                    
-                    document.addEventListener('mousemove', this.handleResize.bind(this));
-                    document.addEventListener('mouseup', this.stopResize.bind(this));
-                    e.preventDefault();
-                });
+            // --- RESIZE LOGIC ---
+            startResize(e) {
+                e.preventDefault();
+                this.isResizing = true;
+                this.resizeHandle.classList.add('dragging');
+
+                this.resizeStartX = e.clientX;
+                this.resizeStartY = e.clientY;
+                this.resizeStartWidth = this.editorPanel.offsetWidth;
+                this.resizeStartHeight = this.editorPanel.offsetHeight;
+
+                document.addEventListener('mousemove', this.boundHandleResize);
+                document.addEventListener('mouseup', this.boundStopResize);
             }
 
             handleResize(e) {
                 if (!this.isResizing) return;
-                
+
                 if (this.layoutMode.value === 'horizontal') {
-                    const width = (e.clientX - startX) + startWidth;
+                    const dx = e.clientX - this.resizeStartX;
+                    let newWidth = this.resizeStartWidth + dx;
                     const containerWidth = this.mainContainer.offsetWidth;
-                    const minWidth = 300;
-                    const maxWidth = containerWidth - 300;
-                    
-                    if (width >= minWidth && width <= maxWidth) {
-                        this.editorPanel.style.flex = `0 0 ${width}px`;
-                    }
+                    // Clamp width to prevent panels from becoming too small
+                    newWidth = Math.max(200, Math.min(newWidth, containerWidth - 200));
+                    this.editorPanel.style.flex = `0 0 ${newWidth}px`;
                 } else {
-                    const height = (e.clientY - startY) + startHeight;
+                    const dy = e.clientY - this.resizeStartY;
+                    let newHeight = this.resizeStartHeight + dy;
                     const containerHeight = this.mainContainer.offsetHeight;
-                    const minHeight = 200;
-                    const maxHeight = containerHeight - 200;
-                    
-                    if (height >= minHeight && height <= maxHeight) {
-                        this.editorPanel.style.flex = `0 0 ${height}px`;
-                    }
+                    // Clamp height
+                    newHeight = Math.max(150, Math.min(newHeight, containerHeight - 150));
+                    this.editorPanel.style.flex = `0 0 ${newHeight}px`;
                 }
             }
 
             stopResize() {
                 this.isResizing = false;
                 this.resizeHandle.classList.remove('dragging');
-                document.removeEventListener('mousemove', this.handleResize.bind(this));
-                document.removeEventListener('mouseup', this.stopResize.bind(this));
+                // Correctly remove the stored, bound event listeners
+                document.removeEventListener('mousemove', this.boundHandleResize);
+                document.removeEventListener('mouseup', this.boundStopResize);
+            }
+
+            // --- EDITOR AND PREVIEW LOGIC ---
+            syncScroll() {
+                this.lineNumbers.scrollTop = this.editor.scrollTop;
             }
 
             updateLineNumbers() {
-                const lines = this.editor.value.split('\n').length;
-                let lineNumbersHtml = '';
-                for (let i = 1; i <= lines; i++) {
-                    lineNumbersHtml += i + '\n';
-                }
-                this.lineNumbers.textContent = lineNumbersHtml;
+                const lineCount = this.editor.value.split('\n').length;
+                this.lineNumbers.innerHTML = Array.from({ length: lineCount }, (_, i) => i + 1).join('<br>');
+                this.syncScroll();
             }
 
             debounceUpdate() {
                 clearTimeout(this.debounceTimer);
                 this.updateLineNumbers();
-                this.debounceTimer = setTimeout(() => {
-                    this.updatePreview();
-                }, 300);
+                this.debounceTimer = setTimeout(() => this.updatePreview(), 300);
             }
 
             updatePreview() {
-                try {
-                    let htmlContent = this.editor.value;
-                    
-                    // Inject learner mode scripts if enabled
-                    if (this.learnerModeActive) {
-                        htmlContent = this.injectLearnerModeScript(htmlContent);
-                    }
-                    
-                    const blob = new Blob([htmlContent], { type: 'text/html' });
-                    const url = URL.createObjectURL(blob);
-                    
-                    this.preview.onload = () => {
-                        if (this.learnerModeActive) {
-                            this.setupLearnerMode();
-                        }
-                    };
-                    
-                    this.preview.src = url;
-                    this.hideError();
-                    
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                } catch (error) {
-                    this.showError('Error rendering HTML: ' + error.message);
-                }
-            }
-
-            injectLearnerModeScript(html) {
-                const script = `
-                    <script>
-                        window.addEventListener('load', function() {
-                            const elements = document.querySelectorAll('*');
-                            elements.forEach((el, index) => {
-                                el.setAttribute('data-element-id', index);
-                                el.addEventListener('mouseenter', function(e) {
-                                    e.stopPropagation();
-                                    window.parent.postMessage({
-                                        type: 'element-hover',
-                                        elementId: index,
-                                        tagName: el.tagName.toLowerCase(),
-                                        className: el.className,
-                                        id: el.id
-                                    }, '*');
-                                });
-                                el.addEventListener('mouseleave', function(e) {
-                                    e.stopPropagation();
-                                    window.parent.postMessage({
-                                        type: 'element-leave',
-                                        elementId: index
-                                    }, '*');
-                                });
-                            });
-                        });
-                    </script>
-                `;
+                const htmlContent = this.editor.value;
+                // Use a Blob to create a URL, which is safer and more reliable
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
                 
-                if (html.includes('</body>')) {
-                    return html.replace('</body>', script + '</body>');
-                } else {
-                    return html + script;
-                }
-            }
+                this.preview.src = url;
 
-            setupLearnerMode() {
-                window.addEventListener('message', (event) => {
-                    if (event.data.type === 'element-hover') {
-                        this.highlightCodeForElement(event.data);
-                        this.showLearnerTooltip(event.data);
-                    } else if (event.data.type === 'element-leave') {
-                        this.removeCodeHighlight();
-                        this.hideLearnerTooltip();
-                    }
-                });
+                // Clean up the object URL after a short delay
+                this.preview.onload = () => {
+                    URL.revokeObjectURL(url);
+                };
             }
-
-            highlightCodeForElement(data) {
-                const code = this.editor.value;
-                const tagName = data.tagName;
-                const className = data.className;
-                const id = data.id;
-                
-                // Simple pattern matching for demonstration
-                let searchPattern = `<${tagName}`;
-                if (id) searchPattern += `[^>]*id=['"']${id}['"']`;
-                if (className) searchPattern += `[^>]*class=['"'][^'"]*${className.split(' ')[0]}`;
-                
-                const regex = new RegExp(searchPattern, 'i');
-                const match = code.match(regex);
-                
-                if (match) {
-                    const start = code.indexOf(match[0]);
-                    const end = start + match[0].length;
-                    
-                    // Highlight in editor (simplified)
-                    this.highlightCodeRange(start, end);
-                }
-            }
-
-            highlightCodeRange(start, end) {
-                // This is a simplified implementation
-                // In a full implementation, you'd want to use a proper code editor library
-                this.editor.focus();
-                this.editor.setSelectionRange(start, end);
-                this.editor.style.backgroundColor = 'rgba(0, 122, 255, 0.1)';
-                
-                setTimeout(() => {
-                    this.editor.style.backgroundColor = '';
-                }, 2000);
-            }
-
-            removeCodeHighlight() {
-                this.editor.style.backgroundColor = '';
-            }
-
-            showLearnerTooltip(data) {
-                const tooltip = this.learnerTooltip;
-                let text = `<${data.tagName}>`;
-                if (data.id) text += ` #${data.id}`;
-                if (data.className) text += ` .${data.className.split(' ')[0]}`;
-                
-                tooltip.textContent = text;
-                tooltip.classList.add('show');
-                
-                // Position tooltip near mouse (simplified)
-                tooltip.style.left = '50%';
-                tooltip.style.top = '50%';
-                tooltip.style.transform = 'translate(-50%, -50%)';
-            }
-
-            hideLearnerTooltip() {
-                this.learnerTooltip.classList.remove('show');
-            }
-
-            toggleLearnerMode() {
-                this.learnerModeActive = this.learnerMode.checked;
-                this.updatePreview();
-            }
-
+            
+            // --- UI CONTROLS ---
             updateDeviceSize() {
                 const size = this.deviceSize.value;
                 this.deviceFrame.className = `device-frame ${size}`;
@@ -853,180 +713,87 @@
                     'desktop-small': { label: 'Desktop Small', dimensions: '1024 × 768' },
                     'mobile': { label: 'Mobile', dimensions: '375 × 667' }
                 };
-                
                 this.deviceInfo.textContent = info[size].dimensions;
                 this.previewInfo.textContent = info[size].label;
             }
 
             updateLayout() {
                 const layout = this.layoutMode.value;
-                if (layout === 'vertical') {
-                    this.mainContainer.classList.add('vertical');
-                    this.resizeHandle.className = 'resize-handle vertical';
-                    this.editorPanel.style.flex = '0 0 50%';
-                } else {
-                    this.mainContainer.classList.remove('vertical');
-                    this.resizeHandle.className = 'resize-handle horizontal';
-                    this.editorPanel.style.flex = '0 0 50%';
-                }
+                this.mainContainer.classList.toggle('vertical', layout === 'vertical');
+                this.resizeHandle.className = `resize-handle ${layout === 'vertical' ? 'vertical' : 'horizontal'}`;
+                // Reset flex basis on layout change
+                this.editorPanel.style.flex = '0 0 50%';
             }
 
-            clearEditor() {
-                if (confirm('Are you sure you want to clear the editor? This action cannot be undone.')) {
+            // --- FIX: Replaced window.confirm with a custom, non-blocking modal ---
+            confirmClearEditor() {
+                this.confirmModal.classList.add('show');
+                // Use .once to ensure the event listener is removed after firing
+                this.modalConfirmBtn.addEventListener('click', () => {
                     this.editor.value = '';
                     this.updatePreview();
                     this.updateLineNumbers();
                     this.editor.focus();
-                }
+                    this.closeConfirmModal();
+                }, { once: true });
+            }
+
+            closeConfirmModal() {
+                this.confirmModal.classList.remove('show');
             }
 
             toggleFullscreen() {
-                if (!this.isFullscreen) {
-                    this.enterFullscreen();
+                this.isFullscreen = !this.isFullscreen;
+                if (this.isFullscreen) {
+                    this.previewPanel.requestFullscreen();
+                    document.addEventListener('fullscreenchange', this.boundHandleFullscreenEscape);
+                    this.fullscreenBtn.textContent = 'Exit Fullscreen';
                 } else {
-                    this.exitFullscreen();
-                }
-            }
-
-            enterFullscreen() {
-                const previewPanel = this.previewPanel;
-                const editorPanel = this.editorPanel;
-                
-                editorPanel.style.display = 'none';
-                previewPanel.style.position = 'fixed';
-                previewPanel.style.top = '0';
-                previewPanel.style.left = '0';
-                previewPanel.style.width = '100vw';
-                previewPanel.style.height = '100vh';
-                previewPanel.style.zIndex = '9999';
-                previewPanel.style.borderRadius = '0';
-                previewPanel.style.boxShadow = 'none';
-                
-                this.fullscreenBtn.textContent = 'Exit Fullscreen';
-                this.isFullscreen = true;
-                
-                // Add escape key listener
-                document.addEventListener('keydown', this.handleFullscreenEscape.bind(this));
-            }
-
-            exitFullscreen() {
-                const previewPanel = this.previewPanel;
-                const editorPanel = this.editorPanel;
-                
-                editorPanel.style.display = 'flex';
-                previewPanel.style.position = 'static';
-                previewPanel.style.width = 'auto';
-                previewPanel.style.height = 'auto';
-                previewPanel.style.zIndex = 'auto';
-                previewPanel.style.borderRadius = '0';
-                previewPanel.style.boxShadow = 'none';
-                
-                this.fullscreenBtn.textContent = 'Fullscreen Preview';
-                this.isFullscreen = false;
-                
-                document.removeEventListener('keydown', this.handleFullscreenEscape.bind(this));
-            }
-
-            handleFullscreenEscape(e) {
-                if (e.key === 'Escape' && this.isFullscreen) {
-                    this.exitFullscreen();
-                }
-            }
-
-            handleKeyboardShortcuts(e) {
-                // Ctrl/Cmd + S to save (prevent default and update preview)
-                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-                    e.preventDefault();
-                    this.updatePreview();
-                    this.showTemporaryMessage('Preview updated');
-                }
-                
-                // Ctrl/Cmd + K to clear
-                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                    e.preventDefault();
-                    this.clearEditor();
-                }
-                
-                // Ctrl/Cmd + Enter for fullscreen
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                    e.preventDefault();
-                    this.toggleFullscreen();
-                }
-                
-                // Tab to insert spaces instead of changing focus
-                if (e.key === 'Tab') {
-                    e.preventDefault();
-                    const start = this.editor.selectionStart;
-                    const end = this.editor.selectionEnd;
-                    this.editor.value = this.editor.value.substring(0, start) + '    ' + this.editor.value.substring(end);
-                    this.editor.selectionStart = this.editor.selectionEnd = start + 4;
-                    this.updateLineNumbers();
-                }
-                
-                // Auto-close brackets and quotes
-                this.handleAutoComplete(e);
-            }
-
-            handleAutoComplete(e) {
-                const pairs = {
-                    '(': ')',
-                    '[': ']',
-                    '{': '}',
-                    '"': '"',
-                    "'": "'",
-                    '<': '>'
-                };
-                
-                if (pairs[e.key]) {
-                    const start = this.editor.selectionStart;
-                    const end = this.editor.selectionEnd;
-                    
-                    if (start === end) { // No selection
-                        e.preventDefault();
-                        const before = this.editor.value.substring(0, start);
-                        const after = this.editor.value.substring(end);
-                        
-                        this.editor.value = before + e.key + pairs[e.key] + after;
-                        this.editor.selectionStart = this.editor.selectionEnd = start + 1;
-                        this.updateLineNumbers();
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
                     }
                 }
             }
 
-            showError(message) {
-                this.errorMessage.textContent = message;
-                this.errorMessage.style.display = 'block';
-                setTimeout(() => this.hideError(), 5000);
+            handleFullscreenEscape() {
+                if (!document.fullscreenElement) {
+                    this.isFullscreen = false;
+                    this.fullscreenBtn.textContent = 'Fullscreen Preview';
+                    document.removeEventListener('fullscreenchange', this.boundHandleFullscreenEscape);
+                }
             }
+            
+            handleKeyboardShortcuts(e) {
+                // Tab to insert spaces
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = this.editor.selectionStart;
+                    const end = this.editor.selectionEnd;
+                    const indent = '  '; // 2 spaces for indentation
+                    this.editor.value = this.editor.value.substring(0, start) + indent + this.editor.value.substring(end);
+                    this.editor.selectionStart = this.editor.selectionEnd = start + indent.length;
+                    this.debounceUpdate();
+                }
 
-            hideError() {
-                this.errorMessage.style.display = 'none';
-            }
-
-            showTemporaryMessage(message) {
-                const originalText = this.previewInfo.textContent;
-                this.previewInfo.textContent = message;
-                this.previewInfo.style.color = '#007aff';
-                setTimeout(() => {
-                    this.previewInfo.textContent = originalText;
-                    this.previewInfo.style.color = '#86868b';
-                }, 2000);
+                // Auto-close brackets and quotes
+                const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+                if (pairs[e.key]) {
+                    e.preventDefault();
+                    const start = this.editor.selectionStart;
+                    const end = this.editor.selectionEnd;
+                    const before = this.editor.value.substring(0, start);
+                    const after = this.editor.value.substring(end);
+                    
+                    this.editor.value = before + e.key + pairs[e.key] + after;
+                    this.editor.selectionStart = this.editor.selectionEnd = start + 1;
+                    this.debounceUpdate();
+                }
             }
         }
 
         // Initialize the editor when the page loads
         document.addEventListener('DOMContentLoaded', () => {
-            window.editor = new ProfessionalHTMLEditor();
-        });
-
-        // Handle window resize to maintain responsive behavior
-        window.addEventListener('resize', () => {
-            if (window.editor && !window.editor.isResizing) {
-                // Reset flex basis on window resize for better responsiveness
-                if (window.innerWidth <= 768) {
-                    window.editor.editorPanel.style.flex = '0 0 50%';
-                }
-            }
+            window.app = new ProfessionalHTMLEditor();
         });
     </script>
 </body>
