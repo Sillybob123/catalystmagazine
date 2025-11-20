@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+  <title>Catalyst Magazine</title>
+  <style>
+    /* --- 1. CORE RESET & APPLE SYSTEM FONTS --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    :root {
+      --bg-body: #fbfbfd;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --accent-blue: #0071e3;
+      --card-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      --card-shadow-hover: 0 12px 40px rgba(0,0,0,0.12);
+      --nav-height: 110px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: transparent; 
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 80px;
+      overflow-x: hidden;
+    }
+
+    /* --- 2. STICKY HEADER (Search & Nav) --- */
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(251, 251, 253, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      padding: 15px 0 10px 0;
+      transition: all 0.3s ease;
+    }
+
+    .header-content {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Search Bar */
+    .search-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      width: 16px;
+      height: 16px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 10px 10px 36px;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.1);
+      background: rgba(255,255,255,0.6);
+      font-size: 15px;
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      background: #fff;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+    }
+
+    /* Category Navigation (Pills) */
+    .category-nav {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 5px;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE */
+      mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
+      padding-left: 20px; /* Visual offset for mask */
+      padding-right: 20px;
+      justify-content: flex-start;
+    }
+    
+    @media (min-width: 800px) {
+        .category-nav { justify-content: center; mask-image: none; -webkit-mask-image: none; padding: 0;}
+    }
+    
+    .category-nav::-webkit-scrollbar { display: none; }
+
+    .nav-pill {
+      white-space: nowrap;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: rgba(0,0,0,0.04);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .nav-pill:hover, .nav-pill.active {
+      background: var(--text-primary);
+      color: #fff;
+    }
+
+    /* --- 3. MAIN LAYOUT --- */
+    .feed-container {
+      max-width: 100%; /* Full Width */
+      margin: 0;
+      padding-top: 20px;
+    }
+
+    /* --- 4. HERO CAROUSEL --- */
+    .hero-section {
+      margin-bottom: 50px;
+      padding: 0 20px; /* Side padding for the header text */
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 20px;
+        max-width: 1600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-title {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    /* Hero Track */
+    .hero-track {
+      display: flex;
+      overflow-x: auto;
+      gap: 20px;
+      padding: 10px 40px 50px 40px; /* Bottom padding for shadow */
+      margin: 0 -20px; /* Negative margin to let scroll go full width */
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .hero-track::-webkit-scrollbar { display: none; }
+
+    /* Hero Card */
+    .hero-card {
+      flex: 0 0 400px;
+      height: 500px;
+      background: #fff;
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+      scroll-snap-align: center;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+      transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
+      cursor: pointer;
+      border: 1px solid rgba(0,0,0,0.02);
+    }
+
+    .hero-card:hover {
+      transform: scale(1.02) translateY(-5px);
+      box-shadow: 0 25px 50px rgba(0,0,0,0.18);
+      z-index: 10;
+    }
+
+    .hero-image {
+      width: 100%;
+      height: 65%;
+      object-fit: cover;
+      transition: transform 0.6s ease;
+    }
+    .hero-card:hover .hero-image { transform: scale(1.05); }
+
+    .hero-content {
+      padding: 24px;
+      height: 35%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .hero-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .hero-headline {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text-primary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .hero-date {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* --- 5. STANDARD CATEGORY ROWS --- */
+    .category-row {
+      margin-bottom: 40px;
+      scroll-margin-top: 120px; /* For sticky header offset */
+    }
+    
+    .category-title {
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        margin-bottom: 15px;
+        padding-left: 40px; /* Match track padding */
+        max-width: 1600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .std-track {
+      display: flex;
+      overflow-x: auto;
+      gap: 20px;
+      padding: 10px 40px 40px 40px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .std-track::-webkit-scrollbar { display: none; }
+
+    .std-card {
+      flex: 0 0 280px;
+      height: 360px;
+      background: white;
+      border-radius: 18px;
+      overflow: hidden;
+      scroll-snap-align: start;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.3s ease;
+      border: 1px solid rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .std-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .std-image {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      background: #f0f0f0;
+    }
+
+    .std-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    .std-cat {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+    }
+
+    .std-title {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .std-meta {
+      margin-top: auto;
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid #f5f5f7;
+      padding-top: 10px;
+    }
+
+    /* --- 6. THEME COLORS --- */
+    [data-cat="neuro"] .std-cat, [data-cat="neuro"] .hero-tag { color: #5856d6; }
+    [data-cat="biochemphys"] .std-cat, [data-cat="biochemphys"] .hero-tag { color: #af52de; }
+    [data-cat="env"] .std-cat, [data-cat="env"] .hero-tag { color: #34c759; }
+    [data-cat="public"] .std-cat, [data-cat="public"] .hero-tag { color: #ff9500; }
+    [data-cat="biotech"] .std-cat, [data-cat="biotech"] .hero-tag { color: #ff2d55; }
+
+    /* --- 7. MOBILE OPTIMIZATIONS (<700px) --- */
+    @media (max-width: 700px) {
+      .feed-container { padding-top: 10px; }
+      
+      .hero-section { padding: 0 15px; margin-bottom: 30px; }
+      .hero-title { font-size: 28px; }
+      
+      /* Full width swipe on mobile, center snap */
+      .hero-track {
+        padding: 10px 20px 40px 20px;
+        margin: 0 -15px;
+        gap: 15px;
+      }
+      
+      .hero-card {
+        flex: 0 0 85vw; /* 85% of viewport width */
+        max-width: none;
+        height: 460px;
+        border-radius: 20px;
+      }
+
+      .category-title {
+        font-size: 20px;
+        padding-left: 20px;
+        margin-bottom: 10px;
+      }
+
+      .std-track {
+        padding: 10px 20px 30px 20px;
+        gap: 15px;
+      }
+
+      .std-card {
+        flex: 0 0 240px; /* Smaller standard cards */
+        height: 320px;
+      }
+      
+      .header-content { padding: 0 15px; }
+      .search-input { font-size: 16px; /* Prevent zoom on focus */ }
+    }
+
+    /* Utility: Hidden class for search filtering */
+    .hidden { display: none !important; }
+    .no-results { text-align: center; padding: 40px; color: var(--text-secondary); font-style: italic; width: 100%; }
+  </style>
+</head>
+<body>
+
+<!-- STICKY HEADER -->
+<div class="sticky-header">
+  <div class="header-content">
+    <!-- Search Bar -->
+    <div class="search-wrapper">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search articles, authors, or topics...">
+    </div>
+    
+    <!-- Navigation Pills -->
+    <nav class="category-nav">
+      <span class="nav-pill" onclick="scrollToSection('recent')">Recent Stories</span>
+      <span class="nav-pill" onclick="scrollToSection('neuro')">Neuroscience</span>
+      <span class="nav-pill" onclick="scrollToSection('biochemphys')">Bio/Chem/Phys</span>
+      <span class="nav-pill" onclick="scrollToSection('env')">Environment</span>
+      <span class="nav-pill" onclick="scrollToSection('public')">Public Health</span>
+      <span class="nav-pill" onclick="scrollToSection('biotech')">Biotech & AI</span>
+    </nav>
+  </div>
+</div>
+
+<div class="feed-container">
+
+  <!-- HERO: RECENT STORIES -->
+  <div class="hero-section" id="recent">
+    <div class="section-header">
+      <h1 class="hero-title">Recent Stories</h1>
+    </div>
+    <div class="hero-track" id="recent-track">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div class="category-row" id="neuro" data-cat="neuro">
+    <h2 class="category-title">Neuroscience & Medicine</h2>
+    <div class="std-track" id="container-neuro"></div>
+  </div>
+
+  <div class="category-row" id="biochemphys" data-cat="biochemphys">
+    <h2 class="category-title">Biology, Chemistry & Physics</h2>
+    <div class="std-track" id="container-biochemphys"></div>
+  </div>
+
+  <div class="category-row" id="env" data-cat="env">
+    <h2 class="category-title">Environmental Science</h2>
+    <div class="std-track" id="container-env"></div>
+  </div>
+
+  <div class="category-row" id="public" data-cat="public">
+    <h2 class="category-title">Public Health & SciComm</h2>
+    <div class="std-track" id="container-public"></div>
+  </div>
+
+  <div class="category-row" id="biotech" data-cat="biotech">
+    <h2 class="category-title">Biotech & AI</h2>
+    <div class="std-track" id="container-biotech"></div>
+  </div>
+
+</div>
+
+<script>
+  /* --- FULL ARTICLE DATABASE (22 Articles) --- */
+  const articles = [
+    {
+      title: "The IMERSE Lab: A New Era of Autonomous Surgical Robotics",
+      author: "Lori Preci",
+      date: "Nov 3, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_790a12e131b64175aa547cdd45d902c1~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/the-imerse-lab-a-new-era-of-autonomous-surgical-robotics",
+      category: "biotech",
+      excerpt: "Inside Johns Hopkins University’s IMERSE Lab, surgical robotics is entering a new frontier."
+    },
+    {
+      title: "Decoding Demyelination: Dr. Jeffrey Huang's Innovative Research on MS",
+      author: "Naama Ben-Dor",
+      date: "Oct 22, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_64403204e5444555b7109a01bfbb794b~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/decoding-demyelination-a-look-inside-dr-jeffrey-huang-s-innovative-research-on-ms",
+      category: "neuro",
+      excerpt: "Dr. Jeffrey Huang's lab holds a patent for a potential new MS drug targeting amino acid transporters."
+    },
+    {
+      title: "I Am, therefore I See: How The Brain Edits Reality on The Fly",
+      author: "Le Nguyen",
+      date: "Oct 9, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_9dd8aec783314c05bfffc9e0f6123770~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/i-am-therefore-i-see-how-the-brain-edits-reality-on-the-fly",
+      category: "neuro",
+      excerpt: "Dr. Sarah Shomstein reveals how our mind silently sorts the sensory chaos around us."
+    },
+    {
+      title: "The Geography of Risk: How D.C. Neighborhoods Shape Children's Health",
+      author: "Alexis Tamm",
+      date: "Sep 18, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_067249c3dd7549b3b2825cc93ee675ec~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/the-geography-of-risk-how-d-c-neighborhoods-shape-children-s-health",
+      category: "public",
+      excerpt: "Environmental racism and climate hazards disproportionately harm marginalized communities in D.C."
+    },
+    {
+      title: "The Cosmic Journey of Dr. Duilia De Mello",
+      author: "Layla Abdoulaye",
+      date: "Sep 8, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_f6fb601d0e8342bcbb0bda53453f6e30~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/the-cosmic-journey-of-dr-duilia-de-mello",
+      category: "biochemphys",
+      excerpt: "Using the universe's oldest light to piece together our cosmic origins from Brazil to NASA."
+    },
+    {
+      title: "How Community-Led Science is Revolutionizing Research",
+      author: "Aidan Brown",
+      date: "Sep 6, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_37e75f32aa924b718d4eb0309ba0d553~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/how-community-led-science-is-revolutionizing-research",
+      category: "public",
+      excerpt: "Scientist Sacoby Wilson is leading a movement to put research tools directly in the hands of the people."
+    },
+    {
+      title: "Charting the Future of Myasthenia Gravis Therapy",
+      author: "Alex Carter",
+      date: "Aug 18, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_1bb33ffb6fc6402cb87a0b6502e23285~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/charting-the-future-of-myasthenia-gravis-therapy",
+      category: "neuro",
+      excerpt: "Leading expert Dr. Henry Kaminski guides us through the latest breakthroughs in MG treatment."
+    },
+    {
+      title: "How Dr. Brandon Kohrt is Expanding Access to Mental Health Care",
+      author: "Lori Preci & Aidan Schurr",
+      date: "Aug 10, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_2e85837e233748b194ee2be01af0699c~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/how-dr-brandon-kohrt-is-expanding-access-to-mental-health-care",
+      category: "public",
+      excerpt: "Combining deep cultural insight with scientific rigor to build inclusive global mental health systems."
+    },
+    {
+      title: "How Coastal Trees Adapt Amid Rising Seas",
+      author: "Aidan Brown",
+      date: "July 10, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_4c10a42242c843f2ba85e9d2233e47c9~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/how-coastal-trees-adapt-amid-rising-seas",
+      category: "env",
+      excerpt: "Scientist Riley Leff dives deep into the hidden strategies trees use to survive extreme stress."
+    },
+    {
+      title: "From Battling a Rare Bioweapon Pathogen to Pioneering Global Health Security",
+      author: "Aidan Schurr",
+      date: "Jul 1, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_47e7a044e37c4cceb9dd09977d590c30~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/reframing-health-as-a-national-security-issue",
+      category: "public",
+      excerpt: "Rebecca Katz’s plan to volunteer in India was unraveled by a severe illness that doctors struggled to diagnose."
+    },
+    {
+      title: "Designing a Sustainable Future with Sun, Wind, and Water",
+      author: "Ginger Taurek",
+      date: "June 7, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_0fe12e2d642740d6b58bbda1df751199~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/designing-a-sustainable-future-with-sun-wind-and-water",
+      category: "env",
+      excerpt: "For innovator Scott Sklar, renewable energy is about more than climate—it’s about human survival."
+    },
+    {
+      title: "Elucidating the Brain’s Language Circuitry",
+      author: "Catalyst Team",
+      date: "May 16, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_4d74a6206a0f43c9a38125c8bc03e28e~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/elucidating-the-brain-s-language-circuitry-with-dr-michael-ullman",
+      category: "neuro",
+      excerpt: "Dr. Michael T. Ullman's Declarative/Procedural model links mental lexicon to declarative memory."
+    },
+    {
+      title: "Sitting Down with the Editor-in-Chief of Science Magazine",
+      author: "Alex Carter & Aidan Schurr",
+      date: "May 07, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_548f96bc13fa4021b9b0c26e3f625fcc~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/sitting-down-with-the-editor-in-chief-of-science-magazine-to-talk-about-the-future-of-scientific-co",
+      category: "public",
+      excerpt: "We sat down with Holden Thorp to explore how one of the world’s leading science journals navigates communication."
+    },
+    {
+      title: "Dr. Song Gao’s Chemistry-Policy Crusade Against Hidden Pollutants",
+      author: "Naama Ben-Dor",
+      date: "Apr 19, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_0384c4b9d49545a3b2e708073485f11b~mv2.jpg",
+      link: "https://www.catalyst-magazine.com/post/pollution-to-solution-dr-song-gao-on-science-policy-and-environmental-sustainability",
+      category: "env",
+      excerpt: "Dr. Song Gao bridges science and policy to tackle climate change, ozone depletion, and environmental sustainability."
+    },
+    {
+      title: "How One Engineer is Changing Sustainable Fuels",
+      author: "Aidan Schurr",
+      date: "Apr 10, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_4491d15e55c94d058d2a63eedf3cfc42~mv2.png",
+      link: "https://www.catalyst-magazine.com/post/how-one-engineer-is-changing-sustainable-fuels",
+      category: "env",
+      excerpt: "Tyler Wyka bridges engineering, sustainability, and global collaboration to drive real-world solutions."
+    },
+    {
+      title: "How The World of Genetics Shapes Evolution",
+      author: "Alex Carter",
+      date: "Mar 14, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_9e5fcb3b2c194aba87fb93241ade3b8b~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/how-the-world-of-genetics-shapes-evolution",
+      category: "biochemphys",
+      excerpt: "Dr. Luca Livraghi studies the colorful patterns on butterfly wings to understand evolutionary novelty."
+    },
+    {
+      title: "Serendipity and Science: The Journey of Dr. John Hawdon",
+      author: "Lori Preci",
+      date: "Mar 05, 2025",
+      image: "https://static.wixstatic.com/media/44031f_75620e6213e04a56b298580689208fce~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/serendipity-and-science-the-journey-of-dr-john-hawdon",
+      category: "neuro",
+      excerpt: "Dr. Hawdon’s research tackles anthelmintic resistance in parasites, a threat to human and animal health."
+    },
+    {
+      title: "Dr. Brent Harris’ Brain Bank Revolution",
+      author: "Aidan Schurr",
+      date: "Feb 15, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_0790d57e5eef4d119d3c9497017df5ca~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-researc",
+      category: "neuro",
+      excerpt: "Dr. Brent Harris's work in neuropathology, ALS research, and advocacy helps countless lives."
+    },
+    {
+      title: "How Cutting-Edge Research in D.C. is Reshaping Science",
+      author: "Yair Ben-Dor",
+      date: "Feb 06, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_aa825fc11e6740d0a40a12f2ea19bf56~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/how-cutting-edge-research-in-washington-d-c-is-reshaping-science-and-medicine",
+      category: "biotech",
+      excerpt: "Researchers in D.C. are revolutionizing AI, MS treatments, and cancer therapies."
+    },
+    {
+      title: "A Universe of Plasma: From Satellites to Cells",
+      author: "Aidan Schurr",
+      date: "Jan 28, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_5623b55dcf734591a3d3feca82b1d76d~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells",
+      category: "biotech",
+      excerpt: "Dr. Michael Keidar applies plasma physics to diverse fields like satellite propulsion and cancer therapy."
+    },
+    {
+      title: "The Road From Academia to Forensic Applications of Chemistry",
+      author: "Naama Ben-Dor",
+      date: "Jan 10, 2025",
+      image: "https://static.wixstatic.com/media/11b1c4_9737d25c5ad74ba7829973eb7513f61a~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/the-road-from-academia-to-forensic-applications-of-chemistry",
+      category: "biochemphys",
+      excerpt: "Dr. Lucas Kane describes his journey from graduate studies in Chemistry to forensic analysis for the Secret Service."
+    },
+    {
+      title: "From Music to Nuclear Policy: Dr. Cahill’s Journey",
+      author: "Lori Preci & Yair Ben-Dor",
+      date: "Dec 14, 2024",
+      image: "https://static.wixstatic.com/media/11b1c4_0c15687348b442c5ab1d0a2295571751~mv2.jpeg",
+      link: "https://www.catalyst-magazine.com/post/from-music-to-nuclear-policy-professor-christopher-cahill-s-unexpected-journey-in-science-and-polic",
+      category: "biochemphys",
+      excerpt: "Professor Christopher Cahill shows how unexpected turns spark curiosity, innovation, and impact in nuclear science."
+    }
+  ];
+
+  /* --- HELPER: NAVIGATE & SCROLL --- */
+  function handleNav(url) {
+    if(window.top) window.top.location.href = url;
+    else window.location.href = url;
+  }
+
+  function scrollToSection(id) {
+    const el = document.getElementById(id);
+    if(el) {
+      const y = el.getBoundingClientRect().top + window.scrollY - 120; // Offset for sticky header
+      window.scrollTo({top: y, behavior: 'smooth'});
+    }
+  }
+
+  function getCategoryLabel(cat) {
+    switch(cat) {
+      case 'neuro': return 'Neuroscience';
+      case 'biochemphys': return 'Bio / Chem / Phys';
+      case 'env': return 'Environment';
+      case 'public': return 'Public Health';
+      case 'biotech': return 'Biotech & AI';
+      default: return 'Article';
+    }
+  }
+
+  /* --- RENDER FUNCTIONS --- */
+  function createHeroCard(article, index) {
+    const loading = index < 2 ? 'eager' : 'lazy'; 
+    return `
+      <div class="hero-card data-card" data-title="${article.title.toLowerCase()}" data-auth="${article.author.toLowerCase()}" onclick="handleNav('${article.link}')">
+        <img src="${article.image}" alt="${article.title}" class="hero-image" loading="${loading}" />
+        <div class="hero-content">
+          <div>
+            <span class="hero-tag" data-cat="${article.category}">${getCategoryLabel(article.category)}</span>
+            <h3 class="hero-headline">${article.title}</h3>
+          </div>
+          <span class="hero-date">${article.date}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function createStandardCard(article) {
+    return `
+      <div class="std-card data-card" data-title="${article.title.toLowerCase()}" data-auth="${article.author.toLowerCase()}" data-cat="${article.category}" onclick="handleNav('${article.link}')">
+        <img src="${article.image}" alt="${article.title}" class="std-image" loading="lazy" />
+        <div class="std-body">
+          <span class="std-cat">${getCategoryLabel(article.category)}</span>
+          <h4 class="std-title">${article.title}</h4>
+          <div class="std-meta">
+            <span>${article.author}</span>
+            <span>${article.date}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /* --- SEARCH LOGIC --- */
+  function initSearch() {
+    const searchInput = document.getElementById('searchInput');
+    searchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const cards = document.querySelectorAll('.data-card');
+      
+      cards.forEach(card => {
+        const title = card.getAttribute('data-title');
+        const author = card.getAttribute('data-auth');
+        const category = card.getAttribute('data-cat'); // For hero cards this might be inside, but simplistic match
+        
+        if (title.includes(term) || author.includes(term)) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      // Hide empty rows if search filters everything out
+      document.querySelectorAll('.category-row, .hero-section').forEach(section => {
+        const visibleCards = section.querySelectorAll('.data-card:not(.hidden)');
+        section.style.display = visibleCards.length > 0 ? 'block' : 'none';
+      });
+    });
+  }
+
+  /* --- INITIALIZATION --- */
+  document.addEventListener('DOMContentLoaded', () => {
+    // 1. Sort by Date
+    const sorted = [...articles].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // 2. Populate Recents
+    const recentTrack = document.getElementById('recent-track');
+    sorted.slice(0, 6).forEach((article, index) => {
+      recentTrack.innerHTML += createHeroCard(article, index);
+    });
+
+    // 3. Populate Categories
+    const containers = {
+      neuro: document.getElementById('container-neuro'),
+      biochemphys: document.getElementById('container-biochemphys'),
+      env: document.getElementById('container-env'),
+      public: document.getElementById('container-public'),
+      biotech: document.getElementById('container-biotech')
+    };
+
+    articles.forEach(article => {
+      const container = containers[article.category];
+      if (container) container.innerHTML += createStandardCard(article);
+    });
+
+    // 4. Init Features
+    initSearch();
+    
+    // 5. Cleanup empty
+    Object.keys(containers).forEach(key => {
+      if(containers[key].children.length === 0) {
+        document.getElementById(key).parentElement.style.display = 'none';
+      }
+    });
+  });
+</script>
+</body>
+</html>
