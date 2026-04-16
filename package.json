@@ -4,6 +4,7 @@
   "description": "Content Management System for The Catalyst Magazine",
   "main": "server.js",
   "scripts": {
+    "build:cloudflare": "node scripts/build-cloudflare.js",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },

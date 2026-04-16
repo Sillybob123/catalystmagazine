@@ -1,0 +1,10 @@
+{
+  "name": "catalystmagazine",
+  "compatibility_date": "2026-04-16",
+  "build": {
+    "command": "npm run build:cloudflare"
+  },
+  "assets": {
+    "directory": "./cloudflare-dist"
+  }
+}
