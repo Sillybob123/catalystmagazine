@@ -16,6 +16,7 @@
   "author": "The Catalyst Magazine",
   "license": "MIT",
   "dependencies": {
+    "bundle": "file:./tools/bundle-shim",
     "express": "^4.18.2",
     "cors": "^2.8.5"
   },

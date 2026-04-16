@@ -14,6 +14,7 @@ const excludedDirectories = new Set([
   "firebase-functions",
   "gitignore",
   "node_modules",
+  "tools",
   "scripts",
   "__pycache__"
 ]);

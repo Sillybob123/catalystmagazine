@@ -1,0 +1,8 @@
+{
+  "name": "bundle",
+  "version": "1.0.0",
+  "private": true,
+  "bin": {
+    "bundle": "bundle.js"
+  }
+}
