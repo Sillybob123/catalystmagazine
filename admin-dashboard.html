@@ -1928,7 +1928,31 @@
                     updatedAt: new Date().toISOString()
                 });
 
-                alert(`Story published! View at: ${result.url}`);
+                // --- Newsletter trigger via /api/publish ----------------------
+                // After the story is published, call the Cloudflare Function
+                // that counts published stories and sends a newsletter every 3.
+                try {
+                    const idToken = await auth.currentUser.getIdToken();
+                    const nlRes = await fetch('/api/publish', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${idToken}`
+                        },
+                        body: JSON.stringify({ storyId })
+                    });
+                    const nlData = await nlRes.json().catch(() => ({}));
+                    if (nlData.newsletterSent) {
+                        alert(`Story published! View at: ${result.url}\n\nNewsletter sent to subscribers (total published: ${nlData.totalPublished}).`);
+                    } else {
+                        const remaining = 3 - (nlData.totalPublished % 3);
+                        alert(`Story published! View at: ${result.url}\n\n${remaining} more story${remaining === 1 ? '' : 'ies'} until the next newsletter.`);
+                    }
+                } catch (nlErr) {
+                    console.warn('Newsletter trigger skipped:', nlErr);
+                    alert(`Story published! View at: ${result.url}`);
+                }
+
                 loadStories();
             } catch (error) {
                 console.error('Error publishing story:', error);

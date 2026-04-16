@@ -1,0 +1,43 @@
+# Copy this to `.dev.vars` (for `wrangler pages dev` local runs).
+# Never commit `.dev.vars` — it is already in `.gitignore`.
+#
+# For Cloudflare Pages production, set these in the dashboard:
+#   Pages project -> Settings -> Environment variables -> Production
+# (use "Secret" for anything flagged SECRET below.)
+#
+# ---------------------------------------------------------------------------
+# NOTE: You're in the "testing" phase — you haven't moved catalyst-magazine.com
+#   off Wix yet. So set SITE_URL to your Cloudflare Pages URL for now
+#   (e.g. https://catalystmagazine.pages.dev) and use Resend's sandbox sender
+#   until the domain is moved. See DEPLOYMENT-GUIDE.md § "Testing phase".
+# ---------------------------------------------------------------------------
+
+# === Firebase ===============================================================
+# The project ID whose Auth + Firestore the site uses.
+# Existing codebase: catalystwriters-5ce43
+# Fresh project from Firebase console: catalystmagazinenew
+FIREBASE_PROJECT_ID=catalystwriters-5ce43
+
+# SECRET. A Firebase Admin service-account JSON pasted as a single line.
+# Download at: Firebase console -> Project settings -> Service accounts -> Generate new private key
+# Paste the ENTIRE JSON (keys and values).
+FIREBASE_SERVICE_ACCOUNT={"type":"service_account","project_id":"...","private_key":"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n","client_email":"...@...iam.gserviceaccount.com","client_id":"...","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token"}
+
+# === Email (Resend) =========================================================
+# SECRET. Create at https://resend.com/api-keys
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# "From" header for every email.
+#  - TESTING (before moving your domain): use Resend's sandbox address.
+#    MAIL_FROM=Catalyst Magazine <onboarding@resend.dev>
+#    Note: the sandbox only delivers to the email you signed up with — great
+#    for testing yourself, not for real subscribers.
+#  - PRODUCTION (after you verify catalyst-magazine.com in Resend):
+#    MAIL_FROM=Catalyst Magazine <hello@catalyst-magazine.com>
+MAIL_FROM=Catalyst Magazine <onboarding@resend.dev>
+
+# === Site ===================================================================
+# Used in email links and as the newsletter footer. Omit trailing slash.
+#  - TESTING: your Cloudflare Pages URL, e.g. https://catalystmagazine.pages.dev
+#  - PRODUCTION: https://catalyst-magazine.com
+SITE_URL=https://catalystmagazine.pages.dev

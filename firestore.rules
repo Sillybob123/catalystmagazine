@@ -1,0 +1,95 @@
+rules_version = '2';
+// Deploy with:  firebase deploy --only firestore:rules
+//
+// Design:
+//  - subscribers: public write (via server only, but also tolerated directly
+//    with email validation). Reads only by admin/editor.
+//  - users/{uid}: a user may read/write their own doc. Admins may read any.
+//  - stories: anyone can read *published* stories; authors can read/write their
+//    own drafts; editors/admins can read/write any story.
+//  - everything else: locked.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function myUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function myRole() {
+      return isSignedIn()
+        ? myUserDoc().data.role
+        : null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && myRole() == 'admin';
+    }
+
+    function isEditor() {
+      return isSignedIn() && (myRole() == 'admin' || myRole() == 'editor');
+    }
+
+    function isStaff() {
+      return isSignedIn() && myRole() in ['admin', 'editor', 'writer'];
+    }
+
+    // ----- users --------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      // Users can create their own doc on first login (role forced to 'reader').
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'reader';
+      // Users can update safe fields on their own doc.
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && !('role' in request.resource.data.diff(resource.data).affectedKeys());
+      // Admins can do anything.
+      allow read, write: if isAdmin();
+    }
+
+    // ----- stories ------------------------------------------------------
+    match /stories/{storyId} {
+      // Public can read only published stories.
+      allow read: if resource.data.status == 'published';
+      // Staff can read any story.
+      allow read: if isStaff();
+
+      // Writers create their own drafts.
+      allow create: if isStaff()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.status in ['draft', 'pending'];
+
+      // Authors can update their own drafts (not publish them).
+      allow update: if isStaff()
+        && resource.data.authorId == request.auth.uid
+        && request.resource.data.status in ['draft', 'pending'];
+
+      // Editors/admins can update or publish any story.
+      allow update, delete: if isEditor();
+    }
+
+    // ----- subscribers --------------------------------------------------
+    // The canonical path is POST /api/subscribe (server-side). We still
+    // allow anonymous create here as a fallback, but only for well-formed
+    // email docs. Reads are staff-only.
+    match /subscribers/{emailKey} {
+      allow read: if isEditor();
+      allow create: if
+        request.resource.data.email is string
+        && request.resource.data.email.matches('.+@.+\\..+')
+        && request.resource.data.status == 'active';
+      allow update, delete: if isAdmin();
+    }
+
+    // Default deny.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

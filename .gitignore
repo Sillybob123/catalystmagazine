@@ -9,6 +9,11 @@ firebase-functions/node_modules/
 .env
 .env.local
 .env.*
+.dev.vars
+
+# Cloudflare + build artifacts
+.wrangler/
+cloudflare-dist/
 
 # OS files
 .DS_Store

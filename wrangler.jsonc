@@ -1,10 +1,15 @@
 {
+  // Cloudflare Pages project config.
+  // Used for `npx wrangler pages dev` and `npx wrangler pages deploy`.
   "name": "catalystmagazine",
   "compatibility_date": "2026-04-16",
-  "build": {
-    "command": "npm run build:cloudflare"
-  },
-  "assets": {
-    "directory": "./cloudflare-dist"
-  }
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The build command packages both static assets and the /functions folder
+  // into ./cloudflare-dist.
+  "pages_build_output_dir": "./cloudflare-dist"
+
+  // Environment variables are NOT set here — they are configured in the
+  // Cloudflare dashboard under Pages -> Settings -> Environment variables.
+  // See .dev.vars.example for the list of required keys.
 }

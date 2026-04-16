@@ -17,12 +17,16 @@ const excludedDirectories = new Set([
   "tools",
   "scripts",
   "__pycache__"
+  // NOTE: "functions" is intentionally NOT excluded — Cloudflare Pages
+  // auto-deploys anything under cloudflare-dist/functions/ as a Function.
 ]);
 
 const excludedFiles = new Set([
   ".gitignore",
   ".htaccess",
   ".nojekyll",
+  ".dev.vars",
+  ".dev.vars.example",
   "_config.yml",
   "generate-article.php",
   "install.sh",
@@ -32,7 +36,10 @@ const excludedFiles = new Set([
   "scheduler/QUICK_START.txt",
   "scheduler/UPLOAD_INSTRUCTIONS.txt",
   "server.js",
-  "wrangler.jsonc"
+  "wrangler.jsonc",
+  "firestore.rules",
+  "firestore.indexes.json",
+  "DEPLOYMENT-GUIDE.md"
 ]);
 
 const excludedExtensions = new Set([
