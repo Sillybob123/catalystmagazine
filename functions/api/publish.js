@@ -22,6 +22,7 @@ import {
   firestoreGet,
   firestoreUpdate,
   firestoreRunQuery,
+  getProjectId,
 } from "../_utils/firebase.js";
 import { sendBulkEmail } from "../_utils/resend.js";
 import { newsletterEmail } from "../_utils/emails.js";
@@ -31,8 +32,7 @@ export const onRequestPost = async ({ request, env }) => {
     const token = getBearerToken(request);
     if (!token) return unauthorized("Missing Bearer token");
 
-    const projectId = env.FIREBASE_PROJECT_ID;
-    if (!projectId) return serverError(new Error("FIREBASE_PROJECT_ID missing"));
+    const projectId = getProjectId(env);
 
     // --- Auth ----------------------------------------------------------------
     let claims;

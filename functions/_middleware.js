@@ -6,7 +6,16 @@
 import { corsHeaders, handleOptions } from "./_utils/http.js";
 
 export async function onRequest(context) {
-  const { request, next } = context;
+  const { request, next, env } = context;
+
+  // Fix env var names that accidentally have trailing whitespace/tabs.
+  // Cloudflare's dashboard sometimes saves keys with invisible characters.
+  for (const key of Object.keys(env)) {
+    const trimmed = key.trim();
+    if (trimmed !== key && env[key] !== undefined) {
+      env[trimmed] = env[key];
+    }
+  }
 
   if (request.method === "OPTIONS") {
     return handleOptions(request);

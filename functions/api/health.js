@@ -2,6 +2,7 @@
 // Sanity-check route you can hit from the browser after deploying.
 
 import { json, serverError } from "../_utils/http.js";
+import { getProjectId } from "../_utils/firebase.js";
 
 export const onRequestGet = async ({ env }) => {
   try {
@@ -16,14 +17,18 @@ export const onRequestGet = async ({ env }) => {
       }
     }
 
+    let projectId = "(unset)";
+    try {
+      projectId = getProjectId(env);
+    } catch { /* fallback already handled */ }
+
     return json({
       ok: true,
       service: "catalyst-magazine",
-      project: env.FIREBASE_PROJECT_ID || "(unset)",
+      project: projectId,
       resendConfigured: Boolean(env.RESEND_API_KEY),
       serviceAccountConfigured: Boolean(saRaw),
       serviceAccountStatus: saStatus,
-      envKeysPresent: Object.keys(env).filter(k => !k.startsWith("__")).sort(),
       timestamp: new Date().toISOString(),
     });
   } catch (err) {

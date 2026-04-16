@@ -193,9 +193,21 @@ async function getServiceAccountAccessToken(env) {
 
 // --- Firestore REST helpers -------------------------------------------------
 
+export function getProjectId(env) {
+  if (env.FIREBASE_PROJECT_ID) return env.FIREBASE_PROJECT_ID;
+  // Fallback: extract project_id from the service account JSON
+  const raw = env.FIREBASE_SERVICE_ACCOUNT;
+  if (raw) {
+    try {
+      const sa = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (sa.project_id) return sa.project_id;
+    } catch { /* ignore */ }
+  }
+  throw new Error("FIREBASE_PROJECT_ID env var is missing and could not be derived from service account");
+}
+
 function firestoreBase(env) {
-  const projectId = env.FIREBASE_PROJECT_ID;
-  if (!projectId) throw new Error("FIREBASE_PROJECT_ID env var is missing");
+  const projectId = getProjectId(env);
   return `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
 }
 
