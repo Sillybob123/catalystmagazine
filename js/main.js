@@ -1241,8 +1241,8 @@ async function loadArticles() {
     let nextId = 1;
 
     try {
-        // Pull structured JSON posts ONLY (article1.json - article100.json and beyond)
-        const jsonArticles = await loadFromJsonPosts(1, 100, new Map());
+        // Pull structured JSON posts (article2.json - article100.json)
+        const jsonArticles = await loadFromJsonPosts(2, 100, new Map());
         jsonArticles.forEach(article => {
             if (!article || !article.title) return;
             const key = safeKey(article);
@@ -1512,8 +1512,12 @@ async function fetchJsonArticle(index, baseByTitle) {
         const res = await fetch(`posts/article${index}.json`);
         if (!res.ok) return [];
 
+        // Cloudflare Pages may return HTML for missing files (200 + html).
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('text/html')) return [];
+
         const text = (await res.text()).replace(/^\uFEFF/, '').trim();
-        if (!text) return [];
+        if (!text || text.startsWith('<!')) return [];
 
         const parsedList = parsePossiblyStackedJson(text);
         return parsedList
