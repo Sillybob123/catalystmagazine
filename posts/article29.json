@@ -1,0 +1,197 @@
+{
+  "article_data": {
+    "metadata": {
+      "title": "The Geography of Risk: How D.C. Neighborhoods Shape Children's Health",
+      "author": "Alexis Tamm",
+      "publish_date": "Sep 17, 2025",
+      "cover_image_url": "postimages/GeoOfRisk.webp",
+      "excerpt": "The climate crisis is becoming an increasingly pressing global issue—and its adverse impacts aren’t affecting everyone equally. Climate change and other forms of environmental degradation pose serious development threats to children, as they are more biologically vulnerable than adults. At the same time, they also tend to disproportionately harm racially marginalized populations.",
+      "category": "feature"
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "paragraph",
+        "content": "The climate crisis is becoming an increasingly pressing global issue—and its adverse impacts aren’t affecting everyone equally. Climate change and other forms of environmental degradation pose serious development threats to children, as they are more biologically vulnerable than adults. At the same time, they also tend to disproportionately harm racially marginalized populations, which is often an ongoing result of discriminatory historical practices—a phenomenon known as environmental racism. Children in marginalized communities are thus at the center of this dangerous intersection, and those in D.C. are no exception."
+      },
+      {
+        "order": 2,
+        "type": "image",
+        "url": "posts/insidearticleimages/image1georgraphyofrisk.avif",
+        "alt_text": "Children walking past an industrial facility in Brentwood",
+        "caption": "Children walking past an industrial facility in Brentwood, a historically Black D.C. neighborhood (Fears, 2021)",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 3,
+        "type": "section_header",
+        "content": "Historical Background"
+      },
+      {
+        "order": 4,
+        "type": "paragraph",
+        "content": "Environmental racism in the U.S. today is often a result of discriminatory housing practices that began as early as the 1930s. In 1933, the U.S. federal government established the Home Owner’s Loan Corporation (HOLC) in response to the Great Depression, which created a zoning system that categorized neighborhoods across the country from desirable (or “green”) to hazardous (or “red”), which became known as redlining. Redlining led to racist policies that prevented Black people from buying homes in certain “green” areas, and highways were often built to further separate redlined neighborhoods and communities of color. Even today, formerly redlined areas have less green space, higher levels of air pollution, and higher surface temperatures than those rated “green” nearly a century ago."
+      },
+      {
+        "order": 5,
+        "type": "paragraph",
+        "content": "Present day macro-social factors continue to promote and exacerbate racism, which is becoming even more dangerous in the context of climate change. Discrimination in zoning laws and housing markets keep people of color concentrated in the same polluted areas and make it difficult for them to move elsewhere. This further perpetuates power differences and limits these populations from being involved in decision-making about hazardous pollution sites. These areas face notable environmental hazards, such as higher heat indices, increased exposure to noise, air, and water pollution, and decreased access to resources such as food, green space, healthcare, transportation, and social services. Children are also still seeing the effects of historical redlining today; for instance, a 2020 study found that rates of asthma-related emergency room visits were 2.4 times higher for children living in previously redlined areas in eight different California cities (Nardone et al., 2020), and a 2017 study found higher levels of both indoor and outdoor air pollution in New Jersey zip codes with a majority Black population (Alexander & Currie, 2017)."
+      },
+      {
+        "order": 6,
+        "type": "section_header",
+        "content": "What makes children vulnerable?"
+      },
+      {
+        "order": 7,
+        "type": "paragraph",
+        "content": "The climate crisis threatens all humans, but children are particularly at risk. Four key development factors drive this vulnerability: consumption, as children eat, drink, and breathe more per pound of body weight than adults do; contact, as children often engage in behaviors like putting their hands in their mouths; immunity, as children’s immune systems are not yet as strong as those of adults; and exposure time, given that children have more time to develop health conditions from early exposure. Children’s developing bodies also take longer to process and remove toxic materials they have ingested, meaning that pollutants remain in their bodies longer than they do in adults."
+      },
+      {
+        "order": 8,
+        "type": "paragraph",
+        "content": "Because of this, children face immediate threats like increased risk of infectious disease, exposure to extreme temperatures and weather events, and adverse mental health impacts such as PTSD and climate anxiety. Indirect effects include exposure to conflict, shortage of resources, malnutrition, or climate-driven migration. And these impacts can be deadly: the World Health Organization found that environmental hazards were responsible for 26% of global deaths among children younger than five years old in 2017."
+      },
+      {
+        "order": 9,
+        "type": "image",
+        "url": "posts/insidearticleimages/image2geographyofrisk.avif",
+        "alt_text": "Residents from Buzzard Point protesting",
+        "caption": "Residents from Buzzard Point, a predominantly Black D.C. neighborhood, protesting the groundbreaking of the DC United Soccer Stadium (Fulton, 2016)",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 10,
+        "type": "section_header",
+        "content": "How does environmental racism affect children?"
+      },
+      {
+        "order": 11,
+        "type": "paragraph",
+        "content": "These environmental hazards not only threaten all children, but disproportionately harm children of color and of lower socioeconomic status. These children tend to face higher levels of air pollution, as they are more likely to live in historically redlined neighborhoods. Many also live near other sources of pollution such as busy roads or factories, and walk to school or use public transportation, increasing their exposure to outdoor air pollution. They are often subject to higher levels of indoor air pollution as well, as they are more likely to live in smaller homes with more people and less ventilation; they also may not have a separate kitchen and living space, increasing exposure to cooking fuels and other air pollutants. Ingesting air pollutants can have adverse respiratory effects, varying from sickness and infections to more serious issues like developmental delays, mental health issues, or even changes to DNA methylation."
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "This disparity extends to other hazards as well, such as lead exposure. Black children in the U.S. are exposed to significantly higher levels of lead than any other racial group, and there is no safe level of lead exposure in early childhood development. These children often ingest lead-based paint in houses built before 1978, another result of structural racism in housing practices resulting from historical redlining."
+      },
+      {
+        "order": 13,
+        "type": "paragraph",
+        "content": "Water pollution is another threat; the 2014 water crisis in Flint, Michigan—a majority Black and low-income community—is often cited as a prime example of environmental racism. Only weeks after Flint officials switched the city’s water source prematurely, residents began complaining about the water quality and resulting adverse health effects—yet it still took over a year to be acknowledged and addressed. An estimated 9,000 children under age six were exposed to lead-contaminated water for 18 months. Affected Flint residents also saw a 12% drop in fertility rates and 58% increase in fetal mortality related to the change in water supply."
+      },
+      {
+        "order": 14,
+        "type": "paragraph",
+        "content": "More broadly, it is clear that environmental racism only perpetuates a vicious cycle. Racism worsens adverse impacts of environmental problems: factors such as poverty, maternal financial hardship, and poor diet can amplify the toxic effects of air pollution and other exposure to chemicals on children’s cognitive abilities. Environmental racism also exacerbates poverty, as those who live in poverty are more likely to be exposed to environmental hazards, subjecting them to more adverse health outcomes. This ultimately impacts caregivers’ abilities to work and provide for their families, but also children’s development and their future capabilities."
+      },
+      {
+        "order": 15,
+        "type": "section_header",
+        "content": "D.C.’s Environmental Threats"
+      },
+      {
+        "order": 16,
+        "type": "paragraph",
+        "content": "Residential segregation in cities, typically by race or socioeconomic status, is a key player in driving environmental health inequities—and D.C. is one of the most racially segregated metropolitan areas in the U.S. The discrepancies are often concentrated by ward: residents of Wards 4, 5, and 6 (located in eastern and central D.C.) are disproportionately exposed to climate hazards such as chemicals in soil, air, and water. Meanwhile, Wards 7 and 8 have been found to face the highest climate burden."
+      },
+      {
+        "order": 17,
+        "type": "image",
+        "url": "posts/insidearticleimages/image3geographyofrisk.avif",
+        "alt_text": "Map of D.C. by Ward",
+        "caption": "Map of D.C. by Ward (What's My Ward?)",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 18,
+        "type": "paragraph",
+        "content": "Some of the largest hazards include soil contamination, air pollution, and water pollution. Soil contamination is primarily caused by leaking underground storage tanks, those which have yet to be fixed—130 as of 2020—located mainly in Ward 5. Wards 5, 6, and 7 are home to the most active areas where development is hazardous due to previous contamination, known as brownfields."
+      },
+      {
+        "order": 19,
+        "type": "paragraph",
+        "content": "Air pollution in D.C. is driven primarily by exhaust from transportation, especially personal vehicles, contributing high levels of ground-level ozone. People living in metropolitan areas with high levels of segregation, like D.C., are more likely to be exposed to air pollutants, and the difference between white and minority populations exposed to multiple types of air pollution is more pronounced in these areas. For example, rates of lifetime prevalence of asthma are significantly higher among both children and adults in D.C. than national averages—but when broken down by race, the rate among Black children is 23% but only 6.5% among white children."
+      },
+      {
+        "order": 20,
+        "type": "paragraph",
+        "content": "Water pollution is also an issue, as numerous permit holders in the district are permitted to release waste into the water. However, southeast D.C. is exposed to higher levels of pollution because of its proximity to more combined sewer overflow pipes, which overflow with heavy rain and release harmful bacteria into water sources. The Anacostia River (which cuts through southeast D.C.) has higher levels of E. coli bacteria and turbidity, measuring below district standards, than the Potomac River (which runs along the western border)."
+      },
+      {
+        "order": 21,
+        "type": "section_header",
+        "content": "What’s being done—and what we can do"
+      },
+      {
+        "order": 22,
+        "type": "paragraph",
+        "content": "D.C. is already making strides in improving its environmental impact, even with the challenges the Trump administration poses to such progress. DC Water’s Lead Free DC campaign, which was launched in 2019, has been working to eliminate lead in the district’s drinking water with the lofty but necessary goal of replacing all lead service lines. As of August 2025, they are 23.1% of the way there, having already completed over 9,000 replacements. To reduce air pollution, the district’s Department of Energy and Environment launched the Carbon Free DC campaign in 2023 — which aims to make D.C. carbon neutral by 2045 — meaning that the city won’t release more greenhouse gases into the atmosphere than it removes. Carbon Free DC outlines other sustainability goals as well, including improving housing, transportation, accessibility of needs for residents in environmentally friendly ways."
+      },
+      {
+        "order": 23,
+        "type": "paragraph",
+        "content": "The Trump administration, however, is making climate progress more difficult, even in the wake of increasingly destructive natural disasters across the country. A string of anti-climate actions—including withdrawing from the Paris Agreement, dismantling numerous climate regulations in favor of oil and fossil fuel industries, and even attempting to revoke the EPA’s finding that greenhouse gas emissions are harmful to people—suggest a scary future for the country in terms of climate change."
+      },
+      {
+        "order": 24,
+        "type": "paragraph",
+        "content": "However, there is also a need to address the clear social inequities that exist to help lessen the disproportionate impacts of the climate crisis, which the Trump administration is also threatening. It’s no coincidence that the areas most impacted by environmental racism and adverse climate hazards are also those that face other burdens, such as the highest poverty levels and lowest life expectancy. Despite this, the administration has cancelled hundreds of grants awarded through the EPA’s environmental and climate justice grant program, putting those most impacted by environmental hazards even more at risk."
+      },
+      {
+        "order": 25,
+        "type": "paragraph",
+        "content": "In a political environment so focused on defunding and deregulation, bolstering promotive factors among vulnerable communities and staying informed are imperative. Promotive factors help build resilience in children: for example, increasing green space in urban areas and encouraging children to spend more time outside can have many different positive impacts, like improved mental health. Promotive factors also include better health policy and easier access to adequate healthcare for minority populations, as they improve the lives of caregivers and therefore children. Education and awareness are also necessary: everyone who touches children’s lives, from parents to policymakers, has to be well-informed to stop perpetuating harmful habits and promote safer, healthier practices."
+      },
+      {
+        "order": 26,
+        "type": "paragraph",
+        "content": "Some organizations are already striving to do this. Nsedu Obot Witherspoon, the executive director of Children’s Environmental Health Network (CEHN), has been leading the charge to advocate for children’s environmental health for over 20 years. Based in D.C., CEHN is a national organization with the broad mission of protecting all developing children from environmental health hazards through research, policy, education, and public awareness. CEHN leads many of its own initiatives, as well as collaborates with local and national partners and coalitions."
+      },
+      {
+        "order": 27,
+        "type": "image",
+        "url": "posts/insidearticleimages/image4geographyofrisk.avif",
+        "alt_text": "Nsedu Obot Witherspoon",
+        "caption": "Nsedu Obot Witherspoon (McCaw, 2020)"
+      },
+      {
+        "order": 28,
+        "type": "paragraph",
+        "content": "One unique initiative it runs is the Eco-Healthy Child Care Program, which provides resources and training to child care professionals to create safer, hazard-free child care settings. “It’s the only program of its kind working to train and educate child care professionals, owners, and facility managers,” Witherspoon said. The program focuses on low-to-no-cost steps to remove environmental health hazards from these spaces, in which developing children spend significant amounts of time. It also offers a two-year endorsement for child care facilities who comply with the majority of CEHN’s child care-specific checklist, which monitors elements such as pesticides, air quality, household chemicals, lead, and others."
+      },
+      {
+        "order": 29,
+        "type": "paragraph",
+        "content": "Witherspoon noted, “Of course, we don’t shake fingers. We just say, here’s why. Here’s why we want to think differently about this.” She also explained that the program has multiple benefits, bringing knowledge and awareness to the professionals it teaches—who are often women, particularly women of color, of childbearing age."
+      },
+      {
+        "order": 30,
+        "type": "paragraph",
+        "content": "CEHN also focuses heavily on community education and awareness, producing an abundance of concise, fact-based guides and infographics that cover numerous aspects of child environmental health. They aim to make information accessible and digestible for parents, caregivers, professionals, and policymakers; materials are often only two to three pages in length and updated annually."
+      },
+      {
+        "order": 31,
+        "type": "paragraph",
+        "content": "For instance, CEHN closely tracks disease health outcomes, which include childhood cancer, asthma, lead poisoning, and water violations. “We have fact sheets for all 50 states, and one we’re developing for DC. It’s like an infographic: what is the issue, what are some major indicators of how children are doing, either well or not, compared to the rest of the country,” Witherspoon explained. “That’s one of the most common questions we get from elected officials: ‘How is our state doing, or how is our city doing?’ And we’re able to show them, with data sets that they can find—this isn’t just something that we arbitrarily came up with,” she added. “And again, we’re not there pointing fingers, but we’re just having an honest conversation.”"
+      },
+      {
+        "order": 32,
+        "type": "paragraph",
+        "content": "“Climate change is probably the most important children’s environmental health issue to date because it exacerbates everything else,” Witherspoon said, which holds particularly true for those disproportionately impacted by it. “The difference is, compared to when our organization started 33 years ago, we actually know a lot of the solutions. We see in a lot of cities and states, and around the world, better ways of doing things. And it takes political will, it takes courage, and it takes investments to make a lot of these things happen.”"
+      },
+      {
+        "order": 33,
+        "type": "paragraph",
+        "content": "Ultimately, there is no doubt that environmental racism is detrimental to children’s development and is up against fierce governmental opposition—making individuals and organizations in D.C. even more responsible to do something about it. “How do we raise our voice, collectively, taking the resources that we have, taking the amazing intelligence of our upcoming generations?” Witherspoon asks. “That’s really where the crux of our resources want to go: we want you to be educated, we want you to elevate your thinking, we want to connect the dots for you, but more importantly, we want you to understand that there is something you can do about it.” To truly mitigate the effects of the climate crisis and build a more sustainable city, we need to make sure we do so for everyone—which means understanding and addressing the harmful inequities that already exist first."
+      },
+      {
+        "order": 34,
+        "type": "game",
+        "src": "posts/games/article29.html",
+        "title": "The Geography of Risk: How D.C. Neighborhoods Shape Children's Health",
+        "height": "580"
+      }
+    ]
+  }
+}

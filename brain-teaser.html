@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Quantum Paradox Challenge | The Catalyst</title>
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      padding: 100px 20px 20px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    main {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 200px);
+    }
+
+    /* Animated particles background */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      animation: float linear infinite;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
+    }
+
+    /* Main container */
+    .puzzle-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 900px;
+      background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.05) 100%
+      );
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 32px;
+      padding: 50px 40px;
+      box-shadow:
+        0 30px 90px rgba(0, 0, 0, 0.5),
+        0 15px 45px rgba(0, 0, 0, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+      animation: containerFloat 1.2s ease-out;
+    }
+
+    @keyframes containerFloat {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Title */
+    .title {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 15px;
+      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+      text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+      animation: titleGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes titleGlow {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(148, 163, 184, 0.4)); }
+      50% { filter: drop-shadow(0 0 30px rgba(148, 163, 184, 0.6)); }
+    }
+
+    .subtitle {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.1rem;
+      margin-bottom: 40px;
+      font-weight: 500;
+    }
+
+    /* Question content */
+    .question-content {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 35px;
+      margin-bottom: 35px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .question-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 25px;
+      text-align: center;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .question-text {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .highlight {
+      color: #60a5fa;
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+    }
+
+    .info-box {
+      background: rgba(96, 165, 250, 0.1);
+      border-left: 4px solid #60a5fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 25px 0;
+      box-shadow: 0 4px 12px rgba(96, 165, 250, 0.1);
+    }
+
+    .info-box strong {
+      color: #60a5fa;
+      display: block;
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+
+    .scenario {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 15px 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Answer input section */
+    .answer-section {
+      margin-top: 40px;
+      text-align: center;
+    }
+
+    .answer-label {
+      display: block;
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .answer-input {
+      width: 100%;
+      max-width: 400px;
+      padding: 18px 28px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      color: #fff;
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(10px);
+      font-family: 'Poppins', sans-serif;
+      margin-bottom: 20px;
+    }
+
+    .answer-input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .answer-input:focus {
+      border-color: #60a5fa;
+      background: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.1), 0 8px 24px rgba(96, 165, 250, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .submit-btn {
+      padding: 18px 48px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 12px 36px rgba(59, 130, 246, 0.4);
+      font-family: 'Poppins', sans-serif;
+      letter-spacing: 0.02em;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.6s;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 50px rgba(59, 130, 246, 0.5);
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    }
+
+    .submit-btn:hover::before {
+      left: 100%;
+    }
+
+    .submit-btn:active {
+      transform: translateY(-2px) scale(1);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Feedback messages */
+    .feedback {
+      margin-top: 25px;
+      padding: 20px 30px;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      animation: feedbackSlide 0.5s ease-out;
+      display: none;
+    }
+
+    @keyframes feedbackSlide {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .feedback.success {
+      display: block;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+      border: 2px solid rgba(34, 197, 94, 0.5);
+      color: #86efac;
+      box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
+    }
+
+    .feedback.error {
+      display: block;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+      border: 2px solid rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+      box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2);
+    }
+
+    /* Winner button */
+    .winner-btn {
+      display: none;
+      margin-top: 30px;
+      padding: 20px 50px;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #fff;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 18px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 16px 48px rgba(16, 185, 129, 0.5);
+      animation: winnerPulse 2s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @keyframes winnerPulse {
+      0%, 100% { box-shadow: 0 16px 48px rgba(16, 185, 129, 0.5); }
+      50% { box-shadow: 0 20px 60px rgba(16, 185, 129, 0.7); }
+    }
+
+    .winner-btn::before {
+      content: '★';
+      position: absolute;
+      left: 20px;
+      font-size: 1.5rem;
+      animation: bounce 1s ease-in-out infinite;
+      color: #fbbf24;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .winner-btn:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 24px 70px rgba(16, 185, 129, 0.7);
+    }
+
+    /* Fireworks overlay */
+    .fireworks-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+    }
+
+    .fireworks-overlay.active {
+      display: block;
+    }
+
+    .firework {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      animation: explode 1.5s ease-out forwards;
+    }
+
+    @keyframes explode {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
+        opacity: 0;
+      }
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .puzzle-container {
+        padding: 30px 25px;
+        border-radius: 24px;
+      }
+
+      .title {
+        font-size: 2rem;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        font-size: 0.95rem;
+        margin-bottom: 30px;
+      }
+
+      .question-content {
+        padding: 25px 20px;
+      }
+
+      .question-title {
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+      }
+
+      .question-text {
+        font-size: 0.95rem;
+      }
+
+      .answer-input {
+        font-size: 1rem;
+        padding: 16px 24px;
+      }
+
+      .submit-btn {
+        padding: 16px 40px;
+        font-size: 1rem;
+      }
+
+      .winner-btn {
+        padding: 18px 40px;
+        font-size: 1.1rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 15px;
+      }
+
+      .puzzle-container {
+        padding: 25px 20px;
+      }
+
+      .question-content {
+        padding: 20px 15px;
+      }
+
+      .info-box, .scenario {
+        padding: 15px;
+      }
+    }
+
+  </style>
+</head>
+<body data-page="brain-teaser">
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+
+    <div id="site-header"></div>
+
+  <!-- Particle background -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Fireworks overlay -->
+  <div class="fireworks-overlay" id="fireworks"></div>
+
+  <!-- Main container -->
+  <main>
+    <div class="puzzle-container">
+    <h1 class="title">The Exponential Sequence Challenge</h1>
+    <p class="subtitle">Only the sharpest minds will unlock the secret...</p>
+
+    <div class="question-content">
+      <h2 class="question-title">The Exponential Pattern</h2>
+
+      <p class="question-text">
+        Analyze this sequence carefully:
+      </p>
+
+      <div class="info-box">
+        <p class="question-text" style="margin: 0; text-align: center; font-size: 1.5rem; letter-spacing: 0.3em; font-weight: 700; color: #60a5fa;">
+          3, 7, 15, 31, 63, ?
+        </p>
+      </div>
+
+      <div class="scenario">
+        <p class="question-text" style="margin: 0;">
+          <strong style="color: #60a5fa;">Your Task:</strong><br>
+          Each number in this pattern follows a mathematical rule involving the previous term. Can you determine what the next number should be?
+        </p>
+      </div>
+
+      <div class="scenario">
+        <p class="question-text" style="margin: 0;">
+          <strong style="color: #60a5fa;">Hint:</strong><br>
+          Consider how each number transforms into the next. Try testing different operations: multiplication, addition, or perhaps a combination of both?
+        </p>
+      </div>
+
+      <p class="question-text" style="margin-top: 25px; font-size: 1.15rem; text-align: center; color: #60a5fa; font-weight: 600;">
+        What number comes next in the sequence?
+      </p>
+    </div>
+
+    <div class="answer-section">
+      <label class="answer-label">Enter the next number:</label>
+      <input
+        type="text"
+        id="answer-input"
+        class="answer-input"
+        placeholder="Type your answer..."
+        maxlength="10"
+      >
+      <br>
+      <button class="submit-btn" id="submit-btn">
+        Submit Answer
+      </button>
+
+      <div class="feedback" id="feedback"></div>
+
+      <a href="q7x9m2k5p8wl4n6r1t3vb.html" class="winner-btn" id="winner-btn" style="display: none;">
+        Enter the Winners' Lounge
+      </a>
+    </div>
+    </div>
+  </main>
+
+    <div id="site-footer"></div>
+
+  <script src="js/layout.js"></script>
+  <script src="js/mailchimp-handler.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Create floating particles
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 50; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+      particle.style.animationDelay = Math.random() * 5 + 's';
+      particlesContainer.appendChild(particle);
+    }
+
+    // Answer checking logic
+    const answerInput = document.getElementById('answer-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const feedback = document.getElementById('feedback');
+    const winnerBtn = document.getElementById('winner-btn');
+    const fireworksContainer = document.getElementById('fireworks');
+
+    const correctAnswers = ['127', 'one hundred twenty seven', 'one hundred twenty-seven', 'onehundredtwentyseven'];
+
+    let hasAnswered = localStorage.getItem('quantumPuzzleSolved') === 'true';
+
+    if (hasAnswered) {
+      answerInput.value = '✓ Already solved';
+      answerInput.disabled = true;
+      submitBtn.textContent = 'Already Completed';
+      submitBtn.disabled = true;
+      feedback.className = 'feedback success';
+      feedback.style.display = 'block';
+      feedback.textContent = 'You\'ve already solved this puzzle! The answer was 127.';
+      winnerBtn.style.display = 'inline-block';
+    }
+
+    function launchFireworks() {
+      fireworksContainer.classList.add('active');
+
+      for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+          createFirework();
+        }, i * 300);
+      }
+
+      setTimeout(() => {
+        fireworksContainer.classList.remove('active');
+        fireworksContainer.innerHTML = '';
+      }, 5000);
+    }
+
+    function createFirework() {
+      const x = Math.random() * window.innerWidth;
+      const y = Math.random() * window.innerHeight * 0.7;
+      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+
+      for (let i = 0; i < 30; i++) {
+        const firework = document.createElement('div');
+        firework.className = 'firework';
+        firework.style.left = x + 'px';
+        firework.style.top = y + 'px';
+        firework.style.background = color;
+
+        const angle = (Math.PI * 2 * i) / 30;
+        const velocity = 100 + Math.random() * 100;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity;
+
+        firework.style.setProperty('--tx', tx + 'px');
+        firework.style.setProperty('--ty', ty + 'px');
+
+        fireworksContainer.appendChild(firework);
+
+        setTimeout(() => firework.remove(), 1500);
+      }
+    }
+
+    submitBtn.addEventListener('click', () => {
+      if (hasAnswered) return;
+
+      const answer = answerInput.value.trim().toLowerCase();
+
+      if (answer.length === 0) {
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Please enter an answer first!';
+        return;
+      }
+
+      const isCorrect = correctAnswers.some(correct => answer === correct.toLowerCase());
+
+      if (isCorrect) {
+        hasAnswered = true;
+        localStorage.setItem('quantumPuzzleSolved', 'true');
+
+        feedback.className = 'feedback success';
+        feedback.innerHTML = '<strong>BRILLIANT!</strong> You cracked the exponential pattern! The answer is 127. The rule: multiply the previous number by 2 and add 1 (e.g., 63 × 2 + 1 = 127). Welcome to the elite Winners\' Lounge!';
+
+        answerInput.disabled = true;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Puzzle Solved!';
+
+        winnerBtn.style.display = 'inline-block';
+
+        launchFireworks();
+
+      } else {
+        feedback.className = 'feedback error';
+        feedback.innerHTML = 'Not quite right. Consider the relationship between consecutive numbers. Try multiplying and adding... What operation transforms 3 into 7, or 31 into 63?';
+      }
+    });
+
+    answerInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !hasAnswered) {
+        submitBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>

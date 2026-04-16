@@ -1,0 +1,121 @@
+{
+  "article_data": {
+    "metadata": {
+      "title": "The Cosmic Journey of Dr. Duilia De Mello",
+      "author": "Layla Abdoulaye",
+      "publish_date": "Sep 6, 2025",
+      "cover_image_url": "postimages/cosmos.webp",
+      "excerpt": "From discovering supernovas to studying the birth of galaxies, Dr. Duilia De Mello's journey took her from Brazil to NASA in Washington, D.C. She uses the universe's oldest light to piece together our cosmic origins. But as the climate for science in America shifts, she questions whether the nation that drew her in will remain the best place on Earth to continue reaching for the stars.",
+      "category": "profile",
+      "image_position": "center",
+      "image_zoom": 1,
+      "image_offset_x": 0,
+      "image_offset_y": 0
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "section_header",
+        "content": "Introduction"
+      },
+      {
+        "order": 2,
+        "type": "paragraph",
+        "content": "Dr. Duilia De Mello’s passion for astronomy inspired her to reach for the stars and even discover some of her own. But how did this accomplished Brazilian NASA researcher and physics professor make her way to DC?"
+      },
+      {
+        "order": 3,
+        "type": "image",
+        "url": "posts/insidearticleimages/image1cosmicjourney.avif",
+        "alt_text": "Dr. Duilia De Mello",
+        "caption": "Dr. Duilia De Mello (Credit: Wikipedia)"
+      },
+      {
+        "order": 4,
+        "type": "section_header",
+        "content": "A Place to grow"
+      },
+      {
+        "order": 5,
+        "type": "paragraph",
+        "content": "As a child, Dr. De Mello was curious about everything but could never find any answers, so she set out to discover them for herself. She sought to become an expert in the field of astronomy, which led her to pursue a Ph.D and participate in two post-doctorate programs at major telescopes located in Chile and Maryland. She even discovered a supernova in 1997 during her time at the European Southern Observatory in Chile. After completing her education, she became a professor at Chalmers University in Sweden."
+      },
+      {
+        "order": 6,
+        "type": "paragraph",
+        "content": "A few years later, Dr. De Mello got an offer to work at NASA Goddard in Maryland. She needed a sponsor to do so, since only American citizens can work for government agencies, and Catholic University of America offered—where she has now worked for over 20 years. She is now a senior researcher at NASA and a tenured professor and vice provost at Catholic University. Dr. De Mello really likes working in DC because, “it's where all the action is.” She pointed out that when you look closely, there is a lot of research happening in and around DC, especially with all the universities and government research facilities. There are opportunities here, regardless of discipline, with organizations like NASA, the National Institute of Health (NIH), the National Institute of Standards and Technology, and much more. Dr. De Mello felt that ending up in DC happened organically for her based on her connections and career aspirations."
+      },
+      {
+        "order": 7,
+        "type": "pull_quote",
+        "content": "“working in DC was kind of a natural choice from the beginning”"
+      },
+      {
+        "order": 8,
+        "type": "image",
+        "url": "posts/insidearticleimages/image2cosmicjourney.avif",
+        "alt_text": "NASA Goddard Space Flight Center",
+        "caption": "NASA Goddard Space Flight Center where Dr. De Mello works with her team to conduct research (By NASA Goddard/Bill Hrybyk)"
+      },
+      {
+        "order": 9,
+        "type": "section_header",
+        "content": "Current research"
+      },
+      {
+        "order": 10,
+        "type": "paragraph",
+        "content": "Dr. De Mello’s interests and education focused on galaxy formation and evolution, and she works on a multitude of projects in this area, some of which she spearheaded. Her work at NASA consists of deep space imaging using the Hubble Space Telescope. Her team analyzes the images and data from deep space and compares it to our own galaxy, the Milky Way, to help understand how our galaxy formed and what the formation process looked like."
+      },
+      {
+        "order": 11,
+        "type": "paragraph",
+        "content": "Here’s how it works: it takes time for things to travel from one place to another, including light. But on Earth, light travels such small distances at such a fast speed that it appears instant to us. However, this is not the case for outer space. Even for something seemingly as close as our sun (which is about 93 million miles away), it still takes light 8 minutes to reach Earth. Now imagine looking at something a million times farther away—suddenly the light we see wasn’t produced just minutes ago, but years or even hundred of years earlier. So when you look at objects deep in the universe, you’re not just seeing incredibly far away, but also back in time! Dr. De Mello and her team use this to their advantage; when they look at data from a distant galaxy that is just starting to form, they can identify parts that are similar to the Milky Way, and use the information to piece together how it formed."
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "Dr. De Mello has also been studying blue blobs that result from colliding galaxies. Blue blobs are young stars that are born from the aftermath of a galactic collision. When galaxies “collide,” they don’t actually crash into each other—galaxies are filled with mostly empty space, so in reality they just slowly pass through each other. But the gravity from all the stars, planets, and other things in one galaxy can have a big impact on the other. This causes some gas to be pushed out of both galaxies, which is left in space. From the gas, stars are born."
+      },
+      {
+        "order": 13,
+        "type": "image",
+        "url": "posts/insidearticleimages/image3cosmicjourney.avif",
+        "alt_text": "Blue blobs captured by the Hubble Space Telescope",
+        "caption": "Blue blobs captured by the Hubble Space Telescope. (Credit: NASA, ESA, and D. de Mello [Catholic University of America/GSFC])"
+      },
+      {
+        "order": 14,
+        "type": "section_header",
+        "content": "Has America lost faith in science?"
+      },
+      {
+        "order": 15,
+        "type": "paragraph",
+        "content": "Despite the success that Dr. De Mello has found in DC, she worries that her time here is coming to an end. Each year thousands of scientists immigrate to the US to seek unique opportunities—. according to the American Immigration Council, almost 25% of the STEM field is made up of foreign-born workers like Dr. De Mello. However, a recent shift in government leadership and public sentiment has drastically impacted the scientific community. Cuts in research funding, distrust in experts, limitations on what can be taught, and negative views on immigration are all starting to push talented scientists elsewhere. Dr. De Mello even says that she came to the United States because it had everything she was looking for. For the past few decades there has been a big push to find scientists of diverse backgrounds and remain one of the leading countries in technological advancements. But as the leadership and American public’s priorities change, it seems the focus is starting to shift. And if it stops being a place where Dr. De Mello has the support and funding to continue her work then she says it will be time for her to leave."
+      },
+      {
+        "order": 16,
+        "type": "pull_quote",
+        "content": "“You only do science if you have the proper condition to do good science.”"
+      },
+      {
+        "order": 17,
+        "type": "section_header",
+        "content": "What’s next?"
+      },
+      {
+        "order": 18,
+        "type": "paragraph",
+        "content": "In the future, Dr. De Mello is planning to start a project with the James Webb Telescope. While the Hubble has been around for over 30 years, the James Webb Space Telescope was launched in 2021. Not only does it provide much clearer images than the Hubble, but it is an infrared telescope, which allows it to accurately capture light from the opposite side of the universe. Dr. De Mello is excited about this because it will allow us to see what the universe looked like 13 to 14 billion years ago, when it was young (relatively speaking). This would better help her to understand the history of the universe and analyze how it has grown and evolved. By understanding the origins of the universe, we can get closer to understanding how life and humans came to be—and Dr. De Mello hopes to be able to continue to do so in DC. Although Dr De Mello didn’t plan to come here, she has felt like it’s the place for her for the past 20 years and hopefully it will continue to be for a while."
+      },
+      {
+        "order": 19,
+        "type": "image",
+        "url": "posts/insidearticleimages/image4acosmicjourney.webp",
+        "alt_text": "Comparison of the southern ring nebula between the Hubble and James Webb Space Telescopes",
+        "caption": "Comparison of the southern ring nebula between the Hubble (left) and James Webb (right) Space Telescopes (Credit Left: Hubble Heritage Team [STScI/AURA/NASA/ESA]) (Credit Right: NASA, ESA, CSA, STScI)"
+      }
+    ]
+  }
+}

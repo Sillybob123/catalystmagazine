@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | The Catalyst Magazine</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .dashboard-container {
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-lg);
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .admin-badge {
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-white);
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .btn-logout:hover {
+            background: var(--accent-gradient-hover);
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 24px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-white);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .stories-list {
+            list-style: none;
+        }
+
+        .story-card {
+            background: var(--bg-white);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .story-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+
+        .story-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .story-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .story-cover {
+            width: 100%;
+            max-width: 300px;
+            border-radius: var(--radius-sm);
+            margin: 16px 0;
+        }
+
+        .story-content {
+            color: var(--text-body);
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 16px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 16px;
+            background: var(--bg-light);
+            border-radius: var(--radius-sm);
+        }
+
+        .story-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .btn-approve {
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .btn-approve:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-reject {
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .btn-reject:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-view {
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-body);
+            background: var(--bg-white);
+            border: 2px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .btn-view:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-published {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-draft {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--glass-border);
+            padding-bottom: 16px;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .filter-tab:hover {
+            color: var(--text-body);
+            background: var(--bg-light);
+        }
+
+        .filter-tab.active {
+            color: var(--text-white);
+            background: var(--accent-primary);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-white);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #060;
+            border: 1px solid #cfc;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Admin Dashboard</h1>
+            <div class="user-info">
+                <a href="admin-users.html" style="padding: 10px 20px; font-size: 14px; font-weight: 600; color: var(--text-white); background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border: none; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-normal); text-decoration: none; margin-right: 12px;">
+                    Manage Users
+                </a>
+                <a href="editorial-studio.html" style="padding: 10px 20px; font-size: 14px; font-weight: 600; color: var(--text-white); background: linear-gradient(135deg, #0f172a 0%, #1f2937 100%); border: none; border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition-normal); text-decoration: none; margin-right: 12px;">
+                    Write a Story
+                </a>
+                <span class="admin-badge">ADMIN</span>
+                <button class="btn-logout" id="logout-btn">Logout</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <h2 class="section-title">Story Management</h2>
+
+            <div class="alert alert-success" id="success-message"></div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="pending-count">0</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="approved-count">0</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="published-count">0</div>
+                    <div class="stat-label">Published</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-count">0</div>
+                    <div class="stat-label">Total Stories</div>
+                </div>
+            </div>
+
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-status="pending">Pending Review</button>
+                <button class="filter-tab" data-status="approved">Approved</button>
+                <button class="filter-tab" data-status="published">Published</button>
+                <button class="filter-tab" data-status="all">All Stories</button>
+            </div>
+
+            <ul class="stories-list" id="stories-list">
+                <li style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    Loading stories...
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal" id="preview-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Story Preview</h3>
+                <button class="modal-close" id="close-modal">&times;</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Story</h3>
+                <button class="modal-close" id="close-edit-modal">&times;</button>
+            </div>
+            <div id="edit-body">
+                <div class="form-group">
+                    <label class="form-label" for="edit-title">Title</label>
+                    <input type="text" id="edit-title" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="edit-deck">Deck / Standfirst</label>
+                    <textarea id="edit-deck" class="form-input" style="min-height: 80px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="edit-category">Category</label>
+                    <input type="text" id="edit-category" class="form-input">
+                </div>
+                    <div class="form-group">
+                    <label class="form-label" for="edit-tags">Tags (comma separated)</label>
+                    <input type="text" id="edit-tags" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="edit-content">Content (HTML)</label>
+                    <textarea id="edit-content" class="form-input" style="min-height: 220px;"></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button class="btn-view" id="cancel-edit-btn">Cancel</button>
+                    <button class="btn-approve" id="save-edit-btn">Save & Republish</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from './js/firebase-config.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import {
+            collection,
+            query,
+            where,
+            getDocs,
+            doc,
+            updateDoc,
+            getDoc,
+            orderBy,
+            setDoc,
+            limit,
+            deleteDoc
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        let currentFilter = 'pending';
+        let allStories = [];
+        const API_BASE = (window.location && window.location.origin && window.location.origin.startsWith('http'))
+            ? window.location.origin
+            : '';
+        const PUBLISH_URL = API_BASE ? `${API_BASE}/api/publish-article` : '/api/publish-article';
+        const DELETE_URL = API_BASE ? `${API_BASE}/api/delete-article` : '/api/delete-article';
+        const PHP_FALLBACK_URL = '/generate-article.php';
+
+        // Auth check (bootstrap first admin if none exists)
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'writer-login.html';
+                return;
+            }
+
+            const userDoc = await ensureAdminUser(user);
+            const userData = userDoc ? userDoc.data() : null;
+
+            if (!userData || userData.role !== 'admin') {
+                await signOut(auth);
+                window.location.href = 'writer-login.html';
+                return;
+            }
+
+            loadStories();
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.href = 'writer-login.html';
+        });
+
+        // Filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.status;
+                renderStories();
+            });
+        });
+
+        async function loadStories() {
+            try {
+                const q = query(collection(db, 'stories'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+
+                allStories = [];
+                querySnapshot.forEach((doc) => {
+                    allStories.push({ id: doc.id, ...doc.data() });
+                });
+
+                updateStats();
+                renderStories();
+
+            } catch (error) {
+                console.error('Error loading stories:', error);
+            }
+        }
+
+        function updateStats() {
+            const pending = allStories.filter(s => s.status === 'pending').length;
+            const approved = allStories.filter(s => s.status === 'approved').length;
+            const published = allStories.filter(s => s.status === 'published').length;
+
+            document.getElementById('pending-count').textContent = pending;
+            document.getElementById('approved-count').textContent = approved;
+            document.getElementById('published-count').textContent = published;
+            document.getElementById('total-count').textContent = allStories.length;
+        }
+
+        function renderStories() {
+            const storiesList = document.getElementById('stories-list');
+
+            let filteredStories = allStories;
+            if (currentFilter !== 'all') {
+                filteredStories = allStories.filter(s => s.status === currentFilter);
+            }
+
+            if (filteredStories.length === 0) {
+                storiesList.innerHTML = '<li style="text-align: center; padding: 40px; color: var(--text-muted);">No stories found.</li>';
+                return;
+            }
+
+            storiesList.innerHTML = '';
+            filteredStories.forEach(story => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="story-card">
+                        <div class="story-header">
+                            <div>
+                                <h3 class="story-title">${story.title}</h3>
+                                ${story.deck ? `<div class="story-meta" style="font-weight: 600; color: var(--text-body);">${story.deck}</div>` : ''}
+                                <div class="story-meta">By ${story.authorName}</div>
+                                <div class="story-meta">${story.category} • ${new Date(story.createdAt).toLocaleDateString()}</div>
+                                ${story.tags && story.tags.length > 0 ? `<div class="story-meta">Tags: ${story.tags.join(', ')}</div>` : ''}
+                            </div>
+                            <span class="status-badge status-${story.status}">${story.status.toUpperCase()}</span>
+                        </div>
+
+                        ${story.coverImage ? `<img src="${story.coverImage}" alt="${story.title}" class="story-cover">` : ''}
+
+                        <div class="story-content">${story.content}</div>
+
+                        <div class="story-actions">
+                            ${story.status === 'pending' ? `
+                                <button class="btn-approve" onclick="approveStory('${story.id}')">Approve & Publish</button>
+                                <button class="btn-reject" onclick="rejectStory('${story.id}')">Reject</button>
+                            ` : ''}
+                            ${story.status === 'approved' ? `
+                                <button class="btn-approve" onclick="publishStory('${story.id}')">Publish to Website</button>
+                            ` : ''}
+                            ${story.status === 'published' ? `
+                                <button class="btn-approve" onclick="publishStory('${story.id}', true)">Republish</button>
+                            ` : ''}
+                            <button class="btn-view" onclick="editStory('${story.id}')">Edit Story</button>
+                            <button class="btn-reject" onclick="deleteStory('${story.id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+                storiesList.appendChild(li);
+            });
+        }
+
+        window.approveStory = async function(storyId) {
+            if (!confirm('Approve and publish this story?')) return;
+
+            try {
+                await updateDoc(doc(db, 'stories', storyId), {
+                    status: 'approved',
+                    approvedAt: new Date().toISOString()
+                });
+
+                // Auto-publish after approval
+                await publishStory(storyId);
+
+            } catch (error) {
+                console.error('Error approving story:', error);
+                alert('Failed to approve story');
+            }
+        };
+
+        window.rejectStory = async function(storyId) {
+            const reason = prompt('Reason for rejection (optional):');
+            if (reason === null) return;
+
+            try {
+                await updateDoc(doc(db, 'stories', storyId), {
+                    status: 'rejected',
+                    rejectedAt: new Date().toISOString(),
+                    rejectionReason: reason || 'No reason provided'
+                });
+
+                showSuccess('Story rejected');
+                loadStories();
+
+            } catch (error) {
+                console.error('Error rejecting story:', error);
+                alert('Failed to reject story');
+            }
+        };
+
+        window.publishStory = async function(storyId, force = false) {
+            try {
+                const storyDoc = await getDoc(doc(db, 'stories', storyId));
+                const story = storyDoc.data();
+
+                if (!story) {
+                    alert('Story not found.');
+                    return;
+                }
+
+                if (!force && story.status !== 'approved' && story.status !== 'published') {
+                    alert('Story must be approved before publishing.');
+                    return;
+                }
+
+                const payload = {
+                    storyId: storyId,
+                    title: story.title,
+                    deck: story.deck || '',
+                    content: story.content,
+                    coverImage: story.coverImage,
+                    category: story.category,
+                    author: story.authorName,
+                    tags: story.tags || [],
+                    date: story.createdAt
+                };
+
+                const publishResult = await publishWithFallback(payload);
+
+                await updateDoc(doc(db, 'stories', storyId), {
+                    status: 'published',
+                    publishedAt: new Date().toISOString(),
+                    publishedUrl: publishResult.url,
+                    updatedAt: new Date().toISOString()
+                });
+
+                showSuccess(`Story published to website! View at: ${publishResult.url}`);
+                loadStories();
+
+            } catch (error) {
+                console.error('Error publishing story:', error);
+                alert('Failed to publish story: ' + error.message + '\n\nMake sure the server is running with: npm start (it must serve /api/publish-article on the same origin).');
+            }
+        };
+
+        async function publishWithFallback(payload) {
+            // Primary: Node/Express API
+            try {
+                const response = await fetch(PUBLISH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (!result.url && result.filename) {
+                        result.url = `/posts/published/${result.filename}`;
+                    }
+                    if (!result.url) throw new Error('No URL returned from publisher');
+                    return result;
+                }
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.error || `Publish API failed (${response.status})`);
+            } catch (primaryError) {
+                console.warn('[Publish] Primary API failed, trying PHP fallback', primaryError);
+
+                // Fallback: PHP generator (works on static hosts)
+                try {
+                    const response = await fetch(PHP_FALLBACK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        const url = result.url || (result.filename ? `/posts/published/${result.filename}` : null);
+                        if (!url) throw new Error('Fallback did not return a URL');
+                        return { ...result, url };
+                    }
+
+                    // If POST is blocked (405), attempt GET with query params
+                    if (response.status === 405) {
+                        const params = new URLSearchParams();
+                        Object.entries(payload).forEach(([key, val]) => {
+                            if (Array.isArray(val)) {
+                                params.append(key, val.join(','));
+                            } else {
+                                params.append(key, String(val || ''));
+                            }
+                        });
+                        const getResp = await fetch(`${PHP_FALLBACK_URL}?${params.toString()}`, { method: 'GET' });
+                        if (!getResp.ok) {
+                            const err = await getResp.json().catch(() => ({}));
+                            throw new Error(err.error || `Fallback GET failed (${getResp.status})`);
+                        }
+                        const result = await getResp.json();
+                        const url = result.url || (result.filename ? `/posts/published/${result.filename}` : null);
+                        if (!url) throw new Error('Fallback did not return a URL');
+                        return { ...result, url };
+                    }
+
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.error || `Fallback publish failed (${response.status})`);
+                } catch (fallbackError) {
+                    throw fallbackError;
+                }
+            }
+        }
+
+        let editingStoryId = null;
+
+        window.editStory = async function(storyId) {
+            try {
+                const snap = await getDoc(doc(db, 'stories', storyId));
+                if (!snap.exists()) {
+                    alert('Story not found.');
+                    return;
+                }
+                const story = snap.data();
+                editingStoryId = storyId;
+
+                document.getElementById('edit-title').value = story.title || '';
+                document.getElementById('edit-deck').value = story.deck || '';
+                document.getElementById('edit-category').value = story.category || '';
+                document.getElementById('edit-tags').value = (story.tags || []).join(', ');
+                document.getElementById('edit-content').value = story.content || '';
+
+                document.getElementById('edit-modal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading story for edit:', error);
+                alert('Unable to load story.');
+            }
+        };
+
+        window.deleteStory = async function(storyId) {
+            if (!confirm('⚠️ PERMANENTLY DELETE this story?\n\nThis will:\n- Delete the story from the database\n- Remove it from the website\n- Delete the published HTML file\n\nThis action CANNOT be undone!')) {
+                return;
+            }
+
+            const confirmText = prompt('Type "DELETE" to confirm permanent deletion:');
+            if (confirmText !== 'DELETE') {
+                alert('Deletion cancelled.');
+                return;
+            }
+
+            try {
+                const storyDoc = await getDoc(doc(db, 'stories', storyId));
+                const story = storyDoc.data();
+
+                const response = await fetch(DELETE_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        storyId: storyId,
+                        title: story?.title || ''
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete published files');
+                }
+
+                await deleteDoc(doc(db, 'stories', storyId));
+
+                showSuccess('Story deleted successfully!');
+                loadStories();
+
+            } catch (error) {
+                console.error('Error deleting story:', error);
+                alert('Failed to delete story: ' + error.message);
+            }
+        };
+
+        function showSuccess(message) {
+            const successMsg = document.getElementById('success-message');
+            successMsg.textContent = message;
+            successMsg.style.display = 'block';
+            setTimeout(() => successMsg.style.display = 'none', 5000);
+        }
+
+        // Modal
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('preview-modal').classList.remove('active');
+        });
+
+        document.getElementById('close-edit-modal').addEventListener('click', closeEditModal);
+        document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
+        document.getElementById('save-edit-btn').addEventListener('click', async () => {
+            if (!editingStoryId) return;
+            const title = document.getElementById('edit-title').value.trim();
+            const deck = document.getElementById('edit-deck').value.trim();
+            const category = document.getElementById('edit-category').value.trim();
+            const tags = document.getElementById('edit-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+            const content = document.getElementById('edit-content').value.trim();
+
+            if (!title || !category || !content) {
+                alert('Title, category, and content are required.');
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, 'stories', editingStoryId), {
+                    title,
+                    deck,
+                    category,
+                    tags,
+                    content,
+                    updatedAt: new Date().toISOString()
+                });
+
+                await publishStory(editingStoryId, true);
+                closeEditModal();
+                showSuccess('Story updated and republished.');
+            } catch (error) {
+                console.error('Error saving story edits:', error);
+                alert('Failed to save edits: ' + error.message);
+            }
+        });
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+            editingStoryId = null;
+        }
+
+        // Bootstrap first admin helper
+        async function ensureAdminUser(user) {
+            const userRef = doc(db, 'users', user.uid);
+            const snap = await getDoc(userRef);
+            if (snap.exists()) return snap;
+
+            const anyUser = await getDocs(query(collection(db, 'users'), limit(1)));
+            if (!anyUser.empty) return null;
+
+            await setDoc(userRef, {
+                name: user.displayName || user.email,
+                email: user.email,
+                role: 'admin',
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                createdBy: user.uid
+            });
+
+            return await getDoc(userRef);
+        }
+    </script>
+</body>
+</html>

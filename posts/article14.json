@@ -1,0 +1,210 @@
+{
+  "article_data": {
+    "metadata": {
+      "title": "How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine",
+      "author": "Yair Ben-Dor",
+      "publish_date": "Feb 6, 2025",
+      "cover_image_url": "https://static.wixstatic.com/media/11b1c4_aa825fc11e6740d0a40a12f2ea19bf56~mv2.jpeg/v1/fill/w_702,h_407,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg",
+      "excerpt": "Three researchers in Washington, D.C., are currently shaping our future through groundbreaking advancements in technology and medicine. From revolutionizing computing with brain-shaped technology and developing innovative treatments for multiple sclerosis to advancing therapies for aggressive breast cancer, these efforts are pushing the boundaries of science as we know it.",
+      "category": "feature"
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "paragraph",
+        "content": "Three researchers in Washington, D.C., are currently shaping our future through groundbreaking advancements in technology and medicine. From revolutionizing computing with brain-shaped technology and developing innovative treatments for multiple sclerosis to advancing therapies for aggressive breast cancer, these efforts are pushing the boundaries of science as we know it."
+      },
+      {
+        "order": 2,
+        "type": "paragraph",
+        "content": "Distinguished researchers like Dr. Gina Adam, Dr. Jeffrey Huang, and Dr. Barry Hudson are pioneering cutting-edge research that expands modern scientific understanding and offers tangible solutions to some of the world’s most pressing challenges — all from the nation’s capital."
+      },
+      {
+        "order": 3,
+        "type": "section_header",
+        "content": "Dr. Gina Adam – Neuromorphic Computing and Nanotechnology"
+      },
+      {
+        "order": 4,
+        "type": "paragraph",
+        "content": "As the world advances in its technological capabilities through powerful tools like AI, the search for more effective and advanced computing systems only grows. Dr. Gina Adam, an Assistant Professor at George Washington University, is working to develop neuromorphic computing and nanotechnology toward this aim."
+      },
+      {
+        "order": 5,
+        "type": "paragraph",
+        "content": "The word “neuromorphic” can be broken down into the Greek words neûron, meaning “string, nerve” and referring to the brain, and morphē, meaning “shape.” Simply put, neuromorphic computing employs computational methods to mimic the function of the brain by simulating the neural and synaptic processes it performs."
+      },
+      {
+        "order": 6,
+        "type": "paragraph",
+        "content": "Dr. Adam’s work focuses on developing “memristors,” which she describes as resistors with memory to recall how much charge they’ve passed. Meanwhile, traditional computers process information using a rigid structure of transistors and binary code of zeroes and ones. Although this approach has worked thus far, it is less effective with higher-complexity tasks like pattern recognition and real-time learning, and when it does attempt those complex tasks, it consumes vast amounts of energy. This limitation lies in how the transistors use sequential processing for information. Imagine that a large image is placed in front of someone. As soon as their eyes see it, the brain processes the information on several tracks — an ability called parallel processing — such that the experience stimulates pathways that evoke feelings from the amygdala, perception in the occipital cortex, and memory recall in the hippocampus. Transistors, however, must process each pixel one by one, requiring extensive time and energy."
+      },
+      {
+        "order": 7,
+        "type": "image",
+        "url": "posts/insidearticleimages/image1howcuttingedge.webp",
+        "alt_text": "Close-up view on a nanotechnology electronic system 3D rendering",
+        "caption": "Close-up view on a nanotechnology electronic system 3D rendering by sdecoret",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 8,
+        "type": "section_sub_header",
+        "content": "So, How Do Memristors Work?"
+      },
+      {
+        "order": 9,
+        "type": "paragraph",
+        "content": "The key to a memristor’s memory lies in resistive switching, which is typically achieved through ion migration or phase changes in the material. The most common way scientists use them to “remember information” is through ion migration, which occurs when an applied voltage creates or fills oxygen vacancies (missing atoms) of metal oxides such as titanium dioxide or hafnium oxide inside the memristor, creating new conductive pathways or removing old ones, effectively “encoding” a retained memory state even after the current information is terminated. Unlike binary logic, memristors can process a range of values, enabling them to perform parallelized tasks like image and speech recognition. "
+      },
+      {
+        "order": 10,
+        "type": "section_sub_header",
+        "content": "How Dr. Adam’s Work is Revolutionizing Computing"
+      },
+      {
+        "order": 11,
+        "type": "paragraph",
+        "content": "One of Dr. Adam’s most notable developments is 3D memristor crossbar arrays — a design that stacks memristors into layers, improving their efficiency. Currently, her lab focuses on integrating a novel category of memristors called ReRAM switches. These two-terminal electronic devices incorporate resistive switching, which involves a dielectric material that can rapidly adjust its resistance into arrays and dense matrices when sufficient voltage is applied."
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "The ability to stack and integrate memristors together offers immense potential for the development of smaller, smarter, and more efficient devices with higher processing capacities per unit space. This revolutionary design additionally offers potential to develop an energy-efficient data center capable of processing massive data inputs using only a fraction of its current power consumption. Finally, the “memory” stored in these devices may also provide a unique ability to give them “digital fingerprints,” making them less vulnerable to malicious hackers and cybersecurity threats."
+      },
+      {
+        "order": 13,
+        "type": "paragraph",
+        "content": "Dr. Adam’s innovative research in neuromorphic computing and nanotechnology is forging a new path in the development of high-functioning and high-processing machines. Her work is paving the way for a new generation of AI-powered technologies with the capacity to shape industries and improve countless lives."
+      },
+      {
+        "order": 14,
+        "type": "section_header",
+        "content": "Dr. Jeffrey Huang – Advancements in Multiple Sclerosis Treatment"
+      },
+      {
+        "order": 15,
+        "type": "paragraph",
+        "content": "Multiple Sclerosis (MS) is a chronic neurological disease affecting roughly 2.8 million people worldwide, according to the National MS Society in 2019. Over time, the disease causes progressive nerve damage, physical disability, and cognitive decline. Despite decades of research, scientists have struggled to develop effective treatments capable of repairing years’ worth of nerve damage. Dr. Jeffrey Huang, an Associate Professor of Biology at Georgetown University, is spearheading innovative research that may offer hope for MS patients in the nation’s capital."
+      },
+      {
+        "order": 16,
+        "type": "paragraph",
+        "content": "A hallmark feature of MS that underlies many of its symptoms is the demyelination of neurons. Like a computer, the neurons of the brain and spinal cord use electricity to communicate with one another and mediate quick information processing. In order to maximize their communication speed, many neuronal fibers are insulated by myelin sheaths, a fatty layer of Schwann cells and oligodendrocytes that wrap themselves along the axons and prevent ions from diffusing out, maximizing their current speed. In MS, the immune system wrongly attacks and destroys these myelin, impairing neuronal communication drastically. Dr. Huang studies remyelination — the process of repairing these protective myelin sheaths — and his discoveries in neuroinflammation and brain repair mechanisms have paved the way for new therapies and redefined our prior understanding of the brain’s innate ability to heal itself. "
+      },
+      {
+        "order": 17,
+        "type": "image",
+        "url": "posts/insidearticleimages/image2howcuttingedge.webp",
+        "alt_text": "Multiple Sclerosis Illustration",
+        "caption": "Image Credit: Multiple Sclerosis by blueringmedia",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 18,
+        "type": "section_sub_header",
+        "content": "Why is Remyelination Critical?"
+      },
+      {
+        "order": 19,
+        "type": "paragraph",
+        "content": "Many of the symptoms observed in MS, such as muscle weakness, impaired coordination of movements, and vision problems, result from the slowed signaling that occurs upon loss of myelin. Moreover, the high energy required for the neurons to communicate following the loss of the myelin sheaths makes them especially vulnerable to a process called excitotoxicity, which causes neuronal death."
+      },
+      {
+        "order": 20,
+        "type": "paragraph",
+        "content": "Current treatments mainly focus on suppressing the immune response, which helps to slow the progression of MS, but does not address the underlying demyelination issue. Some of Dr. Huang’s most significant contributions to MS research elucidate the crucial role of microglia, the brain’s resident immune cell, in clearing damaged myelin and promoting its repair. His research shows that when appropriately activated, microglia release cytokines, chemokines, and growth factors that support the maturation of oligodendrocyte precursor cells, enabling them to produce myelin and repair some of the nerve damage."
+      },
+      {
+        "order": 21,
+        "type": "paragraph",
+        "content": "In 2023, Dr. Huang and his team developed a drug that successfully reversed the effects of late-stage MS in animal models. Utilizing the compound JPH034, an inhibitor of the LAT1 transporter, the drug effectively reduces the quantity of pro-inflammatory factors that induce microglia to cause damage. As inflammation is relieved, OPCs successfully mature and re-myelinate neurons, essentially repairing the damage caused by the disease."
+      },
+      {
+        "order": 22,
+        "type": "paragraph",
+        "content": "As Dr. Huang’s research continues to progress from animal models to clinical applications, it has the potential to transform the lives of millions of MS patients, helping them restore their healthy neurological function and slow the progression of their disease."
+      },
+      {
+        "order": 23,
+        "type": "section_header",
+        "content": "Dr. Barry Hudson – Targeting Triple-Negative Breast Cancer"
+      },
+      {
+        "order": 24,
+        "type": "paragraph",
+        "content": "In the realm of oncology, triple-negative breast cancer (TNBC) remains an intimidating challenge that affects countless women. In fact, the National Institutes of Health (NIH) reported that about 2,088,849 cases of TNBC were recorded in 2018, making it a common cancer in women. TNBC is a particularly aggressive subtype of breast cancer that derives its name from the fact that it lacks the three receptors commonly targeted in breast cancer treatments: estrogen, which controls female sexual and reproductive development, progesterone, which regulates the menstrual cycle, pregnancy, and other aspects of reproduction, and HER2, a protein that controls cell growth. The absence of these receptors makes conventional hormonal therapies ineffective in TNBC, leaving patients with minimal options for treatment and a pressing need for innovative approaches."
+      },
+      {
+        "order": 25,
+        "type": "paragraph",
+        "content": "At Georgetown University, Dr. Barry Hudson, an Associate Professor in the Department of Oncology, is leading impactful research that has the potential to transform TNBC treatment."
+      },
+      {
+        "order": 26,
+        "type": "image",
+        "url": "posts/insidearticleimages/image3howcuttingedge.webp",
+        "alt_text": "Microscopic view of ductal cell carcinoma",
+        "caption": "Image Credit: Microscopic view of ductal cell carcinoma, adenocarcinoma from human breast cancer tissue section stained with H&E, captured at 400X magnification. Image by arcyto, licensed under an Education License.",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 27,
+        "type": "section_sub_header",
+        "content": "Targeting Inflammatory Pathways in TNBC"
+      },
+      {
+        "order": 28,
+        "type": "paragraph",
+        "content": "Dr. Hudson’s laboratory is researching the relationship between inflammation and breast cancer metastasis. His work focuses on the Receptor for Advanced Glycation End-products (RAGE), a multi-ligand receptor that binds to harmful molecules called Glycation End-products (AGEs). These molecules, which are secreted due to factors like aging, stress, and high blood pressure, accumulate as waste products in the body."
+      },
+      {
+        "order": 29,
+        "type": "section_sub_header",
+        "content": "Why does RAGE matter?"
+      },
+      {
+        "order": 30,
+        "type": "paragraph",
+        "content": "When AGEs bind to RAGE, they trigger inflammation and oxidative stress, which can further prompt the progression of various diseases, such as cancer, diabetes complications, and heart disease. Even though the body can typically clear AGEs, the overactivation of RAGE in TNBC causes persistent inflammation and damage, which increases tumor growth by stimulating cell division, enhancing metastasis of the cancer and allowing it to spread to other parts of the body. "
+      },
+      {
+        "order": 31,
+        "type": "section_sub_header",
+        "content": "Targeting RAGE"
+      },
+      {
+        "order": 32,
+        "type": "paragraph",
+        "content": "Dr. Hudson’s laboratory has developed novel RAGE inhibitors that have demonstrated potential in reducing inflammation and metastasis in animal models. Dr. Hudson and his team have repurposed a small-molecule RAGE inhibitor used for Alzheimer’s treatment, called TTP488 (Azeliragon), to assess its efficacy against TNBC."
+      },
+      {
+        "order": 33,
+        "type": "paragraph",
+        "content": "Recent studies in mouse models of TNBC have demonstrated that Azeliragon effectively inhibits cancer metastasis to the lungs. Additionally, the inhibition of RAGE by Azeliragon disrupted key signaling pathways involved in tumor cell adhesion (Akt), migration (Pyk2), and invasion (STAT3), which are essential for reducing the risk of cancer metastasis."
+      },
+      {
+        "order": 34,
+        "type": "paragraph",
+        "content": "Dr. Hudson’s innovative research on RAGE inhibition represents a promising avenue for treating TNBC. By repurposing Azeliragon, his work has the potential to revolutionize TNBC treatment, reduce the burden of metastatic disease, and provide more personalized and effective therapies. This innovative approach brings oncology researchers closer to improving the quality of life for those battling one of the most aggressive forms of breast cancer."
+      },
+      {
+        "order": 35,
+        "type": "section_header",
+        "content": "Pioneering Research That is Shaping the Future of Science and Medicine"
+      },
+      {
+        "order": 36,
+        "type": "paragraph",
+        "content": "The groundbreaking research conducted by Dr. Gina Adam, Dr. Jeffrey Huang, and Dr. Barry Hudson reveals the incredible power of innovation that occurs at the intersection of science, technology, and medicine. From advancing neuromorphic computing to pursuing curative therapies for Multiple Sclerosis and aggressive breast cancer, these scientists are at the forefront of paving a future that is more efficient, intelligent, and compassionate. The headquarters of these endeavours at the nation’s capital serves as a reminder that the innovations coming out of Washington, D.C., are not only advancing human knowledge but also offering tangible solutions that will enhance lives, fight disease, and push the boundaries of what’s possible."
+      },
+      {
+        "order": 37,
+        "type": "game",
+        "src": "posts/games/article14.html",
+        "title": "DC Breakthroughs: Shaping Futures",
+        "height": "580"
+      }
+    ]
+  }
+}

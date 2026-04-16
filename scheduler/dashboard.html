@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Dashboard - Catalyst Tracker</title>
+    <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/11b1c4_d0a154e8ddf24787a03381f78041bd54~mv2.png">
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="components.css" />
+    <link rel="stylesheet" href="layout-fix.css" />
+    <link rel="stylesheet" href="modal-forms.css" />
+    <link rel="stylesheet" href="calendar.css" />
+    <link rel="stylesheet" href="details-modal.css" />
+    <link rel="stylesheet" href="status-report.css" />
+    <link rel="stylesheet" href="notifications.css" />
+    <link rel="stylesheet" href="debug.css" />
+    <link rel="stylesheet" href="utilities.css" />
+    <link rel="stylesheet" href="column-fix.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Preload critical scripts for faster loading -->
+    <link rel="preload" href="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js" as="script">
+    <link rel="preload" href="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js" as="script">
+    <link rel="preload" href="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js" as="script">
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+  </head>
+  <body>
+    <div id="loader" class="loader-container">
+      <div class="loader" role="status" aria-label="Loading"></div>
+      <p style="margin-top: 20px; color: #c0c9d5;">Loading Catalyst Tracker...</p>
+    </div>
+
+    <div id="app-container" class="app-container" style="display: none">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <img src="https://static.wixstatic.com/media/11b1c4_d0a154e8ddf24787a03381f78041bd54~mv2.png" alt="Catalyst Logo" class="logo-img">
+          <h2>Catalyst Tracker</h2>
+        </div>
+
+        <div class="sidebar-card meeting-card subtle top" aria-live="polite">
+          <p class="meeting-eyebrow">Next Meeting</p>
+          <h3 id="meeting-summary" class="meeting-title">No meeting scheduled</h3>
+          <div class="countdown-display" id="meeting-countdown">-- : -- : --</div>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Primary">
+          <p class="nav-heading">Views</p>
+          <a 
+            href="https://gwu-edu.zoom.us/j/97392237308" 
+            class="nav-item join-zoom-nav" 
+            id="join-zoom-sidebar"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-zoom-link
+            aria-label="Join Zoom (Mondays 6:30-8:30pm ET)"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+              <path d="M23 7l-7 5 7 5V7z"></path>
+            </svg>
+            <span>Join Zoom</span>
+            <span class="live-dot" aria-hidden="true"></span>
+          </a>
+          <a href="#" id="nav-dashboard" class="nav-item" aria-current="false">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            <span>Dashboard</span>
+          </a>
+          <a href="#" id="nav-tasks" class="nav-item">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            <span>Tasks</span>
+          </a>
+<a href="#" id="nav-my-assignments" class="nav-item" aria-current="false">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"
+              ></path>
+              <circle
+                stroke="currentColor"
+                stroke-width="2"
+                cx="12"
+                cy="7"
+                r="4"
+              ></circle>
+            </svg>
+            <span>My Assignments</span>
+          </a>
+          <a href="#" id="nav-calendar" class="nav-item" aria-current="false">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect
+                stroke="currentColor"
+                stroke-width="2"
+                x="3"
+                y="4"
+                width="18"
+                height="18"
+                rx="2"
+                ry="2"
+              ></rect>
+              <line
+                x1="16"
+                y1="2"
+                x2="16"
+                y2="6"
+                stroke="currentColor"
+                stroke-width="2"
+              ></line>
+              <line
+                x1="8"
+                y1="2"
+                x2="8"
+                y2="6"
+                stroke="currentColor"
+                stroke-width="2"
+              ></line>
+              <line
+                x1="3"
+                y1="10"
+                x2="21"
+                y2="10"
+                stroke="currentColor"
+                stroke-width="2"
+              ></line>
+            </svg>
+            <span>Calendar</span>
+          </a>
+          <a href="#" id="nav-meeting-prep" class="nav-item" aria-current="false">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 20v-1a4 4 0 014-4h6a4 4 0 014 4v1"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+              <path d="M17 11a4 4 0 110-6"></path>
+              <path d="M7 11a4 4 0 100-6"></path>
+            </svg>
+            <span>Meeting Preparation</span>
+          </a>
+
+          <p class="nav-heading">Workflows</p>
+          <a href="#" id="nav-interviews" class="nav-item active" aria-current="page">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
+              ></path>
+            </svg>
+            <span>Catalyst in the Capital</span>
+          </a>
+          <a href="#" id="nav-opeds" class="nav-item" aria-current="false">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></path>
+              <path
+                d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></path>
+            </svg>
+            <span>Op-Eds</span>
+          </a>
+        </nav>
+
+        <button class="zoom-settings-toggle owner-only" id="open-zoom-settings" data-owner-display="flex" aria-expanded="false" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M12 1v6m0 6v6m8.66-14.66l-4.24 4.24m-4.24 4.24l-4.24 4.24m16.48 0l-4.24-4.24m-4.24-4.24l-4.24-4.24"></path>
+          </svg>
+          <span>Zoom Settings</span>
+        </button>
+        <div class="owner-only zoom-settings-panel" id="zoom-settings-panel" data-owner-display="block" style="display: none;" aria-hidden="true">
+          <div class="settings-section">
+            <h4 class="settings-section-title">Zoom Link</h4>
+            <div class="current-link-display">
+              <a
+                id="zoom-link-display"
+                class="link-preview"
+                href="https://gwu-edu.zoom.us/j/97392237308"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-zoom-link
+              >
+                https://gwu-edu.zoom.us/j/97392237308
+              </a>
+            </div>
+            <form id="zoom-link-form" class="settings-form">
+              <div class="input-group">
+                <input type="url" id="zoom-link-input" placeholder="Enter new Zoom link" required />
+                <button type="submit" class="save-btn">Update</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <div class="settings-section">
+            <h4 class="settings-section-title">Schedule Meeting</h4>
+            <form id="meeting-form" class="settings-form">
+              <div class="form-row">
+                <div class="input-field">
+                  <label>Date</label>
+                  <input type="date" id="meeting-date-input" required />
+                </div>
+                <div class="input-field">
+                  <label>Time</label>
+                  <input type="time" id="meeting-time-input" required />
+                </div>
+              </div>
+              <div class="input-field">
+                <label>Timezone</label>
+                <select id="meeting-timezone-input">
+                  <option value="America/New_York">Eastern Time (ET)</option>
+                  <option value="America/Chicago">Central Time (CT)</option>
+                  <option value="America/Denver">Mountain Time (MT)</option>
+                  <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                  <option value="UTC">UTC</option>
+                </select>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="save-btn primary">Save Meeting</button>
+                <button type="button" class="clear-btn" id="clear-meeting-button">Clear</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="sidebar-footer">
+          <div class="user-profile">
+            <div class="user-avatar" id="user-avatar" aria-hidden="true">U</div>
+            <div class="user-details">
+              <span id="user-name">Loading...</span>
+              <span id="user-role">writer</span>
+            </div>
+          </div>
+          <button id="logout-button" class="logout-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"
+              />
+            </svg>
+            <span>Logout</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="main-header">
+          <h1 id="board-title">Catalyst in the Capital</h1>
+          <div class="header-actions">
+            <button
+              id="status-report-button"
+              class="btn-secondary admin-only"
+              style="display: none;"
+            >
+              Generate Status Report
+            </button>
+            <button id="add-project-button" class="add-project-btn">
+              + Propose New Article
+            </button>
+            <button id="add-task-button" class="add-project-btn" style="display: none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Create Task
+            </button>
+          </div>
+        </header>
+        <div id="board-view">
+          <div id="kanban-board" class="kanban-board" aria-live="polite">
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <p>Loading projects...</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="tasks-view" style="display: none">
+          <div id="tasks-board" class="kanban-board" aria-live="polite">
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <p>Loading tasks...</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="calendar-view" style="display: none">
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <div class="calendar-nav">
+                        <button class="calendar-nav-btn" id="prev-month" aria-label="Previous month">‹</button>
+                        <h2 id="month-year">Calendar</h2>
+                        <button class="calendar-nav-btn" id="next-month" aria-label="Next month">›</button>
+                    </div>
+                    
+                    <div class="calendar-controls">
+                        <div class="view-toggle">
+                            <button class="active">Month</button>
+                            <button>Week</button>
+                            <button>Day</button>
+                        </div>
+                        <button class="today-btn" id="today-btn">Today</button>
+                    </div>
+                </div>
+                
+                <div class="calendar-content">
+                    <div class="calendar-day-names">
+                        <div class="calendar-day-name">Sun</div>
+                        <div class="calendar-day-name">Mon</div>
+                        <div class="calendar-day-name">Tue</div>
+                        <div class="calendar-day-name">Wed</div>
+                        <div class="calendar-day-name">Thu</div>
+                        <div class="calendar-day-name">Fri</div>
+                        <div class="calendar-day-name">Sat</div>
+                    </div>
+                    
+                    <div class="calendar-days-grid" id="calendar-grid">
+                        </div>
+                </div>
+            
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color publication"></div>
+                        <span>Publication</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color interview"></div>
+                        <span>Interview</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color due-soon"></div>
+                        <span>Due Soon</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color overdue"></div>
+                        <span>Overdue</span>
+                    </div>
+                    
+                    <div class="calendar-stats">
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-month">0</div>
+                            <div class="stat-label">This Month</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-week">0</div>
+                            <div class="stat-label">This Week</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" id="stat-overdue">0</div>
+                            <div class="stat-label">Overdue</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="meeting-prep-view" class="meeting-prep-view" style="display: none;">
+          <!-- Compact countdown banner -->
+          <div class="prep-countdown-banner">
+            <div class="prep-countdown-info">
+              <span class="prep-countdown-label">Next Meeting</span>
+              <span id="meeting-prep-datetime" class="prep-countdown-date">No meeting scheduled</span>
+            </div>
+            <div id="meeting-prep-countdown" class="prep-countdown-timer">-- : -- : --</div>
+          </div>
+
+          <!-- My Team Card (for regular users) -->
+          <div id="prep-my-team-section" class="prep-my-team-section">
+            <div id="prep-my-team-card" class="prep-my-team-card">
+              <div class="prep-my-team-empty">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <p>You haven't been assigned to a team yet.</p>
+                <span class="prep-hint">Check back closer to the meeting!</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- All Teams List -->
+          <div class="prep-teams-section">
+            <div class="prep-section-header">
+              <h3>All Teams</h3>
+              <span class="prep-team-count" id="prep-team-count">0 teams</span>
+            </div>
+            <div id="prep-groups-list" class="prep-teams-grid">
+              <div class="prep-empty-state">
+                <p>No teams created yet.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Panel (simplified) -->
+          <div class="prep-admin-section admin-only" style="display: none;">
+            <div class="prep-section-header">
+              <h3>Team Builder</h3>
+              <span class="chip accent">Admin Only</span>
+            </div>
+
+            <div class="prep-admin-card">
+              <div class="prep-admin-controls">
+                <div class="prep-control-group">
+                  <label>Number of Teams</label>
+                  <div class="prep-team-buttons" id="prep-team-count-options">
+                    <button type="button" class="prep-count-btn" data-team-count="2">2</button>
+                    <button type="button" class="prep-count-btn" data-team-count="3">3</button>
+                    <button type="button" class="prep-count-btn active" data-team-count="4">4</button>
+                    <button type="button" class="prep-count-btn" data-team-count="5">5</button>
+                    <button type="button" class="prep-count-btn" data-team-count="6">6</button>
+                  </div>
+                </div>
+
+                <div class="prep-control-group">
+                  <label>Assignment Mode</label>
+                  <div class="prep-mode-toggle" id="prep-assignment-options">
+                    <button type="button" class="prep-mode-btn active" data-mode="random">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 3 21 3 21 8"></polyline>
+                        <line x1="4" y1="20" x2="21" y2="3"></line>
+                        <polyline points="21 16 21 21 16 21"></polyline>
+                        <line x1="15" y1="15" x2="21" y2="21"></line>
+                        <line x1="4" y1="4" x2="9" y2="9"></line>
+                      </svg>
+                      Random
+                    </button>
+                    <button type="button" class="prep-mode-btn" data-mode="manual">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      Manual
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="prep-admin-actions">
+                <button type="button" class="btn-secondary" id="prep-load-existing">Load Current</button>
+                <button type="button" class="btn-primary" id="prep-build-teams">Build Teams</button>
+              </div>
+            </div>
+
+            <!-- Manual Assignment Table (hidden by default) -->
+            <div id="prep-manual-assignment" class="prep-manual-card" style="display: none;">
+              <div class="prep-manual-header">
+                <span>Assign team members manually</span>
+                <div class="prep-manual-actions">
+                  <button type="button" class="btn-secondary" id="prep-manual-balance">Auto-balance</button>
+                  <button type="button" class="btn-primary" id="prep-apply-manual">Apply</button>
+                </div>
+              </div>
+              <div class="prep-manual-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Role</th>
+                      <th>Team</th>
+                    </tr>
+                  </thead>
+                  <tbody id="prep-manual-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Team Columns for editing -->
+            <div id="prep-builder-workspace" class="prep-builder-workspace" style="display: none;">
+              <div class="prep-workspace-header">
+                <span id="prep-builder-summary">Edit teams below</span>
+                <div class="prep-workspace-actions">
+                  <button type="button" class="btn-secondary" id="prep-builder-reset">Reset</button>
+                  <button type="button" class="btn-primary" id="prep-builder-save">Save & Publish</button>
+                </div>
+              </div>
+              <div id="prep-team-columns" class="prep-team-columns"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="task-modal" class="modal-overlay" role="dialog" aria-modal="true" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="task-modal-title">Create New Task</h2>
+          <button class="close-button" aria-label="Close">×</button>
+        </div>
+        <form id="task-form">
+          <div class="form-group">
+            <label for="task-title">Task Title</label>
+            <input
+              type="text"
+              id="task-title"
+              required
+              placeholder="e.g., Contact Nature Journal about Catalyst feature"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="task-description">Description</label>
+            <textarea
+              id="task-description"
+              rows="4"
+              placeholder="Describe what needs to be done, any specific requirements, contacts, or additional context."
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="task-assignee">Assign To</label>
+            <div class="multi-select-wrapper">
+              <div class="multi-select-container" id="multi-select-container">
+                <div class="multi-select-header" id="multi-select-header">
+                  <div class="selected-assignees" id="selected-assignees"></div>
+                  <div class="assignee-search-wrapper">
+                    <input 
+                      type="text" 
+                      id="assignee-search" 
+                      class="assignee-search"
+                      placeholder="Search team members..."
+                      autocomplete="off"
+                    >
+                    <div class="search-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="dropdown-indicator" id="dropdown-indicator">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <div class="assignee-dropdown" id="assignee-dropdown">
+                  <div class="dropdown-loading">
+                    <div class="mini-loader"></div>
+                    <span>Loading team members...</span>
+                  </div>
+                </div>
+              </div>
+              <div class="selection-counter" id="selection-counter">0</div>
+            </div>
+            <div class="assignee-help-text">
+              Search and select team members. Click on selected members to remove them.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="task-deadline">Deadline</label>
+            <input type="date" id="task-deadline" required />
+          </div>
+
+          <div class="form-group">
+            <label for="task-priority">Priority</label>
+            <select id="task-priority" required>
+              <option value="low">Low Priority</option>
+              <option value="medium" selected>Medium Priority</option>
+              <option value="high">High Priority</option>
+              <option value="urgent">Urgent Priority</option>
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary close-button">Cancel</button>
+            <button type="submit" id="save-task-button" class="btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20,6 9,17 4,12"></polyline>
+              </svg>
+              Create Task
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="task-details-modal" class="modal-overlay" role="dialog" aria-modal="true" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="task-details-title">Task Details</h2>
+                <button class="close-button" aria-label="Close">×</button>
+            </div>
+            <div class="details-container">
+                <div class="details-grid">
+                    <div class="details-main">
+                        <h4>Description</h4>
+                        <p id="task-details-description">Loading...</p>
+        
+                        <hr>
+                        <h4>Comments & Activity</h4>
+                        <div class="comment-box">
+                            <textarea id="task-comment-input" placeholder="Add a comment or update..."></textarea>
+                            <button id="add-task-comment-button" class="btn-primary">Post</button>
+                        </div>
+                        <div id="task-details-activity-feed" class="activity-feed">
+                          <p>No activity yet.</p>
+                        </div>
+                    </div>
+        
+                    <aside class="details-sidebar">
+                        <div class="sidebar-section">
+                            <h4>Status</h4>
+                            <p id="task-details-status">Loading...</p>
+                        </div>
+        
+                        <div class="sidebar-section">
+                            <h4>Assignment</h4>
+                            <p><strong>Created by:</strong> <span id="task-details-creator">Unknown</span></p>
+                            <p><strong>Assigned to:</strong> <span id="task-details-assignee">Not Assigned</span></p>
+                        </div>
+        
+                        <div class="sidebar-section">
+                            <h4>Timeline</h4>
+                            <p><strong>Created:</strong> <span id="task-details-created">Loading...</span></p>
+                            <p><strong>Deadline:</strong> <span id="task-details-deadline">Not set</span></p>
+                            <p><strong>Priority:</strong> <span id="task-details-priority">Medium</span></p>
+                        </div>
+
+                        <div id="task-admin-approval-section" class="sidebar-section admin-only" style="display: none;">
+                            <h4>Admin Actions</h4>
+                            <div class="button-group">
+                                <button id="approve-task-button" class="btn-success">Approve</button>
+                                <button id="reject-task-button" class="btn-danger">Reject</button>
+                            </div>
+                        </div>
+
+                        <div id="task-assignee-actions" class="sidebar-section" style="display: none;">
+                            <h4>Task Actions</h4>
+                            <div class="button-group">
+                                <button id="complete-task-button" class="btn-success">Mark Complete</button>
+                                <button id="request-extension-button" class="btn-secondary">Request Extension</button>
+                            </div>
+                        </div>
+        
+                        <div id="task-delete-section" class="sidebar-section">
+                            <h4>Delete Task</h4>
+                            <button id="delete-task-button" class="btn-danger" style="display: none;">Delete Forever</button>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="project-modal" class="modal-overlay" role="dialog" aria-modal="true" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modal-title">Propose New Article</h2>
+          <button class="close-button" aria-label="Close">×</button>
+        </div>
+        <form id="project-form">
+          <div class="form-group">
+            <label for="project-title">Article Title / Topic</label>
+            <input
+              type="text"
+              id="project-title"
+              required
+              placeholder="e.g., The Future of AI in Neuroscience"
+            />
+          </div>
+          <div class="form-group">
+            <label for="project-type">Project Type</label>
+            <select id="project-type" required>
+              <option value="Interview">Catalyst in the Capital (Interview)</option>
+              <option value="Op-Ed">Op-Ed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="project-proposal">Brief Proposal</label>
+            <textarea
+              id="project-proposal"
+              rows="4"
+              placeholder="Describe your article idea, potential interviewees, and the main angle."
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label for="project-deadline">Target Publication Deadline</label>
+            <input type="date" id="project-deadline" required />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn-secondary close-button">
+              Cancel
+            </button>
+            <button type="submit" id="save-project-button" class="btn-primary">
+              Save Proposal
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="details-modal" class="modal-overlay" role="dialog" aria-modal="true" style="display: none;">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="details-title">Project Details</h2>
+                <button class="close-button" aria-label="Close">×</button>
+            </div>
+            <div class="details-container">
+                <div class="details-grid">
+                    <div class="details-main">
+                        <h4>Proposal
+                            <button id="edit-proposal-button" class="btn-secondary" style="display: none; margin-left: 12px;">Edit</button>
+                            <button id="save-proposal-button" class="btn-success" style="display: none; margin-left: 12px;">Save</button>
+                            <button id="cancel-proposal-button" class="btn-secondary" style="display: none; margin-left: 6px;">Cancel</button>
+                        </h4>
+                        <p id="details-proposal">No proposal provided.</p>
+        
+                        <hr>
+                        <h4>Progress Checklist</h4>
+                        <div id="details-timeline">
+                          <p>No tasks available.</p>
+                        </div>
+        
+                        <hr>
+                        <h4>Comments & Activity</h4>
+                        <div class="comment-box">
+                            <textarea id="comment-input" placeholder="Add a comment or update..."></textarea>
+                            <button id="add-comment-button" class="btn-primary">Post</button>
+                        </div>
+                        <div id="details-activity-feed" class="activity-feed">
+                          <p>No activity yet.</p>
+                        </div>
+                    </div>
+        
+                    <aside class="details-sidebar">
+                        <div class="sidebar-section">
+                            <h4>Status</h4>
+                            <p id="details-status">Loading...</p>
+                        </div>
+        
+                        <div class="sidebar-section">
+                            <h4>Key People</h4>
+                            <p><strong>Author:</strong> <span id="details-author">Unknown</span></p>
+                            <p><strong>Editor:</strong> <span id="details-editor">Not Assigned</span></p>
+                            <div id="assign-editor-section" class="admin-only details-form" style="margin-top: 12px; display: none;">
+                                <label for="editor-dropdown">Assign or Change Editor:</label>
+                                <select id="editor-dropdown">
+                                  <option value="">Select Editor</option>
+                                </select>
+                                <button id="assign-editor-button">Assign Editor</button>
+                            </div>
+                        </div>
+        
+                        <div class="sidebar-section">
+                            <h4>Publication Deadline</h4>
+                            <p id="details-publication-deadline">Not set</p>
+                        </div>
+
+                        <div id="deadline-request-section" class="sidebar-section" style="display: none;">
+                            </div>
+        
+                        <div id="deadlines-section" class="sidebar-section">
+                            <h4>Task Deadlines</h4>
+                            <div id="details-deadlines-list">
+                              <p>No deadlines set.</p>
+                            </div>
+                            <button id="set-deadlines-button" class="btn-secondary" style="width: 100%; margin-top: 12px; display: none;">Set Remaining Deadlines</button>
+                            <button id="request-deadline-change-button" class="btn-secondary" style="width: 100%; margin-top: 8px; display: none;">Request Deadline Changes</button>
+                        </div>
+        
+                        <div id="admin-approval-section" class="sidebar-section admin-only" style="display: none;">
+                            <h4>Admin Actions</h4>
+                            <div class="button-group">
+                                <button id="approve-button" class="btn-success">Approve</button>
+                                <button id="reject-button" class="btn-danger">Reject</button>
+                            </div>
+                        </div>
+        
+                        <div id="delete-section" class="sidebar-section">
+                            <h4>Delete Project</h4>
+                            <button id="delete-project-button" class="btn-danger" style="display: none;">Delete Forever</button>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="report-modal" class="modal-overlay" role="dialog" aria-modal="true" style="display: none;">
+      <div class="modal-content large report-modal-content">
+        <div class="modal-header">
+          <h2>Overall Status Report</h2>
+          <button class="close-button" aria-label="Close">×</button>
+        </div>
+        <div id="report-content" class="report-content-body">
+          <p>Loading report...</p>
+        </div>
+      </div>
+    </div>
+    <div id="notification-container"></div>
+
+    <script>
+    window.addEventListener('error', function(e) {
+        console.error('[GLOBAL ERROR]', e.error || e.message);
+        
+        // Show user-friendly error if app fails to load
+        const loader = document.getElementById('loader');
+        if (loader && loader.style.display !== 'none') {
+            setTimeout(() => {
+                if (loader.style.display !== 'none') {
+                    loader.innerHTML = `
+                        <div style="text-align: center; padding: 40px;">
+                            <h3 style="color: #ef4444; margin-bottom: 16px;">Loading Error</h3>
+                            <p style="color: #64748b; margin-bottom: 20px;">There was an issue loading the application.</p>
+                            <button onclick="window.location.reload()" style="padding: 10px 20px; background: #007AFF; color: white; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px;">
+                                Refresh Page
+                            </button>
+                            <button onclick="window.location.href = 'index.html'" style="padding: 10px 20px; background: #64748b; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                                Back to Login
+                            </button>
+                        </div>
+                    `;
+                }
+            }, 3000);
+        }
+    });
+    
+    // Check if Firebase loads properly
+    setTimeout(() => {
+        if (typeof firebase === 'undefined') {
+            console.error('[FIREBASE ERROR] Firebase not loaded after 3 seconds');
+            const loader = document.getElementById('loader');
+            if (loader) {
+                loader.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h3 style="color: #ef4444; margin-bottom: 16px;">Connection Error</h3>
+                        <p style="color: #64748b; margin-bottom: 20px;">Unable to connect to the database. Please check your internet connection.</p>
+                        <button onclick="window.location.reload()" style="padding: 10px 20px; background: #007AFF; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+    }, 3000);
+    </script>
+
+    <script defer src="directFormFix.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <!-- Core application scripts -->
+    <script defer src="timestampHelper.js?v=3"></script>
+    <script defer src="stateManager.js?v=3"></script>
+    <script defer src="dashboard.js?v=6"></script>
+    <script defer src="dashboardHelpers.js?v=3"></script>
+    <script defer src="proposalEditFix.js?v=3"></script>
+    <script defer src="proposalEditButtons.js?v=2"></script>
+    <script defer src="modalFixes_APPLY.js?v=5"></script>
+    <script defer src="deadlineFixes_APPLY.js?v=2"></script>
+    <script defer src="fixedSubscriptions.js?v=3"></script>
+    <script defer src="startupVerification.js?v=3"></script>
+    <!-- Critical Firebase and form submission fixes -->
+  </body>
+</html>

@@ -1,0 +1,512 @@
+﻿{
+  "article_data": {
+    "metadata": {
+      "title": "Can AI transform speech therapy? Welcome to Worlds of Hello",
+      "author": "Alexis Tamm",
+      "publish_date": "Nov 26",
+      "cover_image_url": "https://static.wixstatic.com/media/11b1c4_43ed9c0e43f448cfb11cbe7d9fbd57ea~mv2.jpg",
+      "excerpt": "What if your child with a speech delay could receive regular, consistent, and even fun speech support in your own home—guided by the sound of your own voice? For young children with speech delays and the caregivers who support them, Dr. Amy Yeboah Quarkume is working to make this vision a reality."
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "section_header_or_caption",
+        "content": "Dr. Quarkume (“Amy Yeboah Quarkume, Ph.D.”)"
+      },
+      {
+        "order": 2,
+        "type": "paragraph",
+        "content": "Dr. Quarkume, an accomplished scholar, data scientist, associate professor at Howard University, and director of the CORE Futures Lab, is—among a myriad of other projects—using AI in innovative ways to make speech therapy more accessible to children and their families. Her new AI-based program is called Worlds of Hello."
+      },
+      {
+        "order": 3,
+        "type": "paragraph",
+        "content": "“Worlds of Hello is an AI-powered platform that connects families with therapy, allowing them to support their child and find their voice,” Dr. Quarkume explained. “We focus on children with speech delays.” It started as a passion project inspired by her nephew, who has a speech delay, and the challenges her family faced in getting the support he needed—particularly with a shortage of speech therapists. “We all try to help him, but there’s a three-month wait on therapists, and there’s only a thirty-minute session generally a week, and we wanted more.”"
+      },
+      {
+        "order": 4,
+        "type": "image_placeholder",
+        "alt_text": "Worlds of Hello",
+        "note": "Image location indicated in source text"
+      },
+      {
+        "order": 5,
+        "type": "paragraph",
+        "content": "Seeing this issue unfold in her own family, Dr. Quarkume and a few of her like-minded students came together to build Worlds of Hello. “It is our way to allow families to create personalized lessons for their children to find their voice. So you’ll hear your mom’s voice or your dad’s voice, or you’ll see your mom’s face, your dad’s face, or a family member’s face.”"
+      },
+      {
+        "order": 6,
+        "type": "paragraph",
+        "content": "The idea was simple enough: “When we first started, we felt it was like sending an audio file to your child on a phone, they hear your voice, and they start talking,” she explained, with the primary motive to speak being the comfort of hearing a familiar voice. “What we have right now is more dynamic, more engaging. There’s storytelling, there’s gamification, there is, again, AI in there that helps parents clone their voice.”"
+      },
+      {
+        "order": 7,
+        "type": "paragraph",
+        "content": "The app includes various lessons and activities that prompt children to practice speaking. It strives to create the perfect balance between promoting speech development and gamification, with animations that make it enticing for young children. It also allows families to be actively involved in their child’s learning, and for clinicians to monitor both caregiver and child usage. Dr. Quarkume’s team now includes speech therapists who work to emulate practices used in live sessions in the digital program."
+      },
+      {
+        "order": 8,
+        "type": "image_placeholder",
+        "alt_text": "Worlds of Hello",
+        "note": "Image location indicated in source text"
+      },
+      {
+        "order": 9,
+        "type": "paragraph",
+        "content": "Worlds of Hello also builds this sense of familiarity by accounting for linguistic diversity, particularly different accents and dialects. Its users can select from various dialects used in different parts of the country, allowing children to learn a language as they hear it around them. “So if your mom has an accent, and she wants to use her voice, there you go. If your dad has an accent, they use their voice, there you go,” Dr. Quarkume said. The goal is to expand and include other languages as well."
+      },
+      {
+        "order": 10,
+        "type": "paragraph",
+        "content": "The program is currently undergoing beta testing, a process to prepare it for future broad consumption. The team is currently offering paid testing opportunities for families with young children with speech delays and speech therapists to test both sides of the program. But the road to this point hasn’t been easy; funding has been a constant hurdle. The project has received a Phase I grant from the National Science Foundation (NSF) Small Business Innovation Research (SBIR), but is still facing funding difficulties. At this moment, the team continues to search for solutions to further their research and development. Dr. Quarkume explained how difficult it is for Black women in particular to fund their businesses—less than 1% of companies founded by Black women receive venture capital or similar financial support. She also noted the challenges of data privacy, especially for children, the costs associated with software and AI development, and the environmental impact of AI. However, she is hopeful about the project’s next steps: exploring avenues to complete the research and development, resolving any remaining bugs or issues, and bringing Worlds of Hello to market."
+      },
+      {
+        "order": 11,
+        "type": "paragraph",
+        "content": "For Dr. Quarkume, it’s exciting to see the potential gains for families and the way it can support them. “It works—that children will see their family members in their learning environment and be drawn to speak and overcome their challenges, and that parents will feel comfortable contributing to their child’s learning journey, because it does take time and most parents are busy, right?” The possibility of expanding similar technology beyond pediatrics is also an exciting prospect, and she has received inquiries about doing so in areas such as geriatrics. “Voice technology has been here for a while,” she said, but described how her team wants to find its unlocked potential. “It’s just, where hasn’t it gone that we can kind of support?”"
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "“If one child can speak or doesn't have trouble with speaking, it just makes the world better because that child can be productive and give back to their community as a citizen,” Dr. Quarkume shared. “So even though the work isn't considered top priority, some of us are still doing it because we know that the impacts supersede the communities that we’re working with,” referring to young children with speech delays. “It will benefit everyone if we still continue [to work] on these challenges.”"
+      }
+    ]
+  }
+}
+{
+  "article_data": {
+    "metadata": {
+      "title": "The IMERSE Lab: A New Era of Autonomous Surgical Robotics",
+      "author": "Lori Preci",
+      "publish_date": "Nov 3",
+      "cover_image_url": "https://static.wixstatic.com/media/11b1c4_790a12e131b64175aa547cdd45d902c1~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg",
+      "excerpt": "Inside Johns Hopkins University’s IMERSE Lab, surgical robotics is entering a new frontier. From the early days of robotic assistance in minimally invasive surgery to today’s systems that can recognize anatomy, adapt as tissue shifts, and plan intricate movements with remarkable precision, the field is evolving at an extraordinary pace."
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "paragraph",
+        "content": "Inside Johns Hopkins University’s IMERSE Lab, surgical robotics is entering a new frontier. From the early days of robotic assistance in minimally invasive surgery to today’s systems that can recognize anatomy, adapt as tissue shifts, and plan intricate movements with remarkable precision, the field is evolving at an extraordinary pace. At the center is a team of engineers and clinicians rethinking how human skill and machine intelligence can operate in synergy, transforming what surgery renders possible."
+      },
+      {
+        "order": 2,
+        "type": "section_header",
+        "content": "From Sci-Fi to Supervised Autonomy"
+      },
+      {
+        "order": 3,
+        "type": "paragraph",
+        "content": "From the development of robots in the early 20th century to the robotic boom of the 1980s, the idea of surgical robots belonged to the realm of science fiction. Yet by 1985, the first steps toward commercialization had begun. Surgeons adapted the PUMA 560, an industrial robotic arm originally designed for factory automation, to guide a needle during CT-guided brain biopsies. In that first successful use, the robot performed a delicate brain tissue sampling with unprecedented steadiness, demonstrating that machines could deliver precision beyond the limits of the human hand."
+      },
+      {
+        "order": 4,
+        "type": "paragraph",
+        "content": "By the early 2000s, robotic platforms such as Intuitive Surgical’s da Vinci® had entered operating rooms worldwide. Their rise coincided with growing demand for less invasive technologies, hospital competition for technological prestige, and surgeon interest in tools that could reduce fatigue and improve precision. This convergence of clinical, commercial, and technological incentives fueled the rapid adoption of surgical robotics across the U.S. and abroad. Cleared by the FDA in 2000 for general laparoscopic procedures - operations performed through small incisions using slender instruments and a camera - da Vinci transformed possibilities for minimally invasive surgery. The robot’s articulated instruments restored the dexterity lost in traditional laparoscopic tools by mimicking the rotation of a human wrist, while its stereoscopic camera provided a magnified, three-dimensional view of the operative field. Together, these features gave surgeons unprecedented precision in confined anatomical spaces."
+      },
+      {
+        "order": 5,
+        "type": "paragraph",
+        "content": "Yet for all its advances, da Vinci remains entirely tele-operated: a sophisticated extension of the surgeon's hand. It faithfully executes every console command but lacks the capacity to make independent decisions. Overcoming these limitations defines the next frontier: autonomy."
+      },
+      {
+        "order": 6,
+        "type": "section_header",
+        "content": "The IMERSE Lab and the Next Frontier"
+      },
+      {
+        "order": 7,
+        "type": "paragraph",
+        "content": "At Johns Hopkins University, the Intelligent Medical Robotic Systems and Equipment (IMERSE) Lab, led by Dr. Axel Krieger, is bringing robotic autonomy into the operating room. The team is developing robotic systems that interpret complex anatomical environments, plan and adapt their actions as conditions evolve, and move beyond pre-scripted motions toward intelligent, collaborative assistance."
+      },
+      {
+        "order": 8,
+        "type": "paragraph",
+        "content": "Achieving true autonomy demands close collaboration between engineers, computer scientists, and surgeons. The IMERSE Lab’s work bridges these disciplines, translating advances in machine learning and computer vision into practical surgical systems capable of navigating the variability and unpredictability of living anatomy with reliability, subtleties that still elude even the most advanced simulations."
+      },
+      {
+        "order": 9,
+        "type": "paragraph",
+        "content": "Importantly, the IMERSE Lab's goal is not to replace surgeons but to amplify their judgment, reduce both the physical and cognitive demands of surgery, and ensure greater consistency in outcomes."
+      },
+      {
+        "order": 10,
+        "type": "section_header",
+        "content": "STAR: A First Proof of Concept"
+      },
+      {
+        "order": 11,
+        "type": "paragraph",
+        "content": "Autonomous surgery first drew wide scientific attention through a series of collaborative efforts led by Dr. Axel Krieger and his colleagues at Children's National Hospital, and later continued at Johns Hopkins University. In 2016, Krieger’s team demonstrated an early open-surgery version of the Smart Tissue Autonomous Robot (STAR) - performed through a traditional incision rather than small laparoscopic openings - which successfully carried out autonomous soft-tissue suturing in vivo (in living tissue) on animal models."
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "Six years later, the refined STAR took on a new mission: laparoscopic intestinal anastomosis - reconnecting two ends of the intestine after removing a diseased segment. This delicate task requires extreme precision, where even minute errors in suture spacing or tension can lead to leakage and serious complications. "
+      },
+      {
+        "order": 13,
+        "type": "paragraph",
+        "content": "Operating laparoscopically intensifies the technical challenge. Surgeons must operate through small incisions using long instruments and a camera, working without direct tactile feedback and within narrow visual and mechanical constraints. Achieving the precision required for secure, tension-free suturing under these conditions challenges even the most experienced hands."
+      },
+      {
+        "order": 14,
+        "type": "paragraph",
+        "content": "The greatest obstacle, however, lies in the living tissue itself: soft organs bend, stretch, and shift with every breath, demanding sub-millimeter accuracy. To manage this, STAR integrated several innovations: an advanced three-dimensional endoscope to reconstruct the surgical field, near-infrared fluorescent markers to track tissue motion in real time, and machine learning algorithms capable of mapping optimal stitch placement and replanning whenever tissue displacement exceeded roughly three millimeters."
+      },
+      {
+        "order": 15,
+        "type": "paragraph",
+        "content": "In 2022, STAR successfully performed autonomous intestinal anastomosis in live pigs without human guidance. Evaluations showed that its sutures matched, and in some trials exceeded, those of experienced surgeons in spacing consistency and tissue alignment. The demonstration marked the first laparoscopic autonomous soft-tissue surgery in vivo, building upon the earlier open-surgery version completed in 2016."
+      },
+      {
+        "order": 16,
+        "type": "image_placeholder",
+        "alt_text": "The Smart Tissue Autonomous Robot (STAR) system",
+        "caption": "The Smart Tissue Autonomous Robot (STAR) system, developed by the IMERSE Lab at Johns Hopkins University. (The IMERSE LAB / Johns Hopkins University)",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 17,
+        "type": "paragraph",
+        "content": "Despite its success, STAR remained limited in scope: it was purpose-built for a single procedure and required nearly a decade of iterative development to reach that milestone. The next challenge was to design systems capable of generalizing across operations and adapting flexibly to new surgical contexts with the same level of precision."
+      },
+      {
+        "order": 18,
+        "type": "section_header",
+        "content": "The Rise of SRT-H"
+      },
+      {
+        "order": 19,
+        "type": "paragraph",
+        "content": "That challenge - to create systems capable of generalizing across operations and learning to perform different surgical procedures - became the foundation for the next stage of research at the IMERSE Lab. Within the group, Juo-Tung “Justin” Chen, a doctoral researcher in mechanical engineering, helped develop the Surgical Robot Transformer-H (SRT-H), a system designed to teach robots surgical workflows through human demonstration rather than manually programming each motion."
+      },
+      {
+        "order": 20,
+        "type": "image_placeholder",
+        "alt_text": "PhD student Juo-Tung “Justin” Chen beside the SRT-H robotic system",
+        "caption": "PhD student Juo-Tung “Justin” Chen beside the SRT-H robotic system (Juo-Tung Chen / Johns Hopkins University)",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 21,
+        "type": "paragraph",
+        "content": "At its core, SRT-H uses a hierarchical decision-making structure. A high-level planner issues task-level directives in plain language, such as “expose Calot’s triangle,” an anatomical landmark near the gallbladder’s ducts, or “apply clip to duct.” Low-level controllers then translate those commands into precise movements of robotic arms and tools using natural language processing (NLP) algorithms that map each instruction to corresponding motor actions. The separation mirrors how people operate: first reasoning through what must be done, then executing it physically."
+      },
+      {
+        "order": 22,
+        "type": "paragraph",
+        "content": "Before each motion is executed, the system displays the planner’s directive on a surgeon-facing console interface, allowing the operator to review and confirm what the robot intends to do. This visibility provides transparency and allows the supervising surgeons to intervene before the action occurs."
+      },
+      {
+        "order": 23,
+        "type": "paragraph",
+        "content": "This design makes SRT-H both interpretable and resilient. Surgeons can observe the planner’s language-based instructions and understand what the robot intends to do, offering a degree of transparency uncommon in machine-learning systems. When unexpected situations arise, such as tissue dyed red to simulate bleeding, or an organ shifted into a different orientation, SRT-H relies on stereo cameras and real-time vision sensors that continuously track the operative field. When these sensors detect a deviation beyond a set tolerance, the high-level planner automatically replans the next movement or issues a corrective micro-adjustment, such as “shift gripper slightly right,” allowing the workflow to continue rather than freezing mid-procedure."
+      },
+      {
+        "order": 24,
+        "type": "paragraph",
+        "content": "SRT-H has already advanced toward the operating room. In published studies, it achieved step-level autonomy - that is, independence across a sequence of surgical steps rather than a single repeated motion - during the clipping and cutting phase of a cholecystectomy (gallbladder removal) on ex vivo (outside-the-body) pig tissue. Across eight trials, the robot completed the sequence without human intervention, achieving 100 percent success. While not yet capable of a full cholecystectomy, this demonstration marked the first time a system achieved autonomous control across multiple surgical subtasks rather than a single isolated skill."
+      },
+      {
+        "order": 25,
+        "type": "image_placeholder",
+        "alt_text": "SRT-H led cholecystectomy on a pig gallbladder",
+        "caption": "SRT-H led cholecystectomy on a pig gallbladder, 14x speed (Juo-Tung Chen / Johns Hopkins University)",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 26,
+        "type": "section_header",
+        "content": "What Makes SRT-H Different"
+      },
+      {
+        "order": 27,
+        "type": "paragraph",
+        "content": "Earlier autonomous prototypes like STAR proved that surgical autonomy was possible but remained limited in flexibility and scope. SRT-H takes a fundamentally different approach, both in how it learns and how it adapts."
+      },
+      {
+        "order": 28,
+        "type": "section_sub_header",
+        "content": "Data-Driven Training"
+      },
+      {
+        "order": 29,
+        "type": "paragraph",
+        "content": "Instead of relying on hand-coded rules, the team trained SRT-H on roughly 18,000 surgical demonstrations collected from over 30 pig gallbladders. Operators performed gallbladder dissections using the da Vinci robotic system, recording synchronized video and instrument motion. Clinical collaborators oversaw the process to replicate real surgical conditions, ensuring the data captured reflected the precision and rhythm of a true operating room."
+      },
+      {
+        "order": 30,
+        "type": "section_sub_header",
+        "content": "Language-Conditioned Learning"
+      },
+      {
+        "order": 31,
+        "type": "paragraph",
+        "content": "Each demonstration was annotated with one of 17 subtask phrases, such as “grasp gallbladder” or “apply first clip.” By linking actions to language, the robot learns to reason in ways that humans can easily interpret, and, more importantly, correct through feedback expressed in plain terms. This language-conditioned structure not only makes its decisions transparent but also bridges human and machine communication inside the operating room."
+      },
+      {
+        "order": 32,
+        "type": "section_sub_header",
+        "content": "Robustness to Variation"
+      },
+      {
+        "order": 33,
+        "type": "paragraph",
+        "content": "To prevent overfitting - when an algorithm performs well on familiar data but fails in new environments, the researchers deliberately perturbed the training data. They altered colors, simulated bleeding, cropped images, and randomized orientations to expose the robot to countless variations. As a result, SRT-H can operate reliably even when confronted with occlusion, distortion, or unexpected visual cues, demonstrating a level of adaptability that earlier systems lacked."
+      },
+      {
+        "order": 34,
+        "type": "section_sub_header",
+        "content": "Real-Time Recovery"
+      },
+      {
+        "order": 35,
+        "type": "paragraph",
+        "content": "Whereas STAR paused when conditions changed, SRT-H adapts in real time. It can issue micro-adjustments, such as “move gripper slightly right,” and continue seamlessly through a task. This capacity for real-time correction makes it a far more practical candidate for clinical transition."
+      },
+      {
+        "order": 36,
+        "type": "section_header",
+        "content": "Scaling the Vision"
+      },
+      {
+        "order": 37,
+        "type": "paragraph",
+        "content": "For Chen and his colleagues, the gallbladder experiments mark only the first step toward a broader goal: expanding surgical autonomy through shared, data-driven learning. If SRT-H demonstrated that autonomy can extend beyond a single task, the next frontier is scaling that capability across procedures, robots, and institutions."
+      },
+      {
+        "order": 38,
+        "type": "paragraph",
+        "content": "To achieve this, the IMERSE Lab and its collaborators, including NVIDIA, aim to develop foundation models for surgical robotics. Much like large language models trained on vast collections of text, these systems would learn from multimodal surgical data encompassing videos, robotic motion, imaging, and annotations gathered from diverse clinical environments. By training across such varied datasets, a foundation model could, in principle, generalize surgical knowledge across tasks and platforms, adapting flexibly to new operating conditions."
+      },
+      {
+        "order": 39,
+        "type": "paragraph",
+        "content": "The long-term ambition is the creation of a shared foundation model capable of enabling robotic systems to perform a wide range of procedures, even in settings without subspecialist expertise. In this vision, surgical autonomy is not a luxury technology reserved for advanced centers but a tool for equitable access, bringing expert-level surgical care to every hospital, anywhere in the world."
+      },
+      {
+        "order": 40,
+        "type": "section_header",
+        "content": "Ethical Considerations and the Future Role of the Surgeon"
+      },
+      {
+        "order": 41,
+        "type": "paragraph",
+        "content": "The promise of surgical autonomy brings with it a new set of challenges. Robotic systems may offer surgeons greater precision, consistency, and reduced fatigue, but surgery remains a field where even minor errors can have life-altering consequences - and where public trust, once lost, is difficult to regain."
+      },
+      {
+        "order": 42,
+        "type": "paragraph",
+        "content": "Chen emphasizes that autonomy in surgery does not mean independence. He envisions a future in which the surgeon becomes a supervisor and decision-maker, guiding the operation while the robot executes repetitive or technically demanding tasks. He likens this to autonomous driving: a car may steer, brake, and park itself, but a human driver still bears responsibility. Likewise, surgical robots are being designed as collaborators - extensions of the surgeon’s skill, not replacements for their judgment."
+      },
+      {
+        "order": 43,
+        "type": "paragraph",
+        "content": "Realizing this future will require far more than advances in algorithms. Engineers and clinicians will need clear regulatory standards, robust safety mechanisms, and transparent validation frameworks to ensure reliability. Just as importantly, they must cultivate patient trust through openness and ethical design, ensuring that progress in autonomy enhances, not undermines, the human connection at the heart of medicine."
+      },
+      {
+        "order": 44,
+        "type": "section_header",
+        "content": "Conclusion"
+      },
+      {
+        "order": 45,
+        "type": "paragraph",
+        "content": "The trajectory of the IMERSE Lab’s work, from STAR’s meticulously engineered sutures to SRT-H’s language-guided learning, captures both the promise and the complexity of surgical autonomy. What once seemed speculative is now unfolding through trial, error, and iteration in real laboratories, where autonomy is being redefined not as independence, but as collaboration."
+      },
+      {
+        "order": 46,
+        "type": "paragraph",
+        "content": "For now, the surgeon’s hands remain indispensable. Through the work of researchers like Justin Chen, the operating room is steadily evolving into a space of collaboration between human judgment and machine intelligence. The future of surgery may not hinge on choosing between surgeon or robot, but on discovering new ways for the two to think and operate as one."
+      }
+    ]
+  }
+}
+{
+  "article_data": {
+    "metadata": {
+      "title": "Decoding Demyelination: A Look Inside Dr. Jeffrey Huang's Innovative Research on MS",
+      "author": "Naama Ben-Dor",
+      "publish_date": "Oct 21",
+      "cover_image_url": "https://static.wixstatic.com/media/11b1c4_64403204e5444555b7109a01bfbb794b~mv2.jpg/v1/fill/w_780,h_452,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg",
+      "excerpt": "Multiple Sclerosis (MS) is a chronic autoimmune disease that damages the nervous system. Despite being one of the most common autoimmune disorders in the world, with 2.9 million people estimated to suffer from the disease in 2023, there are currently no cures available. Recent advances in the field, however, offer new hope for patients."
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "paragraph",
+        "content": "Multiple Sclerosis (MS) is a chronic autoimmune disease that damages the nervous system. Patients can experience numerous symptoms, ranging from fatigue, impaired vision, and decreased motor coordination, to memory deficits and difficulties with bowel and bladder function. Despite being one of the most common autoimmune disorders in the world, with 2.9 million people estimated to suffer from the disease in 2023, there are currently no cures available for MS. Recent advances in the field, however, offer new hope for patients. One such example is the exciting work conducted by Dr. Jeffrey Huang, whose lab at Georgetown University holds a patent for a potential new MS drug. Based out of nation’s capital, Dr. Huang and his team at Georgetown University are targeting an amino acid transporter that they recently identified, with the goal of reducing disease severity for MS patients. In this exclusive interview, Dr. Huang shares the journey that led him to his breakthrough discovery, additional successes along the way, and the path that led him to his impactful research on MS."
+      },
+      {
+        "order": 2,
+        "type": "section_header",
+        "content": "Introduction"
+      },
+      {
+        "order": 3,
+        "type": "paragraph",
+        "content": "Dr. Jeffrey K. Huang is a Provost's Distinguished Associate Professor in the Department of Biology at Georgetown University. His lab investigates the mechanisms of remyelination—a crucial repair process in brain disorders like multiple sclerosis (MS). This work has made impactful contributions toward developing therapies for patients with neurodegenerative diseases. Having served on peer review panels for major funding agencies such as the National Institute of Health (NIH), the National MS Society, and the Congressionally Directed Medical Research Programs, Dr. Huang is a trusted and influential figure in the field of MS research."
+      },
+      {
+        "order": 4,
+        "type": "paragraph",
+        "content": "Beyond his scientific and medical contributions, Dr. Huang’s story serves as a powerful example of how curiosity, dedication, and mentorship can guide an uncertain start towards an impactful and fulfilling career. In an interview with The Catalyst, he shares some of the pivotal moments that shaped his career trajectory, his lab’s exciting breakthroughs and discoveries, and his candid advice for students seeking a meaningful career in science."
+      },
+      {
+        "order": 5,
+        "type": "section_header",
+        "content": "Dr. Huang’s Research Evolution: Remyelination & Multiple Sclerosis"
+      },
+      {
+        "order": 6,
+        "type": "paragraph",
+        "content": "As one of the most common autoimmune diseases in the world, with no cures discovered to date, Multiple Sclerosis has been a subject of great interest in the scientific community for decades. While the initial pathological event driving MS progression involves the infiltration of immune cells into the brain and spinal cord, symptoms of the disease primarily result from a process called “demyelination,” in which immune cells destroy myelin, an important structure in the brain that coats neurons."
+      },
+      {
+        "order": 7,
+        "type": "section_sub_header",
+        "content": "Myelin – Function"
+      },
+      {
+        "order": 8,
+        "type": "paragraph",
+        "content": "Similar to the insulation on an electrical wire, our brain relies on a special coating called myelin to transmit high-speed electrical signals from one neuron to the next. This structure is formed by a population of cells in the brain known as oligodendrocytes, which send out extensions of their membrane and wrap them around neurons, creating dozens of insulating layers. While brain activity is primarily mediated by neurons, which send electrical signals to one another in the form of ion currents, myelin plays a key role in the process. By preventing ions from leaking out along the neuronal membrane, this protective coating ensures smooth, lag-free conduction. Myelin enables the high-speed signaling that our brain requires to rapidly respond to information from our surroundings in real time."
+      },
+      {
+        "order": 9,
+        "type": "section_sub_header",
+        "content": "Myelin – Formation"
+      },
+      {
+        "order": 10,
+        "type": "paragraph",
+        "content": "Myelin also provides physical protection for neurons which, in contrast to oligodendrocytes, are unable to regenerate. The brain contains a large reservoir of oligodendrocyte precursor cells, which remyelinate neurons in response to injury. In healthy brains, remyelination is important to re-establish normal signaling—but in certain pathological conditions, it fails over time. In MS, specifically, patients often experience cycles of demyelination and remyelination for several years. Eventually, however, they enter a progressive stage of the disease where this natural repair process fails."
+      },
+      {
+        "order": 11,
+        "type": "section_header",
+        "content": "Dr. Huang’s Research Journey: The Beginnings"
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "When he began his PhD at Mount Sinai School of Medicine, Dr. Huang originally planned to study cancer biology. His interests took a sharp turn, however, while doing a rotation with Dr. David R. Colman, where he was first introduced to the beautiful spiral wrappings of myelin. When his mentor showed him an electron micrograph image of the structure, he was mesmerized."
+      },
+      {
+        "order": 13,
+        "type": "paragraph",
+        "content": "“I was curious about how you get this beautiful structure without anyone turning it—it just forms in the brain. That's when science really hit me in the head… When I was in Dave's lab, I realized there were questions behind anything that you see, and that you could start asking questions and exploring the unknown – The challenge of not knowing the answer, but then developing a hypothesis and solving it, was exciting.”"
+      },
+      {
+        "order": 14,
+        "type": "paragraph",
+        "content": "Not only did that experience assure Dr. Huang that he wanted to pursue a career in academic research, it sparked his deep fascination in myelin that has shaped his studies ever since. Upon completion of his PhD, Dr. Huang joined a lab at the University of Cambridge to study the mechanisms of myelin regeneration, where he shifted toward translational research on demyelinating diseases such as MS."
+      },
+      {
+        "order": 15,
+        "type": "paragraph",
+        "content": "“As an autoimmune process, you have to start learning and appreciating the complexity of the immune system… So our lab started to learn immunology, started to use immune demyelination models in mice as a way to get a bit closer to understanding disease pathology and pathogenesis in MS… I would say what sort of got us to where we are is, we found that there is this particular amino acid transporter that is involved in driving inflammation.”"
+      },
+      {
+        "order": 16,
+        "type": "section_header",
+        "content": "A Pivotal Discovery"
+      },
+      {
+        "order": 17,
+        "type": "paragraph",
+        "content": "As he analyzed the lesion environment in MS—the localized areas of damage in the brain and spinal cord due to immune cell infiltration—Dr. Huang observed an upregulation of neutral amino acids in the region. As critical metabolites, amino acids are required for many aspects of cell growth."
+      },
+      {
+        "order": 18,
+        "type": "paragraph",
+        "content": "In his studies on immunology, Dr. Huang had learned of dysregulated amino acid transporters in other pathological conditions that cause excessive activation of immune cells. Since neutral amino acids, like those he’d observed in MS lesions, require transporters for cellular uptake, Dr. Huang wondered if inhibiting certain transporters with a drug could effectively “starve” inflammatory cells and restore a healthy environment, suitable for remyelination."
+      },
+      {
+        "order": 19,
+        "type": "paragraph",
+        "content": "“This led me to speculate–and this was purely speculation… I thought, ‘Why don't we get the drug [an inhibitor of the transporter] and add it to our model to see if it has an effect?’… And it turned out that by inhibiting this transporter, we were able to dampen inflammation and enhance repair.”"
+      },
+      {
+        "order": 20,
+        "type": "paragraph",
+        "content": "To further test their hypothesis, the Huang Lab genetically modified a mouse line to “knock out” its expression of the transporter. When compared to mice that did not undergo genetic modification, those lacking the transporter showed reduced inflammation during the remyelination process. Even more strikingly, the knock-out mice exhibited an accelerated repair process."
+      },
+      {
+        "order": 21,
+        "type": "paragraph",
+        "content": "Having corroborated these findings through additional experiments, Dr. Huang and his team have shifted their focus to investigate this protein as a potential therapeutic target for MS. Their strong preclinical data, accumulated over several years of hard work, has led them to an exciting collaboration with a pharmaceutical company, and a patent for a potential drug for MS patients."
+      },
+      {
+        "order": 22,
+        "type": "section_header",
+        "content": "The Power of Questions: A Methodological Breakthrough"
+      },
+      {
+        "order": 23,
+        "type": "paragraph",
+        "content": "While the significance of the Huang Lab’s drug development work is apparent even to those unfamiliar with the field of MS research, their contributions to the study extend even further. One of the core impediments that Dr. Huang and his team faced when they began to investigate the lesion environment of MS, was an inability to identify the sites in intact tissues."
+      },
+      {
+        "order": 24,
+        "type": "paragraph",
+        "content": "“When you create a focal lesion in the mouse spinal cord, or in the brain, you don't know where that lesion is unless you section the tissue. So I wanted to be able to identify it or be able to visualize it on an intact tissue using some sort of dye.”"
+      },
+      {
+        "order": 25,
+        "type": "paragraph",
+        "content": "A seemingly far-reaching goal, some lab members questioned whether it would really be possible to develop a new visualization strategy. “They were like, ‘you're just being crazy, as always,’” Dr. Huang said."
+      },
+      {
+        "order": 26,
+        "type": "paragraph",
+        "content": "“But I had an undergrad… So this is why I love undergrads: They're willing to take chances because, they're not like, trying to get a PhD out of a project. So they could take risks, and they want to learn.”"
+      },
+      {
+        "order": 27,
+        "type": "paragraph",
+        "content": "With his undergraduate research assistant, David, on board, they researched numerous dyes to test on the lesions. One of the dyes they came across, called neutral red, had been used by other researchers to preferentially bind to highly acidic living cells, such as macrophages, which maintain a low pH due to their high lysosomal activity. “So I asked David to try this, and a few others,” Dr. Huang said."
+      },
+      {
+        "order": 28,
+        "type": "paragraph",
+        "content": "Through trial and error, they discovered that by injecting the mice with the neutral red two hours before sacrificing them, they could visualize the lesions without sectioning and fixing them—a process that restricts the analyses they could perform on the tissue. Then Dr. Maryna Baydyuk, an Assistant Research Professor who just joined Dr. Huang’s lab, took the project further and began to characterize neutral red labeled lesions in mice."
+      },
+      {
+        "order": 29,
+        "type": "paragraph",
+        "content": "“Once we sacrifice the mouse and take out the [spinal] cord, you can see this big red spot where we created that lesion… We can now dissect it out and then do single-cell RNA sequencing and mass spectrometry and proteomics on it… So this approach was a major, major finding in my lab that opened up so many doors because it allowed us to now characterize the lesion microenvironment and the molecular and cellular composition of lesions during remyelination.”"
+      },
+      {
+        "order": 30,
+        "type": "section_header",
+        "content": "A Mindset for Discovery: The Freedom to Fail"
+      },
+      {
+        "order": 31,
+        "type": "paragraph",
+        "content": "Professor Huang’s professional journey attests not only to the rewarding success produced through hard work and dedication, but also to the power of curiosity and a growth mindset. By leaning into the wonder that first drew him to study myelin, and seeking out important questions to probe, Dr. Huang was able to direct his intellectual passions towards tangible, meaningful impact. His journey shows that embracing the unknown, learning from failure, and allowing oneself to be captivated by a question is not only part of the process of science, but a fundamental component."
+      },
+      {
+        "order": 32,
+        "type": "paragraph",
+        "content": "“When you're doing research, you can learn from your mistakes. That's how you get better. You have to not be afraid to do things. You have to just be ready to fail. And I say this, that for anyone who joins my lab. I always say, you're gonna fail, and you have to be okay with it. You have to mentally prepare for that… Because you're gonna do it and you'll repeat your experiments and troubleshoot several times before it works out. But that's okay as long as you're willing to keep doing it. You know, I think that's the hardest thing about research—that sort of willingness to keep going.”"
+      },
+      {
+        "order": 33,
+        "type": "paragraph",
+        "content": "It is this approach that has enabled his lab’s remarkable influence on the field. Dr. Huang’s discovery of a potential new drug for MS, enabled by his willingness to explore a mere hypothesis about an amino acid transporter, and his innovative methodology for labeling MS lesions, developed through numerous trials, shows the importance of perseverance and an indifference to the prospect of failure. By pursuing abstract questions through relentless thought and experimentation, Dr. Huang is helping to spearhead progress in the field of MS research, to provide a better future for patients with neurodegenerative diseases worldwide."
+      },
+      {
+        "order": 34,
+        "type": "section_header",
+        "content": "Additional Information/Resources"
+      },
+      {
+        "order": 35,
+        "type": "paragraph",
+        "content": "Find more information about Dr. Huang’s research at https://www.huang-lab.com/\n\nAlso check out our past article featuring Dr. Huang!: How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine"
+      }
+    ]
+  }
+}

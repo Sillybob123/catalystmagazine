@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management | The Catalyst Magazine</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .dashboard-container {
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-lg);
+            padding: 24px 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            color: var(--text-white);
+            background: var(--accent-gradient);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-gradient-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            color: var(--text-body);
+            background: var(--bg-white);
+            border: 2px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .main-content {
+            background: var(--glass-bg-strong);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid var(--glass-border);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 24px;
+        }
+
+        .add-user-form {
+            background: var(--bg-white);
+            border: 2px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-body);
+            margin-bottom: 8px;
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            border: 2px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-white);
+            color: var(--text-dark);
+            transition: all var(--transition-fast);
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.1);
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-white);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .users-table thead {
+            background: var(--bg-light);
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .users-table th {
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 14px;
+        }
+
+        .users-table td {
+            color: var(--text-body);
+            font-size: 14px;
+        }
+
+        .users-table tr:hover {
+            background: var(--bg-light);
+        }
+
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .role-admin {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+        }
+
+        .role-editor {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .role-writer {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-disabled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #060;
+            border: 1px solid #cfc;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c00;
+            border: 1px solid #fcc;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">User Management</h1>
+            <div class="header-actions">
+                <a href="admin-dashboard.html" class="btn btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Back to Dashboard
+                </a>
+                <button class="btn btn-secondary" id="logout-btn">Logout</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <h2 class="section-title">Add New User</h2>
+
+            <div class="alert alert-success" id="success-message"></div>
+            <div class="alert alert-error" id="error-message"></div>
+
+            <div class="add-user-form">
+                <form id="add-user-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="user-name">Full Name</label>
+                            <input type="text" id="user-name" class="form-input" placeholder="John Doe" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="user-email">Email Address</label>
+                            <input type="email" id="user-email" class="form-input" placeholder="john@example.com" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="user-role">Role</label>
+                            <select id="user-role" class="form-select" required>
+                                <option value="writer">Writer</option>
+                                <option value="editor">Editor</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="user-password">Password</label>
+                            <input type="password" id="user-password" class="form-input" placeholder="Min 6 characters" required minlength="6">
+                        </div>
+
+                        <div class="form-group" style="display: flex; align-items: flex-end;">
+                            <button type="submit" class="btn btn-primary" id="add-user-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="8.5" cy="7" r="4"/>
+                                    <line x1="20" y1="8" x2="20" y2="14"/>
+                                    <line x1="23" y1="11" x2="17" y2="11"/>
+                                </svg>
+                                Add User
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <h2 class="section-title">All Users</h2>
+
+            <table class="users-table" id="users-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-tbody">
+                    <tr>
+                        <td colspan="6" class="empty-state">Loading users...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from './js/firebase-config.js';
+        import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import {
+            collection,
+            getDocs,
+            doc,
+            setDoc,
+            updateDoc,
+            deleteDoc,
+            getDoc,
+            query,
+            orderBy,
+            limit
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Check if user is admin (with first-user bootstrap)
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'writer-login.html';
+                return;
+            }
+
+            const userDoc = await ensureAdminUser(user);
+            const userData = userDoc ? userDoc.data() : null;
+
+            if (!userData || userData.role !== 'admin') {
+                alert('Access denied. Admin only.');
+                window.location.href = 'editorial-studio.html';
+                return;
+            }
+
+            loadUsers();
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.href = 'writer-login.html';
+        });
+
+        // Add new user
+        document.getElementById('add-user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const name = document.getElementById('user-name').value.trim();
+            const email = document.getElementById('user-email').value.trim();
+            const role = document.getElementById('user-role').value;
+            const password = document.getElementById('user-password').value;
+            const addBtn = document.getElementById('add-user-btn');
+
+            addBtn.disabled = true;
+            addBtn.textContent = 'Creating user...';
+
+            try {
+                // Create user in Firebase Authentication
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const newUser = userCredential.user;
+
+                // Update display name
+                await updateProfile(newUser, { displayName: name });
+
+                // Create user document in Firestore
+                await setDoc(doc(db, 'users', newUser.uid), {
+                    name: name,
+                    email: email,
+                    role: role,
+                    status: 'active',
+                    createdAt: new Date().toISOString(),
+                    createdBy: auth.currentUser.uid
+                });
+
+                showSuccess(`User ${name} created successfully with role: ${role}`);
+
+                // Reset form
+                document.getElementById('add-user-form').reset();
+
+                // Reload users list
+                await loadUsers();
+
+                addBtn.disabled = false;
+                addBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="20" y1="8" x2="20" y2="14"/>
+                        <line x1="23" y1="11" x2="17" y2="11"/>
+                    </svg>
+                    Add User
+                `;
+
+            } catch (error) {
+                console.error('Error creating user:', error);
+                showError(getErrorMessage(error.code) || error.message);
+                addBtn.disabled = false;
+                addBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="20" y1="8" x2="20" y2="14"/>
+                        <line x1="23" y1="11" x2="17" y2="11"/>
+                    </svg>
+                    Add User
+                `;
+            }
+        });
+
+        async function loadUsers() {
+            const tbody = document.getElementById('users-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Loading users...</td></tr>';
+
+            try {
+                const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No users found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const user = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${user.name || 'N/A'}</td>
+                        <td>${user.email}</td>
+                        <td><span class="role-badge role-${user.role}">${user.role.toUpperCase()}</span></td>
+                        <td><span class="status-badge status-${user.status || 'active'}">${(user.status || 'active').toUpperCase()}</span></td>
+                        <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-small btn-secondary" onclick="changeRole('${doc.id}', '${user.role}')">
+                                Change Role
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteUser('${doc.id}', '${user.email}')" ${auth.currentUser.uid === doc.id ? 'disabled' : ''}>
+                                Delete
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (error) {
+                console.error('Error loading users:', error);
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Error loading users.</td></tr>';
+            }
+        }
+
+        window.changeRole = async function(userId, currentRole) {
+            const roles = ['writer', 'editor', 'admin'];
+            const newRole = prompt(`Change role for this user. Current: ${currentRole}\n\nEnter new role (writer, editor, or admin):`, currentRole);
+
+            if (!newRole || !roles.includes(newRole.toLowerCase())) {
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, 'users', userId), {
+                    role: newRole.toLowerCase()
+                });
+
+                showSuccess('Role updated successfully');
+                loadUsers();
+
+            } catch (error) {
+                console.error('Error updating role:', error);
+                showError('Failed to update role');
+            }
+        };
+
+        window.deleteUser = async function(userId, userEmail) {
+            if (!confirm(`Are you sure you want to delete user: ${userEmail}?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, 'users', userId));
+                showSuccess('User deleted successfully');
+                loadUsers();
+
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showError('Failed to delete user. Note: You must also delete the user from Firebase Authentication console.');
+            }
+        };
+
+        function showSuccess(message) {
+            const successMsg = document.getElementById('success-message');
+            successMsg.textContent = message;
+            successMsg.style.display = 'block';
+            setTimeout(() => successMsg.style.display = 'none', 5000);
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('error-message');
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+            setTimeout(() => errorMsg.style.display = 'none', 5000);
+        }
+
+        function hideMessages() {
+            document.getElementById('success-message').style.display = 'none';
+            document.getElementById('error-message').style.display = 'none';
+        }
+
+        function getErrorMessage(code) {
+            const messages = {
+                'auth/email-already-in-use': 'This email is already registered.',
+                'auth/invalid-email': 'Invalid email address.',
+                'auth/weak-password': 'Password should be at least 6 characters.',
+                'auth/network-request-failed': 'Network error. Please check your connection.',
+            };
+            return messages[code] || 'An error occurred. Please try again.';
+        }
+
+        // Bootstrap first admin if no users exist (helps avoid "Access denied" on fresh setup)
+        async function ensureAdminUser(user) {
+            const userRef = doc(db, 'users', user.uid);
+            const snap = await getDoc(userRef);
+            if (snap.exists()) return snap;
+
+            const anyUser = await getDocs(query(collection(db, 'users'), limit(1)));
+            if (!anyUser.empty) return null; // Some user exists, so we can't auto-elevate
+
+            await setDoc(userRef, {
+                name: user.displayName || user.email,
+                email: user.email,
+                role: 'admin',
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                createdBy: user.uid
+            });
+
+            return await getDoc(userRef);
+        }
+    </script>
+</body>
+</html>

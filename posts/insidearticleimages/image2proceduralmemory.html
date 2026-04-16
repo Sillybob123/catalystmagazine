@@ -1,0 +1,162 @@
+<!-- Study Optimizer: Declarative/Procedural Model Feature -->
+<section class="study-optimizer">
+  <h2>Optimize Your Study with Memory Science</h2>
+  <p>
+    Apply Dr. Michael T. Ullman’s Declarative/Procedural Model to tailor your learning techniques—
+    engage the right memory system for each discipline.
+  </p>
+
+  <!-- Language Card -->
+  <div class="dp-card">
+    <div class="card-header">
+      <h3>Language</h3>
+      <span class="indicator">+</span>
+    </div>
+    <div class="card-body">
+      <h4>Declarative Memory</h4>
+      <ul>
+        <li>Spaced repetition of new vocabulary to strengthen hippocampal consolidation.</li>
+        <li>Active retrieval practice (flash-cards, self-quizzing) for durable recall.</li>
+        <li>Multimodal encoding: pair words with images, example sentences, or audio.</li>
+      </ul>
+      <h4>Procedural Memory</h4>
+      <ul>
+        <li>Immersive practice—speak, listen, think in the target language daily.</li>
+        <li>Interleaved grammar drills (mix patterns rather than block one rule at a time).</li>
+        <li>Prioritize sleep after rule practice to enhance offline procedural consolidation.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Math Card -->
+  <div class="dp-card">
+    <div class="card-header">
+      <h3>Mathematics</h3>
+      <span class="indicator">+</span>
+    </div>
+    <div class="card-body">
+      <h4>Declarative Memory</h4>
+      <ul>
+        <li>Drill arithmetic facts (e.g. times-tables) with spaced flash-cards.</li>
+        <li>Self-testing on formulas and definitions instead of passive review.</li>
+        <li>Create concept maps linking related theorems and formulas.</li>
+      </ul>
+      <h4>Procedural Memory</h4>
+      <ul>
+        <li>Work through step-by-step worked examples to internalize algorithms.</li>
+        <li>Use interleaved problem sets across topics (algebra, geometry, etc.).</li>
+        <li>Overlearn key procedures until they become automatic.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Music Card -->
+  <div class="dp-card">
+    <div class="card-header">
+      <h3>Music</h3>
+      <span class="indicator">+</span>
+    </div>
+    <div class="card-body">
+      <h4>Declarative Memory</h4>
+      <ul>
+        <li>Memorize short motifs with repeated listening and notation drills.</li>
+        <li>Quiz yourself on scales, chords, and terminology using flash-cards.</li>
+        <li>Link musical patterns to visual or narrative mnemonics.</li>
+      </ul>
+      <h4>Procedural Memory</h4>
+      <ul>
+        <li>Practice passages slowly to build accurate muscle memory.</li>
+        <li>Use a metronome for consistent rhythmic drilling.</li>
+        <li>Maintain daily, focused repetition of technical exercises.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  :root {
+    --accent: #2980b9;
+    --text: #2c3e50;
+    --bg: #ffffff;
+    --border: #e0e0e0;
+    --shadow: rgba(0,0,0,0.1);
+  }
+  .study-optimizer {
+    max-width: 700px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background: var(--bg);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text);
+  }
+  .study-optimizer h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 0.25rem;
+  }
+  .study-optimizer p {
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+  .dp-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 0 12px var(--shadow);
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    background: var(--bg);
+  }
+  .card-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+  .indicator {
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: transform 0.3s;
+  }
+  .dp-card.active .indicator {
+    transform: rotate(45deg);
+  }
+  .card-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+    padding: 0 1.25rem;
+    background: var(--bg);
+  }
+  .dp-card.active .card-body {
+    max-height: 500px;
+    padding-bottom: 1rem;
+  }
+  .card-body h4 {
+    margin: 1rem 0 0.5rem;
+    font-size: 1rem;
+    color: var(--accent);
+  }
+  .card-body ul {
+    margin: 0 0 0.5rem 1.25rem;
+    padding: 0;
+  }
+  .card-body li {
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.study-optimizer .card-header')
+    .forEach(header => {
+      header.addEventListener('click', () => {
+        header.parentElement.classList.toggle('active');
+      });
+    });
+</script>

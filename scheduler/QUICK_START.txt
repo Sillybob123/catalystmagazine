@@ -1,0 +1,56 @@
+╔═══════════════════════════════════════════════════════════════╗
+║                    🚀 QUICK START GUIDE 🚀                   ║
+║                                                               ║
+║              Upload Your Folder to GitHub Now!               ║
+╚═══════════════════════════════════════════════════════════════╝
+
+✅ FOLDER IS CLEAN - All unnecessary files deleted!
+✅ ALL FIXES APPLIED - Approve & Edit buttons work!
+✅ JEKYLL ERROR FIXED - No more build failures!
+
+═══════════════════════════════════════════════════════════════
+📦 3-STEP UPLOAD PROCESS:
+═══════════════════════════════════════════════════════════════
+
+STEP 1: Delete Everything on GitHub
+   Go to: https://github.com/YOUR_USERNAME/YOUR_REPO_NAME
+   → Select all files (top checkbox)
+   → Click "..." → "Delete files"
+   → Commit: "Clean for fresh upload"
+
+STEP 2: Upload Entire Folder
+   → Click "Add file" → "Upload files"
+   → Drag entire CatalystSchedule-main folder
+   → Commit: "Complete upload with fixes"
+
+STEP 3: Wait & Test
+   → Wait 2-3 minutes
+   → Go to "Actions" tab → Check ✅ build success
+   → Visit your site and test!
+
+═══════════════════════════════════════════════════════════════
+✨ WHAT'S FIXED:
+═══════════════════════════════════════════════════════════════
+
+1. ✅ Approve button refreshes modal after clicking
+2. ✅ Edit button works for proposal authors
+3. ✅ Edit mode auto-cancels when closing modal
+4. ✅ No edit state carries between proposals
+5. ✅ Jekyll build error fixed (_config.yml)
+6. ✅ All version numbers updated for cache-busting
+
+═══════════════════════════════════════════════════════════════
+🎯 AFTER UPLOAD:
+═══════════════════════════════════════════════════════════════
+
+→ Clear browser cache (Ctrl+Shift+Delete / Cmd+Shift+Delete)
+→ Visit your GitHub Pages site
+→ Test approve button (as admin)
+→ Test edit button (as user on your proposal)
+→ Everything works! 🎉
+
+═══════════════════════════════════════════════════════════════
+
+For detailed instructions, see: UPLOAD_INSTRUCTIONS.txt
+
+═══════════════════════════════════════════════════════════════

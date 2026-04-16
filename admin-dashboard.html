@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editorial Dashboard | Catalyst</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/workflow-preview.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafbfc;
+            min-height: 100vh;
+            color: #111827;
+        }
+
+        /* Unified Header */
+        .editorial-header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-logo {
+            font-size: 18px;
+            font-weight: 800;
+            color: #111827;
+            letter-spacing: -0.3px;
+            text-decoration: none;
+        }
+
+        .brand-divider {
+            width: 1px;
+            height: 24px;
+            background: #e5e7eb;
+        }
+
+        .page-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #6b7280;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #111827, #374151);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #111827;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1f2937;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .btn-icon {
+            padding: 10px;
+        }
+
+        /* Main Layout */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-header-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 8px;
+            letter-spacing: -0.8px;
+        }
+
+        .page-header-subtitle {
+            font-size: 16px;
+            color: #6b7280;
+            font-weight: 400;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .grid-col-4 {
+            grid-column: span 4;
+        }
+
+        .grid-col-6 {
+            grid-column: span 6;
+        }
+
+        .grid-col-8 {
+            grid-column: span 8;
+        }
+
+        .grid-col-12 {
+            grid-column: span 12;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .action-btn {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .action-btn:hover {
+            border-color: #111827;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .action-icon {
+            width: 48px;
+            height: 48px;
+            background: #f3f4f6;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover .action-icon {
+            background: #111827;
+        }
+
+        .action-btn:hover .action-icon svg {
+            stroke: white;
+        }
+
+        .action-label {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 40px;
+            font-weight: 800;
+            color: #111827;
+            letter-spacing: -1px;
+        }
+
+        /* Calendar */
+        .calendar-container {
+            padding: 0;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .calendar-nav-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .calendar-nav-btn:hover {
+            background: #f9fafb;
+        }
+
+        .calendar-month {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 8px 0;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .calendar-day:hover {
+            border-color: #111827;
+        }
+
+        .calendar-day.other-month {
+            background: #f9fafb;
+            color: #d1d5db;
+        }
+
+        .calendar-day.today {
+            border-color: #111827;
+            border-width: 2px;
+        }
+
+        .calendar-day.has-events {
+            background: #f0f9ff;
+            border-color: #3b82f6;
+        }
+
+        .calendar-events {
+            display: flex;
+            gap: 2px;
+            margin-top: auto;
+            flex-wrap: wrap;
+        }
+
+        .calendar-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+        }
+
+        .dot-pending { background: #fbbf24; }
+        .dot-approved { background: #10b981; }
+        .dot-published { background: #3b82f6; }
+
+        /* Story List */
+        .story-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            list-style: none;
+        }
+
+        .story-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+
+        .story-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
+        }
+
+        .story-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .story-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 6px;
+        }
+
+        .story-meta {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-published {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .story-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+
+        .btn-approve {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-approve:hover {
+            background: #059669;
+        }
+
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #dc2626;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+
+        .empty-state svg {
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 28px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #f3f4f6;
+            color: #6b7280;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            background: #111827;
+            color: white;
+        }
+
+        .modal-body {
+            padding: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            font-size: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #111827;
+            box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.1);
+        }
+
+        textarea.form-input {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Scheduler Styles */
+        .scheduler-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .scheduler-calendar {
+            background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .scheduler-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .scheduler-month-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .scheduler-nav-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            background: white;
+            cursor: pointer;
+            font-size: 20px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .scheduler-nav-btn:hover {
+            background: #111827;
+            color: white;
+            border-color: #111827;
+        }
+
+        .scheduler-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .scheduler-weekday {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            padding: 8px;
+        }
+
+        .scheduler-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .scheduler-day {
+            aspect-ratio: 1;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+            color: #111827;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .scheduler-day:hover {
+            border-color: #111827;
+            transform: translateY(-1px);
+        }
+
+        .scheduler-day.other-month {
+            background: #fafbfc;
+            color: #d1d5db;
+        }
+
+        .scheduler-day.today {
+            border-color: #111827;
+            border-width: 2px;
+            font-weight: 700;
+        }
+
+        .scheduler-day.has-scheduled {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+
+        .scheduler-badge {
+            min-width: 22px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #0f172a, #1f2937);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(17, 24, 39, 0.18);
+        }
+
+        .scheduler-list {
+            background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .scheduled-items {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .scheduled-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .scheduled-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .scheduled-item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 6px;
+        }
+
+        .scheduled-item-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .scheduled-item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-schedule-cancel {
+            padding: 4px 10px;
+            font-size: 12px;
+            background: white;
+            color: #ef4444;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-schedule-cancel:hover {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        /* Mini Scheduler */
+        .mini-scheduler-card {
+            background: linear-gradient(135deg, #0f172a, #111827 55%, #1f2937);
+            border: 1px solid #0b1220;
+            border-radius: 14px;
+            padding: 22px;
+            color: #e5e7eb;
+            box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mini-scheduler-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 35%),
+                        radial-gradient(circle at 80% 0%, rgba(148, 163, 184, 0.08), transparent 25%);
+            pointer-events: none;
+        }
+
+        .mini-scheduler-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .mini-scheduler-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .mini-title {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            color: #f8fafc;
+        }
+
+        .mini-subtitle {
+            font-size: 13px;
+            color: #cbd5e1;
+            margin-top: 4px;
+            max-width: 640px;
+            line-height: 1.6;
+        }
+
+        .mini-week-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .mini-day {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px;
+            color: #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .mini-day-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #cbd5e1;
+        }
+
+        .mini-day-date {
+            font-size: 16px;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+
+        .mini-day-count {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            width: fit-content;
+        }
+
+        .mini-count-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.15);
+        }
+
+        .mini-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .mini-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+        }
+
+        .mini-item-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 4px;
+        }
+
+        .mini-item-meta {
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+
+        .mini-status {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .mini-status.pending { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .mini-status.approved { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .mini-status.published { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+        .mini-status.scheduled { background: rgba(244, 114, 182, 0.2); color: #f472b6; }
+
+        .mini-empty {
+            color: #cbd5e1;
+            text-align: center;
+            padding: 24px 12px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .scheduler-grid {
+                grid-template-columns: 1fr;
+            }
+            .grid-col-4, .grid-col-6, .grid-col-8, .grid-col-12 {
+                grid-column: span 12;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px 16px;
+            }
+
+            .header-container {
+                padding: 12px 16px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .header-brand {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .page-header-title {
+                font-size: 24px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .calendar-grid {
+                gap: 4px;
+            }
+
+            .calendar-day {
+                font-size: 12px;
+                padding: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="editorial-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <a href="admin-dashboard.html" class="brand-logo">CATALYST EDITORIAL</a>
+                <div class="brand-divider"></div>
+                <div class="page-title">Dashboard</div>
+            </div>
+            <div class="header-actions">
+                <div class="user-menu">
+                    <div class="user-avatar" id="user-avatar">YB</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">Loading...</div>
+                        <div class="user-role" id="user-role">Writer</div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" id="logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-header-title">Editorial Dashboard</h1>
+            <p class="page-header-subtitle">Your newsroom command center</p>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Quick Actions -->
+            <div class="grid-col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">Quick Actions</h2>
+                            <p class="card-subtitle">Common tasks and tools</p>
+                        </div>
+                    </div>
+                    <div class="quick-actions" id="quick-actions">
+                        <a href="editorial-studio.html" class="action-btn">
+                            <div class="action-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </div>
+                            <span class="action-label">Write Story</span>
+                        </a>
+
+                        <div class="action-btn" onclick="showMyStories()">
+                            <div class="action-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                </svg>
+                            </div>
+                            <span class="action-label">My Stories</span>
+                        </div>
+
+                        <div class="action-btn" id="guidelines-btn">
+                            <div class="action-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                </svg>
+                            </div>
+                            <span class="action-label">Guidelines</span>
+                        </div>
+
+                        <a href="scheduler/dashboard.html" class="action-btn">
+                            <div class="action-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                            </div>
+                            <span class="action-label">Scheduler</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Catalyst in the Capital Workflow Preview -->
+            <div class="grid-col-12" style="margin-top: 32px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">Catalyst in the Capital</h2>
+                            <p class="card-subtitle">Editorial workflow pipeline - powered by scheduler database</p>
+                        </div>
+                        <a href="scheduler/dashboard.html" class="btn btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                            </svg>
+                            Full Scheduler
+                        </a>
+                    </div>
+
+                    <!-- View Tabs -->
+                    <div class="workflow-tabs">
+                        <button class="workflow-tab active" data-view="interviews">
+                            Interviews
+                            <span class="tab-count" id="interviews-count">0</span>
+                        </button>
+                        <button class="workflow-tab" data-view="opeds">
+                            Op-Eds
+                            <span class="tab-count" id="opeds-count">0</span>
+                        </button>
+                        <button class="workflow-tab" data-view="my-assignments">
+                            My Assignments
+                            <span class="tab-count" id="my-assignments-count">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Workflow Preview Container -->
+                    <div id="workflow-preview-board">
+                        <div class="workflow-loading-state">
+                            <div class="workflow-loading-spinner"></div>
+                            <div>Loading workflow...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Scheduler -->
+            <div class="grid-col-12" style="margin-top: 32px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">Content Scheduler</h2>
+                            <p class="card-subtitle">Plan and manage your publishing calendar</p>
+                        </div>
+                        <button class="btn btn-primary" id="add-schedule-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Schedule Post
+                        </button>
+                    </div>
+                    <div style="padding: 20px;">
+                        <div class="scheduler-grid">
+                            <div class="scheduler-calendar">
+                                <div class="scheduler-controls">
+                                    <button class="scheduler-nav-btn" id="prev-scheduler-month">‹</button>
+                                    <div class="scheduler-month-title" id="scheduler-month-title">Loading...</div>
+                                    <button class="scheduler-nav-btn" id="next-scheduler-month">›</button>
+                                </div>
+                                <div class="scheduler-weekdays">
+                                    <div class="scheduler-weekday">Sun</div>
+                                    <div class="scheduler-weekday">Mon</div>
+                                    <div class="scheduler-weekday">Tue</div>
+                                    <div class="scheduler-weekday">Wed</div>
+                                    <div class="scheduler-weekday">Thu</div>
+                                    <div class="scheduler-weekday">Fri</div>
+                                    <div class="scheduler-weekday">Sat</div>
+                                </div>
+                                <div class="scheduler-days" id="scheduler-days"></div>
+                            </div>
+                            <div class="scheduler-list">
+                                <h3 style="font-size: 14px; font-weight: 700; color: #111827; margin-bottom: 16px;">Upcoming Scheduled Posts</h3>
+                                <ul class="scheduled-items" id="scheduled-items">
+                                    <li class="empty-state" style="padding: 40px 20px;">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                        <div>No scheduled posts yet</div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Overview -->
+            <div class="grid-col-12" style="margin-top: 32px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">Content Overview</h2>
+                            <p class="card-subtitle">Story status breakdown</p>
+                        </div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Pending</div>
+                            <div class="stat-value" id="pending-count">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Approved</div>
+                            <div class="stat-value" id="approved-count">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Published</div>
+                            <div class="stat-value" id="published-count">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total</div>
+                            <div class="stat-value" id="total-count">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editorial Calendar -->
+            <div class="grid-col-6" style="margin-top: 32px;">
+                <div class="card calendar-container">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">Editorial Calendar</h2>
+                            <p class="card-subtitle">Track deadlines and submissions</p>
+                        </div>
+                    </div>
+
+                    <div class="calendar-header">
+                        <div class="calendar-nav">
+                            <button class="calendar-nav-btn" id="prev-month">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <div class="calendar-month" id="current-month">January 2026</div>
+                            <button class="calendar-nav-btn" id="next-month">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                        <a href="scheduler/dashboard.html" class="btn btn-primary btn-small">
+                            Full Scheduler
+                        </a>
+                    </div>
+
+                    <div class="calendar-grid" id="calendar-grid">
+                        <div class="calendar-day-header">Sun</div>
+                        <div class="calendar-day-header">Mon</div>
+                        <div class="calendar-day-header">Tue</div>
+                        <div class="calendar-day-header">Wed</div>
+                        <div class="calendar-day-header">Thu</div>
+                        <div class="calendar-day-header">Fri</div>
+                        <div class="calendar-day-header">Sat</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Stories -->
+            <div class="grid-col-6" style="margin-top: 32px;">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">Recent Stories</h2>
+                            <p class="card-subtitle">Latest submissions and updates</p>
+                        </div>
+                        <a href="#all-stories" class="btn btn-secondary btn-small">View All</a>
+                    </div>
+                    <ul class="story-list" id="recent-stories">
+                        <li class="empty-state">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <div>Loading stories...</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- All Stories Section -->
+            <div class="grid-col-12" style="margin-top: 32px;" id="all-stories">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">All Stories</h2>
+                            <p class="card-subtitle">Manage all content</p>
+                        </div>
+                    </div>
+                    <ul class="story-list" id="all-stories-list">
+                        <li class="empty-state">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <div>No stories found</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Guidelines Modal -->
+    <div class="modal" id="guidelines-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Writing & Editorial Guidelines</h3>
+                <button class="modal-close" id="close-guidelines">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3 style="margin-bottom: 12px;">Story Structure</h3>
+                <p style="margin-bottom: 16px; color: #6b7280; line-height: 1.6;">Every Catalyst story should follow professional journalism standards with a clear headline, compelling lede, nut graf explaining why it matters, supporting body content, and a strong conclusion.</p>
+
+                <h3 style="margin: 24px 0 12px;">Writing Standards</h3>
+                <ul style="margin-left: 20px; color: #6b7280; line-height: 1.8;">
+                    <li><strong>Accuracy</strong> – All facts, names, and quotes must be verified</li>
+                    <li><strong>Clarity</strong> – Use active voice; write for a general audience</li>
+                    <li><strong>Attribution</strong> – Cite all sources properly</li>
+                    <li><strong>Objectivity</strong> – Present multiple perspectives</li>
+                </ul>
+
+                <h3 style="margin: 24px 0 12px;">Submission Checklist</h3>
+                <ul style="margin-left: 20px; color: #6b7280; line-height: 1.8;">
+                    <li>✓ Headline is specific and uses Title Case</li>
+                    <li>✓ Cover image is 16:9 and under 5MB</li>
+                    <li>✓ Category and tags are set correctly</li>
+                    <li>✓ No spelling or grammar errors</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Story</h3>
+                <button class="modal-close" id="close-edit-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="edit-title" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Deck / Standfirst</label>
+                    <textarea id="edit-deck" class="form-input"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" id="edit-category" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tags (comma separated)</label>
+                    <input type="text" id="edit-tags" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Content (HTML)</label>
+                    <textarea id="edit-content" class="form-input" style="min-height: 200px;"></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+                    <button class="btn btn-secondary" id="cancel-edit-btn">Cancel</button>
+                    <button class="btn btn-approve" id="save-edit-btn">Save & Republish</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Post Modal -->
+    <div class="modal" id="schedule-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Schedule Post</h3>
+                <button class="modal-close" id="close-schedule-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Post Title</label>
+                    <input type="text" id="schedule-title" class="form-input" placeholder="Enter post title">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Schedule Date</label>
+                    <input type="date" id="schedule-date" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Schedule Time</label>
+                    <input type="time" id="schedule-time" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea id="schedule-notes" class="form-input" placeholder="Add any notes about this scheduled post"></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+                    <button class="btn btn-secondary" id="cancel-schedule-btn">Cancel</button>
+                    <button class="btn btn-primary" id="save-schedule-btn">Schedule Post</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import dual Firebase configuration (primary + workflow databases)
+        import { auth, db, workflowDb } from './js/firebase-dual-config.js';
+        import { WorkflowPreviewWidget } from './js/widgets/workflow-preview.js';
+        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import {
+            collection,
+            query,
+            where,
+            getDocs,
+            doc,
+            updateDoc,
+            getDoc,
+            orderBy,
+            setDoc,
+            limit,
+            deleteDoc
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        let allStories = [];
+        let currentUser = null;
+        let currentUserData = null;
+        let currentMonth = new Date();
+        let editingStoryId = null;
+        let schedulerMonth = new Date();
+        let scheduledPosts = [];
+        let schedulerEvents = [];
+
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+
+        const API_BASE = window.location.origin.startsWith('http') ? window.location.origin : 'http://localhost:3000';
+        const PUBLISH_URL = `${API_BASE}/api/publish-article`;
+        const DELETE_URL = `${API_BASE}/api/delete-article`;
+
+        // Auth
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = 'writer-login.html';
+                return;
+            }
+
+            currentUser = user;
+            const userDoc = await ensureUser(user);
+            currentUserData = userDoc ? userDoc.data() : null;
+
+            if (!currentUserData) {
+                await signOut(auth);
+                window.location.href = 'writer-login.html';
+                return;
+            }
+
+            // Update UI
+            document.getElementById('user-name').textContent = currentUserData.name || user.email;
+            document.getElementById('user-role').textContent = currentUserData.role.toUpperCase();
+
+            const initials = (currentUserData.name || user.email).split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+            document.getElementById('user-avatar').textContent = initials;
+
+            // Add admin actions
+            if (currentUserData.role === 'admin') {
+                addAdminActions();
+            }
+
+            await loadStories();
+            await loadScheduledPosts();
+            buildSchedulerEvents();
+            renderSchedulerSuite();
+
+            // Initialize Catalyst in the Capital workflow preview (from catalystmonday database)
+            const workflowPreview = new WorkflowPreviewWidget('workflow-preview-board', currentUser);
+            console.log('[DASHBOARD] Workflow preview initialized');
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.href = 'writer-login.html';
+        });
+
+        // Calendar navigation
+        document.getElementById('prev-month').addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() - 1);
+            renderCalendar();
+        });
+
+        document.getElementById('next-month').addEventListener('click', () => {
+            currentMonth.setMonth(currentMonth.getMonth() + 1);
+            renderCalendar();
+        });
+
+        // Modals
+        document.getElementById('guidelines-btn').addEventListener('click', () => {
+            document.getElementById('guidelines-modal').classList.add('active');
+        });
+
+        document.getElementById('close-guidelines').addEventListener('click', () => {
+            document.getElementById('guidelines-modal').classList.remove('active');
+        });
+
+        document.getElementById('close-edit-modal').addEventListener('click', closeEditModal);
+        document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
+
+        document.getElementById('save-edit-btn').addEventListener('click', async () => {
+            if (!editingStoryId) return;
+
+            const title = document.getElementById('edit-title').value.trim();
+            const deck = document.getElementById('edit-deck').value.trim();
+            const category = document.getElementById('edit-category').value.trim();
+            const tags = document.getElementById('edit-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+            const content = document.getElementById('edit-content').value.trim();
+
+            if (!title || !category || !content) {
+                alert('Title, category, and content are required.');
+                return;
+            }
+
+            try {
+                await updateDoc(doc(db, 'stories', editingStoryId), {
+                    title,
+                    deck,
+                    category,
+                    tags,
+                    content,
+                    updatedAt: new Date().toISOString()
+                });
+
+                await publishStory(editingStoryId, true);
+                closeEditModal();
+                alert('Story updated and republished.');
+                loadStories();
+            } catch (error) {
+                console.error('Error saving story edits:', error);
+                alert('Failed to save edits: ' + error.message);
+            }
+        });
+
+        // Load and render
+        async function loadStories() {
+            try {
+                const q = query(collection(db, 'stories'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(q);
+
+                allStories = [];
+                querySnapshot.forEach((doc) => {
+                    allStories.push({ id: doc.id, ...doc.data() });
+                });
+
+                updateStats();
+                renderRecentStories();
+                renderAllStories();
+                renderCalendar();
+                buildSchedulerEvents();
+                renderSchedulerSuite();
+            } catch (error) {
+                console.error('Error loading stories:', error);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('pending-count').textContent = allStories.filter(s => s.status === 'pending').length;
+            document.getElementById('approved-count').textContent = allStories.filter(s => s.status === 'approved').length;
+            document.getElementById('published-count').textContent = allStories.filter(s => s.status === 'published').length;
+            document.getElementById('total-count').textContent = allStories.length;
+        }
+
+        function renderRecentStories() {
+            const list = document.getElementById('recent-stories');
+            const recent = allStories.slice(0, 5);
+
+            if (recent.length === 0) {
+                list.innerHTML = '<li class="empty-state">No recent stories</li>';
+                return;
+            }
+
+            list.innerHTML = '';
+            recent.forEach(story => renderStoryItem(story, list));
+        }
+
+        function renderAllStories() {
+            const list = document.getElementById('all-stories-list');
+
+            if (allStories.length === 0) {
+                list.innerHTML = '<li class="empty-state">No stories found</li>';
+                return;
+            }
+
+            list.innerHTML = '';
+            allStories.forEach(story => renderStoryItem(story, list, true));
+        }
+
+        function renderStoryItem(story, parentElement, showActions = false) {
+            const li = document.createElement('li');
+            const isAdmin = currentUserData && currentUserData.role === 'admin';
+            const isOwner = currentUser && story.authorEmail === currentUser.email;
+
+            li.innerHTML = `
+                <div class="story-item">
+                    <div class="story-header">
+                        <div>
+                            <div class="story-title">${story.title}</div>
+                            <div class="story-meta">
+                                ${story.authorName} • ${story.category} • ${new Date(story.createdAt).toLocaleDateString()}
+                            </div>
+                        </div>
+                        <span class="status-badge status-${story.status}">${story.status}</span>
+                    </div>
+                    ${showActions ? `
+                        <div class="story-actions">
+                            ${isAdmin && story.status === 'pending' ? `
+                                <button class="btn btn-approve btn-small" onclick="approveStory('${story.id}')">Approve</button>
+                                <button class="btn btn-reject btn-small" onclick="rejectStory('${story.id}')">Reject</button>
+                            ` : ''}
+                            ${isAdmin && story.status === 'approved' ? `
+                                <button class="btn btn-approve btn-small" onclick="publishStory('${story.id}')">Publish</button>
+                            ` : ''}
+                            ${isAdmin && story.status === 'published' ? `
+                                <button class="btn btn-approve btn-small" onclick="publishStory('${story.id}', true)">Republish</button>
+                            ` : ''}
+                            ${(isAdmin || isOwner) ? `<button class="btn btn-secondary btn-small" onclick="editStory('${story.id}')">Edit</button>` : ''}
+                            ${isAdmin ? `<button class="btn btn-reject btn-small" onclick="deleteStory('${story.id}')">Delete</button>` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            parentElement.appendChild(li);
+        }
+
+        function renderCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+
+            document.getElementById('current-month').textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+            const calendarGrid = document.getElementById('calendar-grid');
+
+            while (calendarGrid.children.length > 7) {
+                calendarGrid.removeChild(calendarGrid.lastChild);
+            }
+
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = daysInPrevMonth - i;
+                calendarGrid.appendChild(createCalendarDay(day, true, new Date(year, month - 1, day)));
+            }
+
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const isToday = date.toDateString() === today.toDateString();
+                calendarGrid.appendChild(createCalendarDay(day, false, date, isToday));
+            }
+
+            const totalCells = calendarGrid.children.length - 7;
+            const remainingCells = 42 - totalCells - 7;
+            for (let day = 1; day <= remainingCells; day++) {
+                calendarGrid.appendChild(createCalendarDay(day, true, new Date(year, month + 1, day)));
+            }
+        }
+
+        function createCalendarDay(day, isOtherMonth, date, isToday = false) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'calendar-day';
+            if (isOtherMonth) dayEl.classList.add('other-month');
+            if (isToday) dayEl.classList.add('today');
+
+            const dateStr = date.toDateString();
+            const dayStories = allStories.filter(story => {
+                const storyDate = story.publishedAt || story.createdAt;
+                return storyDate && new Date(storyDate).toDateString() === dateStr;
+            });
+
+            if (dayStories.length > 0 && !isOtherMonth) {
+                dayEl.classList.add('has-events');
+            }
+
+            dayEl.textContent = day;
+
+            const eventsContainer = document.createElement('div');
+            eventsContainer.className = 'calendar-events';
+
+            dayStories.slice(0, 3).forEach(story => {
+                const dot = document.createElement('div');
+                dot.className = 'calendar-dot';
+                if (story.status === 'pending') dot.classList.add('dot-pending');
+                else if (story.status === 'approved') dot.classList.add('dot-approved');
+                else if (story.status === 'published') dot.classList.add('dot-published');
+                eventsContainer.appendChild(dot);
+            });
+
+            dayEl.appendChild(eventsContainer);
+            return dayEl;
+        }
+
+        function buildSchedulerEvents() {
+            const manualEvents = (scheduledPosts || []).map(post => {
+                const date = post.scheduledDate || post.date;
+                const parsed = date ? new Date(date) : null;
+                if (!parsed || isNaN(parsed.getTime())) return null;
+                return {
+                    id: post.id,
+                    title: post.title || 'Scheduled post',
+                    date: parsed.toISOString(),
+                    status: post.status || 'scheduled',
+                    source: 'scheduled',
+                    notes: post.notes || ''
+                };
+            }).filter(Boolean);
+
+            const storyEvents = (allStories || []).map(story => {
+                const date = story.publishedAt || story.approvedAt || story.createdAt;
+                if (!date) return null;
+                const parsed = new Date(date);
+                if (isNaN(parsed.getTime())) return null;
+                return {
+                    id: story.id,
+                    title: story.title || 'Untitled story',
+                    date: parsed.toISOString(),
+                    status: story.status || 'pending',
+                    source: 'story',
+                    author: story.authorName || story.authorEmail || '',
+                    category: story.category || ''
+                };
+            }).filter(Boolean);
+
+            schedulerEvents = [...manualEvents, ...storyEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
+            console.log('Built scheduler events:', schedulerEvents.length, '(manual:', manualEvents.length, ', stories:', storyEvents.length, ')');
+        }
+
+        function getEventsByDay() {
+            return schedulerEvents.reduce((acc, event) => {
+                const key = new Date(event.date).toDateString();
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(event);
+                return acc;
+            }, {});
+        }
+
+        function formatSchedulerDate(date) {
+            const d = new Date(date);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatStatusLabel(status) {
+            if (!status) return 'Scheduled';
+            return status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        function renderSchedulerSuite() {
+            buildSchedulerEvents();
+            renderScheduler();
+            renderScheduledList();
+            renderMiniScheduler();
+        }
+
+        function addAdminActions() {
+            const actionsContainer = document.getElementById('quick-actions');
+            const pendingCount = allStories.filter(s => s.status === 'pending').length;
+
+            const reviewBtn = document.createElement('div');
+            reviewBtn.className = 'action-btn';
+            reviewBtn.onclick = () => {
+                document.getElementById('all-stories').scrollIntoView({ behavior: 'smooth' });
+            };
+            reviewBtn.innerHTML = `
+                <div class="action-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 11 12 14 22 4"></polyline>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                </div>
+                <span class="action-label">Review Queue ${pendingCount > 0 ? `(${pendingCount})` : ''}</span>
+            `;
+            actionsContainer.appendChild(reviewBtn);
+        }
+
+        window.showMyStories = function() {
+            if (!currentUser) return;
+            const myStories = allStories.filter(s => s.authorEmail === currentUser.email);
+            const list = document.getElementById('all-stories-list');
+
+            if (myStories.length === 0) {
+                list.innerHTML = '<li class="empty-state">No stories found</li>';
+                return;
+            }
+
+            list.innerHTML = '';
+            myStories.forEach(story => renderStoryItem(story, list, true));
+            document.getElementById('all-stories').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.editStory = async function(storyId) {
+            try {
+                const snap = await getDoc(doc(db, 'stories', storyId));
+                if (!snap.exists()) return alert('Story not found.');
+
+                const story = snap.data();
+                editingStoryId = storyId;
+
+                document.getElementById('edit-title').value = story.title || '';
+                document.getElementById('edit-deck').value = story.deck || '';
+                document.getElementById('edit-category').value = story.category || '';
+                document.getElementById('edit-tags').value = (story.tags || []).join(', ');
+                document.getElementById('edit-content').value = story.content || '';
+
+                document.getElementById('edit-modal').classList.add('active');
+            } catch (error) {
+                console.error('Error loading story:', error);
+                alert('Unable to load story.');
+            }
+        };
+
+        window.approveStory = async function(storyId) {
+            if (!confirm('Approve and publish this story?')) return;
+
+            try {
+                await updateDoc(doc(db, 'stories', storyId), {
+                    status: 'approved',
+                    approvedAt: new Date().toISOString()
+                });
+                await publishStory(storyId);
+            } catch (error) {
+                console.error('Error approving story:', error);
+                alert('Failed to approve story');
+            }
+        };
+
+        window.rejectStory = async function(storyId) {
+            const reason = prompt('Reason for rejection (optional):');
+            if (reason === null) return;
+
+            try {
+                await updateDoc(doc(db, 'stories', storyId), {
+                    status: 'rejected',
+                    rejectedAt: new Date().toISOString(),
+                    rejectionReason: reason || 'No reason provided'
+                });
+                alert('Story rejected');
+                loadStories();
+            } catch (error) {
+                console.error('Error rejecting story:', error);
+                alert('Failed to reject story');
+            }
+        };
+
+        window.publishStory = async function(storyId, force = false) {
+            try {
+                const storyDoc = await getDoc(doc(db, 'stories', storyId));
+                const story = storyDoc.data();
+
+                if (!story) return alert('Story not found.');
+                if (!force && story.status !== 'approved' && story.status !== 'published') {
+                    return alert('Story must be approved before publishing.');
+                }
+
+                const payload = {
+                    storyId: storyId,
+                    title: story.title,
+                    deck: story.deck || '',
+                    content: story.content,
+                    coverImage: story.coverImage,
+                    category: story.category,
+                    author: story.authorName,
+                    tags: story.tags || [],
+                    date: story.createdAt
+                };
+
+                const response = await fetch(PUBLISH_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to publish');
+                }
+
+                const result = await response.json();
+
+                await updateDoc(doc(db, 'stories', storyId), {
+                    status: 'published',
+                    publishedAt: new Date().toISOString(),
+                    publishedUrl: result.url,
+                    updatedAt: new Date().toISOString()
+                });
+
+                alert(`Story published! View at: ${result.url}`);
+                loadStories();
+            } catch (error) {
+                console.error('Error publishing story:', error);
+                alert('Failed to publish story: ' + error.message);
+            }
+        };
+
+        window.deleteStory = async function(storyId) {
+            if (!confirm('Delete this story permanently?')) return;
+            const confirmText = prompt('Type DELETE to confirm:');
+            if (confirmText !== 'DELETE') return;
+
+            try {
+                await fetch(DELETE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ storyId: storyId })
+                });
+
+                await deleteDoc(doc(db, 'stories', storyId));
+                alert('Story deleted successfully');
+                loadStories();
+            } catch (error) {
+                console.error('Error deleting story:', error);
+                alert('Failed to delete story: ' + error.message);
+            }
+        };
+
+        function closeEditModal() {
+            document.getElementById('edit-modal').classList.remove('active');
+            editingStoryId = null;
+        }
+
+        async function ensureUser(user) {
+            const userRef = doc(db, 'users', user.uid);
+            const snap = await getDoc(userRef);
+            if (snap.exists()) return snap;
+
+            const anyUser = await getDocs(query(collection(db, 'users'), limit(1)));
+            if (!anyUser.empty) return null;
+
+            await setDoc(userRef, {
+                name: user.displayName || user.email,
+                email: user.email,
+                role: 'admin',
+                status: 'active',
+                createdAt: new Date().toISOString(),
+                createdBy: user.uid
+            });
+
+            return await getDoc(userRef);
+        }
+
+        async function loadScheduledPosts() {
+            try {
+                const schedulesRef = collection(db, 'scheduled_posts');
+                const snapshot = await getDocs(schedulesRef);
+                scheduledPosts = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                console.log('Loaded scheduled posts:', scheduledPosts.length);
+            } catch (error) {
+                console.error('Error loading scheduled posts:', error);
+                scheduledPosts = [];
+            } finally {
+                buildSchedulerEvents();
+                renderSchedulerSuite();
+            }
+        }
+
+        function renderScheduler() {
+            const title = document.getElementById('scheduler-month-title');
+            const daysContainer = document.getElementById('scheduler-days');
+
+            if (!title || !daysContainer) {
+                console.log('Scheduler elements not found');
+                return;
+            }
+
+            title.textContent = `${monthNames[schedulerMonth.getMonth()]} ${schedulerMonth.getFullYear()}`;
+            daysContainer.innerHTML = '';
+
+            const year = schedulerMonth.getFullYear();
+            const month = schedulerMonth.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const daysInPrevMonth = new Date(year, month, 0).getDate();
+            const eventsMap = getEventsByDay();
+
+            const today = new Date();
+            const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+
+            // Previous month days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const day = daysInPrevMonth - i;
+                const dayEl = createSchedulerDay(day, true, new Date(year, month - 1, day), eventsMap);
+                daysContainer.appendChild(dayEl);
+            }
+
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const isToday = isCurrentMonth && today.getDate() === day;
+                const dayEl = createSchedulerDay(day, false, date, eventsMap, isToday);
+                daysContainer.appendChild(dayEl);
+            }
+
+            // Next month days
+            const remainingDays = 42 - (firstDay + daysInMonth);
+            for (let day = 1; day <= remainingDays; day++) {
+                const dayEl = createSchedulerDay(day, true, new Date(year, month + 1, day), eventsMap);
+                daysContainer.appendChild(dayEl);
+            }
+        }
+
+        function createSchedulerDay(day, isOtherMonth, date, eventsMap, isToday = false) {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'scheduler-day';
+            if (isOtherMonth) dayEl.classList.add('other-month');
+            if (isToday) dayEl.classList.add('today');
+
+            const dateStr = date.toDateString();
+            const dayEvents = eventsMap[dateStr] || [];
+
+            if (dayEvents.length > 0 && !isOtherMonth) {
+                dayEl.classList.add('has-scheduled');
+            }
+
+            dayEl.textContent = day;
+
+            if (dayEvents.length > 0 && !isOtherMonth) {
+                const badge = document.createElement('div');
+                badge.className = 'scheduler-badge';
+                badge.textContent = dayEvents.length > 9 ? '9+' : dayEvents.length;
+                dayEl.appendChild(badge);
+                dayEl.title = dayEvents.slice(0, 4).map(ev => `${ev.title} (${formatStatusLabel(ev.status)})`).join('\n');
+            }
+
+            return dayEl;
+        }
+
+        function renderScheduledList() {
+            const listContainer = document.getElementById('scheduled-items');
+            if (!listContainer) {
+                console.log('Scheduled items container not found');
+                return;
+            }
+
+            const now = new Date();
+            const upcoming = schedulerEvents
+                .filter(event => !isNaN(new Date(event.date)) && new Date(event.date) >= now)
+                .slice(0, 6);
+
+            console.log('Scheduled list - upcoming events:', upcoming.length);
+
+            if (upcoming.length === 0) {
+                listContainer.innerHTML = `
+                    <li class="empty-state" style="padding: 40px 20px;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        <div>No upcoming posts scheduled</div>
+                    </li>
+                `;
+                return;
+            }
+
+            listContainer.innerHTML = upcoming.map(event => {
+                const dateStr = formatSchedulerDate(event.date);
+                const statusClass = (event.status || 'scheduled').toLowerCase();
+                const statusLabel = formatStatusLabel(event.status);
+                const metaParts = [];
+                if (event.author) metaParts.push(event.author);
+                if (event.category) metaParts.push(event.category);
+                const meta = metaParts.length ? `${metaParts.join(' • ')} • ${dateStr}` : dateStr;
+
+                return `
+                    <li class="scheduled-item">
+                        <div class="scheduled-item-title">${event.title}</div>
+                        <div class="scheduled-item-meta">${meta}</div>
+                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px;">
+                            <span class="mini-status ${statusClass}">${statusLabel}</span>
+                            ${event.source === 'scheduled' ? `
+                                <div class="scheduled-item-actions">
+                                    <button class="btn-schedule-cancel" onclick="cancelScheduledPost('${event.id}')">Cancel</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        function renderMiniScheduler() {
+            const weekGrid = document.getElementById('mini-week-grid');
+            const miniList = document.getElementById('mini-scheduler-list');
+            if (!weekGrid || !miniList) {
+                console.log('Mini scheduler elements not found');
+                return;
+            }
+
+            const eventsMap = getEventsByDay();
+            const today = new Date();
+            const nextWeek = new Date();
+            nextWeek.setDate(today.getDate() + 7);
+            const weekDays = [];
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date();
+                d.setDate(today.getDate() + i);
+                weekDays.push(d);
+            }
+
+            weekGrid.innerHTML = weekDays.map(d => {
+                const key = d.toDateString();
+                const dayEvents = eventsMap[key] || [];
+                const countLabel = dayEvents.length ? `${dayEvents.length} ${dayEvents.length === 1 ? 'item' : 'items'}` : 'Free';
+                const dotStyle = dayEvents.length > 0 ? 'background: #22c55e; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.15);' : 'background: #64748b; box-shadow: 0 0 0 6px rgba(100, 116, 139, 0.15);';
+                return `
+                    <div class="mini-day">
+                        <div class="mini-day-label">${d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                        <div class="mini-day-date">${d.getDate()}</div>
+                        <div class="mini-day-count">
+                            <span class="mini-count-dot" style="${dotStyle}"></span>
+                            <span>${countLabel}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const upcoming = schedulerEvents
+                .filter(event => {
+                    const eventDate = new Date(event.date);
+                    return !isNaN(eventDate.getTime()) && eventDate >= today && eventDate <= nextWeek;
+                })
+                .slice(0, 5);
+
+            console.log('Mini scheduler - upcoming events:', upcoming.length);
+
+            if (upcoming.length === 0) {
+                miniList.innerHTML = '<div class="mini-empty">No upcoming events for the next week. All clear!</div>';
+                return;
+            }
+
+            miniList.innerHTML = upcoming.map(event => {
+                const statusClass = (event.status || 'scheduled').toLowerCase();
+                const metaPieces = [event.author, event.category].filter(Boolean).join(' • ');
+                return `
+                    <div class="mini-item">
+                        <div>
+                            <div class="mini-item-title">${event.title}</div>
+                            <div class="mini-item-meta">${metaPieces ? `${metaPieces} • ` : ''}${formatSchedulerDate(event.date)}</div>
+                        </div>
+                        <span class="mini-status ${statusClass}">${formatStatusLabel(event.status)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.cancelScheduledPost = async function(postId) {
+            if (!confirm('Cancel this scheduled post?')) return;
+
+            try {
+                await deleteDoc(doc(db, 'scheduled_posts', postId));
+                await loadScheduledPosts();
+                alert('Scheduled post cancelled');
+            } catch (error) {
+                console.error('Error cancelling scheduled post:', error);
+                alert('Failed to cancel scheduled post');
+            }
+        };
+
+        // Scheduler navigation
+        document.getElementById('prev-scheduler-month')?.addEventListener('click', () => {
+            schedulerMonth.setMonth(schedulerMonth.getMonth() - 1);
+            renderScheduler();
+        });
+
+        document.getElementById('next-scheduler-month')?.addEventListener('click', () => {
+            schedulerMonth.setMonth(schedulerMonth.getMonth() + 1);
+            renderScheduler();
+        });
+
+        // Schedule modal handlers
+        document.getElementById('add-schedule-btn')?.addEventListener('click', () => {
+            // Set default values
+            const today = new Date();
+            document.getElementById('schedule-date').value = today.toISOString().split('T')[0];
+            document.getElementById('schedule-time').value = '09:00';
+            document.getElementById('schedule-title').value = '';
+            document.getElementById('schedule-notes').value = '';
+
+            document.getElementById('schedule-modal').classList.add('active');
+        });
+
+        document.getElementById('close-schedule-modal')?.addEventListener('click', () => {
+            document.getElementById('schedule-modal').classList.remove('active');
+        });
+
+        document.getElementById('cancel-schedule-btn')?.addEventListener('click', () => {
+            document.getElementById('schedule-modal').classList.remove('active');
+        });
+
+        document.getElementById('save-schedule-btn')?.addEventListener('click', async () => {
+            const title = document.getElementById('schedule-title').value.trim();
+            const date = document.getElementById('schedule-date').value;
+            const time = document.getElementById('schedule-time').value;
+            const notes = document.getElementById('schedule-notes').value.trim();
+
+            if (!title) {
+                alert('Please enter a post title');
+                return;
+            }
+
+            if (!date || !time) {
+                alert('Please select both date and time');
+                return;
+            }
+
+            const scheduledDate = new Date(`${date}T${time}`);
+            if (isNaN(scheduledDate.getTime())) {
+                alert('Invalid date or time');
+                return;
+            }
+
+            try {
+                await setDoc(doc(collection(db, 'scheduled_posts')), {
+                    title: title,
+                    scheduledDate: scheduledDate.toISOString(),
+                    notes: notes,
+                    createdAt: new Date().toISOString(),
+                    createdBy: currentUser.uid,
+                    status: 'scheduled'
+                });
+                await loadScheduledPosts();
+                document.getElementById('schedule-modal').classList.remove('active');
+                alert('Post scheduled successfully!');
+            } catch (error) {
+                console.error('Error scheduling post:', error);
+                alert('Failed to schedule post');
+            }
+        });
+
+    </script>
+</body>
+</html>

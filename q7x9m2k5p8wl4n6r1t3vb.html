@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+    <!-- End Google Tag Manager -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winners' Lounge | The Catalyst</title>
+    <link rel="icon" type="image/png" href="NewGlassLogo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            position: relative;
+        }
+
+        /* Animated gradient background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(from 0deg, #8b5cf6, #ec4899, #f59e0b, #10b981, #3b82f6, #8b5cf6);
+            animation: rotate-gradient 20s linear infinite;
+            transform-origin: center center;
+            opacity: 0.15;
+            filter: blur(100px);
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+
+        @keyframes rotate-gradient {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1.5); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.5); }
+        }
+
+        /* Fireworks canvas */
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Main content */
+        .main-content {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 120px 20px 40px;
+        }
+
+        /* Trophy animation */
+        .trophy-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: floatIn 1.5s ease-out;
+        }
+
+        @keyframes floatIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .trophy-icon {
+            font-size: 6rem;
+            animation: bounce 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.6));
+            color: #fbbf24;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .trophy-title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 20px 0 10px;
+            text-shadow: 0 4px 20px rgba(251, 191, 36, 0.5);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .trophy-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .elite-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3));
+            border: 2px solid rgba(236, 72, 153, 0.5);
+            padding: 10px 25px;
+            border-radius: 50px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(236, 72, 153, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Chat container */
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.05) 100%
+            );
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 32px;
+            padding: 40px;
+            box-shadow:
+                0 30px 90px rgba(0, 0, 0, 0.5),
+                0 15px 45px rgba(0, 0, 0, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            animation: slideUp 1s ease-out 0.3s both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .chat-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+        }
+
+        /* Messages area */
+        .messages-area {
+            height: 400px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .messages-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .loading-message {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 40px;
+            font-size: 1.1rem;
+        }
+
+        /* Message item */
+        .message {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 15px;
+            animation: messageSlide 0.4s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        .message:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .message-author {
+            font-weight: 700;
+            color: #60a5fa;
+            font-size: 1rem;
+            text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+        }
+
+        .message-time {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .message-text {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .message-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .like-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+
+        .like-btn:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .like-btn.liked {
+            color: #ef4444;
+        }
+
+        .like-count {
+            font-weight: 600;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-left: auto;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* Message form */
+        .message-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-input,
+        .form-textarea {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            padding: 14px 20px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            padding: 16px 32px;
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 12px 36px rgba(16, 185, 129, 0.4);
+            font-family: 'Poppins', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 48px rgba(16, 185, 129, 0.5);
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .user-id {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+        }
+
+        .user-id-value {
+            color: rgba(255, 255, 255, 0.6);
+            font-family: monospace;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 30px 15px;
+            }
+
+            .chat-container {
+                padding: 25px 20px;
+                border-radius: 24px;
+            }
+
+            .trophy-icon {
+                font-size: 4rem;
+            }
+
+            .trophy-title {
+                font-size: 2rem;
+            }
+
+            .trophy-subtitle {
+                font-size: 1rem;
+            }
+
+            .chat-title {
+                font-size: 1.5rem;
+            }
+
+            .messages-area {
+                height: 350px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chat-container {
+                padding: 20px 15px;
+            }
+
+            .messages-area {
+                height: 300px;
+                padding: 15px;
+            }
+
+            .message {
+                padding: 12px 15px;
+            }
+        }
+
+    </style>
+</head>
+<body data-page="winners">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+        <div id="site-header"></div>
+
+    <div class="animated-bg"></div>
+    <canvas id="fireworks-canvas"></canvas>
+
+    <div class="main-content">
+        <div class="trophy-header">
+            <div class="trophy-icon">★</div>
+            <h1 class="trophy-title">The Winners' Lounge</h1>
+            <p class="trophy-subtitle">Congratulations, Genius! You've earned your place among the elite.</p>
+            <div class="elite-badge">Elite Puzzle Solver</div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2 class="chat-title">Winners' Chat Room</h2>
+                <p class="chat-description">Leave your mark and connect with fellow brilliant minds!</p>
+            </div>
+
+            <div class="messages-area" id="messages-container">
+                <div class="loading-message">Connecting to the Winners' Network...</div>
+            </div>
+
+            <form class="message-form" id="message-form">
+                <div class="form-row">
+                    <input type="text" class="form-input" id="username-input" placeholder="Your Name" required>
+                    <input type="text" class="form-input" id="title-input" placeholder="Your Title (optional)" maxlength="30">
+                </div>
+                <textarea class="form-textarea" id="message-input" placeholder="Share your thoughts with the winners..." required></textarea>
+                <button type="submit" class="submit-btn">Send Message</button>
+            </form>
+
+            <div class="user-id">
+                Your Winner ID: <span class="user-id-value" id="user-id-display">Connecting...</span>
+            </div>
+        </div>
+    </div>
+
+        <div id="site-footer"></div>
+
+    <script src="js/layout.js"></script>
+    <script src="js/mailchimp-handler.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/main.js"></script>
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc, updateDoc, increment, setDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDx9Z_2YQLdYurs-OR1SmzMJTHxp63S0EM",
+            authDomain: "catalystmagazine-6555d.firebaseapp.com",
+            projectId: "catalystmagazine-6555d",
+            storageBucket: "catalystmagazine-6555d.appspot.com",
+            messagingSenderId: "460060848977",
+            appId: "1:460060848977:web:42c43d344c541540165970"
+        };
+
+        const OWNER_USER_ID = "R6BSCQubiPXkzfoJO6KhsvOiYYs1";
+
+        let db, auth, userId = null;
+        let likedMessages = new Set();
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            authenticateUser();
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+            document.getElementById('messages-container').innerHTML = '<div class="loading-message">Error connecting to chat</div>';
+        }
+
+        async function authenticateUser() {
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth failed:", error);
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                document.getElementById('user-id-display').textContent = userId.substring(0, 12) + '...';
+                loadMessages();
+            }
+        });
+
+        // Fireworks animation
+        const canvas = document.getElementById('fireworks-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 8,
+                    y: (Math.random() - 0.5) * 8
+                };
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.015;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.velocity.y += 0.1;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= this.decay;
+            }
+        }
+
+        let particles = [];
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+        function createFirework() {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height * 0.6;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            for (let i = 0; i < 50; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function animateFireworks() {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            particles = particles.filter(particle => particle.alpha > 0);
+
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            requestAnimationFrame(animateFireworks);
+        }
+
+        // Launch fireworks on load
+        for (let i = 0; i < 5; i++) {
+            setTimeout(() => createFirework(), i * 400);
+        }
+        setInterval(() => createFirework(), 3000);
+        animateFireworks();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Chat functionality
+        const messagesContainer = document.getElementById('messages-container');
+        const messageForm = document.getElementById('message-form');
+        const usernameInput = document.getElementById('username-input');
+        const titleInput = document.getElementById('title-input');
+        const messageInput = document.getElementById('message-input');
+
+        function formatTimeAgo(timestamp) {
+            if (!timestamp) return 'just now';
+            const date = timestamp.toDate();
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        function renderMessage(doc) {
+            const data = doc.data();
+            const isOwner = userId === OWNER_USER_ID;
+            const hasLiked = likedMessages.has(doc.id);
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.dataset.id = doc.id;
+
+            const displayName = data.title
+                ? `${data.username} • ${data.title}`
+                : data.username;
+
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-author">${displayName}</div>
+                    <div class="message-time">${formatTimeAgo(data.timestamp)}</div>
+                </div>
+                <div class="message-text">${data.message}</div>
+                <div class="message-actions">
+                    <button class="like-btn ${hasLiked ? 'liked' : ''}" ${!userId ? 'disabled' : ''}>
+                        ♥ <span class="like-count">${data.likes || 0}</span>
+                    </button>
+                    ${isOwner ? '<button class="delete-btn">Delete</button>' : ''}
+                </div>
+            `;
+
+            return messageDiv;
+        }
+
+        function loadMessages() {
+            const messagesCol = collection(db, "winners-messages");
+            const q = query(messagesCol, orderBy("timestamp", "desc"));
+
+            onSnapshot(q, (snapshot) => {
+                messagesContainer.innerHTML = '';
+
+                if (snapshot.empty) {
+                    messagesContainer.innerHTML = '<div class="loading-message">Be the first winner to leave a message!</div>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    messagesContainer.appendChild(renderMessage(doc));
+                });
+            });
+        }
+
+        messagesContainer.addEventListener('click', async (e) => {
+            const messageEl = e.target.closest('.message');
+            if (!messageEl) return;
+
+            const docId = messageEl.dataset.id;
+            const docRef = doc(db, "winners-messages", docId);
+
+            if (e.target.closest('.like-btn') && userId && !likedMessages.has(docId)) {
+                likedMessages.add(docId);
+                try {
+                    await updateDoc(docRef, { likes: increment(1) });
+                } catch (error) {
+                    console.error("Error liking:", error);
+                    likedMessages.delete(docId);
+                }
+            }
+
+            if (e.target.closest('.delete-btn') && userId === OWNER_USER_ID) {
+                try {
+                    await deleteDoc(docRef);
+                } catch (error) {
+                    console.error("Error deleting:", error);
+                }
+            }
+        });
+
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = usernameInput.value.trim();
+            const title = titleInput.value.trim();
+            const message = messageInput.value.trim();
+
+            if (!username || !message) return;
+
+            // Validate input length
+            if (username.length > 50) {
+                alert('Username must be 50 characters or less');
+                return;
+            }
+            if (message.length > 500) {
+                alert('Message must be 500 characters or less');
+                return;
+            }
+            if (title && title.length > 30) {
+                alert('Title must be 30 characters or less');
+                return;
+            }
+
+            try {
+                // Add message to Firestore
+                await addDoc(collection(db, "winners-messages"), {
+                    username,
+                    title: title || null,
+                    message,
+                    timestamp: serverTimestamp(),
+                    userId: userId || null,
+                    likes: 0
+                });
+
+                // Update rate limit tracker
+                if (userId) {
+                    try {
+                        const rateLimitRef = doc(db, "rate-limits", userId);
+                        await setDoc(rateLimitRef, {
+                            lastPost: serverTimestamp()
+                        }, { merge: true });
+                    } catch (error) {
+                        console.log("Rate limit tracking error:", error);
+                    }
+                }
+
+                messageInput.value = '';
+                titleInput.value = '';
+                messageInput.focus();
+
+                // Launch celebration firework
+                createFirework();
+            } catch (error) {
+                console.error("Error sending message:", error);
+                if (error.code === 'permission-denied') {
+                    alert('Please wait 12 minutes between messages to prevent spam.');
+                } else {
+                    alert('Error sending message. Please try again.');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

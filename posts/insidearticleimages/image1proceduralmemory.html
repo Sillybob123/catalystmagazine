@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Systems</title>
+<style>
+  /* Reset for embedding if needed, assuming page has its own body styles */
+  .memory-graphic-body { /* Use a class to avoid conflict if embedded */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    margin: 0;
+    padding: 20px; /* Provides spacing if this is the only thing on a test page */
+    background-color: #ffffff; /* Assuming article background is white for testing */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* min-height: 100vh; /* For standalone centering demonstration */
+  }
+
+  .memory-container {
+    display: flex;
+    justify-content: space-around;
+    gap: 25px; /* Increased gap for spacing */
+    width: 100%;
+    max-width: 750px; /* Slightly wider for more space */
+    padding: 0; /* Container itself has no padding or background */
+    background-color: transparent; /* Ensures it blends with page background */
+  }
+
+  .memory-column {
+    flex: 1;
+    padding: 30px; /* Generous padding */
+    border-radius: 18px; /* Softer, more pronounced rounded corners */
+    text-align: left; /* Apple often uses left-align for card content */
+    background-color: #f9f9f9; /* Very light grey for the cards */
+    /* Softer, more subtle shadow, Apple-like */
+    box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.06), 0px 1px 4px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column; /* To align brain-region at bottom */
+  }
+
+  .memory-column h2 {
+    font-size: 1.6em; /* Slightly larger heading */
+    font-weight: 600; /* Apple-style font weight */
+    margin-top: 0;
+    margin-bottom: 18px;
+  }
+
+  .declarative h2 {
+    color: #1f668b; /* Apple's classic blue for declarative */
+  }
+
+  .procedural h2 {
+    color: #f87708; /* Apple's green for procedural */
+  }
+
+  .memory-column .definition {
+    color: #333; /* Darker grey for better readability */
+    font-size: 1em;
+    line-height: 1.65;
+    margin-bottom: 25px;
+  }
+
+  .memory-column strong.label { /* For "Examples:" label */
+    display: block;
+    color: #555;
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .memory-column ul {
+    list-style: none; /* Remove default bullets */
+    padding: 0;
+    margin: 0 0 25px 0;
+  }
+
+  .memory-column ul li {
+    color: #444;
+    font-size: 0.95em;
+    line-height: 1.7;
+    padding: 6px 0; /* Vertical spacing for list items */
+    position: relative;
+    padding-left: 20px; /* Space for custom bullet */
+  }
+
+  .memory-column ul li::before { /* Custom, softer bullet */
+    content: '•';
+    position: absolute;
+    left: 0;
+    top: 6px; /* Adjust for vertical alignment */
+    font-size: 1em;
+    color: #8e8e93; /* Softer grey for bullets */
+  }
+
+  .brain-region {
+    font-size: 0.88em;
+    color: #666;
+    margin-top: auto; /* Pushes to bottom */
+    padding-top: 20px;
+    border-top: 1px solid #e5e5e5; /* Softer separator line */
+  }
+
+  .brain-region strong {
+    color: #333;
+    font-weight: 600;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 640px) {
+    .memory-container {
+      flex-direction: column;
+      gap: 20px; /* Adjust gap for stacked view */
+    }
+    .memory-column {
+      padding: 25px; /* Slightly less padding on mobile */
+    }
+    .memory-column h2 {
+        font-size: 1.4em;
+    }
+    .memory-column .definition {
+        font-size: 0.95em;
+    }
+    .memory-column ul li {
+        font-size: 0.9em;
+    }
+  }
+</style>
+</head>
+<body class="memory-graphic-body"> <div class="memory-container">
+  <div class="memory-column declarative">
+    <h2>Declarative Memory</h2>
+    <p class="definition">Involves the conscious recall of information, such as facts and personally experienced events. Think of it as <strong>"knowing that..."</strong></p>
+    <strong class="label">Examples:</strong>
+    <ul>
+      <li>Remembering a historical date</li>
+      <li>Recalling details of your last vacation</li>
+      <li>Learning new vocabulary words</li>
+      <li>Knowing the capital of a country</li>
+    </ul>
+    <div class="brain-region">
+      <strong>Key Brain Areas:</strong> Medial Temporal Lobe (e.g., Hippocampus)
+    </div>
+  </div>
+
+  <div class="memory-column procedural">
+    <h2>Procedural Memory</h2>
+    <p class="definition">Supports the non-conscious learning and retrieval of skills and habits. This is your <strong>"knowing how..."</strong></p>
+    <strong class="label">Examples:</strong>
+    <ul>
+      <li>Riding a bicycle effortlessly</li>
+      <li>Typing on a keyboard without looking</li>
+      <li>Playing a familiar song on an instrument</li>
+      <li>Applying grammatical rules automatically</li>
+    </ul>
+    <div class="brain-region">
+      <strong>Key Brain Areas:</strong> Basal Ganglia, Cerebellum
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

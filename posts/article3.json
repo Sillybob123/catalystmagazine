@@ -1,0 +1,91 @@
+{
+  "article_data": {
+    "metadata": {
+      "title": "Understanding Science to Learn Science: Dopamine and Why You Should Care",
+      "author": "Naama Ben-Dor",
+      "publish_date": "Dec 23, 2024",
+      "cover_image_url": "https://static.wixstatic.com/media/11b1c4_c93db0b3162140a9a44f871d3ade2c83~mv2.jpg/v1/fill/w_520,h_291,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpg",
+      "excerpt": "STEM curriculums are no joke; there is no room for error or opinion, only facts and uncertainties. Dopamine, a neurotransmitter used by the brain, plays an important role in our motivation to do difficult tasks; while the tasks themselves don’t become easier, dopamine increases our drive to perform them.",
+      "category": "editorial"
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "section_header",
+        "content": "Calling All STEM Students— Why You Should Rethink Your Methods"
+      },
+      {
+        "order": 2,
+        "type": "paragraph",
+        "content": "STEM curriculums are no joke; there is no room for error or opinion, only facts and uncertainties. Either you know an enzymatic pathway, mechanism, or the solution to a chemistry or physics problem– or you don’t. And from information about ecosystem to organism to organ to cell to atom to electron, when it comes to STEM, the nitty gritty can always get nittier, and then grittier. As students of the sciences, we take upon ourselves an ambitious goal to simultaneously learn all that is known, while learning how to learn the unknowns. Learning will never become easy, it is effortful and uncomfortable by nature. However, as students of the sciences, we have the advantage of empirical knowledge of the body and of the mind. By truly understanding certain mental processes, we can leverage this knowledge to, at the least, ensure that our learning is as efficient and mindful as possible."
+      },
+      {
+        "order": 3,
+        "type": "paragraph",
+        "content": "The process of learning and memorization is still largely a mystery, but is known to involve changes to neuronal connections that are beyond our conscious control. However, the process of learning involves many components, some of which we have the capacity to influence. Dopamine, a neurotransmitter used by the brain, plays an important role in our motivation to do difficult tasks; while the tasks themselves don’t become easier, dopamine increases our drive to perform them. As such, understanding the mechanisms by which dopamine facilitates drive and motivation can help us fuel our ambitious goals, and prime us for increased achievement."
+      },
+      {
+        "order": 4,
+        "type": "section_header",
+        "content": "The Central Nervous System: Context About the Brain"
+      },
+      {
+        "order": 5,
+        "type": "paragraph",
+        "content": "For those who are less familiar with the brain, neurons— the primary cell of the central nervous system— form a complex communication system that enables us to think, experience, perform and exist as conscious beings. Unlike most cells of the body, which communicate by chemical signals, neurons mediate fast signal transmission through electrical currents produced by ion flow. This can sometimes involve direct ion transmission between neurons (at gap junctions), but neurons most often communicate by releasing molecules, known as neurotransmitters. Neurotransmitters can act as agonists for ion channels– allowing the movement of ions in/out of the cell to create an electrical current– or they may bind to G-protein coupled receptors, which either cause cellular changes through second messengers, or open ion channels. You may have heard of some of these neurotransmitters (ex. glutamate, GABA, serotonin), but today’s discussion centers on dopamine."
+      },
+      {
+        "order": 7,
+        "type": "section_header",
+        "content": "Dopamine in the Brain"
+      },
+      {
+        "order": 8,
+        "type": "paragraph",
+        "content": "Dopamine serves several functions in the brain (such as movement and emotion), but some of its key functions include learning, attention, and reward. You can think of dopamine as an ‘I want more,’ ‘feel-good’ signal. Unlike, for example, a content and peaceful, looking-out-into-the-sunset happiness, in which you feel at peace, dopamine is a good feeling that drives you to keep going. Think chocolate: one bite is great, but you always want another. Behaviors that involve a drive associated with reward, such as pleasurable foods and sex, involve dopamine; so does, for example, drug addiction– dopamine is a powerful chemical. The relevance of dopamine to your studying has exactly to do with this: studying is difficult to do, but on the molecular level, it is not a foreign process to your brain. Everything you know now, you once did not. The difficulty with studying and learning often lies with initiation and with the personal motivation to just do it. The beautiful thing, though, is that you reap the benefits of this labor: at the end, there comes a good grade, or, more importantly, an intrinsic feeling of success and accomplishment. Of reward. The culprit? Dopamine. We talk frequently of discipline and work ethic, but the mind, like the rest of us, functions by means of physical, tangible processes. Though ‘discipline’ is a nice concept, it should be noted that there are real, physical mechanisms that allow us to ‘do,’ and to want to do, and the release of dopamine is crucial to these mechanisms."
+      },
+      {
+        "order": 9,
+        "type": "section_header",
+        "content": "Dopamine: Limitations & Implications"
+      },
+      {
+        "order": 10,
+        "type": "paragraph",
+        "content": "So let’s get nittier. Chemicals don’t appear out of thin air; dopamine is produced from precursors in the cell, and stored in vesicles at the bottom of the neuron, ready to be released. When signaling initiates an ion current, the contents of the vesicles are released from the neuron, releasing dopamine to other neurons. It is important to understand that this process involves first synthesis, and then release, because the availability of dopamine, to drive us to perform activities, is dependent on these processes. There is no infinite supply, and availability is not a continuous and stable ‘given’. If you deplete your dopamine stock through mindless stimulation, you will decrease your drive to perform subsequent behaviors. When you perform a rewarding behavior, such as scrolling on social media mindlessly, it is truly difficult to stop. If I lie down on a sofa and then want to get up, I have no problem doing so. But for some reason, when it's 11:57pm and I know I need to get to sleep already, but have to get up to brush my teeth first, it’s nearly impossible. The bursts of dopamine prompted by my explore page– perfectly curated to pique my interests– have deprived me of the drive to do other things. This is one of the reasons why everyone and their mother tell you not to get on your phone first thing in the morning; it doesn’t just ‘set the tone,’ it robs you of drive."
+      },
+      {
+        "order": 11,
+        "type": "section_header",
+        "content": "Contextualizing Dopamine in Your Life"
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "While we all like to feel good, it could be helpful to think of dopamine like cash, and your brain as the wallet. In theory, you could spend your money on anything you’d like; you could enter a mall and buy everything until you’re out. But to get more money, you need to do work– and some things provide more instant gratification, but take away from your ability to make better, more rewarding purchases in the future. Next time you have an urge to scroll on your phone, think of it like m&ms; they’re great and all, but would you waste your money and pay for them if it comes out of your retirement fund, or even just your savings for a trip? To continue with the analogy of money, cash is earned through work: dopamine is too. As you perform the difficult task of learning, memorizing, and thinking, your brain synthesizes more dopamine. More effort materializes in stronger feelings of reward."
+      },
+      {
+        "order": 13,
+        "type": "paragraph",
+        "content": "Additionally important is to not only anticipate some struggle, but also to aim for it– or at least accept it. When we constantly increase our baseline dopamine levels, the experience of reward will begin to diminish, and we need more and more stimulation to experience these feelings. This is part of the underlying physical components of drug addiction. Though this may sound discouraging to consider, it should serve as a welcome reminder that you can actually look forward to the difficult feelings of effort with the knowledge that they will actually result in more reward. But also, this should caution you away from piling on quick and easy sources of dopamine (ex. always listening to music on runs, rewarding yourself for schoolwork/performance with unhealthy foods, drinking energy drinks every time you need more focus). Every now and then, we all need to do what we need to do, but be cognizant and mindful that you aren’t relying on them constantly; over time, if everything is always easy and enjoyable, we don’t just notice that other things aren’t as enjoyable, but they actually become less enjoyable."
+      },
+      {
+        "order": 14,
+        "type": "section_header",
+        "content": "What is the Main Takeaway?"
+      },
+      {
+        "order": 15,
+        "type": "paragraph",
+        "content": "There is much more to say about dopamine, and I will leave some great and approachable resources below. To summarize, though, there is no molecule that makes anything easy, and as students with the job to learn, our task will never not be effortful. However, our drive, which pushes us to perform the work we are required to do, has a chemical basis: dopamine. Like everything in life, dopamine is a finite resource, limited by the presence of its precursors and the time of its synthesis. Through quick, mindless, and high dopamine release, you reduce your neurons’ supply, and consequently your drive to perform ambitious tasks, such as studying. Additionally, increasing your baseline levels of dopamine through continuous use of quick sources, will increase your threshold levels necessary to facilitate drive. To leverage this information to enhance your ability to perform rigorous tasks like studying, avoid dopamine-depleting activities like social media and intensely satisfying foods/treats, especially before work, and prevent increased baseline levels through consistent layering or reliance on dopamine sources. I know this information isn’t ‘fun,’ and ‘easy,’ but hopefully a look into the biological mechanisms involved in effort can help you better consider decisions, or at least become more mindful of their stakes and implications."
+      },
+      {
+        "order": 16,
+        "type": "game",
+        "src": "posts/games/article3.html",
+        "title": "Term Targeter: Dopamine & Learning",
+        "height": "580"
+      }
+    ]
+  }
+}

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sustainable DC Actions</title>
+    <!-- Import Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Base Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: transparent;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h2 {
+            text-align: center;
+            color: #2c5e2e;
+            margin-bottom: 20px; /* Reduced margin */
+            font-size: 1.6rem; /* Slightly smaller header */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            display: block;
+            width: 100%;
+        }
+
+        h2::after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 3px;
+            background: #4caf50;
+            margin: 8px auto 0;
+            border-radius: 2px;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px; /* Tighter gap */
+            width: 100%;
+        }
+
+        /* Card Styles */
+        .card {
+            background: white;
+            border-radius: 12px; /* Slightly tighter radius */
+            padding: 18px; /* Reduced padding from 24px */
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+            height: 100%;
+        }
+
+        .card:hover, .card:active {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(46, 125, 50, 0.12);
+            border-color: #a5d6a7;
+        }
+
+        /* Icon Container */
+        .icon-box {
+            background: #e8f5e9;
+            width: 48px; /* Smaller icon box */
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px; /* Reduced margin */
+            transition: all 0.3s ease;
+            color: #2e7d32;
+            flex-shrink: 0;
+        }
+
+        .card:hover .icon-box {
+            background: #2e7d32;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* Text Styling */
+        .card-title {
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 6px;
+            color: #1b5e20;
+            line-height: 1.2;
+        }
+
+        .card-desc {
+            font-size: 0.85rem; /* Smaller font for compactness */
+            color: #555;
+            line-height: 1.4;
+            flex-grow: 1;
+            margin-bottom: 12px;
+        }
+
+        /* Action Arrow / Button */
+        .arrow {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            background-color: #f1f8e9;
+            color: #2e7d32;
+            transition: all 0.3s ease;
+            margin-top: auto; /* Pushes to bottom */
+            align-self: center; /* Ensures centering */
+        }
+
+        .card:hover .arrow {
+            background-color: #2e7d32;
+            color: white;
+            padding-right: 10px; /* Slight adjustment for arrow animation space */
+        }
+
+        .arrow i {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover .arrow i {
+            transform: translateX(3px);
+        }
+
+        /* Color Variations */
+        .card:nth-child(2) .icon-box { color: #0277bd; background: #e1f5fe; }
+        .card:nth-child(2):hover .icon-box { background: #0277bd; color: white; }
+        .card:nth-child(2) .arrow { background-color: #e1f5fe; color: #0277bd; }
+        .card:nth-child(2):hover .arrow { background-color: #0277bd; color: white; }
+        
+        .card:nth-child(4) .icon-box { color: #f57f17; background: #fffde7; }
+        .card:nth-child(4):hover .icon-box { background: #f57f17; color: white; }
+        .card:nth-child(4) .arrow { background-color: #fffde7; color: #f9a825; }
+        .card:nth-child(4):hover .arrow { background-color: #f9a825; color: white; }
+
+        /* Mobile Specific Adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px 5px;
+            }
+            h2 {
+                font-size: 1.4rem;
+                margin-bottom: 15px;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .card {
+                padding: 15px;
+                flex-direction: row; /* Keep side-by-side for height efficiency */
+                text-align: left;
+                align-items: center; /* Align items center vertically */
+            }
+            .icon-box {
+                width: 40px; /* Even smaller on mobile */
+                height: 40px;
+                margin-right: 15px;
+                margin-bottom: 0;
+            }
+            .icon-box i {
+                width: 20px;
+                height: 20px;
+            }
+            .mobile-text-wrapper {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                align-items: flex-start; /* Align text left */
+            }
+            .card-title {
+                font-size: 1rem;
+                margin-bottom: 3px;
+            }
+            .card-desc {
+                font-size: 0.8rem;
+                margin-bottom: 8px;
+                line-height: 1.3;
+            }
+            /* Override to Center the button on mobile if desired, 
+               or keep it left aligned with text. 
+               User asked for "centered aligned". 
+               Centering a button under left-aligned text can look odd side-by-side.
+               Let's try centering the whole text block on mobile for a unified look? 
+               No, side-by-side is strictly shorter. 
+               I will center the button relative to the text block. */
+            .arrow {
+                align-self: center; /* Centers button in the text column */
+                width: 100%; /* Full width button on mobile looks nice and is easy to tap */
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Take Action Today</h2>
+        <div class="grid">
+            
+            <!-- Card 1: Casey Trees -->
+            <a href="https://caseytrees.org/" target="_blank" class="card">
+                <div class="icon-box">
+                    <i data-lucide="trees"></i>
+                </div>
+                <div class="mobile-text-wrapper">
+                    <div class="card-title">Plant Shade</div>
+                    <div class="card-desc">Plant trees where they're needed most with Casey Trees.</div>
+                    <div class="arrow">Visit Site <i data-lucide="arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Card 2: Rock Creek -->
+            <a href="https://www.rockcreekconservancy.org/" target="_blank" class="card">
+                <div class="icon-box">
+                    <i data-lucide="droplets"></i>
+                </div>
+                <div class="mobile-text-wrapper">
+                    <div class="card-title">Restore Wetlands</div>
+                    <div class="card-desc">Protect our water with Rock Creek Conservancy.</div>
+                    <div class="arrow">Visit Site <i data-lucide="arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Card 3: DC Plans -->
+            <a href="https://doee.dc.gov/" target="_blank" class="card">
+                <div class="icon-box">
+                    <i data-lucide="book-open"></i>
+                </div>
+                <div class="mobile-text-wrapper">
+                    <div class="card-title">Spread Awareness</div>
+                    <div class="card-desc">Learn about D.C.’s environmental plans.</div>
+                    <div class="arrow">Visit Site <i data-lucide="arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Card 4: ANC -->
+            <a href="https://oanc.dc.gov/" target="_blank" class="card">
+                <div class="icon-box">
+                    <i data-lucide="users"></i>
+                </div>
+                <div class="mobile-text-wrapper">
+                    <div class="card-title">Connect Locally</div>
+                    <div class="card-desc">Attend Advisory Neighborhood Commissions.</div>
+                    <div class="arrow">Visit Site <i data-lucide="arrow-right"></i></div>
+                </div>
+            </a>
+
+            <!-- Card 5: Open Data -->
+            <a href="https://opendata.dc.gov/search?collection=dataset&tags=environment" target="_blank" class="card">
+                <div class="icon-box">
+                    <i data-lucide="bar-chart-2"></i>
+                </div>
+                <div class="mobile-text-wrapper">
+                    <div class="card-title">Research Data</div>
+                    <div class="card-desc">Explore D.C.'s environmental open data.</div>
+                    <div class="arrow">Visit Site <i data-lucide="arrow-right"></i></div>
+                </div>
+            </a>
+
+        </div>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

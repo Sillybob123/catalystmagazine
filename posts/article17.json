@@ -1,0 +1,79 @@
+{
+  "article_data": {
+    "metadata": {
+      "title": "How The World of Genetics Shapes Evolution",
+      "author": "Alex Carter",
+      "publish_date": "Mar 14, 2025",
+      "cover_image_url": "https://static.wixstatic.com/media/11b1c4_9e5fcb3b2c194aba87fb93241ade3b8b~mv2.jpeg/v1/fill/w_702,h_407,al_c,q_80,usm_0.66_1.00_0.01,enc_avif,quality_auto/shutterstock_1898354080.jpeg",
+      "excerpt": "As geneticist Theodosius Dobzhansky once said, “nothing in biology makes sense except in the light of evolution,” but what is there to say when even the framework evolution is built on doesn't make sense? As a species, humanity has only begun to peel back the film covering the mysteries of evolution.",
+      "category": "interview"
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "paragraph",
+        "content": "As geneticist Theodosius Dobzhansky once said, “nothing in biology makes sense except in the light of evolution,” but what is there to say when even the framework evolution is built on doesn't make sense? As a species, humanity has only begun to peel back the film covering the mysteries of evolution; ecological surveillance allows for the understanding of the interplay between an organism and its environment, elucidating why certain traits are selected for in nature. However, the genetic origins of such selected traits are often unknown—leaving many scientists fascinated on how changes in the genome give rise to evolutionary novelty."
+      },
+      {
+        "order": 2,
+        "type": "paragraph",
+        "content": "To explore these unknowns, Dr. Luca Livraghi studies the colorful and diverse patterns on the wings of butterflies. These evolutionary canvases boast strong visual evidence of selection, making butterflies an effective system for studying how changes in the genome lead to ecological adaptation. This work in particular encapsulates multiple sub-fields of biology, stitching together population genetics—which heavily relies on statistical analyses to pinpoint regions of DNA that show high levels of variability within a given population—and evolutionary developmental genetics, which attempts to make sense of evolutionary change by uncovering the genetic mechanisms responsible for producing novel traits in a species. Dr. Livraghi, who is trained as an evolutionary biologist, currently works at George Washington University as a Postdoctoral Researcher to understand these mechanisms, peering into the world of silvered wing patterns in Speyeria mormonia butterflies."
+      },
+      {
+        "order": 3,
+        "type": "image",
+        "url": "posts/insidearticleimages/image1howtheworldofgenetics.avif",
+        "alt_text": "Speyeria mormonia butterfly",
+        "caption": "Image Credit: Photo by Jerrry G, licensed under an Education License. Dimensions: 5000 x 3321px.",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 4,
+        "type": "pull_quote",
+        "content": "\"The butterfly system itself is an incredible way to measure diversity; on a phenotypic level, you have scorable natural variation within populations that is very easy to get at experimentally. Because butterflies are so variable, you can easily track phenotypically associated genetic variants and see how they change over space and time.\""
+      },
+      {
+        "order": 5,
+        "type": "paragraph",
+        "content": "A characteristic analysis often utilized in this field is the Genome Wide Association Study (GWAS). Through inputting the genetic information of groups of individuals displaying a wide range of phenotypes, the GWAS searches through the entire population’s genome, giving information on small differences, or polymorphisms, in DNA sequence between each subject. A successful GWA experiment can accurately identify a single location across DNA samples with high levels of polymorphism—meaning there are unmatching nucleotides between individuals with different phenotypes at that specific location. This data can be used to conclude that, for example, a fish with red scales has a mutation in a certain area while a fish with blue scales doesn’t, explaining their differences in morphology."
+      },
+      {
+        "order": 6,
+        "type": "paragraph",
+        "content": "For Dr. Livraghi, conducting a GWAS was just the beginning of a series of comprehensive experiments to further confirm the involvement of the gene optix in the repression of silver colored scales in the wings of Speyeria mormonia, a North American orange and silver butterfly. Previously identified as a master regulator of eye development in Drosophila fruit flies, optix has been found to take on a different role in the wings of butterflies, acting as a genetic light switch for coloration and patterning (1). This epitomizes the central pillar of evolutionary development, showing how the genetic regions surrounding certain genes can become hotspots of evolutionary diversity, as slight changes in gene expression opens up an abundance of potential pathways for further evolution to tread upon."
+      },
+      {
+        "order": 7,
+        "type": "paragraph",
+        "content": "To examine closer, Dr. Livraghi performed a hybridization chain reaction (HCR) experiment to target and fluorescently tag optix mRNA transcripts, visualizing their location within the tissue through a microscope. Fluorescent stainings are able to determine how and when a gene may perform its function. Results found that at ~50% pupal development, optix is absent in presumptive silvered spots on the wings, indicating it may work to repress the silver scale state."
+      },
+      {
+        "order": 8,
+        "type": "pull_quote",
+        "content": "“The way that optix has picked up this role in butterflies is unclear. We’re not sure what the ancestral role of this gene was, but even though it acts as a regulator of eye development in Drosophila, it doesn’t mean it was necessarily ‘co-opted’ [re-used] towards a pattern regulation gene in butterflies. In CRISPR knock-out individuals, we don’t see any effects in the eye, so the hypothesis is shaky—optix is definitely pleiotropic, it’s unclear and unlikely that it’s been co-opted from an eye development role.”"
+      },
+      {
+        "order": 9,
+        "type": "paragraph",
+        "content": "Dr. Livraghi worked to confirm these findings through utilization of RNA interference (RNAi) gene ‘knockdown’, which gives insight into an organism’s phenotype if it didn’t have a certain gene during crucial periods in its development. Through the introduction of a silencing RNA species into the cells of the developing pupal wing, researchers are able to target and break down RNA transcripts of a gene of interest. In this case, the knockdowns targeted the optix gene, and the resulting mutants yielded fascinating results—covering the wings with patches of silver. This data all but confirms that optix functions to suppress silvered spots; its regulation during development, amazingly, has been controlled tightly by evolution, restricting it from specific areas on the wing but allowing free reign everywhere else. The precise control of pigment genes is crucial for adaptive evolution of all butterfly species, allowing for a wide range of diversity among populations. "
+      },
+      {
+        "order": 10,
+        "type": "paragraph",
+        "content": "Developing and using the genetic tools we have at our disposal is crucial to examining the world around us, allowing for the gradual climb of our species towards greater understanding—unraveling the complex knots that biology has tied itself since the dawn of cellular life. Mechanistic explanations for evolutionary processes act as a flame to ignite these knots and fuel our progress, providing the basis for millions of years of evolutionary diversity."
+      },
+      {
+        "order": 11,
+        "type": "pull_quote",
+        "content": "\"If you want to understand evolutionary principles, you have to understand the underlying genetic drivers of diversity—to understand how phenotypes evolved, first you must understand how genes evolved to generate these phenotypes. To understand the general evolutionary principle, you need to understand genetics. There’s another side to the quote ‘nothing in biology makes sense except in the light of evolution’. In reality, nothing makes sense except in the light of development, it’s necessary to pull back the folds of such evolutionary questions.\""
+      },
+      {
+        "order": 12,
+        "type": "game",
+        "src": "posts/games/article17.html",
+        "title": "EvoGenetics Dash: Livraghi's Lepidoptera",
+        "height": "580"
+      }
+    ]
+  }
+}

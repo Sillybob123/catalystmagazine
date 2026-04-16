@@ -1,0 +1,165 @@
+CATALYST MAGAZINE - ARTICLE INDEX
+============================================================
+
+Article 2: An Ode to Microglia
+  Author: Naama Ben-Dor
+  Date: Dec 5, 2024
+  File: posts/article2.json
+
+Article 3: Understanding Science to Learn Science: Dopamine and Why You Should Care
+  Author: Naama Ben-Dor
+  Date: Dec 23, 2024
+  File: posts/article3.json
+
+Article 4: Everything Sings: The Science of Systems
+  Author: Aidan Schurr
+  Date: Jan 19
+  File: posts/article4.json
+
+Article 5: Chromatic Chemistry: Transition Metals and Nature’s Hidden Color Palette
+  Author: Lori Preci
+  Date: Feb 24
+  File: posts/article5.json
+
+Article 6: Science’s Silly Lexicon: Wacky Words to Brighten Your Day (and Casually Drop Into Conversation)
+  Author: Naama Ben-Dor
+  Date: Mar 23
+  File: posts/article6.json
+
+Article 7: The Significance of Genetics in Insect Coloration and Evolution
+  Author: Alex Carter
+  Date: Mar 31
+  File: posts/article7.json
+
+Article 8: The Fascinating Role of Paradoxes in Science
+  Author: Lori Preci
+  Date: Apr 27
+  File: posts/article8.json
+
+Article 9: The Star of the Nervous System: An Ode to the Astrocyte
+  Author: Naama Ben-Dor
+  Date: Jul 28
+  File: posts/article9.json
+
+Article 10: The District: A Sustainable City?
+  Author: Ginger Taurek
+  Date: Dec 14
+  File: posts/article10.json
+
+Article 11: From Music to Nuclear Policy: Professor Christopher Cahill’s unexpected Journey in Science and Policy
+  Author: Lori Preci and Yair Ben-Dor
+  Date: Dec 14, 2024
+  File: posts/article11.json
+
+Article 12: From Fluorine to Forensics: The Road From Academia to Forensic Chemistry
+  Author: Naama Ben-Dor
+  Date: Jan 10
+  File: posts/article12.json
+
+Article 13: A Universe of Plasma: How one Scientist Connects his World from Satellites to Cells.
+  Author: Aidan Schurr
+  Date: Jan 28
+  File: posts/article13.json
+
+Article 14: How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine
+  Author: Yair Ben-Dor
+  Date: Feb 6
+  File: posts/article14.json
+
+Article 15: From Brain to Bench to Bedside and Beyond: How a DC Neuroscientist is Changing Brain Disease Research
+  Author: Aidan Schurr
+  Date: Feb 15
+  File: posts/article15.json
+
+Article 16: Serendipity and Science: The Journey of Dr. John Hawdon
+  Author: Lori Preci
+  Date: Mar 5
+  File: posts/article16.json
+
+Article 17: How The World of Genetics Shapes Evolution
+  Author: Alex Carter
+  Date: Mar 14
+  File: posts/article17.json
+
+Article 18: How One Engineer is Changing Sustainable Fuels
+  Author: Aidan Schurr
+  Date: Apr 9
+  File: posts/article18.json
+
+Article 19: Pollution to Solution: Dr. Song Gao on Science, Policy, and Environmental Sustainability
+  Author: Naama Ben-Dor
+  Date: Apr 18
+  File: posts/article19.json
+
+Article 20: The Role of Science Communication in Today's Discourse
+  Author: Alex Carter and Aidan Schurr
+  Date: May 6
+  File: posts/article20.json
+
+Article 21: The Declarative/Procedural Model: Understanding Language and Memory
+  Author: Yair Ben-Dor
+  Date: May 15
+  File: posts/article21.json
+
+Article 22: Scott Sklar's Vision for Renewable Energy
+  Author: Ginger Taurek
+  Date: Jun 9
+  File: posts/article22.json
+
+Article 23: From Battling a Rare Bioweapon Pathogen to Pioneering Global Health Security
+  Author: Aidan Schurr
+  Date: Jun 30
+  File: posts/article23.json
+
+Article 24: How Coastal Trees Adapt Amid Rising Seas
+  Author: Aidan Brown
+  Date: Jul 9
+  File: posts/article24.json
+
+Article 25: How Dr. Brandon Kohrt is Expanding Access to Mental Health Care
+  Author: Lori Preci and Aidan Schurr
+  Date: Aug 9
+  File: posts/article25.json
+
+Article 26: Charting the Future of Myasthenia Gravis Therapy With Dr. Henry Kaminski
+  Author: Alex Carter
+  Date: Aug 17
+  File: posts/article26.json
+
+Article 27: How Community-Led Science is Revolutionizing Research
+  Author: Aidan Brown
+  Date: Sep 7
+  File: posts/article27.json
+
+Article 28: The Cosmic Journey of Dr. Duilia De Mello
+  Author: Layla Abdoulaye
+  Date: Sep 6
+  File: posts/article28.json
+
+Article 29: The Geography of Risk: How D.C. Neighborhoods Shape Children's Health
+  Author: Alexis Tamm
+  Date: Sep 17
+  File: posts/article29.json
+
+Article 30: I Am, therefore I See: How The Brain Edits Reality on The Fly
+  Author: Le Nguyen
+  Date: Oct 8
+  File: posts/article30.json
+
+Article 31: Decoding Demyelination: A Look Inside Dr. Jeffrey Huang's Innovative Research on MS
+  Author: Naama Ben-Dor
+  Date: Oct 21
+  File: posts/article31.json
+
+Article 32: The IMERSE Lab: A New Era of Autonomous Surgical Robotics
+  Author: Lori Preci
+  Date: Nov 3
+  File: posts/article32.json
+
+Article 33: Can AI transform speech therapy? Welcome to Worlds of Hello
+  Author: Alexis Tamm
+  Date: Nov 26
+  File: posts/article33.json
+
+============================================================
+Total Articles: 32

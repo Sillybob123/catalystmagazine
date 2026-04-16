@@ -1,0 +1,98 @@
+{
+  "article_data": {
+    "metadata": {
+      "title": "How Community-Led Science is Revolutionizing Research",
+      "author": "Aidan Brown",
+      "publish_date": "Sep 7, 2025",
+      "cover_image_url": "postimages/communityled.webp",
+      "excerpt": "For communities plagued by pollution, science feels like something done to them, not for them. Environmental health scientist Sacoby Wilson is leading a movement to put the tools and products of research directly in the hands of the people.",
+      "category": "feature"
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "section_header",
+        "content": "Empowering, Informing, and Including Communities"
+      },
+      {
+        "order": 2,
+        "type": "paragraph",
+        "content": "In communities across the nation, a foul taste hangs in the air and water, a constant reminder of the industries and pollutants that surround them. Complaints of burning throats and asthma are common, but complaints to officials fall on deaf ears. With many anecdotes but little hard evidence, the struggles of communities go unaddressed while they suffer from environmental and health hazards."
+      },
+      {
+        "order": 3,
+        "type": "paragraph",
+        "content": "The gap between what people in affected communities experience and what official data say is a battleground across the nation. For generations, scientific research has been a top-down affair, a closed-off process in the “ivory tower” of academia. Researchers with their own questions would descend on communities, collect data, and publish in a closed academic journal, overlooking the residents' most pressing concerns. A new movement is growing, allowing communities to be engaged in the research process from start to finish, elevating their valuable input."
+      },
+      {
+        "order": 4,
+        "type": "paragraph",
+        "content": "This new approach, often called community-engaged research, is championed by scientists like Dr. Sacoby Wilson, director of The Health, Environmental and Economic Justice lab (T.H.E.E.J. lab) at the University of Maryland, College Park. Dr. Wilson has worked on environmental justice through community-engaged research since his time as a PhD student at the University of North Carolina, Chapel Hill, where he studied the impacts of industrial hog farms on community health and air quality."
+      },
+      {
+        "order": 5,
+        "type": "paragraph",
+        "content": "Dr. Wilson described how engaging people most impacted by certain health hazards elevates the research being done, saying, “When we think about community engagement in general and in the research enterprise, it helps to really bring the community's voice into the work and show the value of their contextual knowledge and expertise.” He drew a sharp distinction between the motivations of research led by scientists versus led by communities, since community-engaged research can be more comprehensive and inclusive by asking questions that cover the full experience of the community and get more relevant data to drive solutions. “Their lived experience is a form of data, so they’re the experts on their everyday lives,” he said."
+      },
+      {
+        "order": 6,
+        "type": "paragraph",
+        "content": "Empowering communities through community–engaged science will not only lead to a better impact of the research to benefit the community, but it may also help improve public trust in science. Throughout our conversation, there were many repeating themes of power differences and division in traditional research methods, and between academics and the public. “There's a lot of baked-in inequities in how we do science,” Dr. Wilson said, further elaborating how traditional research is driven in a top-down manner, with many differences in funding and power between academic institutions and community groups. These power imbalances drive a sharp divide between academics and citizens. Engaging the community in science by involving them at every step and empowering them with skills along the way can help improve communication and trust between researchers and the public, something that is lacking in the present day. Dr. Wilson pointed out that this division could be part of the reason for widespread anti-science sentiment in the US. Conducting research inspired by citizens is a way of “ground truthing lived experience,” he said."
+      },
+      {
+        "order": 7,
+        "type": "paragraph",
+        "content": "The division Dr. Wilson described extends beyond an academic setting. There is a growing national crisis of confidence in science. Public trust in science has fluctuated in recent years, and it remains lower than pre-pandemic levels, according to a Pew Research Center poll. Only 45% of US adults say that it is accurate to describe scientists as good communicators. There is also a divide in confidence between democrats and republicans, with republicans expressing less overall trust in scientists to act in the best interests of the public."
+      },
+      {
+        "order": 8,
+        "type": "paragraph",
+        "content": "Part of this mistrust–as Dr. Wilson alluded to–could be a lack of understanding between citizens and scientists. When communities are left out of the research of their lived experiences, they feel iced out, not understanding or feeling like they benefit from the scientific process. Additionally, when scientists are used to publishing in academic journals and using field-specific jargon, they may do a bad job of communicating their work’s importance and relevance to society."
+      },
+      {
+        "order": 9,
+        "type": "section_header",
+        "content": "From the Community, for the Community"
+      },
+      {
+        "order": 10,
+        "type": "paragraph",
+        "content": "One of Dr. Wilson’s most impactful areas of research involves air quality monitoring through a network of deployed indoor and outdoor air quality monitors. He collaborates with multiple groups, from community organizations and government agencies to other universities. These networks collect data to help inform and empower communities afflicted by harmful air quality. The project makes efficient use of resources, colocating some of its cheaper, widely spread monitors with EPA equipment. This strategy allows researchers to calibrate the low-cost sensors for accuracy and spread them out over a much larger area than is possible with more expensive equipment. By collecting, visualizing, and analyzing air quality data in affected communities, Dr. Wilson and his colleagues can help to inform the public and identify specific sources of pollution and implement reduction strategies to improve public health. This researcher-community collaboration is critical for the project. Community partners, who have enhanced knowledge of their area or where it is most important to monitor, helped to plan the deployment of air quality monitors. Their input is a valuable addition that can help to make the data collected more relevant and impactful."
+      },
+      {
+        "order": 11,
+        "type": "image",
+        "url": "posts/insidearticleimages/image1howcommunityledscience.avif",
+        "alt_text": "Air quality monitoring sensors used in T.H.E.E.J. lab projects",
+        "caption": "Air quality monitoring sensors used in T.H.E.E.J. lab projects at Turner Station, Cheverly, and Curtis Bay, Maryland"
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "Dr. Wilson is involved in many other projects looking at environmental hazards like the effects of industrial chicken farms in the eastern shore of Maryland and southern Delaware, as well as incinerator and port pollution in Newark. These projects span an array of pollution issues from different sources and help inform decision makers and educate communities on these issues."
+      },
+      {
+        "order": 13,
+        "type": "paragraph",
+        "content": "Environmental and economic justice are inextricably linked, with poor environmental quality leading to a range of health conditions, like asthma, which additionally have increased economic costs for those afflicted. Some communities are also more affected by a lack of access to necessary infrastructure, one example of which is inadequate sewer and water infrastructure in low-income African American communities. Dr. Wilson's work helps to quantify and inform affected communities on the science behind what’s happening in their everyday lives, both validating their experiences and equipping them with the data to fight for change."
+      },
+      {
+        "order": 14,
+        "type": "section_header",
+        "content": "Driving Policy / Making an Impact"
+      },
+      {
+        "order": 15,
+        "type": "paragraph",
+        "content": "Engaging the community in research, whether it is through community-based science or citizen science, leads to a greater understanding and impact. Elevating the voices of those most impacted and giving non-scientists the tools to shape their future will create better outcomes for both scientists and citizens. Engaging communities in scientific research has the potential to increase trust in science and drive policy decisions. As Dr. Wilson said, “communities want science that leads to real action and change, so to do that you have to translate the science and communicate to decision makers, like policy makers.” Empowering communities to tell their stories through science helps to keep policy and people at the forefront of research, paving the way for a brighter, more equitable future."
+      },
+      {
+        "order": 16,
+        "type": "game",
+        "src": "posts/games/article27.html",
+        "title": "Eco-Justice Dash: Community Power",
+        "height": "580"
+      }
+    ]
+  }
+}

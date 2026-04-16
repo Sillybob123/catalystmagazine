@@ -1,0 +1,164 @@
+{
+  "article_data": {
+    "metadata": {
+      "title": "Pollution to Solution: Dr. Song Gao on Science, Policy, and Environmental Sustainability",
+      "author": "Naama Ben-Dor",
+      "publish_date": "Apr 18, 2025
+      ",
+      "cover_image_url": "postimages/poltosol.webp",
+      "excerpt": "Dr. Song Gao of Georgetown University reveals how bridging atmospheric chemistry and environmental policy can drive real-world sustainability. In this article, Gao discusses his transformative journey from synthetic chemistry to investigating the impacts of aerosols on climate change and the ozone layer.",
+      "category": "feature"
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "paragraph",
+        "content": "Dr. Song Gao of Georgetown University reveals how bridging atmospheric chemistry and environmental policy can drive real-world sustainability. In this article, Gao discusses his transformative journey from synthetic chemistry to investigating the impacts of aerosols on climate change and the ozone layer. Drawing on lessons from the Montreal Protocol and its innovative integration of science with policy, he highlights the critical need for interdisciplinary collaboration. Gao’s insights underscore that only by aligning scientific breakthroughs with pragmatic, flexible policies can we effectively combat the escalating challenges of global environmental degradation."
+      },
+      {
+        "order": 2,
+        "type": "image",
+        "url": "posts/insidearticleimages/image1pollutiontosolution.avif",
+        "alt_text": "Forest Fire, Wildfire burning tree",
+        "caption": "Forest Fire, Wildfire burning tree in red and orange color. Photo by yelantsevv",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 3,
+        "type": "paragraph",
+        "content": "From fires and floods to unprecedented scalding temperatures in worldwide locations, global climate change is becoming an increasingly pressing issue. The scientific community must find ways to address it. Despite the already-palpable implications, factors such as technological advances, convenience, and political motives all impede on the ability to mitigate the accumulating damage to the environment. While societal change can be idealized at the individual level, the urgency of global climate change demands pragmatic initiative and creativity to implement structural changes."
+      },
+      {
+        "order": 4,
+        "type": "paragraph",
+        "content": "In recent years, Professor Song Gao from Georgetown University’s Department of Chemistry has worked to battle environmental systems’ damage and promote sustainability on a broader scale: international policy."
+      },
+      {
+        "order": 5,
+        "type": "section_header",
+        "content": "From Synthetic Chemistry to Atmospheric Chemistry"
+      },
+      {
+        "order": 6,
+        "type": "paragraph",
+        "content": "Throughout his undergraduate studies, Dr. Gao was primarily focused on synthetic chemistry. With a long-held passion for the environment, though, he pursued polymer synthesis, seeking to develop cleaner materials for energy storage. When he began his search for a graduate program, though, his interests drew him to PhD advisors at the University of Washington, and later his postdoctoral mentors at Caltech, to work on broader environmental science issues — in particular, atmospheric chemistry. There, Dr. Gao began researching the effects of aerosols on air pollution and the climate. While scientists had understood some of their harmful effects on air quality, they were just beginning to decipher the climate impacts of organic aerosols, especially, in both reflecting sunlight (a direct impact) and influencing the formation of clouds (an indirect impact)."
+      },
+      {
+        "order": 7,
+        "type": "section_header",
+        "content": "The Montreal Protocol and Policy Influence"
+      },
+      {
+        "order": 8,
+        "type": "paragraph",
+        "content": "While Dr. Gao’s focus on air pollution and climate change has remained strong, a pivotal encounter in 2016 inspired him to consider incorporating a new angle to his work. A group of science-based policy makers asked Dr. Gao to write a review article on stratospheric ozone depletion and its implications on the regulation of chlorofluorocarbons, better known as CFCs. These molecules, which have been widely used as refrigerants, coolants and fire extinguishers since the 1940s, were discovered to play a massive role in the destruction of the ozone layer in the 1970s — a finding so consequential that it won Crutzen, Molina, and Rowland, the 1995 Nobel Prize in Chemistry. Due to their stable C-F and C-Cl bonds, CFCs are mostly inert in the lower atmosphere and resistant to degradation efforts. Upon traveling to the upper atmosphere, however, the sun’s ultraviolet radiation breaks these covalent bonds. The resulting Cl and Br radicals deplete the earth’s ozone layer, inhibiting its function of filtering the most cancerous and dangerous wavelengths of ultraviolet light from reaching biological life on earth’s surface."
+      },
+      {
+        "order": 9,
+        "type": "html",
+        "content": "<table style=\"border-collapse: collapse; margin: 0 auto;\">\n  <caption style=\"font-weight: bold; margin-bottom: 8px;\">Catalytic Ozone Destruction</caption>\n  <tbody><tr>\n    <td>Cl + O<sub>3</sub></td>\n    <td>→</td>\n    <td>ClO + O<sub>2</sub></td>\n  </tr>\n  <tr>\n    <td>ClO + O</td>\n    <td>→</td>\n    <td>Cl + O<sub>2</sub></td>\n  </tr>\n  <tr style=\"border-top: 1px solid #000;\">\n    <td colspan=\"3\" style=\"text-align:center; padding-top: 8px;\">\n      Net: O + O<sub>3</sub> → 2 O<sub>2</sub>\n    </td>\n  </tr>\n</tbody></table>",
+        "caption": "The Rowland-Molina theory of ozone depletion."
+      },
+      {
+        "order": 10,
+        "type": "paragraph",
+        "content": "As awareness of their harm grew, the United Nations signed the Montreal Protocol in 1987 to phase out the use of CFCs. Often considered the UN’s most successful international agreement, the Montreal Protocol has eliminated approximately 99% of ozone-depleting substances in the environment."
+      },
+      {
+        "order": 11,
+        "type": "paragraph",
+        "content": "Following that initial collaboration with science policymakers, Dr. Gao became aware of the massive potential for widespread influence by incorporating clever policy into scientific work."
+      },
+      {
+        "order": 12,
+        "type": "pull_quote",
+        "content": "“I realized that for science to truly improve society and safeguard the environment, it must interface with policy effectively. That realization has influenced my approach ever since.”"
+      },
+      {
+        "order": 13,
+        "type": "paragraph",
+        "content": "Although rooted in science, environmental policy — as with everything related to government affairs — is strongly influenced by politics. In Chemical Transformations in the Environment, a course Dr. Gao teaches at Georgetown, he highlights “the three Ps” that underlie effective environmental policy: people, planet, and profit."
+      },
+      {
+        "order": 14,
+        "type": "paragraph",
+        "content": "“If one aspect is ignored, the entire system becomes unworkable. If policies or solutions negatively impact people’s livelihoods or cause economic losses, they won’t be accepted. If, however, the focus is solely on profits and politics while polluting the environment, that’s unsustainable. And if we protect the environment but ignore economic or social factors, the approach is too naïve to be effective,” he said. “Sustainability requires integrating all three.”"
+      },
+      {
+        "order": 15,
+        "type": "paragraph",
+        "content": "The ingenious approach of the Montreal Protocol, according to Dr. Gao, was its unprecedented flexibility and consideration for the “three Ps.” Since its initial ratification, it has been amended more than 20 times to incorporate new scientific findings and the differing on-the-ground realities that various countries face. Other international agreements like the Paris Agreement, which demanded rigid, often-quantified commitments, and imposed higher economic costs, have shown much less success."
+      },
+      {
+        "order": 16,
+        "type": "section_header",
+        "content": "Current Work"
+      },
+      {
+        "order": 17,
+        "type": "image",
+        "url": "posts/insidearticleimages/image3polutiontosolution.avif",
+        "alt_text": "Nitrous oxide emissions",
+        "caption": "Nitrous oxide emissions from wastewater treatment systems.",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 18,
+        "type": "paragraph",
+        "content": "Although highly successful at eliminating ozone depletion, the Montreal Protocol showed an unexpected outcome. While the ozone layer was showing signs of replenishment, some of the replacements for CFCs — particular HFCs and HCFCs — posed a separate issue: climate warming. In light of this discovery, 163 parties signed the 2016 Kigali Amendment to the Montreal Protocol, agreeing to phase out HFCs as well."
+      },
+      {
+        "order": 19,
+        "type": "paragraph",
+        "content": "Despite these efforts, however, air quality data from recent years has shown increasing concentrations of certain CFCs and HFCs in the environment pointing to undisclosed, potentially illicit use. Continued emissions of these substances seriously hinder the ongoing efforts to combat climate change and ozone depletion. Consequently, in 2021, Dr. Gao took action and partnered with Dr. Stephen Anderson — one of the founders of the famous Montreal Protocol and a prominent figure in environmental policy — on a highly influential paper addressing this issue."
+      },
+      {
+        "order": 20,
+        "type": "paragraph",
+        "content": "Through extensive research, Dr. Gao and his collaborators revealed a potential loophole in the Protocol that allows exemptions of ozone-depleting substances (ODSs) for “critical uses” in medicine, manufacturing, and other applications. Growing evidence indicates misuse and overuse of these exemptions for non-critical purposes, which also may include plastics production. In their work, Dr. Gao and Dr. Anderson identified multiple pathways by which some ODSs and HFCs may be converted into fluoropolymers, like Teflon. In their paper they offer actionable recommendations for further amending the Montreal Protocol in order to more effectively prevent exploitation of its exemptions and to maximize its success at battling multiple and inter-linking environmental damages."
+      },
+      {
+        "order": 21,
+        "type": "section_header",
+        "content": "Bringing Science into Action: The Role of Policy in Environmental Research"
+      },
+      {
+        "order": 22,
+        "type": "paragraph",
+        "content": "Dr. Gao’s work highlights a key but often overlooked application for science-oriented work. Although most discoveries are made in the lab, there is vast potential for wider influence through interdisciplinary work. There exists a problematic gap in science communication that limits the accessibility of breakthrough research to people outside the field, and prevents widespread implementation of crucial scientific developments."
+      },
+      {
+        "order": 23,
+        "type": "paragraph",
+        "content": "“Understanding policy has influenced the kinds of scientific questions I pursue. If you want your research to have real-world impacts, it’s important to study science that is relevant to policy and societal needs,” Dr. Gao said."
+      },
+      {
+        "order": 24,
+        "type": "section_header",
+        "content": "Takeaways For Students"
+      },
+      {
+        "order": 25,
+        "type": "paragraph",
+        "content": "To the readers here, at the heart of the nation’s capital, consider Dr. Gao’s message:"
+      },
+      {
+        "order": 26,
+        "type": "paragraph",
+        "content": "“Right now, science and policy are not as integrated as they should be. Scientists and policymakers are often curious about each other’s fields, but there aren’t many structured pathways for collaboration,” he said. “That’s why I encourage students to study both. A strong foundation in chemistry, ecology, mathematics and atmospheric science is essential. But it’s equally important to develop skills in scientific communication and environmental policy. Having expertise in both allows for an effective convergence of the two.”"
+      },
+      {
+        "order": 27,
+        "type": "paragraph",
+        "content": "As is made clearer every day, the worsening condition of the environment demands scientific minds to collaborate towards discovering innovative solutions, and often tweak existing solutions. While climate change is an undoubtedly urgent issue, environmental science is one of many fields in STEM that can benefit from interdisciplinary collaboration and communication. This field allows for a positive impact on the world through science and a wide scope of influence, even if the means are unconventional."
+      },
+      {
+        "order": 28,
+        "type": "game",
+        "src": "posts/games/article19.html",
+        "title": "Atmospheric Alchemy: Gao’s Policy Quest",
+        "height": "580"
+      }
+    ]
+  }
+}

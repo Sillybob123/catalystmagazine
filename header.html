@@ -1,0 +1,71 @@
+<!-- Header -->
+<header class="header">
+    <div class="container nav-container">
+        <button class="mobile-newsletter-btn" id="mobile-newsletter-btn" aria-label="Newsletter">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            </svg>
+        </button>
+
+        <a href="/index.html" class="brand">
+            <img src="/WebLogo.png" alt="The Catalyst Logo" class="brand-logo brand-logo-desktop">
+            <img src="/NewLogoShape.png" alt="The Catalyst Logo" class="brand-logo brand-logo-mobile">
+            <span class="brand-name">The Catalyst</span>
+        </a>
+
+        <nav>
+            <ul class="nav-menu">
+                <li><a href="/index.html" class="nav-link">Home</a></li>
+                <li><a href="/articles.html" class="nav-link">Articles</a></li>
+                <li><a href="/collaborate.html" class="nav-link">Collaborate</a></li>
+                <li><a href="/about.html" class="nav-link">About</a></li>
+            </ul>
+        </nav>
+
+        <div class="nav-cta">
+            <button class="btn btn-primary" id="desktop-subscribe-btn">Subscribe</button>
+        </div>
+
+        <button class="menu-toggle" aria-label="Toggle menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>
+
+<!-- Newsletter Modal -->
+<div class="newsletter-modal" id="newsletter-modal">
+    <div class="newsletter-modal-overlay" id="newsletter-modal-overlay"></div>
+    <div class="newsletter-modal-content">
+        <button class="newsletter-modal-close" id="newsletter-modal-close" aria-label="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <h3 class="newsletter-modal-title">Join the Changemakers</h3>
+        <p class="newsletter-modal-subtitle">Sign up for our newsletter to stay connected with exclusive stories and D.C. STEM spotlights.</p>
+        <form action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d" method="post" id="mc-embedded-subscribe-form-modal" name="mc-embedded-subscribe-form" class="newsletter-form-glass" novalidate>
+            <div class="newsletter-form-grid">
+                <input type="text" name="FNAME" class="form-input-glass" placeholder="First Name" required>
+                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last Name" required>
+            </div>
+            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL-modal" placeholder="Email Address" required>
+
+            <!-- Bot prevention -->
+            <div aria-hidden="true" style="position: absolute; left: -5000px;">
+                <input type="text" name="b_d76819924b4f0773791d6827b_1ce6c96e6d" tabindex="-1" value="">
+            </div>
+
+            <button type="submit" name="subscribe" class="btn btn-primary btn-glass">
+                Subscribe
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </button>
+            <div id="mce-response-modal" class="newsletter-response"></div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,1832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Eco-Justice Dash: Community Power</title>
+<style>
+:root {
+  /* Enhanced Color Palette */
+  --bg-main-canvas: #0a0a0f;
+  --bg-wrap: #050508;
+  --text-color-on-dark: #f0f0f0;
+  --text-color-dark-for-button-hover: #0a0a0f;
+
+  /* Neon Colors with Better Contrast */
+  --accent-neon-cyan: #00e5ff;
+  --accent-neon-magenta: #ff0080;
+  --accent-neon-lime: #32ff7e;
+  --accent-neon-orange: #ff6348;
+  --accent-neon-yellow: #ffd700;
+  --accent-neon-electricblue: #00d4ff;
+  --accent: var(--accent-neon-lime);
+
+  /* Game Element Colors */
+  --player-fill: var(--accent);
+  --player-glow: var(--accent);
+  --platform-fill: #1a1a2e;
+  --platform-highlight: #16213e;
+  --platform-outline: rgba(0, 229, 255, 0.3);
+  --block-active-fill: var(--accent-neon-orange);
+  --block-active-glow: var(--accent-neon-orange);
+  --block-key-color: var(--accent-neon-yellow);
+  --block-used-fill: #2c2c3e;
+  --block-correct-fill: var(--accent-neon-lime);
+  --coin-fill: var(--accent-neon-yellow);
+  --coin-glow: var(--accent-neon-yellow);
+  --enemy-mite-fill: var(--accent-neon-magenta);
+  --enemy-mite-glow: var(--accent-neon-magenta);
+  --enemy-golem-fill: var(--accent-neon-orange);
+  --enemy-golem-glow: var(--accent-neon-orange);
+  --goal-fill: var(--accent-neon-electricblue);
+  --goal-glow: var(--accent-neon-electricblue);
+  --goal-portal-accent: #ffffff;
+  --goal-locked-fill: #2a2a3e;
+  --projectile-fill: #ffffff;
+  --projectile-glow: var(--accent);
+  --hud-text-color: var(--text-color-on-dark);
+  --button-text-color: var(--accent);
+  --button-bg-hover: var(--accent);
+  --button-text-hover: var(--text-color-dark-for-button-hover);
+  --font: 'Segoe UI', 'Arial', sans-serif;
+  --glow-intensity: 6px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  background: transparent;
+  color: var(--text-color-on-dark);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 800px;
+  margin: 1.5em 1.5em;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--bg-wrap) 0%, rgba(10, 10, 15, 0.95) 100%);
+  border-radius: 20px;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  border: 2px solid var(--accent);
+  position: relative;
+  backdrop-filter: blur(5px);
+}
+
+#gameInstruction {
+  font-size: 0.85em;
+  color: var(--text-color-on-dark);
+  margin-bottom: 0.5em;
+  opacity: 0.8;
+  letter-spacing: 0.5px;
+}
+
+h2 {
+  margin: 0 0 0.8em;
+  font-size: 1.5em;
+  color: var(--text-color-on-dark);
+  text-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent);
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+#gameCanvasContainer {
+  position: relative;
+  margin: 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+canvas {
+  border: 3px solid var(--accent);
+  border-radius: 10px;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 720 / 300;
+  image-rendering: optimizeSpeed;
+  box-shadow: 0 0 20px var(--accent), inset 0 0 10px rgba(0, 0, 0, 0.3);
+  touch-action: none;
+  background: var(--bg-main-canvas);
+}
+
+#hud {
+  font-size: 0.9em;
+  margin: 0.8em 0;
+  color: var(--hud-text-color);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+button {
+  padding: 12px 24px;
+  font-size: 0.9em;
+  margin: 5px;
+  border: 2px solid var(--button-text-color);
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05));
+  color: var(--button-text-color);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  border-radius: 5px;
+  position: relative;
+  overflow: hidden;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: var(--button-bg-hover);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+button:hover::before {
+  width: 120%;
+  height: 120%;
+}
+
+button:hover {
+  color: var(--button-text-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px var(--button-bg-hover), 0 0 30px var(--button-bg-hover);
+  border-color: var(--button-bg-hover);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#pauseBtn {
+  display: none;
+}
+
+#gamePausedOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  border-radius: 10px;
+  pointer-events: none;
+  backdrop-filter: blur(5px);
+  text-shadow: 0 0 20px var(--accent);
+  letter-spacing: 3px;
+}
+
+#msg {
+  font-size: 1.2em;
+  min-height: 1.5em;
+  margin-top: 0.5em;
+  font-weight: 600;
+  color: var(--text-color-on-dark);
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5), 0 0 10px var(--accent);
+  letter-spacing: 0.5px;
+}
+
+/* Enhanced Question Modal */
+#questionModal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(5, 5, 8, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+#questionModal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#qBox {
+  background: linear-gradient(135deg, var(--bg-main-canvas) 0%, rgba(26, 26, 46, 0.95) 100%);
+  padding: 25px;
+  border-radius: 15px;
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 30px var(--accent), inset 0 0 20px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+  color: var(--text-color-on-dark);
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#questionModal.visible #qBox {
+  transform: scale(1);
+}
+
+#qText {
+  font-size: 1.1em;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+#qOptionsContainer button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 15px;
+  font-size: 0.95em;
+  border: 2px solid rgba(0, 229, 255, 0.5);
+  background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05));
+  color: var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+#qOptionsContainer button::before {
+  content: '';
+  position: absolute;
+  left: -100%;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+#qOptionsContainer button:hover::before {
+  left: 100%;
+}
+
+#qOptionsContainer button:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--button-text-hover);
+  box-shadow: 0 0 20px var(--accent);
+  transform: translateX(5px);
+  border-color: var(--accent);
+}
+
+#qOptionsContainer button:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+#qFeedback {
+  min-height: 1.5em;
+  margin-top: 15px;
+  font-weight: 600;
+  font-size: 0.95em;
+  line-height: 1.4;
+  transition: all 0.3s;
+}
+
+#qFeedback.correct {
+  color: var(--accent-neon-lime);
+  text-shadow: 0 0 10px var(--accent-neon-lime);
+}
+
+#qFeedback.incorrect {
+  color: var(--accent-neon-magenta);
+  text-shadow: 0 0 10px var(--accent-neon-magenta);
+}
+
+/* Responsive Design */
+@media (max-width: 399px) {
+  .wrap { display: none !important; }
+}
+
+@media (min-width: 400px) and (max-width: 600px) {
+  .wrap { width: 98%; padding: 15px; }
+  #gameInstruction { font-size: 0.75em; }
+  h2 { font-size: 1.2em; }
+  #hud { font-size: 0.8em; }
+  button { padding: 10px 16px; font-size: 0.8em; }
+  #msg { font-size: 1em; }
+  #qBox { padding: 20px; }
+  #qText { font-size: 1em; }
+  #qOptionsContainer button { padding: 12px; font-size: 0.9em; }
+}
+
+/* Loading Animation */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+.loading {
+  animation: pulse 1.5s infinite;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p id="gameInstruction">🎮 Test your knowledge on community-led science!</p>
+  <h2>🤝 Eco-Justice Dash: Community Power</h2>
+  <div id="gameCanvasContainer">
+    <canvas id="cv" width="720" height="300"></canvas>
+    <div id="gamePausedOverlay" style="display: none;">PAUSED</div>
+  </div>
+  <div id="hud">Score: 0 | Lives: 3 | Time: 120s</div>
+  <button id="btn" type="button">Start Game</button>
+  <button id="pauseBtn" type="button">Pause</button>
+  <div id="msg"></div>
+  <div id="questionModal">
+    <div id="qBox">
+      <p id="qText"></p>
+      <div id="qOptionsContainer"></div>
+      <p id="qFeedback"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========== ENHANCED GAME ENGINE ========== */
+
+// Performance optimizations
+const RAF = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame;
+const now = () => performance.now();
+
+// Canvas and DOM elements
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d', { alpha: false });
+const W = cv.width, H = cv.height;
+const msgEl = document.getElementById('msg');
+const btnEl = document.getElementById('btn');
+const hudEl = document.getElementById('hud');
+const pauseBtnEl = document.getElementById('pauseBtn');
+const gamePausedOverlayEl = document.getElementById('gamePausedOverlay');
+const questionModalEl = document.getElementById('questionModal');
+const qTextEl = document.getElementById('qText');
+const qOptionsContainerEl = document.getElementById('qOptionsContainer');
+const qFeedbackEl = document.getElementById('qFeedback');
+
+// Initialize accent color
+(() => {
+  const accents = [
+    '--accent-neon-cyan', '--accent-neon-magenta', '--accent-neon-lime',
+    '--accent-neon-orange', '--accent-neon-yellow', '--accent-neon-electricblue'
+  ];
+  const chosenAccent = accents[Math.floor(Math.random() * accents.length)];
+  const accentValue = getComputedStyle(document.documentElement).getPropertyValue(chosenAccent).trim();
+  document.documentElement.style.setProperty('--accent', accentValue);
+  document.documentElement.style.setProperty('--player-fill', accentValue);
+  document.documentElement.style.setProperty('--player-glow', accentValue);
+})();
+
+// Game constants with improved physics
+const PLAYER_W = 20, PLAYER_H = 20;
+const PLAYER_SPEED = 4;
+const PLAYER_JUMP_POWER = 11;
+const GRAVITY = 0.45;
+const TERMINAL_VELOCITY = 12;
+const GROUND_Y = H - 60;
+const BLOCK_W = 28, BLOCK_H = 28;
+const COIN_SIZE = 14;
+const KEY_ICON_SIZE_FACTOR = 0.7;
+const NUM_MAIN_PLATFORMS = 8;
+const PLATFORM_MIN_W = 90;
+const PLATFORM_MAX_W = 160;
+const PLATFORM_H = 16;
+const X_GAP_MIN = 50;
+const X_GAP_MAX = 110;
+const Y_CHANGE_MAX = 50;
+const MIN_PLATFORM_Y_ABS_FROM_TOP = H * 0.25;
+const MAX_PLATFORM_Y_ABS_FROM_GROUND = GROUND_Y - PLATFORM_H - BLOCK_H - PLAYER_H - 20;
+const INITIAL_PLATFORM_X_START = 140;
+const COIN_SPIN_SPEED = 0.08;
+
+// Game state
+let gameState = {
+  playing: false,
+  isPaused: false,
+  score: 0,
+  lives: 3,
+  timeLeft: 120,
+  spawnFire: false,
+  doubleJump: false,
+  lastFrameTime: 0,
+  deltaTime: 0
+};
+
+let player, platforms, enemies, coins, blocks, goal, camX, timerInt;
+let keys = {}, projectiles = [], bgStars = [], particles = [];
+let currentBlockInteracting = null;
+
+// Touch controls
+let touchState = {
+  touches: {},
+  leftTouchId: null,
+  rightTouchId: null
+};
+
+const SWIPE_THRESHOLD = 30;
+const SWIPE_TIME_THRESHOLD = 400;
+const TAP_AREA_WIDTH_RATIO = 0.4;
+
+// Utility functions
+const getCSSVar = varName => getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+const rand = (a, b) => Math.random() * (b - a) + a;
+const randInt = (a, b) => Math.floor(rand(a, b + 1));
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+// Collision detection with improved accuracy
+function collide(a, b) {
+  return a.x < b.x + b.w &&
+         a.x + a.w > b.x &&
+         a.y < b.y + b.h &&
+         a.y + a.h > b.y;
+}
+
+// Enhanced particle system
+class Particle {
+  constructor(x, y, vx, vy, color, life) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.color = color;
+    this.life = life;
+    this.maxLife = life;
+    this.size = rand(2, 6);
+  }
+
+  update(dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.vy += GRAVITY * 0.5 * dt;
+    this.life -= dt;
+    this.vx *= 0.98;
+  }
+
+  draw() {
+    const alpha = Math.max(0, this.life / this.maxLife);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = this.color;
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 10;
+    ctx.fillRect(this.x - camX - this.size/2, this.y - this.size/2, this.size, this.size);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Background stars with parallax
+function initBackgroundStars(numStars = 150) {
+  bgStars = [];
+  for (let i = 0; i < numStars; i++) {
+    bgStars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      radius: rand(0.5, 2),
+      alpha: rand(0.3, 0.9),
+      parallax: rand(0.05, 0.3),
+      twinkle: rand(0, Math.PI * 2)
+    });
+  }
+}
+
+function drawBackground() {
+  // Gradient background
+  const gradient = ctx.createLinearGradient(0, 0, 0, H);
+  gradient.addColorStop(0, '#0a0a0f');
+  gradient.addColorStop(1, '#1a1a2e');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw stars with twinkle effect
+  bgStars.forEach(star => {
+    star.twinkle += 0.02;
+    const twinkleAlpha = Math.sin(star.twinkle) * 0.3 + 0.7;
+    const xPos = (star.x - camX * star.parallax + W * 2) % W;
+    
+    ctx.beginPath();
+    ctx.arc(xPos, star.y, star.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = star.alpha * twinkleAlpha;
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Grid effect
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.03)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < H; i += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(W, i);
+    ctx.stroke();
+  }
+  
+  const firstVisibleWorldX = Math.floor(camX / 40) * 40;
+  const lastVisibleWorldX = Math.ceil((camX + W) / 40) * 40;
+  for (let worldX = firstVisibleWorldX; worldX <= lastVisibleWorldX; worldX += 40) {
+    const screenX = worldX - camX;
+    ctx.beginPath();
+    ctx.moveTo(screenX, 0);
+    ctx.lineTo(screenX, H);
+    ctx.stroke();
+  }
+}
+
+// Enhanced level generation
+function buildLevel() {
+  // Reset game objects
+  player = {
+    x: 50,
+    y: GROUND_Y - PLAYER_H - 10,
+    w: PLAYER_W,
+    h: PLAYER_H,
+    vx: 0,
+    vy: 0,
+    onGround: false,
+    jumps: 0,
+    angle: 0,
+    trail: []
+  };
+
+  platforms = [];
+  coins = [];
+  enemies = [];
+  blocks = [];
+  particles = [];
+
+  // Create ground
+  const groundWidth = INITIAL_PLATFORM_X_START + (NUM_MAIN_PLATFORMS + 3) * (PLATFORM_MAX_W + X_GAP_MAX) + 200;
+  platforms.push({
+    x: -100,
+    y: GROUND_Y,
+    w: groundWidth,
+    h: 60,
+    type: 'ground'
+  });
+
+  // Generate platforms with improved spacing
+  let currentX = INITIAL_PLATFORM_X_START;
+  let previousY = GROUND_Y - rand(40, 80);
+  previousY = clamp(previousY, MIN_PLATFORM_Y_ABS_FROM_TOP, MAX_PLATFORM_Y_ABS_FROM_GROUND);
+
+  const blockInterval = Math.max(1, Math.floor(NUM_MAIN_PLATFORMS / Q.length));
+  let nextBlockIndex = randInt(0, 1);
+  let qBlockIndex = 0;
+
+  for (let i = 0; i < NUM_MAIN_PLATFORMS; i++) {
+    const pWidth = rand(PLATFORM_MIN_W, PLATFORM_MAX_W);
+    let pY = previousY + rand(-Y_CHANGE_MAX, Y_CHANGE_MAX * 0.7);
+    pY = clamp(pY, MIN_PLATFORM_Y_ABS_FROM_TOP, MAX_PLATFORM_Y_ABS_FROM_GROUND);
+
+    const platform = {
+      x: currentX,
+      y: pY,
+      w: pWidth,
+      h: PLATFORM_H,
+      type: 'normal'
+    };
+    platforms.push(platform);
+
+    // Place question blocks
+    if (i === nextBlockIndex && qBlockIndex < Q.length) {
+      blocks.push({
+        x: platform.x + platform.w / 2 - BLOCK_W / 2,
+        y: platform.y - BLOCK_H,
+        w: BLOCK_W,
+        h: BLOCK_H,
+        state: '?',
+        qID: qBlockIndex,
+        bounce: 0
+      });
+      qBlockIndex++;
+      nextBlockIndex += blockInterval + randInt(0, 1);
+    }
+    // Place enemies
+    else if (Math.random() < 0.35) {
+      const enemyType = Math.random() < 0.6 ? 'mite' : 'golem';
+      const enemySize = enemyType === 'mite' ? 20 : 26;
+      enemies.push({
+        x: platform.x + rand(10, platform.w - enemySize - 10),
+        y: platform.y - enemySize,
+        w: enemySize,
+        h: enemySize,
+        dir: Math.random() < 0.5 ? 1 : -1,
+        type: enemyType,
+        speed: enemyType === 'mite' ? 1.5 : 0.8,
+        patrolMinX: platform.x,
+        patrolMaxX: platform.x + platform.w - enemySize,
+        animFrame: 0
+      });
+    }
+
+    // Place coins
+    const numCoins = randInt(1, 3);
+    for (let j = 0; j < numCoins; j++) {
+      coins.push({
+        x: platform.x + rand(COIN_SIZE, platform.w - COIN_SIZE * 2),
+        y: platform.y - PLATFORM_H - rand(20, 60),
+        w: COIN_SIZE,
+        h: COIN_SIZE,
+        collected: false,
+        angle: rand(0, Math.PI * 2),
+        spinSpeed: COIN_SPIN_SPEED,
+        floatY: 0
+      });
+    }
+
+    previousY = pY;
+    currentX += pWidth + rand(X_GAP_MIN, X_GAP_MAX);
+  }
+
+  // Create goal platform
+  const lastPlatform = platforms[platforms.length - 1];
+  const goalX = lastPlatform.x + lastPlatform.w + rand(80, 120);
+  const goalY = GROUND_Y - rand(80, 120);
+  
+  platforms.push({
+    x: goalX,
+    y: goalY,
+    w: 120,
+    h: PLATFORM_H,
+    type: 'goal_platform'
+  });
+
+  goal = {
+    x: goalX + 60 - 25,
+    y: goalY - 70,
+    w: 50,
+    h: 70,
+    isLocked: true,
+    pulse: 0
+  };
+
+  // Initialize game state
+  camX = 0;
+  gameState.score = 0;
+  gameState.lives = 3;
+  gameState.timeLeft = 120;
+  gameState.spawnFire = false;
+  gameState.doubleJump = false;
+  projectiles = [];
+  
+  initBackgroundStars();
+  updateGoalLockState();
+  updateHUD();
+}
+
+// Questions data
+const Q = [
+  {
+    "qID": 0,
+    "q": "What is a primary criticism of the traditional 'ivory tower' approach to research mentioned in the article?",
+    "options": [
+      {
+        "text": "It focuses too much on collaboration with industry.",
+        "correct": false
+      },
+      {
+        "text": "Researchers descend on communities, collect data, and overlook residents' most pressing concerns.",
+        "correct": true
+      },
+      {
+        "text": "It produces results too slowly to be useful.",
+        "correct": false
+      }
+    ],
+    "feedbackCorrect": "✅ Correct! The article highlights that traditional research has been a top-down affair, often ignoring the community's actual needs.",
+    "feedbackIncorrect": "❌ Not quite. The article's main critique focuses on how the traditional process can exclude and ignore the very people it's supposed to help.",
+    "power": "double"
+  },
+  {
+    "qID": 1,
+    "q": "According to Dr. Sacoby Wilson, what does community-engaged research value as a form of data?",
+    "options": [
+      {
+        "text": "The community's 'lived experience'",
+        "correct": true
+      },
+      {
+        "text": "Official government census reports",
+        "correct": false
+      },
+      {
+        "text": "Social media sentiment",
+        "correct": false
+      }
+    ],
+    "feedbackCorrect": "✅ Exactly! Dr. Wilson emphasizes that a community's lived experience is a crucial form of data that makes them experts on their own lives.",
+    "feedbackIncorrect": "❌ Think about what unique expertise community members possess. Dr. Wilson notes their 'lived experience' is a valuable form of data.",
+    "power": "fire"
+  },
+  {
+    "qID": 2,
+    "q": "How does Dr. Wilson's air quality monitoring project efficiently create a wide and accurate network?",
+    "options": [
+      {
+        "text": "It relies exclusively on expensive, high-grade EPA equipment.",
+        "correct": false
+      },
+      {
+        "text": "It uses satellites to monitor the entire area at once.",
+        "correct": false
+      },
+      {
+        "text": "It uses many low-cost sensors that are calibrated for accuracy with official EPA equipment.",
+        "correct": true
+      }
+    ],
+    "feedbackCorrect": "✅ That's right! This strategy allows for wider coverage than using only expensive equipment while still ensuring the data is accurate.",
+    "feedbackIncorrect": "❌ Incorrect. The article describes a clever combination of technologies to get the best of both worlds: widespread coverage and data accuracy.",
+    "power": "double"
+  },
+  {
+    "qID": 3,
+    "q": "What is the ultimate goal of empowering communities with science and data, according to the article?",
+    "options": [
+      {
+        "text": "To help community members become professional academic researchers.",
+        "correct": false
+      },
+      {
+        "text": "To translate the science into real action and policy change.",
+        "correct": true
+      },
+      {
+        "text": "To reduce the funding needed for university research labs.",
+        "correct": false
+      }
+    ],
+    "feedbackCorrect": "✅ Correct! As Dr. Wilson states, the goal is to use science to drive real-world change and inform decision-makers.",
+    "feedbackIncorrect": "❌ Not quite. The article stresses that the point of the research is to create tangible impacts for the community.",
+    "power": "both"
+  }
+];
+
+// Enhanced drawing functions
+function drawPlayer() {
+  const x = player.x - camX;
+  const y = player.y;
+  
+  // Draw trail effect when moving
+  if (Math.abs(player.vx) > 0.1) {
+    player.trail.push({ x: player.x + player.w/2, y: player.y + player.h/2, life: 10 });
+  }
+  
+  player.trail = player.trail.filter(t => {
+    t.life--;
+    if (t.life > 0) {
+      ctx.globalAlpha = t.life / 20;
+      ctx.fillStyle = getCSSVar('--player-glow');
+      ctx.fillRect(t.x - camX - 2, t.y - 2, 4, 4);
+      return true;
+    }
+    return false;
+  });
+  
+  ctx.globalAlpha = 1;
+  
+  // Draw player with rotation when jumping
+  ctx.save();
+  ctx.translate(x + player.w/2, y + player.h/2);
+  
+  if (!player.onGround) {
+    ctx.rotate(player.angle);
+  }
+  
+  // Player shadow
+  ctx.shadowColor = getCSSVar('--player-glow');
+  ctx.shadowBlur = 15;
+  
+  // Player body
+  ctx.fillStyle = getCSSVar('--player-fill');
+  ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
+  
+  // Player outline
+  ctx.strokeStyle = getCSSVar('--player-glow');
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-player.w/2, -player.h/2, player.w, player.h);
+  
+  ctx.restore();
+  ctx.shadowBlur = 0;
+}
+
+function drawPlatform(p) {
+  const x = p.x - camX;
+  
+  // Platform gradient
+  const gradient = ctx.createLinearGradient(x, p.y, x, p.y + p.h);
+  gradient.addColorStop(0, getCSSVar('--platform-highlight'));
+  gradient.addColorStop(1, getCSSVar('--platform-fill'));
+  
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, p.y, p.w, p.h);
+  
+  // Platform edge highlight
+  ctx.strokeStyle = getCSSVar('--platform-outline');
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, p.y, p.w, p.h);
+  
+  // Top highlight
+  ctx.fillStyle = getCSSVar('--platform-highlight');
+  ctx.globalAlpha = 0.6;
+  ctx.fillRect(x, p.y, p.w, 4);
+  ctx.globalAlpha = 1;
+}
+
+function drawCoin(c) {
+  if (c.collected) return;
+  
+  const x = c.x - camX + c.w/2;
+  const y = c.y + c.h/2 + Math.sin(now() * 0.003 + c.x) * 3;
+  
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(c.angle);
+  
+  // Coin glow
+  ctx.shadowColor = getCSSVar('--coin-glow');
+  ctx.shadowBlur = 20;
+  
+  // Coin body with 3D effect
+  const scale = Math.abs(Math.cos(c.angle));
+  ctx.scale(scale, 1);
+  
+  ctx.fillStyle = getCSSVar('--coin-fill');
+  ctx.beginPath();
+  ctx.arc(0, 0, c.w/2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Inner circle
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.beginPath();
+  ctx.arc(0, 0, c.w/3, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
+  ctx.shadowBlur = 0;
+}
+
+function drawBlock(b) {
+  const x = b.x - camX;
+  const y = b.y + Math.sin(now() * 0.005 + b.x) * 2;
+  
+  let fillColor = getCSSVar('--block-used-fill');
+  let glowColor = null;
+  
+  if (b.state === '?' || b.state === 'asking') {
+    fillColor = getCSSVar('--block-active-fill');
+    glowColor = getCSSVar('--block-active-glow');
+    b.bounce = Math.sin(now() * 0.01) * 3;
+  } else if (b.state === 'used_correctly') {
+    fillColor = getCSSVar('--block-correct-fill');
+    glowColor = getCSSVar('--block-correct-fill');
+  }
+  
+  // Block shadow
+  if (glowColor) {
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 20;
+  }
+  
+  // Block body with gradient
+  const gradient = ctx.createLinearGradient(x, y, x + b.w, y + b.h);
+  gradient.addColorStop(0, fillColor);
+  gradient.addColorStop(1, 'rgba(0, 0, 0, 0.3)');
+  
+  ctx.fillStyle = gradient;
+  ctx.fillRect(x, y + b.bounce, b.w, b.h);
+  
+  // Block outline
+  ctx.strokeStyle = glowColor || 'rgba(255, 255, 255, 0.2)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y + b.bounce, b.w, b.h);
+  
+  // Draw key icon
+  if (b.state === '?' || b.state === 'asking') {
+    drawKeyIcon(x + b.w/2, y + b.h/2 + b.bounce, b.w * KEY_ICON_SIZE_FACTOR);
+  }
+  
+  ctx.shadowBlur = 0;
+}
+
+function drawKeyIcon(cx, cy, size) {
+  const headRadius = size * 0.35;
+  const stemLength = size * 0.7;
+  const stemWidth = size * 0.18;
+  
+  ctx.fillStyle = getCSSVar('--block-key-color');
+  ctx.shadowColor = getCSSVar('--block-key-color');
+  ctx.shadowBlur = 10;
+  
+  // Key head
+  ctx.beginPath();
+  ctx.arc(cx, cy - stemLength/3, headRadius, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Key stem
+  ctx.fillRect(cx - stemWidth/2, cy - stemLength/3, stemWidth, stemLength);
+  
+  // Key teeth
+  ctx.fillRect(cx + stemWidth/2, cy + stemLength/3, stemWidth * 0.8, stemWidth * 0.6);
+  ctx.fillRect(cx + stemWidth/2, cy + stemLength/3 - stemWidth, stemWidth * 0.8, stemWidth * 0.6);
+  
+  ctx.shadowBlur = 0;
+}
+
+function drawEnemy(e) {
+  if (e.dead) return;
+  
+  const x = e.x - camX;
+  const y = e.y;
+  
+  e.animFrame += 0.1;
+  const bobY = Math.sin(e.animFrame) * 2;
+  
+  ctx.save();
+  
+  if (e.type === 'mite') {
+    // Animated triangle enemy
+    ctx.fillStyle = getCSSVar('--enemy-mite-fill');
+    ctx.shadowColor = getCSSVar('--enemy-mite-glow');
+    ctx.shadowBlur = 15;
+    
+    ctx.translate(x + e.w/2, y + e.h/2 + bobY);
+    ctx.rotate(Math.sin(e.animFrame * 0.5) * 0.1);
+    
+    ctx.beginPath();
+    ctx.moveTo(0, -e.h/2);
+    ctx.lineTo(e.w/2, e.h/2);
+    ctx.lineTo(-e.w/2, e.h/2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-4, -2, 3, 3);
+    ctx.fillRect(1, -2, 3, 3);
+  } else {
+    // Golem enemy with animation
+    ctx.fillStyle = getCSSVar('--enemy-golem-fill');
+    ctx.shadowColor = getCSSVar('--enemy-golem-glow');
+    ctx.shadowBlur = 20;
+    
+    const squashY = 1 + Math.sin(e.animFrame * 2) * 0.05;
+    ctx.translate(x + e.w/2, y + e.h + bobY);
+    ctx.scale(1, squashY);
+    
+    ctx.fillRect(-e.w/2, -e.h, e.w, e.h);
+    
+    // Golem details
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillRect(-e.w/2 + 4, -e.h + 4, e.w - 8, 4);
+    ctx.fillRect(-e.w/2 + 4, -e.h/2, e.w - 8, 4);
+  }
+  
+  ctx.restore();
+  ctx.shadowBlur = 0;
+}
+
+function drawProjectile(p) {
+  const x = p.x - camX;
+  const y = p.y;
+  
+  // Projectile trail
+  for (let i = 0; i < 3; i++) {
+    ctx.globalAlpha = 0.3 - i * 0.1;
+    ctx.fillStyle = getCSSVar('--projectile-glow');
+    ctx.fillRect(x - p.vx * i * 2, y, p.w - i, p.h - i);
+  }
+  
+  ctx.globalAlpha = 1;
+  
+  // Projectile body
+  ctx.fillStyle = getCSSVar('--projectile-fill');
+  ctx.shadowColor = getCSSVar('--projectile-glow');
+  ctx.shadowBlur = 15;
+  
+  ctx.beginPath();
+  ctx.arc(x + p.w/2, y + p.h/2, p.w/2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.shadowBlur = 0;
+}
+
+function drawGoal() {
+  const x = goal.x - camX;
+  const y = goal.y;
+  
+  goal.pulse += 0.05;
+  const pulseSize = Math.sin(goal.pulse) * 5;
+  
+  if (goal.isLocked) {
+    // Locked portal
+    ctx.fillStyle = getCSSVar('--goal-locked-fill');
+    ctx.fillRect(x, y, goal.w, goal.h);
+    
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, goal.w, goal.h);
+    
+    // Lock icon
+    ctx.fillStyle = '#888';
+    ctx.font = `bold ${goal.h * 0.5}px ${getCSSVar('--font')}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🔒', x + goal.w/2, y + goal.h/2);
+  } else {
+    // Unlocked portal with effects
+    ctx.save();
+    
+    // Portal glow
+    ctx.shadowColor = getCSSVar('--goal-glow');
+    ctx.shadowBlur = 30 + pulseSize;
+    
+    // Portal gradient
+    const gradient = ctx.createRadialGradient(
+      x + goal.w/2, y + goal.h/2, 0,
+      x + goal.w/2, y + goal.h/2, goal.w/2
+    );
+    gradient.addColorStop(0, getCSSVar('--goal-portal-accent'));
+    gradient.addColorStop(0.5, getCSSVar('--goal-fill'));
+    gradient.addColorStop(1, 'rgba(0, 212, 255, 0.3)');
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - pulseSize/2, y - pulseSize/2, goal.w + pulseSize, goal.h + pulseSize);
+    
+    // Portal swirl effect
+    ctx.strokeStyle = getCSSVar('--goal-portal-accent');
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.7;
+    
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      const angle = goal.pulse + i * Math.PI * 2/3;
+      const radius = goal.w/3;
+      ctx.arc(
+        x + goal.w/2 + Math.cos(angle) * radius,
+        y + goal.h/2 + Math.sin(angle) * radius,
+        5, 0, Math.PI * 2
+      );
+      ctx.stroke();
+    }
+    
+    ctx.restore();
+  }
+  
+  ctx.shadowBlur = 0;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
+// Main game loop with delta time
+function gameLoop(currentTime) {
+  if (!gameState.playing || gameState.isPaused) {
+    if (gameState.isPaused && gameState.playing) {
+      draw();
+      gamePausedOverlayEl.style.display = 'flex';
+    }
+    return;
+  }
+  
+  // Calculate delta time for smooth physics
+  if (!gameState.lastFrameTime) gameState.lastFrameTime = currentTime;
+  gameState.deltaTime = Math.min((currentTime - gameState.lastFrameTime) / 16.67, 2);
+  gameState.lastFrameTime = currentTime;
+  
+  update(gameState.deltaTime);
+  draw();
+  
+  RAF(gameLoop);
+}
+
+// Enhanced update function
+function update(dt) {
+  if (!gameState.playing || gameState.isPaused) return;
+  
+  // Player movement with smooth acceleration
+  const targetVx = keys['ArrowRight'] ? PLAYER_SPEED : (keys['ArrowLeft'] ? -PLAYER_SPEED : 0);
+  player.vx = lerp(player.vx, targetVx, 0.2 * dt);
+  
+  // Boundary checks
+  const minX = platforms[0] ? platforms[0].x : 0;
+  const maxX = platforms[0] ? platforms[0].x + platforms[0].w - player.w : W;
+  
+  if (player.x <= minX && player.vx < 0) {
+    player.x = minX;
+    player.vx = 0;
+  } else if (player.x >= maxX && player.vx > 0) {
+    player.x = maxX;
+    player.vx = 0;
+  }
+  
+  // Jumping with double jump
+  if (keys['Space'] && (player.onGround || (gameState.doubleJump && player.jumps < 2))) {
+    player.vy = -PLAYER_JUMP_POWER;
+    player.onGround = false;
+    player.jumps++;
+    keys['Space'] = false;
+    
+    // Jump particles
+    for (let i = 0; i < 5; i++) {
+      particles.push(new Particle(
+        player.x + player.w/2,
+        player.y + player.h,
+        rand(-2, 2),
+        rand(-2, -5),
+        getCSSVar('--player-glow'),
+        30
+      ));
+    }
+  }
+  
+  // Apply physics
+  player.vy += GRAVITY * dt;
+  player.vy = Math.min(player.vy, TERMINAL_VELOCITY);
+  
+  player.x += player.vx * dt;
+  player.y += player.vy * dt;
+  
+  // Rotation when airborne
+  if (!player.onGround) {
+    player.angle += player.vx * 0.02 * dt;
+  } else {
+    player.angle = lerp(player.angle, 0, 0.3 * dt);
+  }
+  
+  // Platform collision with improved detection
+  player.onGround = false;
+  platforms.forEach(p => {
+    if (collide(player, p)) {
+      const playerBottom = player.y + player.h;
+      const playerTop = player.y;
+      const playerLeft = player.x;
+      const playerRight = player.x + player.w;
+      
+      const platTop = p.y;
+      const platBottom = p.y + p.h;
+      const platLeft = p.x;
+      const platRight = p.x + p.w;
+      
+      const prevPlayerBottom = playerBottom - player.vy * dt;
+      const prevPlayerTop = playerTop - player.vy * dt;
+      const prevPlayerLeft = playerLeft - player.vx * dt;
+      const prevPlayerRight = playerRight - player.vx * dt;
+      
+      // Landing on platform
+      if (player.vy >= 0 && prevPlayerBottom <= platTop + 5) {
+        player.y = platTop - player.h;
+        player.vy = 0;
+        player.onGround = true;
+        player.jumps = 0;
+      }
+      // Hitting platform from below
+      else if (player.vy < 0 && prevPlayerTop >= platBottom - 5) {
+        player.y = platBottom;
+        player.vy = 1;
+      }
+      // Side collisions
+      else if (prevPlayerRight <= platLeft + 5 && player.vx > 0) {
+        player.x = platLeft - player.w;
+        player.vx = 0;
+      } else if (prevPlayerLeft >= platRight - 5 && player.vx < 0) {
+        player.x = platRight;
+        player.vx = 0;
+      }
+    }
+  });
+  
+  // Fall death
+  if (player.y > H + player.h * 2) {
+    loseLife();
+  }
+  
+  // Block interactions
+  blocks.forEach(b => {
+    if (collide(player, b) && b.state === '?' && gameState.playing && !gameState.isPaused) {
+      b.state = 'asking';
+      currentBlockInteracting = b;
+      player.vx = 0;
+      
+      const questionData = Q.find(q => q.qID === b.qID);
+      if (questionData) {
+        showQuestionModal(questionData);
+      }
+    }
+  });
+  
+  // Enemy AI and collisions
+  enemies.forEach(e => {
+    if (e.dead) return;
+    
+    // Enemy movement
+    e.x += e.dir * e.speed * dt;
+    
+    // Patrol boundaries
+    if (e.x <= e.patrolMinX || e.x + e.w >= e.patrolMaxX) {
+      e.dir *= -1;
+      e.x = clamp(e.x, e.patrolMinX, e.patrolMaxX - e.w);
+    }
+    
+    // Player collision
+    if (collide(player, e)) {
+      if (player.vy > 0 && player.y + player.h - player.vy * dt <= e.y + 5) {
+        // Stomp enemy
+        player.vy = -8;
+        gameState.score += 10;
+        e.dead = true;
+        
+        // Enemy defeat particles
+        for (let i = 0; i < 8; i++) {
+          particles.push(new Particle(
+            e.x + e.w/2,
+            e.y + e.h/2,
+            rand(-3, 3),
+            rand(-3, -6),
+            e.type === 'mite' ? getCSSVar('--enemy-mite-fill') : getCSSVar('--enemy-golem-fill'),
+            40
+          ));
+        }
+      } else {
+        loseLife();
+      }
+    }
+  });
+  
+  // Projectile firing
+  if (gameState.spawnFire && keys['KeyF'] && projectiles.length < 3) {
+    const now = Date.now();
+    if (!projectiles.lastFireTime || now - projectiles.lastFireTime > 300) {
+      const dir = player.vx >= 0 ? 1 : -1;
+      projectiles.push({
+        x: player.x + (dir > 0 ? player.w : -10),
+        y: player.y + player.h/2 - 5,
+        vx: 8 * dir,
+        vy: 0,
+        w: 10,
+        h: 10
+      });
+      projectiles.lastFireTime = now;
+    }
+  }
+  
+  // Update projectiles
+  projectiles = projectiles.filter(p => {
+    p.x += p.vx * dt;
+    
+    // Check enemy hits
+    enemies.forEach(e => {
+      if (!e.dead && collide(p, e)) {
+        e.dead = true;
+        p.hit = true;
+        gameState.score += 15;
+        
+        // Hit particles
+        for (let i = 0; i < 6; i++) {
+          particles.push(new Particle(
+            e.x + e.w/2,
+            e.y + e.h/2,
+            rand(-4, 4),
+            rand(-4, -7),
+            getCSSVar('--projectile-glow'),
+            35
+          ));
+        }
+      }
+    });
+    
+    // Remove off-screen projectiles
+    if (p.x < camX - 50 || p.x > camX + W + 50) {
+      p.hit = true;
+    }
+    
+    return !p.hit;
+  });
+  
+  // Coin collection
+  coins.forEach(c => {
+    if (!c.collected) {
+      c.angle += c.spinSpeed * dt;
+      
+      if (collide(player, c)) {
+        c.collected = true;
+        gameState.score += 10;
+        
+        // Coin particles
+        for (let i = 0; i < 10; i++) {
+          particles.push(new Particle(
+            c.x + c.w/2,
+            c.y + c.h/2,
+            rand(-3, 3),
+            rand(-3, -6),
+            getCSSVar('--coin-fill'),
+            30
+          ));
+        }
+      }
+    }
+  });
+  
+  // Update particles
+  particles = particles.filter(p => {
+    p.update(dt);
+    return p.life > 0;
+  });
+  
+  // Goal check
+  updateGoalLockState();
+  if (!goal.isLocked && collide(player, goal)) {
+    win();
+  }
+  
+  // Camera smoothing
+  const targetCamX = player.x - W/3;
+  const minCamX = platforms[0] ? platforms[0].x : 0;
+  const maxCamX = platforms[0] ? Math.max(0, platforms[0].x + platforms[0].w - W) : 0;
+  
+  const desiredCamX = clamp(targetCamX, minCamX, maxCamX);
+  camX = lerp(camX, desiredCamX, 0.1 * dt);
+  
+  updateHUD();
+}
+
+// Main draw function
+function draw() {
+  drawBackground();
+  
+  // Draw platforms
+  platforms.forEach(p => drawPlatform(p));
+  
+  // Draw coins
+  coins.forEach(c => drawCoin(c));
+  
+  // Draw blocks
+  blocks.forEach(b => drawBlock(b));
+  
+  // Draw enemies
+  enemies.forEach(e => drawEnemy(e));
+  
+  // Draw projectiles
+  projectiles.forEach(p => drawProjectile(p));
+  
+  // Draw particles
+  particles.forEach(p => p.draw());
+  
+  // Draw player
+  drawPlayer();
+  
+  // Draw goal
+  drawGoal();
+}
+
+// Game state management
+function updateGoalLockState() {
+  goal.isLocked = !blocks.every(b => b.state === 'used_correctly');
+}
+
+function updateHUD() {
+  hudEl.textContent = `Score: ${gameState.score} | Lives: ${gameState.lives} | Time: ${gameState.timeLeft}s`;
+}
+
+function loseLife() {
+  gameState.lives--;
+  updateHUD();
+  
+  if (gameState.lives <= 0) {
+    gameOver();
+    return;
+  }
+  
+  // Respawn player
+  player.x = Math.max(50, player.x - W/3);
+  player.y = GROUND_Y - PLAYER_H - 80;
+  player.vx = 0;
+  player.vy = -3;
+  player.angle = 0;
+  player.trail = [];
+  
+  // Death particles
+  for (let i = 0; i < 20; i++) {
+    particles.push(new Particle(
+      player.x + player.w/2,
+      player.y + player.h/2,
+      rand(-5, 5),
+      rand(-5, -10),
+      getCSSVar('--accent-neon-magenta'),
+      50
+    ));
+  }
+}
+
+function win() {
+  gameState.playing = false;
+  gameState.isPaused = false;
+  pauseBtnEl.style.display = 'none';
+  gamePausedOverlayEl.style.display = 'none';
+  msgEl.textContent = '🎉 LEVEL COMPLETE! 🎉';
+  msgEl.className = 'win-message';
+  confetti(200, true);
+  btnEl.style.display = 'inline-block';
+  btnEl.textContent = 'Play Again';
+  clearInterval(timerInt);
+}
+
+function gameOver() {
+  gameState.playing = false;
+  gameState.isPaused = false;
+  pauseBtnEl.style.display = 'none';
+  gamePausedOverlayEl.style.display = 'none';
+  msgEl.textContent = '💀 GAME OVER 💀';
+  msgEl.className = 'game-over-message';
+  btnEl.style.display = 'inline-block';
+  btnEl.textContent = 'Try Again';
+  clearInterval(timerInt);
+}
+
+function startGame() {
+  buildLevel();
+  gameState.playing = true;
+  gameState.isPaused = false;
+  msgEl.textContent = '';
+  msgEl.className = '';
+  btnEl.style.display = 'none';
+  pauseBtnEl.style.display = 'inline-block';
+  pauseBtnEl.textContent = 'Pause';
+  gamePausedOverlayEl.style.display = 'none';
+  
+  clearInterval(timerInt);
+  timerInt = setInterval(() => {
+    if (!gameState.playing || gameState.isPaused || questionModalEl.classList.contains('visible')) return;
+    
+    gameState.timeLeft--;
+    updateHUD();
+    
+    if (gameState.timeLeft <= 0) {
+      gameOver();
+    }
+  }, 1000);
+  
+  RAF(gameLoop);
+}
+
+function togglePause() {
+  if (!gameState.playing) return;
+  
+  gameState.isPaused = !gameState.isPaused;
+  
+  if (gameState.isPaused) {
+    pauseBtnEl.textContent = 'Resume';
+    gamePausedOverlayEl.style.display = 'flex';
+  } else {
+    pauseBtnEl.textContent = 'Pause';
+    gamePausedOverlayEl.style.display = 'none';
+    RAF(gameLoop);
+  }
+}
+
+// Question modal functions
+function showQuestionModal(questionData) {
+  gameState.isPaused = true;
+  gameState.playing = false;
+  
+  qTextEl.textContent = questionData.q;
+  qOptionsContainerEl.innerHTML = '';
+  qFeedbackEl.textContent = '';
+  qFeedbackEl.className = '';
+  
+  questionData.options.forEach(opt => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = opt.text;
+    button.onclick = () => handleAnswerSelection(opt, questionData);
+    qOptionsContainerEl.appendChild(button);
+  });
+  
+  questionModalEl.classList.add('visible');
+}
+
+function handleAnswerSelection(selectedOption, questionData) {
+  Array.from(qOptionsContainerEl.children).forEach(btn => btn.disabled = true);
+  
+  if (selectedOption.correct) {
+    qFeedbackEl.textContent = questionData.feedbackCorrect;
+    qFeedbackEl.className = 'correct';
+    gameState.score += 50;
+    
+    if (currentBlockInteracting) {
+      currentBlockInteracting.state = 'used_correctly';
+    }
+    
+    // Grant power-ups
+    if (questionData.power === 'double') {
+      gameState.doubleJump = true;
+    } else if (questionData.power === 'fire') {
+      gameState.spawnFire = true;
+    } else if (questionData.power === 'both') {
+      gameState.doubleJump = true;
+      gameState.spawnFire = true;
+    }
+    
+    // Success particles
+    for (let i = 0; i < 15; i++) {
+      particles.push(new Particle(
+        player.x + player.w/2,
+        player.y,
+        rand(-4, 4),
+        rand(-4, -8),
+        getCSSVar('--accent-neon-lime'),
+        60
+      ));
+    }
+  } else {
+    qFeedbackEl.textContent = questionData.feedbackIncorrect;
+    qFeedbackEl.className = 'incorrect';
+    
+    if (currentBlockInteracting) {
+      currentBlockInteracting.state = '?';
+    }
+    
+    loseLife();
+  }
+  
+  updateHUD();
+  updateGoalLockState();
+  
+  setTimeout(() => {
+    questionModalEl.classList.remove('visible');
+    currentBlockInteracting = null;
+    gameState.playing = true;
+    gameState.isPaused = false;
+    
+    if (gameState.lives > 0 && gameState.timeLeft > 0) {
+      RAF(gameLoop);
+    }
+  }, 2500);
+}
+
+// Event listeners
+document.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space' || e.code.startsWith('Arrow')) {
+    e.preventDefault();
+  }
+  if (e.code === 'KeyP' && gameState.playing) {
+    togglePause();
+  }
+});
+
+document.addEventListener('keyup', e => {
+  keys[e.code] = false;
+});
+
+btnEl.onclick = startGame;
+pauseBtnEl.onclick = togglePause;
+
+// Touch controls
+cv.addEventListener('touchstart', handleTouchStart, { passive: false });
+cv.addEventListener('touchmove', handleTouchMove, { passive: false });
+cv.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+function handleTouchStart(event) {
+  if (!gameState.playing || gameState.isPaused || questionModalEl.classList.contains('visible')) return;
+  event.preventDefault();
+  
+  const rect = cv.getBoundingClientRect();
+  
+  for (let touch of event.changedTouches) {
+    const x = touch.clientX - rect.left;
+    const relativeX = x / rect.width;
+    
+    touchState.touches[touch.identifier] = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startTime: now(),
+      relativeX: relativeX
+    };
+    
+    if (relativeX < TAP_AREA_WIDTH_RATIO) {
+      keys['ArrowLeft'] = true;
+      touchState.leftTouchId = touch.identifier;
+    } else if (relativeX > 1 - TAP_AREA_WIDTH_RATIO) {
+      keys['ArrowRight'] = true;
+      touchState.rightTouchId = touch.identifier;
+    }
+  }
+}
+
+function handleTouchMove(event) {
+  if (!gameState.playing || gameState.isPaused) return;
+  event.preventDefault();
+  
+  const rect = cv.getBoundingClientRect();
+  
+  for (let touch of event.changedTouches) {
+    const touchData = touchState.touches[touch.identifier];
+    if (!touchData) continue;
+    
+    const x = touch.clientX - rect.left;
+    const relativeX = x / rect.width;
+    
+    // Update movement based on current position
+    if (touch.identifier === touchState.leftTouchId && relativeX >= TAP_AREA_WIDTH_RATIO) {
+      keys['ArrowLeft'] = false;
+      touchState.leftTouchId = null;
+    } else if (touch.identifier === touchState.rightTouchId && relativeX <= 1 - TAP_AREA_WIDTH_RATIO) {
+      keys['ArrowRight'] = false;
+      touchState.rightTouchId = null;
+    }
+    
+    // Check for new movement area
+    if (relativeX < TAP_AREA_WIDTH_RATIO && touch.identifier !== touchState.leftTouchId) {
+      keys['ArrowLeft'] = true;
+      touchState.leftTouchId = touch.identifier;
+    } else if (relativeX > 1 - TAP_AREA_WIDTH_RATIO && touch.identifier !== touchState.rightTouchId) {
+      keys['ArrowRight'] = true;
+      touchState.rightTouchId = touch.identifier;
+    }
+  }
+}
+
+function handleTouchEnd(event) {
+  if (!gameState.playing || gameState.isPaused) return;
+  
+  for (let touch of event.changedTouches) {
+    const touchData = touchState.touches[touch.identifier];
+    if (!touchData) continue;
+    
+    const deltaX = touch.clientX - touchData.startX;
+    const deltaY = touch.clientY - touchData.startY;
+    const deltaTime = now() - touchData.startTime;
+    
+    // Check for swipe up (jump)
+    if (deltaTime < SWIPE_TIME_THRESHOLD && 
+        deltaY < -SWIPE_THRESHOLD && 
+        Math.abs(deltaY) > Math.abs(deltaX) * 1.5) {
+      keys['Space'] = true;
+      setTimeout(() => keys['Space'] = false, 50);
+    }
+    
+    // Clear movement keys
+    if (touch.identifier === touchState.leftTouchId) {
+      keys['ArrowLeft'] = false;
+      touchState.leftTouchId = null;
+    }
+    if (touch.identifier === touchState.rightTouchId) {
+      keys['ArrowRight'] = false;
+      touchState.rightTouchId = null;
+    }
+    
+    delete touchState.touches[touch.identifier];
+  }
+}
+
+// Confetti effect
+function confetti(count = 150, enhanced = false) {
+  const colors = [
+    getCSSVar('--accent-neon-cyan'),
+    getCSSVar('--accent-neon-magenta'),
+    getCSSVar('--accent-neon-lime'),
+    getCSSVar('--accent-neon-orange'),
+    getCSSVar('--accent-neon-yellow'),
+    getCSSVar('--accent')
+  ];
+  
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const div = document.createElement('div');
+      const size = enhanced ? rand(6, 12) : rand(4, 8);
+      
+      Object.assign(div.style, {
+        position: 'fixed',
+        left: '50%',
+        top: '40%',
+        width: size + 'px',
+        height: size + 'px',
+        background: colors[Math.floor(Math.random() * colors.length)],
+        borderRadius: enhanced ? '2px' : '50%',
+        transform: `translate(-50%, -50%) rotate(${rand(0, 360)}deg)`,
+        zIndex: 9999,
+        pointerEvents: 'none'
+      });
+      
+      if (enhanced) {
+        div.style.boxShadow = `0 0 ${size}px currentColor`;
+      }
+      
+      document.body.appendChild(div);
+      
+      let vx = rand(-8, 8);
+      let vy = rand(-12, -6);
+      let rotation = rand(-10, 10);
+      let life = 0;
+      const maxLife = rand(60, 100);
+      
+      function animate() {
+        life++;
+        vx *= 0.98;
+        vy += 0.4;
+        rotation *= 0.99;
+        
+        const x = parseFloat(div.style.left) + vx;
+        const y = parseFloat(div.style.top) + vy;
+        const currentRotation = parseFloat(div.style.transform.match(/rotate\((.+)deg\)/)[1]);
+        
+        div.style.left = x + '%';
+        div.style.top = y + '%';
+        div.style.transform = `translate(-50%, -50%) rotate(${currentRotation + rotation}deg)`;
+        div.style.opacity = Math.max(0, 1 - life / maxLife);
+        
+        if (life < maxLife) {
+          requestAnimationFrame(animate);
+        } else {
+          div.remove();
+        }
+      }
+      
+      requestAnimationFrame(animate);
+    }, i * (enhanced ? 8 : 5));
+  }
+}
+
+// Initialize accent-dependent styles
+document.addEventListener('DOMContentLoaded', () => {
+  const accent = getCSSVar('--accent');
+  
+  // Update button styles
+  document.querySelectorAll('button').forEach(btn => {
+    btn.style.setProperty('--button-text-color', accent);
+    btn.style.setProperty('--button-bg-hover', accent);
+  });
+  
+  // Update wrapper
+  const wrap = document.querySelector('.wrap');
+  if (wrap) {
+    wrap.style.borderColor = accent;
+    wrap.style.boxShadow = `0 0 30px ${accent}`;
+  }
+  
+  // Update canvas
+  if (cv) {
+    cv.style.borderColor = accent;
+    cv.style.boxShadow = `0 0 20px ${accent}`;
+  }
+});
+
+// Handle visibility change
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && gameState.playing && !gameState.isPaused) {
+    togglePause();
+  }
+});
+
+// Prevent zoom on double tap
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) {
+    e.preventDefault();
+  }
+  lastTouchEnd = now;
+}, false);
+</script>
+</body>
+</html>

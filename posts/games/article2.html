@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en" style="--primary: #3b82f6; --secondary: #f59e0b;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>An Ode to Microglia – Term Targeter</title>
+<style>
+  @keyframes feedbackPop {
+    0% {
+      transform: translate(-50%, -50%) scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  }
+</style>
+<style>
+:root {
+  /* Dynamic color palette */
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
+  --secondary: #ec4899;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  
+  /* Game colors */
+  --bg-main: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-game: #020617;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --border: #334155;
+  
+  /* Effects */
+  --glow-primary: 0 0 20px var(--primary), 0 0 40px var(--primary);
+  --glow-success: 0 0 20px var(--success), 0 0 40px var(--success);
+  --glow-error: 0 0 20px var(--error), 0 0 40px var(--error);
+  
+  /* Typography */
+  --font-main: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  touch-action: manipulation;
+}
+
+body {
+  font-family: var(--font-main);
+  /* MODIFICATION: Changed background to transparent */
+  background: transparent;
+  color: var(--text-primary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* MODIFICATION: Hide the animated background effect */
+body::before {
+  display: none;
+}
+
+@keyframes backgroundFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-20px, -20px) scale(1.1); }
+  66% { transform: translate(20px, -10px) scale(0.9); }
+}
+
+.interactive-game-container {
+  /* MODIFICATION: Reduced size - was max-width: 720px */
+  width: 100%;
+  max-width: 580px;
+  margin: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(20px);
+  border: none;
+  border-radius: 20px;
+  box-shadow: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.interactive-game-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    var(--primary),
+    transparent
+  );
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+h2 {
+  /* MODIFICATION: Reduced font size - was 2rem */
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+  letter-spacing: -0.02em;
+  position: relative;
+}
+
+.game-icon {
+  display: inline-block;
+  /* MODIFICATION: Reduced icon size - was 2.5rem */
+  font-size: 2rem;
+  margin-right: 0.5rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+#clue {
+  /* MODIFICATION: Reduced font size - was 1.125rem */
+  font-size: 1rem;
+  line-height: 1.5;
+  /* MODIFICATION: Reduced min-height - was 3.5rem */
+  min-height: 3rem;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+#clue.active {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+}
+
+#game-area {
+  position: relative;
+  /* MODIFICATION: Reduced height - was 320px */
+  height: 260px;
+  margin: 0.75rem 0;
+  background: var(--bg-game);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+/* Starfield effect */
+.stars {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: white;
+  border-radius: 50%;
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Grid overlay */
+#game-area::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.target {
+  position: absolute;
+  /* MODIFICATION: Reduced padding - was 0.75rem 1.25rem */
+  padding: 0.6rem 1rem;
+  min-width: 70px;
+  /* MODIFICATION: Reduced font size - was 0.875rem */
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  background: linear-gradient(135deg, var(--bg-secondary), rgba(51, 65, 85, 0.8));
+  color: var(--text-primary);
+  border: 2px solid var(--primary);
+  border-radius: 9999px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 20px rgba(99, 102, 241, 0.3);
+  animation: slideIn linear forwards;
+  transform-origin: center;
+  will-change: transform;
+}
+
+/* MODIFICATION: Fixed animation to ensure targets are removed when they reach the left edge */
+@keyframes slideIn {
+  from { 
+    transform: translateX(0) scale(0.8); 
+    opacity: 0; 
+  }
+  5% { 
+    transform: translateX(-10px) scale(1); 
+    opacity: 1; 
+  }
+  100% { 
+    transform: translateX(-100vw) scale(1); 
+    opacity: 1; 
+  }
+}
+
+.target::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
+  border-radius: 9999px;
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.3s ease;
+}
+
+.target:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    0 0 30px rgba(99, 102, 241, 0.5);
+}
+
+.target:hover::before {
+  opacity: 0.3;
+}
+
+.target.correct {
+  animation: correctHit 0.6s ease forwards;
+}
+
+@keyframes correctHit {
+  0% { transform: scale(1); }
+  50% { 
+    transform: scale(1.2);
+    background: var(--success);
+    box-shadow: var(--glow-success);
+  }
+  100% { 
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.target.wrong {
+  animation: wrongHit 0.6s ease forwards;
+}
+
+@keyframes wrongHit {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-10px); }
+  30% { transform: translateX(10px); }
+  50% { transform: translateX(-10px); }
+  70% { transform: translateX(10px); }
+  90% { background: var(--error); }
+}
+
+.score-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* MODIFICATION: Reduced margin - was 0.75rem 0 */
+  margin: 0.5rem 0;
+  /* MODIFICATION: Reduced padding - was 0.75rem */
+  padding: 0.6rem;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.score-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.score-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+.score-value {
+  /* MODIFICATION: Reduced font size - was 1.5rem */
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--primary);
+  text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+.button-container {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  /* MODIFICATION: Reduced margin - was 1rem */
+  margin-top: 0.75rem;
+}
+
+button {
+  /* MODIFICATION: Reduced padding - was 0.75rem 2rem */
+  padding: 0.6rem 1.5rem;
+  /* MODIFICATION: Reduced font size - was 1rem */
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--primary);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+button:hover:not(:disabled) {
+  color: var(--bg-main);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+
+button:hover:not(:disabled)::before {
+  left: 0;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+#game-end-message-area {
+  /* MODIFICATION: Reduced font size - was 1.25rem */
+  font-size: 1.1rem;
+  /* MODIFICATION: Reduced margin - was 1rem */
+  margin-top: 0.75rem;
+  min-height: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.success-message {
+  color: var(--success);
+  text-shadow: var(--glow-success);
+  animation: successPulse 1s ease-in-out;
+}
+
+@keyframes successPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Particle effects */
+.particle {
+  position: absolute;
+  pointer-events: none;
+  width: 4px;
+  height: 4px;
+  background: var(--primary);
+  border-radius: 50%;
+  animation: particle 1s ease-out forwards;
+}
+
+@keyframes particle {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Confetti */
+.confetti {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  animation: confettiFall 3s ease-out forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+/* Responsive design */
+/* MODIFICATION: Added rule to hide game on small screens */
+@media (max-width: 399px) {
+  .interactive-game-container {
+    display: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .interactive-game-container {
+    margin: 0.5rem;
+    padding: 0.75rem;
+    /* MODIFICATION: Further reduced max-width for mobile */
+    max-width: 500px;
+  }
+  
+  h2 { 
+    font-size: 1.4rem;
+  }
+  
+  .game-icon {
+    font-size: 1.75rem;
+  }
+  
+  #clue {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.8rem;
+  }
+  
+  #game-area {
+    /* MODIFICATION: Further reduced height for mobile - was 280px */
+    height: 220px;
+  }
+  
+  .target {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.8rem;
+    min-width: 60px;
+  }
+  
+  button {
+    padding: 0.5rem 1.2rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Loading animation */
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(99, 102, 241, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--primary);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<div class="interactive-game-container">
+  <h2><span class="game-icon">🪐</span>Term Targeter: An Ode to Microglia</h2>
+  <div id="clue">Press "Start Game" to begin your mission!</div>
+  <div id="game-area">
+    <div class="stars"></div>
+  </div>
+  <div class="score-display">
+    <div class="score-item">
+      <span class="score-label">Score</span>
+      <span class="score-value" id="score-value">0/5</span>
+    </div>
+    <div class="score-item">
+      <span class="score-label">Accuracy</span>
+      <span class="score-value" id="accuracy-value">0%</span>
+    </div>
+    <div class="score-item">
+      <span class="score-label">Tries</span>
+      <span class="score-value" id="tries-value">2</span>
+    </div>
+  </div>
+  <div class="button-container">
+    <button id="start-btn">Start Game</button>
+    <button id="stop-btn" style="display:none;">Stop Game</button>
+    <button id="reset-btn" style="display:none;">Play Again</button>
+  </div>
+  <div id="game-end-message-area"></div>
+</div>
+
+<script>
+// Enhanced game engine with smooth animations and professional features
+class TermTargeterGame {
+  constructor() {
+    // Game data from the "An Ode to Microglia" article
+    this.roundsData = [
+      { term: 'Microglia', clue: 'CNS-resident immune cells derived from yolk sac that defend neurons' },
+      { term: 'Phagocytosis', clue: 'Process by which microglia engulf and remove pathogens and debris' },
+      { term: 'Synaptic pruning', clue: 'Microglia-mediated removal of excess neuronal connections during development' },
+      { term: 'Cytokines', clue: 'Signaling proteins released by microglia to recruit the immune response' },
+      { term: 'Matrix metalloproteinases', clue: 'Enzymes released by microglia to clear extracellular debris and remodel tissue' }
+    ];
+    
+    this.distractorsData = [
+      'Astrocyte',
+      'Macrophage',
+      'Oligodendrocyte',
+      'Ependymal cell',
+      'Schwann cell',
+      'Blood-brain barrier'
+    ];
+    
+    // DOM elements
+    this.elements = {
+      area: document.getElementById('game-area'),
+      clue: document.getElementById('clue'),
+      scoreValue: document.getElementById('score-value'),
+      accuracyValue: document.getElementById('accuracy-value'),
+      triesValue: document.getElementById('tries-value'),
+      message: document.getElementById('game-end-message-area'),
+      startBtn: document.getElementById('start-btn'),
+      stopBtn: document.getElementById('stop-btn'),
+      resetBtn: document.getElementById('reset-btn'),
+      stars: document.querySelector('.stars')
+    };
+    
+    // Game state
+    this.state = {
+      currentRoundIndex: 0,
+      score: 0,
+      totalAttempts: 0,
+      triesLeft: 2,
+      maxConcurrentTargets: 4,
+      lanesBusy: [false, false, false, false],
+      currentRoundTargetPool: [],
+      activeTargets: new Set(),
+      gameStopped: true,
+      spawnInterval: null,
+      animationFrame: null,
+      difficulty: 1,
+      combo: 0
+    };
+    
+    // Performance optimization
+    this.targetPool = [];
+    this.particlePool = [];
+    
+    // Initialize
+    this.init();
+  }
+  
+  init() {
+    // Set random theme color
+    this.setRandomTheme();
+    
+    // Create starfield
+    this.createStarfield();
+    
+    // Bind events
+    this.bindEvents();
+    
+    // Initialize game state
+    this.resetGame();
+    
+    // Start animation loop
+    this.startAnimationLoop();
+  }
+  
+  setRandomTheme() {
+    const themes = [
+      { primary: '#d32f2f', secondary: '#ff8a65' }, // Red theme from old game
+      { primary: '#007aff', secondary: '#4fc3f7' }, // Blue theme from old game
+      { primary: '#af52de', secondary: '#9575cd' }, // Purple theme from old game
+      { primary: '#3b82f6', secondary: '#f59e0b' },
+      { primary: '#8b5cf6', secondary: '#10b981' },
+      { primary: '#06b6d4', secondary: '#f43f5e' }
+    ];
+    
+    const theme = themes[Math.floor(Math.random() * themes.length)];
+    document.documentElement.style.setProperty('--primary', theme.primary);
+    document.documentElement.style.setProperty('--secondary', theme.secondary);
+  }
+  
+  createStarfield() {
+    const starCount = 50;
+    this.elements.stars.innerHTML = '';
+    
+    for (let i = 0; i < starCount; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = `${Math.random() * 100}%`;
+      star.style.top = `${Math.random() * 100}%`;
+      star.style.animationDelay = `${Math.random() * 3}s`;
+      star.style.animationDuration = `${3 + Math.random() * 2}s`;
+      this.elements.stars.appendChild(star);
+    }
+  }
+  
+  bindEvents() {
+    this.elements.startBtn.addEventListener('click', () => this.startGame());
+    this.elements.stopBtn.addEventListener('click', () => this.stopGame());
+    this.elements.resetBtn.addEventListener('click', () => this.resetGame());
+    
+    // Prevent text selection during gameplay
+    this.elements.area.addEventListener('selectstart', e => e.preventDefault());
+  }
+  
+  startAnimationLoop() {
+    const animate = () => {
+      this.update();
+      this.state.animationFrame = requestAnimationFrame(animate);
+    };
+    animate();
+  }
+  
+  update() {
+    // Update active targets - MODIFICATION: Improved target removal logic
+    this.state.activeTargets.forEach(target => {
+      if (target.element && !target.hit && target.element.parentNode) {
+        const rect = target.element.getBoundingClientRect();
+        const areaRect = this.elements.area.getBoundingClientRect();
+        
+        // MODIFICATION: More reliable check for targets that have moved off screen
+        // Check if target has completely left the game area (with buffer)
+        if (rect.right < areaRect.left - 50) {
+          this.removeTarget(target);
+        }
+      }
+    });
+    
+    // Update particles
+    this.updateParticles();
+  }
+  
+  updateParticles() {
+    this.particlePool = this.particlePool.filter(particle => {
+      if (particle.life <= 0) {
+        particle.element.remove();
+        return false;
+      }
+      particle.life--;
+      return true;
+    });
+  }
+  
+  shuffle(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  
+  updateHUD() {
+    const accuracy = this.state.totalAttempts > 0 
+      ? Math.round((this.state.score / this.state.totalAttempts) * 100) 
+      : 0;
+    
+    this.elements.scoreValue.textContent = `${this.state.score}/${this.roundsData.length}`;
+    this.elements.accuracyValue.textContent = `${accuracy}%`;
+    this.elements.triesValue.textContent = this.state.triesLeft;
+    
+    // Animate score change
+    this.elements.scoreValue.style.transform = 'scale(1.2)';
+    setTimeout(() => {
+      this.elements.scoreValue.style.transform = 'scale(1)';
+    }, 200);
+  }
+  
+  createTarget(term, lane) {
+    const target = document.createElement('div');
+    target.className = 'target';
+    target.textContent = term;
+    target.dataset.term = term;
+    target.dataset.lane = lane;
+    
+    // Position target
+    const laneHeight = this.elements.area.clientHeight / this.state.maxConcurrentTargets;
+    const y = lane * laneHeight + (laneHeight - 50) / 2; // MODIFICATION: Adjusted for smaller target height
+    target.style.top = `${y}px`;
+    target.style.left = `${this.elements.area.clientWidth}px`;
+    
+    // Set animation duration based on difficulty
+    const baseDuration = 8;
+    const duration = baseDuration - (this.state.difficulty * 0.5);
+    target.style.animationDuration = `${duration}s`;
+    
+    // Create target object
+    const targetObj = {
+      element: target,
+      term: term,
+      lane: lane,
+      hit: false
+    };
+    
+    // Add click handler
+    target.addEventListener('click', (e) => this.handleTargetClick(e, targetObj));
+    target.addEventListener('touchstart', (e) => this.handleTargetClick(e, targetObj), { passive: true });
+    
+    // MODIFICATION: Add animation end listener to ensure cleanup
+    target.addEventListener('animationend', () => {
+      if (!targetObj.hit) {
+        this.removeTarget(targetObj);
+      }
+    });
+    
+    // Add to DOM and track
+    this.elements.area.appendChild(target);
+    this.state.activeTargets.add(targetObj);
+    
+    return targetObj;
+  }
+  
+  handleTargetClick(event, target) {
+    event.stopPropagation();
+    
+    if (target.hit || this.state.gameStopped) return;
+    
+    target.hit = true;
+    this.state.totalAttempts++;
+    
+    const isCorrect = target.term === this.roundsData[this.state.currentRoundIndex].term;
+    
+    // Create click effect
+    this.createClickEffect(event, isCorrect);
+    
+    if (isCorrect) {
+      this.handleCorrectAnswer(target);
+    } else {
+      this.handleWrongAnswer(target);
+    }
+  }
+  
+  createClickEffect(event, isCorrect) {
+    const rect = event.target.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    
+    // Create particles
+    for (let i = 0; i < 12; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = `${x}px`;
+      particle.style.top = `${y}px`;
+      particle.style.background = isCorrect ? 'var(--success)' : 'var(--error)';
+      
+      const angle = (Math.PI * 2 * i) / 12;
+      const velocity = 50 + Math.random() * 50;
+      particle.style.setProperty('--tx', `${Math.cos(angle) * velocity}px`);
+      particle.style.setProperty('--ty', `${Math.sin(angle) * velocity}px`);
+      
+      document.body.appendChild(particle);
+      
+      this.particlePool.push({
+        element: particle,
+        life: 60
+      });
+      
+      setTimeout(() => particle.remove(), 1000);
+    }
+  }
+  
+  handleCorrectAnswer(target) {
+    this.state.score++;
+    this.state.combo++;
+    
+    // Animate target
+    target.element.classList.add('correct');
+    target.element.style.pointerEvents = 'none';
+    
+    // Update HUD
+    this.updateHUD();
+    
+    // Show success feedback
+    this.showFeedback('Correct! 🎯', 'success');
+    
+    // Play success sound (if implemented)
+    this.playSound('success');
+    
+    // End round after animation
+    setTimeout(() => {
+      this.removeTarget(target);
+      this.endRound(true);
+    }, 600);
+  }
+  
+  handleWrongAnswer(target) {
+    this.state.triesLeft--;
+    this.state.combo = 0;
+    
+    // Animate target
+    target.element.classList.add('wrong');
+    target.element.style.pointerEvents = 'none';
+    
+    // Update HUD
+    this.updateHUD();
+    
+    // Show error feedback
+    this.showFeedback('Wrong! Try again', 'error');
+    
+    // Play error sound (if implemented)
+    this.playSound('error');
+    
+    // Remove target after animation
+    setTimeout(() => {
+      this.removeTarget(target);
+      
+      if (this.state.triesLeft <= 0) {
+        this.finishGame();
+      }
+    }, 600);
+  }
+  
+  showFeedback(message, type) {
+    const feedback = document.createElement('div');
+    feedback.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 1rem 2rem;
+      background: ${type === 'success' ? 'var(--success)' : 'var(--error)'};
+      color: white;
+      border-radius: 8px;
+      font-weight: 600;
+      z-index: 1000;
+      animation: feedbackPop 0.5s ease-out;
+    `;
+    feedback.textContent = message;
+    
+    document.body.appendChild(feedback);
+    
+    setTimeout(() => feedback.remove(), 1000);
+  }
+  
+  playSound(type) {
+    // Placeholder for sound effects
+    // In a real implementation, you would play audio files here
+  }
+  
+  removeTarget(target) {
+    if (target.element && target.element.parentNode) {
+      target.element.remove();
+    }
+    this.state.lanesBusy[target.lane] = false;
+    this.state.activeTargets.delete(target);
+  }
+  
+  spawnTarget() {
+    if (this.state.gameStopped || 
+        this.state.activeTargets.size >= this.state.maxConcurrentTargets ||
+        this.state.currentRoundTargetPool.length === 0) {
+      return; }
+    
+    // Find free lane
+    const freeLane = this.state.lanesBusy.findIndex(busy => !busy);
+    if (freeLane === -1) return;
+    
+    // Get available terms
+    const onScreen = Array.from(this.state.activeTargets).map(t => t.term);
+    const available = this.state.currentRoundTargetPool.filter(t => !onScreen.includes(t));
+    
+    if (available.length === 0) return;
+    
+    // Mark lane as busy
+    this.state.lanesBusy[freeLane] = true;
+    
+    // Select random term
+    const term = available[Math.floor(Math.random() * available.length)];
+    
+    // Create target
+    this.createTarget(term, freeLane);
+  }
+  
+  setupRoundTargetPool() {
+    const correctTerm = this.roundsData[this.state.currentRoundIndex].term;
+    const allTerms = [...this.roundsData.map(r => r.term), ...this.distractorsData];
+    const otherTerms = this.shuffle(allTerms.filter(t => t !== correctTerm));
+    
+    // Create pool with correct answer and distractors
+    this.state.currentRoundTargetPool = [correctTerm];
+    
+    // Add distractors
+    const distractorCount = Math.min(5, otherTerms.length);
+    for (let i = 0; i < distractorCount; i++) {
+      this.state.currentRoundTargetPool.push(otherTerms[i]);
+    }
+    
+    // Shuffle the pool
+    this.state.currentRoundTargetPool = this.shuffle(this.state.currentRoundTargetPool);
+  }
+  
+  startRound() {
+    if (this.state.currentRoundIndex >= this.roundsData.length) {
+      this.finishGame();
+      return;
+    }
+    
+    // Reset round state
+    this.state.gameStopped = false;
+    
+    // Clear area
+    this.clearGameArea();
+    
+    // Update UI
+    this.elements.clue.textContent = this.roundsData[this.state.currentRoundIndex].clue;
+    this.elements.clue.classList.add('active');
+    this.updateHUD();
+    
+    // Setup target pool
+    this.setupRoundTargetPool();
+    
+    // Start spawning targets
+    this.startSpawning();
+    
+    // Update buttons
+    this.elements.startBtn.style.display = 'none';
+    this.elements.stopBtn.style.display = 'inline-block';
+    this.elements.resetBtn.style.display = 'none';
+  }
+  
+  startSpawning() {
+    // Initial spawn
+    for (let i = 0; i < this.state.maxConcurrentTargets; i++) {
+      setTimeout(() => this.spawnTarget(), i * 300);
+    }
+    
+    // Continuous spawning
+    this.state.spawnInterval = setInterval(() => {
+      if (!this.state.gameStopped) {
+        this.spawnTarget();
+      }
+    }, 1500);
+  }
+  
+  endRound(success) {
+    this.state.gameStopped = true;
+    
+    // Clear spawning
+    if (this.state.spawnInterval) {
+      clearInterval(this.state.spawnInterval);
+      this.state.spawnInterval = null;
+    }
+    
+    // Increase difficulty
+    if (success) {
+      this.state.difficulty = Math.min(this.state.difficulty + 0.2, 3);
+    }
+    
+    // Next round or finish
+    setTimeout(() => {
+      this.state.currentRoundIndex++;
+      
+      if (this.state.currentRoundIndex < this.roundsData.length && this.state.triesLeft > 0) {
+        this.startRound();
+      } else {
+        this.finishGame();
+      }
+    }, success ? 1000 : 500);
+  }
+  
+  clearGameArea() {
+    // Remove all targets
+    this.state.activeTargets.forEach(target => {
+      if (target.element && target.element.parentNode) {
+        target.element.remove();
+      }
+    });
+    
+    this.state.activeTargets.clear();
+    this.state.lanesBusy = [false, false, false, false];
+  }
+  
+  startGame() {
+    this.resetGame();
+    this.state.gameStopped = false;
+    this.startRound();
+  }
+  
+  stopGame() {
+    this.state.gameStopped = true;
+    
+    if (this.state.spawnInterval) {
+      clearInterval(this.state.spawnInterval);
+      this.state.spawnInterval = null;
+    }
+    
+    this.clearGameArea();
+    this.resetGame();
+  }
+  
+  resetGame() {
+    // Reset state
+    this.state.currentRoundIndex = 0;
+    this.state.score = 0;
+    this.state.totalAttempts = 0;
+    this.state.triesLeft = 2;
+    this.state.gameStopped = true;
+    this.state.difficulty = 1;
+    this.state.combo = 0;
+    
+    // Clear intervals
+    if (this.state.spawnInterval) {
+      clearInterval(this.state.spawnInterval);
+      this.state.spawnInterval = null;
+    }
+    
+    // Update UI
+    this.updateHUD();
+    this.elements.clue.textContent = 'Press "Start Game" to begin your mission!';
+    this.elements.clue.classList.remove('active');
+    this.elements.message.textContent = '';
+    this.elements.message.className = '';
+    
+    // Update buttons
+    this.elements.startBtn.style.display = 'inline-block';
+    this.elements.stopBtn.style.display = 'none';
+    this.elements.resetBtn.style.display = 'none';
+    
+    // Clear game area
+    this.clearGameArea();
+  }
+  
+  finishGame() {
+    this.state.gameStopped = true;
+    
+    // Clear any remaining intervals
+    if (this.state.spawnInterval) {
+      clearInterval(this.state.spawnInterval);
+      this.state.spawnInterval = null;
+    }
+    
+    // Clear game area
+    this.clearGameArea();
+    
+    // Calculate final stats
+    const accuracy = this.state.totalAttempts > 0 
+      ? Math.round((this.state.score / this.state.totalAttempts) * 100) 
+      : 0;
+    
+    // Show results
+    if (this.state.score === this.roundsData.length) {
+      this.elements.clue.textContent = 'Game Complete!';
+      this.elements.message.textContent = `🏆 Perfect Score! ${this.state.score}/${this.roundsData.length} with ${accuracy}% accuracy!`;
+      this.elements.message.className = 'success-message';
+      this.triggerConfetti();
+    } else {
+      this.elements.clue.textContent = 'Game Over!';
+      this.elements.message.textContent = `You lost! Final Score: ${this.state.score}/${this.roundsData.length} (${accuracy}% accuracy)`;
+      this.elements.message.className = '';
+    }
+    
+    // Update buttons
+    this.elements.startBtn.style.display = 'none';
+    this.elements.stopBtn.style.display = 'none';
+    this.elements.resetBtn.style.display = 'inline-block';
+  }
+  
+  triggerConfetti() {
+    const colors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+    const confettiCount = 100;
+    
+    for (let i = 0; i < confettiCount; i++) {
+      setTimeout(() => {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.cssText = `
+          left: ${Math.random() * 100}%;
+          width: ${Math.random() * 10 + 5}px;
+          height: ${Math.random() * 10 + 5}px;
+          background: ${colors[Math.floor(Math.random() * colors.length)]};
+          animation-delay: ${Math.random() * 0.5}s;
+          animation-duration: ${Math.random() * 1 + 2}s;
+        `;
+        
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 3000);
+      }, i * 20);
+    }
+  }
+}
+
+// Initialize game when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  const game = new TermTargeterGame();
+});
+
+</script>
+
+</body>
+</html>

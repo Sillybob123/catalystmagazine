@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catalyst Magazine Login</title>
+    <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/11b1c4_d0a154e8ddf24787a03381f78041bd54~mv2.png">
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="components.css" />
+    <link rel="stylesheet" href="modal-forms.css" />
+    <link rel="stylesheet" href="utilities.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="login-page-body">
+    <div class="login-bg">
+      <span class="orb orb-1" aria-hidden="true"></span>
+      <span class="orb orb-2" aria-hidden="true"></span>
+      <span class="orb orb-3" aria-hidden="true"></span>
+    </div>
+
+    <div class="login-grid" role="main">
+      <section class="login-panel" aria-label="Catalyst overview">
+        <div class="brand-chip">
+          <span class="chip-dot"></span>
+          Catalyst Magazine • Internal Workspace
+        </div>
+        <h1>Plan every story with clarity.</h1>
+        <p class="panel-subtitle">
+          Track editorial pipelines, unblock owners, and keep delivery dates visible to everyone on your team.
+        </p>
+        <div class="login-metrics">
+          <div class="metric-card">
+            <div class="metric-label">Active Projects</div>
+            <div class="metric-value">32</div>
+            <div class="metric-footnote">Synced live from the dashboard</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">On-Time Rate</div>
+            <div class="metric-value">98%</div>
+            <div class="metric-footnote">Past 30 days</div>
+          </div>
+        </div>
+        <ul class="login-highlights">
+          <li>
+            <span class="highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 10.5L8.5 14L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            Real-time status on every deliverable
+          </li>
+          <li>
+            <span class="highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 10.5L8.5 14L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            Clear ownership for writers, editors, and designers
+          </li>
+          <li>
+            <span class="highlight-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 10.5L8.5 14L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            Instant alerts for deadlines and blockers
+          </li>
+        </ul>
+      </section>
+
+      <section class="login-box" aria-label="Sign in">
+        <div class="login-header">
+          <div class="logo-wrap">
+            <div>
+              <p class="eyebrow">TEAM ACCESS</p>
+              <h2>Catalyst Tracker</h2>
+            </div>
+          </div>
+          <p class="subtext">Sign in with your work email to access your editorial board.</p>
+        </div>
+
+        <form id="login-form" novalidate>
+          <p id="login-error" class="error-message" role="alert" aria-live="polite" hidden></p>
+
+          <div class="input-group">
+            <label for="email">Work Email</label>
+            <input
+              id="email"
+              type="email"
+              name="email"
+              required
+              autocomplete="email"
+              inputmode="email"
+              placeholder="you@catalystmag.com"
+              aria-describedby="email-hint"
+            />
+          </div>
+
+          <div class="input-group password-group">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              name="password"
+              required
+              autocomplete="current-password"
+              placeholder="Enter your password"
+              aria-describedby="password-hint"
+            />
+            <button class="password-toggle" type="button" id="toggle-password" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
+
+          <button class="btn-primary login-submit" type="submit" aria-label="Sign in to dashboard">
+            <span class="btn-label">Sign In</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+
+          <button type="button" class="forgot-password-link" id="forgot-password-btn">
+            Forgot your password?
+          </button>
+        </form>
+
+        <!-- Forgot Password Form (hidden by default) -->
+        <form id="forgot-password-form" class="forgot-password-form" style="display: none;" novalidate>
+          <p id="forgot-error" class="error-message" role="alert" aria-live="polite" hidden></p>
+          <p id="forgot-success" class="success-message" role="status" aria-live="polite" hidden></p>
+
+          <div class="input-group">
+            <label for="forgot-email">Email Address</label>
+            <input
+              id="forgot-email"
+              type="email"
+              name="forgot-email"
+              required
+              autocomplete="email"
+              inputmode="email"
+              placeholder="you@catalystmag.com"
+            />
+          </div>
+
+          <button class="btn-primary login-submit" type="submit" id="send-reset-btn">
+            <span class="btn-label">Send Reset Email</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+
+          <button type="button" class="back-to-login-link" id="back-to-login-btn">
+            Back to Sign In
+          </button>
+        </form>
+
+        <div class="support-text">
+          Trouble signing in? <a href="mailto:stemcatalystmagazine@gmail.com">Contact Support</a>
+        </div>
+      </section>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="auth.js"></script>
+  </body>
+</html>

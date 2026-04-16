@@ -1,0 +1,100 @@
+{
+  "article_data": {
+    "metadata": {
+      "title": "The Star of the Nervous System: An Ode to the Astrocyte",
+      "author": "Naama Ben-Dor",
+      "publish_date": "Jul 28, 2025",
+      "cover_image_url": "postimages/astrocyte.webp",
+      "excerpt": "While neurons often take center stage in discussions about the brain, other cells play equally vital roles. This article shines a light on the often-overlooked astrocyte, revealing its critical functions in neuronal communication, protection, and metabolic support.",
+      "category": "op-ed"
+    },
+    "content_blocks": [
+      {
+        "order": 1,
+        "type": "paragraph",
+        "content": "While neurons often take center stage in discussions about the brain, other cells play equally vital roles. This article shines a light on the often-overlooked astrocyte, revealing its critical functions in neuronal communication, protection, and metabolic support."
+      },
+      {
+        "order": 2,
+        "type": "section_header",
+        "content": "Introduction"
+      },
+      {
+        "order": 3,
+        "type": "paragraph",
+        "content": "Since publishing An Ode to Microglia seven months ago, I have been consumed by a sense of guilt—one that I finally wish to unload. Today, I come forth with a confession to you all: I am nominating a different cell for the glial throne. In all fairness, when I wrote An Ode to Microglia, I never claimed that it was the best, but argued it is unfairly shadowed by the awesomeness of its peer, the neuron. I now realize, however, that in awarding the microglia the attention it deserves, I unjustly dismissed another hero. But alas, I return to correct my misdeed. I present to you, An Ode to the Astrocyte."
+      },
+      {
+        "order": 4,
+        "type": "image_placeholder",
+        "alt_text": "Fluorescent astrocytes with glowing green processes and blue nuclei",
+        "caption": "Fluorescent astrocytes with glowing green processes and blue nuclei.",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 5,
+        "type": "section_header",
+        "content": "Rediscovering the Brain's \"Glue\": The Evolving Understanding of Glial Cells"
+      },
+      {
+        "order": 6,
+        "type": "paragraph",
+        "content": "For years, scientists significantly underestimated the role of glial cells in the brain. The term neuroglia itself was coined by German pathologist Rudolf Ludwig Karl Virchow in 1858 when, observing strange masses surrounding neurons, he figured they were connective tissue—the “glue”—of the brain. We now know that glial cells are a world of their own, but if one of them truly “holds it together,” you could make a solid case for the astrocyte. One of the key ideas preached in every cell biology class is that structure defines function. Named with the Greek prefix “astro-” due to its stellated shape, the astrocyte not only looks like a star, it is one."
+      },
+      {
+        "order": 7,
+        "type": "section_header",
+        "content": "The Tripartite Synapse and Astrocyte's Role in Neuronal Communication"
+      },
+      {
+        "order": 8,
+        "type": "paragraph",
+        "content": "Over the past two decades, neurobiologists have expanded their understanding of the synapse—the space between two communicating neurons where one releases ions onto the next, in order to propagate an electrical signal. A new notion, coined the “tripartite synapse,” conveys a fuller picture of neuronal communication that occurs in many regions of the brain, composed of three partners: two neurons and an astrocyte. Just as a chef developing a new recipe will taste and make adjustments before delivering it to customers, the astrocyte adjusts the chemical environment between neurons and even releases some of its own, to ensure that the transmitted signal is perfect. Scientists have discovered that astrocytes express receptors for certain signal molecules, called neurotransmitters. When neurotransmitters bind, they trigger intracellular changes to Ca2+ concentrations in the astrocytes, which may prompt them to release their own neurotransmitters as well to strengthen, weaken, or fine-tune the neuronal signal. "
+      },
+      {
+        "order": 9,
+        "type": "image_placeholder",
+        "alt_text": "Neurotransmitter release at a synaptic cleft",
+        "caption": "Neurotransmitter release at a synaptic cleft, with an astrocyte process taking up spillover molecules",
+        "note": "Internal image placement indicated in source text"
+      },
+      {
+        "order": 10,
+        "type": "paragraph",
+        "content": "In addition to releasing signals of its own, the astrocyte can also uptake neurotransmitters from the synapse to both prevent toxic signaling and convert them to different molecular forms that can be reused by neurons. Glutamate, the brain’s primary excitatory neurotransmitter, is known to cause an event called excitotoxicity when released in surplus. As the name suggests, excitotoxicity is deadly to neurons and is associated with a multitude of disorders ranging from ALS, Huntington’s Disease, and Multiple Sclerosis, to Epilepsy, Schizophrenia, and Autism., Astrocytes play a crucial role in modulating glutamate signaling by taking up any excess, converting it to its precursor form, and transporting it back to the neurons to reuse when needed."
+      },
+      {
+        "order": 11,
+        "type": "section_header",
+        "content": "Astrocytes: Guardians of the Brain and Metabolic Powerhouses"
+      },
+      {
+        "order": 12,
+        "type": "paragraph",
+        "content": "Excitotoxicity is not the only danger that the astrocyte protects us from. Beyond their roles at the neuronal synapse, astrocytes also associate with the capillaries of the brain. By wrapping their fine, limb-like extensions around endothelial cells and secreting special molecules, they promote their adhesion to reinforce the semi-permeability of the blood-brain barrier. Due to the inability of neurons to regenerate, this function is crucial for preventing the entry of harmful chemicals that may cause neuronal injury. When we go to sleep, astrocytes use their aquaporin channels to circulate fluid in the brain, helping to flush out any toxins or waste that may have accumulated. "
+      },
+      {
+        "order": 13,
+        "type": "paragraph",
+        "content": "As if that wasn’t enough, astrocytes use their close contact with blood vessels to absorb glucose, convert it to lactate, and shuttle it to neurons. During periods of high brain activity, such as memory formation, this becomes especially beneficial. Instead of performing ten metabolic reactions to convert glucose to pyruvate, lactate only requires one."
+      },
+      {
+        "order": 14,
+        "type": "section_header",
+        "content": "Concluding Remarks: A Call for Recognition"
+      },
+      {
+        "order": 15,
+        "type": "paragraph",
+        "content": "For too long, the narrative of the brain has been neuron-centric, like imagining a galaxy with only one type of planet. The more we learn about the complex relationships that constitute our brains, the clearer it becomes that no single cell acts in isolation. Yet, if there is one cell that truly holds it all together—the tireless soldier that holds up the forts of the nervous system while nourishing its neighboring neurons and providing metabolic support—it is the “star”-cell. My previous ode celebrated the important contributions of the microglia, and rightly so. But in rectifying that oversight, I hope to have shone a deserving spotlight on the astrocyte, whose functions are, quite literally, central to our ability to think, feel, and function. The story of the astrocyte is far from fully written, inviting a new generation of scientists to continue uncovering its secrets and revolutionizing our understanding of the brain."
+      },
+      {
+        "order": 16,
+        "type": "game",
+        "src": "posts/games/article9.html",
+        "title": "The Star of the Nervous System – Term Targeter",
+        "height": "580"
+      }
+    ]
+  }
+}
