@@ -4,7 +4,7 @@
 
 export async function sendEmail(env, { to, subject, html, replyTo }) {
   const apiKey = env.RESEND_API_KEY;
-  const from = env.MAIL_FROM || "Catalyst Magazine <hello@catalyst-magazine.com>";
+  const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
 
   if (!apiKey) {
     throw new Error("RESEND_API_KEY is not configured");
@@ -46,7 +46,7 @@ export async function sendBulkEmail(env, { recipients, subject, html }) {
   for (const chunk of chunks) {
     // Send one message, BCC the chunk. The visible "to" is the from address
     // so that subscribers don't see each other's emails.
-    const from = env.MAIL_FROM || "Catalyst Magazine <hello@catalyst-magazine.com>";
+    const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {

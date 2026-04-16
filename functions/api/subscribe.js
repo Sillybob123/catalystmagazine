@@ -74,15 +74,21 @@ export const onRequestPost = async ({ request, env }) => {
       docId
     );
 
-    // Confirmation email — non-blocking-ish: if it fails, the subscriber
-    // record is still stored, and we return an error so the UI can retry.
-    await sendEmail(env, {
-      to: email,
-      subject: "You're subscribed to The Catalyst",
-      html: subscribeConfirmEmail({ firstName, siteUrl }),
-    });
+    // Confirmation email — best-effort: if it fails, the subscriber record
+    // is already stored, so we still return success.
+    let emailSent = false;
+    try {
+      await sendEmail(env, {
+        to: email,
+        subject: "You're subscribed to The Catalyst",
+        html: subscribeConfirmEmail({ firstName, siteUrl }),
+      });
+      emailSent = true;
+    } catch (emailErr) {
+      console.error("Confirmation email failed:", emailErr.message);
+    }
 
-    return json({ ok: true });
+    return json({ ok: true, emailSent });
   } catch (err) {
     return serverError(err);
   }
