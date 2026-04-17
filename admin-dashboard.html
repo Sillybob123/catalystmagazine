@@ -1896,61 +1896,64 @@
                     return alert('Story must be approved before publishing.');
                 }
 
-                const payload = {
-                    storyId: storyId,
-                    title: story.title,
-                    deck: story.deck || '',
-                    content: story.content,
-                    coverImage: story.coverImage,
-                    category: story.category,
-                    author: story.authorName,
-                    tags: story.tags || [],
-                    date: story.createdAt
-                };
-
-                const response = await fetch(PUBLISH_URL, {
+                // Try Cloudflare Functions endpoint first (production).
+                const idToken = await auth.currentUser.getIdToken();
+                let response = await fetch('/api/publish', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({ storyId })
                 });
 
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error || 'Failed to publish');
+                // Fall back to local Express endpoint (npm start) when the
+                // Cloudflare Function isn't available (404/405).
+                if (response.status === 404 || response.status === 405) {
+                    const payload = {
+                        storyId,
+                        title: story.title,
+                        deck: story.deck || '',
+                        content: story.content,
+                        coverImage: story.coverImage,
+                        category: story.category,
+                        author: story.authorName,
+                        tags: story.tags || [],
+                        date: story.createdAt
+                    };
+                    response = await fetch(PUBLISH_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const localData = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(localData.error || `Publish failed (${response.status})`);
+                    }
+
+                    await updateDoc(doc(db, 'stories', storyId), {
+                        status: 'published',
+                        publishedAt: new Date().toISOString(),
+                        publishedUrl: localData.url,
+                        updatedAt: new Date().toISOString()
+                    });
+
+                    alert(`Story published! View at: ${localData.url}`);
+                    loadStories();
+                    return;
                 }
 
-                const result = await response.json();
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data.error || `Publish failed (${response.status})`);
+                }
 
-                await updateDoc(doc(db, 'stories', storyId), {
-                    status: 'published',
-                    publishedAt: new Date().toISOString(),
-                    publishedUrl: result.url,
-                    updatedAt: new Date().toISOString()
-                });
-
-                // --- Newsletter trigger via /api/publish ----------------------
-                // After the story is published, call the Cloudflare Function
-                // that counts published stories and sends a newsletter every 3.
-                try {
-                    const idToken = await auth.currentUser.getIdToken();
-                    const nlRes = await fetch('/api/publish', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${idToken}`
-                        },
-                        body: JSON.stringify({ storyId })
-                    });
-                    const nlData = await nlRes.json().catch(() => ({}));
-                    if (nlData.newsletterSent) {
-                        alert(`Story published! View at: ${result.url}\n\nNewsletter sent to subscribers (total published: ${nlData.totalPublished}).`);
-                    } else {
-                        const remaining = 3 - (nlData.totalPublished % 3);
-                        alert(`Story published! View at: ${result.url}\n\n${remaining} more story${remaining === 1 ? '' : 'ies'} until the next newsletter.`);
-                    }
-                } catch (nlErr) {
-                    console.warn('Newsletter trigger skipped:', nlErr);
-                    alert(`Story published! View at: ${result.url}`);
+                if (data.newsletterSent) {
+                    alert(`Story published!\n\nNewsletter sent to subscribers (total published: ${data.totalPublished}).`);
+                } else {
+                    const remaining = 3 - (data.totalPublished % 3);
+                    alert(`Story published!\n\n${remaining} more story${remaining === 1 ? '' : 'ies'} until the next newsletter.`);
                 }
 
                 loadStories();
