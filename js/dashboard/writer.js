@@ -3,11 +3,16 @@
 //   - "mine":  list the current user's own articles
 //   - "feed":  read-only feed of everything in the works across the newsroom
 
-import { db } from "../firebase-config.js";
+import { db, storage } from "../firebase-config.js";
 import {
   collection, query, where, orderBy, getDocs, doc, setDoc, updateDoc,
   addDoc, serverTimestamp, getDoc, onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL,
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, fmtRelative, statusPill } from "./ui.js";
 
 export async function mount(ctx, container) {
@@ -77,8 +82,11 @@ function mountDraftEditor(ctx, container) {
         <button class="rt-btn" data-action="divider" title="Section divider" aria-label="Section divider">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg>
         </button>
-        <button class="rt-btn" data-action="image" title="Insert image" aria-label="Insert image">
+        <button class="rt-btn" data-action="image" title="Insert image (upload or URL)" aria-label="Insert image">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        </button>
+        <button class="rt-btn" data-action="video" title="Insert video (upload or URL)" aria-label="Insert video">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         </button>
       </div>
       <div class="rt-group">
@@ -213,7 +221,7 @@ function wireRichToolbar(wrap, editorEl, ctx) {
   // Block insertions
   toolbar.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("mousedown", (e) => e.preventDefault());
-    btn.addEventListener("click", () => handleBlockAction(btn.dataset.action, editorEl));
+    btn.addEventListener("click", () => handleBlockAction(btn.dataset.action, editorEl, ctx));
   });
 
   // Reflect active states as user moves caret
@@ -244,7 +252,7 @@ function updateToolbarState(toolbar) {
   });
 }
 
-function handleBlockAction(action, editorEl) {
+function handleBlockAction(action, editorEl, ctx) {
   editorEl.focus();
   if (action === "link") {
     const url = prompt("Link URL (https://…)");
@@ -270,17 +278,11 @@ function handleBlockAction(action, editorEl) {
     return;
   }
   if (action === "image") {
-    const url = prompt("Image URL (paste a public image link)");
-    if (!url) return;
-    const alt = prompt("Alt text (describe the image for accessibility)") || "";
-    const caption = prompt("Caption (optional)") || "";
-    const html = `
-      <figure class="rt-figure">
-        <img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" />
-        ${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ""}
-      </figure>
-      <p><br/></p>`;
-    insertBlockAtCaret(editorEl, html);
+    openMediaDialog("image", editorEl, ctx);
+    return;
+  }
+  if (action === "video") {
+    openMediaDialog("video", editorEl, ctx);
     return;
   }
   if (action === "new-section") {
@@ -314,6 +316,196 @@ function insertBlockAtCaret(editorEl, html) {
     sel.addRange(range);
   }
   document.execCommand("insertHTML", false, html);
+}
+
+// ===== Media upload dialog (images + videos) ================================
+function openMediaDialog(kind, editorEl, ctx) {
+  const isImage = kind === "image";
+  const accept = isImage ? "image/*" : "video/*";
+  const label = isImage ? "image" : "video";
+
+  // Build the modal
+  const scrim = el("div", { class: "media-dialog-scrim" });
+  const modal = el("div", { class: "media-dialog" });
+  modal.innerHTML = `
+    <div class="media-dialog-head">
+      <div class="media-dialog-title">Insert ${label}</div>
+      <button class="media-dialog-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="media-dialog-body">
+      <div class="media-dropzone" id="m-drop" tabindex="0">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <div class="media-dropzone-title">Drop a ${label} here, or <span class="link">browse your computer</span></div>
+        <div class="media-dropzone-hint">${isImage ? "JPG, PNG, WebP, or GIF — up to 10 MB." : "MP4 or WebM — up to 100 MB."}</div>
+        <input type="file" id="m-file" accept="${accept}" hidden />
+      </div>
+
+      <div class="media-or"><span>or paste a URL</span></div>
+
+      <div class="field">
+        <input class="input" id="m-url" placeholder="https://…" />
+      </div>
+
+      <div class="field">
+        <label class="label">${isImage ? "Alt text (for accessibility)" : "Caption / description"}</label>
+        <input class="input" id="m-alt" placeholder="${isImage ? "Describe what's in the image" : "What's happening in this video"}" />
+      </div>
+      <div class="field">
+        <label class="label">Caption (optional)</label>
+        <input class="input" id="m-caption" placeholder="Shown beneath the ${label}" />
+      </div>
+
+      <div class="media-progress" id="m-progress" hidden>
+        <div class="media-progress-bar"><span id="m-progress-fill"></span></div>
+        <div class="media-progress-text" id="m-progress-text">Uploading… 0%</div>
+      </div>
+
+      <div class="media-error" id="m-error"></div>
+    </div>
+    <div class="media-dialog-foot">
+      <button class="btn btn-ghost btn-sm" id="m-cancel">Cancel</button>
+      <button class="btn btn-accent btn-sm" id="m-insert" disabled>Insert</button>
+    </div>
+  `;
+
+  document.body.appendChild(scrim);
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); });
+
+  const fileInput = modal.querySelector("#m-file");
+  const urlInput = modal.querySelector("#m-url");
+  const altInput = modal.querySelector("#m-alt");
+  const capInput = modal.querySelector("#m-caption");
+  const drop = modal.querySelector("#m-drop");
+  const insertBtn = modal.querySelector("#m-insert");
+  const progressWrap = modal.querySelector("#m-progress");
+  const progressFill = modal.querySelector("#m-progress-fill");
+  const progressText = modal.querySelector("#m-progress-text");
+  const errorEl = modal.querySelector("#m-error");
+
+  let resolvedUrl = null;
+  let pendingFile = null;
+
+  const close = () => {
+    scrim.classList.remove("open");
+    modal.classList.remove("open");
+    setTimeout(() => { scrim.remove(); modal.remove(); }, 200);
+  };
+  modal.querySelector(".media-dialog-close").addEventListener("click", close);
+  modal.querySelector("#m-cancel").addEventListener("click", close);
+  scrim.addEventListener("click", close);
+
+  const updateInsertState = () => {
+    insertBtn.disabled = !(resolvedUrl || urlInput.value.trim());
+  };
+  urlInput.addEventListener("input", () => {
+    resolvedUrl = null;
+    pendingFile = null;
+    updateInsertState();
+  });
+
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") fileInput.click(); });
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("hover"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("hover"));
+  drop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    drop.classList.remove("hover");
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+  fileInput.addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (f) handleFile(f);
+  });
+
+  const maxBytes = isImage ? 10 * 1024 * 1024 : 100 * 1024 * 1024;
+  async function handleFile(file) {
+    errorEl.textContent = "";
+    if (isImage && !file.type.startsWith("image/")) { errorEl.textContent = "Please choose an image file."; return; }
+    if (!isImage && !file.type.startsWith("video/")) { errorEl.textContent = "Please choose a video file."; return; }
+    if (file.size > maxBytes) {
+      errorEl.textContent = `File too large. Max ${isImage ? "10 MB" : "100 MB"}.`;
+      return;
+    }
+    pendingFile = file;
+    urlInput.value = file.name;
+    urlInput.disabled = true;
+    drop.classList.add("has-file");
+
+    try {
+      progressWrap.hidden = false;
+      resolvedUrl = await uploadToFirebase(file, kind, ctx, (pct) => {
+        progressFill.style.width = pct + "%";
+        progressText.textContent = `Uploading… ${pct}%`;
+      });
+      progressText.textContent = "Upload complete.";
+      updateInsertState();
+    } catch (err) {
+      errorEl.textContent = "Upload failed: " + (err?.message || err);
+      progressWrap.hidden = true;
+      urlInput.disabled = false;
+      urlInput.value = "";
+      resolvedUrl = null;
+      pendingFile = null;
+      drop.classList.remove("has-file");
+    }
+  }
+
+  insertBtn.addEventListener("click", () => {
+    const url = resolvedUrl || urlInput.value.trim();
+    if (!url) return;
+    const alt = altInput.value.trim();
+    const caption = capInput.value.trim();
+    let html;
+    if (isImage) {
+      html = `
+        <figure class="rt-figure">
+          <img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" />
+          ${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ""}
+        </figure>
+        <p><br/></p>`;
+    } else {
+      html = `
+        <figure class="rt-figure rt-figure-video">
+          <video src="${escapeAttr(url)}" controls playsinline preload="metadata"${alt ? ` aria-label="${escapeAttr(alt)}"` : ""}></video>
+          ${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ""}
+        </figure>
+        <p><br/></p>`;
+    }
+    insertBlockAtCaret(editorEl, html);
+    close();
+  });
+}
+
+async function uploadToFirebase(file, kind, ctx, onProgress) {
+  const uid = ctx?.user?.uid || "anonymous";
+  const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+  const path = `stories/${uid}/${kind}s/${Date.now()}-${safeName}`;
+  const ref = storageRef(storage, path);
+  const task = uploadBytesResumable(ref, file, { contentType: file.type });
+  return new Promise((resolve, reject) => {
+    task.on(
+      "state_changed",
+      (snap) => {
+        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+        onProgress && onProgress(pct);
+      },
+      (err) => reject(err),
+      async () => {
+        try {
+          const url = await getDownloadURL(task.snapshot.ref);
+          resolve(url);
+        } catch (err) { reject(err); }
+      }
+    );
+  });
 }
 
 function escapeHtml(s) {
