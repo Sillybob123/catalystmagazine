@@ -74,6 +74,20 @@ export async function mount(ctx, container) {
   container.appendChild(recent);
   loadRecentArticles(recent.querySelector("#recent-body"), ctx);
 
+  // Staff directory
+  const staff = el("div", { class: "card", style: { marginTop: "20px" } });
+  staff.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="card-title">The team</div>
+        <div class="card-subtitle">Everyone on staff and what they do</div>
+      </div>
+      ${ctx.role === "admin" ? `<a class="btn btn-ghost btn-sm" href="#/admin/users">Manage &rarr;</a>` : ""}
+    </div>
+    <div class="card-body" id="staff-body"><div class="loading-state"><div class="spinner"></div>Loading&hellip;</div></div>`;
+  container.appendChild(staff);
+  loadStaff(staff.querySelector("#staff-body"), ctx);
+
   // Shared pipeline
   const pipeline = el("div", { class: "card", style: { marginTop: "20px" } });
   pipeline.innerHTML = `
@@ -122,6 +136,103 @@ async function loadQuickStats(gridEl, ctx) {
     console.warn("Quick stats failed:", err);
     gridEl.querySelectorAll("[data-k]").forEach((n) => (n.textContent = "—"));
   }
+}
+
+const ROLE_META = {
+  admin:              { label: "Administrator",      group: "Leadership",  order: 1, color: "#7c3aed" },
+  editor:             { label: "Editor",             group: "Editorial",   order: 2, color: "#0f766e" },
+  writer:             { label: "Writer",             group: "Editorial",   order: 3, color: "#0891b2" },
+  newsletter_builder: { label: "Newsletter Builder", group: "Publishing",  order: 4, color: "#b45309" },
+  marketing:          { label: "Marketing",          group: "Publishing",  order: 5, color: "#db2777" },
+  reader:             { label: "Reader",             group: "Community",   order: 6, color: "#64748b" },
+};
+
+const GROUP_ORDER = ["Leadership", "Editorial", "Publishing", "Community"];
+
+async function loadStaff(mount, ctx) {
+  try {
+    const snap = await getDocs(query(collection(db, "users"), limit(200)));
+    if (snap.empty) {
+      mount.innerHTML = `<div class="empty-state">No teammates found yet.</div>`;
+      return;
+    }
+
+    // Group by role-group, filter out readers unless viewer is admin.
+    const showReaders = ctx.role === "admin";
+    const people = [];
+    snap.forEach((d) => {
+      const u = d.data();
+      const role = u.role || "reader";
+      if (role === "reader" && !showReaders) return;
+      if ((u.status || "active") === "inactive") return;
+      people.push({ id: d.id, ...u, role });
+    });
+
+    if (!people.length) {
+      mount.innerHTML = `<div class="empty-state">No teammates found yet.</div>`;
+      return;
+    }
+
+    // Sort by role order, then by name.
+    people.sort((a, b) => {
+      const ao = ROLE_META[a.role]?.order ?? 99;
+      const bo = ROLE_META[b.role]?.order ?? 99;
+      if (ao !== bo) return ao - bo;
+      return (a.name || a.email || "").localeCompare(b.name || b.email || "");
+    });
+
+    // Group
+    const groups = {};
+    for (const p of people) {
+      const g = ROLE_META[p.role]?.group || "Community";
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(p);
+    }
+
+    mount.innerHTML = "";
+    for (const gName of GROUP_ORDER) {
+      const list = groups[gName];
+      if (!list || !list.length) continue;
+
+      const section = el("div", { class: "staff-group" });
+      section.innerHTML = `
+        <div class="staff-group-head">
+          <span class="staff-group-title">${esc(gName)}</span>
+          <span class="staff-group-count">${list.length}</span>
+        </div>
+        <div class="staff-grid"></div>`;
+      const grid = section.querySelector(".staff-grid");
+
+      list.forEach((p) => {
+        const meta = ROLE_META[p.role] || ROLE_META.reader;
+        const name = p.name || p.email || "Unknown";
+        const init = getInitials(name);
+        const card = el("div", { class: "staff-card" });
+        card.innerHTML = `
+          <div class="staff-avatar" style="background:${meta.color};">${esc(init)}</div>
+          <div class="staff-info">
+            <div class="staff-name">${esc(name)}</div>
+            <div class="staff-role" style="color:${meta.color};">${esc(meta.label)}</div>
+            ${p.email ? `<div class="staff-email">${esc(p.email)}</div>` : ""}
+          </div>`;
+        grid.appendChild(card);
+      });
+
+      mount.appendChild(section);
+    }
+  } catch (err) {
+    console.warn("[overview] staff load failed", err);
+    mount.innerHTML = `<div class="error-state">Could not load the team. ${esc(err?.message || "")}</div>`;
+  }
+}
+
+function getInitials(nameOrEmail) {
+  const s = String(nameOrEmail || "").trim();
+  if (!s) return "?";
+  if (s.includes("@")) return s[0].toUpperCase();
+  const parts = s.split(/\s+/);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 async function loadRecentArticles(mount, ctx) {

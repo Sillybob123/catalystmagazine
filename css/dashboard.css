@@ -627,6 +627,90 @@ button { font-family: inherit; cursor: pointer; }
 .comment-body { font-size: 14px; color: var(--ink-2); line-height: 1.55; white-space: pre-wrap; }
 
 /* ==========================================================================
+   Staff directory (overview page)
+   ========================================================================== */
+.staff-group { padding: 6px 0 18px; }
+.staff-group + .staff-group { border-top: 1px solid var(--hairline-2); margin-top: 18px; padding-top: 22px; }
+.staff-group-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.staff-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.staff-group-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted-2);
+  background: var(--surface-3);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.staff-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.staff-card:hover {
+  border-color: var(--muted-2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.staff-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15);
+}
+.staff-info { min-width: 0; flex: 1; }
+.staff-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.staff-role {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+.staff-email {
+  font-size: 11px;
+  color: var(--muted-2);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ==========================================================================
    WYSIWYG Compose — editor surface mirrors the published article page
    (Source Serif Pro body, hero, magazine typography). See article-premium.css.
    ========================================================================== */
