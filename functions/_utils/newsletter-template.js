@@ -27,7 +27,7 @@ export function buildNewsletter({
   recipientEmail = null,
   logoUrl = LOGO_URL,
 }) {
-  const cardHtml = articles.map((a, i) => articleCard(a, siteUrl, i === 0, i === articles.length - 1)).join("");
+  const cardHtml = articles.map((a, i) => articleCard(a, siteUrl, i === 0)).join("");
   const unsub = unsubscribeUrl
     ? `<a href="${esc(unsubscribeUrl)}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`
     : `<a href="${esc(siteUrl)}/unsubscribe?email=${encodeURIComponent(recipientEmail || "")}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`;
@@ -97,7 +97,7 @@ export function buildNewsletter({
 
           <!-- Articles -->
           <tr>
-            <td class="px-40" style="padding:0 40px 8px 40px;">
+            <td class="px-40" style="padding:0 40px 24px 40px;">
               ${cardHtml}
             </td>
           </tr>
@@ -126,7 +126,7 @@ export function buildNewsletter({
 </html>`;
 }
 
-function articleCard(a, siteUrl, isFirst, isLast) {
+function articleCard(a, siteUrl, isFirst) {
   const href = absoluteUrl(siteUrl, a.url || a.slug || "");
   const img = a.coverImage || a.image || "";
   const category = (a.category || "Feature").toUpperCase();
@@ -134,35 +134,29 @@ function articleCard(a, siteUrl, isFirst, isLast) {
   const excerpt = a.excerpt || a.dek || "";
   const byline = a.author ? `By ${a.author}` : "";
 
-  // No border — cards separated by a thin hairline between them. Makes the
-  // newsletter read as a single editorial page rather than a grid of boxes.
+  // Each article sits inside its own bordered, rounded card so stories are
+  // visually distinct. Margin-top on cards after the first creates spacing.
   return `
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;background:${COLORS.surface};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:${isFirst ? "0" : "20px"} 0 0 0;border:1px solid ${COLORS.hairline};border-radius:16px;overflow:hidden;background:${COLORS.surface};">
       ${img ? `
       <tr>
-        <td style="padding:${isFirst ? "0" : "8px"} 0 20px 0;">
+        <td style="padding:0;line-height:0;font-size:0;">
           <a href="${esc(href)}" style="text-decoration:none;display:block;">
-            <img class="card-img" src="${escAttr(img)}" alt="${escAttr(title)}" width="520" style="width:100%;height:auto;display:block;border:0;border-radius:14px;">
+            <img class="card-img" src="${escAttr(img)}" alt="${escAttr(title)}" width="520" style="width:100%;height:auto;display:block;border:0;">
           </a>
         </td>
       </tr>` : ""}
       <tr>
-        <td style="padding:0 0 28px 0;">
-          <div style="font-size:11px;font-weight:600;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:12px;text-transform:uppercase;">${esc(category)}</div>
+        <td style="padding:24px 28px 28px 28px;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:10px;text-transform:uppercase;">${esc(category)}</div>
           <a href="${esc(href)}" style="text-decoration:none;color:${COLORS.ink};">
-            <div class="card-title" style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:26px;font-weight:600;line-height:1.2;color:${COLORS.ink};margin-bottom:12px;letter-spacing:-0.02em;">${esc(title)}</div>
+            <div class="card-title" style="font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;font-size:24px;font-weight:600;line-height:1.2;color:${COLORS.ink};margin-bottom:10px;letter-spacing:-0.02em;">${esc(title)}</div>
           </a>
-          ${byline ? `<div style="font-size:13px;color:${COLORS.muted};margin-bottom:12px;font-weight:400;">${esc(byline)}</div>` : ""}
-          ${excerpt ? `<div style="font-size:15px;line-height:1.6;color:${COLORS.inkSoft};margin-bottom:16px;font-weight:400;">${esc(excerpt)}</div>` : ""}
-          <a class="read-link" href="${esc(href)}" style="color:${COLORS.ink};font-weight:500;font-size:14px;text-decoration:none;border-bottom:1px solid ${COLORS.ink};padding-bottom:2px;">Read the story &rarr;</a>
+          ${byline ? `<div style="font-size:13px;color:${COLORS.muted};margin-bottom:10px;font-weight:400;">${esc(byline)}</div>` : ""}
+          ${excerpt ? `<div style="font-size:15px;line-height:1.6;color:${COLORS.inkSoft};margin-bottom:18px;font-weight:400;">${esc(excerpt)}</div>` : ""}
+          <a class="read-link" href="${esc(href)}" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:980px;font-weight:500;font-size:14px;letter-spacing:-0.01em;">Read the story &rarr;</a>
         </td>
       </tr>
-      ${!isLast ? `
-      <tr>
-        <td style="padding:0 0 28px 0;">
-          <div style="height:1px;background:${COLORS.hairline};line-height:1px;font-size:1px;">&nbsp;</div>
-        </td>
-      </tr>` : ""}
     </table>`;
 }
 
