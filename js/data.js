@@ -67,7 +67,7 @@ const articles = [
     },
     {
         id: 3,
-        title: "Decoding Demyelination: Dr. Jeffrey Huang's Innovative Research on MS",
+        title: "Decoding Demyelination: A Look Inside Dr. Jeffrey Huang's Innovative Research on MS",
         author: "The Catalyst",
         date: "Oct 16, 2025",
         image: "https://static.wixstatic.com/media/11b1c4_64403204e5444555b7109a01bfbb794b~mv2.jpg",
@@ -122,7 +122,7 @@ const articles = [
     },
     {
         id: 8,
-        title: "Charting the Future of Myasthenia Gravis Therapy",
+        title: "Charting the Future of Myasthenia Gravis Therapy With Dr. Henry Kaminski",
         author: "The Catalyst",
         date: "Aug 18, 2025",
         image: "https://static.wixstatic.com/media/11b1c4_1bb33ffb6fc6402cb87a0b6502e23285~mv2.jpg",
@@ -287,7 +287,7 @@ const articles = [
     },
     {
         id: 23,
-        title: "From Music to Nuclear Policy: Dr. Cahill’s Journey in Science and Policy",
+        title: "From Music to Nuclear Policy: Professor Christopher Cahill’s unexpected Journey in Science and Policy",
         author: "Lori Preci and Yair Ben-Dor",
         date: "Dec 14, 2024",
         image: "https://static.wixstatic.com/media/11b1c4_0c15687348b442c5ab1d0a2295571751~mv2.jpeg",
@@ -358,7 +358,7 @@ const editorials = [
     },
     {
         id: 108,
-        title: "Understanding Science to Learn Science: Dopamine and Learning",
+        title: "Understanding Science to Learn Science: Dopamine and Why You Should Care",
         author: "Naama Ben-Dor",
         date: "Dec 23, 2024",
         category: "editorial",

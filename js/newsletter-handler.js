@@ -43,7 +43,12 @@ function wire(form, responseDiv) {
     const firstName = String(data.get('FNAME') || data.get('firstName') || '').trim();
     const lastName = String(data.get('LNAME') || data.get('lastName') || '').trim();
 
-    if (!email || !firstName) {
+    // First name is required only when the form actually has the input
+    // (modal uses first+last; compact footer takes email only).
+    const requiresFirstName = !!form.querySelector(
+      'input[name="FNAME"], input[name="firstName"]'
+    );
+    if (!email || (requiresFirstName && !firstName)) {
       showResponse(responseDiv, 'Please fill in all fields.', 'error');
       return;
     }

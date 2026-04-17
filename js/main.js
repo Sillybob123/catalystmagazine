@@ -1306,25 +1306,44 @@ function getArticleLink(article) {
 async function loadArticles() {
     if (window.__articleCache) return window.__articleCache;
 
-    // Only load from JSON files - no CSV or text files
+    // Dedup by normalized title, post-URL slug, and Wix image asset ID.
+    // Image-ID match catches stories where the data.js title diverged from the
+    // JSON source but both entries point to the same uploaded cover image.
     const byKey = new Map();
+    const slugIndex = new Map();
+    const imgIndex = new Map();
     let nextId = 1;
+
+    const tryAdd = (article) => {
+        if (!article || !article.title) return;
+        const titleKey = safeKey(article);
+        const linkSlug = slugKey(article.link || article.url || '');
+        const titleSlug = titleToSlug(article.title);
+        const imgId = imageAssetId(article.image);
+        if (byKey.has(titleKey)) return;
+        if (linkSlug && slugIndex.has(linkSlug)) return;
+        if (titleSlug && slugIndex.has(titleSlug)) return;
+        if (imgId && imgIndex.has(imgId)) return;
+        byKey.set(titleKey, article);
+        if (linkSlug) slugIndex.set(linkSlug, titleKey);
+        if (titleSlug) slugIndex.set(titleSlug, titleKey);
+        if (imgId) imgIndex.set(imgId, titleKey);
+    };
+
+    // Build a title → data.js record map so JSON posts can inherit the
+    // canonical /post/<slug> link (JSON files only carry metadata, not URLs).
+    const baseByTitle = new Map();
+    if (Array.isArray(window.articles)) {
+        window.articles.forEach(raw => {
+            if (!raw?.title) return;
+            baseByTitle.set(raw.title.toLowerCase().trim(), raw);
+        });
+    }
 
     try {
         // Pull structured JSON posts (article2.json - article100.json)
-        const jsonArticles = await loadFromJsonPosts(2, 100, new Map());
-        jsonArticles.forEach(article => {
-            if (!article || !article.title) return;
-            const key = safeKey(article);
-
-            // Skip if we already have this article (prevent duplicates)
-            if (byKey.has(key)) return;
-
-            byKey.set(key, {
-                id: nextId++,
-                ...article
-            });
-        });
+        const jsonArticles = await loadFromJsonPosts(2, 100, baseByTitle);
+        jsonArticles.forEach(article => tryAdd({ id: nextId++, ...article }));
     } catch (err) {
         console.error('Article load failed', err);
     }
@@ -1334,12 +1353,7 @@ async function loadArticles() {
     // also baked into data.js by the local publisher.
     try {
         const fsArticles = await loadFromFirestore();
-        fsArticles.forEach(article => {
-            const link = article.link || '';
-            const key = safeKey({ title: article.title, link });
-            if (byKey.has(key)) return;
-            byKey.set(key, article);
-        });
+        fsArticles.forEach(article => tryAdd(article));
     } catch (err) {
         console.warn('Firestore article load failed', err);
     }
@@ -1349,10 +1363,7 @@ async function loadArticles() {
         window.articles.forEach(raw => {
             if (!raw || !raw.title) return;
             const link = raw.link || raw.url || '';
-            const key = safeKey({ title: raw.title, link });
-            if (byKey.has(key)) return;
-
-            byKey.set(key, {
+            tryAdd({
                 id: raw.id || nextId++,
                 title: raw.title,
                 author: raw.author || 'The Catalyst',
@@ -1363,7 +1374,8 @@ async function loadArticles() {
                 category: (raw.category || 'feature').toLowerCase(),
                 tags: raw.tags || [],
                 excerpt: raw.deck || raw.excerpt || '',
-                deck: raw.deck || ''
+                deck: raw.deck || '',
+                content: raw.content || ''
             });
         });
     }
@@ -1637,7 +1649,39 @@ function normalizeLink(link = '') {
 }
 
 function safeKey(article) {
-    return `${(article.title || '').toLowerCase().trim()}|${(article.link || '').toLowerCase().trim()}`;
+    return (article.title || '')
+        .toLowerCase()
+        .replace(/[’']/g, "'")
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+// Extract the post slug from a canonical catalyst-magazine.com/post/<slug> URL
+// so articles baked into data.js with long aliased slugs dedupe against the
+// JSON source when they point to the same Wix post.
+function slugKey(link = '') {
+    if (!link) return '';
+    const match = String(link).match(/\/post\/([^/?#]+)/i);
+    return match ? match[1].toLowerCase() : '';
+}
+
+// Derive a Wix-style post slug from a title so JSON articles (which carry no
+// link) still dedupe against data.js entries whose link slug matches.
+function titleToSlug(title = '') {
+    return String(title)
+        .toLowerCase()
+        .replace(/[’']/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+// Extract the Wix static asset ID (e.g. 11b1c4_9737d25c5ad74ba7...~mv2.jpeg)
+// from a cover image URL. Two articles sharing this ID are the same story
+// even if their titles or link slugs have diverged.
+function imageAssetId(image = '') {
+    if (!image) return '';
+    const match = String(image).match(/([a-f0-9_]+~mv2\.[a-z]+)/i);
+    return match ? match[1].toLowerCase() : '';
 }
 
 async function loadFromJsonPosts(start = 1, end = 100, baseByTitle = new Map()) {

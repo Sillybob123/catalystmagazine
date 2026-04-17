@@ -298,6 +298,8 @@
                             <select id="user-role" class="form-select" required>
                                 <option value="writer">Writer</option>
                                 <option value="editor">Editor</option>
+                                <option value="newsletter_builder">Newsletter Builder</option>
+                                <option value="marketing">Marketing</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
@@ -494,8 +496,8 @@
         }
 
         window.changeRole = async function(userId, currentRole) {
-            const roles = ['writer', 'editor', 'admin'];
-            const newRole = prompt(`Change role for this user. Current: ${currentRole}\n\nEnter new role (writer, editor, or admin):`, currentRole);
+            const roles = ['writer', 'editor', 'admin', 'newsletter_builder', 'marketing', 'reader'];
+            const newRole = prompt(`Change role for this user. Current: ${currentRole}\n\nEnter one of: ${roles.join(', ')}`, currentRole);
 
             if (!newRole || !roles.includes(newRole.toLowerCase())) {
                 return;

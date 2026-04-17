@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editorial Dashboard | The Catalyst</title>
+
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/workflow-preview.css">
+</head>
+<body>
+  <div class="app-shell" id="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="brand">
+        <div class="brand-mark">C</div>
+        <div>
+          <div class="brand-name">Catalyst</div>
+          <div class="brand-sub">Editorial Suite</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <!-- Populated by JS based on user role -->
+        <div class="loading-state" style="padding:32px 14px;">
+          <div class="spinner"></div> Loading&hellip;
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="footer-user-info">&hellip;</div>
+        <div><a href="#" id="sidebar-signout" class="nav-link" style="padding:6px 10px;">
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out
+        </a></div>
+      </div>
+    </aside>
+    <div class="sidebar-scrim" id="sidebar-scrim"></div>
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div style="display:flex;align-items:center;">
+        <button class="hamburger" id="hamburger" aria-label="Open menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <h1 class="page-title" id="page-title">
+          <span class="crumbs">Dashboard</span><span id="page-title-text">&hellip;</span>
+        </h1>
+      </div>
+      <div class="topbar-actions">
+        <a href="index.html" class="btn btn-ghost btn-sm" title="View public site">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Public site
+        </a>
+        <div class="user-chip" id="user-chip">
+          <div class="avatar" id="user-avatar">?</div>
+          <div class="user-meta">
+            <span class="user-meta-name" id="user-name">&hellip;</span>
+            <span class="user-meta-role" id="user-role">&hellip;</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTENT OUTLET -->
+    <main class="content" id="content">
+      <div class="loading-state"><div class="spinner"></div> Loading your workspace&hellip;</div>
+    </main>
+  </div>
+
+  <!-- Toasts / modals -->
+  <div class="toast-stack" id="toast-stack" aria-live="polite"></div>
+  <div id="modal-root"></div>
+
+  <!-- Bootstrap app (ES modules) -->
+  <script type="module" src="./js/dashboard/app.js"></script>
+</body>
+</html>

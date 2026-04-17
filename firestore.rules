@@ -1,85 +1,95 @@
 rules_version = '2';
 // Deploy with:  firebase deploy --only firestore:rules
 //
-// Design:
-//  - subscribers: public write (via server only, but also tolerated directly
-//    with email validation). Reads only by admin/editor.
-//  - users/{uid}: a user may read/write their own doc. Admins may read any.
-//  - stories: anyone can read *published* stories; authors can read/write their
-//    own drafts; editors/admins can read/write any story.
-//  - everything else: locked.
+// Roles supported:
+//   - admin               (ultimate control)
+//   - editor              (edit/comment/approve drafts)
+//   - writer              (submit + edit own drafts)
+//   - newsletter_builder  (compose + send newsletters, read subscribers)
+//   - marketing           (read subscribers + analytics)
+//   - reader              (default for newly registered users)
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
+    // ---------- role helpers ----------
+    function isSignedIn() { return request.auth != null; }
     function myUserDoc() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
-
     function myRole() {
-      return isSignedIn()
-        ? myUserDoc().data.role
-        : null;
+      return isSignedIn() ? myUserDoc().data.role : null;
     }
+    function hasRole(r) { return isSignedIn() && myRole() == r; }
+    function hasAnyRole(list) { return isSignedIn() && myRole() in list; }
 
-    function isAdmin() {
-      return isSignedIn() && myRole() == 'admin';
-    }
+    function isAdmin()             { return hasRole('admin'); }
+    function isEditor()            { return hasAnyRole(['admin', 'editor']); }
+    function isWriter()            { return hasAnyRole(['admin', 'editor', 'writer']); }
+    function isNewsletterBuilder() { return hasAnyRole(['admin', 'newsletter_builder']); }
+    function isMarketing()         { return hasAnyRole(['admin', 'marketing']); }
+    function isStaff()             { return hasAnyRole(['admin', 'editor', 'writer', 'newsletter_builder', 'marketing']); }
 
-    function isEditor() {
-      return isSignedIn() && (myRole() == 'admin' || myRole() == 'editor');
-    }
-
-    function isStaff() {
-      return isSignedIn() && myRole() in ['admin', 'editor', 'writer'];
-    }
-
-    // ----- users --------------------------------------------------------
+    // ---------- users ----------
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin() || isEditor());
       // Users can create their own doc on first login (role forced to 'reader').
       allow create: if isSignedIn()
         && request.auth.uid == uid
         && request.resource.data.role == 'reader';
-      // Users can update safe fields on their own doc.
+      // Users can update safe fields on their own doc (but not role).
       allow update: if isSignedIn()
         && request.auth.uid == uid
         && !('role' in request.resource.data.diff(resource.data).affectedKeys());
-      // Admins can do anything.
+      // Admins can do anything to any user.
       allow read, write: if isAdmin();
     }
 
-    // ----- stories ------------------------------------------------------
+    // ---------- stories ----------
     match /stories/{storyId} {
-      // Public can read only published stories.
       allow read: if resource.data.status == 'published';
-      // Staff can read any story.
       allow read: if isStaff();
 
-      // Writers create their own drafts.
-      allow create: if isStaff()
+      allow create: if isWriter()
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.status in ['draft', 'pending'];
 
-      // Authors can update their own drafts (not publish them).
-      allow update: if isStaff()
+      // Author can update their own draft.
+      allow update: if isWriter()
         && resource.data.authorId == request.auth.uid
         && request.resource.data.status in ['draft', 'pending'];
 
-      // Editors/admins can update or publish any story.
+      // Editors / admins can update, assign, approve, publish, delete.
       allow update, delete: if isEditor();
+
+      // ----- nested collections on a story -----
+      match /comments/{commentId} {
+        allow read: if isStaff();
+        allow create: if isEditor()
+          && request.resource.data.authorId == request.auth.uid;
+        allow update, delete: if isEditor()
+          && resource.data.authorId == request.auth.uid;
+        allow delete: if isAdmin();
+      }
+
+      match /checklist/{itemId} {
+        allow read: if isStaff();
+        allow write: if isEditor();
+      }
     }
 
-    // ----- subscribers --------------------------------------------------
-    // The canonical path is POST /api/subscribe (server-side). We still
-    // allow anonymous create here as a fallback, but only for well-formed
-    // email docs. Reads are staff-only.
+    // ---------- assignments (admin -> editor mapping) ----------
+    match /assignments/{assignmentId} {
+      allow read: if isStaff();
+      allow write: if isEditor();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- subscribers ----------
+    // Canonical write path is POST /api/subscribe (server-side, service account).
+    // Anonymous create allowed as a fallback; reads are staff-only.
     match /subscribers/{emailKey} {
-      allow read: if isEditor();
+      allow read: if isMarketing() || isNewsletterBuilder() || isEditor();
       allow create: if
         request.resource.data.email is string
         && request.resource.data.email.matches('.+@.+\\..+')
@@ -87,7 +97,39 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    // Default deny.
+    // ---------- newsletter campaigns ----------
+    match /newsletter_campaigns/{campaignId} {
+      allow read: if isNewsletterBuilder() || isMarketing();
+      allow create, update: if isNewsletterBuilder()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    // ---------- collaboration requests (contact / collaborate form) ----------
+    match /collaboration_requests/{reqId} {
+      // Anyone (even anonymous) can submit the contact form.
+      allow create: if
+        request.resource.data.email is string
+        && request.resource.data.email.matches('.+@.+\\..+');
+      allow read: if isMarketing() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- analytics events (page views, signups, etc.) ----------
+    match /analytics_events/{eventId} {
+      allow create: if true; // anonymous logging permitted
+      allow read: if isMarketing() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- user presence / last-seen ----------
+    match /user_presence/{uid} {
+      // Users update their own presence on login.
+      allow read: if isEditor() || isAdmin();
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ---------- default deny ----------
     match /{document=**} {
       allow read, write: if false;
     }

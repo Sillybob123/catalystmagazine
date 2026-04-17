@@ -628,9 +628,9 @@
         </div>
 
         <div class="action-strip" aria-label="Workspace actions">
-            <a class="action-btn primary" href="/editorial-studio.html">Open Studio</a>
-            <a class="action-btn" href="/writer-dashboard.html">My posts</a>
-            <a class="action-btn" href="/admin-dashboard.html">Review queue</a>
+            <a class="action-btn primary" href="/dashboard.html">Open Dashboard</a>
+            <a class="action-btn" href="/dashboard.html#/writer/mine">My posts</a>
+            <a class="action-btn" href="/dashboard.html#/editor/queue">Review queue</a>
             <button class="action-btn" type="button" data-modal-target="pitch-modal">Pitch guide</button>
             <button class="action-btn" type="button" data-modal-target="workflow-modal">Workflow</button>
         </div>
@@ -788,7 +788,8 @@
                 const userData = userDoc.data();
 
                 // Check if user has a valid role
-                if (!userData.role || !['writer', 'editor', 'admin'].includes(userData.role)) {
+                const allowedRoles = ['writer', 'editor', 'admin', 'newsletter_builder', 'marketing'];
+                if (!userData.role || !allowedRoles.includes(userData.role)) {
                     throw new Error('Your account does not have proper permissions. Please contact your administrator.');
                 }
 
@@ -797,8 +798,8 @@
                     throw new Error('Your account is pending activation. Please contact your administrator.');
                 }
 
-                // Redirect everyone into the newsroom dashboard (writers still have access controls there)
-                window.location.href = 'admin-dashboard.html';
+                // Redirect everyone into the unified editorial dashboard (role-gated inside).
+                window.location.href = 'dashboard.html';
 
             } catch (error) {
                 console.error('Login error:', error);
@@ -843,7 +844,7 @@
                 const userData = userDoc.data();
 
                 if (userData) {
-                    window.location.href = 'admin-dashboard.html';
+                    window.location.href = 'dashboard.html';
                 }
             }
         });
