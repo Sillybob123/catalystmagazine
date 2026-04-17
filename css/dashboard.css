@@ -726,7 +726,7 @@ button { font-family: inherit; cursor: pointer; }
   --compose-ink-muted: #6e6e73;
   --compose-ink-faint: #a1a1a6;
   --compose-line: #e6e6e6;
-  max-width: 1040px;
+  max-width: 1180px;
   margin: -12px auto 40px;
   position: relative;
 }
@@ -806,6 +806,19 @@ button { font-family: inherit; cursor: pointer; }
 }
 .rt-btn:hover { background: var(--surface-3); transform: translateY(-1px); }
 .rt-btn.active { background: var(--accent-soft); color: var(--accent); }
+.rt-btn.rt-btn-wide {
+  width: auto;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.rt-btn.rt-btn-wide:hover {
+  background: var(--accent);
+  color: #fff;
+}
 .rt-select {
   height: 32px;
   padding: 0 10px;
@@ -860,7 +873,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .compose-hero-inner {
   width: 100%;
-  max-width: 820px;
+  max-width: 960px;
   margin: 0 auto;
 }
 .compose-hero-category {
@@ -924,14 +937,14 @@ button { font-family: inherit; cursor: pointer; }
 /* body */
 .compose-body-wrap {
   background: var(--compose-paper);
-  padding: 64px clamp(20px, 5vw, 64px) 80px;
+  padding: 56px clamp(24px, 4vw, 56px) 80px;
 }
 .compose-body {
-  max-width: 720px;
+  max-width: 880px;
   margin: 0 auto;
   font-family: var(--compose-serif);
   font-size: 20px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--compose-ink-soft);
   letter-spacing: -0.003em;
   outline: none;
@@ -965,6 +978,7 @@ button { font-family: inherit; cursor: pointer; }
   margin: 48px 0 16px;
 }
 .compose-body h1, .compose-body h2 { font-size: 2rem; }
+.compose-body h2.rt-section-heading { margin-top: 64px; }
 .compose-body h3 { font-size: 1.55rem; }
 .compose-body h4 {
   font-size: 1rem;
@@ -1057,7 +1071,7 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--compose-ink-muted);
   line-height: 1.5;
   text-align: left;
-  max-width: 720px;
+  max-width: 880px;
   font-style: normal;
 }
 

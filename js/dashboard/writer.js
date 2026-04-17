@@ -82,6 +82,12 @@ function mountDraftEditor(ctx, container) {
         </button>
       </div>
       <div class="rt-group">
+        <button class="rt-btn rt-btn-wide" data-action="new-section" title="Insert a new section (heading + paragraph)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>New section</span>
+        </button>
+      </div>
+      <div class="rt-group">
         <button class="rt-btn" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V4h16v3"/><line x1="5" y1="20" x2="19" y2="20"/><path d="M13 4L8 20"/></svg>
         </button>
@@ -275,6 +281,23 @@ function handleBlockAction(action, editorEl) {
       </figure>
       <p><br/></p>`;
     insertBlockAtCaret(editorEl, html);
+    return;
+  }
+  if (action === "new-section") {
+    // Gap + heading + empty paragraph. The zero-width space in the <p>
+    // keeps contenteditable from collapsing the empty paragraph.
+    const html = `<p><br/></p><h2 class="rt-section-heading">New section</h2><p>&#8203;</p>`;
+    insertBlockAtCaret(editorEl, html);
+    // Select the "New section" text so the user can type right over it.
+    const headings = editorEl.querySelectorAll("h2.rt-section-heading");
+    const heading = headings[headings.length - 1];
+    if (heading) {
+      const range = document.createRange();
+      range.selectNodeContents(heading);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
     return;
   }
 }
