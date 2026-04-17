@@ -286,7 +286,9 @@ function paintUserChip() {
 // ---------- routing ----------
 async function handleRoute() {
   const hash = location.hash || "#/overview";
-  let route = ROUTES[hash];
+  // Strip query string (e.g. "#/editor/queue?review=abc") before looking up the route.
+  const hashPath = hash.split("?")[0];
+  let route = ROUTES[hashPath];
 
   if (!route) { location.hash = "#/overview"; return; }
   const allowed = route.roles.includes("*") || route.roles.includes(state.role) || state.role === "admin";
@@ -297,7 +299,7 @@ async function handleRoute() {
   }
 
   // Highlight active nav link
-  document.querySelectorAll(".nav-link").forEach((a) => a.classList.toggle("active", a.dataset.route === hash));
+  document.querySelectorAll(".nav-link").forEach((a) => a.classList.toggle("active", a.dataset.route === hashPath));
   const labelPath = route.label;
   document.getElementById("page-title-text").textContent = labelPath;
 

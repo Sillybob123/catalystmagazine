@@ -6,14 +6,30 @@
 import { db, storage } from "../firebase-config.js";
 import {
   collection, query, where, orderBy, getDocs, doc, setDoc, updateDoc,
-  addDoc, serverTimestamp, getDoc, onSnapshot,
+  addDoc, serverTimestamp, getDoc, onSnapshot, deleteDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { paintSuggestionMarks, renderSuggestionsPanel } from "./editor.js";
 import {
   ref as storageRef,
   uploadBytesResumable,
   getDownloadURL,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { el, esc, fmtRelative, statusPill } from "./ui.js";
+import { el, esc, fmtRelative, statusPill, slugify } from "./ui.js";
+import { convertToWebp } from "../image-utils.js";
+
+// Writer self-review checklist. Every item must be checked before a draft
+// can be submitted for editor review — mirrors the editor-side checklist
+// so writers catch structural issues on their own pass first.
+const WRITER_CHECKLIST = [
+  { id: "lead",       text: "I've written a lead that earns the reader's attention — specific, not a summary." },
+  { id: "angle",      text: "The piece has a clear, concrete angle, not just a broad topic." },
+  { id: "structure",  text: "Sections flow logically and every paragraph moves the story forward." },
+  { id: "quotes",     text: "All quotes are attributed correctly and placed in context." },
+  { id: "sources",    text: "Every factual claim is backed by a source I can cite." },
+  { id: "terms",      text: "Scientific terms are defined for a college-level reader." },
+  { id: "ending",     text: "The ending lands — a quote, callback, or forward-looking implication." },
+  { id: "proofread",  text: "I've read the full piece through for grammar, clarity, and flow." },
+];
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -156,9 +172,17 @@ function mountDraftEditor(ctx, container) {
           </select>
         </div>
         <div class="field">
-          <label class="label">Cover image URL</label>
-          <input class="input" id="f-cover" placeholder="https://…">
-          <div class="hint">Paste any public image URL. Shows in the hero above.</div>
+          <label class="label">Cover image</label>
+          <div class="cover-picker">
+            <button type="button" class="btn btn-secondary btn-sm" id="f-cover-upload-btn">Upload from computer</button>
+            <input type="file" id="f-cover-file" accept="image/*" hidden>
+            <div class="cover-picker-progress" id="f-cover-progress" hidden>
+              <div class="cover-picker-progress-track"><div class="cover-picker-progress-fill" id="f-cover-progress-fill"></div></div>
+              <div class="cover-picker-progress-text" id="f-cover-progress-text">Uploading…</div>
+            </div>
+          </div>
+          <input class="input" id="f-cover" placeholder="https://… or upload above" style="margin-top:10px;">
+          <div class="hint">Upload an image (auto-converts to WebP) or paste a public URL.</div>
         </div>
         <div class="field">
           <label class="label">Status</label>
@@ -179,9 +203,70 @@ function mountDraftEditor(ctx, container) {
   wireRichToolbar(wrap, editorEl, ctx);
   wireHeroPreview(wrap);
   wireSettingsDrawer(wrap);
+  wireCoverUpload(wrap, ctx);
 
-  // Comments sidebar when editing.
+  // Writer self-review checklist — always present so writers see the bar
+  // they need to clear before submitting for editor review.
+  const checklistCard = el("div", { class: "card", style: { marginTop: "20px" } });
+  checklistCard.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="card-title">Pre-submission checklist</div>
+        <div class="card-subtitle">Every item must be confirmed before you can submit for editor review.</div>
+      </div>
+      <div class="writer-checklist-progress" id="writer-checklist-progress">0/${WRITER_CHECKLIST.length}</div>
+    </div>
+    <div class="card-body" id="writer-checklist-body"></div>`;
+  container.appendChild(checklistCard);
+  const checklistBody = checklistCard.querySelector("#writer-checklist-body");
+  const checklistProgress = checklistCard.querySelector("#writer-checklist-progress");
+  WRITER_CHECKLIST.forEach((item) => {
+    const line = el("label", { class: "checklist-item" });
+    line.innerHTML = `
+      <input type="checkbox" data-k="${item.id}">
+      <span class="checklist-label">${esc(item.text)}</span>`;
+    checklistBody.appendChild(line);
+  });
+  const refreshChecklistProgress = () => {
+    const boxes = checklistBody.querySelectorAll('input[type="checkbox"]');
+    const done = Array.from(boxes).filter((b) => b.checked).length;
+    checklistProgress.textContent = `${done}/${WRITER_CHECKLIST.length}`;
+    checklistProgress.classList.toggle("complete", done === WRITER_CHECKLIST.length);
+  };
+  checklistBody.addEventListener("change", async (e) => {
+    const cb = e.target.closest('input[type="checkbox"]');
+    if (!cb) return;
+    cb.closest(".checklist-item").classList.toggle("done", cb.checked);
+    refreshChecklistProgress();
+    // Persist checklist state on the story doc so it survives reloads.
+    if (editingId) {
+      const items = {};
+      checklistBody.querySelectorAll('input[type="checkbox"]').forEach((b) => { items[b.dataset.k] = b.checked; });
+      try {
+        await updateDoc(doc(db, "stories", editingId), {
+          writerChecklist: items,
+          updatedAt: new Date().toISOString(),
+        });
+      } catch (err) {
+        ctx.toast("Could not save checklist: " + err.message, "error");
+      }
+    }
+  });
+
+  // Comments + suggestions sidebar when editing.
   if (editingId) {
+    const suggestions = el("div", { class: "card", style: { marginTop: "20px" } });
+    suggestions.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">Editor suggestions</div>
+          <div class="card-subtitle">Accept to apply the change. Reject to dismiss.</div>
+        </div>
+      </div>
+      <div class="card-body" id="draft-suggestions"><div class="empty-state">No suggestions yet.</div></div>`;
+    container.appendChild(suggestions);
+    subscribeToSuggestions(ctx, editingId, wrap, suggestions.querySelector("#draft-suggestions"));
+
     const comments = el("div", { class: "card", style: { marginTop: "20px" } });
     comments.innerHTML = `
       <div class="card-header"><div class="card-title">Editor feedback</div></div>
@@ -360,6 +445,16 @@ function openMediaDialog(kind, editorEl, ctx) {
         <label class="label">Caption (optional)</label>
         <input class="input" id="m-caption" placeholder="Shown beneath the ${label}" />
       </div>
+      ${isImage ? `
+      <div class="field">
+        <label class="label">Size</label>
+        <div class="media-size-picker" role="radiogroup" aria-label="Image size">
+          <label class="media-size-opt"><input type="radio" name="m-size" value="small"><span><strong>Small</strong><em>Inline thumb, ~320px</em></span></label>
+          <label class="media-size-opt"><input type="radio" name="m-size" value="compact"><span><strong>Compact</strong><em>Column width, ~520px</em></span></label>
+          <label class="media-size-opt"><input type="radio" name="m-size" value="standard" checked><span><strong>Standard</strong><em>Body width, ~720px</em></span></label>
+          <label class="media-size-opt"><input type="radio" name="m-size" value="large"><span><strong>Large</strong><em>Full-bleed, edge to edge</em></span></label>
+        </div>
+      </div>` : ""}
 
       <div class="media-progress" id="m-progress" hidden>
         <div class="media-progress-bar"><span id="m-progress-fill"></span></div>
@@ -465,8 +560,10 @@ function openMediaDialog(kind, editorEl, ctx) {
     const caption = capInput.value.trim();
     let html;
     if (isImage) {
+      const sizeEl = modal.querySelector('input[name="m-size"]:checked');
+      const size = sizeEl ? sizeEl.value : "standard";
       html = `
-        <figure class="rt-figure">
+        <figure class="rt-figure rt-size-${size}">
           <img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" />
           ${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ""}
         </figure>
@@ -486,10 +583,11 @@ function openMediaDialog(kind, editorEl, ctx) {
 
 async function uploadToFirebase(file, kind, ctx, onProgress) {
   const uid = ctx?.user?.uid || "anonymous";
-  const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+  const toUpload = kind === "image" ? await convertToWebp(file) : file;
+  const safeName = toUpload.name.replace(/[^\w.\-]+/g, "_");
   const path = `stories/${uid}/${kind}s/${Date.now()}-${safeName}`;
   const ref = storageRef(storage, path);
-  const task = uploadBytesResumable(ref, file, { contentType: file.type });
+  const task = uploadBytesResumable(ref, toUpload, { contentType: toUpload.type });
   return new Promise((resolve, reject) => {
     task.on(
       "state_changed",
@@ -578,6 +676,46 @@ function wireSettingsDrawer(wrap) {
   scrim.addEventListener("click", close);
 }
 
+// ===== Cover-image upload ===================================================
+function wireCoverUpload(wrap, ctx) {
+  const btn       = wrap.querySelector("#f-cover-upload-btn");
+  const fileInput = wrap.querySelector("#f-cover-file");
+  const urlInput  = wrap.querySelector("#f-cover");
+  const progress  = wrap.querySelector("#f-cover-progress");
+  const fill      = wrap.querySelector("#f-cover-progress-fill");
+  const text      = wrap.querySelector("#f-cover-progress-text");
+
+  btn.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { ctx.toast("Please choose an image file.", "error"); return; }
+    if (file.size > 15 * 1024 * 1024) { ctx.toast("Image must be under 15 MB.", "error"); return; }
+
+    progress.hidden = false;
+    fill.style.width = "0%";
+    text.textContent = "Preparing…";
+    btn.disabled = true;
+
+    try {
+      const url = await uploadToFirebase(file, "image", ctx, (pct) => {
+        fill.style.width = pct + "%";
+        text.textContent = `Uploading… ${pct}%`;
+      });
+      urlInput.value = url;
+      urlInput.dispatchEvent(new Event("input", { bubbles: true }));
+      text.textContent = "Uploaded.";
+      setTimeout(() => { progress.hidden = true; }, 800);
+    } catch (err) {
+      ctx.toast("Cover upload failed: " + (err?.message || err), "error");
+      progress.hidden = true;
+    } finally {
+      btn.disabled = false;
+      fileInput.value = "";
+    }
+  });
+}
+
 async function loadDraft(id, wrap, ctx) {
   try {
     const snap = await getDoc(doc(db, "stories", id));
@@ -594,6 +732,19 @@ async function loadDraft(id, wrap, ctx) {
     wrap.querySelector("#f-cover").value = d.coverImage || "";
     wrap.querySelector("#f-dek").textContent = d.dek || d.excerpt || "";
     wrap.querySelector("#f-body").innerHTML = d.body || "";
+    // Restore the writer's checklist state so progress carries across sessions.
+    const saved = d.writerChecklist || {};
+    document.querySelectorAll('#writer-checklist-body input[type="checkbox"]').forEach((cb) => {
+      cb.checked = !!saved[cb.dataset.k];
+      cb.closest(".checklist-item").classList.toggle("done", cb.checked);
+    });
+    const progressEl = document.getElementById("writer-checklist-progress");
+    if (progressEl) {
+      const total = document.querySelectorAll('#writer-checklist-body input[type="checkbox"]').length;
+      const done = document.querySelectorAll('#writer-checklist-body input[type="checkbox"]:checked').length;
+      progressEl.textContent = `${done}/${total}`;
+      progressEl.classList.toggle("complete", done === total);
+    }
     // Refresh hero preview
     wrap.querySelector("#f-cover").dispatchEvent(new Event("input", { bubbles: true }));
     wrap.querySelector("#f-category").dispatchEvent(new Event("change", { bubbles: true }));
@@ -608,15 +759,51 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
   const coverImage = wrap.querySelector("#f-cover").value.trim();
   const dek = (wrap.querySelector("#f-dek").textContent || "").trim();
   const bodyEl = wrap.querySelector("#f-body");
-  const body = bodyEl.innerHTML;
+  // Strip any live suggestion marks before persisting — they're rendered on top, not saved.
+  const body = bodyEl.innerHTML.replace(/<mark class="sx-mark[^"]*"[^>]*>([\s\S]*?)<\/mark>/g, "$1");
   const bodyText = bodyEl.textContent || "";
   const msg = wrap.querySelector("#form-msg");
 
+  // Collect the writer's self-review checklist state.
+  const writerChecklist = {};
+  document.querySelectorAll('#writer-checklist-body input[type="checkbox"]').forEach((cb) => {
+    writerChecklist[cb.dataset.k] = cb.checked;
+  });
+  const checklistDone = WRITER_CHECKLIST.every((item) => writerChecklist[item.id]);
+
   if (!title) { msg.textContent = "Please add a title before saving."; return; }
-  if (desiredStatus === "pending" && !bodyText.trim()) { msg.textContent = "Please add some body text before submitting for review."; return; }
+
+  if (desiredStatus === "pending") {
+    // Hard gate for "Submit for review": title, cover image, excerpt (dek),
+    // body, and every item on the writer's checklist must be checked.
+    const missing = [];
+    if (!title) missing.push("a title");
+    if (!coverImage) missing.push("a cover image");
+    if (!dek) missing.push("an excerpt (the one-sentence deck under the headline)");
+    if (!bodyText.trim()) missing.push("body text");
+    if (missing.length) {
+      msg.textContent = "Before submitting, please add " + missing.join(", ") + ".";
+      ctx.toast("Can't submit yet — missing " + missing.join(", ") + ".", "error");
+      return;
+    }
+    if (!checklistDone) {
+      msg.textContent = "Before submitting, please complete every item on the pre-submission checklist.";
+      ctx.toast("Complete the checklist to submit for review.", "error");
+      // Flash the checklist card so the writer notices it.
+      const card = document.getElementById("writer-checklist-body")?.closest(".card");
+      if (card) {
+        card.classList.add("flash-attention");
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => card.classList.remove("flash-attention"), 1600);
+      }
+      return;
+    }
+  }
 
   const payload = {
     title, category, coverImage, dek, body,
+    slug: slugify(title),
+    writerChecklist,
     status: desiredStatus,
     authorId: ctx.user.uid,
     authorName: ctx.profile.name || ctx.user.email,
@@ -638,6 +825,96 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
     msg.textContent = "Save failed: " + err.message;
     ctx.toast("Save failed: " + err.message, "error");
   }
+}
+
+function subscribeToSuggestions(ctx, storyId, wrap, panel) {
+  const bodyEl = wrap.querySelector("#f-body");
+  const q = query(collection(db, "stories", storyId, "suggestions"), orderBy("createdAt", "asc"));
+  let lastKey = "";
+  return onSnapshot(q, (snap) => {
+    const items = [];
+    snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
+
+    // Only re-paint the body when the set of suggestions actually changed,
+    // to avoid losing the writer's caret on every snapshot echo.
+    const key = items.map((s) => `${s.id}:${s.start}-${s.end}`).join("|");
+    if (key !== lastKey) {
+      lastKey = key;
+      const cleanHtml = bodyEl.innerHTML.replace(/<mark class="sx-mark[^"]*"[^>]*>([\s\S]*?)<\/mark>/g, "$1");
+      paintSuggestionMarks(bodyEl, cleanHtml, items);
+    }
+
+    const writerCtx = {
+      ...ctx,
+      onAccept: async (s) => {
+        try {
+          if (s.kind === "replace") {
+            applyReplacement(bodyEl, s);
+            await persistBody(storyId, bodyEl);
+          }
+          await deleteDoc(doc(db, "stories", storyId, "suggestions", s.id));
+          ctx.toast("Applied.", "success");
+        } catch (err) { ctx.toast("Could not apply: " + err.message, "error"); }
+      },
+      onReject: async (s) => {
+        try {
+          await deleteDoc(doc(db, "stories", storyId, "suggestions", s.id));
+        } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
+      },
+    };
+    renderSuggestionsPanel(panel, items, writerCtx, "writer");
+  });
+}
+
+// Replace the range [s.start, s.end) with s.replacementText in the editable body.
+// Falls back to no-op if the text no longer matches (writer edited around it).
+function applyReplacement(bodyEl, s) {
+  // Strip any existing marks for cleanness before measuring offsets.
+  bodyEl.querySelectorAll("mark.sx-mark").forEach((m) => {
+    const parent = m.parentNode;
+    while (m.firstChild) parent.insertBefore(m.firstChild, m);
+    parent.removeChild(m);
+  });
+  bodyEl.normalize();
+
+  const walker = document.createTreeWalker(bodyEl, NodeFilter.SHOW_TEXT, null);
+  let count = 0;
+  let startNode = null, startOffset = 0, endNode = null, endOffset = 0;
+  while (walker.nextNode()) {
+    const n = walker.currentNode;
+    const len = n.nodeValue.length;
+    if (!startNode && count + len >= s.start) {
+      startNode = n;
+      startOffset = s.start - count;
+    }
+    if (!endNode && count + len >= s.end) {
+      endNode = n;
+      endOffset = s.end - count;
+      break;
+    }
+    count += len;
+  }
+  if (!startNode || !endNode) throw new Error("range not found in current text");
+
+  const range = document.createRange();
+  range.setStart(startNode, startOffset);
+  range.setEnd(endNode, endOffset);
+
+  // Conflict check: has the text underneath drifted?
+  if (range.toString() !== (s.originalText || "")) {
+    throw new Error("text has changed since the suggestion was made");
+  }
+  range.deleteContents();
+  if (s.replacementText) {
+    range.insertNode(document.createTextNode(s.replacementText));
+  }
+}
+
+async function persistBody(storyId, bodyEl) {
+  await updateDoc(doc(db, "stories", storyId), {
+    body: bodyEl.innerHTML,
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 function subscribeToComments(storyId, mount) {

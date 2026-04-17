@@ -119,6 +119,19 @@ export function initials(name = "", email = "") {
   return (first + last).toUpperCase();
 }
 
+// Turn a title into a URL-safe slug: lowercased, ASCII-only, hyphen-separated.
+// Kept simple — handles diacritics, strips punctuation, collapses whitespace.
+export function slugify(title) {
+  return String(title || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // strip combining marks
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 export function statusPill(status) {
   const map = {
     draft: "pill pill-draft",

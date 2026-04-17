@@ -5,7 +5,7 @@
 import { db } from "../firebase-config.js";
 import {
   collection, query, where, orderBy, onSnapshot, getDocs, doc, getDoc,
-  updateDoc, addDoc, setDoc, serverTimestamp, onSnapshot as onSnap,
+  updateDoc, addDoc, setDoc, deleteDoc, serverTimestamp, onSnapshot as onSnap,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
 
@@ -109,7 +109,7 @@ async function mountReviewSurface(ctx, container, id) {
     container.innerHTML = `<div class="error-state">${esc(err.message)}</div>`; return;
   }
 
-  // Layout: left = article editor (title/body), right = checklist + comments.
+  // Layout: left = article editor (title/body), right = checklist + suggestions.
   const grid = el("div", { class: "grid", style: { gridTemplateColumns: "1.3fr 1fr", gap: "20px" } });
   container.appendChild(grid);
 
@@ -138,12 +138,21 @@ async function mountReviewSurface(ctx, container, id) {
           <div class="field"><label class="label">Cover image URL</label><input class="input" id="e-cover" value="${escAttr(story.coverImage || "")}"></div>
         </div>
         <div class="field"><label class="label">Dek</label><textarea class="textarea" id="e-dek" rows="2">${esc(story.dek || story.excerpt || "")}</textarea></div>
-        <div class="field"><label class="label">Body</label><textarea class="textarea" id="e-body" rows="22">${esc(story.body || "")}</textarea></div>
+
+        <div class="review-body-wrap">
+          <div class="review-body-toolbar" id="review-tools">
+            <span class="review-body-hint">Select text in the article, then:</span>
+            <button class="btn btn-secondary btn-xs" id="tool-highlight" disabled>Highlight</button>
+            <button class="btn btn-secondary btn-xs" id="tool-suggest" disabled>Suggest edit</button>
+            <button class="btn btn-secondary btn-xs" id="tool-comment" disabled>Comment on selection</button>
+          </div>
+          <div class="article-body review-body" id="review-body"></div>
+        </div>
       </div>
     </div>
 
     <div class="card" style="margin-top:20px;">
-      <div class="card-header"><div class="card-title">Comments & suggestions</div></div>
+      <div class="card-header"><div class="card-title">General comments</div></div>
       <div class="card-body">
         <div id="comments-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
         <div style="margin-top:16px;border-top:1px solid var(--hairline-2);padding-top:14px;">
@@ -151,7 +160,7 @@ async function mountReviewSurface(ctx, container, id) {
             <div class="field"><label class="label">Paragraph # (optional)</label><input class="input" type="number" min="1" id="c-paragraph" placeholder="e.g., 3"></div>
             <div></div>
           </div>
-          <div class="field"><label class="label">Comment / suggestion</label><textarea class="textarea" id="c-body" rows="3" placeholder="Leave an in-depth suggestion or question for the writer."></textarea></div>
+          <div class="field"><label class="label">Comment</label><textarea class="textarea" id="c-body" rows="3" placeholder="Leave a broader note for the writer."></textarea></div>
           <button class="btn btn-primary btn-sm" id="add-comment">Post comment</button>
         </div>
       </div>
@@ -159,10 +168,22 @@ async function mountReviewSurface(ctx, container, id) {
   `;
   grid.appendChild(left);
 
-  // --- Right column: checklist ------------------------------------------
+  // --- Right column: suggestions + checklist ------------------------------
   const right = el("div", {});
   right.innerHTML = `
     <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Suggestions & highlights</div>
+          <div class="card-subtitle">Inline marks on the article. Each one the writer will accept or reject.</div>
+        </div>
+      </div>
+      <div class="card-body" id="suggestions-body">
+        <div class="empty-state">Select text in the article to add a highlight or suggestion.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
       <div class="card-header">
         <div>
           <div class="card-title">Editor Review Checklist</div>
@@ -222,7 +243,130 @@ async function mountReviewSurface(ctx, container, id) {
     refreshConfirmBtn();
   });
 
-  // --- Save edits ------
+  // --- Review body: render + wire selection tools -----------------------
+  const reviewBody = left.querySelector("#review-body");
+  reviewBody.innerHTML = story.body || "";
+  const btnHighlight = left.querySelector("#tool-highlight");
+  const btnSuggest   = left.querySelector("#tool-suggest");
+  const btnComment   = left.querySelector("#tool-comment");
+
+  // Track current selection inside the review body.
+  let currentRange = null;
+  function refreshToolsFromSelection() {
+    const sel = window.getSelection();
+    const active = sel && sel.rangeCount
+      && reviewBody.contains(sel.anchorNode)
+      && reviewBody.contains(sel.focusNode)
+      && !sel.isCollapsed;
+    if (active) {
+      currentRange = sel.getRangeAt(0).cloneRange();
+      btnHighlight.disabled = false;
+      btnSuggest.disabled = false;
+      btnComment.disabled = false;
+    } else {
+      currentRange = null;
+      btnHighlight.disabled = true;
+      btnSuggest.disabled = true;
+      btnComment.disabled = true;
+    }
+  }
+  document.addEventListener("selectionchange", refreshToolsFromSelection);
+
+  // Offsets are counted in plain text; we also save a snapshot for context + conflict detection.
+  function rangeToAnchor(range) {
+    const start = textOffsetOf(reviewBody, range.startContainer, range.startOffset);
+    const end   = textOffsetOf(reviewBody, range.endContainer,   range.endOffset);
+    const text  = range.toString();
+    return { start, end, text };
+  }
+
+  const suggestionsRef = collection(db, "stories", id, "suggestions");
+
+  btnHighlight.addEventListener("click", async () => {
+    if (!currentRange) return;
+    const anchor = rangeToAnchor(currentRange);
+    if (!anchor.text.trim()) return;
+    try {
+      await addDoc(suggestionsRef, {
+        kind: "highlight",
+        start: anchor.start,
+        end: anchor.end,
+        originalText: anchor.text,
+        note: "",
+        authorId: ctx.user.uid,
+        authorName: ctx.profile.name || ctx.user.email,
+        createdAt: new Date().toISOString(),
+      });
+      window.getSelection().removeAllRanges();
+      ctx.toast("Highlight added.", "success");
+    } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
+  });
+
+  btnSuggest.addEventListener("click", async () => {
+    if (!currentRange) return;
+    const anchor = rangeToAnchor(currentRange);
+    if (!anchor.text.trim()) return;
+    const replacement = prompt(`Replace with:\n\n"${anchor.text}"\n\nSuggested text:`, anchor.text);
+    if (replacement === null) return;
+    const note = prompt("Optional note for the writer (why this change?)", "") || "";
+    try {
+      await addDoc(suggestionsRef, {
+        kind: "replace",
+        start: anchor.start,
+        end: anchor.end,
+        originalText: anchor.text,
+        replacementText: replacement,
+        note,
+        authorId: ctx.user.uid,
+        authorName: ctx.profile.name || ctx.user.email,
+        createdAt: new Date().toISOString(),
+      });
+      window.getSelection().removeAllRanges();
+      ctx.toast("Suggestion saved.", "success");
+    } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
+  });
+
+  btnComment.addEventListener("click", async () => {
+    if (!currentRange) return;
+    const anchor = rangeToAnchor(currentRange);
+    if (!anchor.text.trim()) return;
+    const note = prompt(`Comment on:\n\n"${anchor.text}"\n\nYour note:`, "");
+    if (!note) return;
+    try {
+      await addDoc(suggestionsRef, {
+        kind: "comment",
+        start: anchor.start,
+        end: anchor.end,
+        originalText: anchor.text,
+        note,
+        authorId: ctx.user.uid,
+        authorName: ctx.profile.name || ctx.user.email,
+        createdAt: new Date().toISOString(),
+      });
+      window.getSelection().removeAllRanges();
+      ctx.toast("Comment added.", "success");
+    } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
+  });
+
+  // Live-render suggestions on the right + paint marks on the body.
+  const suggestionsBody = right.querySelector("#suggestions-body");
+  let currentSuggestions = [];
+  const panelCtx = {
+    ...ctx,
+    onDelete: async (s) => {
+      try {
+        await deleteDoc(doc(db, "stories", id, "suggestions", s.id));
+      } catch (err) { ctx.toast("Remove failed: " + err.message, "error"); }
+    },
+  };
+  const unsubSuggestions = onSnap(query(suggestionsRef, orderBy("createdAt", "asc")), (snap) => {
+    currentSuggestions = [];
+    snap.forEach((d) => currentSuggestions.push({ id: d.id, ...d.data() }));
+    paintSuggestionMarks(reviewBody, story.body || "", currentSuggestions);
+    renderSuggestionsPanel(suggestionsBody, currentSuggestions, panelCtx, "editor");
+  });
+
+  // --- Save edits (title/category/cover/dek only; body is tracked via suggestions) ---
   left.querySelector("#save-edits").addEventListener("click", async () => {
     try {
       await updateDoc(docRef, {
@@ -230,7 +374,6 @@ async function mountReviewSurface(ctx, container, id) {
         category: left.querySelector("#e-category").value,
         coverImage: left.querySelector("#e-cover").value.trim(),
         dek: left.querySelector("#e-dek").value.trim(),
-        body: left.querySelector("#e-body").value,
         updatedAt: new Date().toISOString(),
       });
       ctx.toast("Edits saved.", "success");
@@ -292,7 +435,175 @@ async function mountReviewSurface(ctx, container, id) {
     } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
   });
 
-  return () => { if (unsub) unsub(); };
+  return () => {
+    if (unsub) unsub();
+    if (unsubSuggestions) unsubSuggestions();
+    document.removeEventListener("selectionchange", refreshToolsFromSelection);
+  };
+}
+
+// --- Suggestion helpers (shared with writer module via paintSuggestionMarks/renderSuggestionsPanel) ---
+
+// Convert a (node, offset) inside `root` into a flat text-index counting all text nodes.
+export function textOffsetOf(root, node, offset) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  let count = 0;
+  while (walker.nextNode()) {
+    const n = walker.currentNode;
+    if (n === node) return count + offset;
+    count += n.nodeValue.length;
+  }
+  if (node === root) {
+    // offset is number of child nodes before; fall back to total length if unreachable.
+    return count;
+  }
+  return count;
+}
+
+// Paints <mark class="sx-mark"> around each suggestion's [start, end) text range.
+// Re-renders from `originalHTML` every time to keep marks idempotent.
+export function paintSuggestionMarks(container, originalHTML, suggestions) {
+  container.innerHTML = originalHTML || "";
+  if (!suggestions || !suggestions.length) return;
+
+  // Sort by start descending so inserting marks doesn't invalidate later offsets.
+  const sorted = [...suggestions].sort((a, b) => b.start - a.start);
+  for (const s of sorted) {
+    const pair = findTextRange(container, s.start, s.end);
+    if (!pair) continue;
+    const range = document.createRange();
+    range.setStart(pair.startNode, pair.startOffset);
+    range.setEnd(pair.endNode, pair.endOffset);
+
+    // If the range crosses element boundaries, skip a clean wrap (would split structure).
+    // Use CSS Highlights-style fallback: wrap each text node slice inside the range.
+    try {
+      wrapRangeInMarks(range, s);
+    } catch {
+      // Skip unpaintable suggestion; still visible in the side panel.
+    }
+  }
+}
+
+function findTextRange(root, start, end) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  let count = 0;
+  let startNode = null, startOffset = 0, endNode = null, endOffset = 0;
+  while (walker.nextNode()) {
+    const n = walker.currentNode;
+    const len = n.nodeValue.length;
+    if (!startNode && count + len >= start) {
+      startNode = n;
+      startOffset = start - count;
+    }
+    if (!endNode && count + len >= end) {
+      endNode = n;
+      endOffset = end - count;
+      break;
+    }
+    count += len;
+  }
+  if (!startNode || !endNode) return null;
+  return { startNode, startOffset, endNode, endOffset };
+}
+
+function wrapRangeInMarks(range, s) {
+  // Walk text nodes fully inside the range and wrap each slice in a <mark>.
+  const root = range.commonAncestorContainer;
+  const ancestor = root.nodeType === 1 ? root : root.parentNode;
+  const walker = document.createTreeWalker(ancestor, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => range.intersectsNode(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT,
+  });
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  for (const node of nodes) {
+    const nodeStart = node === range.startContainer ? range.startOffset : 0;
+    const nodeEnd   = node === range.endContainer   ? range.endOffset   : node.nodeValue.length;
+    if (nodeEnd <= nodeStart) continue;
+    const before = node.nodeValue.slice(0, nodeStart);
+    const middle = node.nodeValue.slice(nodeStart, nodeEnd);
+    const after  = node.nodeValue.slice(nodeEnd);
+    const mark = document.createElement("mark");
+    mark.className = `sx-mark sx-${s.kind || "highlight"}`;
+    mark.dataset.suggestionId = s.id;
+    mark.textContent = middle;
+    const parent = node.parentNode;
+    if (before) parent.insertBefore(document.createTextNode(before), node);
+    parent.insertBefore(mark, node);
+    if (after) parent.insertBefore(document.createTextNode(after), node);
+    parent.removeChild(node);
+  }
+}
+
+// Renders the side panel of suggestions with optional accept/reject buttons.
+// role: "editor" shows a delete button; "writer" shows accept + reject.
+export function renderSuggestionsPanel(panelEl, suggestions, ctx, role) {
+  if (!suggestions.length) {
+    panelEl.innerHTML = `<div class="empty-state">${role === "writer" ? "No suggestions yet." : "Select text in the article to add a highlight or suggestion."}</div>`;
+    return;
+  }
+  panelEl.innerHTML = "";
+  suggestions.forEach((s) => {
+    const card = el("div", { class: `suggestion-card sx-card-${s.kind}` });
+    const kindLabel = { highlight: "Highlight", replace: "Suggested edit", comment: "Comment" }[s.kind] || "Note";
+
+    const head = el("div", { class: "suggestion-head" });
+    head.innerHTML = `
+      <span class="suggestion-kind">${kindLabel}</span>
+      <span class="suggestion-author">${esc(s.authorName || "Editor")} · ${fmtRelative(s.createdAt)}</span>`;
+    card.appendChild(head);
+
+    const orig = el("blockquote", { class: "suggestion-original" });
+    orig.textContent = s.originalText || "";
+    card.appendChild(orig);
+
+    if (s.kind === "replace") {
+      const repl = el("div", { class: "suggestion-replace" });
+      repl.innerHTML = `<span class="suggestion-arrow">→</span>`;
+      const txt = document.createElement("span");
+      txt.className = "suggestion-replace-text";
+      txt.textContent = s.replacementText || "(deletion)";
+      repl.appendChild(txt);
+      card.appendChild(repl);
+    }
+    if (s.note) {
+      const note = el("div", { class: "suggestion-note" });
+      note.textContent = s.note;
+      card.appendChild(note);
+    }
+
+    const actions = el("div", { class: "suggestion-actions" });
+    if (role === "writer") {
+      const accept = el("button", { class: "btn btn-accent btn-xs" }, "Accept");
+      const reject = el("button", { class: "btn btn-ghost btn-xs" }, "Reject");
+      accept.addEventListener("click", () => ctx.onAccept && ctx.onAccept(s));
+      reject.addEventListener("click", () => ctx.onReject && ctx.onReject(s));
+      if (s.kind === "comment" || s.kind === "highlight") {
+        // Nothing to apply — just allow dismissing.
+        accept.textContent = "Mark done";
+      }
+      actions.appendChild(accept);
+      actions.appendChild(reject);
+    } else {
+      const del = el("button", { class: "btn btn-ghost btn-xs" }, "Remove");
+      del.addEventListener("click", () => ctx.onDelete && ctx.onDelete(s));
+      actions.appendChild(del);
+    }
+    card.appendChild(actions);
+
+    // Clicking the card scrolls the corresponding mark into view.
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      const mark = document.querySelector(`.sx-mark[data-suggestion-id="${s.id}"]`);
+      if (mark) {
+        mark.scrollIntoView({ behavior: "smooth", block: "center" });
+        mark.classList.add("is-flash");
+        setTimeout(() => mark.classList.remove("is-flash"), 900);
+      }
+    });
+
+    panelEl.appendChild(card);
+  });
 }
 
 function getHashParam(name) {

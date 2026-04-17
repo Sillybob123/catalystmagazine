@@ -76,6 +76,20 @@ service cloud.firestore {
         allow read: if isStaff();
         allow write: if isEditor();
       }
+
+      // ----- editor suggestions (track-changes style) -----
+      // Editors create suggestions on any draft.
+      // The author of the parent story (and any editor) can read them.
+      // The author can accept/reject (= delete). Editors can also delete their own.
+      match /suggestions/{suggestionId} {
+        allow read: if isStaff();
+        allow create: if isEditor()
+          && request.resource.data.authorId == request.auth.uid;
+        allow update: if isEditor()
+          && resource.data.authorId == request.auth.uid;
+        allow delete: if isEditor()
+          || (isWriter() && get(/databases/$(database)/documents/stories/$(storyId)).data.authorId == request.auth.uid);
+      }
     }
 
     // ---------- assignments (admin -> editor mapping) ----------

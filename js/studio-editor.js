@@ -25,6 +25,8 @@ import {
     uploadBytes,
     getDownloadURL
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+import { convertToWebp } from './image-utils.js';
+import { slugify } from './dashboard/ui.js';
 
 // ---------------------------------------------------------------------
 // Register a divider blot so we can insert <hr> blocks.
@@ -433,8 +435,9 @@ function openInlineImagePicker(insertAt) {
         }
         try {
             showToast('Uploading image…');
-            const imageRef = ref(storage, 'covers/inline-' + Date.now() + '-' + file.name);
-            const snap = await uploadBytes(imageRef, file);
+            const toUpload = await convertToWebp(file);
+            const imageRef = ref(storage, 'covers/inline-' + Date.now() + '-' + toUpload.name);
+            const snap = await uploadBytes(imageRef, toUpload, { contentType: toUpload.type });
             const url = await getDownloadURL(snap.ref);
             quill.insertEmbed(insertAt, 'image', url, 'user');
             quill.insertText(insertAt + 1, '\n', 'user');
@@ -476,8 +479,9 @@ function validateStory() {
 }
 
 async function uploadCoverImage() {
-    const imageRef = ref(storage, 'covers/cover-' + Date.now() + '-' + coverFile.name);
-    const snap = await uploadBytes(imageRef, coverFile);
+    const toUpload = await convertToWebp(coverFile);
+    const imageRef = ref(storage, 'covers/cover-' + Date.now() + '-' + toUpload.name);
+    const snap = await uploadBytes(imageRef, toUpload, { contentType: toUpload.type });
     return await getDownloadURL(snap.ref);
 }
 
@@ -495,6 +499,7 @@ async function saveStory(status) {
 
         const storyData = {
             title: payload.title,
+            slug: slugify(payload.title),
             deck: payload.deck,
             category: payload.category,
             tags: payload.tags,
