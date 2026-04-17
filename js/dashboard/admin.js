@@ -443,6 +443,9 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       coverImage: body.querySelector("#sd-cover").value.trim(),
       dek: body.querySelector("#sd-dek").value.trim(),
       body: body.querySelector("#sd-body").value,
+      // Public article renderer reads `content`, dashboard reads `body`; keep
+      // them in sync so saved edits actually show up on the live site.
+      content: body.querySelector("#sd-body").value,
       authors: cleanAuthors,
       authorName: cleanAuthors.map((a) => a.name).join(", "),
       authorId: cleanAuthors[0]?.id || story.authorId || null,

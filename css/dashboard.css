@@ -578,13 +578,28 @@ button { font-family: inherit; cursor: pointer; }
 .newsletter-frame {
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: auto;
   background: #f4f4f4;
   height: 760px;
+  display: flex;
+  justify-content: center;
 }
 .newsletter-frame iframe {
   width: 100%; height: 100%; border: 0;
+  background: #fff;
+  transition: width 120ms ease;
 }
+.newsletter-frame[data-size="mobile"] iframe {
+  width: 420px;
+  max-width: 100%;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+}
+.newsletter-frame[data-size="desktop"] iframe {
+  width: 100%;
+  min-width: 900px;
+}
+.preview-size-toggle [aria-pressed="true"] { background: var(--surface-2) !important; color: var(--ink-1); }
+.preview-size-toggle [aria-pressed="false"] { background: transparent !important; color: var(--muted); }
 
 /* Sparkline */
 .sparkline {

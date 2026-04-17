@@ -14,7 +14,9 @@ const COLORS = {
   footerBg: "#fafafa",
 };
 
-const LOGO_URL = "https://catalyst-magazine.com/WebLogo.png";
+// Hosted on Firebase Storage — Gmail proxies and caches images, so a stable
+// HTTPS URL with a public token is the right source for email clients.
+const LOGO_URL = "https://firebasestorage.googleapis.com/v0/b/catalystwriters-5ce43.firebasestorage.app/o/stories%2FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%2Fimages%2F1776461000434-WebLogo.webp?alt=media&token=47e787ba-fb60-46c6-a8bf-65cf7c9b7350";
 
 export function buildNewsletter({
   subject = "New from The Catalyst",

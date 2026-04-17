@@ -26,7 +26,9 @@ export const onRequestPost = async ({ request, env }) => {
     const headline = body.headline || (count === 1 ? "A fresh story from The Catalyst" : `${count} new stories from The Catalyst`);
     const intro = body.intro || "Here is the latest reporting from our team of student writers. Tap any card to read the full piece.";
     const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
-    const logoUrl = env.NEWSLETTER_LOGO_URL || `${siteUrl.replace(/\/$/, "")}/WebLogo.png`;
+    // Let the template default handle the logo unless an env override is set.
+    // The template ships with the Firebase-hosted WebLogo used in emails.
+    const logoUrl = env.NEWSLETTER_LOGO_URL || undefined;
 
     let articles;
     if (Array.isArray(body.articleIds) && body.articleIds.length) {

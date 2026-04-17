@@ -150,6 +150,14 @@ const ROUTES = {
     loader: () => import("./admin.js"),
     mountKey: "users",
   },
+  "#/admin/advanced": {
+    label: "Advanced tools",
+    icon: ICONS.shield,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./admin-import.js"),
+    mountKey: "advanced",
+  },
 };
 
 const GROUPS = [

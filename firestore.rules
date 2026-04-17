@@ -59,6 +59,11 @@ service cloud.firestore {
         && resource.data.authorId == request.auth.uid
         && request.resource.data.status in ['draft', 'pending'];
 
+      // Author can delete their own draft/pending piece (before it ships).
+      allow delete: if isWriter()
+        && resource.data.authorId == request.auth.uid
+        && resource.data.status in ['draft', 'pending'];
+
       // Editors / admins can update, assign, approve, publish, delete.
       allow update, delete: if isEditor();
 

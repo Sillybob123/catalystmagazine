@@ -14,7 +14,7 @@ import {
   uploadBytesResumable,
   getDownloadURL,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { el, esc, fmtRelative, statusPill, slugify } from "./ui.js";
+import { el, esc, fmtRelative, statusPill, slugify, confirmDialog, toast } from "./ui.js";
 import { convertToWebp } from "../image-utils.js";
 
 // Writer self-review checklist. Every item must be checked before a draft
@@ -205,9 +205,11 @@ function mountDraftEditor(ctx, container) {
   wireSettingsDrawer(wrap);
   wireCoverUpload(wrap, ctx);
 
-  // Writer self-review checklist — always present so writers see the bar
-  // they need to clear before submitting for editor review.
-  const checklistCard = el("div", { class: "card", style: { marginTop: "20px" } });
+  // Writer self-review checklist — shown to writers/editors who need to clear
+  // it before submitting for editor review. Admins bypass it entirely (see
+  // the submit handler below), so we don't render the card for them.
+  const showChecklist = ctx.role !== "admin";
+  const checklistCard = el("div", { class: "card", style: { marginTop: "20px", display: showChecklist ? "" : "none" } });
   checklistCard.innerHTML = `
     <div class="card-header">
       <div>
@@ -786,7 +788,9 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
       ctx.toast("Can't submit yet — missing " + missing.join(", ") + ".", "error");
       return;
     }
-    if (!checklistDone) {
+    // Admins bypass the checklist — they're expected to be self-editing and
+    // often import or publish pieces that never went through a writer's review.
+    if (!checklistDone && ctx.role !== "admin") {
       msg.textContent = "Before submitting, please complete every item on the pre-submission checklist.";
       ctx.toast("Complete the checklist to submit for review.", "error");
       // Flash the checklist card so the writer notices it.
@@ -1014,8 +1018,34 @@ function renderArticleRows(mount, snap, allowEdit) {
         ${allowEdit ? `<a class="btn btn-secondary btn-xs" href="#/writer/draft?edit=${esc(d.id)}">Open</a>` : ""}
         ${a.status === "published" && a.url
           ? `<a class="btn btn-ghost btn-xs" href="${esc(a.url)}" target="_blank" rel="noopener">View</a>` : ""}
+        ${allowEdit ? `<button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(d.id)}" style="color:var(--danger);">Delete</button>` : ""}
       </div>`;
     mount.appendChild(row);
+  });
+
+  if (!allowEdit) return;
+  mount.addEventListener("click", async (e) => {
+    const btn = e.target.closest('[data-action="delete"]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const ok = await confirmDialog(
+      "Delete this article? This cannot be undone.",
+      { confirmText: "Delete", danger: true },
+    );
+    if (!ok) return;
+    btn.disabled = true;
+    try {
+      await deleteDoc(doc(db, "stories", id));
+      toast("Article deleted.", "success");
+      // Remove the row without a full reload.
+      btn.closest(".article-row")?.remove();
+      if (!mount.querySelector(".article-row")) {
+        mount.innerHTML = `<div class="empty-state">Nothing here yet.</div>`;
+      }
+    } catch (err) {
+      btn.disabled = false;
+      toast("Delete failed: " + err.message, "error");
+    }
   });
 }
 

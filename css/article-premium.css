@@ -28,7 +28,9 @@ body[data-page="article"] {
 body[data-page="article"] .bg-blobs { display: none; }
 body[data-page="article"] main { padding: 0; }
 body[data-page="article"] .article-page { padding: 0; margin: 0; }
-body[data-page="article"] .container { max-width: none; padding: 0; }
+/* Full-bleed only for the article section itself — leave the site footer's
+   .container at normal gutters so the footer doesn't touch the edges. */
+body[data-page="article"] .article-page > .container { max-width: none; padding: 0; }
 
 /* --- Reading progress bar -------------------------------------------------- */
 .reading-progress {
@@ -565,3 +567,14 @@ body[data-page="article"] .back-link:hover {
 /* --- Site header + footer tune-up on article pages ----------------------- */
 body[data-page="article"] #site-header { display: none; }
 body[data-page="article"] #site-footer { background: var(--paper); }
+
+/* Related articles block sits inside the full-bleed container; give it its
+   own centered gutter so the grid doesn't touch the viewport edges. */
+body[data-page="article"] .related-articles-wrap {
+  max-width: 1200px;
+  margin: 80px auto 0;
+  padding: 0 24px 80px;
+}
+@media (max-width: 600px) {
+  body[data-page="article"] .related-articles-wrap { padding: 0 16px 48px; }
+}

@@ -59,8 +59,15 @@ async function mountBuilder(ctx, container) {
           </div>
         </div>
         <div>
-          <div class="section-title" style="margin-top:0;">Live preview</div>
-          <div class="newsletter-frame"><iframe id="preview-frame" sandbox="allow-same-origin" title="Newsletter preview"></iframe></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;">
+            <div class="section-title" style="margin:0;">Live preview</div>
+            <div class="preview-size-toggle" role="tablist" aria-label="Preview width" style="display:inline-flex;border:1px solid var(--hairline);border-radius:8px;overflow:hidden;">
+              <button type="button" class="btn btn-ghost btn-xs" data-preview-size="mobile" aria-pressed="true" style="border-radius:0;border:0;padding:6px 12px;font-weight:600;background:var(--surface-2);">Mobile</button>
+              <button type="button" class="btn btn-ghost btn-xs" data-preview-size="desktop" aria-pressed="false" style="border-radius:0;border:0;border-left:1px solid var(--hairline);padding:6px 12px;font-weight:600;">Desktop (Gmail)</button>
+            </div>
+          </div>
+          <div class="newsletter-frame" id="preview-frame-wrap"><iframe id="preview-frame" sandbox="allow-same-origin" title="Newsletter preview"></iframe></div>
+          <div class="hint" id="preview-size-hint" style="margin-top:6px;">Rendering at 420px wide — matches phone mail clients.</div>
         </div>
       </div>
     </div>`;
@@ -74,10 +81,29 @@ async function mountBuilder(ctx, container) {
     status: card.querySelector("#builder-status"),
     articleList: card.querySelector("#article-list"),
     iframe: card.querySelector("#preview-frame"),
+    frameWrap: card.querySelector("#preview-frame-wrap"),
+    sizeHint: card.querySelector("#preview-size-hint"),
     btnRefresh: card.querySelector("#btn-refresh"),
     btnTest: card.querySelector("#btn-test"),
     btnSend: card.querySelector("#btn-send"),
   };
+
+  // Preview-width toggle. Desktop mode simulates Gmail's wider reading pane
+  // (~900px), mobile simulates phone clients (~420px). The email template is
+  // fluid — the iframe width change is what drives its @media breakpoints.
+  els.frameWrap.dataset.size = "mobile";
+  card.querySelectorAll("[data-preview-size]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const size = btn.dataset.previewSize;
+      els.frameWrap.dataset.size = size;
+      card.querySelectorAll("[data-preview-size]").forEach((b) => {
+        b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+      });
+      els.sizeHint.textContent = size === "desktop"
+        ? "Rendering at full desktop width — matches Gmail's wide reading pane."
+        : "Rendering at 420px wide — matches phone mail clients.";
+    });
+  });
 
   let currentHtml = "";
   let currentArticles = [];
