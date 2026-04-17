@@ -61,6 +61,7 @@ function generateArticleHTML(data) {
     const safeCategory = escapeHtml(category);
     const safeCoverImage = escapeHtml(coverImage);
     const safeDeck = deck ? escapeHtml(deck) : '';
+    const authorInitial = (author || 'A').trim().charAt(0).toUpperCase();
 
     const dateFormatted = new Date(date).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -68,11 +69,15 @@ function generateArticleHTML(data) {
         day: 'numeric'
     });
 
+    // Rough reading time (200 wpm)
+    const wordCount = (content || '').replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    const readMinutes = Math.max(1, Math.round(wordCount / 200));
+
     let tagsHTML = '';
     if (tags && tags.length > 0) {
         tagsHTML = tags.map(tag => {
             const safeTag = escapeHtml(tag);
-            return `<span class="article-tag">${safeTag}</span>`;
+            return `<a class="tag-pill" href="../../articles.html?tag=${encodeURIComponent(tag)}">#${safeTag}</a>`;
         }).join('');
     }
 
@@ -89,7 +94,7 @@ function generateArticleHTML(data) {
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="${safeTitle} - The Catalyst Magazine">
+    <meta name="description" content="${safeDeck || safeTitle + ' - The Catalyst Magazine'}">
     <title>${safeTitle} | The Catalyst Magazine</title>
 
     <!-- Favicons -->
@@ -101,7 +106,7 @@ function generateArticleHTML(data) {
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="article">
     <meta property="og:title" content="${safeTitle} | The Catalyst Magazine">
-    <meta property="og:description" content="${safeTitle} - The Catalyst Magazine">
+    <meta property="og:description" content="${safeDeck || safeTitle + ' - The Catalyst Magazine'}">
     <meta property="og:image" content="${safeCoverImage}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -109,178 +114,15 @@ function generateArticleHTML(data) {
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${safeTitle} | The Catalyst Magazine">
-    <meta name="twitter:description" content="${safeTitle} - The Catalyst Magazine">
+    <meta name="twitter:description" content="${safeDeck || safeTitle + ' - The Catalyst Magazine'}">
     <meta name="twitter:image" content="${safeCoverImage}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../css/styles.css">
-
-    <style>
-        .article-detail-header {
-            margin-bottom: 40px;
-        }
-
-        .article-detail-category {
-            display: inline-block;
-            padding: 8px 18px;
-            background: var(--accent-gradient);
-            border-radius: var(--radius-full);
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 20px;
-        }
-
-        .article-detail-title {
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 20px;
-            color: var(--text-dark);
-        }
-
-        .article-deck {
-            font-size: 20px;
-            color: var(--text-muted);
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-
-        .article-detail-meta {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            font-size: 1rem;
-            color: var(--text-muted);
-        }
-
-        .article-detail-image {
-            width: 100%;
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            margin-bottom: 40px;
-            box-shadow: var(--glass-shadow-lg);
-        }
-
-        .article-detail-image img {
-            width: 100%;
-            height: 100%;
-            display: block;
-            object-fit: cover;
-        }
-
-        .article-detail-content {
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(16px);
-            border: 1px solid #e5e7eb;
-            border-radius: var(--radius-xl);
-            padding: 48px;
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-        }
-
-        .article-detail-content p {
-            font-size: 1.1rem;
-            line-height: 1.9;
-            color: var(--text-body);
-            margin-bottom: 24px;
-        }
-
-        .article-detail-content h1,
-        .article-detail-content h2,
-        .article-detail-content h3 {
-            font-weight: 700;
-            margin: 48px 0 24px;
-            color: var(--text-dark);
-        }
-
-        .article-detail-content h1 { font-size: 1.8rem; }
-        .article-detail-content h2 {
-            font-size: 1.6rem;
-            padding-bottom: 12px;
-            border-bottom: 2px solid var(--accent-primary);
-        }
-        .article-detail-content h3 { font-size: 1.4rem; }
-
-        .article-detail-content img {
-            max-width: 100%;
-            border-radius: var(--radius-sm);
-            margin: 32px 0;
-        }
-
-        .article-detail-content blockquote {
-            border-left: 4px solid var(--accent-primary);
-            padding-left: 24px;
-            margin: 32px 0;
-            font-style: italic;
-            color: var(--text-muted);
-            font-size: 1.15rem;
-        }
-
-        .article-detail-content ul,
-        .article-detail-content ol {
-            margin: 24px 0;
-            padding-left: 32px;
-        }
-
-        .article-detail-content li {
-            margin-bottom: 12px;
-            line-height: 1.8;
-        }
-
-        .article-detail-content code {
-            background: var(--bg-light);
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-        }
-
-        .article-detail-content pre {
-            background: var(--bg-light);
-            padding: 20px;
-            border-radius: var(--radius-sm);
-            overflow-x: auto;
-            margin: 24px 0;
-        }
-
-        .article-detail-content a {
-            color: var(--accent-primary);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .article-detail-content a:hover {
-            text-decoration: underline;
-        }
-
-        .article-tags {
-            margin-top: 48px;
-            padding-top: 32px;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .article-tag {
-            display: inline-block;
-            padding: 8px 16px;
-            margin-right: 12px;
-            margin-bottom: 12px;
-            background: var(--bg-light);
-            border-radius: var(--radius-full);
-            font-size: 14px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        @media (max-width: 768px) {
-            .article-detail-content {
-                padding: 32px 24px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../../css/article-premium.css">
 </head>
 <body data-page="article">
     <!-- Google Tag Manager (noscript) -->
@@ -288,56 +130,87 @@ function generateArticleHTML(data) {
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <!-- Animated Background Blobs -->
-    <div class="bg-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="blob blob-3"></div>
-        <div class="blob blob-4"></div>
-    </div>
+    <!-- Reading progress bar -->
+    <div id="reading-progress" class="reading-progress" aria-hidden="true"><span></span></div>
+
+    <!-- Floating back link -->
+    <a href="../../articles.html" class="article-back-fab" aria-label="Back to articles">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Back</span>
+    </a>
 
     <div id="site-header"></div>
 
     <main>
-        <section class="article-page">
-            <div class="container">
-                <a href="../../articles.html" class="back-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7"/>
-                    </svg>
-                    Back to Articles
-                </a>
-
-                <div class="article-detail">
-                    <div class="article-detail-header">
-                        <span class="article-detail-category">${safeCategory}</span>
-                        <h1 class="article-detail-title">${safeTitle}</h1>
-                        ${safeDeck ? `<p class="article-deck">${safeDeck}</p>` : ''}
-                        <div class="article-detail-meta">
-                            <span>${safeAuthor}</span>
-                            <span>•</span>
-                            <span>${dateFormatted}</span>
-                        </div>
-                    </div>
-
-                    <div class="article-detail-image">
-                        <img src="${safeCoverImage}" alt="${safeTitle}">
-                    </div>
-
-                    <div class="article-detail-content">
-                        ${content}
-                    </div>
-
-                    ${tagsHTML ? `<div class="article-tags">${tagsHTML}</div>` : ''}
+        <!-- CNN/NYT style full-bleed hero -->
+        <header class="article-hero">
+            <div class="article-hero__image" style="background-image:url('${safeCoverImage}')"></div>
+            <div class="article-hero__scrim"></div>
+            <div class="article-hero__inner">
+                <span class="article-hero__category">${safeCategory}</span>
+                <h1 class="article-hero__title">${safeTitle}</h1>
+                ${safeDeck ? `<p class="article-hero__deck">${safeDeck}</p>` : ''}
+                <div class="article-hero__meta">
+                    <span class="article-hero__avatar" aria-hidden="true">${escapeHtml(authorInitial)}</span>
+                    <span class="article-hero__author">By ${safeAuthor}</span>
+                    <span class="article-hero__dot">·</span>
+                    <span class="article-hero__date">${dateFormatted}</span>
+                    <span class="article-hero__dot">·</span>
+                    <span class="article-hero__read">${readMinutes} min read</span>
                 </div>
+            </div>
+        </header>
+
+        <section class="article-body-wrap">
+            <article class="article-body">${content}</article>
+
+            ${tagsHTML ? `<div class="article-tags-row">${tagsHTML}</div>` : ''}
+
+            <aside class="article-byline">
+                <div class="article-byline__avatar" aria-hidden="true">${escapeHtml(authorInitial)}</div>
+                <div class="article-byline__body">
+                    <div class="article-byline__label">Written by</div>
+                    <div class="article-byline__name">${safeAuthor}</div>
+                    <div class="article-byline__bio">Contributor, The Catalyst Magazine</div>
+                </div>
+            </aside>
+
+            <div class="article-share" role="group" aria-label="Share this article">
+                <span class="article-share__label">Share this story</span>
+                <a class="article-share__btn article-share__btn--twitter" target="_blank" rel="noopener"
+                   href="https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2H21l-6.52 7.45L22.5 22h-6.77l-4.74-6.2L5.4 22H2.64l6.97-7.97L1.5 2h6.86l4.29 5.65L18.244 2Zm-1.19 18h1.77L7.03 4H5.13l11.924 16Z"/></svg>
+                </a>
+                <a class="article-share__btn article-share__btn--linkedin" target="_blank" rel="noopener"
+                   href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('')}">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.452 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.851-3.037-1.853 0-2.136 1.446-2.136 2.94v5.666H9.356V9h3.414v1.561h.047c.476-.9 1.637-1.85 3.37-1.85 3.602 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.06 2.06 0 01-2.063-2.06 2.06 2.06 0 012.063-2.06 2.06 2.06 0 012.062 2.06 2.06 2.06 0 01-2.062 2.06zm1.777 13.019H3.56V9h3.554v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.226.792 24 1.771 24h20.451C23.2 24 24 23.226 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                </a>
+                <button class="article-share__btn article-share__btn--copy" type="button" onclick="(function(btn){navigator.clipboard.writeText(window.location.href).then(()=>{btn.classList.add('is-copied');setTimeout(()=>btn.classList.remove('is-copied'),1800);});})(this)" aria-label="Copy link">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
             </div>
         </section>
     </main>
 
     <div id="site-footer"></div>
 
+    <script>
+      // Reading progress bar
+      (function(){
+        var bar = document.querySelector('#reading-progress span');
+        if (!bar) return;
+        function onScroll(){
+          var h = document.documentElement;
+          var max = h.scrollHeight - h.clientHeight;
+          var pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+          bar.style.width = pct + '%';
+        }
+        window.addEventListener('scroll', onScroll, { passive:true });
+        onScroll();
+      })();
+    </script>
     <script src="../../js/layout.js"></script>
-    <script src="../../js/mailchimp-handler.js"></script>
+    <script src="../../js/newsletter-handler.js"></script>
 </body>
 </html>`;
 }

@@ -1113,13 +1113,12 @@ function renderArticleDetail(article) {
     const container = document.getElementById('article-detail');
     if (!container) return;
 
-    // Update page title
+    // --- Meta tags + page title -------------------------------------------
     document.title = `${article.title} | The Catalyst Magazine`;
 
-    // Update Open Graph and Twitter Card meta tags
-    const articleUrl = `https://yairben.com/catalyst/article?id=${article.id}`;
-    const articleImage = article.image || 'https://yairben.com/catalyst/NewLogoShape.png';
-    const articleDescription = article.excerpt || article.description || 'Read this article on The Catalyst Magazine';
+    const articleUrl = `${window.location.origin}/article.html?id=${article.id}`;
+    const articleImage = article.image || 'NewLogoShape.png';
+    const articleDescription = article.excerpt || article.deck || article.description || 'Read this story on The Catalyst Magazine';
 
     document.getElementById('meta-description')?.setAttribute('content', articleDescription);
     document.getElementById('meta-og-url')?.setAttribute('content', articleUrl);
@@ -1131,48 +1130,119 @@ function renderArticleDetail(article) {
     document.getElementById('meta-twitter-description')?.setAttribute('content', articleDescription);
     document.getElementById('meta-twitter-image')?.setAttribute('content', articleImage);
 
+    // --- Content ----------------------------------------------------------
     const contentHtml = article.blocks?.length
         ? renderContentBlocks(article.blocks)
-        : article.content;
+        : (article.content || `<p>${article.excerpt || ''}</p>`);
     const readingTime = article.readingTime || estimateReadingTime(article);
-    const coverImage = createProgressiveImage(
-        article.image || ARTICLE_FALLBACK_IMAGE,
-        article.title,
-        'article-detail-image',
-        true,
-        article.imageSettings
-    );
+    const heroImage = article.image || ARTICLE_FALLBACK_IMAGE;
+    const category = formatCategory(article.category || 'feature');
+    const authorInitials = (article.author || 'TC')
+        .split(/\s+/)
+        .map(s => s[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+    const deckHtml = article.deck
+        ? `<p class="article-hero__deck">${escapeHtmlAttr(article.deck)}</p>`
+        : '';
+    const shareUrl = encodeURIComponent(articleUrl);
+    const shareText = encodeURIComponent(article.title);
 
     container.innerHTML = `
-        <div class="article-detail-header">
-            <span class="article-detail-category">${formatCategory(article.category)}</span>
-            <h1 class="article-detail-title">${article.title}</h1>
-            <div class="article-detail-meta">
-                <span class="article-detail-author">${article.author}</span>
-                <span>•</span>
-                <span>${article.date}</span>
-                <span class="reading-time">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    ${readingTime}
-                </span>
+        <header class="article-hero">
+            <div class="article-hero__image" style="background-image:url('${escapeHtmlAttr(heroImage)}')"></div>
+            <div class="article-hero__inner">
+                <span class="article-hero__category">${category}</span>
+                <h1 class="article-hero__title">${escapeHtmlAttr(article.title)}</h1>
+                ${deckHtml}
+                <div class="article-hero__meta">
+                    <span>By <strong>${escapeHtmlAttr(article.author || 'The Catalyst')}</strong></span>
+                    <span class="dot"></span>
+                    <span>${escapeHtmlAttr(article.date || '')}</span>
+                    <span class="dot"></span>
+                    <span class="reading-time">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        ${readingTime}
+                    </span>
+                </div>
             </div>
-        </div>
+        </header>
 
-        ${coverImage}
+        <div class="article-body-wrap">
+            <article class="article-body">${contentHtml}</article>
 
-        <div class="article-detail-content">
-            ${contentHtml ? contentHtml : `
-                <p>${article.excerpt || ''}</p>
-                <p>This article is available on The Catalyst Magazine website.</p>
-            `}
+            <aside class="article-byline">
+                <div class="article-byline__avatar">${authorInitials}</div>
+                <div>
+                    <div class="article-byline__name">${escapeHtmlAttr(article.author || 'The Catalyst')}</div>
+                    <div class="article-byline__role">Contributing writer · The Catalyst Magazine</div>
+                </div>
+            </aside>
+
+            <div class="article-share" role="group" aria-label="Share this story">
+                <span>Share</span>
+                <a class="article-share__btn" href="https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}" target="_blank" rel="noopener" aria-label="Share on X">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+                <a class="article-share__btn" href="https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zM7.78 8h4.37v1.93h.06c.61-1.15 2.1-2.37 4.32-2.37 4.62 0 5.47 3.04 5.47 7v7.45h-4.56v-6.6c0-1.58-.03-3.61-2.2-3.61-2.2 0-2.54 1.72-2.54 3.5V22H7.78V8z"/></svg>
+                </a>
+                <button class="article-share__btn" type="button" onclick="copyArticleLink()" aria-label="Copy link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </button>
+            </div>
         </div>
     `;
 
+    mountReadingProgress();
     registerProgressiveImages(container);
 }
+
+// Minimal HTML-attribute-safe escape; article.content may contain trusted HTML.
+function escapeHtmlAttr(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+// Reading-progress bar — height of window / scroll position.
+function mountReadingProgress() {
+    if (document.getElementById('reading-progress')) return;
+    const bar = document.createElement('div');
+    bar.id = 'reading-progress';
+    bar.className = 'reading-progress';
+    bar.innerHTML = '<div class="reading-progress__fill"></div>';
+    document.body.prepend(bar);
+    const fill = bar.firstElementChild;
+
+    const update = () => {
+        const doc = document.documentElement;
+        const scrolled = doc.scrollTop || document.body.scrollTop;
+        const maxScroll = (doc.scrollHeight - doc.clientHeight) || 1;
+        const pct = Math.min(100, Math.max(0, (scrolled / maxScroll) * 100));
+        fill.style.width = pct + '%';
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+}
+
+// Copy link helper used by the share row.
+window.copyArticleLink = function () {
+    const url = window.location.href;
+    (navigator.clipboard && navigator.clipboard.writeText)
+        ? navigator.clipboard.writeText(url).then(() => {
+            showNotification?.('Link copied!', 'success');
+          })
+        : (() => { const i = document.createElement('input'); i.value = url; document.body.appendChild(i); i.select(); document.execCommand('copy'); i.remove(); })();
+};
 
 function renderRelatedArticles(currentArticle, data = articleData) {
     const container = document.getElementById('related-articles');

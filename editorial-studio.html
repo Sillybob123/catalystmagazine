@@ -3,2162 +3,242 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editorial Studio | The Catalyst Magazine</title>
+    <meta name="description" content="Editorial Studio — The Catalyst Magazine">
+    <title>Editorial Studio · The Catalyst Magazine</title>
 
+    <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
 
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+Pro:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
 
+    <!-- Quill 1.3.6 (snow + bubble themes — persistent toolbar AND floating selection toolbar) -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.core.css" rel="stylesheet">
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.bubble.css" rel="stylesheet">
 
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #fafbfc;
-            color: #1a1a1a;
-            min-height: 100vh;
-        }
-
-
-        .btn {
-            padding: 10px 16px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            font-family: inherit;
-        }
-
-        .btn-secondary {
-            background: white;
-            color: #374151;
-            border: 1px solid #e5e7eb;
-        }
-
-        .btn-secondary:hover {
-            background: #f9fafb;
-            border-color: #d1d5db;
-        }
-
-        .studio-shell {
-            max-width: 1480px;
-            margin: 0 auto;
-            padding: 40px 32px 80px;
-        }
-
-        /* Editor V2 Layout */
-        .editor-v2-container {
-            display: grid;
-            grid-template-columns: 1fr 300px;
-            gap: 32px;
-            align-items: start;
-        }
-
-        .editor-v2-main {
-            min-width: 0;
-        }
-
-        .editor-v2-canvas {
-            max-width: 900px;
-            margin: 0 auto;
-            background: #fcfcfc;
-            border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-
-        /* Hero Image Zone - Compact */
-        .editor-v2-hero-zone {
-            position: relative;
-            width: 100%;
-            max-height: 280px;
-            aspect-ratio: 21 / 9;
-            cursor: pointer;
-            overflow: hidden;
-        }
-
-        .editor-v2-hero-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 2px dashed #d1d5db;
-            background: #fafbfc;
-            transition: all 0.2s;
-        }
-
-        .editor-v2-hero-placeholder:hover {
-            border-color: #3b82f6;
-            background: #f0f9ff;
-        }
-
-        .editor-v2-hero-zone.dragover .editor-v2-hero-placeholder {
-            border-color: #3b82f6;
-            background: #eff6ff;
-            border-style: solid;
-        }
-
-        .hero-icon {
-            color: #9ca3af;
-            margin-bottom: 12px;
-        }
-
-        .hero-label {
-            font-size: 15px;
-            font-weight: 600;
-            color: #374151;
-            margin: 0 0 4px 0;
-        }
-
-        .hero-hint {
-            font-size: 13px;
-            color: #6b7280;
-            margin: 0;
-        }
-
-        .editor-v2-hero-preview {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-
-        .editor-v2-hero-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .hero-remove {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: none;
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .hero-remove:hover {
-            background: rgba(239, 68, 68, 0.9);
-            transform: scale(1.1);
-        }
-
-        .editor-v2-actions {
-            max-width: 900px;
-            margin: 20px auto 0;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 12px;
-            border: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .editor-v2-sidebar {
-            position: sticky;
-            top: 80px;
-            height: fit-content;
-            max-height: calc(100vh - 100px);
-            overflow-y: auto;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.82);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        .sidebar-section {
-            border-bottom: 1px solid #eee;
-            padding-bottom: 16px;
-            margin-bottom: 16px;
-        }
-
-        .sidebar-section:last-of-type {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-
-        .sidebar-section-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 12px;
-            cursor: pointer;
-        }
-
-        .sidebar-section-content {
-            padding-top: 8px;
-        }
-
-        details.sidebar-section summary {
-            list-style: none;
-            user-select: none;
-        }
-
-        details.sidebar-section summary::-webkit-details-marker {
-            display: none;
-        }
-
-        .article-outline {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .outline-empty {
-            font-size: 13px;
-            color: #9ca3af;
-            font-style: italic;
-            padding: 8px 0;
-        }
-
-        .outline-item {
-            font-size: 14px;
-            line-height: 1.6;
-            padding: 6px 0;
-            color: #666;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .outline-item:hover {
-            color: #3b82f6;
-        }
-
-        .outline-item.h1 {
-            font-weight: 700;
-            padding-left: 0;
-            color: #374151;
-        }
-
-        .outline-item.h2 {
-            padding-left: 12px;
-            font-weight: 600;
-        }
-
-        .outline-item.h3 {
-            padding-left: 24px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .sidebar-footer {
-            padding-top: 16px;
-            margin-top: 16px;
-            border-top: 1px solid #eee;
-        }
-
-        .word-count {
-            font-size: 13px;
-            font-weight: 600;
-            color: #6b7280;
-            text-align: center;
-        }
-
-        @media (max-width: 1200px) {
-            .editor-v2-container {
-                grid-template-columns: 1fr;
-            }
-
-            .editor-v2-sidebar {
-                position: static;
-                order: -1;
-                max-height: none;
-            }
-        }
-
-        .workflow-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 14px;
-            margin: 22px 0 28px;
-        }
-
-        .helper-banner {
-            margin: 14px 0 8px;
-            padding: 14px 16px;
-            background: var(--glass-bg-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .helper-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .helper-link {
-            padding: 8px 12px;
-            border-radius: var(--radius-full);
-            background: var(--bg-white);
-            border: 1px solid var(--glass-border);
-            color: var(--text-body);
-            font-weight: 700;
-            text-decoration: none;
-            transition: all var(--transition-fast);
-        }
-
-        .helper-link:hover {
-            color: var(--text-dark);
-            border-color: var(--accent-primary);
-        }
-
-        .workflow-card {
-            background: var(--glass-bg-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            padding: 16px 18px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        .workflow-card h4 {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 6px;
-        }
-
-        .workflow-card p {
-            color: var(--text-muted);
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .studio-grid {
-            display: grid;
-            grid-template-columns: 360px 1fr;
-            gap: 18px;
-        }
-
-        .pane {
-            background: var(--glass-bg-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--glass-shadow-lg);
-        }
-
-        .pane + .pane {
-            margin-top: 16px;
-        }
-
-        .pane-header {
-            padding: 18px 20px 12px;
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .pane-title {
-            font-size: 17px;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .pane-body {
-            padding: 18px 20px 22px;
-        }
-
-        .field {
-            margin-bottom: 18px;
-        }
-
-        .field label {
-            display: block;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-body);
-            margin-bottom: 6px;
-        }
-
-        .field input,
-        .field textarea,
-        .field select {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: var(--radius-sm);
-            border: 2px solid var(--glass-border);
-            background: var(--bg-white);
-            font-family: 'Poppins', sans-serif;
-            font-size: 14px;
-            color: var(--text-dark);
-            transition: all var(--transition-fast);
-        }
-
-        .field textarea {
-            min-height: 90px;
-            resize: vertical;
-        }
-
-        .field input:focus,
-        .field textarea:focus,
-        .field select:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.08);
-        }
-
-        .hint {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 6px;
-        }
-
-        .dropzone {
-            border: 2px dashed var(--glass-border);
-            border-radius: var(--radius-md);
-            padding: 28px 18px;
-            text-align: center;
-            background: var(--bg-white);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .dropzone:hover,
-        .dropzone.dragover {
-            border-color: var(--accent-primary);
-            background: var(--bg-light);
-        }
-
-        .cover-preview {
-            margin-top: 12px;
-            display: none;
-        }
-
-        .cover-preview img {
-            width: 100%;
-            border-radius: var(--radius-sm);
-        }
-
-        .editor-pane {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .editorial-preview {
-            max-width: 880px;
-            margin: 0 auto 12px;
-            padding: 24px 28px 0;
-        }
-
-        .editorial-category {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: var(--radius-full);
-            background: var(--accent-gradient);
-            color: white;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-        }
-
-        .editorial-title {
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-weight: 800;
-            line-height: 1.2;
-            color: var(--text-dark);
-            margin: 18px 0 12px;
-        }
-
-        .editorial-deck {
-            font-size: 1.05rem;
-            line-height: 1.7;
-            color: var(--text-muted);
-            margin-bottom: 18px;
-        }
-
-        .editorial-meta {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 18px;
-        }
-
-        .editorial-author {
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .editorial-cover {
-            width: 100%;
-            max-width: 880px;
-            margin: 0 auto 24px;
-            aspect-ratio: 16 / 9;
-            border-radius: var(--radius-xl);
-            overflow: hidden;
-            background: var(--bg-light);
-            box-shadow: var(--glass-shadow-lg);
-        }
-
-        .editorial-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .editorial-canvas {
-            background: rgba(255, 255, 255, 0.94);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--glass-shadow-lg);
-            max-width: 880px;
-            margin: 0 auto 14px;
-        }
-
-        /* Editor V2 Toolbar - Minimal Sticky Bar */
-        #studio-toolbar {
-            position: sticky;
-            top: 72px;
-            z-index: 50;
-            border: none !important;
-            border-bottom: 1px solid #e5e7eb !important;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 10px 16px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        #studio-toolbar .ql-formats {
-            margin: 0 8px 0 0;
-            padding-right: 8px;
-            border-right: 1px solid #e5e7eb;
-        }
-
-        #studio-toolbar .ql-formats:last-child {
-            border-right: none;
-        }
-
-        #studio-toolbar button,
-        #studio-toolbar select {
-            width: auto !important;
-            height: 32px !important;
-            padding: 6px 10px !important;
-            border-radius: 6px !important;
-            transition: all 0.2s;
-        }
-
-        #studio-toolbar button:hover {
-            background: #f3f4f6 !important;
-        }
-
-        #studio-toolbar button.ql-active {
-            background: #e5e7eb !important;
-            color: #3b82f6 !important;
-        }
-
-        #studio-toolbar #insert-hr {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #studio-toolbar #insert-hr svg {
-            color: #6b7280;
-        }
-
-        #studio-toolbar #insert-hr:hover svg {
-            color: #3b82f6;
-        }
-
-        .ql-container {
-            border: none !important;
-            background: transparent;
-        }
-
-        #editor {
-            min-height: 600px;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0;
-            background: #fcfcfc;
-        }
-
-        /* Editor V2 Typography - Professional Journal Fonts */
-        #editor .ql-editor {
-            font-family: 'Lora', 'Crimson Text', 'Source Serif Pro', Georgia, serif;
-            font-size: 18px;
-            line-height: 1.7;
-            color: #1a1a1a;
-            padding: 28px 24px 72px;
-        }
-
-        #editor .ql-editor p {
-            font-family: 'Lora', 'Crimson Text', Georgia, serif;
-            font-size: 18px;
-            line-height: 1.7;
-            color: #1a1a1a;
-            margin-bottom: 1.3em;
-        }
-
-        #editor .ql-editor h1 {
-            font-family: 'Inter', -apple-system, sans-serif;
-            font-size: 2.5rem;
-            font-weight: 700;
-            line-height: 1.2;
-            color: #000000;
-            margin: 0 0 24px 0;
-            padding: 48px 0 0 0;
-            border-top: 3px solid #e5e7eb;
-        }
-
-        #editor .ql-editor h1:first-child {
-            border-top: none;
-            padding-top: 0;
-        }
-
-        #editor .ql-editor h2 {
-            font-family: 'Inter', -apple-system, sans-serif;
-            font-size: 1.75rem;
-            font-weight: 600;
-            line-height: 1.3;
-            color: #000000;
-            margin: 0 0 20px 0;
-            padding: 40px 0 0 0;
-            border-top: 2px solid #e5e7eb;
-        }
-
-        #editor .ql-editor h2:first-child {
-            border-top: none;
-            padding-top: 0;
-        }
-
-        #editor .ql-editor h3 {
-            font-family: 'Inter', -apple-system, sans-serif;
-            font-size: 1.35rem;
-            font-weight: 600;
-            line-height: 1.4;
-            color: #1a1a1a;
-            margin: 32px 0 16px 0;
-        }
-
-        #editor .ql-editor h4 {
-            font-family: 'Inter', -apple-system, sans-serif;
-            font-size: 1.1rem;
-            font-weight: 600;
-            line-height: 1.4;
-            color: #374151;
-            margin: 24px 0 12px 0;
-        }
-
-        #editor .ql-editor blockquote {
-            font-family: 'Lora', 'Crimson Text', Georgia, serif;
-            font-size: 1.05rem;
-            line-height: 1.75;
-            font-style: italic;
-            color: #374151;
-            border-left: 4px solid #3b82f6;
-            padding: 20px 24px;
-            margin: 32px 0;
-            background: rgba(248, 250, 252, 0.8);
-            border-radius: 0 6px 6px 0;
-        }
-
-        #editor .ql-editor ul,
-        #editor .ql-editor ol {
-            font-family: 'Lora', 'Crimson Text', Georgia, serif;
-            padding-left: 28px;
-            margin: 20px 0;
-            line-height: 1.7;
-            color: #1a1a1a;
-        }
-
-        #editor .ql-editor li {
-            font-family: 'Lora', 'Crimson Text', Georgia, serif;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        #editor .ql-editor img {
-            max-width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            margin: 32px 0;
-        }
-
-        #editor .ql-editor a {
-            color: #3b82f6;
-            text-decoration: underline;
-        }
-
-        #editor .ql-editor a:hover {
-            color: #2563eb;
-        }
-
-        #editor .ql-editor .ql-video {
-            width: 100%;
-            height: 420px;
-            margin: 32px 0;
-            border-radius: 8px;
-        }
-
-        #editor .ql-editor hr {
-            border: none;
-            border-top: 1px solid #e5e7eb;
-            margin: 40px 0;
-        }
-
-        #editor .ql-editor pre,
-        #editor .ql-editor code {
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 15px;
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-        }
-
-        .action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .status-chip {
-            padding: 10px 12px;
-            background: var(--bg-light);
-            border-radius: var(--radius-full);
-            color: var(--text-muted);
-            font-size: 13px;
-            border: 1px solid var(--glass-border);
-        }
-
-        .btn-primary {
-            padding: 12px 20px;
-            font-size: 14px;
-            font-weight: 700;
-            color: white;
-            background: var(--accent-gradient);
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all var(--transition-normal);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .btn-secondary {
-            padding: 12px 18px;
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text-body);
-            background: var(--bg-white);
-            border: 2px solid var(--glass-border);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--accent-primary);
-            background: var(--bg-light);
-        }
-
-        .btn-primary:disabled,
-        .btn-secondary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .toast {
-            position: fixed;
-            right: 20px;
-            bottom: 20px;
-            padding: 14px 16px;
-            border-radius: var(--radius-sm);
-            color: white;
-            font-weight: 600;
-            box-shadow: var(--shadow-md);
-            transform: translateY(30px);
-            opacity: 0;
-            transition: all var(--transition-normal);
-            z-index: 999;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .toast.success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        .toast.error {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-
-        .tiny-text {
-            font-size: 12px;
-            color: var(--text-muted);
-            line-height: 1.5;
-        }
-
-        /* Image Modal Styles */
-        .image-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            animation: fadeIn 0.2s ease;
-        }
-
-        .image-modal-overlay.active {
-            display: flex;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        .image-modal {
-            background: white;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                transform: translateY(20px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-
-        .image-modal-header {
-            padding: 20px 24px;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .image-modal-header h3 {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .image-modal-close {
-            background: none;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #6b7280;
-            transition: all 0.2s;
-        }
-
-        .image-modal-close:hover {
-            background: #f3f4f6;
-            color: #111827;
-        }
-
-        .image-modal-body {
-            padding: 24px;
-        }
-
-        .image-upload-zone {
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            padding: 40px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #f9fafb;
-            margin-bottom: 24px;
-        }
-
-        .image-upload-zone:hover {
-            border-color: #3b82f6;
-            background: #eff6ff;
-        }
-
-        .image-upload-zone.has-image {
-            padding: 0;
-            border: 1px solid #e5e7eb;
-            background: transparent;
-        }
-
-        .image-upload-icon {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 12px;
-            color: #9ca3af;
-        }
-
-        .image-upload-text {
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 4px;
-        }
-
-        .image-upload-hint {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .image-preview-container {
-            width: 100%;
-            max-height: 300px;
-            overflow: hidden;
-            border-radius: 6px;
-            display: none;
-        }
-
-        .image-preview-container.active {
-            display: block;
-        }
-
-        .image-preview-container img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 14px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.2s;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .form-select {
-            width: 100%;
-            padding: 10px 12px;
-            font-size: 14px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-family: 'Inter', sans-serif;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .form-select:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .radio-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-
-        .radio-option input[type="radio"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #3b82f6;
-        }
-
-        .radio-option label {
-            font-size: 14px;
-            color: #374151;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .image-modal-footer {
-            padding: 16px 24px;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        .modal-btn {
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
-
-        .modal-btn-cancel {
-            background: #f3f4f6;
-            color: #374151;
-        }
-
-        .modal-btn-cancel:hover {
-            background: #e5e7eb;
-        }
-
-        .modal-btn-insert {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-        }
-
-        .modal-btn-insert:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
-        }
-
-        .modal-btn-insert:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Image alignment and sizing in editor */
-        #editor .ql-editor figure {
-            margin: 32px 0;
-            display: block;
-        }
-
-        #editor .ql-editor figure.img-left {
-            float: left;
-            margin: 8px 24px 16px 0;
-            max-width: 50%;
-        }
-
-        #editor .ql-editor figure.img-right {
-            float: right;
-            margin: 8px 0 16px 24px;
-            max-width: 50%;
-        }
-
-        #editor .ql-editor figure.img-center {
-            margin: 32px auto;
-            text-align: center;
-        }
-
-        #editor .ql-editor figure.img-compact img {
-            max-width: 400px;
-        }
-
-        #editor .ql-editor figure.img-normal img {
-            max-width: 100%;
-        }
-
-        #editor .ql-editor figure.img-medium img {
-            max-width: 600px;
-        }
-
-        #editor .ql-editor figure img {
-            display: block;
-            width: 100%;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        #editor .ql-editor figcaption {
-            margin-top: 12px;
-            font-size: 14px;
-            color: #6b7280;
-            font-style: italic;
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        @media (max-width: 1100px) {
-            .studio-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 720px) {
-            .header-container {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .action-bar {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .btn-primary,
-            .btn-secondary,
-            .btn {
-                width: 100%;
-            }
-
-            .header-actions {
-                width: 100%;
-            }
-
-            .user-menu {
-                width: 100%;
-            }
-
-            .helper-banner {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .image-modal {
-                width: 95%;
-                max-height: 95vh;
-            }
-
-            #editor .ql-editor figure.img-left,
-            #editor .ql-editor figure.img-right {
-                float: none;
-                max-width: 100%;
-                margin: 24px 0;
-            }
-        }
-    </style>
+    <!-- Editor styles -->
+    <link rel="stylesheet" href="css/editor-premium.css">
 </head>
-<body data-page="editorial-studio" data-section="editorial">
-    <div id="site-header"></div>
+<body data-page="studio">
 
-    <main class="studio-shell">
-        <div class="editor-v2-container">
-            <!-- Main Canvas (Centered) -->
-            <div class="editor-v2-main">
-                <div class="editor-v2-canvas">
-                    <!-- Hero Image Upload Zone -->
-                    <div class="editor-v2-hero-zone" id="hero-zone">
-                        <input type="file" id="cover-input" accept="image/*" hidden>
-                        <div class="editor-v2-hero-placeholder" id="hero-placeholder">
-                            <svg class="hero-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                <polyline points="21 15 16 10 5 21"></polyline>
-                            </svg>
-                            <p class="hero-label">Drop hero image or click to upload</p>
-                            <p class="hero-hint">Wide format • Max 5MB • JPG/PNG</p>
+    <div class="studio-shell">
+
+        <!-- Sticky Apple-style topbar -->
+        <header class="studio-topbar">
+            <a class="studio-brand" href="admin-dashboard.html" aria-label="Back to dashboard">
+                <img src="NewLogoShape.png" alt="">
+                <span>Editorial Studio</span>
+            </a>
+
+            <div class="studio-breadcrumb">
+                <span id="breadcrumb-label">New Story</span>
+                <span class="dot"></span>
+                <span class="studio-status" id="autosave-indicator" aria-live="polite">
+                    <span class="studio-status__text">Not saved</span>
+                </span>
+            </div>
+
+            <div class="studio-actions">
+                <a class="btn btn-ghost btn-sm" href="admin-dashboard.html">Exit</a>
+                <button type="button" class="btn btn-sm" id="save-draft-btn">Save draft</button>
+                <button type="button" class="btn btn-primary btn-sm" id="submit-btn">Submit for review</button>
+            </div>
+        </header>
+
+        <!-- Editor canvas -->
+        <div class="studio-canvas">
+
+            <!-- Main editor column -->
+            <div class="studio-main">
+
+                <!-- Cover uploader -->
+                <div class="cover-uploader" id="cover-uploader">
+                    <div class="cover-uploader__placeholder" id="cover-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        <div>
+                            <strong>Drop cover image</strong> · or click to upload
                         </div>
-                        <div class="editor-v2-hero-preview" id="hero-preview" style="display:none;">
-                            <img id="hero-preview-img" src="" alt="Hero image">
-                            <button class="hero-remove" id="hero-remove" type="button" title="Remove image">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                </svg>
-                            </button>
-                        </div>
+                        <div style="font-size:12px;color:#a1a1a6">Recommended 1600 × 900 · max 5MB</div>
                     </div>
-
-                    <!-- Minimal Toolbar -->
-                    <div id="studio-toolbar">
-                        <span class="ql-formats">
-                            <select class="ql-header">
-                                <option value="1"></option>
-                                <option value="2"></option>
-                                <option value="3"></option>
-                                <option value="4"></option>
-                                <option value="5"></option>
-                                <option value="6"></option>
-                                <option selected></option>
-                            </select>
-                            <select class="ql-font"></select>
-                            <select class="ql-size">
-                                <option value="small"></option>
-                                <option selected></option>
-                                <option value="large"></option>
-                                <option value="huge"></option>
-                            </select>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-bold"></button>
-                            <button class="ql-italic"></button>
-                            <button class="ql-underline"></button>
-                            <button class="ql-strike"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <select class="ql-color"></select>
-                            <select class="ql-background"></select>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-script" value="sub"></button>
-                            <button class="ql-script" value="super"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-blockquote"></button>
-                            <button class="ql-code-block"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <button id="insert-hr" title="Horizontal Line">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                                </svg>
-                            </button>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-list" value="ordered"></button>
-                            <button class="ql-list" value="bullet"></button>
-                            <button class="ql-indent" value="-1"></button>
-                            <button class="ql-indent" value="+1"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <select class="ql-align"></select>
-                            <button class="ql-direction" value="rtl"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-link"></button>
-                            <button class="ql-image"></button>
-                            <button class="ql-video"></button>
-                        </span>
-                        <span class="ql-formats">
-                            <button class="ql-clean"></button>
-                        </span>
+                    <div class="cover-uploader__scrim"></div>
+                    <div class="cover-uploader__actions">
+                        <button type="button" class="btn btn-sm" id="cover-change-btn">Change</button>
+                        <button type="button" class="btn btn-ghost btn-sm" id="cover-remove-btn">Remove</button>
                     </div>
-
-                    <!-- Quill Editor -->
-                    <div id="editor"></div>
+                    <input type="file" id="cover-input" class="cover-input" accept="image/*">
                 </div>
 
-                <!-- Action Bar -->
-                <div class="editor-v2-actions">
-                    <div class="status-chip" id="status-chip">Not saved yet.</div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="btn-secondary" id="save-draft-btn">Save Draft</button>
-                        <button class="btn-primary" id="submit-btn">Send to Admin</button>
+                <!-- Title & deck -->
+                <textarea class="title-input" id="story-title" rows="2" placeholder="A great story starts with a great title…" maxlength="200"></textarea>
+                <textarea class="deck-input" id="story-deck" rows="2" placeholder="Deck — one sentence that hooks the reader" maxlength="300"></textarea>
+
+                <!-- Editor surface -->
+                <div class="editor-surface">
+
+                    <!-- Persistent formatting toolbar (Wix-style) -->
+                    <div id="studio-toolbar" class="studio-toolbar">
+                        <span class="ql-formats">
+                            <select class="ql-header" aria-label="Text style">
+                                <option value="1">Heading 1</option>
+                                <option value="2">Heading 2</option>
+                                <option value="3">Heading 3</option>
+                                <option selected>Paragraph</option>
+                            </select>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-bold" aria-label="Bold"></button>
+                            <button class="ql-italic" aria-label="Italic"></button>
+                            <button class="ql-underline" aria-label="Underline"></button>
+                            <button class="ql-strike" aria-label="Strikethrough"></button>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-link" aria-label="Link"></button>
+                            <button class="ql-blockquote" aria-label="Block quote"></button>
+                            <button class="ql-code-block" aria-label="Code block"></button>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-list" value="ordered" aria-label="Numbered list"></button>
+                            <button class="ql-list" value="bullet" aria-label="Bulleted list"></button>
+                            <button class="ql-indent" value="-1" aria-label="Decrease indent"></button>
+                            <button class="ql-indent" value="+1" aria-label="Increase indent"></button>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-align" value="" aria-label="Align left"></button>
+                            <button class="ql-align" value="center" aria-label="Align center"></button>
+                            <button class="ql-align" value="right" aria-label="Align right"></button>
+                        </span>
+                        <span class="ql-formats">
+                            <button type="button" id="btn-divider" class="studio-toolbar__custom" aria-label="Insert divider" title="Insert divider (horizontal line)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg>
+                            </button>
+                            <button type="button" id="btn-image" class="studio-toolbar__custom" aria-label="Insert image" title="Insert image">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            </button>
+                        </span>
+                        <span class="ql-formats">
+                            <button class="ql-clean" aria-label="Clear formatting"></button>
+                        </span>
+                    </div>
+
+                    <div id="editor"></div>
+
+                    <!-- Slash menu -->
+                    <div class="slash-menu" id="slash-menu" role="listbox" aria-label="Insert block">
+                        <div class="slash-menu__hint">Basic blocks</div>
+                        <div class="slash-item" data-block="h1" role="option">
+                            <div class="slash-item__icon">H1</div>
+                            <div class="slash-item__meta"><span class="slash-item__name">Heading 1</span><span class="slash-item__desc">Big section title</span></div>
+                        </div>
+                        <div class="slash-item" data-block="h2" role="option">
+                            <div class="slash-item__icon">H2</div>
+                            <div class="slash-item__meta"><span class="slash-item__name">Heading 2</span><span class="slash-item__desc">Medium section title</span></div>
+                        </div>
+                        <div class="slash-item" data-block="h3" role="option">
+                            <div class="slash-item__icon">H3</div>
+                            <div class="slash-item__meta"><span class="slash-item__name">Heading 3</span><span class="slash-item__desc">Small section title</span></div>
+                        </div>
+                        <div class="slash-item" data-block="quote" role="option">
+                            <div class="slash-item__icon">“”</div>
+                            <div class="slash-item__meta"><span class="slash-item__name">Pull quote</span><span class="slash-item__desc">Highlight a memorable line</span></div>
+                        </div>
+                        <div class="slash-item" data-block="bullet" role="option">
+                            <div class="slash-item__icon">•</div>
+                            <div class="slash-item__meta"><span class="slash-item__name">Bulleted list</span><span class="slash-item__desc">Unordered list</span></div>
+                        </div>
+                        <div class="slash-item" data-block="ordered" role="option">
+                            <div class="slash-item__icon">1.</div>
+                            <div class="slash-item__meta"><span class="slash-item__name">Numbered list</span><span class="slash-item__desc">Ordered list</span></div>
+                        </div>
+                        <div class="slash-item" data-block="divider" role="option">
+                            <div class="slash-item__icon">—</div>
+                            <div class="slash-item__meta"><span class="slash-item__name">Divider</span><span class="slash-item__desc">Horizontal line between sections</span></div>
+                        </div>
+                        <div class="slash-item" data-block="image" role="option">
+                            <div class="slash-item__icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            </div>
+                            <div class="slash-item__meta"><span class="slash-item__name">Image</span><span class="slash-item__desc">Upload from your device</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Sidebar -->
-            <aside class="editor-v2-sidebar">
-                <!-- Collapsible Metadata Section -->
-                <details class="sidebar-section" id="metadata-section" open>
-                    <summary class="sidebar-section-title">Story Details</summary>
-                    <div class="sidebar-section-content">
-                        <div class="field">
-                            <label for="story-title">Title</label>
-                            <input type="text" id="story-title" placeholder="A bold, specific headline" required>
-                        </div>
+            <!-- Sidebar -->
+            <aside class="studio-sidebar">
 
-                        <div class="field">
-                            <label for="story-deck">Deck (optional)</label>
-                            <textarea id="story-deck" placeholder="One or two sentences that frame the story." rows="3"></textarea>
-                        </div>
+                <div class="panel">
+                    <h3>Story settings</h3>
+                    <div class="field">
+                        <label for="story-category">Category</label>
+                        <select id="story-category">
+                            <option value="">Select a category…</option>
+                            <option value="Feature">Feature</option>
+                            <option value="Research">Research</option>
+                            <option value="News">News</option>
+                            <option value="Interview">Interview</option>
+                            <option value="Opinion">Opinion</option>
+                            <option value="Brain Teaser">Brain Teaser</option>
+                        </select>
+                    </div>
 
-                        <div class="field">
-                            <label for="story-category">Category</label>
-                            <select id="story-category" required>
-                                <option value="">Select a category</option>
-                                <option value="Feature">Feature</option>
-                                <option value="Profile">Profile</option>
-                                <option value="Interview">Interview</option>
-                                <option value="Op-Ed">Op-Ed</option>
-                                <option value="Editorial">Editorial</option>
-                                <option value="Culture">Culture</option>
-                                <option value="Campus">Campus</option>
-                            </select>
-                        </div>
-
-                        <div class="field">
-                            <label for="story-tags">Tags</label>
-                            <input type="text" id="story-tags" placeholder="politics, technology">
+                    <div class="field">
+                        <label for="tags-entry">Tags</label>
+                        <div class="tag-input-wrap" id="tag-input-wrap">
+                            <input type="text" id="tags-entry" placeholder="Press Enter to add…">
                         </div>
                     </div>
-                </details>
 
-                <!-- Article Outline Section -->
-                <div class="sidebar-section">
-                    <div class="sidebar-section-header">
-                        <h3 class="sidebar-section-title">Article Structure</h3>
+                    <div class="meta-row">
+                        <span id="word-count">0 words</span>
+                        <span id="read-time">0 min read</span>
                     </div>
-                    <nav class="article-outline" id="article-outline">
-                        <p class="outline-empty">Start writing to see outline...</p>
-                    </nav>
                 </div>
 
-                <!-- Word Count Footer -->
-                <div class="sidebar-footer">
-                    <div class="word-count" id="word-count">0 words</div>
+                <div class="panel">
+                    <h3>Byline</h3>
+                    <div class="field">
+                        <label>Author</label>
+                        <input type="text" id="byline-name" readonly placeholder="—">
+                    </div>
+                    <div class="field">
+                        <label>Role</label>
+                        <input type="text" id="byline-role" readonly placeholder="—">
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Tips</h3>
+                    <div style="font-size:13px;color:var(--ed-muted);line-height:1.55">
+                        Type <code style="background:var(--ed-line-soft);padding:1px 6px;border-radius:6px;font-family:inherit;font-size:12px;">/</code> on a new line to insert headings, quotes, lists, images, and more.
+                        Select any text to format it with the floating toolbar.
+                    </div>
                 </div>
             </aside>
         </div>
-    </main>
+    </div>
 
-    <div id="site-footer"></div>
-
-    <div class="toast" id="toast"></div>
-
-    <!-- Image Upload Modal -->
-    <div class="image-modal-overlay" id="image-modal-overlay">
-        <div class="image-modal">
-            <div class="image-modal-header">
-                <h3>Insert Image</h3>
-                <button class="image-modal-close" id="image-modal-close">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            <div class="image-modal-body">
-                <div class="image-upload-zone" id="image-upload-zone">
-                    <div id="upload-placeholder">
-                        <svg class="image-upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        <div class="image-upload-text">Click to upload or drag and drop</div>
-                        <div class="image-upload-hint">PNG, JPG, GIF up to 5MB</div>
-                    </div>
-                    <div class="image-preview-container" id="image-preview-container">
-                        <img id="image-preview" src="" alt="Preview">
-                    </div>
-                    <input type="file" id="image-file-input" accept="image/*" style="display: none;">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Alignment</label>
-                    <div class="radio-group">
-                        <div class="radio-option">
-                            <input type="radio" id="align-left" name="alignment" value="left">
-                            <label for="align-left">Left</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="align-center" name="alignment" value="center" checked>
-                            <label for="align-center">Center</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="align-right" name="alignment" value="right">
-                            <label for="align-right">Right</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="image-size">Size</label>
-                    <select class="form-select" id="image-size">
-                        <option value="compact">Compact (400px)</option>
-                        <option value="normal" selected>Normal (Full width)</option>
-                        <option value="medium">Medium (600px)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="image-caption">Caption (optional)</label>
-                    <input type="text" class="form-input" id="image-caption" placeholder="Add a caption for this image">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="image-alt">Alt Text</label>
-                    <input type="text" class="form-input" id="image-alt" placeholder="Describe the image for accessibility">
-                </div>
-            </div>
-            <div class="image-modal-footer">
-                <button class="modal-btn modal-btn-cancel" id="modal-cancel">Cancel</button>
-                <button class="modal-btn modal-btn-insert" id="modal-insert" disabled>Insert Image</button>
-            </div>
+    <!-- Publish confirmation modal -->
+    <div class="modal-backdrop" id="publish-backdrop"></div>
+    <div class="modal" id="publish-modal" role="dialog" aria-modal="true" aria-labelledby="publish-title">
+        <h2 id="publish-title">Submit for review?</h2>
+        <p>Your story will go to the admin queue. An editor will review and schedule the publish.</p>
+        <div class="modal__actions">
+            <button type="button" class="btn" data-close-modal>Not yet</button>
+            <button type="button" class="btn btn-accent" id="publish-confirm">Submit</button>
         </div>
     </div>
 
+    <!-- Toast -->
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <!-- Scripts -->
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
-    <script type="module">
-        import { auth, db, storage } from './js/firebase-config.js';
-        import EditorOutline from './js/editor-outline.js';
-        import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import {
-            collection,
-            addDoc,
-            updateDoc,
-            doc,
-            getDoc
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import {
-            ref,
-            uploadBytes,
-            getDownloadURL
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-
-        let currentUser = null;
-        let coverImageFile = null;
-        let editingStoryId = null;
-        let existingCoverImageUrl = null;
-
-        const statusChip = document.getElementById('status-chip');
-        const toast = document.getElementById('toast');
-        // Preview elements removed in v2 design
-        // const previewTitle = document.getElementById('preview-title');
-        // const previewDeck = document.getElementById('preview-deck');
-        // const previewCategory = document.getElementById('preview-category');
-        // const previewAuthor = document.getElementById('preview-author');
-        // const previewDate = document.getElementById('preview-date');
-        // const previewCover = document.getElementById('preview-cover');
-
-        // Register custom divider/hr blot
-        const BlockEmbed = Quill.import('blots/block/embed');
-        class DividerBlot extends BlockEmbed {}
-        DividerBlot.blotName = 'divider';
-        DividerBlot.tagName = 'hr';
-        Quill.register(DividerBlot);
-
-        const quill = new Quill('#editor', {
-            theme: 'snow',
-            modules: {
-                toolbar: {
-                    container: '#studio-toolbar',
-                    handlers: {
-                        image: inlineImageHandler
-                    }
-                },
-                clipboard: {
-                    matchVisual: false
-                }
-            },
-            placeholder: 'Write your story here — use the toolbar for headings, colors, pull quotes, lists, code, links, inline images, and embeds.'
-        });
-
-        // Initialize smart outline sidebar
-        const outline = new EditorOutline('#editor .ql-editor', '#article-outline');
-
-        // Horizontal rule button handler
-        document.getElementById('insert-hr').addEventListener('click', () => {
-            const range = quill.getSelection(true);
-            quill.insertText(range.index, '\n', 'user');
-            quill.insertEmbed(range.index + 1, 'divider', true, 'user');
-            quill.insertText(range.index + 2, '\n', 'user');
-            quill.setSelection(range.index + 3, 'silent');
-        });
-
-        // Wait for shared header to load
-        const headerElementsPromise = (() => {
-            const layoutPromise = (window.layoutReady && typeof window.layoutReady.then === 'function') ? window.layoutReady : Promise.resolve();
-            return layoutPromise.then(() => new Promise((resolve) => {
-                const start = performance.now();
-                const poll = () => {
-                    const elements = {
-                        header: document.querySelector('.editorial-header'),
-                        userMenuBtn: document.getElementById('user-menu-btn'),
-                        userDropdown: document.querySelector('.user-dropdown'),
-                        logoutBtn: document.getElementById('logout-btn'),
-                        userName: document.getElementById('user-name'),
-                        userRole: document.getElementById('user-role'),
-                        userAvatar: document.getElementById('user-avatar'),
-                        autosaveIndicator: document.getElementById('autosave-indicator')
-                    };
-
-                    if (elements.header && elements.userMenuBtn && elements.userDropdown && elements.logoutBtn && elements.userName && elements.userRole && elements.userAvatar) {
-                        resolve(elements);
-                        return;
-                    }
-
-                    if (performance.now() - start > 4000) {
-                        resolve(elements);
-                        return;
-                    }
-
-                    requestAnimationFrame(poll);
-                };
-
-                poll();
-            }));
-        })();
-
-        headerElementsPromise.then((elements) => {
-            const { userMenuBtn, userDropdown } = elements;
-            if (!userMenuBtn || !userDropdown) return;
-
-            userMenuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                userDropdown.classList.toggle('active');
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!userDropdown.contains(e.target)) {
-                    userDropdown.classList.remove('active');
-                }
-            });
-        });
-
-        // Word count functionality
-        function updateWordCount() {
-            const text = quill.getText().trim();
-            const words = text.split(/\s+/).filter(word => word.length > 0);
-            const wordCount = words.length;
-
-            const wordCountElement = document.getElementById('word-count');
-            if (wordCountElement) {
-                wordCountElement.textContent = `${wordCount.toLocaleString()} word${wordCount !== 1 ? 's' : ''}`;
-            }
-        }
-
-        // Update word count on text change
-        quill.on('text-change', updateWordCount);
-
-        // Initial word count
-        updateWordCount();
-
-        // Autosave indicator functions
-        function setAutosaveStatus(status) {
-            const indicator = document.getElementById('autosave-indicator');
-            if (!indicator) return;
-
-            const dot = indicator.querySelector('.autosave-dot');
-            const text = indicator.querySelector('.autosave-text');
-
-            // Remove all status classes
-            indicator.classList.remove('saving', 'saved', 'error');
-
-            switch(status) {
-                case 'saving':
-                    indicator.classList.add('saving');
-                    text.textContent = 'Saving...';
-                    break;
-                case 'saved':
-                    indicator.classList.add('saved');
-                    text.textContent = 'Draft saved';
-                    // Reset to neutral after 3 seconds
-                    setTimeout(() => {
-                        if (indicator.classList.contains('saved')) {
-                            text.textContent = 'Not saved';
-                            indicator.classList.remove('saved');
-                        }
-                    }, 3000);
-                    break;
-                case 'error':
-                    indicator.classList.add('error');
-                    text.textContent = 'Save failed';
-                    break;
-                default:
-                    text.textContent = 'Not saved';
-            }
-        }
-
-        // Header shrink on scroll
-        headerElementsPromise.then(({ header }) => {
-            if (!header) return;
-            window.addEventListener('scroll', () => {
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                if (scrollTop > 100) {
-                    header.classList.add('shrunk');
-                } else {
-                    header.classList.remove('shrunk');
-                }
-            }, { passive: true });
-        });
-
-        // Auth gate: writers, editors, and admins only
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) {
-                window.location.href = 'writer-login.html';
-                return;
-            }
-
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (!userDoc.exists()) {
-                await signOut(auth);
-                window.location.href = 'writer-login.html';
-                return;
-            }
-
-            const data = userDoc.data();
-            const allowed = ['writer', 'editor', 'admin'];
-
-            if (!allowed.includes(data.role) || data.status === 'pending' || data.status === 'disabled') {
-                await signOut(auth);
-                window.location.href = 'writer-login.html';
-                return;
-            }
-
-            currentUser = user;
-            const userName = data.name || user.email;
-            document.body.dataset.authenticated = 'true';
-
-            headerElementsPromise.then((elements) => {
-                const { userName: userNameEl, userRole, userAvatar } = elements;
-                if (!userNameEl || !userRole || !userAvatar) return;
-
-                userNameEl.textContent = userName;
-                userRole.textContent = data.role.toUpperCase();
-
-                // Set user avatar initials
-                const initials = userName.split(' ')
-                    .map(n => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2);
-                userAvatar.textContent = initials;
-            });
-
-            // Check if we're editing an existing story
-            const urlParams = new URLSearchParams(window.location.search);
-            editingStoryId = urlParams.get('edit');
-            if (editingStoryId) {
-                await loadStoryForEditing(editingStoryId);
-            }
-        });
-
-        headerElementsPromise.then(({ logoutBtn }) => {
-            if (!logoutBtn) return;
-            logoutBtn.addEventListener('click', async () => {
-                await signOut(auth);
-                window.location.href = 'writer-login.html';
-            });
-        });
-
-        // Hero image upload (drag and drop)
-        const heroZone = document.getElementById('hero-zone');
-        const heroInput = document.getElementById('cover-input');
-        const heroPlaceholder = document.getElementById('hero-placeholder');
-        const heroPreview = document.getElementById('hero-preview');
-        const heroPreviewImg = document.getElementById('hero-preview-img');
-        const heroRemove = document.getElementById('hero-remove');
-
-        // Click to upload
-        heroZone.addEventListener('click', (e) => {
-            if (!e.target.closest('.hero-remove')) {
-                heroInput.click();
-            }
-        });
-
-        // File selection
-        heroInput.addEventListener('change', (e) => handleHeroImage(e.target.files[0]));
-
-        // Drag events
-        heroZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            heroZone.classList.add('dragover');
-        });
-
-        heroZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            heroZone.classList.remove('dragover');
-        });
-
-        heroZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            heroZone.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            handleHeroImage(file);
-        });
-
-        // Remove button
-        heroRemove.addEventListener('click', (e) => {
-            e.stopPropagation();
-            removeHeroImage();
-        });
-
-        function handleHeroImage(file) {
-            if (!file || !file.type.startsWith('image/')) {
-                showToast('Please upload an image file', 'error');
-                return;
-            }
-
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('Image must be under 5MB', 'error');
-                return;
-            }
-
-            coverImageFile = file;
-
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                heroPreviewImg.src = event.target.result;
-                heroPlaceholder.style.display = 'none';
-                heroPreview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function removeHeroImage() {
-            coverImageFile = null;
-            heroInput.value = '';
-            heroPlaceholder.style.display = 'flex';
-            heroPreview.style.display = 'none';
-            heroPreviewImg.src = '';
-        }
-
-        // Image Modal Management
-        let selectedImageFile = null;
-        let imageInsertPosition = null;
-
-        const imageModal = document.getElementById('image-modal-overlay');
-        const imageUploadZone = document.getElementById('image-upload-zone');
-        const imageFileInput = document.getElementById('image-file-input');
-        const imagePreviewContainer = document.getElementById('image-preview-container');
-        const imagePreview = document.getElementById('image-preview');
-        const uploadPlaceholder = document.getElementById('upload-placeholder');
-        const modalInsertBtn = document.getElementById('modal-insert');
-        const modalCancelBtn = document.getElementById('modal-cancel');
-        const modalCloseBtn = document.getElementById('image-modal-close');
-
-        // Open modal when image button is clicked
-        function inlineImageHandler() {
-            imageInsertPosition = quill.getSelection(true);
-            openImageModal();
-        }
-
-        function openImageModal() {
-            imageModal.classList.add('active');
-            resetImageModal();
-        }
-
-        function closeImageModal() {
-            imageModal.classList.remove('active');
-            resetImageModal();
-        }
-
-        function resetImageModal() {
-            selectedImageFile = null;
-            imageFileInput.value = '';
-            imagePreview.src = '';
-            imagePreviewContainer.classList.remove('active');
-            uploadPlaceholder.style.display = 'block';
-            document.getElementById('image-caption').value = '';
-            document.getElementById('image-alt').value = '';
-            document.getElementById('align-center').checked = true;
-            document.getElementById('image-size').value = 'normal';
-            modalInsertBtn.disabled = true;
-        }
-
-        // Handle file selection
-        imageUploadZone.addEventListener('click', () => {
-            imageFileInput.click();
-        });
-
-        imageFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleImageFile(file);
-            }
-        });
-
-        // Handle drag and drop
-        imageUploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            imageUploadZone.style.borderColor = '#3b82f6';
-            imageUploadZone.style.background = '#eff6ff';
-        });
-
-        imageUploadZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            imageUploadZone.style.borderColor = '#d1d5db';
-            imageUploadZone.style.background = '#f9fafb';
-        });
-
-        imageUploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            imageUploadZone.style.borderColor = '#d1d5db';
-            imageUploadZone.style.background = '#f9fafb';
-
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                handleImageFile(file);
-            }
-        });
-
-        function handleImageFile(file) {
-            if (!file.type.startsWith('image/')) {
-                showToast('Only image files are allowed.', 'error');
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('Image must be under 5MB.', 'error');
-                return;
-            }
-
-            selectedImageFile = file;
-
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                imagePreview.src = e.target.result;
-                uploadPlaceholder.style.display = 'none';
-                imagePreviewContainer.classList.add('active');
-                imageUploadZone.classList.add('has-image');
-                modalInsertBtn.disabled = false;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Modal controls
-        modalCancelBtn.addEventListener('click', closeImageModal);
-        modalCloseBtn.addEventListener('click', closeImageModal);
-
-        imageModal.addEventListener('click', (e) => {
-            if (e.target === imageModal) {
-                closeImageModal();
-            }
-        });
-
-        // Insert image with all settings
-        modalInsertBtn.addEventListener('click', async () => {
-            if (!selectedImageFile) return;
-
-            const alignment = document.querySelector('input[name="alignment"]:checked').value;
-            const size = document.getElementById('image-size').value;
-            const caption = document.getElementById('image-caption').value.trim();
-            const altText = document.getElementById('image-alt').value.trim();
-
-            modalInsertBtn.disabled = true;
-            modalInsertBtn.textContent = 'Uploading...';
-
-            try {
-                // Upload to Firebase
-                const imageRef = ref(storage, 'covers/inline-' + Date.now() + '-' + selectedImageFile.name);
-                const snapshot = await uploadBytes(imageRef, selectedImageFile);
-                const url = await getDownloadURL(snapshot.ref);
-
-                // Insert figure element with image and caption
-                insertImageWithSettings(url, alignment, size, caption, altText);
-
-                showToast('Image inserted successfully.', 'success');
-                closeImageModal();
-            } catch (error) {
-                console.error('Upload error:', error);
-                showToast('Failed to upload image.', 'error');
-            } finally {
-                modalInsertBtn.disabled = false;
-                modalInsertBtn.textContent = 'Insert Image';
-            }
-        });
-
-        function insertImageWithSettings(url, alignment, size, caption, altText) {
-            const range = imageInsertPosition || quill.getSelection(true);
-
-            // Create figure element with all settings
-            const figureClasses = `img-${alignment} img-${size}`;
-            const captionHTML = caption ? `<figcaption>${caption}</figcaption>` : '';
-            const altAttribute = altText || 'Article image';
-
-            // Insert HTML at cursor position
-            const figureHTML = `
-                <figure class="${figureClasses}">
-                    <img src="${url}" alt="${altAttribute}" />
-                    ${captionHTML}
-                </figure>
-                <p><br></p>
-            `;
-
-            // Use Quill's clipboard to insert HTML
-            quill.clipboard.dangerouslyPasteHTML(range.index, figureHTML);
-
-            // Move cursor after the inserted content
-            quill.setSelection(range.index + 2);
-        }
-
-        // Close modal with Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && imageModal.classList.contains('active')) {
-                closeImageModal();
-            }
-        });
-
-        // Load story for editing
-        async function loadStoryForEditing(storyId) {
-            try {
-                setWorking(true, 'Loading story...');
-                const storyDoc = await getDoc(doc(db, 'stories', storyId));
-
-                if (!storyDoc.exists()) {
-                    showToast('Story not found.', 'error');
-                    window.location.href = 'admin-dashboard.html';
-                    return;
-                }
-
-                const story = storyDoc.data();
-
-                // Populate form fields
-                document.getElementById('story-title').value = story.title || '';
-                document.getElementById('story-deck').value = story.deck || '';
-                document.getElementById('story-category').value = story.category || 'Feature';
-                document.getElementById('story-tags').value = (story.tags || []).join(', ');
-
-                // Set editor content
-                quill.root.innerHTML = story.content || '';
-
-                // Set cover image
-                if (story.coverImage) {
-                    existingCoverImageUrl = story.coverImage;
-                    heroPreviewImg.src = story.coverImage;
-                    heroPlaceholder.style.display = 'none';
-                    heroPreview.style.display = 'block';
-                }
-
-                // Update page title
-                document.querySelector('.page-title').textContent = 'Edit Story';
-
-                statusChip.textContent = 'Editing: ' + story.title;
-                statusChip.dataset.state = 'custom';
-
-                setWorking(false);
-                showToast('Story loaded for editing', 'success');
-            } catch (error) {
-                console.error('Error loading story:', error);
-                showToast('Failed to load story', 'error');
-                setWorking(false);
-            }
-        }
-
-        // Story persistence
-        document.getElementById('save-draft-btn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            await saveStory('draft');
-        });
-
-        document.getElementById('submit-btn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            await saveStory('pending');
-        });
-
-        async function saveStory(status) {
-            if (!currentUser) {
-                showToast('Still signing you in. Please wait a second.', 'error');
-                return;
-            }
-
-            const title = document.getElementById('story-title').value.trim();
-            const deck = document.getElementById('story-deck').value.trim();
-            const category = document.getElementById('story-category').value;
-            const tags = document.getElementById('story-tags').value
-                .split(',')
-                .map(t => t.trim())
-                .filter(Boolean);
-            const content = quill.root.innerHTML.trim();
-
-            if (!title || !category) {
-                showToast('Title and category are required.', 'error');
-                return;
-            }
-
-            if (!content || content === '<p><br></p>') {
-                showToast('Please add article content.', 'error');
-                return;
-            }
-
-            // Only require cover image for new stories
-            if (!coverImageFile && !existingCoverImageUrl) {
-                showToast('Please upload a cover image.', 'error');
-                return;
-            }
-
-            setWorking(true, editingStoryId ? 'Updating story...' : (status === 'draft' ? 'Saving draft...' : 'Submitting...'));
-            setAutosaveStatus('saving');
-
-            try {
-                // Upload new cover if provided, otherwise use existing
-                const coverUrl = coverImageFile ? await uploadCoverImage() : existingCoverImageUrl;
-                const now = new Date().toISOString();
-
-                const storyData = {
-                    title,
-                    deck: deck || '',
-                    category,
-                    tags,
-                    content,
-                    coverImage: coverUrl,
-                    updatedAt: now
-                };
-
-                if (editingStoryId) {
-                    // Update existing story
-                    storyData.status = status; // Allow changing status when editing
-                    await updateDoc(doc(db, 'stories', editingStoryId), storyData);
-                } else {
-                    // Create new story
-                    storyData.authorId = currentUser.uid;
-                    storyData.authorName = currentUser.displayName || currentUser.email;
-                    storyData.status = status;
-                    storyData.createdAt = now;
-                    await addDoc(collection(db, 'stories'), storyData);
-                }
-
-                setAutosaveStatus('saved');
-
-                if (editingStoryId) {
-                    statusChip.textContent = 'Story updated successfully!';
-                    statusChip.dataset.state = 'custom';
-                    showToast('Story updated successfully!', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'admin-dashboard.html';
-                    }, 1500);
-                } else {
-                    statusChip.textContent = status === 'draft'
-                        ? 'Draft saved. Admins cannot see drafts until you submit.'
-                        : 'Submitted. Admin will review and publish.';
-                    statusChip.dataset.state = 'custom';
-                    showToast(status === 'draft' ? 'Draft saved.' : 'Sent to admin for approval.', 'success');
-                    resetForm();
-                }
-            } catch (error) {
-                console.error('Error saving story', error);
-                setAutosaveStatus('error');
-                showToast('Could not save your story. Please try again.', 'error');
-                statusChip.textContent = 'Save failed. Nothing submitted.';
-                statusChip.dataset.state = 'custom';
-            } finally {
-                setWorking(false);
-            }
-        }
-
-        async function uploadCoverImage() {
-            const imageRef = ref(storage, 'covers/cover-' + Date.now() + '-' + coverImageFile.name);
-            const snapshot = await uploadBytes(imageRef, coverImageFile);
-            return await getDownloadURL(snapshot.ref);
-        }
-
-        function resetForm() {
-            document.getElementById('story-title').value = '';
-            document.getElementById('story-deck').value = '';
-            document.getElementById('story-category').value = '';
-            document.getElementById('story-tags').value = '';
-            removeHeroImage();
-            quill.setContents([]);
-            delete statusChip.dataset.state;
-            statusChip.textContent = 'Not saved yet.';
-        }
-
-        function setWorking(isWorking, label = '') {
-            const submitBtn = document.getElementById('submit-btn');
-            const draftBtn = document.getElementById('save-draft-btn');
-            submitBtn.disabled = isWorking;
-            draftBtn.disabled = isWorking;
-            if (isWorking && label) {
-                statusChip.dataset.state = 'progress';
-                statusChip.textContent = label;
-            } else if (!isWorking && statusChip.dataset.state === 'progress') {
-                statusChip.textContent = 'Not saved yet.';
-                delete statusChip.dataset.state;
-            }
-        }
-
-        function setInlineStatus(text) {
-            inlineStatus.textContent = text;
-        }
-
-        function showToast(message, type = 'success') {
-            toast.textContent = message;
-            toast.className = 'toast show ' + type;
-            setTimeout(() => {
-                toast.className = 'toast ' + type;
-            }, 3000);
-        }
-
-        // Live preview removed in v2 design
-        // ['story-title', 'story-deck', 'story-category'].forEach(id => {
-        //     const el = document.getElementById(id);
-        //     el.addEventListener('input', updatePreview);
-        //     el.addEventListener('change', updatePreview);
-        // });
-
-        // function updatePreview() {
-        //     const titleVal = document.getElementById('story-title').value.trim();
-        //     const deckVal = document.getElementById('story-deck').value.trim();
-        //     const categoryVal = document.getElementById('story-category').value;
-        //     previewTitle.textContent = titleVal || 'Your headline appears here';
-        //     previewDeck.textContent = deckVal || 'Deck / standfirst preview shows here so you can judge spacing and tone.';
-        //     previewDeck.style.display = 'block';
-        //     previewCategory.textContent = categoryVal || 'Category';
-        //     const authorVal = (currentUser && (currentUser.displayName || currentUser.email)) || 'Your byline';
-        //     previewAuthor.textContent = `By ${authorVal}`;
-        //     const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-        //     previewDate.textContent = today;
-        // }
-    </script>
-    <script src="/js/layout.js"></script>
-    <script src="/js/newsletter-handler.js"></script>
+    <script type="module" src="js/studio-editor.js"></script>
 </body>
 </html>
