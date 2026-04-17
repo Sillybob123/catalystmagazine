@@ -1329,6 +1329,21 @@ async function loadArticles() {
         console.error('Article load failed', err);
     }
 
+    // Merge in stories published via the editorial studio (Firestore).
+    // Done before data.js so a Firestore record wins if the same story was
+    // also baked into data.js by the local publisher.
+    try {
+        const fsArticles = await loadFromFirestore();
+        fsArticles.forEach(article => {
+            const link = article.link || '';
+            const key = safeKey({ title: article.title, link });
+            if (byKey.has(key)) return;
+            byKey.set(key, article);
+        });
+    } catch (err) {
+        console.warn('Firestore article load failed', err);
+    }
+
     // Merge in articles defined in js/data.js (published via the studio)
     if (Array.isArray(window.articles)) {
         window.articles.forEach(raw => {
@@ -1362,6 +1377,87 @@ async function loadArticles() {
 
     window.__articleCache = combined;
     return combined;
+}
+
+// Fetch published stories from the catalystwriters-5ce43 Firestore via REST.
+// Public reads of documents where status == 'published' are permitted by
+// firestore.rules, so no auth token is required.
+async function loadFromFirestore() {
+    const projectId = 'catalystwriters-5ce43';
+    const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+
+    const body = {
+        structuredQuery: {
+            from: [{ collectionId: 'stories' }],
+            where: {
+                fieldFilter: {
+                    field: { fieldPath: 'status' },
+                    op: 'EQUAL',
+                    value: { stringValue: 'published' }
+                }
+            },
+            orderBy: [
+                { field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }
+            ],
+            limit: 100
+        }
+    };
+
+    const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(`Firestore ${res.status}`);
+
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return [];
+
+    return rows
+        .map(row => row.document)
+        .filter(Boolean)
+        .map(firestoreDocToArticle)
+        .filter(a => a && a.title);
+}
+
+function firestoreDocToArticle(doc) {
+    const name = doc.name || '';
+    const storyId = name.split('/').pop();
+    const f = doc.fields || {};
+    const str = k => f[k]?.stringValue ?? '';
+    const arr = k => (f[k]?.arrayValue?.values || []).map(v => v.stringValue).filter(Boolean);
+
+    const publishedRaw = f.publishedAt?.timestampValue || f.publishedAt?.stringValue || f.createdAt?.timestampValue || f.createdAt?.stringValue || '';
+    let dateStr = '';
+    if (publishedRaw) {
+        const d = new Date(publishedRaw);
+        if (!isNaN(d)) {
+            dateStr = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+    }
+
+    const title = str('title');
+    if (!title) return null;
+
+    const category = (str('category') || 'feature').toLowerCase();
+    const content = str('content');
+    const deck = str('deck');
+    const excerpt = deck || (content ? content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220) : '');
+
+    return {
+        id: storyId,
+        title,
+        author: str('authorName') || str('author') || 'The Catalyst',
+        date: dateStr,
+        image: str('coverImage') || ARTICLE_FALLBACK_IMAGE,
+        link: `article.html?id=${storyId}`,
+        url: `article.html?id=${storyId}`,
+        category,
+        tags: arr('tags'),
+        excerpt,
+        deck,
+        content
+    };
 }
 
 function buildExcerptFromBlocks(blocks = []) {
