@@ -68,11 +68,12 @@ export function buildNewsletter({
       <td align="center">
         <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:${COLORS.surface};border-radius:20px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
 
-          <!-- Masthead with logo -->
+          <!-- Masthead with logo (white panel behind transparent PNG so it
+               never shows as a dark box in Gmail/Outlook dark mode) -->
           <tr>
             <td class="px-40" style="padding:48px 40px 12px 40px;text-align:center;background:${COLORS.surface};">
-              <a href="${esc(siteUrl)}" style="text-decoration:none;display:inline-block;">
-                <img src="${escAttr(logoUrl)}" alt="The Catalyst" width="440" style="width:440px;max-width:90%;height:auto;display:block;margin:0 auto;border:0;">
+              <a href="${esc(siteUrl)}" style="text-decoration:none;display:inline-block;background:#ffffff;border-radius:14px;padding:18px 28px;">
+                <img src="${escAttr(logoUrl)}" alt="The Catalyst" width="440" style="width:440px;max-width:100%;height:auto;display:block;margin:0 auto;border:0;background:#ffffff;">
               </a>
               <div style="margin-top:22px;font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${COLORS.muted};font-weight:600;">The Catalyst Magazine</div>
             </td>
