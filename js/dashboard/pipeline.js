@@ -180,6 +180,65 @@ let _role        = null;
 let _profile     = null;
 let _ctx         = null;
 
+// ─── Inject guaranteed styles (once) ─────────────────────────────────────────
+
+function ensureKanbanStyles() {
+  if (document.getElementById("kanban-styles")) return;
+  const s = document.createElement("style");
+  s.id = "kanban-styles";
+  s.textContent = `
+    .kb-page { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .kb-header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+      background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px;
+      margin-bottom:20px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+    .kb-header-title { font-size:18px; font-weight:800; color:#0b1220; margin:0 0 2px; }
+    .kb-header-sub { font-size:13px; color:#64748b; margin:0; }
+    .kb-header-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
+    .kb-scroll { width:100%; overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; padding-bottom:20px; }
+    .kb-board { display:flex; flex-direction:row; flex-wrap:nowrap; gap:14px; align-items:flex-start; }
+    .kb-col { flex:0 0 272px; width:272px; background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+      overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(15,23,42,.06); }
+    .kb-col-head { padding:12px 14px; background:#f8fafc; border-bottom:1px solid #e5e7eb;
+      display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .kb-col-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#374151; }
+    .kb-col-count { background:#e5e7eb; color:#6b7280; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; }
+    .kb-col-body { padding:10px; display:flex; flex-direction:column; gap:8px; flex:1; min-height:200px; }
+    .kb-empty { font-size:12px; color:#9ca3af; text-align:center; padding:24px 8px; }
+    .kb-card { background:#fff; border:1px solid #e5e7eb; border-left:3px solid #94a3b8;
+      border-radius:8px; padding:12px 14px; cursor:pointer;
+      transition:box-shadow .15s, transform .12s; }
+    .kb-card:hover { box-shadow:0 4px 14px rgba(15,118,110,.13); transform:translateY(-2px); }
+    .kb-card.s-green  { border-left-color:#15803d; }
+    .kb-card.s-yellow { border-left-color:#f59e0b; }
+    .kb-card.s-blue   { border-left-color:#3b82f6; }
+    .kb-card.s-red    { border-left-color:#b91c1c; }
+    .kb-card.s-dim    { opacity:.75; }
+    .kb-card-title { font-size:13px; font-weight:600; color:#0b1220; line-height:1.4; margin:0 0 5px; }
+    .kb-card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 6px; }
+    .kb-badge { font-size:10px; font-weight:700; background:#f1f5f9; color:#64748b;
+      padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:.05em; }
+    .kb-badge-idle { background:#fee2e2; color:#b91c1c; }
+    .kb-status { font-size:11px; color:#6b7280; }
+    .kb-progress { height:3px; background:#e5e7eb; border-radius:99px; margin:6px 0; overflow:hidden; }
+    .kb-progress-fill { height:100%; background:linear-gradient(90deg,#14b8a6,#0f766e); border-radius:99px; }
+    .kb-card-foot { display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:8px; }
+    .kb-author { display:flex; align-items:center; gap:6px; font-size:12px; color:#6b7280; min-width:0; overflow:hidden; }
+    .kb-author span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kb-avatar { width:22px; height:22px; border-radius:50%; color:#fff; font-size:11px; font-weight:700;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .kb-due { font-size:11px; font-weight:600; color:#94a3b8; white-space:nowrap; }
+    .kb-due.overdue { color:#b91c1c; }
+    .kb-due.soon { color:#f59e0b; }
+    .kb-avail-chip { display:flex; align-items:center; gap:10px; padding:8px 10px;
+      border-radius:8px; border:1px solid #e5e7eb; background:#f8fafc; }
+    .kb-avail-name { font-size:12px; font-weight:600; color:#1f2937; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kb-avail-role { font-size:11px; color:#6b7280; }
+    .kb-priority { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; color:#fff; letter-spacing:.05em; }
+    .kb-desc { font-size:12px; color:#6b7280; margin:4px 0 6px; line-height:1.4; }
+  `;
+  document.head.appendChild(s);
+}
+
 // ─── Mount ────────────────────────────────────────────────────────────────────
 
 export async function mount(ctx, container) {
@@ -189,29 +248,27 @@ export async function mount(ctx, container) {
   _profile = ctx.profile;
   _view    = ctx.mountKey || "interviews";
 
+  ensureKanbanStyles();
   container.innerHTML = "";
+  container.className = (container.className || "") + " kb-page";
 
-  // Header bar
-  const header = el("div", { class: "pipeline-page-header" });
+  const viewTitle = _view === "mine" ? "My Assignments" : _view === "opeds" ? "Op-Eds" : "Catalyst in the Capital";
+  const viewSub   = _view === "mine" ? "All your active projects and tasks." : "Every story moves left-to-right through the editorial lifecycle.";
+
+  const header = el("div", { class: "kb-header" });
   header.innerHTML = `
     <div>
-      <div class="card-title">${_view === "mine" ? "My Assignments" : _view === "opeds" ? "Op-Eds" : "Catalyst in the Capital"}</div>
-      <div class="card-subtitle">${_view === "mine" ? "All your active projects and tasks." : "Every story moves left-to-right through the editorial lifecycle."}</div>
+      <div class="kb-header-title">${esc(viewTitle)}</div>
+      <div class="kb-header-sub">${esc(viewSub)}</div>
     </div>
-    <div class="pipeline-header-actions">
+    <div class="kb-header-actions">
       ${_view !== "mine" && canPropose() ? `<button class="btn btn-accent btn-sm" id="pl-new-btn">+ New proposal</button>` : ""}
       ${_role === "admin" ? `<button class="btn btn-secondary btn-sm" id="pl-report-btn">Status report</button>` : ""}
     </div>`;
   container.appendChild(header);
 
-  const scrollWrap = el("div", { class: "kanban-scroll-wrap", style: {
-    width: "100%", overflowX: "auto", overflowY: "visible",
-    WebkitOverflowScrolling: "touch", paddingBottom: "20px",
-  }});
-  const boardEl = el("div", { class: "kanban-board", id: "pl-board", style: {
-    display: "flex", flexDirection: "row", flexWrap: "nowrap",
-    gap: "14px", alignItems: "flex-start",
-  }});
+  const scrollWrap = el("div", { class: "kb-scroll" });
+  const boardEl   = el("div", { class: "kb-board", id: "pl-board" });
   scrollWrap.appendChild(boardEl);
   container.appendChild(scrollWrap);
 
@@ -327,21 +384,16 @@ const COL_COLORS = {
 
 function renderColumn(name, projects) {
   const color = COL_COLORS[name] || "#94a3b8";
-  const colEl = el("div", { class: "kanban-col", style: {
-    flex: "0 0 272px", width: "272px", minWidth: "0",
-    background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px",
-    overflow: "hidden", display: "flex", flexDirection: "column",
-    boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
-  }});
+  const colEl = el("div", { class: "kb-col" });
   colEl.innerHTML = `
-    <div class="kanban-col-header" style="border-top:3px solid ${color};padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-      <span class="kanban-col-title" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1f2937;">${esc(name)}</span>
-      <span class="kanban-col-count" style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">${projects.length}</span>
+    <div class="kb-col-head" style="border-top:3px solid ${color}">
+      <span class="kb-col-title">${esc(name)}</span>
+      <span class="kb-col-count">${projects.length}</span>
     </div>
-    <div class="kanban-col-body" style="padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:200px;"></div>`;
-  const body = colEl.querySelector(".kanban-col-body");
+    <div class="kb-col-body"></div>`;
+  const body = colEl.querySelector(".kb-col-body");
   if (!projects.length) {
-    body.innerHTML = `<div class="kanban-empty">No projects here</div>`;
+    body.innerHTML = `<div class="kb-empty">No projects here</div>`;
   } else {
     projects
       .sort((a, b) => dueTime(a) - dueTime(b))
@@ -367,30 +419,29 @@ function renderCard(project) {
   const isInactive = inactive > 9 && state.column !== COL.COMPLETED && state.column !== COL.DONE;
   const hasDeadlineRequest = (project.deadlineRequest?.status === "pending") || (project.deadlineChangeRequest?.status === "pending");
 
+  const stateClass = { green: "s-green", yellow: "s-yellow", blue: "s-blue", red: "s-red" }[state.color] || "";
   const card = el("div", {
-    class: `kanban-card state-${state.color}${isInactive ? " card-inactive" : ""}`,
+    class: `kb-card ${stateClass}${isInactive ? " s-dim" : ""}`,
     onclick: () => openDetailModal(project.id),
   });
 
   const authorInitial = (project.authorName || "?")[0].toUpperCase();
 
   card.innerHTML = `
-    <div class="kanban-card-title">${esc(project.title)}${hasDeadlineRequest ? ' <span class="deadline-req-dot" title="Pending deadline request">⏰</span>' : ""}</div>
-    <div class="kanban-card-meta">
-      <span class="kc-type">${esc(project.type || "")}</span>
-      <span class="kc-status">${esc(state.status)}</span>
-      ${isInactive ? `<span class="kc-idle">${inactive}d idle</span>` : ""}
+    <div class="kb-card-title">${esc(project.title)}${hasDeadlineRequest ? " ⏰" : ""}</div>
+    <div class="kb-card-meta">
+      <span class="kb-badge">${esc(project.type || "")}</span>
+      <span class="kb-status">${esc(state.status)}</span>
+      ${isInactive ? `<span class="kb-badge kb-badge-idle">${inactive}d idle</span>` : ""}
     </div>
-    <div class="kc-progress-wrap">
-      <div class="kc-progress-bar" style="width:${progress}%"></div>
-    </div>
-    <div class="kanban-card-footer">
-      <div class="kc-author">
-        <div class="kc-avatar" style="background:${stringToColor(project.authorName)}">${authorInitial}</div>
+    <div class="kb-progress"><div class="kb-progress-fill" style="width:${progress}%"></div></div>
+    <div class="kb-card-foot">
+      <div class="kb-author">
+        <div class="kb-avatar" style="background:${stringToColor(project.authorName)}">${authorInitial}</div>
         <span>${esc(project.authorName || "")}</span>
       </div>
-      <div class="kc-deadline ${isOverdue ? "kc-overdue" : isDueSoon ? "kc-due-soon" : ""}">
-        ${due ? fmtShort(due) : "No deadline"}
+      <div class="kb-due${isOverdue ? " overdue" : isDueSoon ? " soon" : ""}">
+        ${due ? fmtShort(due) : "—"}
       </div>
     </div>`;
 
@@ -398,31 +449,26 @@ function renderCard(project) {
 }
 
 function renderAvailabilityColumn() {
-  const colEl = el("div", { class: "kanban-col kanban-col-availability", style: {
-    flex: "0 0 220px", width: "220px", minWidth: "0",
-    background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px",
-    overflow: "hidden", display: "flex", flexDirection: "column",
-    boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
-  }});
+  const colEl = el("div", { class: "kb-col", style: { flex: "0 0 220px", width: "220px" } });
   colEl.innerHTML = `
-    <div class="kanban-col-header" style="border-top:3px solid #64748b;padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-      <span class="kanban-col-title" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1f2937;">Team</span>
-      <span class="kanban-col-count" style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">${_allUsers.length}</span>
+    <div class="kb-col-head" style="border-top:3px solid #64748b">
+      <span class="kb-col-title">Team</span>
+      <span class="kb-col-count">${_allUsers.filter(u => ["writer","editor","admin"].includes(u.role)).length}</span>
     </div>
-    <div class="kanban-col-body" style="padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:200px;overflow-y:auto;"></div>`;
-  const body = colEl.querySelector(".kanban-col-body");
+    <div class="kb-col-body" style="overflow-y:auto; max-height:600px;"></div>`;
+  const body = colEl.querySelector(".kb-col-body");
   const writers = _allUsers.filter(u => ["writer", "editor", "admin"].includes(u.role));
   if (!writers.length) {
-    body.innerHTML = `<div class="kanban-empty">No team members loaded</div>`;
+    body.innerHTML = `<div class="kb-empty">No team members loaded</div>`;
   } else {
     for (const u of writers) {
       const activeCount = _allProjects.filter(p => p.authorId === u.id || p.editorId === u.id).length;
-      const chip = el("div", { class: "avail-chip" });
+      const chip = el("div", { class: "kb-avail-chip" });
       chip.innerHTML = `
-        <div class="kc-avatar" style="background:${stringToColor(u.name || u.email)}">${(u.name || u.email || "?")[0].toUpperCase()}</div>
-        <div class="avail-info">
-          <div class="avail-name">${esc(u.name || u.email)}</div>
-          <div class="avail-role">${esc(u.role || "")} · ${activeCount} active</div>
+        <div class="kb-avatar" style="background:${stringToColor(u.name || u.email)}">${(u.name || u.email || "?")[0].toUpperCase()}</div>
+        <div style="min-width:0;flex:1;">
+          <div class="kb-avail-name">${esc(u.name || u.email)}</div>
+          <div class="kb-avail-role">${esc(u.role || "")} · ${activeCount} active</div>
         </div>`;
       body.appendChild(chip);
     }
