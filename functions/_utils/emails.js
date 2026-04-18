@@ -104,50 +104,98 @@ export function subscribeConfirmEmail({ firstName, siteUrl }) {
     : `Welcome to The Catalyst.`;
 
   const body = `
+    <!-- Hero -->
     <div style="text-align:center;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:0.28em;color:${COLORS.muted};margin-bottom:14px;text-transform:uppercase;">You're subscribed</div>
-      <h1 class="hero-h1" style="margin:0 0 18px 0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;font-size:40px;line-height:1.08;color:${COLORS.ink};letter-spacing:-0.035em;">${greeting}</h1>
-      <p style="margin:0 0 16px 0;font-size:17px;line-height:1.55;color:${COLORS.inkSoft};font-weight:400;">
-        Thanks for joining a growing community of curious minds. You're now on the list for stories by and for young scientists across D.C.
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.28em;color:${COLORS.muted};margin-bottom:16px;text-transform:uppercase;">You're in</div>
+      <h1 class="hero-h1" style="margin:0 0 20px 0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;font-size:42px;line-height:1.05;color:${COLORS.ink};letter-spacing:-0.035em;">${greeting}</h1>
+      <p style="margin:0;font-size:18px;line-height:1.5;color:${COLORS.inkSoft};font-weight:400;">
+        You've just joined a community of curious minds who believe science is for everyone.
       </p>
-      <p style="margin:0 0 32px 0;font-size:17px;line-height:1.55;color:${COLORS.inkSoft};font-weight:400;">
-        Every time three new stories go live, we'll send you a short, beautifully designed dispatch — no spam, no filler, just the best of student STEM reporting.
-      </p>
-      <a href="${escapeAttr(siteUrl)}/articles.html" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:15px 34px;border-radius:980px;font-weight:500;font-size:15px;letter-spacing:-0.01em;">Browse the archive</a>
     </div>
 
-    <div style="margin:44px 0 0 0;border-top:1px solid ${COLORS.hairline};padding-top:32px;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:16px;text-transform:uppercase;text-align:center;">What to expect</div>
+    <!-- Inspirational quote -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:40px 0 0 0;">
+      <tr>
+        <td style="padding:32px 28px;background:#0b0b0d;border-radius:16px;text-align:center;">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;line-height:1.45;color:#ffffff;font-style:italic;font-weight:400;letter-spacing:-0.01em;margin-bottom:14px;">
+            &ldquo;Somewhere, something incredible is waiting to be known.&rdquo;
+          </div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.28em;color:#a1a1a6;text-transform:uppercase;">Carl Sagan</div>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Mission -->
+    <div style="margin:40px 0 0 0;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:12px;text-transform:uppercase;">Our mission</div>
+      <p style="margin:0 0 16px 0;font-size:17px;line-height:1.6;color:${COLORS.inkSoft};font-weight:400;">
+        The Catalyst is a student-run STEM magazine based in Washington, D.C. We exist to put young scientists behind the byline — reporting on research, policy, and the people shaping the future of science.
+      </p>
+      <p style="margin:0;font-size:17px;line-height:1.6;color:${COLORS.inkSoft};font-weight:400;">
+        Every story is written, edited, and published by students who believe the next generation of thinkers deserves a platform to tell the truth, ask hard questions, and make science feel human again.
+      </p>
+    </div>
+
+    <!-- Primary CTA -->
+    <div style="text-align:center;margin:40px 0 0 0;">
+      <a href="${escapeAttr(siteUrl)}/articles.html" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:16px 38px;border-radius:980px;font-weight:500;font-size:15px;letter-spacing:-0.01em;">Start reading</a>
+    </div>
+
+    <!-- Explore the community -->
+    <div style="margin:48px 0 0 0;border-top:1px solid ${COLORS.hairline};padding-top:36px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:20px;text-transform:uppercase;text-align:center;">Explore the community</div>
+
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <tr>
-          <td style="padding:0 0 18px 0;">
-            <div style="font-size:16px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Three stories at a time</div>
-            <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">A curated trio of features from our student writers, delivered only when the next batch is ready.</div>
+          <td style="padding:0 0 14px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${COLORS.hairline};border-radius:14px;">
+              <tr>
+                <td style="padding:22px 24px;">
+                  <div style="font-size:17px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Read our stories</div>
+                  <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};margin-bottom:12px;">Browse the archive — features, investigations, and interviews from our student newsroom.</div>
+                  <a href="${escapeAttr(siteUrl)}/articles.html" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Visit the archive &rarr;</a>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:0 0 18px 0;">
-            <div style="font-size:16px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Science made human</div>
-            <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">Reporting on research, policy, and the people in D.C. shaping the future of STEM.</div>
+          <td style="padding:0 0 14px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${COLORS.hairline};border-radius:14px;">
+              <tr>
+                <td style="padding:22px 24px;">
+                  <div style="font-size:17px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Join our team</div>
+                  <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};margin-bottom:12px;">Pitch a story, edit with us, or design our next cover. We're always looking for new voices.</div>
+                  <a href="${escapeAttr(siteUrl)}/collaborate.html" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Collaborate with us &rarr;</a>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
         <tr>
           <td style="padding:0;">
-            <div style="font-size:16px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Written by students, for everyone</div>
-            <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">Every piece is reported and edited by young writers who care about getting the story right.</div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${COLORS.hairline};border-radius:14px;">
+              <tr>
+                <td style="padding:22px 24px;">
+                  <div style="font-size:17px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">About The Catalyst</div>
+                  <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};margin-bottom:12px;">Meet the team, read our editorial standards, and learn how we got here.</div>
+                  <a href="${escapeAttr(siteUrl)}/about.html" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Our story &rarr;</a>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
       </table>
     </div>
 
-    <p style="margin:36px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};text-align:center;">
-      In the meantime, follow along at <a href="${escapeAttr(siteUrl)}" style="color:${COLORS.inkSoft};text-decoration:underline;">catalyst-magazine.com</a>.
+    <p style="margin:40px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};text-align:center;">
+      Welcome aboard. We can't wait to share what's next.
     </p>
   `;
 
   return shell({
     title: "Welcome to The Catalyst",
-    preheader: "You're on the list — here's what's coming next.",
+    preheader: "You're in — a welcome note from the student newsroom.",
     body,
     siteUrl,
   });
