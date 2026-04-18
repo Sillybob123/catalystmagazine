@@ -25,6 +25,124 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
+
+    <style>
+        .unsub-wrap {
+            min-height: 70vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 16px 80px;
+        }
+        .unsub-card {
+            background: #fff;
+            border-radius: 24px;
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 12px 40px rgba(0,0,0,0.06);
+            padding: 56px 52px 48px;
+            max-width: 540px;
+            width: 100%;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .unsub-card { padding: 40px 28px 36px; }
+        }
+
+        .unsub-eyebrow {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--text-muted, #6e6e73);
+            display: block;
+            margin-bottom: 20px;
+        }
+        .unsub-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark, #0b1220);
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            margin: 0 0 16px 0;
+        }
+        @media (max-width: 480px) { .unsub-title { font-size: 1.6rem; } }
+
+        .unsub-body {
+            font-size: 1rem;
+            line-height: 1.75;
+            color: var(--text-muted, #6e6e73);
+            margin: 0 0 32px 0;
+        }
+        .unsub-body strong { color: var(--text-dark, #0b1220); }
+        .unsub-body a { color: var(--text-dark, #0b1220); font-weight: 500; }
+
+        .unsub-divider {
+            height: 1px;
+            background: rgba(0,0,0,0.07);
+            margin: 36px 0;
+        }
+        .unsub-note {
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text-muted, #6e6e73);
+            margin: 0 0 28px 0;
+        }
+
+        /* Email input form (shown when email param is missing) */
+        .unsub-form { text-align: left; }
+        .unsub-form label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted, #6e6e73);
+            margin-bottom: 8px;
+        }
+        .unsub-form input[type="email"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px 16px;
+            font-size: 1rem;
+            font-family: inherit;
+            border: 1px solid rgba(0,0,0,0.14);
+            border-radius: 12px;
+            background: var(--bg-light, #f4f6f8);
+            color: var(--text-dark, #0b1220);
+            outline: none;
+            transition: border-color 0.2s, background 0.2s;
+            margin-bottom: 14px;
+        }
+        .unsub-form input[type="email"]:focus {
+            border-color: var(--text-dark, #0b1220);
+            background: #fff;
+        }
+        .unsub-form input::placeholder { color: var(--text-light, #9ca3af); }
+
+        /* Status indicator line */
+        .unsub-status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 28px;
+        }
+        .unsub-status-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .unsub-status-icon svg { display: block; }
+        .icon-success { background: #f0fdf4; }
+        .icon-error   { background: #fff7ed; }
+        .icon-info    { background: var(--bg-light, #f4f6f8); }
+
+        .unsub-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+    </style>
 </head>
 <body data-page="unsubscribe">
     <!-- Google Tag Manager (noscript) -->
@@ -35,105 +153,184 @@
     <div id="site-header"></div>
 
     <main>
-        <section class="page-hero" style="padding: 80px 0 60px;">
-            <div class="container" style="text-align: center; max-width: 640px; margin: 0 auto;">
-                <div id="unsub-icon" style="font-size: 48px; margin-bottom: 24px; line-height: 1;">&#128148;</div>
-                <h1 id="unsub-title" class="page-hero-title" style="margin-bottom: 16px;">We're sad to see you go.</h1>
-                <p id="unsub-body" class="page-hero-subtitle" style="font-size: 1.1rem; line-height: 1.7; margin-bottom: 32px;">
-                    Loading&hellip;
-                </p>
-                <div id="unsub-actions"></div>
-            </div>
-        </section>
+        <div class="unsub-wrap">
+            <div class="unsub-card">
 
-        <section class="section" style="padding-top: 0;">
-            <div class="container" style="max-width: 640px; margin: 0 auto; text-align: center;">
-                <div class="panel" style="padding: 40px; border-radius: 16px;">
-                    <p style="font-size: 1rem; line-height: 1.7; color: var(--text-secondary, #555); margin: 0 0 24px 0;">
-                        Thank you for the time you spent with us. Your readership genuinely meant something to everyone on the team, and we're grateful you were part of the community — even for a little while.
+                <!-- State: done (successfully unsubscribed) -->
+                <div id="state-done" style="display:none;">
+                    <div class="unsub-status-row">
+                        <div class="unsub-status-icon icon-success">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
+                    <span class="unsub-eyebrow">Unsubscribed</span>
+                    <h1 class="unsub-title">We're sad to see you go.</h1>
+                    <p class="unsub-body" id="done-body"></p>
+                    <div class="unsub-divider"></div>
+                    <p class="unsub-note">
+                        Thank you for the time you spent with us. Your readership meant something to everyone on the team, and we're grateful you were here — even for a little while. You're always welcome back.
                     </p>
-                    <p style="font-size: 1rem; line-height: 1.7; color: var(--text-secondary, #555); margin: 0;">
-                        If you'd like to come back, you're always welcome. Our newsletter will be here whenever you're ready.
-                    </p>
+                    <div class="unsub-actions">
+                        <a href="/" class="btn btn-primary">Back to Home</a>
+                        <a href="/about#newsletter-section" class="btn btn-secondary">Resubscribe</a>
+                    </div>
                 </div>
-                <div style="margin-top: 32px;">
-                    <a href="/" class="btn btn-primary" style="margin-right: 12px;">Back to Home</a>
-                    <a href="/about#newsletter-section" class="btn btn-secondary" id="resubscribe-btn">Resubscribe</a>
+
+                <!-- State: already unsubscribed -->
+                <div id="state-already" style="display:none;">
+                    <div class="unsub-status-row">
+                        <div class="unsub-status-icon icon-info">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6e6e73" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </div>
+                    </div>
+                    <span class="unsub-eyebrow">Already removed</span>
+                    <h1 class="unsub-title">You're already unsubscribed.</h1>
+                    <p class="unsub-body" id="already-body"></p>
+                    <div class="unsub-actions">
+                        <a href="/" class="btn btn-primary">Back to Home</a>
+                    </div>
                 </div>
+
+                <!-- State: not found -->
+                <div id="state-not-found" style="display:none;">
+                    <div class="unsub-status-row">
+                        <div class="unsub-status-icon icon-info">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6e6e73" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </div>
+                    </div>
+                    <span class="unsub-eyebrow">Not found</span>
+                    <h1 class="unsub-title">We couldn't find that address.</h1>
+                    <p class="unsub-body" id="not-found-body"></p>
+                    <div class="unsub-actions">
+                        <a href="mailto:contact@catalyst-magazine.com" class="btn btn-primary">Email us to remove</a>
+                        <a href="/" class="btn btn-secondary">Back to Home</a>
+                    </div>
+                </div>
+
+                <!-- State: error -->
+                <div id="state-error" style="display:none;">
+                    <div class="unsub-status-row">
+                        <div class="unsub-status-icon icon-error">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        </div>
+                    </div>
+                    <span class="unsub-eyebrow">Something went wrong</span>
+                    <h1 class="unsub-title">We hit an error.</h1>
+                    <p class="unsub-body" id="error-body"></p>
+                    <div class="unsub-actions">
+                        <a href="mailto:contact@catalyst-magazine.com" class="btn btn-primary">Email us to remove</a>
+                        <a href="/" class="btn btn-secondary">Back to Home</a>
+                    </div>
+                </div>
+
+                <!-- State: no email param — ask the user to enter it -->
+                <div id="state-enter-email" style="display:none;">
+                    <span class="unsub-eyebrow">Newsletter</span>
+                    <h1 class="unsub-title">Unsubscribe</h1>
+                    <p class="unsub-body">Enter the email address you subscribed with and we'll remove you from our mailing list right away.</p>
+                    <div class="unsub-form">
+                        <label for="unsub-email-input">Email address</label>
+                        <input type="email" id="unsub-email-input" placeholder="you@example.com" autocomplete="email">
+                        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="submitEmail()">
+                            Unsubscribe
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                        <p id="unsub-form-error" style="display:none;color:#ea580c;font-size:0.875rem;margin-top:10px;text-align:center;"></p>
+                    </div>
+                </div>
+
+                <!-- State: loading (while redirect processes) -->
+                <div id="state-loading" style="display:none;">
+                    <span class="unsub-eyebrow">Please wait</span>
+                    <h1 class="unsub-title">Processing&hellip;</h1>
+                    <p class="unsub-body">We're removing you from our mailing list.</p>
+                </div>
+
             </div>
-        </section>
+        </div>
     </main>
 
     <div id="site-footer"></div>
 
     <script src="/js/layout.js"></script>
     <script>
-        (function () {
-            const params = new URLSearchParams(window.location.search);
-            const status = params.get("status");
-            const error  = params.get("error");
-            const email  = params.get("email") || "";
+    (function () {
+        const params = new URLSearchParams(window.location.search);
+        const status = params.get("status");
+        const error  = params.get("error");
+        const email  = params.get("email") || "";
 
-            const title  = document.getElementById("unsub-title");
-            const body   = document.getElementById("unsub-body");
-            const icon   = document.getElementById("unsub-icon");
-            const actions = document.getElementById("unsub-actions");
-
-            if (error) {
-                icon.textContent = "⚠️";
-                title.textContent = "Something went wrong.";
-                body.textContent = error === "invalid"
-                    ? "The unsubscribe link appears to be malformed. Please email us at contact@catalyst-magazine.com and we'll remove you manually."
-                    : "We ran into an error processing your request. Please try again in a moment, or email us directly at contact@catalyst-magazine.com.";
-                return;
-            }
-
-            if (status === "already") {
-                icon.textContent = "✅";
-                title.textContent = "You're already unsubscribed.";
-                body.innerHTML = email
-                    ? `<strong>${escHtml(email)}</strong> is not on our mailing list. No further action is needed.`
-                    : "This address is not on our mailing list. No further action is needed.";
-                return;
-            }
-
-            if (status === "not_found") {
-                icon.textContent = "🔍";
-                title.textContent = "We couldn't find your subscription.";
-                body.innerHTML = email
-                    ? `We don't have <strong>${escHtml(email)}</strong> on our list. If you think this is a mistake, please reach out to us at <a href="mailto:contact@catalyst-magazine.com">contact@catalyst-magazine.com</a>.`
-                    : "We couldn't locate your subscription. Please reach out to us at <a href=\"mailto:contact@catalyst-magazine.com\">contact@catalyst-magazine.com</a> and we'll sort it out.";
-                return;
-            }
-
-            if (status === "done") {
-                icon.textContent = "💙";
-                title.textContent = "You've been unsubscribed.";
-                body.innerHTML = email
-                    ? `<strong>${escHtml(email)}</strong> has been removed from our mailing list. You won't receive any further emails from us.`
-                    : "You've been removed from our mailing list. You won't receive any further emails from us.";
-
-                // Offer a resubscribe link pre-filled with email
-                if (email) {
-                    const resubBtn = document.getElementById("resubscribe-btn");
-                    resubBtn.href = `/about#newsletter-section`;
-                }
-                return;
-            }
-
-            // Fallback if page is visited directly with no params
-            icon.textContent = "📧";
-            title.textContent = "Unsubscribe from The Catalyst";
-            body.textContent = "To unsubscribe, click the unsubscribe link at the bottom of any newsletter email you've received from us.";
-        })();
-
-        function escHtml(s) {
-            return String(s)
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;");
+        function show(id) {
+            ["done","already","not-found","error","enter-email","loading"].forEach(s => {
+                document.getElementById("state-" + s).style.display = "none";
+            });
+            document.getElementById("state-" + id).style.display = "";
         }
+
+        if (error) {
+            document.getElementById("error-body").textContent = error === "invalid"
+                ? "The unsubscribe link appears to be malformed. Email us at contact@catalyst-magazine.com and we'll remove you manually."
+                : "We ran into a server error. Please try again in a moment, or email us at contact@catalyst-magazine.com.";
+            show("error");
+            return;
+        }
+
+        if (status === "done") {
+            document.getElementById("done-body").innerHTML = email
+                ? `<strong>${escHtml(email)}</strong> has been removed from our mailing list. You won't receive any further emails from us.`
+                : "You've been removed from our mailing list. You won't receive any further emails from us.";
+            show("done");
+            return;
+        }
+
+        if (status === "already") {
+            document.getElementById("already-body").innerHTML = email
+                ? `<strong>${escHtml(email)}</strong> is not currently on our mailing list.`
+                : "This address is not currently on our mailing list.";
+            show("already");
+            return;
+        }
+
+        if (status === "not_found") {
+            document.getElementById("not-found-body").innerHTML = email
+                ? `We don't have <strong>${escHtml(email)}</strong> on our list. If you think this is a mistake, please email us at <a href="mailto:contact@catalyst-magazine.com">contact@catalyst-magazine.com</a>.`
+                : "We couldn't find a subscription for that address. Please email us at <a href=\"mailto:contact@catalyst-magazine.com\">contact@catalyst-magazine.com</a>.";
+            show("not-found");
+            return;
+        }
+
+        // No status param — show the email entry form
+        show("enter-email");
+    })();
+
+    function submitEmail() {
+        const input = document.getElementById("unsub-email-input");
+        const errEl = document.getElementById("unsub-form-error");
+        const email = input.value.trim();
+
+        errEl.style.display = "none";
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            errEl.textContent = "Please enter a valid email address.";
+            errEl.style.display = "block";
+            input.focus();
+            return;
+        }
+
+        // Redirect to the API unsubscribe endpoint — same flow as clicking
+        // the link in an email.
+        window.location.href = "/api/unsubscribe?email=" + encodeURIComponent(email);
+    }
+
+    // Allow pressing Enter in the email field
+    document.getElementById("unsub-email-input")?.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") submitEmail();
+    });
+
+    function escHtml(s) {
+        return String(s)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
     </script>
 </body>
 </html>

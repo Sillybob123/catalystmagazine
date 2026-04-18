@@ -34,7 +34,7 @@ export function buildNewsletter({
   const cardHtml = articles.map((a, i) => articleCard(a, siteUrl, i === 0)).join("");
   const unsub = unsubscribeUrl
     ? `<a href="${esc(unsubscribeUrl)}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`
-    : `<a href="${esc(siteUrl)}/unsubscribe?email=${encodeURIComponent(recipientEmail || "")}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`;
+    : `<a href="${esc(siteUrl)}/api/unsubscribe?email=${encodeURIComponent(recipientEmail || "")}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`;
 
   return `<!doctype html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
