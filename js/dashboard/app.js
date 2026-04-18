@@ -255,7 +255,11 @@ function initPresencePing() {
 // ---------- sidebar ----------
 function renderSidebar() {
   const nav = document.getElementById("nav");
-  const userIsAllowed = (roles) => roles.includes("*") || roles.includes(state.role) || state.role === "admin";
+  // editors inherit writer permissions
+  const effectiveRoles = state.role === "editor"
+    ? [state.role, "writer"]
+    : [state.role];
+  const userIsAllowed = (roles) => roles.includes("*") || effectiveRoles.some(r => roles.includes(r)) || state.role === "admin";
 
   const byGroup = new Map();
   for (const [hash, route] of Object.entries(ROUTES)) {
@@ -307,7 +311,8 @@ async function handleRoute() {
   let route = ROUTES[hashPath];
 
   if (!route) { location.hash = "#/overview"; return; }
-  const allowed = route.roles.includes("*") || route.roles.includes(state.role) || state.role === "admin";
+  const effectiveRoles = state.role === "editor" ? [state.role, "writer"] : [state.role];
+  const allowed = route.roles.includes("*") || effectiveRoles.some(r => route.roles.includes(r)) || state.role === "admin";
   if (!allowed) {
     toast("You don't have access to that page.", "error");
     location.hash = "#/overview";
