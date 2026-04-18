@@ -7,9 +7,13 @@
 
   // The build command packages both static assets and the /functions folder
   // into ./cloudflare-dist.
-  "pages_build_output_dir": "./cloudflare-dist"
+  "pages_build_output_dir": "./cloudflare-dist",
 
-  // Environment variables are NOT set here — they are configured in the
+  "vars": {
+    "MAIL_FROM": "Catalyst Magazine <hello@catalyst-magazine.com>"
+  }
+
+  // Secrets (RESEND_API_KEY, FIREBASE_SERVICE_ACCOUNT, etc.) are set in the
   // Cloudflare dashboard under Pages -> Settings -> Environment variables.
-  // See .dev.vars.example for the list of required keys.
+  // See .dev.vars.example for the full list of required keys.
 }
