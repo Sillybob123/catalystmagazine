@@ -96,7 +96,7 @@ export async function mount(ctx, container) {
         <div class="card-title">Catalyst in the Capital — Editorial workflow</div>
         <div class="card-subtitle">Live from the scheduler database</div>
       </div>
-      <a class="btn btn-ghost btn-sm" href="#/pipeline">Full view &rarr;</a>
+      <a class="btn btn-ghost btn-sm" href="#/pipeline/interviews">Full view &rarr;</a>
     </div>
     <div id="pipeline-mount"></div>`;
   container.appendChild(pipeline);

@@ -40,6 +40,7 @@ const ICONS = {
   shield: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
   users: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
   book: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  activity: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
 };
 
 // ---------- state ----------
@@ -63,12 +64,36 @@ const ROUTES = {
     group: "main",
     loader: () => import("./overview.js"),
   },
-  "#/pipeline": {
-    label: "Workflow pipeline",
+  "#/pipeline/interviews": {
+    label: "Catalyst in the Capital",
     icon: ICONS.pipeline,
     roles: ["*"],
     group: "main",
     loader: () => import("./pipeline.js"),
+    mountKey: "interviews",
+  },
+  "#/pipeline/opeds": {
+    label: "Op-Eds",
+    icon: ICONS.book,
+    roles: ["*"],
+    group: "main",
+    loader: () => import("./pipeline.js"),
+    mountKey: "opeds",
+  },
+  "#/pipeline/mine": {
+    label: "My assignments",
+    icon: ICONS.users,
+    roles: ["*"],
+    group: "main",
+    loader: () => import("./pipeline.js"),
+    mountKey: "mine",
+  },
+  "#/tasks": {
+    label: "Tasks",
+    icon: ICONS.check,
+    roles: ["*"],
+    group: "main",
+    loader: () => import("./tasks.js"),
   },
   "#/writer/draft": {
     label: "Submit a draft",
@@ -166,10 +191,17 @@ const ROUTES = {
     loader: () => import("./admin-import.js"),
     mountKey: "advanced",
   },
+  "#/admin/activity": {
+    label: "Activity",
+    icon: ICONS.activity,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./activity.js"),
+  },
 };
 
 const GROUPS = [
-  { id: "main", label: "Overview" },
+  { id: "main", label: "Workspace" },
   { id: "write", label: "Writing" },
   { id: "edit", label: "Editing" },
   { id: "newsletter", label: "Newsletter" },

@@ -87,8 +87,8 @@ button { font-family: inherit; cursor: pointer; }
 .content {
   grid-area: content;
   padding: 28px 36px 56px 36px;
-  max-width: 1400px;
-  width: 100%;
+  min-width: 0;
+  overflow: visible;
 }
 
 /* ---------- sidebar ---------- */
@@ -2028,3 +2028,518 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 16px;
   padding: 22px 24px;
   background: linear-gradient(135deg, var(--accent-soft) 0
+
+/* ==========================================================================
+   Pipeline enhancements — clickable cards, proposal modal, detail modal
+   ========================================================================== */
+
+.pipeline-item-clickable {
+  cursor: pointer;
+  transition: border-color 0.14s, box-shadow 0.14s, transform 0.12s;
+}
+.pipeline-item-clickable:hover {
+  border-color: var(--accent-2);
+  box-shadow: 0 2px 8px rgba(15,118,110,0.12);
+  transform: translateY(-1px);
+}
+
+/* Progress checklist rows inside the project detail modal */
+.pipeline-steps { display: flex; flex-direction: column; gap: 6px; }
+.pipeline-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  user-select: none;
+}
+.pipeline-check-editable { cursor: pointer; }
+.pipeline-check-editable:hover { border-color: var(--accent-2); background: var(--accent-soft); }
+.pipeline-check-row input[type="checkbox"] {
+  width: 15px; height: 15px; flex-shrink: 0; accent-color: var(--accent);
+}
+.pipeline-check-row input:checked + span { text-decoration: line-through; color: var(--muted); }
+
+/* Proposal / pitch body in the detail modal */
+.detail-prose {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+/* Inline activity feed inside project detail modal */
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.activity-row {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+}
+.activity-author { font-weight: 700; }
+.activity-text { }
+.activity-when { color: var(--muted); }
+
+/* ==========================================================================
+   Admin Activity Page — full feed
+   ========================================================================== */
+
+.activity-section { margin-bottom: 24px; }
+.activity-date-header {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--hairline-2);
+  margin-bottom: 12px;
+}
+.activity-feed-full {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: none;
+}
+.activity-row-full {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.12s;
+}
+.activity-row-full:hover { border-color: var(--muted-2); }
+.activity-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+.activity-content { flex: 1; min-width: 0; }
+.activity-content > div:first-child { font-size: 13.5px; margin-bottom: 4px; }
+.activity-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.activity-project { font-weight: 600; color: var(--ink-2); }
+.activity-when { color: var(--muted-2); }
+.pill-tag {
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+
+/* ==========================================================================
+   KANBAN BOARD — full pipeline & tasks
+   ========================================================================== */
+
+/* Page header bar above the board */
+.pipeline-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.pipeline-page-header .card-title { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+.pipeline-page-header .card-subtitle { font-size: 13px; color: var(--muted); }
+.pipeline-header-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+/* Board container — horizontal scroll on overflow */
+.kanban-board {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: visible;
+  align-items: flex-start;
+  padding-bottom: 24px;
+  /* Escape the content padding so the board scrolls edge-to-edge */
+  width: calc(100% + 72px);
+  margin-left: -36px;
+  padding-left: 36px;
+  padding-right: 36px;
+  /* Smooth momentum scroll on iOS */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline) transparent;
+}
+
+/* Column */
+.kanban-col {
+  flex: 0 0 280px;
+  min-width: 240px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+}
+.kanban-col-availability { flex: 0 0 220px; }
+
+.kanban-col-header {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--hairline);
+  border-top: 3px solid var(--accent-2); /* overridden per-column via inline style */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.kanban-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-2); }
+.kanban-col-count {
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.kanban-col-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 200px;
+}
+.kanban-empty {
+  font-size: 12px;
+  color: var(--muted-2);
+  text-align: center;
+  padding: 20px 8px;
+}
+
+/* Card */
+.kanban-card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--muted-2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.14s, box-shadow 0.14s, transform 0.12s;
+}
+.kanban-card:hover {
+  border-color: var(--accent-2);
+  box-shadow: 0 3px 12px rgba(15,118,110,0.13);
+  transform: translateY(-2px);
+}
+
+/* State color strips */
+.kanban-card.state-green  { border-left-color: var(--good); }
+.kanban-card.state-yellow { border-left-color: #f59e0b; }
+.kanban-card.state-blue   { border-left-color: #3b82f6; }
+.kanban-card.state-red    { border-left-color: var(--danger); }
+.kanban-card.state-default{ border-left-color: var(--muted-2); }
+.kanban-card.card-inactive { opacity: 0.75; }
+
+.kanban-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+.kanban-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.kc-type {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--surface-3);
+  color: var(--muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.kc-status { font-size: 11px; color: var(--muted); flex: 1; }
+.kc-idle {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--danger-soft);
+  color: var(--danger);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Progress bar */
+.kc-progress-wrap {
+  height: 3px;
+  background: var(--hairline);
+  border-radius: 99px;
+  margin: 6px 0;
+  overflow: hidden;
+}
+.kc-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  border-radius: 99px;
+  transition: width 0.3s;
+}
+
+/* Card footer */
+.kanban-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+  gap: 8px;
+}
+.kc-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+  overflow: hidden;
+}
+.kc-author span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kc-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.kc-deadline {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.kc-deadline.kc-overdue  { color: var(--danger); }
+.kc-deadline.kc-due-soon { color: #f59e0b; }
+.kc-overdue-card { background: var(--danger-soft); }
+
+/* Deadline request dot */
+.deadline-req-dot { cursor: help; }
+
+/* Inactivity banner in detail modal */
+.detail-inactive-banner {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid rgba(185,28,28,0.2);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Availability column chips */
+.avail-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hairline);
+  background: var(--surface-2);
+}
+.avail-info { min-width: 0; }
+.avail-name { font-size: 12px; font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avail-role { font-size: 11px; color: var(--muted); }
+
+/* Detail modal layout */
+.detail-modal-body { display: flex; flex-direction: column; gap: 0; }
+.detail-top-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.detail-meta-row { display: flex; gap: 16px; font-size: 12px; color: var(--muted); flex-wrap: wrap; margin-bottom: 16px; }
+.detail-section { margin-bottom: 20px; }
+.detail-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detail-proposal-text {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+/* Timeline checklist */
+.tl-steps { display: flex; flex-direction: column; gap: 6px; }
+.tl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  user-select: none;
+}
+.tl-editable { cursor: pointer; }
+.tl-editable:hover { border-color: var(--accent-2); background: var(--accent-soft); }
+.tl-row input[type="checkbox"] { width: 15px; height: 15px; flex-shrink: 0; accent-color: var(--accent); }
+.tl-row input:checked + span { text-decoration: line-through; color: var(--muted); }
+
+/* Deadlines */
+.dl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.dl-label { font-size: 12px; color: var(--muted); width: 160px; flex-shrink: 0; }
+.dl-input { flex: 1; }
+.dl-request-box {
+  background: var(--warn-soft);
+  border: 1px solid rgba(180,83,9,0.2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-top: 10px;
+}
+.dl-request-box p { margin: 4px 0; }
+
+/* Activity feed */
+.act-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.act-row {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  line-height: 1.45;
+}
+.act-author { font-weight: 700; }
+.act-when { color: var(--muted); }
+
+/* Tasks — priority badge */
+.kc-priority-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: #fff;
+  letter-spacing: 0.06em;
+}
+.kc-desc-preview {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 4px 0 6px;
+  line-height: 1.4;
+}
+
+/* Task assignee multi-select */
+.multi-assignee-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  background: var(--surface-2);
+}
+.assignee-check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.assignee-check-row:hover { background: var(--accent-soft); }
+.assignee-check-row input { flex-shrink: 0; accent-color: var(--accent); }
+.assignee-role { font-size: 11px; color: var(--muted); margin-left: auto; }
+
+/* Status report stats grid */
+.report-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.report-stat {
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: center;
+}
+.report-stat-num { font-size: 28px; font-weight: 800; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+.report-stat-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* Pipeline embed on overview page */
+.pipeline-embed-grid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 14px 18px 18px;
+}
