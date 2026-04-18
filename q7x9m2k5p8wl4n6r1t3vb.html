@@ -532,10 +532,10 @@
     <script src="js/data.js"></script>
     <script src="js/main.js"></script>
     <script type="module">
-        // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc, updateDoc, increment, setDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+        // Firebase imports — pinned to 10.7.1 to match the rest of the site
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, serverTimestamp, deleteDoc, doc, updateDoc, increment, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // Firebase config
         const firebaseConfig = {
@@ -553,7 +553,9 @@
         let likedMessages = new Set();
 
         try {
-            const app = initializeApp(firebaseConfig);
+            // Use a named app so it doesn't collide with the default app from firebase-config.js
+            const existing = getApps().find(a => a.name === 'winners-lounge');
+            const app = existing || initializeApp(firebaseConfig, 'winners-lounge');
             db = getFirestore(app);
             auth = getAuth(app);
             authenticateUser();

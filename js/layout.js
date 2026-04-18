@@ -41,6 +41,36 @@ const footerPath = isEditorial ? '/editor-footer.html' : '/footer.html';
 window.layoutReady = Promise.all([
     loadFragment('site-header', headerPath),
     loadFragment('site-footer', footerPath)
-]).catch(error => {
+]).then(() => {
+    setupNewsletterModal();
+}).catch(error => {
     console.error('[Layout] Error loading shared fragments', error);
 });
+
+function setupNewsletterModal() {
+    const newsletterModal = document.getElementById('newsletter-modal');
+    if (!newsletterModal) return;
+
+    const mobileNewsletterBtn = document.getElementById('mobile-newsletter-btn');
+    const desktopSubscribeBtn = document.getElementById('desktop-subscribe-btn');
+    const modalClose = document.getElementById('newsletter-modal-close');
+    const modalOverlay = document.getElementById('newsletter-modal-overlay');
+
+    const openModal = () => {
+        newsletterModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    };
+    const closeModal = () => {
+        newsletterModal.classList.remove('active');
+        document.body.style.overflow = '';
+    };
+
+    mobileNewsletterBtn?.addEventListener('click', openModal);
+    desktopSubscribeBtn?.addEventListener('click', openModal);
+    modalClose?.addEventListener('click', closeModal);
+    modalOverlay?.addEventListener('click', closeModal);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && newsletterModal.classList.contains('active')) closeModal();
+    });
+}

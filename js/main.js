@@ -386,7 +386,9 @@ const deepClone = (val) => {
 
 async function initApp() {
     setupNavigation();
-    setupNewsletterModal();
+    // setupNewsletterModal is now called by layout.js after header injection,
+    // so skip it here to avoid double-binding.
+    // setupNewsletterModal();
     setupScrollEffects();
     setupScrollToTop();
     setupCollaborationMailto();

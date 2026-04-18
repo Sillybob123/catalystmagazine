@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Writer Login | The Catalyst Magazine</title>
+    <title>Staff Login | The Catalyst Magazine</title>
 
-    <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -13,836 +12,408 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/styles.css">
+
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            background: radial-gradient(circle at 10% 20%, rgba(70, 130, 180, 0.14), transparent 30%), radial-gradient(circle at 90% 10%, rgba(255, 140, 0, 0.14), transparent 25%), var(--bg-gradient);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f7;
             min-height: 100vh;
-        }
-
-        .auth-wrapper {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 48px 20px 64px;
-            display: grid;
-            gap: 18px;
-        }
-
-        .auth-grid {
-            display: grid;
-            grid-template-columns: 1.1fr 0.9fr;
-            gap: 20px;
-            align-items: stretch;
-        }
-
-        .auth-info {
-            background: var(--glass-bg-strong);
-            border-radius: var(--radius-xl);
-            padding: 32px;
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow-lg);
-        }
-
-        .auth-steps {
-            display: grid;
-            gap: 12px;
-            margin-top: 18px;
-        }
-
-        .auth-step {
             display: flex;
-            gap: 12px;
-            padding: 14px 16px;
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--glass-border);
-            background: var(--bg-white);
-            align-items: center;
-        }
-
-        .auth-step strong {
-            color: var(--text-dark);
-        }
-
-        .auth-card {
-            background: var(--glass-bg-strong);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius-lg);
-            padding: 32px;
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow-lg);
-        }
-
-        .auth-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 22px;
-        }
-
-        .auth-logo img {
-            width: 64px;
-            height: auto;
-        }
-
-        .auth-title {
-            font-size: 28px;
-            font-weight: 800;
-            color: var(--text-dark);
-            margin-bottom: 4px;
-        }
-
-        .auth-subtitle {
-            font-size: 15px;
-            color: var(--text-muted);
-            margin-bottom: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 18px;
-        }
-
-        .form-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-body);
-            margin-bottom: 6px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 16px;
-            font-size: 15px;
-            font-family: 'Poppins', sans-serif;
-            border: 2px solid var(--glass-border);
-            border-radius: var(--radius-sm);
-            background: var(--bg-white);
-            color: var(--text-dark);
-            transition: all var(--transition-fast);
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.1);
-        }
-
-        .btn-auth {
-            width: 100%;
-            padding: 14px 24px;
-            font-size: 15px;
-            font-weight: 700;
-            font-family: 'Poppins', sans-serif;
-            color: var(--text-white);
-            background: var(--accent-gradient);
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all var(--transition-normal);
-            margin-top: 8px;
-        }
-
-        .btn-auth:hover {
-            background: var(--accent-gradient-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
-        }
-
-        .btn-auth:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .auth-toggle {
-            margin-top: 18px;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .auth-toggle a {
-            color: var(--accent-primary);
-            font-weight: 700;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .auth-toggle a:hover {
-            text-decoration: underline;
-        }
-
-        .alert {
-            padding: 12px 14px;
-            border-radius: var(--radius-sm);
-            margin-bottom: 12px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .alert-error {
-            background: #fee;
-            color: #c00;
-            border: 1px solid #fcc;
-        }
-
-        .alert-success {
-            background: #efe;
-            color: #060;
-            border: 1px solid #cfc;
-        }
-
-        .auth-meta-bar {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin: 6px 0 18px;
-        }
-
-        .meta-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            border-radius: var(--radius-full);
-            border: 1px solid var(--glass-border);
-            background: var(--glass-bg);
-            color: var(--text-muted);
-            font-weight: 700;
-            font-size: 12px;
-        }
-
-        .meta-chip .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 999px;
-            background: var(--accent-primary);
-        }
-
-        .quick-help-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 12px;
-            margin-top: 14px;
-        }
-
-        .quick-help-card {
-            background: var(--bg-white);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            padding: 14px 16px;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .quick-help-card h4 {
-            font-size: 15px;
-            font-weight: 800;
-            color: var(--text-dark);
-            margin-bottom: 4px;
-        }
-
-        .quick-help-card p {
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.6;
-        }
-
-        .quick-help-card a {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-weight: 700;
-            color: var(--accent-primary);
-            text-decoration: none;
-            margin-top: 8px;
-        }
-
-        .input-wrap {
-            position: relative;
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            border: 1px solid var(--glass-border);
-            background: var(--bg-light);
-            color: var(--text-body);
-            border-radius: var(--radius-full);
-            padding: 8px 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .toggle-password:hover {
-            background: var(--bg-white);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .caps-warning {
-            display: none;
-            font-size: 12px;
-            color: #b91c1c;
-            margin-top: 6px;
-            font-weight: 700;
-        }
-
-        .small-hint {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 6px;
-        }
-
-        .auth-quick-links {
-            display: grid;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .auth-quick-links a {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 12px;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--glass-border);
-            background: var(--bg-light);
-            color: var(--text-body);
-            font-weight: 700;
-            text-decoration: none;
-            transition: all var(--transition-fast);
-        }
-
-        .auth-quick-links a:hover {
-            border-color: var(--accent-primary);
-            color: var(--text-dark);
-        }
-
-        .cta-grid {
-            margin-top: 26px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 14px;
-        }
-
-        .cta-card {
-            background: var(--glass-bg-strong);
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--glass-border);
-            padding: 16px 18px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        .cta-card h3 {
-            font-size: 16px;
-            font-weight: 800;
-            color: var(--text-dark);
-            margin-bottom: 8px;
-        }
-
-        .cta-card p {
-            color: var(--text-muted);
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        .hub-grid {
-            margin-top: 28px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 14px;
-        }
-
-        .hub-card {
-            background: var(--glass-bg-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            padding: 16px 18px;
-            box-shadow: var(--glass-shadow);
-            display: grid;
-            gap: 8px;
-        }
-
-        .hub-card h3 {
-            font-size: 16px;
-            font-weight: 800;
-            color: var(--text-dark);
-        }
-
-        .hub-card p {
-            color: var(--text-muted);
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        .hub-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .hub-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            border-radius: var(--radius-full);
-            border: 1px solid var(--glass-border);
-            background: var(--bg-white);
-            color: var(--text-body);
-            font-weight: 700;
-            text-decoration: none;
-            font-size: 12px;
-            transition: all var(--transition-fast);
-        }
-
-        .hub-link:hover {
-            border-color: var(--accent-primary);
-            color: var(--text-dark);
-        }
-
-        .guide-grid {
-            margin-top: 22px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 14px;
-        }
-
-        .guide-card {
-            background: var(--bg-white);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            padding: 16px 18px;
-            box-shadow: var(--shadow-sm);
-            display: grid;
-            gap: 8px;
-        }
-
-        .guide-card h3 {
-            font-size: 15px;
-            font-weight: 800;
-            color: var(--text-dark);
-        }
-
-        .guide-card ul {
-            padding-left: 18px;
-            color: var(--text-muted);
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        .list-plain {
-            list-style: none;
-            padding: 0;
-            margin: 10px 0 0;
-            display: grid;
-            gap: 8px;
-            color: var(--text-body);
-        }
-
-        .list-plain li {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            align-items: start;
-            gap: 10px;
-            font-size: 14px;
-        }
-
-        .list-dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 999px;
-            background: var(--accent-primary);
-            margin-top: 6px;
-        }
-
-        .action-strip {
-            margin-top: 18px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            border-radius: var(--radius-full);
-            border: 1px solid var(--glass-border);
-            background: var(--bg-white);
-            color: var(--text-body);
-            font-weight: 700;
-            text-decoration: none;
-            transition: all var(--transition-fast);
-            font-size: 13px;
-        }
-
-        .action-btn.primary {
-            background: var(--accent-gradient);
-            color: var(--text-white);
-            border: none;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .action-btn:hover {
-            transform: translateY(-1px);
-            border-color: var(--accent-primary);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .modal {
-            position: fixed;
-            inset: 0;
-            display: none;
             align-items: center;
             justify-content: center;
-            background: rgba(15, 23, 42, 0.35);
-            backdrop-filter: blur(6px);
-            z-index: 9999;
-            padding: 20px;
+            padding: 24px;
+            color: #1d1d1f;
         }
 
-        .modal.show {
-            display: flex;
-        }
-
-        .modal-card {
-            max-width: 720px;
+        /* ── Card ── */
+        .login-card {
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 12px 48px rgba(0,0,0,0.08);
+            padding: 52px 48px 44px;
             width: 100%;
-            background: var(--bg-white);
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow-lg);
-            padding: 20px 22px;
-            position: relative;
+            max-width: 420px;
         }
 
-        .modal-card h3 {
-            margin-bottom: 10px;
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--text-dark);
+        /* ── Logo + header ── */
+        .login-logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 28px;
+        }
+        .login-logo img {
+            width: 52px;
+            height: auto;
+        }
+        .login-title {
+            font-size: 1.65rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            text-align: center;
+            color: #1d1d1f;
+            margin-bottom: 6px;
+        }
+        .login-sub {
+            font-size: 0.875rem;
+            color: #6e6e73;
+            text-align: center;
+            margin-bottom: 36px;
+            line-height: 1.5;
         }
 
-        .modal-card ul {
-            color: var(--text-body);
-            font-size: 14px;
-            line-height: 1.6;
-            margin-left: 16px;
-        }
+        /* ── Form views ── */
+        .view { display: none; }
+        .view.active { display: block; }
 
-        .modal-close {
+        /* ── Fields ── */
+        .field { margin-bottom: 16px; }
+        .field label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #1d1d1f;
+            margin-bottom: 7px;
+        }
+        .input-wrap { position: relative; }
+        .field input {
+            width: 100%;
+            padding: 13px 16px;
+            font-size: 0.97rem;
+            font-family: inherit;
+            border: 1.5px solid #d2d2d7;
+            border-radius: 12px;
+            background: #fafafa;
+            color: #1d1d1f;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        }
+        .field input:focus {
+            outline: none;
+            border-color: #1d1d1f;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(29,29,31,0.08);
+        }
+        .toggle-pw {
             position: absolute;
-            right: 12px;
-            top: 12px;
-            border: 1px solid var(--glass-border);
-            background: var(--bg-light);
-            border-radius: var(--radius-full);
-            padding: 8px 10px;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6366f1;
             cursor: pointer;
-            font-weight: 800;
-            color: var(--text-body);
+            font-family: inherit;
+            padding: 0;
+        }
+        .caps-warn {
+            font-size: 0.75rem;
+            color: #dc2626;
+            font-weight: 600;
+            margin-top: 5px;
+            display: none;
         }
 
-        @media (max-width: 960px) {
-            .auth-grid {
-                grid-template-columns: 1fr;
-            }
+        /* ── Forgot password link ── */
+        .forgot-link {
+            display: block;
+            text-align: right;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #6366f1;
+            text-decoration: none;
+            margin-top: -8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: inherit;
+        }
+        .forgot-link:hover { text-decoration: underline; }
+
+        /* ── Submit button ── */
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            border-radius: 100px;
+            border: none;
+            background: #1d1d1f;
+            color: #fff;
+            font-size: 0.97rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.15s;
+            margin-top: 4px;
+        }
+        .btn-submit:hover { opacity: 0.85; transform: scale(0.99); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ── Alerts ── */
+        .alert {
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 18px;
+            display: none;
+        }
+        .alert.show { display: block; }
+        .alert-error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .alert-success { background: #f0fdf4; color: #047857; border: 1px solid #bbf7d0; }
+
+        /* ── Back link ── */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #6e6e73;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: inherit;
+            margin-bottom: 24px;
+            padding: 0;
+        }
+        .back-link:hover { color: #1d1d1f; }
+
+        /* ── Footer note ── */
+        .login-footer {
+            margin-top: 28px;
+            font-size: 0.8rem;
+            color: #8e8e93;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .login-footer a {
+            color: #6366f1;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .login-footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            .login-card { padding: 40px 28px 36px; }
         }
     </style>
 </head>
-<body data-page="writer-login" data-section="editorial">
-    <main class="auth-wrapper">
-        <div class="auth-grid">
-            <div class="auth-info">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                    <div style="width: 10px; height: 10px; border-radius: 999px; background: var(--accent-primary);"></div>
-                    <span style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 12px; color: var(--text-muted);">Editorial access</span>
+<body>
+    <div class="login-card">
+        <div class="login-logo">
+            <img src="/NewLogoShape.png" alt="The Catalyst Magazine">
+        </div>
+        <h1 class="login-title">Staff Login</h1>
+        <p class="login-sub">Sign in to the editorial workspace.<br>Staff accounts only.</p>
+
+        <!-- ── Sign-in view ── -->
+        <div class="view active" id="view-login">
+            <div class="alert alert-error" id="login-error"></div>
+
+            <form id="login-form" novalidate>
+                <div class="field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required>
                 </div>
-                <h1 class="auth-title" style="margin-bottom: 8px;">Sign in to the workspace</h1>
-                <p class="auth-subtitle">Staff-only access for writing, editing, and approvals. Simple, focused, and ready when you are.</p>
 
-                <ul class="list-plain">
-                    <li><span class="list-dot"></span><div>Use your staff email; admins create accounts and assign roles.</div></li>
-                    <li><span class="list-dot"></span><div>Autosave, inline uploads, and cover previews are ready in the studio.</div></li>
-                    <li><span class="list-dot"></span><div>Submit to admin when finished; drafts stay private until approved.</div></li>
-                </ul>
-
-                <div class="small-hint" style="margin-top: 12px;">Need access? <a href="mailto:stemcatalystmagazine@gmail.com?subject=Editorial%20Access" style="font-weight: 700; color: var(--accent-primary); text-decoration: none;">Email the admin desk</a>.</div>
-            </div>
-
-            <div class="auth-card">
-                <div class="auth-logo">
-                    <img src="/NewLogoShape.png" alt="The Catalyst Magazine">
-                    <div>
-                        <div class="auth-title" style="margin: 0;">Staff Login</div>
-                        <div class="auth-subtitle" style="margin: 4px 0 0;">Restricted access • Secure Firebase auth</div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+                        <button type="button" class="toggle-pw" id="toggle-pw" tabindex="-1">Show</button>
                     </div>
+                    <div class="caps-warn" id="caps-warn">Caps Lock is on</div>
                 </div>
 
-                <div class="auth-meta-bar" style="margin-top: -4px;">
-                    <span class="meta-chip"><span class="dot"></span>Staff only</span>
-                    <span class="meta-chip"><span class="dot"></span>Firebase protected</span>
-                    <span class="meta-chip"><span class="dot"></span>Autosave ready</span>
-                </div>
+                <button type="button" class="forgot-link" id="show-reset">Forgot password?</button>
 
-                <div class="alert alert-error" id="error-message"></div>
-                <div class="alert alert-success" id="success-message"></div>
+                <button type="submit" class="btn-submit" id="login-btn">Sign In</button>
+            </form>
 
-                <!-- Login Form -->
-                <form id="login-form">
-                    <div class="form-group">
-                        <label class="form-label" for="email">Email Address <span style="color: var(--text-muted); font-weight: 600;">Required</span></label>
-                        <input type="email" id="email" class="form-input" placeholder="you@example.com" required>
-                        <div class="small-hint">We only use this to sign you in. Your last email is remembered locally for faster access.</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="password">Password <span style="color: var(--text-muted); font-weight: 600;">Required</span></label>
-                        <div class="input-wrap">
-                            <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
-                            <button type="button" class="toggle-password" id="toggle-password" aria-label="Toggle password visibility">Show</button>
-                        </div>
-                        <div class="caps-warning" id="caps-warning">Caps Lock is on</div>
-                    </div>
-
-                    <button type="submit" class="btn-auth" id="submit-btn">Sign In</button>
-                </form>
-
-                <div class="auth-toggle">
-                    <div>Need access? Contact your administrator.</div>
-                    <div style="margin-top: 4px;">Locked out? Try a hard refresh and sign in again.</div>
-                </div>
-
-                <div class="auth-quick-links">
-                    <a href="/admin/login#login-form">Reset session and reload</a>
-                    <a href="/collaborate.html#team">Request contributor access</a>
-                    <a href="mailto:stemcatalystmagazine@gmail.com?subject=Editorial%20Support">Email editorial support</a>
-                </div>
-            </div>
+            <p class="login-footer">
+                No account? <a href="mailto:stemcatalystmagazine@gmail.com?subject=Editorial%20Access%20Request">Request access</a>
+            </p>
         </div>
 
-        <div class="action-strip" aria-label="Workspace actions">
-            <a class="action-btn primary" href="/admin">Open Dashboard</a>
-            <a class="action-btn" href="/admin#/writer/mine">My posts</a>
-            <a class="action-btn" href="/admin#/editor/queue">Review queue</a>
-            <button class="action-btn" type="button" data-modal-target="pitch-modal">Pitch guide</button>
-            <button class="action-btn" type="button" data-modal-target="workflow-modal">Workflow</button>
-        </div>
-    </main>
+        <!-- ── Password reset view ── -->
+        <div class="view" id="view-reset">
+            <button type="button" class="back-link" id="back-to-login">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 5l-7 7 7 7"/></svg>
+                Back to sign in
+            </button>
 
-    <div class="modal" id="pitch-modal" aria-hidden="true">
-        <div class="modal-card">
-            <button class="modal-close" data-close-modal>&times;</button>
-            <h3>Pitch guide (150–200 words)</h3>
-            <ul>
-                <li>Core argument in one sentence.</li>
-                <li>Significance: why it matters to our readers.</li>
-                <li>Timeliness: why this story now; what’s the hook.</li>
-                <li>Added value: what’s new or distinct about your angle.</li>
-                <li>Author credibility: why you should write it; what access you bring.</li>
-                <li>Submission status: what’s done and what you need from the editor.</li>
-            </ul>
-            <h3 style="margin-top: 14px;">Signals of a strong pitch</h3>
-            <ul>
-                <li>Clarity: communicated quickly and plainly.</li>
-                <li>Relevance: aligns with The Catalyst audience.</li>
-                <li>Urgency: feels current or pressing.</li>
-                <li>Originality: adds something new to the conversation.</li>
-            </ul>
-            <h3 style="margin-top: 14px;">Outline</h3>
-            <ul>
-                <li>Opening: central argument + stakes.</li>
-                <li>Timeliness/hook: why now.</li>
-                <li>Added value: how this advances the conversation.</li>
-                <li>Conclusion: status + proposed next steps.</li>
-            </ul>
-        </div>
-    </div>
+            <div class="alert alert-error" id="reset-error"></div>
+            <div class="alert alert-success" id="reset-success"></div>
 
-    <div class="modal" id="workflow-modal" aria-hidden="true">
-        <div class="modal-card">
-            <button class="modal-close" data-close-modal>&times;</button>
-            <h3>General workflow</h3>
-            <ul>
-                <li>Idea / Assignment → Deliverable: approved pitch.</li>
-                <li>Reporting → Deliverable: notes/recordings + source list.</li>
-                <li>Writing → Deliverable: complete first draft.</li>
-                <li>Editing → Deliverable: revised draft ready to publish.</li>
-                <li>Prep for publish → Deliverable: final sign-off.</li>
-                <li>Publish → Deliverable: live story.</li>
-            </ul>
+            <form id="reset-form" novalidate>
+                <div class="field">
+                    <label for="reset-email">Email address</label>
+                    <input type="email" id="reset-email" placeholder="you@example.com" autocomplete="email" required>
+                </div>
+                <button type="submit" class="btn-submit" id="reset-btn">Send Reset Link</button>
+            </form>
+
+            <p class="login-footer" style="margin-top: 20px;">
+                We'll send a password reset link to your staff email. Only authorized accounts can receive one.
+            </p>
         </div>
     </div>
 
     <script type="module">
         import { auth, db } from '/js/firebase-config.js';
         import {
-            signInWithEmailAndPassword
+            signInWithEmailAndPassword,
+            sendPasswordResetEmail
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import {
             doc,
             getDoc
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const loginForm = document.getElementById('login-form');
-        const errorMessage = document.getElementById('error-message');
-        const successMessage = document.getElementById('success-message');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const togglePasswordBtn = document.getElementById('toggle-password');
-        const capsWarning = document.getElementById('caps-warning');
-        const modals = document.querySelectorAll('.modal');
+        // ── Element refs ──
+        const viewLogin   = document.getElementById('view-login');
+        const viewReset   = document.getElementById('view-reset');
+        const loginForm   = document.getElementById('login-form');
+        const resetForm   = document.getElementById('reset-form');
+        const emailInput  = document.getElementById('email');
+        const pwInput     = document.getElementById('password');
+        const togglePwBtn = document.getElementById('toggle-pw');
+        const capsWarn    = document.getElementById('caps-warn');
+        const loginError  = document.getElementById('login-error');
+        const resetError  = document.getElementById('reset-error');
+        const resetSuccess= document.getElementById('reset-success');
+        const loginBtn    = document.getElementById('login-btn');
+        const resetBtn    = document.getElementById('reset-btn');
 
-        // Remember last used email locally for faster re-auth
-        const storedEmail = localStorage.getItem('editorialLastEmail');
-        if (storedEmail) {
-            emailInput.value = storedEmail;
+        // ── Restore remembered email ──
+        const stored = localStorage.getItem('editorialLastEmail');
+        if (stored) emailInput.value = stored;
+
+        // ── Show / hide password ──
+        togglePwBtn.addEventListener('click', () => {
+            const hidden = pwInput.type === 'password';
+            pwInput.type = hidden ? 'text' : 'password';
+            togglePwBtn.textContent = hidden ? 'Hide' : 'Show';
+            pwInput.focus();
+        });
+
+        // ── Caps Lock warning ──
+        ['keyup', 'keydown'].forEach(ev => {
+            pwInput.addEventListener(ev, e => {
+                capsWarn.style.display = e.getModifierState?.('CapsLock') ? 'block' : 'none';
+            });
+        });
+
+        // ── View switching ──
+        document.getElementById('show-reset').addEventListener('click', () => {
+            const prefill = emailInput.value.trim();
+            if (prefill) document.getElementById('reset-email').value = prefill;
+            switchView('reset');
+        });
+        document.getElementById('back-to-login').addEventListener('click', () => switchView('login'));
+
+        function switchView(name) {
+            viewLogin.classList.toggle('active', name === 'login');
+            viewReset.classList.toggle('active', name === 'reset');
+            clearAlerts();
         }
 
-        if (togglePasswordBtn) {
-            togglePasswordBtn.addEventListener('click', () => {
-                const isHidden = passwordInput.type === 'password';
-                passwordInput.type = isHidden ? 'text' : 'password';
-                togglePasswordBtn.textContent = isHidden ? 'Hide' : 'Show';
-                passwordInput.focus();
-            });
-        }
-
-        ['keyup', 'keydown'].forEach(eventName => {
-            passwordInput.addEventListener(eventName, (event) => {
-                const capsOn = event.getModifierState && event.getModifierState('CapsLock');
-                capsWarning.style.display = capsOn ? 'block' : 'none';
-            });
-        });
-
-        // Minimal modal helpers for guides
-        function openModal(id) {
-            const modal = document.getElementById(id);
-            if (modal) {
-                modal.classList.add('show');
-                modal.setAttribute('aria-hidden', 'false');
-            }
-        }
-
-        function closeModals() {
-            modals.forEach(modal => {
-                modal.classList.remove('show');
-                modal.setAttribute('aria-hidden', 'true');
-            });
-        }
-
-        document.querySelectorAll('[data-modal-target]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const target = btn.getAttribute('data-modal-target');
-                openModal(target);
-            });
-        });
-
-        document.querySelectorAll('[data-close-modal]').forEach(btn => {
-            btn.addEventListener('click', closeModals);
-        });
-
-        modals.forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModals();
-            });
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModals();
-        });
-
-        // Login handler
-        loginForm.addEventListener('submit', async (e) => {
+        // ── Login ──
+        loginForm.addEventListener('submit', async e => {
             e.preventDefault();
-            hideMessages();
+            clearAlerts();
 
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
-            const submitBtn = document.getElementById('submit-btn');
+            const email    = emailInput.value.trim();
+            const password = pwInput.value;
 
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Signing in...';
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in…';
 
             try {
                 localStorage.setItem('editorialLastEmail', email);
 
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
 
-                // Check if user exists in database and has proper role
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (!userDoc.exists()) throw new Error('Account not found. Contact your administrator.');
 
-                if (!userDoc.exists()) {
-                    throw new Error('User account not found. Please contact your administrator.');
-                }
-
-                const userData = userDoc.data();
-
-                // Check if user has a valid role
+                const data = userDoc.data();
                 const allowedRoles = ['writer', 'editor', 'admin', 'newsletter_builder', 'marketing'];
-                if (!userData.role || !allowedRoles.includes(userData.role)) {
-                    throw new Error('Your account does not have proper permissions. Please contact your administrator.');
-                }
 
-                // Check if account is active
-                if (userData.status === 'pending' || userData.status === 'disabled') {
-                    throw new Error('Your account is pending activation. Please contact your administrator.');
-                }
+                if (!data.role || !allowedRoles.includes(data.role))
+                    throw new Error('Your account does not have the required permissions.');
 
-                // Redirect everyone into the unified editorial dashboard (role-gated inside).
+                if (data.status === 'pending' || data.status === 'disabled')
+                    throw new Error('Your account is pending activation. Contact your administrator.');
+
                 window.location.href = '/admin';
 
-            } catch (error) {
-                console.error('Login error:', error);
-                showError(error.message || getErrorMessage(error.code));
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Sign In';
+            } catch (err) {
+                showAlert(loginError, friendlyError(err));
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
             }
         });
 
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-        }
+        // ── Password reset ──
+        resetForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            clearAlerts();
 
-        function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.style.display = 'block';
-        }
+            const email = document.getElementById('reset-email').value.trim();
+            if (!email) { showAlert(resetError, 'Please enter your email address.'); return; }
 
-        function hideMessages() {
-            errorMessage.style.display = 'none';
-            successMessage.style.display = 'none';
-        }
+            resetBtn.disabled = true;
+            resetBtn.textContent = 'Sending…';
 
-        function getErrorMessage(code) {
-            const messages = {
-                'auth/invalid-email': 'Invalid email address.',
-                'auth/user-disabled': 'This account has been disabled.',
-                'auth/user-not-found': 'No account found with this email.',
-                'auth/wrong-password': 'Incorrect password.',
-                'auth/email-already-in-use': 'An account with this email already exists.',
-                'auth/weak-password': 'Password should be at least 6 characters.',
-                'auth/network-request-failed': 'Network error. Please check your connection.',
-            };
-            return messages[code] || 'An error occurred. Please try again.';
-        }
-
-        // Check if user is already logged in
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
-                const userData = userDoc.data();
-
-                if (userData) {
-                    window.location.href = '/admin';
-                }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showAlert(resetSuccess, 'Reset link sent — check your inbox (and spam folder).');
+                resetForm.reset();
+            } catch (err) {
+                showAlert(resetError, friendlyError(err));
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Send Reset Link';
             }
+        });
+
+        // ── Helpers ──
+        function showAlert(el, msg) {
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+
+        function clearAlerts() {
+            [loginError, resetError, resetSuccess].forEach(el => {
+                el.textContent = '';
+                el.classList.remove('show');
+            });
+        }
+
+        function friendlyError(err) {
+            const map = {
+                'auth/invalid-email':           'Invalid email address.',
+                'auth/user-disabled':           'This account has been disabled.',
+                'auth/user-not-found':          'No account found with this email.',
+                'auth/wrong-password':          'Incorrect password.',
+                'auth/invalid-credential':      'Incorrect email or password.',
+                'auth/too-many-requests':       'Too many attempts. Please wait a moment and try again.',
+                'auth/network-request-failed':  'Network error. Check your connection.',
+            };
+            return map[err.code] || err.message || 'Something went wrong. Please try again.';
+        }
+
+        // ── Already signed in? ──
+        auth.onAuthStateChanged(async user => {
+            if (!user) return;
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) window.location.href = '/admin';
         });
     </script>
 </body>

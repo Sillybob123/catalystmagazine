@@ -49,44 +49,240 @@
     <link rel="stylesheet" href="/css/styles.css">
 
     <style>
+        /* ── Collaborate Hero ─────────────────────────────────── */
+        .collab-hero {
+            padding: 140px 0 100px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .collab-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .collab-hero-eyebrow {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #6366f1;
+            margin-bottom: 20px;
+            background: rgba(99,102,241,0.08);
+            padding: 6px 16px;
+            border-radius: 100px;
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+        .collab-hero-title {
+            font-size: clamp(2.8rem, 6vw, 5rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.05;
+            color: #1d1d1f;
+            margin: 0 0 20px;
+        }
+        .collab-hero-subtitle {
+            font-size: clamp(1.05rem, 2vw, 1.25rem);
+            color: #6e6e73;
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        /* ── Cards Section ────────────────────────────────────── */
+        .collab-section {
+            padding: 0 0 120px;
+        }
+        .collab-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 24px;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .collab-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 48px 44px;
+            border: 1px solid rgba(0,0,0,0.07);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 8px 40px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+        .collab-card:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 16px 60px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
+        }
+        .collab-card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 28px;
+            flex-shrink: 0;
+        }
+        .collab-card-icon.purple { background: linear-gradient(135deg, #818cf8, #6366f1); }
+        .collab-card-icon.dark   { background: linear-gradient(135deg, #374151, #1f2937); }
+        .collab-card-icon svg { width: 26px; height: 26px; color: #fff; }
+        .collab-card-title {
+            font-size: 1.45rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #1d1d1f;
+            margin: 0 0 12px;
+        }
+        .collab-card-desc {
+            font-size: 1rem;
+            color: #6e6e73;
+            line-height: 1.7;
+            margin: 0 0 28px;
+            flex-grow: 1;
+        }
+        .collab-card-meta {
+            font-size: 0.875rem;
+            color: #1d1d1f;
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        .collab-card-meta strong { font-weight: 600; }
+        .collab-card-hint {
+            font-size: 0.84rem;
+            color: #8e8e93;
+            margin-bottom: 32px;
+            line-height: 1.55;
+        }
+        .collab-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 100px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            border: 0;
+            text-decoration: none;
+            transition: opacity 0.2s, transform 0.2s;
+            width: 100%;
+        }
+        .collab-btn:hover { opacity: 0.85; transform: scale(0.98); }
+        .collab-btn-primary {
+            background: #1d1d1f;
+            color: #fff;
+        }
+        .collab-btn-alt {
+            background: linear-gradient(135deg, #818cf8, #6366f1);
+            color: #fff;
+        }
+
+        /* ── Modal ────────────────────────────────────────────── */
         .collab-modal-backdrop {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             display: none; align-items: center; justify-content: center;
             z-index: 1000; padding: 20px; overflow-y: auto;
         }
         .collab-modal-backdrop.is-open { display: flex; }
         .collab-modal {
-            background: #fff; border-radius: 18px; width: 100%; max-width: 520px;
-            padding: 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-            max-height: calc(100vh - 40px); overflow-y: auto; position: relative;
+            background: #fff;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 520px;
+            padding: 40px;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.2);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            position: relative;
+            animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
         }
-        .collab-modal h2 { margin: 0 0 8px; font-size: 1.4rem; color: #1d1d1f; }
-        .collab-modal .modal-sub { margin: 0 0 20px; color: #6e6e73; font-size: 0.95rem; }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.94) translateY(16px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .collab-modal h2 {
+            margin: 0 0 6px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #1d1d1f;
+        }
+        .collab-modal .modal-sub {
+            margin: 0 0 28px;
+            color: #6e6e73;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
         .collab-modal .modal-close {
-            position: absolute; top: 14px; right: 14px; background: transparent;
-            border: 0; font-size: 1.5rem; line-height: 1; cursor: pointer; color: #6e6e73;
-            width: 32px; height: 32px; border-radius: 50%;
+            position: absolute; top: 16px; right: 16px;
+            background: #f2f2f7;
+            border: 0;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            color: #6e6e73;
+            transition: background 0.15s;
         }
-        .collab-modal .modal-close:hover { background: #f2f2f2; }
-        .collab-form .field { margin-bottom: 14px; }
+        .collab-modal .modal-close:hover { background: #e5e5ea; color: #1d1d1f; }
+        .collab-form .field { margin-bottom: 16px; }
         .collab-form label {
-            display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px;
-            color: #333; text-transform: uppercase; letter-spacing: 0.05em;
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 7px;
+            color: #1d1d1f;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
-        .collab-form input, .collab-form select, .collab-form textarea {
-            width: 100%; box-sizing: border-box; padding: 11px 13px; font-size: 1rem;
-            font-family: inherit; border: 1px solid rgba(0,0,0,0.15); border-radius: 10px;
-            background: #fff; color: #1d1d1f;
+        .collab-form input,
+        .collab-form select,
+        .collab-form textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            font-size: 0.97rem;
+            font-family: inherit;
+            border: 1.5px solid #e5e5ea;
+            border-radius: 12px;
+            background: #fafafa;
+            color: #1d1d1f;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
         }
-        .collab-form input:focus, .collab-form select:focus, .collab-form textarea:focus {
-            outline: none; border-color: #0f172a; box-shadow: 0 0 0 3px rgba(15,23,42,0.1);
+        .collab-form input:focus,
+        .collab-form select:focus,
+        .collab-form textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
         }
         .collab-form textarea { min-height: 110px; resize: vertical; }
-        .collab-form .help { font-size: 0.8rem; color: #6e6e73; margin-top: 4px; }
+        .collab-form .help { font-size: 0.8rem; color: #8e8e93; margin-top: 5px; }
         .collab-form button[type="submit"] { width: 100%; margin-top: 8px; }
-        .collab-form-status { margin-top: 12px; font-size: 0.9rem; min-height: 1.2em; }
-        .collab-form-status.is-error { color: #b91c1c; }
-        .collab-form-status.is-success { color: #047857; }
+        .collab-form-status { margin-top: 12px; font-size: 0.875rem; min-height: 1.2em; border-radius: 10px; padding: 0; }
+        .collab-form-status.is-error   { color: #dc2626; background: #fef2f2; padding: 10px 14px; }
+        .collab-form-status.is-success { color: #047857; background: #f0fdf4; padding: 10px 14px; }
+
+        @media (max-width: 600px) {
+            .collab-hero { padding: 110px 24px 72px; }
+            .collab-cards { grid-template-columns: 1fr; padding: 0 16px; }
+            .collab-card { padding: 36px 28px; }
+            .collab-modal { padding: 28px 24px; }
+        }
     </style>
 </head>
 <body data-page="collaborate">
@@ -98,84 +294,65 @@
     <div id="site-header"></div>
 
     <main>
-        <!-- Page Hero -->
-        <section class="page-hero">
+        <!-- Hero -->
+        <section class="collab-hero">
             <div class="container">
-                <h1 class="page-hero-title">Collaborate With Us</h1>
-                <p class="page-hero-subtitle">Join us in shaping the future of STEM storytelling</p>
+                <span class="collab-hero-eyebrow">Get Involved</span>
+                <h1 class="collab-hero-title">Collaborate With Us</h1>
+                <p class="collab-hero-subtitle">Join us in shaping the future of STEM storytelling — your voice matters here.</p>
             </div>
         </section>
 
-        <!-- Collaboration Options -->
-        <section class="section">
-            <div class="container">
-                <div class="panels-grid">
-                    <!-- Submit Article Panel -->
-                    <div class="panel">
-                        <div class="panel-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <line x1="16" y1="13" x2="8" y2="13"/>
-                                <line x1="16" y1="17" x2="8" y2="17"/>
-                            </svg>
-                        </div>
-                        <h3 class="panel-title">Submit an Article or Opinion</h3>
-                        <p class="panel-description">
-                            Do you have an article idea or a thought-provoking opinion paper you'd like to share?
-                            We'd love to hear from you! Send it our way, and we'll review your submission.
-                        </p>
-                        <p style="font-size: 0.9rem; color: var(--text-body); margin: 20px 0; line-height: 1.6;">
-                            <strong>Acceptable formats:</strong> DOC, PDF, JPG, MP3, MP4 (Max 40MB)
-                        </p>
-                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6;">
-                            Fill out the form below and share a link to your article or proposal (Google Drive, Dropbox, etc).
-                        </p>
-                        <button type="button"
-                                class="btn btn-primary"
-                                data-open-modal="proposal-modal"
-                                style="width: 100%; display: inline-flex; align-items: center; justify-content: center; border: 0; cursor: pointer;">
-                            Send Proposal
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 8px;">
-                                <line x1="22" y1="2" x2="11" y2="13"/>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                            </svg>
-                        </button>
-                    </div>
+        <!-- Cards -->
+        <section class="collab-section">
+            <div class="collab-cards">
 
-                    <!-- Join Team Panel -->
-                    <div class="panel">
-                        <div class="panel-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
-                        </div>
-                        <h3 class="panel-title">Join Our Team</h3>
-                        <p class="panel-description">
-                            We're always looking for passionate individuals to join our growing team.
-                            If you're interested in shaping the future of STEM storytelling, reach out!
-                        </p>
-                        <p style="font-size: 0.9rem; color: var(--text-body); margin: 20px 0; line-height: 1.6;">
-                            <strong>Available positions:</strong> Writer, Editor, Designer, Operations, Campus Ambassador
-                        </p>
-                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6;">
-                            Fill out the form below and share a link to your CV or portfolio (Google Drive, Dropbox, LinkedIn, etc).
-                        </p>
-                        <button type="button"
-                                class="btn btn-primary"
-                                data-open-modal="join-team-modal"
-                                style="width: 100%; display: inline-flex; align-items: center; justify-content: center; border: 0; cursor: pointer;">
-                            Apply Now
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 8px;">
-                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                <polyline points="22 4 12 14.01 9 11.01"/>
-                            </svg>
-                        </button>
+                <!-- Submit Article Card -->
+                <div class="collab-card">
+                    <div class="collab-card-icon purple">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
                     </div>
+                    <h2 class="collab-card-title">Submit an Article or Opinion</h2>
+                    <p class="collab-card-desc">Have an article idea or a thought-provoking opinion piece? We'd love to hear from you. Send it our way and our editors will review your submission.</p>
+                    <p class="collab-card-meta"><strong>Formats accepted:</strong> DOC, PDF, JPG, MP3, MP4 &nbsp;·&nbsp; Max 40 MB</p>
+                    <p class="collab-card-hint">Share a link to your article or proposal via Google Drive, Dropbox, or similar.</p>
+                    <button type="button" class="collab-btn collab-btn-alt" data-open-modal="proposal-modal">
+                        Send Proposal
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
                 </div>
+
+                <!-- Join Team Card -->
+                <div class="collab-card">
+                    <div class="collab-card-icon dark">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <h2 class="collab-card-title">Join Our Team</h2>
+                    <p class="collab-card-desc">We're always looking for passionate individuals to join our growing team. If you want to shape the future of STEM storytelling, reach out — we review every application.</p>
+                    <p class="collab-card-meta"><strong>Open roles:</strong> Writer, Editor, Designer, Operations, Campus Ambassador</p>
+                    <p class="collab-card-hint">Share a link to your CV or portfolio via LinkedIn, Google Drive, or your personal site.</p>
+                    <button type="button" class="collab-btn collab-btn-primary" data-open-modal="join-team-modal">
+                        Apply Now
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14"/>
+                            <path d="M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+
             </div>
         </section>
     </main>
@@ -210,7 +387,7 @@
                     <label for="p-message">Brief description</label>
                     <textarea id="p-message" name="message" required placeholder="What's it about, and why are you the right person to tell this story?"></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit proposal</button>
+                <button type="submit" class="collab-btn collab-btn-alt">Submit Proposal</button>
                 <p class="collab-form-status" data-status></p>
             </form>
         </div>
@@ -256,7 +433,7 @@
                     <label for="j-message">Why do you want to join?</label>
                     <textarea id="j-message" name="message" required placeholder="Tell us about yourself and what draws you to The Catalyst."></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit application</button>
+                <button type="submit" class="collab-btn collab-btn-primary">Submit Application</button>
                 <p class="collab-form-status" data-status></p>
             </form>
         </div>
