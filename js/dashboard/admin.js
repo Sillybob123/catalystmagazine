@@ -350,6 +350,10 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       <label class="label">Cover image URL</label>
       <input class="input" id="sd-cover" value="${escAttr(story.coverImage || story.image || "")}">
       <div id="sd-cover-preview" style="margin-top:8px;"></div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--ink-2);">
+        <input type="checkbox" id="sd-light-cover" ${story.lightCover ? "checked" : ""} style="width:16px;height:16px;cursor:pointer;">
+        <span>Cover image is bright/white — add dark overlay so the title text is readable</span>
+      </label>
     </div>
 
     <div class="field">
@@ -449,6 +453,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       category: body.querySelector("#sd-category").value,
       slug: (body.querySelector("#sd-slug").value.trim() || slugify(body.querySelector("#sd-title").value.trim())) || null,
       coverImage: body.querySelector("#sd-cover").value.trim(),
+      lightCover: !!body.querySelector("#sd-light-cover")?.checked,
       dek: body.querySelector("#sd-dek").value.trim(),
       body: body.querySelector("#sd-body").value,
       // Public article renderer reads `content`, dashboard reads `body`; keep
