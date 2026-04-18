@@ -25,7 +25,7 @@ import {
   getProjectId,
 } from "../_utils/firebase.js";
 import { sendBulkEmail } from "../_utils/resend.js";
-import { newsletterEmail } from "../_utils/emails.js";
+import { buildNewsletter } from "../_utils/newsletter-template.js";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -137,7 +137,12 @@ export const onRequestPost = async ({ request, env }) => {
         .filter((v, i, arr) => arr.indexOf(v) === i);
 
       const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
-      const html = newsletterEmail({ articles, siteUrl });
+      const html = buildNewsletter({
+        subject: `New from The Catalyst: ${articles[0].title}`,
+        preheader: `${articles[0].title} — and more inside.`,
+        articles,
+        siteUrl,
+      });
 
       if (emails.length > 0) {
         newsletterResult = await sendBulkEmail(env, {

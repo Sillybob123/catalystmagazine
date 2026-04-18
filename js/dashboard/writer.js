@@ -13,6 +13,9 @@ import {
   ref as storageRef,
   uploadBytesResumable,
   getDownloadURL,
+  listAll,
+  getMetadata,
+  deleteObject,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, fmtRelative, statusPill, slugify, confirmDialog, toast } from "./ui.js";
 import { convertToWebp } from "../image-utils.js";
@@ -58,6 +61,10 @@ function mountDraftEditor(ctx, container) {
         <button class="btn btn-ghost btn-sm" id="toggle-settings">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Settings
+        </button>
+        <button class="btn btn-ghost btn-sm" id="preview-btn" title="Open a full preview of how this article will look when published">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
         </button>
         <button class="btn btn-secondary btn-sm" id="save-draft-btn">Save draft</button>
         <button class="btn btn-accent btn-sm" id="submit-btn">Submit for review</button>
@@ -113,6 +120,10 @@ function mountDraftEditor(ctx, container) {
         <button class="rt-btn rt-btn-wide" data-action="paste-gdoc" title="Paste from a Google Doc and keep headings, bold, italic, and links">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 6v14a2 2 0 0 0 2 2h10"/></svg>
           <span>Paste from Google Doc</span>
+        </button>
+        <button class="rt-btn rt-btn-wide" data-action="quiz" title="Add a 3-question knowledge quiz to the end of the article">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Add quiz</span>
         </button>
       </div>
       <div class="rt-group">
@@ -180,6 +191,7 @@ function mountDraftEditor(ctx, container) {
           <label class="label">Cover image</label>
           <div class="cover-picker">
             <button type="button" class="btn btn-secondary btn-sm" id="f-cover-upload-btn">Upload from computer</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="f-cover-library-btn">Choose from library</button>
             <input type="file" id="f-cover-file" accept="image/*" hidden>
             <div class="cover-picker-progress" id="f-cover-progress" hidden>
               <div class="cover-picker-progress-track"><div class="cover-picker-progress-fill" id="f-cover-progress-fill"></div></div>
@@ -285,6 +297,7 @@ function mountDraftEditor(ctx, container) {
   // Prefill when editing.
   if (editingId) loadDraft(editingId, wrap, ctx);
 
+  wrap.querySelector("#preview-btn").addEventListener("click", () => openArticlePreview(wrap, ctx));
   wrap.querySelector("#save-draft-btn").addEventListener("click", () => saveStory(ctx, wrap, "draft", editingId));
   wrap.querySelector("#submit-btn").addEventListener("click", () => saveStory(ctx, wrap, "pending", editingId));
 }
@@ -330,6 +343,25 @@ function wireRichToolbar(wrap, editorEl, ctx) {
     const text = (e.clipboardData || window.clipboardData).getData("text/plain");
     document.execCommand("insertText", false, text);
   });
+
+  // Click on an inserted image/video figure → open the edit dialog so the
+  // writer can change size, caption, alt text, or replace/remove the media.
+  // We don't hijack clicks on the <video> element itself — those should play
+  // the video, not open the dialog.
+  editorEl.addEventListener("click", (e) => {
+    const quizFig = e.target.closest("figure.rt-quiz");
+    if (quizFig && editorEl.contains(quizFig)) {
+      e.preventDefault();
+      openQuizDialog(editorEl, ctx, quizFig);
+      return;
+    }
+    const figure = e.target.closest("figure.rt-figure");
+    if (!figure || !editorEl.contains(figure)) return;
+    if (e.target.tagName === "VIDEO") return; // let native controls work
+    e.preventDefault();
+    const kind = figure.classList.contains("rt-figure-video") ? "video" : "image";
+    openMediaDialog(kind, editorEl, ctx, figure);
+  });
 }
 
 function updateToolbarState(toolbar) {
@@ -358,7 +390,7 @@ function handleBlockAction(action, editorEl, ctx) {
     return;
   }
   if (action === "divider") {
-    insertBlockAtCaret(editorEl, '<hr class="rt-divider" />');
+    insertDividerAtCaret(editorEl);
     return;
   }
   if (action === "blockquote") {
@@ -370,15 +402,19 @@ function handleBlockAction(action, editorEl, ctx) {
     return;
   }
   if (action === "image") {
-    openMediaDialog("image", editorEl, ctx);
+    openMediaDialog("image", editorEl, ctx, null, captureEditorRange(editorEl));
     return;
   }
   if (action === "video") {
-    openMediaDialog("video", editorEl, ctx);
+    openMediaDialog("video", editorEl, ctx, null, captureEditorRange(editorEl));
     return;
   }
   if (action === "paste-gdoc") {
     openGoogleDocPasteDialog(editorEl, ctx);
+    return;
+  }
+  if (action === "quiz") {
+    openQuizDialog(editorEl, ctx, null);
     return;
   }
   if (action === "new-section") {
@@ -651,6 +687,393 @@ function convertGDocInline(node) {
   return out;
 }
 
+// ===== Article preview ======================================================
+// Opens a new tab showing the draft as readers will see it on the live site.
+// We reuse the public site's stylesheets (css/styles.css + article-premium.css)
+// and mount the same `.article-detail` structure that js/main.js produces, so
+// the writer sees a true-to-life preview without needing to publish.
+function openArticlePreview(wrap, ctx) {
+  const title = (wrap.querySelector("#f-title").textContent || "").trim() || "Untitled draft";
+  const dek = (wrap.querySelector("#f-dek").textContent || "").trim();
+  const cover = wrap.querySelector("#f-cover").value.trim();
+  const category = wrap.querySelector("#f-category").value || "Feature";
+  const author = ctx.profile?.name || ctx.user?.email || "The Catalyst";
+  // Strip live suggestion marks before rendering — they aren't part of the
+  // published article and would otherwise show up as highlighted text.
+  const bodyHtml = wrap.querySelector("#f-body").innerHTML
+    .replace(/<mark class="sx-mark[^"]*"[^>]*>([\s\S]*?)<\/mark>/g, "$1");
+
+  // Reading time mirrors the public-site estimator: 220 wpm against the body.
+  const wordCount = (wrap.querySelector("#f-body").textContent || "").trim().split(/\s+/).filter(Boolean).length;
+  const readingTime = `${Math.max(1, Math.round(wordCount / 220))} min read`;
+  const todayStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const initials = author.split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+
+  // Resolve the absolute origin so preview stylesheets, fonts, and the quiz
+  // template all load from the live site instead of about:srcdoc.
+  const origin = window.location.origin;
+  const heroBg = cover || `${origin}/NewLogoShape.png`;
+
+  const doc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preview · ${esc(title)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="${origin}/css/styles.css">
+<link rel="stylesheet" href="${origin}/css/article-premium.css">
+<style>
+  body { background: var(--canvas, #fafafa); }
+  .preview-banner {
+    position: sticky; top: 0; z-index: 1000;
+    background: #0b1220; color: #fff;
+    padding: 10px 20px; text-align: center;
+    font: 600 13px/1.4 Inter, system-ui, sans-serif;
+    letter-spacing: 0.04em;
+  }
+  .preview-banner span { opacity: 0.7; font-weight: 400; margin-left: 10px; }
+  main { padding-top: 0; }
+  .article-page { padding: 40px 24px 80px; }
+  .article-page .container { max-width: 1100px; margin: 0 auto; }
+</style>
+</head>
+<body data-page="article">
+  <div class="preview-banner">PREVIEW MODE <span>This is how your article will appear when published.</span></div>
+  <main>
+    <section class="article-page">
+      <div class="container">
+        <div class="article-detail">
+          <header class="article-hero">
+            <div class="article-hero__image" style="background-image:url('${escAttrJs(heroBg)}')"></div>
+            <div class="article-hero__inner">
+              <span class="article-hero__category">${esc(category)}</span>
+              <h1 class="article-hero__title">${esc(title)}</h1>
+              ${dek ? `<p class="article-hero__deck">${esc(dek)}</p>` : ""}
+              <div class="article-hero__meta">
+                <span>By <strong>${esc(author)}</strong></span>
+                <span class="dot"></span>
+                <span>${esc(todayStr)}</span>
+                <span class="dot"></span>
+                <span class="reading-time">${esc(readingTime)}</span>
+              </div>
+            </div>
+          </header>
+          <div class="article-body-wrap">
+            <article class="article-body" id="preview-article-body">${bodyHtml}</article>
+            <aside class="article-byline">
+              <div class="article-byline__avatar">${esc(initials || "TC")}</div>
+              <div>
+                <div class="article-byline__name">${esc(author)}</div>
+                <div class="article-byline__role">Contributing writer · The Catalyst Magazine</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    // Inline-hydrate any quiz figures using the same template + substitution
+    // logic as the public article page. We can't import main.js here because
+    // its module entry-point pulls in the full site router; instead we reuse
+    // the same template fetch and placeholder-swap.
+    (function () {
+      const ORIGIN = ${JSON.stringify(origin)};
+      function decodeQuiz(raw) {
+        try { return JSON.parse(decodeURIComponent(escape(atob(raw)))); }
+        catch (e) { return null; }
+      }
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      function renderGameHtml(template, data) {
+        const powers = ['double', 'fire', 'both'];
+        const questions = (data.questions || []).map(function (q, i) {
+          const correctIdx = Math.max(0, Math.min(q.correct, (q.options || []).length - 1));
+          return {
+            qID: i,
+            q: q.prompt,
+            options: (q.options || []).map(function (text, oi) { return { text: text, correct: oi === correctIdx }; }),
+            feedbackCorrect: q.feedbackCorrect || '✅ Correct!',
+            feedbackIncorrect: q.feedbackIncorrect || '❌ Not quite — give it another look.',
+            power: powers[i % powers.length]
+          };
+        });
+        const json = JSON.stringify(questions, null, 2);
+        return template
+          .replace(/__GAME_TITLE__/g, esc(data.title || 'Knowledge quiz'))
+          .replace(/__GAME_INTRO__/g, esc(data.intro || 'Test your knowledge of the article.'))
+          .replace('/*__QUESTIONS_JSON__*/[]', json);
+      }
+      const figures = document.querySelectorAll('figure.rt-quiz[data-quiz]');
+      if (!figures.length) return;
+      fetch(ORIGIN + '/posts/games/_template.html').then(function (res) {
+        if (!res.ok) throw new Error('template ' + res.status);
+        return res.text();
+      }).then(function (template) {
+        figures.forEach(function (figure) {
+          const data = decodeQuiz(figure.getAttribute('data-quiz') || '');
+          if (!data || !Array.isArray(data.questions) || !data.questions.length) return;
+          const wrap = document.createElement('div');
+          wrap.className = 'article-block article-quiz';
+          const iframe = document.createElement('iframe');
+          iframe.className = 'article-quiz-frame';
+          iframe.title = data.title || 'Interactive quiz';
+          iframe.setAttribute('allow', 'fullscreen');
+          iframe.srcdoc = renderGameHtml(template, data);
+          wrap.appendChild(iframe);
+          figure.replaceWith(wrap);
+        });
+      }).catch(function (err) { console.warn('preview quiz hydration failed', err); });
+    })();
+  </script>
+</body>
+</html>`;
+
+  // Open a fresh window and write the document. Using a Blob URL (rather than
+  // document.write) keeps the new tab's history clean and avoids the deprecated
+  // open + write pattern that some browsers warn about.
+  const blob = new Blob([doc], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank", "noopener,noreferrer");
+  if (!win) {
+    ctx?.toast?.("Allow pop-ups for this site to see the preview.", "error");
+    URL.revokeObjectURL(url);
+    return;
+  }
+  // Revoke the URL once the new tab has had time to fetch it.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+// Small helper used by openArticlePreview when the value is going into a
+// JS string in the inlined preview document. Mirrors escapeAttr but allows
+// embedding directly into a quoted style attribute or JS string.
+function escAttrJs(value) {
+  return String(value == null ? "" : value)
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/"/g, "&quot;")
+    .replace(/\n/g, " ");
+}
+
+// ===== Quiz dialog ==========================================================
+// Lets a writer add a 3-question knowledge quiz that renders at the end of the
+// article as the same retro-arcade "Neuro Dash" mini-game used elsewhere in
+// the magazine. The quiz data is base64-encoded JSON parked on a non-editable
+// <figure class="rt-quiz" data-quiz="…"> block. At render time the public
+// article page (js/main.js) loads the game template and embeds the game in an
+// iframe at that figure's position.
+function openQuizDialog(editorEl, ctx, existingFigure = null) {
+  const isEdit = !!existingFigure;
+
+  let initial = {
+    title: "",
+    intro: "",
+    questions: defaultQuizQuestions(),
+  };
+  if (isEdit) {
+    try {
+      const raw = existingFigure.getAttribute("data-quiz") || "";
+      const parsed = decodeQuizData(raw);
+      if (parsed && Array.isArray(parsed.questions) && parsed.questions.length === 3) {
+        initial = {
+          title: parsed.title || "",
+          intro: parsed.intro || "",
+          questions: parsed.questions,
+        };
+      }
+    } catch { /* fall back to defaults */ }
+  }
+
+  const scrim = el("div", { class: "media-dialog-scrim" });
+  const modal = el("div", { class: "media-dialog quiz-dialog", style: { maxWidth: "760px" } });
+  modal.innerHTML = `
+    <div class="media-dialog-head">
+      <div class="media-dialog-title">${isEdit ? "Edit" : "Add"} interactive quiz game</div>
+      <button class="media-dialog-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="media-dialog-body">
+      <div class="hint" style="margin-bottom:14px;">
+        Add a 3-question retro arcade mini-game to the end of your article.
+        Readers run, jump, and collect coins while answering your questions to
+        unlock the goal portal.
+      </div>
+      <div class="field">
+        <label class="label">Game title</label>
+        <input class="input" id="qz-title" placeholder='e.g. "Neuro Dash: Unfolding the Mystery"' value="${escapeAttr(initial.title || "")}" />
+      </div>
+      <div class="field">
+        <label class="label">Intro line (shown above the game)</label>
+        <input class="input" id="qz-intro" placeholder='e.g. "🧠 Test your knowledge about misfolded proteins!"' value="${escapeAttr(initial.intro || "")}" />
+      </div>
+      <div id="qz-questions"></div>
+      <div class="media-error" id="qz-error"></div>
+    </div>
+    <div class="media-dialog-foot">
+      ${isEdit ? `<button class="btn btn-ghost btn-sm" id="qz-delete" style="color:var(--danger);margin-right:auto;">Remove quiz</button>` : ""}
+      <button class="btn btn-ghost btn-sm" id="qz-cancel">Cancel</button>
+      <button class="btn btn-accent btn-sm" id="qz-save">${isEdit ? "Save changes" : "Insert quiz"}</button>
+    </div>
+  `;
+  document.body.appendChild(scrim);
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); });
+
+  const questionsEl = modal.querySelector("#qz-questions");
+  const errorEl = modal.querySelector("#qz-error");
+
+  // Render the 3 question cards. Each card has a prompt, 3 answer choices
+  // (matches the canvas game's option modal which sizes for 3), a radio to
+  // mark the correct one, and per-question feedback for both outcomes.
+  initial.questions.slice(0, 3).forEach((q, qi) => {
+    const card = el("div", { class: "quiz-q-card" });
+    card.innerHTML = `
+      <div class="quiz-q-head">Question ${qi + 1}</div>
+      <div class="field">
+        <label class="label">Prompt</label>
+        <input class="input qz-q-prompt" data-qi="${qi}" placeholder="Ask a question about your article" value="${escapeAttr(q.prompt || "")}" />
+      </div>
+      <div class="field">
+        <label class="label">Answer choices (pick the correct one with the radio)</label>
+        <div class="quiz-options" data-qi="${qi}">
+          ${[0, 1, 2].map((oi) => {
+            const opt = q.options?.[oi] || "";
+            const isCorrect = q.correct === oi;
+            return `
+              <label class="quiz-option-row">
+                <input type="radio" name="qz-correct-${qi}" value="${oi}" ${isCorrect ? "checked" : ""} aria-label="Mark choice ${oi + 1} as correct" />
+                <input class="input qz-q-option" data-qi="${qi}" data-oi="${oi}" placeholder="Choice ${oi + 1}" value="${escapeAttr(opt)}" />
+              </label>`;
+          }).join("")}
+        </div>
+      </div>
+      <div class="field">
+        <label class="label">Feedback when correct</label>
+        <input class="input qz-q-fc" data-qi="${qi}" placeholder='e.g. "✅ Correct! Here\'s why…"' value="${escapeAttr(q.feedbackCorrect || "")}" />
+      </div>
+      <div class="field">
+        <label class="label">Feedback when wrong</label>
+        <input class="input qz-q-fi" data-qi="${qi}" placeholder='e.g. "❌ Not quite — the article explains…"' value="${escapeAttr(q.feedbackIncorrect || "")}" />
+      </div>
+    `;
+    questionsEl.appendChild(card);
+  });
+
+  const close = () => {
+    scrim.classList.remove("open");
+    modal.classList.remove("open");
+    setTimeout(() => { scrim.remove(); modal.remove(); }, 200);
+  };
+  modal.querySelector(".media-dialog-close").addEventListener("click", close);
+  modal.querySelector("#qz-cancel").addEventListener("click", close);
+  scrim.addEventListener("click", close);
+
+  if (isEdit) {
+    modal.querySelector("#qz-delete").addEventListener("click", () => {
+      // Drop both the figure and the empty paragraph the editor parked after it.
+      const after = existingFigure.nextElementSibling;
+      existingFigure.remove();
+      if (after && after.tagName === "P" && (after.textContent || "").trim() === "") after.remove();
+      editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+      ctx?.toast?.("Quiz removed.", "success");
+      close();
+    });
+  }
+
+  modal.querySelector("#qz-save").addEventListener("click", () => {
+    const title = (modal.querySelector("#qz-title").value || "").trim();
+    const intro = (modal.querySelector("#qz-intro").value || "").trim();
+    if (!title) { errorEl.textContent = "Please add a game title."; return; }
+
+    const questions = [];
+    for (let qi = 0; qi < 3; qi++) {
+      const prompt = (modal.querySelector(`.qz-q-prompt[data-qi="${qi}"]`).value || "").trim();
+      const options = [];
+      for (let oi = 0; oi < 3; oi++) {
+        const v = (modal.querySelector(`.qz-q-option[data-qi="${qi}"][data-oi="${oi}"]`).value || "").trim();
+        if (v) options.push(v);
+      }
+      const correctRaw = modal.querySelector(`input[name="qz-correct-${qi}"]:checked`)?.value;
+      const correct = correctRaw == null ? -1 : Number(correctRaw);
+      const feedbackCorrect = (modal.querySelector(`.qz-q-fc[data-qi="${qi}"]`).value || "").trim();
+      const feedbackIncorrect = (modal.querySelector(`.qz-q-fi[data-qi="${qi}"]`).value || "").trim();
+
+      if (!prompt) { errorEl.textContent = `Question ${qi + 1} is missing a prompt.`; return; }
+      if (options.length < 2) { errorEl.textContent = `Question ${qi + 1} needs at least 2 answer choices.`; return; }
+      if (correct < 0 || correct >= options.length) {
+        errorEl.textContent = `Question ${qi + 1}: pick which answer is correct (and make sure it's filled in).`;
+        return;
+      }
+      questions.push({ prompt, options, correct, feedbackCorrect, feedbackIncorrect });
+    }
+
+    const data = { title, intro, questions };
+    const figureHtml = renderQuizFigureHtml(data);
+
+    if (isEdit) {
+      existingFigure.outerHTML = figureHtml;
+    } else {
+      // Always append at the end — the article reads better with the game
+      // sitting after the closing paragraph rather than mid-body.
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = figureHtml + `<p><br/></p>`;
+      while (wrapper.firstChild) editorEl.appendChild(wrapper.firstChild);
+    }
+    editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+    ctx?.toast?.(isEdit ? "Quiz updated." : "Quiz added to the end of your article.", "success");
+    close();
+  });
+}
+
+function defaultQuizQuestions() {
+  return [
+    { prompt: "", options: ["", "", ""], correct: 0, feedbackCorrect: "", feedbackIncorrect: "" },
+    { prompt: "", options: ["", "", ""], correct: 0, feedbackCorrect: "", feedbackIncorrect: "" },
+    { prompt: "", options: ["", "", ""], correct: 0, feedbackCorrect: "", feedbackIncorrect: "" },
+  ];
+}
+
+function encodeQuizData(data) {
+  // Base64 keeps the quiz JSON readable to our renderer but opaque to the
+  // contenteditable rich-text engine, which would otherwise mangle quotes and
+  // angle brackets in the data attribute as the writer types around the block.
+  const json = JSON.stringify(data);
+  return btoa(unescape(encodeURIComponent(json)));
+}
+
+function decodeQuizData(raw) {
+  if (!raw) return null;
+  try {
+    const json = decodeURIComponent(escape(atob(raw)));
+    return JSON.parse(json);
+  } catch { return null; }
+}
+
+function renderQuizFigureHtml(data) {
+  const encoded = encodeQuizData(data);
+  const count = data.questions.length;
+  const title = escapeHtml(data.title || "Knowledge quiz");
+  const intro = escapeHtml(data.intro || "Test your knowledge of this article.");
+  // The visible content is just an editor-side preview card. The public
+  // article page replaces this with the actual game iframe at render time.
+  return `<figure class="rt-quiz" contenteditable="false" data-rt-quiz="1" data-quiz="${escapeAttr(encoded)}">
+    <div class="rt-quiz-card">
+      <div class="rt-quiz-eyebrow">🎮 Interactive quiz game</div>
+      <div class="rt-quiz-title">${title}</div>
+      <div class="rt-quiz-intro">${intro}</div>
+      <div class="rt-quiz-meta">${count} question${count === 1 ? "" : "s"} · readers play to unlock the goal · click to edit</div>
+    </div>
+  </figure>`;
+}
+
 // Fallback when the clipboard has no HTML (rare — plain text copy).
 // Double newlines become paragraph breaks; single newlines become <br/>.
 function plainTextToHtml(text) {
@@ -661,11 +1084,51 @@ function plainTextToHtml(text) {
     .join("\n");
 }
 
-function insertBlockAtCaret(editorEl, html) {
+// Insert an <hr class="rt-divider"> as a top-level block in the editor,
+// followed by an empty paragraph where the caret lands. Using execCommand
+// to insert an <hr> tends to nest it inside the current paragraph and leave
+// a stranded empty block above — this routes around that.
+function insertDividerAtCaret(editorEl) {
   editorEl.focus();
-  // Make sure we have a selection in the editor; if not, append to end.
   const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0 || !editorEl.contains(sel.anchorNode)) {
+  const hr = document.createElement("hr");
+  hr.className = "rt-divider";
+  const after = document.createElement("p");
+  after.innerHTML = "<br/>";
+  // Find the top-level block inside the editor that contains the caret.
+  let block = null;
+  if (sel && sel.rangeCount && editorEl.contains(sel.anchorNode)) {
+    let n = sel.anchorNode;
+    while (n && n.parentNode !== editorEl) n = n.parentNode;
+    block = n;
+  }
+  if (block && block !== editorEl) {
+    block.after(hr);
+    hr.after(after);
+  } else {
+    // No known caret inside a block — append to the end.
+    editorEl.appendChild(hr);
+    editorEl.appendChild(after);
+  }
+  // Place caret inside the new paragraph so the writer keeps typing below.
+  const range = document.createRange();
+  range.setStart(after, 0);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function insertBlockAtCaret(editorEl, html, savedRange = null) {
+  editorEl.focus();
+  const sel = window.getSelection();
+  // If the caller captured a range before the dialog stole focus, restore it
+  // so the new block lands where the writer's cursor actually was.
+  if (savedRange && editorEl.contains(savedRange.startContainer)) {
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  } else if (!sel || sel.rangeCount === 0 || !editorEl.contains(sel.anchorNode)) {
+    // No known position — append to end.
     const range = document.createRange();
     range.selectNodeContents(editorEl);
     range.collapse(false);
@@ -675,11 +1138,39 @@ function insertBlockAtCaret(editorEl, html) {
   document.execCommand("insertHTML", false, html);
 }
 
+// Snapshot the editor's current selection so we can restore it after a modal
+// has stolen focus. Returns a cloned Range (safe to hold) or null.
+function captureEditorRange(editorEl) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  if (!editorEl.contains(range.startContainer)) return null;
+  return range.cloneRange();
+}
+
+// Split a writer's caption into main text + optional credit line.
+// We recognize an em-dash (—), regular dash surrounded by spaces (" - "), or
+// a vertical bar ("|") as the credit separator. Everything after is rendered
+// in a small, letter-spaced, non-italic span styled by CSS.
+function renderFigureCaption(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  const match = text.match(/^(.*?)\s*(?:—|–| - | \| )\s*(.+)$/);
+  if (match) {
+    const main = match[1].trim();
+    const credit = match[2].trim();
+    return `<figcaption><span class="fig-caption-text">${escapeHtml(main)}</span><span class="fig-caption-credit">${escapeHtml(credit)}</span></figcaption>`;
+  }
+  return `<figcaption><span class="fig-caption-text">${escapeHtml(text)}</span></figcaption>`;
+}
+
 // ===== Media upload dialog (images + videos) ================================
 // When `existingFigure` is passed, we edit it in place instead of inserting a
 // new one — lets writers click an already-placed image/video to change its
-// caption, alt text, or size.
-function openMediaDialog(kind, editorEl, ctx, existingFigure = null) {
+// caption, alt text, or size. When `savedRange` is passed, the new figure is
+// inserted at that exact caret position (the caller captured it before the
+// dialog stole focus from the contenteditable).
+function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange = null) {
   const isImage = kind === "image";
   const accept = isImage ? "image/*" : "video/*";
   const label = isImage ? "image" : "video";
@@ -694,7 +1185,21 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null) {
     const mediaEl = existingFigure.querySelector(isImage ? "img" : "video");
     initialUrl = mediaEl?.getAttribute("src") || "";
     initialAlt = (isImage ? mediaEl?.getAttribute("alt") : mediaEl?.getAttribute("aria-label")) || "";
-    initialCaption = existingFigure.querySelector("figcaption")?.textContent || "";
+    // Reconstruct the writer-facing caption (main — credit) from the split
+    // spans. Falls back to the raw textContent for older figures that were
+    // inserted before the split-span structure existed.
+    const capEl = existingFigure.querySelector("figcaption");
+    if (capEl) {
+      const mainSpan = capEl.querySelector(".fig-caption-text");
+      const creditSpan = capEl.querySelector(".fig-caption-credit");
+      if (mainSpan || creditSpan) {
+        const main = (mainSpan?.textContent || "").trim();
+        const credit = (creditSpan?.textContent || "").trim();
+        initialCaption = credit ? `${main} — ${credit}` : main;
+      } else {
+        initialCaption = capEl.textContent.trim();
+      }
+    }
     const sizeMatch = (existingFigure.className || "").match(/rt-size-(\w+)/);
     if (sizeMatch) initialSize = sizeMatch[1];
   }
@@ -724,9 +1229,18 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null) {
         <input type="file" id="m-file" accept="${accept}" hidden />
       </div>
 
-      <div class="media-or"><span>or paste a URL</span></div>
+      <div class="media-or"><span>or</span></div>
+
+      ${isImage ? `
+      <div class="field">
+        <button type="button" class="btn btn-secondary btn-sm" id="m-browse-library" style="width:100%;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px;"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          Choose from your image library
+        </button>
+      </div>` : ""}
 
       <div class="field">
+        <label class="label" style="font-size:12px;">Or paste a URL</label>
         <input class="input" id="m-url" placeholder="https://…" value="${escapeAttr(initialUrl)}" />
       </div>
 
@@ -736,7 +1250,8 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null) {
       </div>
       <div class="field">
         <label class="label">Caption (optional)</label>
-        <input class="input" id="m-caption" placeholder="Shown beneath the ${label}" value="${escapeAttr(initialCaption)}" />
+        <input class="input" id="m-caption" placeholder='e.g. "Researchers review the sequencing data. — Photo: Jane Doe"' value="${escapeAttr(initialCaption)}" />
+        <div class="hint" style="margin-top:6px;">Add a credit by writing it after an em-dash: <em>caption — credit</em>.</div>
       </div>
       ${isImage ? `
       <div class="field">
@@ -799,6 +1314,22 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null) {
     updateInsertState();
   });
 
+  const libraryBtn = modal.querySelector("#m-browse-library");
+  if (libraryBtn) {
+    libraryBtn.addEventListener("click", () => {
+      openImageLibraryPicker(ctx, (pickedUrl) => {
+        resolvedUrl = pickedUrl;
+        pendingFile = null;
+        urlInput.value = pickedUrl;
+        urlInput.disabled = false;
+        drop.classList.add("has-file");
+        progressWrap.hidden = true;
+        errorEl.textContent = "";
+        updateInsertState();
+      });
+    });
+  }
+
   drop.addEventListener("click", () => fileInput.click());
   drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") fileInput.click(); });
   drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("hover"); });
@@ -852,35 +1383,237 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null) {
     if (!url) return;
     const alt = altInput.value.trim();
     const caption = capInput.value.trim();
-    let html;
-    if (isImage) {
-      const sizeEl = modal.querySelector('input[name="m-size"]:checked');
-      const size = sizeEl ? sizeEl.value : "standard";
-      html = `
-        <figure class="rt-figure rt-size-${size}">
-          <img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" />
-          ${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ""}
-        </figure>
-        <p><br/></p>`;
+    const size = isImage
+      ? (modal.querySelector('input[name="m-size"]:checked')?.value || "standard")
+      : null;
+
+    // Build just the <figure>…</figure> (no trailing <p>) so an in-place edit
+    // doesn't duplicate the empty paragraph that already follows the figure.
+    const captionHtml = caption ? renderFigureCaption(caption) : "";
+    const figureHtml = isImage
+      ? `<figure class="rt-figure rt-size-${size}" contenteditable="false" data-rt-figure="image">
+           <img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" />
+           ${captionHtml}
+         </figure>`
+      : `<figure class="rt-figure rt-figure-video" contenteditable="false" data-rt-figure="video">
+           <video src="${escapeAttr(url)}" controls playsinline preload="metadata"${alt ? ` aria-label="${escapeAttr(alt)}"` : ""}></video>
+           ${captionHtml}
+         </figure>`;
+
+    if (isEdit) {
+      // Replace the existing figure in place. Using outerHTML keeps the
+      // surrounding text (and empty paragraph after) exactly as it was.
+      existingFigure.outerHTML = figureHtml;
     } else {
-      html = `
-        <figure class="rt-figure rt-figure-video">
-          <video src="${escapeAttr(url)}" controls playsinline preload="metadata"${alt ? ` aria-label="${escapeAttr(alt)}"` : ""}></video>
-          ${caption ? `<figcaption>${escapeHtml(caption)}</figcaption>` : ""}
-        </figure>
-        <p><br/></p>`;
+      // New insert — use the caret position the toolbar captured before the
+      // dialog opened, and add a blank paragraph so typing continues below.
+      insertBlockAtCaret(editorEl, figureHtml + `<p><br/></p>`, savedRange);
     }
-    insertBlockAtCaret(editorEl, html);
+    editorEl.dispatchEvent(new Event("input", { bubbles: true }));
     close();
+  });
+
+  // Remove button (edit mode only) — deletes the figure from the article.
+  const deleteBtn = modal.querySelector("#m-delete");
+  if (deleteBtn && isEdit) {
+    deleteBtn.addEventListener("click", () => {
+      existingFigure.remove();
+      editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+      close();
+    });
+  }
+}
+
+// ===== Image library picker =================================================
+// Lists every image the current writer has previously uploaded (both inline
+// figures and cover images go to the same path prefix) and lets them pick
+// one to reuse. Called from the media dialog and the cover-image field.
+function openImageLibraryPicker(ctx, onPick) {
+  const uid = ctx?.user?.uid;
+  if (!uid) { ctx?.toast?.("Sign in to browse your library.", "error"); return; }
+
+  const isAdmin = ctx?.role === "admin";
+  const scrim = el("div", { class: "media-dialog-scrim" });
+  const modal = el("div", { class: "media-dialog media-dialog-wide" });
+  modal.innerHTML = `
+    <div class="media-dialog-head">
+      <div class="media-dialog-title">${isAdmin ? "Image library (all writers)" : "Your image library"}</div>
+      <button class="media-dialog-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="media-dialog-body">
+      <div class="library-grid-toolbar">
+        <div class="hint">${isAdmin
+          ? "Every image uploaded by any writer. Click to reuse, or hover to delete."
+          : "Click an image to use it. These are photos you've uploaded from any article."}</div>
+        <div class="library-grid-count" id="lib-count"></div>
+      </div>
+      <div class="library-grid-scroll">
+        <div id="lib-grid" class="library-grid">
+          <div class="loading-state" style="grid-column:1/-1;"><div class="spinner"></div>Loading images…</div>
+        </div>
+      </div>
+      <div class="media-error" id="lib-error"></div>
+    </div>
+    <div class="media-dialog-foot">
+      <button class="btn btn-ghost btn-sm" id="lib-cancel">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(scrim);
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); });
+
+  const close = () => {
+    scrim.classList.remove("open");
+    modal.classList.remove("open");
+    setTimeout(() => { scrim.remove(); modal.remove(); }, 200);
+  };
+  modal.querySelector(".media-dialog-close").addEventListener("click", close);
+  modal.querySelector("#lib-cancel").addEventListener("click", close);
+  scrim.addEventListener("click", close);
+
+  const grid = modal.querySelector("#lib-grid");
+  const errorEl = modal.querySelector("#lib-error");
+  const countEl = modal.querySelector("#lib-count");
+
+  (async () => {
+    try {
+      const entries = await loadImageLibrary(isAdmin ? null : uid);
+      if (!entries.length) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">No images yet. Upload one and it'll appear here next time.</div>`;
+        countEl.textContent = "";
+        return;
+      }
+      countEl.textContent = `${entries.length} image${entries.length === 1 ? "" : "s"}`;
+      renderLibraryGrid(grid, entries, {
+        allowDelete: isAdmin,
+        onPick: (entry) => { onPick(entry.url); close(); },
+        onDelete: async (entry, tile) => {
+          const ok = await confirmDialog(
+            "Delete this image? It will be removed from Firebase Storage, and any article referencing it will show a broken image.",
+            { confirmText: "Delete", danger: true },
+          );
+          if (!ok) return;
+          try {
+            await deleteObject(entry.ref);
+            tile.remove();
+            const remaining = grid.querySelectorAll(".library-tile").length;
+            countEl.textContent = remaining ? `${remaining} image${remaining === 1 ? "" : "s"}` : "";
+            if (!remaining) {
+              grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">Library is empty.</div>`;
+            }
+            ctx?.toast?.("Image deleted.", "success");
+          } catch (err) {
+            ctx?.toast?.("Could not delete: " + (err?.message || err), "error");
+          }
+        },
+      });
+    } catch (err) {
+      errorEl.textContent = "Could not load library: " + (err?.message || err);
+      grid.innerHTML = "";
+    }
+  })();
+}
+
+// Load the image library entries. When `ownerUid` is passed we only list
+// that user's folder; when null we walk every writer's folder (admin view).
+export async function loadImageLibrary(ownerUid) {
+  const rootPaths = ownerUid ? [`stories/${ownerUid}/images`] : await listAllUserImagePaths();
+  const allEntries = [];
+  for (const path of rootPaths) {
+    try {
+      const folderRef = storageRef(storage, path);
+      const listing = await listAll(folderRef);
+      const batch = await Promise.all(listing.items.map(async (item) => {
+        try {
+          const [url, meta] = await Promise.all([
+            getDownloadURL(item),
+            getMetadata(item).catch(() => null),
+          ]);
+          const updated = meta?.updated ? new Date(meta.updated).getTime() : 0;
+          const ownerFromPath = item.fullPath.split("/")[1] || "";
+          return {
+            url,
+            name: item.name,
+            ref: item,
+            fullPath: item.fullPath,
+            owner: ownerFromPath,
+            size: meta?.size || 0,
+            contentType: meta?.contentType || "",
+            updated,
+          };
+        } catch {
+          return null;
+        }
+      }));
+      batch.filter(Boolean).forEach((e) => allEntries.push(e));
+    } catch (err) {
+      console.warn("[image-library] skipping", path, err?.message || err);
+    }
+  }
+  return allEntries.sort((a, b) => b.updated - a.updated);
+}
+
+// Enumerate every writer folder under `stories/`. Admin-only.
+async function listAllUserImagePaths() {
+  const root = storageRef(storage, "stories");
+  const listing = await listAll(root);
+  return listing.prefixes.map((p) => `${p.fullPath}/images`);
+}
+
+export function renderLibraryGrid(grid, entries, opts = {}) {
+  const { allowDelete = false, onPick, onDelete } = opts;
+  grid.innerHTML = "";
+  entries.forEach((entry) => {
+    const tile = el("button", { class: "library-tile", type: "button", title: "Click to use this image" });
+    const metaLine = entry.owner ? shortenOwner(entry.owner) : "";
+    tile.innerHTML = `
+      <img src="${escapeAttr(entry.url)}" alt="" loading="lazy" />
+      ${metaLine ? `<div class="library-tile-meta">${escapeHtml(metaLine)}</div>` : ""}
+      ${allowDelete ? `<span class="library-tile-delete" role="button" aria-label="Delete image" title="Delete this image">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+      </span>` : ""}`;
+    tile.addEventListener("click", (e) => {
+      if (allowDelete && e.target.closest(".library-tile-delete")) {
+        e.preventDefault();
+        e.stopPropagation();
+        onDelete && onDelete(entry, tile);
+        return;
+      }
+      onPick && onPick(entry);
+    });
+    grid.appendChild(tile);
   });
 }
 
+function shortenOwner(uid) {
+  if (!uid) return "";
+  return uid.length > 10 ? `${uid.slice(0, 6)}…${uid.slice(-3)}` : uid;
+}
+
+// Content-hash-based upload. The storage path is derived from the file's
+// SHA-256, so re-uploading the same image (even with a different filename)
+// lands on the same object — automatic dedupe, no orphan copies.
 async function uploadToFirebase(file, kind, ctx, onProgress) {
   const uid = ctx?.user?.uid || "anonymous";
   const toUpload = kind === "image" ? await convertToWebp(file) : file;
-  const safeName = toUpload.name.replace(/[^\w.\-]+/g, "_");
-  const path = `stories/${uid}/${kind}s/${Date.now()}-${safeName}`;
+  const hash = await hashFile(toUpload);
+  const ext = extFromFile(toUpload);
+  const path = `stories/${uid}/${kind}s/${hash}${ext}`;
   const ref = storageRef(storage, path);
+
+  // If this exact file was already uploaded, reuse the existing object.
+  try {
+    await getMetadata(ref);
+    onProgress && onProgress(100);
+    const url = await getDownloadURL(ref);
+    return url;
+  } catch (err) {
+    // Not found (object-not-found) — proceed with upload. Any other error
+    // also falls through; the upload will surface the real problem.
+  }
+
   const task = uploadBytesResumable(ref, toUpload, { contentType: toUpload.type });
   return new Promise((resolve, reject) => {
     task.on(
@@ -898,6 +1631,25 @@ async function uploadToFirebase(file, kind, ctx, onProgress) {
       }
     );
   });
+}
+
+async function hashFile(file) {
+  const buf = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function extFromFile(file) {
+  const fromName = (file.name || "").match(/\.[a-z0-9]+$/i);
+  if (fromName) return fromName[0].toLowerCase();
+  const type = (file.type || "").toLowerCase();
+  if (type === "image/webp") return ".webp";
+  if (type === "image/png") return ".png";
+  if (type === "image/jpeg") return ".jpg";
+  if (type === "image/gif") return ".gif";
+  if (type === "video/mp4") return ".mp4";
+  if (type === "video/webm") return ".webm";
+  return "";
 }
 
 function escapeHtml(s) {
@@ -973,6 +1725,7 @@ function wireSettingsDrawer(wrap) {
 // ===== Cover-image upload ===================================================
 function wireCoverUpload(wrap, ctx) {
   const btn       = wrap.querySelector("#f-cover-upload-btn");
+  const libraryBtn = wrap.querySelector("#f-cover-library-btn");
   const fileInput = wrap.querySelector("#f-cover-file");
   const urlInput  = wrap.querySelector("#f-cover");
   const progress  = wrap.querySelector("#f-cover-progress");
@@ -980,6 +1733,14 @@ function wireCoverUpload(wrap, ctx) {
   const text      = wrap.querySelector("#f-cover-progress-text");
 
   btn.addEventListener("click", () => fileInput.click());
+  if (libraryBtn) {
+    libraryBtn.addEventListener("click", () => {
+      openImageLibraryPicker(ctx, (pickedUrl) => {
+        urlInput.value = pickedUrl;
+        urlInput.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    });
+  }
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;

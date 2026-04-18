@@ -14,9 +14,10 @@ const COLORS = {
   footerBg: "#fafafa",
 };
 
-// Hosted on Firebase Storage — Gmail proxies and caches images, so a stable
-// HTTPS URL with a public token is the right source for email clients.
-const LOGO_URL = "https://firebasestorage.googleapis.com/v0/b/catalystwriters-5ce43.firebasestorage.app/o/stories%2FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%2Fimages%2F1776474995050-newsletterlogo.webp?alt=media&token=111dec89-c352-4837-8541-836eebd4c309";
+// Served from Cloudflare Pages at the repo root. JPEG (not WebP) so Outlook
+// on Windows — which can't render WebP — shows the logo correctly. Gmail
+// proxies and caches the image, so a stable HTTPS URL is ideal.
+const LOGO_URL = "https://www.catalyst-magazine.com/newsletterlogo.jpg";
 
 export function buildNewsletter({
   subject = "New from The Catalyst",
@@ -71,7 +72,7 @@ export function buildNewsletter({
           <!-- Masthead with logo (white panel behind transparent PNG so it
                never shows as a dark box in Gmail/Outlook dark mode) -->
           <tr>
-            <td class="px-40" style="padding:48px 40px 24px 40px;text-align:center;background:${COLORS.surface};">
+            <td class="px-40" style="padding:24px 40px 20px 40px;text-align:center;background:${COLORS.surface};">
               <a href="${esc(siteUrl)}" style="text-decoration:none;display:inline-block;background:#ffffff;border-radius:14px;padding:18px 28px;">
                 <img src="${escAttr(logoUrl)}" alt="The Catalyst" width="440" style="width:440px;max-width:100%;height:auto;display:block;margin:0 auto;border:0;background:#ffffff;">
               </a>

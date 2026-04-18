@@ -1200,6 +1200,95 @@ function renderArticleDetail(article) {
 
     mountReadingProgress();
     registerProgressiveImages(container);
+    hydrateQuizzes(container);
+}
+
+// Replace any quiz figures the writer dropped into the article body with the
+// retro-arcade quiz mini-game. The figure carries the writer-authored quiz
+// data on a data-quiz attribute (base64-encoded JSON written by
+// js/dashboard/writer.js); we materialize the game by loading the template at
+// posts/games/_template.html, substituting the quiz data, and embedding the
+// result into a sandboxed iframe at the figure's position.
+function hydrateQuizzes(container) {
+    if (!container) return;
+    const figures = container.querySelectorAll('figure.rt-quiz[data-quiz]');
+    if (!figures.length) return;
+    figures.forEach(async (figure) => {
+        const data = decodeQuizFigure(figure);
+        if (!data || !Array.isArray(data.questions) || !data.questions.length) return;
+        try {
+            const tmpl = await loadQuizTemplate();
+            const html = renderQuizGameHtml(tmpl, data);
+            const wrap = document.createElement('div');
+            wrap.className = 'article-block article-quiz';
+            const iframe = document.createElement('iframe');
+            iframe.className = 'article-quiz-frame';
+            iframe.title = data.title || 'Interactive quiz';
+            iframe.loading = 'lazy';
+            iframe.setAttribute('allow', 'fullscreen');
+            iframe.srcdoc = html;
+            wrap.appendChild(iframe);
+            figure.replaceWith(wrap);
+        } catch (err) {
+            console.warn('Could not load quiz game template', err);
+        }
+    });
+}
+
+function decodeQuizFigure(figure) {
+    const raw = figure.getAttribute('data-quiz') || '';
+    if (!raw) return null;
+    try {
+        const json = decodeURIComponent(escape(atob(raw)));
+        return JSON.parse(json);
+    } catch (err) {
+        console.warn('Could not decode quiz data', err);
+        return null;
+    }
+}
+
+let quizTemplatePromise = null;
+function loadQuizTemplate() {
+    if (!quizTemplatePromise) {
+        quizTemplatePromise = fetch('/posts/games/_template.html', { cache: 'force-cache' })
+            .then((res) => {
+                if (!res.ok) throw new Error('quiz template ' + res.status);
+                return res.text();
+            })
+            .catch((err) => {
+                // Reset so a later reader can retry after a transient failure.
+                quizTemplatePromise = null;
+                throw err;
+            });
+    }
+    return quizTemplatePromise;
+}
+
+// Substitute the writer's quiz data into the game template. Three placeholders:
+// __GAME_TITLE__ (page title + visible heading), __GAME_INTRO__ (instruction
+// line above the canvas), and the comment-marked Q array assignment.
+function renderQuizGameHtml(template, data) {
+    const title = data.title || 'Knowledge quiz';
+    const intro = data.intro || 'Test your knowledge of the article.';
+    // Build the Q array in the shape the game engine expects, rotating power-up
+    // types so each question grants a different ability.
+    const powers = ['double', 'fire', 'both'];
+    const questions = data.questions.map((q, i) => {
+        const correctIdx = Math.max(0, Math.min(q.correct, q.options.length - 1));
+        return {
+            qID: i,
+            q: q.prompt,
+            options: q.options.map((text, oi) => ({ text, correct: oi === correctIdx })),
+            feedbackCorrect: q.feedbackCorrect || '✅ Correct!',
+            feedbackIncorrect: q.feedbackIncorrect || '❌ Not quite — give it another look.',
+            power: powers[i % powers.length],
+        };
+    });
+    const json = JSON.stringify(questions, null, 2);
+    return template
+        .replace(/__GAME_TITLE__/g, escapeHtmlAttr(title))
+        .replace(/__GAME_INTRO__/g, escapeHtmlAttr(intro))
+        .replace('/*__QUESTIONS_JSON__*/[]', json);
 }
 
 // Minimal HTML-attribute-safe escape; article.content may contain trusted HTML.
@@ -1341,9 +1430,15 @@ async function loadArticles() {
     }
 
     try {
-        // Pull structured JSON posts (article2.json - article100.json)
+        // Pull structured JSON posts (article2.json - article100.json).
+        // Use a stable id of "a<filenameIndex>" so that share links and
+        // server-rendered OG previews (functions/article.html.js) never
+        // break when the load order changes.
         const jsonArticles = await loadFromJsonPosts(2, 100, baseByTitle);
-        jsonArticles.forEach(article => tryAdd({ id: nextId++, ...article }));
+        jsonArticles.forEach(article => {
+            const stableId = article.sourceIndex ? `a${article.sourceIndex}` : `j${nextId++}`;
+            tryAdd({ ...article, id: stableId });
+        });
     } catch (err) {
         console.error('Article load failed', err);
     }
@@ -1384,7 +1479,8 @@ async function loadArticles() {
         const dateA = Date.parse(a.date) || 0;
         const dateB = Date.parse(b.date) || 0;
         if (dateA !== dateB) return dateB - dateA;
-        return (b.id || 0) - (a.id || 0);
+        // Tiebreaker: higher source index (newer JSON file) wins.
+        return (b.sourceIndex || 0) - (a.sourceIndex || 0);
     });
 
     window.__articleCache = combined;
@@ -1732,7 +1828,8 @@ async function fetchJsonArticle(index, baseByTitle) {
         const parsedList = parsePossiblyStackedJson(text);
         return parsedList
             .map(data => convertJsonToArticle(data, baseByTitle))
-            .filter(Boolean);
+            .filter(Boolean)
+            .map(article => ({ ...article, sourceIndex: index }));
     } catch (err) {
         console.warn('Unable to load JSON article', index, err);
         return [];

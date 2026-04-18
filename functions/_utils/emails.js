@@ -1,122 +1,153 @@
 // functions/_utils/emails.js
 // HTML email templates. Pure functions — no side effects.
+//
+// Design matches the newsletter template: monochrome editorial, Catalyst logo
+// masthead, Apple-style typography. Rendered table-based for Gmail / Apple
+// Mail / Outlook compatibility.
 
-const BRAND = {
-  name: "The Catalyst Magazine",
-  tagline: "D.C.'s student STEM magazine",
-  primary: "#0f766e",
-  accent: "#14b8a6",
-  text: "#0f172a",
-  muted: "#475569",
-  bg: "#f8fafc",
+const COLORS = {
+  pageBg:   "#f5f5f7",
+  surface:  "#ffffff",
+  ink:      "#1d1d1f",
+  inkSoft:  "#424245",
+  muted:    "#6e6e73",
+  hairline: "#d2d2d7",
+  footerBg: "#fafafa",
 };
+
+const LOGO_URL = "https://www.catalyst-magazine.com/newsletterlogo.jpg";
 
 function shell({ title, preheader = "", body, siteUrl }) {
   return `<!doctype html>
-<html lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(title)}</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>${escapeHtml(title)}</title>
+<style>
+  body,table,td,a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  table,td { mso-table-lspace:0; mso-table-rspace:0; }
+  img { -ms-interpolation-mode:bicubic; border:0; display:block; }
+  body { margin:0 !important; padding:0 !important; width:100% !important; background:${COLORS.pageBg}; }
+  a { color:${COLORS.ink}; }
+  @media screen and (max-width:620px) {
+    .container { width:100% !important; }
+    .px-40 { padding-left:24px !important; padding-right:24px !important; }
+    .hero-h1 { font-size:32px !important; line-height:1.1 !important; letter-spacing:-0.03em !important; }
+  }
+</style>
 </head>
-<body style="margin:0;padding:0;background:${BRAND.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${BRAND.text};">
-  <span style="display:none;visibility:hidden;opacity:0;color:transparent;max-height:0;max-width:0;">${escapeHtml(preheader)}</span>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.bg};padding:32px 16px;">
-    <tr><td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,0.06);">
-        <tr><td style="padding:28px 32px;background:linear-gradient(135deg,${BRAND.primary},${BRAND.accent});color:#fff;">
-          <div style="font-size:20px;font-weight:700;">${BRAND.name}</div>
-          <div style="font-size:13px;opacity:0.85;">${BRAND.tagline}</div>
-        </td></tr>
-        <tr><td style="padding:32px;">${body}</td></tr>
-        <tr><td style="padding:24px 32px;background:#f1f5f9;font-size:12px;color:${BRAND.muted};text-align:center;">
-          You are receiving this email because you subscribed at
-          <a href="${siteUrl}" style="color:${BRAND.primary};text-decoration:none;">${prettyHost(siteUrl)}</a>.<br>
-          &copy; ${new Date().getFullYear()} The Catalyst Magazine.
-        </td></tr>
-      </table>
-    </td></tr>
+<body style="margin:0;padding:0;background:${COLORS.pageBg};font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Helvetica Neue',Helvetica,Arial,sans-serif;color:${COLORS.ink};">
+  <span style="display:none !important;visibility:hidden;opacity:0;color:transparent;max-height:0;max-width:0;overflow:hidden;font-size:1px;line-height:1px;">${escapeHtml(preheader)}</span>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.pageBg};padding:36px 12px 48px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:${COLORS.surface};border-radius:20px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+
+          <!-- Masthead -->
+          <tr>
+            <td class="px-40" style="padding:24px 40px 20px 40px;text-align:center;background:${COLORS.surface};">
+              <a href="${escapeAttr(siteUrl)}" style="text-decoration:none;display:inline-block;background:#ffffff;border-radius:14px;padding:18px 28px;">
+                <img src="${escapeAttr(LOGO_URL)}" alt="The Catalyst" width="440" style="width:440px;max-width:100%;height:auto;display:block;margin:0 auto;border:0;background:#ffffff;">
+              </a>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td class="px-40" style="padding:22px 40px 0 40px;">
+              <div style="height:1px;background:${COLORS.hairline};line-height:1px;font-size:1px;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr><td class="px-40" style="padding:36px 40px 36px 40px;">${body}</td></tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:32px 40px 40px 40px;background:${COLORS.footerBg};border-top:1px solid ${COLORS.hairline};text-align:center;">
+              <div style="margin:0 auto 16px auto;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:${COLORS.muted};font-weight:600;">The Catalyst</div>
+              <p style="margin:0 0 14px 0;font-size:12px;line-height:1.6;color:${COLORS.muted};">You're receiving this email because you subscribed at <a href="${escapeAttr(siteUrl)}" style="color:${COLORS.inkSoft};text-decoration:underline;">${prettyHost(siteUrl)}</a>.</p>
+              <p style="margin:0 0 14px 0;font-size:12px;line-height:1.6;color:${COLORS.inkSoft};font-weight:500;">
+                The Catalyst Magazine<br>
+                2212 Washington Cir NW, Washington, DC 20037
+              </p>
+              <p style="margin:0 0 12px 0;font-size:12px;line-height:1.6;color:${COLORS.muted};">
+                <a href="${escapeAttr(siteUrl)}/privacy.html" style="color:${COLORS.muted};text-decoration:underline;">Privacy Policy</a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a href="${escapeAttr(siteUrl)}/contact.html" style="color:${COLORS.muted};text-decoration:underline;">Contact Us</a>
+              </p>
+              <p style="margin:0;font-size:12px;line-height:1.6;color:${COLORS.muted};">&copy; ${new Date().getFullYear()} The Catalyst Magazine. All rights reserved.</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
   </table>
 </body>
 </html>`;
 }
 
 export function welcomeEmail({ name, siteUrl }) {
-  const body = `
-    <h1 style="margin:0 0 16px 0;font-size:22px;">Welcome${name ? `, ${escapeHtml(name)}` : ""}!</h1>
-    <p style="margin:0 0 16px 0;line-height:1.6;color:${BRAND.muted};">
-      Thanks for joining The Catalyst Magazine. We publish stories by and for young scientists in the D.C. area.
-    </p>
-    <p style="margin:0 0 16px 0;line-height:1.6;color:${BRAND.muted};">
-      You will receive a community newsletter every time we publish a fresh batch of three stories.
-    </p>
-    <p style="margin:24px 0;">
-      <a href="${siteUrl}/articles.html" style="background:${BRAND.primary};color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Read the latest stories</a>
-    </p>
-  `;
-  return shell({
-    title: "Welcome to The Catalyst Magazine",
-    preheader: "Thanks for subscribing — here is what to expect.",
-    body,
-    siteUrl,
-  });
+  return subscribeConfirmEmail({ firstName: name, siteUrl });
 }
 
 export function subscribeConfirmEmail({ firstName, siteUrl }) {
-  const body = `
-    <h1 style="margin:0 0 16px 0;font-size:22px;">You're on the list${firstName ? `, ${escapeHtml(firstName)}` : ""}.</h1>
-    <p style="margin:0 0 16px 0;line-height:1.6;color:${BRAND.muted};">
-      We will send you a short newsletter whenever three new stories go live. No spam, no filler — just the best of student STEM reporting from D.C.
-    </p>
-    <p style="margin:24px 0;">
-      <a href="${siteUrl}/articles.html" style="background:${BRAND.primary};color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">Browse the archive</a>
-    </p>
-  `;
-  return shell({
-    title: "You're subscribed to The Catalyst",
-    preheader: "Newsletter confirmation.",
-    body,
-    siteUrl,
-  });
-}
-
-export function newsletterEmail({ articles, siteUrl }) {
-  const cards = articles
-    .map(
-      (a) => `
-      <tr><td style="padding:12px 0;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
-          ${
-            a.coverImage
-              ? `<tr><td><a href="${absoluteUrl(siteUrl, a.url)}"><img src="${escapeAttr(a.coverImage)}" alt="${escapeAttr(a.title)}" style="width:100%;display:block;border:0;"></a></td></tr>`
-              : ""
-          }
-          <tr><td style="padding:18px 20px;">
-            <div style="font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:${BRAND.accent};margin-bottom:6px;">${escapeHtml(a.category || "Feature")}</div>
-            <a href="${absoluteUrl(siteUrl, a.url)}" style="color:${BRAND.text};text-decoration:none;">
-              <div style="font-size:18px;font-weight:700;margin-bottom:6px;line-height:1.3;">${escapeHtml(a.title)}</div>
-            </a>
-            <div style="font-size:13px;color:${BRAND.muted};line-height:1.5;margin-bottom:12px;">${escapeHtml(a.excerpt || "")}</div>
-            <a href="${absoluteUrl(siteUrl, a.url)}" style="color:${BRAND.primary};font-weight:600;text-decoration:none;font-size:14px;">Read the story &rarr;</a>
-          </td></tr>
-        </table>
-      </td></tr>`
-    )
-    .join("");
+  const greeting = firstName
+    ? `Welcome, ${escapeHtml(firstName)}.`
+    : `Welcome to The Catalyst.`;
 
   const body = `
-    <h1 style="margin:0 0 8px 0;font-size:22px;">Three new stories, fresh off the press</h1>
-    <p style="margin:0 0 24px 0;color:${BRAND.muted};line-height:1.6;">
-      Here is the latest reporting from our team of student writers. Tap any card to read the full piece.
-    </p>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${cards}</table>
-    <p style="margin:32px 0 0 0;color:${BRAND.muted};font-size:13px;line-height:1.6;">
-      Enjoying the magazine? Forward this to a friend, or send them to <a href="${siteUrl}" style="color:${BRAND.primary};text-decoration:none;">catalyst-magazine.com</a>.
+    <div style="text-align:center;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.28em;color:${COLORS.muted};margin-bottom:14px;text-transform:uppercase;">You're subscribed</div>
+      <h1 class="hero-h1" style="margin:0 0 18px 0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;font-size:40px;line-height:1.08;color:${COLORS.ink};letter-spacing:-0.035em;">${greeting}</h1>
+      <p style="margin:0 0 16px 0;font-size:17px;line-height:1.55;color:${COLORS.inkSoft};font-weight:400;">
+        Thanks for joining a growing community of curious minds. You're now on the list for stories by and for young scientists across D.C.
+      </p>
+      <p style="margin:0 0 32px 0;font-size:17px;line-height:1.55;color:${COLORS.inkSoft};font-weight:400;">
+        Every time three new stories go live, we'll send you a short, beautifully designed dispatch — no spam, no filler, just the best of student STEM reporting.
+      </p>
+      <a href="${escapeAttr(siteUrl)}/articles.html" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:15px 34px;border-radius:980px;font-weight:500;font-size:15px;letter-spacing:-0.01em;">Browse the archive</a>
+    </div>
+
+    <div style="margin:44px 0 0 0;border-top:1px solid ${COLORS.hairline};padding-top:32px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:16px;text-transform:uppercase;text-align:center;">What to expect</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:0 0 18px 0;">
+            <div style="font-size:16px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Three stories at a time</div>
+            <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">A curated trio of features from our student writers, delivered only when the next batch is ready.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 0 18px 0;">
+            <div style="font-size:16px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Science made human</div>
+            <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">Reporting on research, policy, and the people in D.C. shaping the future of STEM.</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0;">
+            <div style="font-size:16px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Written by students, for everyone</div>
+            <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">Every piece is reported and edited by young writers who care about getting the story right.</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin:36px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};text-align:center;">
+      In the meantime, follow along at <a href="${escapeAttr(siteUrl)}" style="color:${COLORS.inkSoft};text-decoration:underline;">catalyst-magazine.com</a>.
     </p>
   `;
+
   return shell({
-    title: "New from The Catalyst",
-    preheader: `${articles[0]?.title || "Three new stories"} — and two more inside.`,
+    title: "Welcome to The Catalyst",
+    preheader: "You're on the list — here's what's coming next.",
     body,
     siteUrl,
   });
@@ -128,14 +159,6 @@ function prettyHost(siteUrl) {
   } catch {
     return "our website";
   }
-}
-
-function absoluteUrl(siteUrl, path) {
-  if (!path) return siteUrl;
-  if (/^https?:/i.test(path)) return path;
-  const cleanBase = siteUrl.replace(/\/$/, "");
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return cleanBase + cleanPath;
 }
 
 function escapeHtml(s) {

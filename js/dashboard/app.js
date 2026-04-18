@@ -150,6 +150,14 @@ const ROUTES = {
     loader: () => import("./admin.js"),
     mountKey: "users",
   },
+  "#/admin/images": {
+    label: "Image library",
+    icon: ICONS.pipeline,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./admin.js"),
+    mountKey: "images",
+  },
   "#/admin/advanced": {
     label: "Advanced tools",
     icon: ICONS.shield,

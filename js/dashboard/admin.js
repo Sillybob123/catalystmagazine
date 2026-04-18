@@ -1,18 +1,23 @@
 // Admin module — mount keys:
 //   - "articles": all articles with approve / deny / publish / assign-editor
 //   - "users":    users directory with role assignment + last-login
+//   - "images":   library manager — browse every image in Firebase Storage
+//                 and delete orphaned or duplicate files
 
-import { db, auth } from "../firebase-config.js";
+import { db, auth, storage } from "../firebase-config.js";
 import {
   collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy,
   where, getDoc, setDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { el, esc, fmtRelative, fmtDate, statusPill, confirmDialog, openModal, slugify } from "./ui.js";
+import { loadImageLibrary, renderLibraryGrid } from "./writer.js";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
   if (ctx.mountKey === "users") return mountUsers(ctx, container);
+  if (ctx.mountKey === "images") return mountImages(ctx, container);
   return mountArticles(ctx, container);
 }
 
@@ -541,4 +546,147 @@ function openAddUserModal(ctx, onDone) {
       saveBtn.disabled = false; saveBtn.textContent = "Create user";
     }
   });
+}
+
+// ====================== IMAGES ============================================
+async function mountImages(ctx, container) {
+  const card = el("div", { class: "card" });
+  card.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="card-title">Image library</div>
+        <div class="card-subtitle">Every image uploaded by any writer. Click to copy the URL, hover to delete.</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input class="input" id="img-search" placeholder="Filter by writer or filename" style="min-width:240px;" />
+        <select class="select" id="img-sort" style="min-width:160px;">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="largest">Largest first</option>
+        </select>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="library-grid-toolbar">
+        <div class="library-grid-count" id="img-count">Loading…</div>
+        <div class="hint" id="img-size-total"></div>
+      </div>
+      <div id="img-grid" class="library-grid">
+        <div class="loading-state" style="grid-column:1/-1;"><div class="spinner"></div>Scanning Firebase Storage…</div>
+      </div>
+      <div class="media-error" id="img-error"></div>
+    </div>`;
+  container.appendChild(card);
+
+  const grid = card.querySelector("#img-grid");
+  const countEl = card.querySelector("#img-count");
+  const sizeTotalEl = card.querySelector("#img-size-total");
+  const searchEl = card.querySelector("#img-search");
+  const sortEl = card.querySelector("#img-sort");
+  const errorEl = card.querySelector("#img-error");
+
+  let entries = [];
+  let ownerNames = new Map(); // uid → display name
+
+  try {
+    entries = await loadImageLibrary(null);
+  } catch (err) {
+    errorEl.textContent = "Could not load images: " + (err?.message || err);
+    grid.innerHTML = "";
+    return;
+  }
+
+  if (!entries.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">No images uploaded yet.</div>`;
+    countEl.textContent = "0 images";
+    return;
+  }
+
+  // Resolve uid → display name so the tile caption shows the writer, not a hash.
+  const uniqueOwners = [...new Set(entries.map((e) => e.owner).filter(Boolean))];
+  await Promise.all(uniqueOwners.map(async (uid) => {
+    try {
+      const snap = await getDoc(doc(db, "users", uid));
+      const name = snap.exists() ? (snap.data().name || snap.data().email) : null;
+      if (name) ownerNames.set(uid, name);
+    } catch { /* ignore */ }
+  }));
+  entries.forEach((e) => {
+    if (ownerNames.has(e.owner)) e.ownerName = ownerNames.get(e.owner);
+  });
+
+  const refresh = () => {
+    const q = searchEl.value.trim().toLowerCase();
+    let filtered = entries.filter((e) => {
+      if (!q) return true;
+      return (
+        (e.name || "").toLowerCase().includes(q) ||
+        (e.ownerName || "").toLowerCase().includes(q) ||
+        (e.owner || "").toLowerCase().includes(q)
+      );
+    });
+    const sort = sortEl.value;
+    if (sort === "oldest") filtered.sort((a, b) => a.updated - b.updated);
+    else if (sort === "largest") filtered.sort((a, b) => (b.size || 0) - (a.size || 0));
+    else filtered.sort((a, b) => b.updated - a.updated);
+
+    const totalBytes = filtered.reduce((sum, e) => sum + (e.size || 0), 0);
+    countEl.textContent = `${filtered.length} of ${entries.length} image${entries.length === 1 ? "" : "s"}`;
+    sizeTotalEl.textContent = totalBytes ? `Total size: ${formatBytes(totalBytes)}` : "";
+
+    // Decorate each entry so the tile caption shows the writer's name.
+    const decorated = filtered.map((e) => ({
+      ...e,
+      // The generic renderer uses entry.owner for the caption — override it
+      // with the resolved display name for this admin view.
+      owner: e.ownerName || e.owner,
+    }));
+
+    if (!decorated.length) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">No images match "${esc(q)}".</div>`;
+      return;
+    }
+
+    renderLibraryGrid(grid, decorated, {
+      allowDelete: true,
+      onPick: async (entry) => {
+        try {
+          await navigator.clipboard.writeText(entry.url);
+          ctx.toast("Image URL copied to clipboard.", "success");
+        } catch {
+          ctx.toast("Copy failed — URL: " + entry.url, "info", 6000);
+        }
+      },
+      onDelete: async (entry, tile) => {
+        const body = el("div", {}, [
+          el("p", {}, "This permanently removes the file from Firebase Storage. Articles that reference it will show a broken image."),
+          el("p", { style: { fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "12px", color: "var(--muted)", marginTop: "8px", wordBreak: "break-all" } }, entry.fullPath),
+        ]);
+        const ok = await confirmDialog(body, { confirmText: "Delete", danger: true });
+        if (!ok) return;
+        try {
+          await deleteObject(entry.ref);
+          entries = entries.filter((x) => x.fullPath !== entry.fullPath);
+          tile.remove();
+          refresh();
+          ctx.toast("Image deleted.", "success");
+        } catch (err) {
+          ctx.toast("Could not delete: " + (err?.message || err), "error");
+        }
+      },
+    });
+  };
+
+  searchEl.addEventListener("input", refresh);
+  sortEl.addEventListener("change", refresh);
+  refresh();
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let i = 0;
+  let v = bytes;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
