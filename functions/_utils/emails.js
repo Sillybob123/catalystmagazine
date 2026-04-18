@@ -15,7 +15,7 @@ const COLORS = {
   footerBg: "#fafafa",
 };
 
-const LOGO_URL = "https://www.catalyst-magazine.com/newsletterlogo.jpg";
+const LOGO_URL = "https://www.catalyst-magazine.com/WebLogo.jpg";
 
 function shell({ title, preheader = "", body, siteUrl }) {
   return `<!doctype html>

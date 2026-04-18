@@ -17,7 +17,7 @@ const COLORS = {
 // Served from Cloudflare Pages at the repo root. JPEG (not WebP) so Outlook
 // on Windows — which can't render WebP — shows the logo correctly. Gmail
 // proxies and caches the image, so a stable HTTPS URL is ideal.
-const LOGO_URL = "https://www.catalyst-magazine.com/newsletterlogo.jpg";
+const LOGO_URL = "https://www.catalyst-magazine.com/WebLogo.jpg";
 
 export function buildNewsletter({
   subject = "New from The Catalyst",
