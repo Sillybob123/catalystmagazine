@@ -204,8 +204,10 @@ export async function mount(ctx, container) {
     </div>`;
   container.appendChild(header);
 
+  const scrollWrap = el("div", { class: "kanban-scroll-wrap" });
   const boardEl = el("div", { class: "kanban-board", id: "pl-board" });
-  container.appendChild(boardEl);
+  scrollWrap.appendChild(boardEl);
+  container.appendChild(scrollWrap);
 
   // Load editors/users once
   await Promise.all([loadEditors(), loadUsers()]);

@@ -74,8 +74,10 @@ export async function mount(ctx, container) {
     <button class="btn btn-accent btn-sm" id="new-task-btn">+ New task</button>`;
   container.appendChild(header);
 
+  const scrollWrap = el("div", { class: "kanban-scroll-wrap" });
   const board = el("div", { class: "kanban-board", id: "tasks-board" });
-  container.appendChild(board);
+  scrollWrap.appendChild(board);
+  container.appendChild(scrollWrap);
 
   await loadUsers();
 

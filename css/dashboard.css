@@ -88,7 +88,7 @@ button { font-family: inherit; cursor: pointer; }
   grid-area: content;
   padding: 28px 36px 56px 36px;
   min-width: 0;
-  overflow: visible;
+  /* overflow is intentionally not set — kanban-scroll-wrap handles its own scroll */
 }
 
 /* ---------- sidebar ---------- */
@@ -2185,23 +2185,24 @@ button { font-family: inherit; cursor: pointer; }
 .pipeline-page-header .card-subtitle { font-size: 13px; color: var(--muted); }
 .pipeline-header-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 
-/* Board container — horizontal scroll on overflow */
-.kanban-board {
-  display: flex;
-  gap: 14px;
+/* Kanban scroll wrapper — scrolls horizontally when columns overflow */
+.kanban-scroll-wrap {
   overflow-x: auto;
-  overflow-y: visible;
-  align-items: flex-start;
-  padding-bottom: 24px;
-  /* Escape the content padding so the board scrolls edge-to-edge */
-  width: calc(100% + 72px);
-  margin-left: -36px;
-  padding-left: 36px;
-  padding-right: 36px;
-  /* Smooth momentum scroll on iOS */
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--hairline) transparent;
+  padding-bottom: 20px;
+}
+.kanban-scroll-wrap::-webkit-scrollbar { height: 6px; }
+.kanban-scroll-wrap::-webkit-scrollbar-track { background: transparent; }
+.kanban-scroll-wrap::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 3px; }
+
+/* Board — flex row of columns */
+.kanban-board {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  min-width: max-content;
 }
 
 /* Column */
