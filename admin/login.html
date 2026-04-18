@@ -272,7 +272,8 @@
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import {
             doc,
-            getDoc
+            getDoc,
+            setDoc
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ── Element refs ──
@@ -338,9 +339,21 @@
                 localStorage.setItem('editorialLastEmail', email);
 
                 const cred = await signInWithEmailAndPassword(auth, email, password);
-                const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+                const userRef = doc(db, 'users', cred.user.uid);
+                let userDoc = await getDoc(userRef);
 
-                if (!userDoc.exists()) throw new Error('Account not found. Contact your administrator.');
+                // Auto-provision Firestore doc for accounts created via Firebase console
+                if (!userDoc.exists()) {
+                    await setDoc(userRef, {
+                        email:       cred.user.email,
+                        role:        'writer',
+                        status:      'active',
+                        displayName: cred.user.displayName || '',
+                        createdAt:   new Date(),
+                        updatedAt:   new Date(),
+                    });
+                    userDoc = await getDoc(userRef);
+                }
 
                 const data = userDoc.data();
                 const allowedRoles = ['writer', 'editor', 'admin', 'newsletter_builder', 'marketing'];
@@ -412,8 +425,15 @@
         // ── Already signed in? ──
         auth.onAuthStateChanged(async user => {
             if (!user) return;
-            const userDoc = await getDoc(doc(db, 'users', user.uid));
-            if (userDoc.exists()) window.location.href = '/admin';
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef);
+            if (!userDoc.exists()) {
+                await setDoc(userRef, {
+                    email: user.email, role: 'writer', status: 'active',
+                    displayName: user.displayName || '', createdAt: new Date(), updatedAt: new Date(),
+                });
+            }
+            window.location.href = '/admin';
         });
     </script>
 </body>
