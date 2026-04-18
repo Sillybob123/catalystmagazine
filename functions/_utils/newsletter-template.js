@@ -23,7 +23,7 @@ const LOGO_URL = "https://catalystmagazine.pages.dev/WebLogo.jpg";
 export function buildNewsletter({
   subject = "New from The Catalyst",
   preheader = "",
-  headline = "New stories from The Catalyst",
+  headline = "New Stories From The Catalyst",
   intro = "Here is the latest reporting from our team of student writers.",
   articles = [],
   siteUrl = "https://catalyst-magazine.com",
@@ -82,7 +82,7 @@ export function buildNewsletter({
 
           <!-- Divider -->
           <tr>
-            <td class="px-40" style="padding:22px 40px 0 40px;">
+            <td class="px-40" style="padding:10px 40px 0 40px;">
               <div style="height:1px;background:${COLORS.hairline};line-height:1px;font-size:1px;">&nbsp;</div>
             </td>
           </tr>
