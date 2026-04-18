@@ -6,7 +6,9 @@
 //   1. posts/article<N>.json — committed JSON files
 //   2. Firestore `stories` collection (status == "published")
 
-const SITE_URL = "https://www.catalyst-magazine.com";
+// Use the Cloudflare Pages host until DNS cutover — www.catalyst-magazine.com
+// still points at Wix and returns 404 for our pages.
+const SITE_URL = "https://catalystmagazine.pages.dev";
 const FALLBACK_IMAGE = `${SITE_URL}/NewLogoShape.png`;
 const FIRESTORE_PROJECT = "catalystwriters-5ce43";
 

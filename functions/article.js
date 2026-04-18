@@ -113,6 +113,9 @@ export const onRequestGet = async ({ request, next }) => {
         el.setAttribute("content", article.title);
       },
     })
+    // Remove stale hardcoded width/height so we can replace with correct values.
+    .on('meta[property="og:image:width"]', { element: (el) => el.remove() })
+    .on('meta[property="og:image:height"]', { element: (el) => el.remove() })
     // Inject canonical + extra article meta + JSON-LD at the end of <head>.
     .on("head", {
       element(el) {
@@ -121,6 +124,8 @@ export const onRequestGet = async ({ request, next }) => {
           `<meta property="og:image:secure_url" content="${escapeAttr(image)}">`,
           { html: true }
         );
+        el.append(`<meta property="og:image:width" content="1200">`, { html: true });
+        el.append(`<meta property="og:image:height" content="630">`, { html: true });
         el.append(
           `<meta property="article:author" content="${escapeAttr(author)}">`,
           { html: true }

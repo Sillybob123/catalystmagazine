@@ -64,10 +64,14 @@ export const onRequestGet = async ({ request, params, next }) => {
     .on('meta[name="twitter:url"]', { element: (el) => el.setAttribute("content", canonical) })
     .on('meta[property="og:image:alt"]', { element: (el) => el.setAttribute("content", article.title) })
     .on('meta[name="twitter:image:alt"]', { element: (el) => el.setAttribute("content", article.title) })
+    .on('meta[property="og:image:width"]', { element: (el) => el.remove() })
+    .on('meta[property="og:image:height"]', { element: (el) => el.remove() })
     .on("head", {
       element(el) {
         el.append(`<link rel="canonical" href="${escapeAttr(canonical)}">`, { html: true });
         el.append(`<meta property="og:image:secure_url" content="${escapeAttr(image)}">`, { html: true });
+        el.append(`<meta property="og:image:width" content="1200">`, { html: true });
+        el.append(`<meta property="og:image:height" content="630">`, { html: true });
         el.append(`<meta property="article:author" content="${escapeAttr(author)}">`, { html: true });
         if (published) {
           el.append(`<meta property="article:published_time" content="${escapeAttr(published)}">`, { html: true });
