@@ -74,8 +74,14 @@ export async function mount(ctx, container) {
     <button class="btn btn-accent btn-sm" id="new-task-btn">+ New task</button>`;
   container.appendChild(header);
 
-  const scrollWrap = el("div", { class: "kanban-scroll-wrap" });
-  const board = el("div", { class: "kanban-board", id: "tasks-board" });
+  const scrollWrap = el("div", { class: "kanban-scroll-wrap", style: {
+    width: "100%", overflowX: "auto", overflowY: "visible",
+    WebkitOverflowScrolling: "touch", paddingBottom: "20px",
+  }});
+  const board = el("div", { class: "kanban-board", id: "tasks-board", style: {
+    display: "flex", flexDirection: "row", flexWrap: "nowrap",
+    gap: "14px", alignItems: "flex-start",
+  }});
   scrollWrap.appendChild(board);
   container.appendChild(scrollWrap);
 
@@ -123,14 +129,18 @@ function renderBoard() {
 }
 
 function renderColumn(col, tasks) {
-  const colEl = el("div", { class: "kanban-col" });
-  colEl.style.setProperty("--col-accent", col.color);
+  const colEl = el("div", { class: "kanban-col", style: {
+    flex: "0 0 272px", width: "272px", minWidth: "0",
+    background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px",
+    overflow: "hidden", display: "flex", flexDirection: "column",
+    boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
+  }});
   colEl.innerHTML = `
-    <div class="kanban-col-header" style="border-top:3px solid ${col.color}">
-      <span class="kanban-col-title">${esc(col.title)}</span>
-      <span class="kanban-col-count">${tasks.length}</span>
+    <div class="kanban-col-header" style="border-top:3px solid ${col.color};padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <span class="kanban-col-title" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1f2937;">${esc(col.title)}</span>
+      <span class="kanban-col-count" style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">${tasks.length}</span>
     </div>
-    <div class="kanban-col-body"></div>`;
+    <div class="kanban-col-body" style="padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:200px;"></div>`;
   const body = colEl.querySelector(".kanban-col-body");
   if (!tasks.length) {
     body.innerHTML = `<div class="kanban-empty">No tasks here</div>`;

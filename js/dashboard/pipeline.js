@@ -204,8 +204,14 @@ export async function mount(ctx, container) {
     </div>`;
   container.appendChild(header);
 
-  const scrollWrap = el("div", { class: "kanban-scroll-wrap" });
-  const boardEl = el("div", { class: "kanban-board", id: "pl-board" });
+  const scrollWrap = el("div", { class: "kanban-scroll-wrap", style: {
+    width: "100%", overflowX: "auto", overflowY: "visible",
+    WebkitOverflowScrolling: "touch", paddingBottom: "20px",
+  }});
+  const boardEl = el("div", { class: "kanban-board", id: "pl-board", style: {
+    display: "flex", flexDirection: "row", flexWrap: "nowrap",
+    gap: "14px", alignItems: "flex-start",
+  }});
   scrollWrap.appendChild(boardEl);
   container.appendChild(scrollWrap);
 
@@ -321,13 +327,18 @@ const COL_COLORS = {
 
 function renderColumn(name, projects) {
   const color = COL_COLORS[name] || "#94a3b8";
-  const colEl = el("div", { class: "kanban-col" });
+  const colEl = el("div", { class: "kanban-col", style: {
+    flex: "0 0 272px", width: "272px", minWidth: "0",
+    background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px",
+    overflow: "hidden", display: "flex", flexDirection: "column",
+    boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
+  }});
   colEl.innerHTML = `
-    <div class="kanban-col-header" style="border-top:3px solid ${color}">
-      <span class="kanban-col-title">${esc(name)}</span>
-      <span class="kanban-col-count">${projects.length}</span>
+    <div class="kanban-col-header" style="border-top:3px solid ${color};padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <span class="kanban-col-title" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1f2937;">${esc(name)}</span>
+      <span class="kanban-col-count" style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">${projects.length}</span>
     </div>
-    <div class="kanban-col-body"></div>`;
+    <div class="kanban-col-body" style="padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:200px;"></div>`;
   const body = colEl.querySelector(".kanban-col-body");
   if (!projects.length) {
     body.innerHTML = `<div class="kanban-empty">No projects here</div>`;
@@ -387,13 +398,18 @@ function renderCard(project) {
 }
 
 function renderAvailabilityColumn() {
-  const colEl = el("div", { class: "kanban-col kanban-col-availability" });
+  const colEl = el("div", { class: "kanban-col kanban-col-availability", style: {
+    flex: "0 0 220px", width: "220px", minWidth: "0",
+    background: "#fff", border: "1px solid #e5e7eb", borderRadius: "12px",
+    overflow: "hidden", display: "flex", flexDirection: "column",
+    boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
+  }});
   colEl.innerHTML = `
-    <div class="kanban-col-header" style="border-top:3px solid #64748b">
-      <span class="kanban-col-title">Team</span>
-      <span class="kanban-col-count">${_allUsers.length}</span>
+    <div class="kanban-col-header" style="border-top:3px solid #64748b;padding:12px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <span class="kanban-col-title" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1f2937;">Team</span>
+      <span class="kanban-col-count" style="background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;">${_allUsers.length}</span>
     </div>
-    <div class="kanban-col-body"></div>`;
+    <div class="kanban-col-body" style="padding:10px;display:flex;flex-direction:column;gap:8px;flex:1;min-height:200px;overflow-y:auto;"></div>`;
   const body = colEl.querySelector(".kanban-col-body");
   const writers = _allUsers.filter(u => ["writer", "editor", "admin"].includes(u.role));
   if (!writers.length) {
