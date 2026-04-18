@@ -81,7 +81,7 @@ export const onRequestPost = async ({ request, env }) => {
       await sendEmail(env, {
         to: email,
         subject: "You're subscribed to The Catalyst",
-        html: subscribeConfirmEmail({ firstName, siteUrl }),
+        html: subscribeConfirmEmail({ firstName, siteUrl, email }),
       });
       emailSent = true;
     } catch (emailErr) {

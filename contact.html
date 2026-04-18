@@ -45,42 +45,169 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
     <link rel="preload" as="image" href="/WebLogo.png" fetchpriority="high">
     <link rel="preload" as="image" href="/NewLogoShape.png" fetchpriority="high">
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
 
     <style>
-        .contact-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: start; max-width: 1020px; margin: 0 auto; }
-        @media (max-width: 860px) { .contact-grid { grid-template-columns: 1fr; gap: 28px; } }
-
-        .contact-card { background: #fff; border-radius: 18px; padding: 36px 40px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.06); }
-        .contact-card h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.25rem; }
-        .contact-card p, .contact-card li { font-size: 1rem; line-height: 1.7; color: var(--text-body, #333); }
-
-        .contact-methods { list-style: none; padding: 0; margin: 0; }
-        .contact-methods li { padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.08); }
-        .contact-methods li:last-child { border-bottom: 0; }
-        .contact-method-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: #6e6e73; display: block; margin-bottom: 4px; }
-        .contact-method-value a { color: #1d1d1f; text-decoration: none; font-weight: 500; }
-        .contact-method-value a:hover { text-decoration: underline; }
-
-        .contact-form .field { margin-bottom: 18px; }
-        .contact-form label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #333; }
-        .contact-form input, .contact-form select, .contact-form textarea {
-            width: 100%; box-sizing: border-box; padding: 12px 14px; font-size: 1rem; font-family: inherit;
-            border: 1px solid rgba(0,0,0,0.15); border-radius: 10px; background: #fff; color: #1d1d1f;
+        /* ── Page layout ── */
+        .contact-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 32px;
+            align-items: start;
+            max-width: 1100px;
+            margin: 0 auto;
         }
-        .contact-form textarea { min-height: 140px; resize: vertical; }
-        .contact-form button { margin-top: 6px; }
-        .contact-form-note { font-size: 0.85rem; color: #6e6e73; margin-top: 10px; }
+        @media (max-width: 900px) {
+            .contact-layout { grid-template-columns: 1fr; }
+        }
 
-        .address-block { font-style: normal; line-height: 1.7; }
-
+        /* ── Shared card ── */
+        .c-card {
+            background: #fff;
+            border-radius: 20px;
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+        .c-card-header {
+            padding: 32px 40px 0;
+        }
+        .c-card-eyebrow {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 8px;
+        }
+        .c-card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 0 0 6px 0;
+            letter-spacing: -0.02em;
+        }
+        .c-card-sub {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.6;
+        }
+        .c-card-body {
+            padding: 28px 40px 40px;
+        }
         @media (max-width: 640px) {
-            .contact-card { padding: 26px 22px; }
+            .c-card-header { padding: 24px 24px 0; }
+            .c-card-body   { padding: 20px 24px 28px; }
+            .c-card-title  { font-size: 1.2rem; }
+        }
+
+        /* ── Form ── */
+        .cf-field { margin-bottom: 16px; }
+        .cf-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 7px;
+        }
+        .cf-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 13px 16px;
+            font-size: 0.975rem;
+            font-family: inherit;
+            border: 1px solid rgba(0,0,0,0.12);
+            border-radius: 12px;
+            background: var(--bg-light, #f4f6f8);
+            color: var(--text-dark);
+            transition: border-color 0.2s, background 0.2s;
+            outline: none;
+        }
+        .cf-input:focus {
+            border-color: var(--text-dark);
+            background: #fff;
+        }
+        .cf-input::placeholder { color: var(--text-light); }
+        textarea.cf-input { min-height: 130px; resize: vertical; }
+        select.cf-input { cursor: pointer; }
+        .cf-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        @media (max-width: 500px) { .cf-row { grid-template-columns: 1fr; } }
+        .cf-note {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+            line-height: 1.6;
+        }
+        .cf-note a { color: var(--text-body); }
+        .cf-divider {
+            height: 1px;
+            background: rgba(0,0,0,0.07);
+            margin: 28px 0;
+        }
+
+        /* ── Sidebar: direct contact ── */
+        .contact-method {
+            padding: 16px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.07);
+        }
+        .contact-method:first-child { padding-top: 0; }
+        .contact-method:last-child  { border-bottom: none; padding-bottom: 0; }
+        .contact-method-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 4px;
+        }
+        .contact-method-value {
+            font-size: 0.975rem;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+        .contact-method-value a {
+            color: var(--text-dark);
+            text-decoration: none;
+        }
+        .contact-method-value a:hover { text-decoration: underline; }
+        .contact-method address {
+            font-style: normal;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--text-body);
+        }
+
+        /* ── Response time chip ── */
+        .response-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--bg-light, #f4f6f8);
+            border-radius: 980px;
+            padding: 8px 16px;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 28px;
+        }
+        .response-chip-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #34d399;
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -95,110 +222,136 @@
     <main>
         <section class="page-hero">
             <div class="container">
-                <h1 class="page-hero-title">Contact Us</h1>
+                <h1 class="page-hero-title">Get in Touch</h1>
                 <p class="page-hero-subtitle">Story tips, pitches, press, or just saying hi — we read every message.</p>
             </div>
         </section>
 
         <section class="section">
             <div class="container">
-                <div class="contact-grid">
+                <div class="contact-layout">
 
-                    <div class="contact-card">
-                        <h3>Send us a message</h3>
-                        <p style="margin-top:0;color:#6e6e73;">Tell us what's on your mind and we'll reply by email within a few business days.</p>
+                    <!-- Left: Message form -->
+                    <div class="c-card">
+                        <div class="c-card-header">
+                            <span class="c-card-eyebrow">Send a message</span>
+                            <h2 class="c-card-title">What's on your mind?</h2>
+                            <p class="c-card-sub">Tell us what you're thinking and we'll reply within a few business days.</p>
+                        </div>
+                        <div class="c-card-body">
+                            <div class="response-chip">
+                                <span class="response-chip-dot"></span>
+                                Typical reply within 2–3 business days
+                            </div>
 
-                        <form class="contact-form" action="mailto:contact@catalyst-magazine.com" method="post" enctype="text/plain" novalidate>
-                            <div class="field">
-                                <label for="c-name">Your name</label>
-                                <input type="text" id="c-name" name="name" required autocomplete="name">
-                            </div>
-                            <div class="field">
-                                <label for="c-email">Email address</label>
-                                <input type="email" id="c-email" name="email" required autocomplete="email">
-                            </div>
-                            <div class="field">
-                                <label for="c-topic">What's this about?</label>
-                                <select id="c-topic" name="topic">
-                                    <option>Story tip or pitch</option>
-                                    <option>Press / media inquiry</option>
-                                    <option>Join the team</option>
-                                    <option>Correction request</option>
-                                    <option>Partnership or collaboration</option>
-                                    <option>General question</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label for="c-message">Message</label>
-                                <textarea id="c-message" name="message" required placeholder="Tell us a bit more…"></textarea>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                Send message
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                            </button>
-                            <p class="contact-form-note">
-                                By sending a message you agree to our <a href="/privacy">Privacy Policy</a>.
-                            </p>
-                        </form>
+                            <form class="contact-form" action="mailto:contact@catalyst-magazine.com" method="post" enctype="text/plain" novalidate>
+                                <div class="cf-row">
+                                    <div class="cf-field">
+                                        <label class="cf-label" for="c-fname">First name</label>
+                                        <input class="cf-input" type="text" id="c-fname" name="first_name" required autocomplete="given-name" placeholder="Jane">
+                                    </div>
+                                    <div class="cf-field">
+                                        <label class="cf-label" for="c-lname">Last name</label>
+                                        <input class="cf-input" type="text" id="c-lname" name="last_name" autocomplete="family-name" placeholder="Smith">
+                                    </div>
+                                </div>
+
+                                <div class="cf-field">
+                                    <label class="cf-label" for="c-email">Email address</label>
+                                    <input class="cf-input" type="email" id="c-email" name="email" required autocomplete="email" placeholder="jane@example.com">
+                                </div>
+
+                                <div class="cf-field">
+                                    <label class="cf-label" for="c-topic">What's this about?</label>
+                                    <select class="cf-input" id="c-topic" name="topic">
+                                        <option>Story tip or pitch</option>
+                                        <option>Press / media inquiry</option>
+                                        <option>Join the team</option>
+                                        <option>Correction request</option>
+                                        <option>Partnership or collaboration</option>
+                                        <option>General question</option>
+                                    </select>
+                                </div>
+
+                                <div class="cf-field">
+                                    <label class="cf-label" for="c-message">Message</label>
+                                    <textarea class="cf-input" id="c-message" name="message" required placeholder="Tell us a bit more…"></textarea>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+                                    Send message
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                </button>
+                                <p class="cf-note">
+                                    By sending a message you agree to our <a href="/privacy">Privacy Policy</a>.
+                                </p>
+                            </form>
+                        </div>
                     </div>
 
-                    <div class="contact-card">
-                        <h3>Reach us directly</h3>
-                        <ul class="contact-methods">
-                            <li>
-                                <span class="contact-method-label">General</span>
-                                <span class="contact-method-value"><a href="mailto:contact@catalyst-magazine.com">contact@catalyst-magazine.com</a></span>
-                            </li>
-                            <li>
-                                <span class="contact-method-label">Story tips &amp; pitches</span>
-                                <span class="contact-method-value"><a href="mailto:editors@catalyst-magazine.com">editors@catalyst-magazine.com</a></span>
-                            </li>
-                            <li>
-                                <span class="contact-method-label">Join the team</span>
-                                <span class="contact-method-value"><a href="/collaborate">See open roles →</a></span>
-                            </li>
-                            <li>
-                                <span class="contact-method-label">Mailing address</span>
-                                <address class="address-block">
-                                    The Catalyst Magazine<br>
-                                    2212 Washington Cir NW<br>
-                                    Washington, DC 20037
-                                </address>
-                            </li>
-                        </ul>
-                    </div>
+                    <!-- Right: Direct contact + address -->
+                    <div style="display: flex; flex-direction: column; gap: 24px;">
 
-                </div>
-            </div>
-        </section>
-
-        <!-- Newsletter -->
-        <section class="section" id="newsletter-section">
-            <div class="container">
-                <div class="newsletter">
-                    <div class="newsletter-content">
-                        <h3 class="newsletter-title">Stay in the loop</h3>
-                        <p class="newsletter-subtitle">Join our newsletter for new stories and D.C. STEM spotlights, delivered to your inbox.</p>
-                        <form action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="newsletter-form-glass" novalidate>
-                            <div class="newsletter-form-grid">
-                                <input type="text" name="FNAME" class="form-input-glass" placeholder="First Name" required>
-                                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last Name" required>
+                        <div class="c-card">
+                            <div class="c-card-header">
+                                <span class="c-card-eyebrow">Direct contact</span>
+                                <h2 class="c-card-title">Reach us directly</h2>
                             </div>
-                            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL" placeholder="Email Address" required>
-
-                            <!-- Bot prevention -->
-                            <div aria-hidden="true" style="position: absolute; left: -5000px;">
-                                <input type="text" name="b_d76819924b4f0773791d6827b_1ce6c96e6d" tabindex="-1" value="">
+                            <div class="c-card-body" style="padding-top:20px;">
+                                <div class="contact-method">
+                                    <span class="contact-method-label">General</span>
+                                    <span class="contact-method-value">
+                                        <a href="mailto:contact@catalyst-magazine.com">contact@catalyst-magazine.com</a>
+                                    </span>
+                                </div>
+                                <div class="contact-method">
+                                    <span class="contact-method-label">Story tips &amp; pitches</span>
+                                    <span class="contact-method-value">
+                                        <a href="mailto:editors@catalyst-magazine.com">editors@catalyst-magazine.com</a>
+                                    </span>
+                                </div>
+                                <div class="contact-method">
+                                    <span class="contact-method-label">Join the team</span>
+                                    <span class="contact-method-value">
+                                        <a href="/collaborate">See open roles →</a>
+                                    </span>
+                                </div>
+                                <div class="contact-method">
+                                    <span class="contact-method-label">Mailing address</span>
+                                    <address>
+                                        The Catalyst Magazine<br>
+                                        2212 Washington Cir NW<br>
+                                        Washington, DC 20037
+                                    </address>
+                                </div>
                             </div>
+                        </div>
 
-                            <button type="submit" name="subscribe" class="btn btn-primary btn-glass">
-                                Subscribe
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                                </svg>
-                            </button>
-                            <div id="mce-response" class="newsletter-response"></div>
-                        </form>
+                        <div class="c-card">
+                            <div class="c-card-header">
+                                <span class="c-card-eyebrow">Newsletter</span>
+                                <h2 class="c-card-title">Stay in the loop</h2>
+                                <p class="c-card-sub">New stories, D.C. STEM spotlights, and more — straight to your inbox.</p>
+                            </div>
+                            <div class="c-card-body" style="padding-top:20px;">
+                                <form action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" novalidate>
+                                    <div class="cf-row" style="margin-bottom:12px;">
+                                        <input type="text" name="FNAME" class="cf-input" placeholder="First name" required>
+                                        <input type="text" name="LNAME" class="cf-input" placeholder="Last name" required>
+                                    </div>
+                                    <input type="email" name="EMAIL" class="cf-input" id="mce-EMAIL2" placeholder="Email address" required style="margin-bottom:12px;">
+                                    <div aria-hidden="true" style="position:absolute;left:-5000px;">
+                                        <input type="text" name="b_d76819924b4f0773791d6827b_1ce6c96e6d" tabindex="-1" value="">
+                                    </div>
+                                    <button type="submit" name="subscribe" class="btn btn-primary" style="width:100%;justify-content:center;">
+                                        Subscribe
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                    </button>
+                                    <div id="mce-response" class="newsletter-response"></div>
+                                </form>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>

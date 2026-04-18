@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+    <!-- End Google Tag Manager -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Unsubscribe from The Catalyst Magazine newsletter.">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Unsubscribe | The Catalyst Magazine</title>
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body data-page="unsubscribe">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <div id="site-header"></div>
+
+    <main>
+        <section class="page-hero" style="padding: 80px 0 60px;">
+            <div class="container" style="text-align: center; max-width: 640px; margin: 0 auto;">
+                <div id="unsub-icon" style="font-size: 48px; margin-bottom: 24px; line-height: 1;">&#128148;</div>
+                <h1 id="unsub-title" class="page-hero-title" style="margin-bottom: 16px;">We're sad to see you go.</h1>
+                <p id="unsub-body" class="page-hero-subtitle" style="font-size: 1.1rem; line-height: 1.7; margin-bottom: 32px;">
+                    Loading&hellip;
+                </p>
+                <div id="unsub-actions"></div>
+            </div>
+        </section>
+
+        <section class="section" style="padding-top: 0;">
+            <div class="container" style="max-width: 640px; margin: 0 auto; text-align: center;">
+                <div class="panel" style="padding: 40px; border-radius: 16px;">
+                    <p style="font-size: 1rem; line-height: 1.7; color: var(--text-secondary, #555); margin: 0 0 24px 0;">
+                        Thank you for the time you spent with us. Your readership genuinely meant something to everyone on the team, and we're grateful you were part of the community — even for a little while.
+                    </p>
+                    <p style="font-size: 1rem; line-height: 1.7; color: var(--text-secondary, #555); margin: 0;">
+                        If you'd like to come back, you're always welcome. Our newsletter will be here whenever you're ready.
+                    </p>
+                </div>
+                <div style="margin-top: 32px;">
+                    <a href="/" class="btn btn-primary" style="margin-right: 12px;">Back to Home</a>
+                    <a href="/about#newsletter-section" class="btn btn-secondary" id="resubscribe-btn">Resubscribe</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const status = params.get("status");
+            const error  = params.get("error");
+            const email  = params.get("email") || "";
+
+            const title  = document.getElementById("unsub-title");
+            const body   = document.getElementById("unsub-body");
+            const icon   = document.getElementById("unsub-icon");
+            const actions = document.getElementById("unsub-actions");
+
+            if (error) {
+                icon.textContent = "⚠️";
+                title.textContent = "Something went wrong.";
+                body.textContent = error === "invalid"
+                    ? "The unsubscribe link appears to be malformed. Please email us at contact@catalyst-magazine.com and we'll remove you manually."
+                    : "We ran into an error processing your request. Please try again in a moment, or email us directly at contact@catalyst-magazine.com.";
+                return;
+            }
+
+            if (status === "already") {
+                icon.textContent = "✅";
+                title.textContent = "You're already unsubscribed.";
+                body.innerHTML = email
+                    ? `<strong>${escHtml(email)}</strong> is not on our mailing list. No further action is needed.`
+                    : "This address is not on our mailing list. No further action is needed.";
+                return;
+            }
+
+            if (status === "not_found") {
+                icon.textContent = "🔍";
+                title.textContent = "We couldn't find your subscription.";
+                body.innerHTML = email
+                    ? `We don't have <strong>${escHtml(email)}</strong> on our list. If you think this is a mistake, please reach out to us at <a href="mailto:contact@catalyst-magazine.com">contact@catalyst-magazine.com</a>.`
+                    : "We couldn't locate your subscription. Please reach out to us at <a href=\"mailto:contact@catalyst-magazine.com\">contact@catalyst-magazine.com</a> and we'll sort it out.";
+                return;
+            }
+
+            if (status === "done") {
+                icon.textContent = "💙";
+                title.textContent = "You've been unsubscribed.";
+                body.innerHTML = email
+                    ? `<strong>${escHtml(email)}</strong> has been removed from our mailing list. You won't receive any further emails from us.`
+                    : "You've been removed from our mailing list. You won't receive any further emails from us.";
+
+                // Offer a resubscribe link pre-filled with email
+                if (email) {
+                    const resubBtn = document.getElementById("resubscribe-btn");
+                    resubBtn.href = `/about#newsletter-section`;
+                }
+                return;
+            }
+
+            // Fallback if page is visited directly with no params
+            icon.textContent = "📧";
+            title.textContent = "Unsubscribe from The Catalyst";
+            body.textContent = "To unsubscribe, click the unsubscribe link at the bottom of any newsletter email you've received from us.";
+        })();
+
+        function escHtml(s) {
+            return String(s)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+    </script>
+</body>
+</html>

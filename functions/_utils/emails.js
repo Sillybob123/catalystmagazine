@@ -20,7 +20,11 @@ const COLORS = {
 // stable as long as the Cloudflare project name stays "catalystmagazine".
 const LOGO_URL = "https://catalystmagazine.pages.dev/WebLogo.jpg";
 
-function shell({ title, preheader = "", body, siteUrl }) {
+function shell({ title, preheader = "", body, siteUrl, recipientEmail = null }) {
+  const unsubUrl = `${siteUrl}/api/unsubscribe?email=${encodeURIComponent(recipientEmail || "")}`;
+  const unsubLink = recipientEmail
+    ? `&nbsp;&nbsp;|&nbsp;&nbsp;<a href="${escapeAttr(unsubUrl)}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`
+    : "";
   return `<!doctype html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
@@ -84,6 +88,7 @@ function shell({ title, preheader = "", body, siteUrl }) {
                 <a href="${escapeAttr(siteUrl)}/privacy.html" style="color:${COLORS.muted};text-decoration:underline;">Privacy Policy</a>
                 &nbsp;&nbsp;|&nbsp;&nbsp;
                 <a href="${escapeAttr(siteUrl)}/contact.html" style="color:${COLORS.muted};text-decoration:underline;">Contact Us</a>
+                ${unsubLink}
               </p>
               <p style="margin:0;font-size:12px;line-height:1.6;color:${COLORS.muted};">&copy; ${new Date().getFullYear()} The Catalyst Magazine. All rights reserved.</p>
             </td>
@@ -101,7 +106,7 @@ export function welcomeEmail({ name, siteUrl }) {
   return subscribeConfirmEmail({ firstName: name, siteUrl });
 }
 
-export function subscribeConfirmEmail({ firstName, siteUrl }) {
+export function subscribeConfirmEmail({ firstName, siteUrl, email = null }) {
   const greeting = firstName
     ? `Welcome, ${escapeHtml(firstName)}.`
     : `Welcome to The Catalyst.`;
@@ -201,6 +206,7 @@ export function subscribeConfirmEmail({ firstName, siteUrl }) {
     preheader: "You're in — a welcome note from the student newsroom.",
     body,
     siteUrl,
+    recipientEmail: email,
   });
 }
 
