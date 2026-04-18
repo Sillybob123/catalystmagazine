@@ -14,10 +14,11 @@ const COLORS = {
   footerBg: "#fafafa",
 };
 
-// Served from Cloudflare Pages at the repo root. JPEG (not WebP) so Outlook
-// on Windows — which can't render WebP — shows the logo correctly. Gmail
-// proxies and caches the image, so a stable HTTPS URL is ideal.
-const LOGO_URL = "https://www.catalyst-magazine.com/WebLogo.jpg";
+// Served from Cloudflare Pages. We use the .pages.dev host (not the apex
+// www.catalyst-magazine.com) because the apex still points at Wix during
+// migration and returns HTTP 400 for our root-level image assets. JPEG
+// (not WebP) so Outlook on Windows renders correctly.
+const LOGO_URL = "https://catalystmagazine.pages.dev/WebLogo.jpg";
 
 export function buildNewsletter({
   subject = "New from The Catalyst",

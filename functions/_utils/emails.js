@@ -15,7 +15,10 @@ const COLORS = {
   footerBg: "#fafafa",
 };
 
-const LOGO_URL = "https://www.catalyst-magazine.com/WebLogo.jpg";
+// Served from Cloudflare Pages, not the Wix-hosted www.catalyst-magazine.com
+// apex — Wix returns 400 for our root-level assets. The .pages.dev host is
+// stable as long as the Cloudflare project name stays "catalystmagazine".
+const LOGO_URL = "https://catalystmagazine.pages.dev/WebLogo.jpg";
 
 function shell({ title, preheader = "", body, siteUrl }) {
   return `<!doctype html>
