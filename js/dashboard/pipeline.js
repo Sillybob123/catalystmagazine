@@ -493,137 +493,131 @@ function openDetailModal(projectId) {
   const inactive  = daysInactive(project);
   const isInactive = inactive > 9 && state.column !== COL.COMPLETED && state.column !== COL.DONE;
 
-  // Inactivity banner
-  const inactivityBanner = isInactive && (isAdmin || isAuthor)
-    ? `<div class="detail-inactive-banner">
-        ⚠ Inactive for <strong>${inactive} days</strong> — no recent progress recorded.
-       </div>`
-    : "";
-
-  // Status badge
-  const statusColor = { green: "pill-published", yellow: "pill-reviewing", blue: "pill-pending", red: "pill-rejected", default: "pill-draft" }[state.color] || "pill-draft";
+  // Status pill colors
+  const pillBg = { green:"#dcfce7", yellow:"#fef3c7", blue:"#dbeafe", red:"#fee2e2", default:"#f1f5f9" }[state.color] || "#f1f5f9";
+  const pillFg = { green:"#15803d", yellow:"#b45309", blue:"#1d4ed8", red:"#b91c1c", default:"#475569" }[state.color] || "#475569";
 
   // Timeline checklist
   const stepsHtml = TIMELINE_STEPS.map(step => {
     const checked = !!tl[step];
-    return `<label class="tl-row ${isAdmin ? "tl-editable" : ""}">
-      <input type="checkbox" data-step="${esc(step)}" ${checked ? "checked" : ""} ${isAdmin ? "" : "disabled"}>
-      <span>${esc(step)}</span>
+    return `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:${checked?"#f0fdf4":"#f8fafc"};border:1px solid ${checked?"#86efac":"#e5e7eb"};cursor:${isAdmin?"pointer":"default"};user-select:none;transition:background .1s;">
+      <input type="checkbox" data-step="${esc(step)}" ${checked?"checked":""} ${isAdmin?"":"disabled"} style="width:15px;height:15px;flex-shrink:0;accent-color:#0f766e;">
+      <span style="font-size:13px;color:${checked?"#6b7280":"#1f2937"};${checked?"text-decoration:line-through;":""}">${esc(step)}</span>
     </label>`;
   }).join("");
 
-  // Deadlines section
-  const deadlineRows = DEADLINE_FIELDS
-    .filter(f => !(project.type === "Op-Ed" && (f.key === "contact" || f.key === "interview")))
-    .map(f => `
-      <div class="dl-row">
-        <label class="dl-label">${esc(f.label)}</label>
-        <input type="date" class="input dl-input" data-dlkey="${esc(f.key)}" value="${esc(deadlines[f.key] || "")}" ${isAdmin ? "" : "disabled"}>
-      </div>`).join("");
-
-  const pubDeadlineHtml = `
-    <div class="dl-row">
-      <label class="dl-label"><strong>Publication date</strong></label>
-      <input type="date" class="input dl-input" data-dlkey="publication" value="${esc(deadlines.publication || project.deadline || "")}" ${isAdmin ? "" : "disabled"}>
-    </div>`;
-
-  // Deadline change request
+  // Deadlines
   const hasRequest = project.deadlineRequest?.status === "pending" || project.deadlineChangeRequest?.status === "pending";
   const req = project.deadlineRequest || project.deadlineChangeRequest;
+  const dlStyle = `display:flex;align-items:center;gap:12px;margin-bottom:10px;`;
+  const dlLabelStyle = `font-size:12px;font-weight:600;color:#64748b;width:150px;flex-shrink:0;`;
+  const dlInputStyle = `flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;`;
+
+  const deadlineRows = DEADLINE_FIELDS
+    .filter(f => !(project.type === "Op-Ed" && (f.key === "contact" || f.key === "interview")))
+    .map(f => `<div style="${dlStyle}">
+      <label style="${dlLabelStyle}">${esc(f.label)}</label>
+      <input type="date" class="dl-input" data-dlkey="${esc(f.key)}" value="${esc(deadlines[f.key]||"")}" ${isAdmin?"":"disabled"} style="${dlInputStyle}${!isAdmin?"background:#f8fafc;color:#94a3b8;":""}">
+    </div>`).join("");
+
+  const pubDeadlineHtml = `<div style="${dlStyle}">
+    <label style="${dlLabelStyle}font-weight:700;color:#374151;">Publication</label>
+    <input type="date" class="dl-input" data-dlkey="publication" value="${esc(deadlines.publication||project.deadline||"")}" ${isAdmin?"":"disabled"} style="${dlInputStyle}font-weight:600;${!isAdmin?"background:#f8fafc;color:#94a3b8;":""}">
+  </div>`;
+
   const deadlineRequestHtml = hasRequest ? `
-    <div class="dl-request-box">
-      <strong>Pending deadline request</strong>
-      <p>By: ${esc(req.requestedBy || "")}</p>
-      <p>Reason: ${esc(req.reason || "")}</p>
-      ${isAdmin ? `
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <button class="btn btn-accent btn-xs" id="dl-approve-req">Approve</button>
-          <button class="btn btn-secondary btn-xs" id="dl-reject-req" style="color:var(--danger)">Reject</button>
-        </div>` : `<p style="color:var(--warn)">Awaiting admin approval…</p>`}
+    <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;">
+      <div style="font-weight:700;color:#92400e;margin-bottom:6px;">⏳ Pending deadline change request</div>
+      <div style="color:#78350f;">Requested by: <strong>${esc(req.requestedBy||"")}</strong></div>
+      <div style="color:#78350f;margin-top:2px;">Reason: ${esc(req.reason||"—")}</div>
+      ${isAdmin?`<div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-accent btn-xs" id="dl-approve-req">Approve</button>
+        <button class="btn btn-secondary btn-xs" id="dl-reject-req" style="color:#b91c1c;">Reject</button>
+      </div>`:`<div style="color:#b45309;margin-top:6px;font-size:12px;">Awaiting admin approval…</div>`}
     </div>` : "";
 
   // Activity feed
   const acts = [...(project.activity || [])].reverse();
   const actHtml = acts.length
     ? acts.map(a => `
-        <div class="act-row">
-          <span class="act-author">${esc(a.authorName || "Someone")}</span>
-          <span class="act-text"> ${esc(a.text || "")}</span>
-          <span class="act-when"> · ${a.timestamp ? fmtActivityTime(a.timestamp) : ""}</span>
+        <div style="display:flex;align-items:baseline;gap:6px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #e5e7eb;font-size:12.5px;line-height:1.4;">
+          <span style="font-weight:700;color:#1f2937;white-space:nowrap;">${esc(a.authorName||"Someone")}</span>
+          <span style="color:#374151;flex:1;">${esc(a.text||"")}</span>
+          <span style="color:#94a3b8;white-space:nowrap;font-size:11px;">${a.timestamp?fmtActivityTime(a.timestamp):""}</span>
         </div>`).join("")
-    : `<div class="act-row" style="color:var(--muted)">No activity yet.</div>`;
+    : `<div style="color:#9ca3af;font-size:13px;padding:12px 0;">No activity yet.</div>`;
 
-  // Editor assignment dropdown
+  // Editor dropdown
   const editorOptions = _allEditors.map(e =>
-    `<option value="${esc(e.id)}" ${e.id === project.editorId ? "selected" : ""}>${esc(e.name || e.email)}</option>`
+    `<option value="${esc(e.id)}" ${e.id===project.editorId?"selected":""}>${esc(e.name||e.email)}</option>`
   ).join("");
 
-  const body = el("div", { class: "detail-modal-body" });
+  // Section heading helper
+  const sec = (label, extra="") =>
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin:0 0 10px;display:flex;align-items:center;gap:8px;">${label}${extra}</div>`;
+  const divider = `<div style="height:1px;background:#f1f5f9;margin:18px 0;"></div>`;
+
+  const body = el("div", { style: { fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif", lineHeight:"1.5" }});
+
   body.innerHTML = `
-    ${inactivityBanner}
-    <div class="detail-top-row">
-      <span class="pill ${statusColor}">${esc(state.status)}</span>
-      <span class="pill pill-draft">${esc(project.type || "Article")}</span>
-    </div>
-    <div class="detail-meta-row">
-      <span>Author: <strong>${esc(project.authorName || "—")}</strong></span>
-      <span>Editor: <strong>${esc(project.editorName || "Not assigned")}</strong></span>
-      ${due ? `<span>Due: <strong>${fmtDate(due + "T00:00:00")}</strong></span>` : ""}
-    </div>
+    ${isInactive&&(isAdmin||isAuthor)?`<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;color:#b91c1c;display:flex;align-items:center;gap:8px;margin-bottom:16px;">⚠ Inactive for <strong>${inactive} days</strong> — no recent progress.</div>`:""}
 
-    ${project.proposal ? `
-    <div class="detail-section">
-      <div class="detail-section-title">Pitch / proposal
-        ${canEdit ? `<button class="btn btn-ghost btn-xs" id="edit-proposal-btn">Edit</button>` : ""}
-      </div>
-      <div class="detail-proposal-text" id="proposal-display">${esc(project.proposal)}</div>
-    </div>` : canEdit ? `
-    <div class="detail-section">
-      <div class="detail-section-title">Pitch / proposal
-        <button class="btn btn-ghost btn-xs" id="edit-proposal-btn">Add</button>
-      </div>
-    </div>` : ""}
-
-    <div class="detail-section">
-      <div class="detail-section-title">Progress checklist</div>
-      <div class="tl-steps" id="tl-steps">${stepsHtml}</div>
+    <!-- Status + meta -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <span style="background:${pillBg};color:${pillFg};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${esc(state.status)}</span>
+      <span style="background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${esc(project.type||"Article")}</span>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#6b7280;margin-bottom:0;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;">
+      <span>Author: <strong style="color:#1f2937;">${esc(project.authorName||"—")}</strong></span>
+      <span>Editor: <strong style="color:#1f2937;">${esc(project.editorName||"Not assigned")}</strong></span>
+      ${due?`<span>Due: <strong style="color:#1f2937;">${fmtDate(due+"T00:00:00")}</strong></span>`:""}
     </div>
 
-    ${isAdmin ? `
-    <div class="detail-section">
-      <div class="detail-section-title">Assign editor</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <select class="select" id="editor-select" style="flex:1;">
-          <option value="">— Choose editor —</option>
-          ${editorOptions}
-        </select>
-        <button class="btn btn-accent btn-sm" id="assign-editor-btn">${project.editorId ? "Reassign" : "Assign"}</button>
-      </div>
-    </div>` : ""}
+    ${project.proposal?`
+    ${divider}
+    ${sec("Pitch / Proposal", canEdit?`<button class="btn btn-ghost btn-xs" id="edit-proposal-btn" style="margin-left:auto;">Edit</button>`:"")}
+    <div id="proposal-display" style="font-size:13.5px;line-height:1.65;color:#374151;white-space:pre-wrap;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">${esc(project.proposal)}</div>
+    `:(canEdit?`
+    ${divider}
+    ${sec("Pitch / Proposal", `<button class="btn btn-ghost btn-xs" id="edit-proposal-btn" style="margin-left:auto;">Add pitch</button>`)}
+    `:``)
+    }
 
-    <div class="detail-section">
-      <div class="detail-section-title">
-        Deadlines
-        ${isAdmin ? `<button class="btn btn-accent btn-xs" id="save-deadlines-btn">Save deadlines</button>` : ""}
-        ${(isAuthor || isEditor) && !hasRequest ? `<button class="btn btn-ghost btn-xs" id="req-deadline-btn">Request change</button>` : ""}
-      </div>
-      ${pubDeadlineHtml}
-      ${deadlineRows}
-      ${deadlineRequestHtml}
+    ${divider}
+    ${sec("Progress")}
+    <div id="tl-steps" style="display:flex;flex-direction:column;gap:6px;">${stepsHtml}</div>
+
+    ${isAdmin?`
+    ${divider}
+    ${sec("Assign Editor")}
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select id="editor-select" style="flex:1;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;">
+        <option value="">— Choose editor —</option>
+        ${editorOptions}
+      </select>
+      <button class="btn btn-accent btn-sm" id="assign-editor-btn">${project.editorId?"Reassign":"Assign"}</button>
+    </div>`:""}
+
+    ${divider}
+    ${sec("Deadlines", `<div style="margin-left:auto;display:flex;gap:6px;">
+      ${isAdmin?`<button class="btn btn-accent btn-xs" id="save-deadlines-btn">Save</button>`:""}
+      ${(isAuthor||isEditor)&&!hasRequest?`<button class="btn btn-ghost btn-xs" id="req-deadline-btn">Request change</button>`:""}
+    </div>`)}
+    ${pubDeadlineHtml}
+    ${deadlineRows}
+    ${deadlineRequestHtml}
+
+    ${divider}
+    ${sec("Leave a comment")}
+    <div style="display:flex;gap:8px;">
+      <input id="comment-input" placeholder="Write a note…" style="flex:1;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;outline:none;">
+      <button class="btn btn-accent btn-sm" id="post-comment-btn">Post</button>
     </div>
 
-    <div class="detail-section">
-      <div class="detail-section-title">Comments</div>
-      <div style="display:flex;gap:8px;">
-        <input class="input" id="comment-input" placeholder="Leave a note…" style="flex:1;">
-        <button class="btn btn-secondary btn-sm" id="post-comment-btn">Post</button>
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <div class="detail-section-title">Activity</div>
-      <div class="act-feed" id="act-feed">${actHtml}</div>
-    </div>`;
+    ${divider}
+    ${sec("Activity")}
+    <div id="act-feed" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;">${actHtml}</div>
+  `;
 
   // Footer buttons
   const footerBtns = [];
