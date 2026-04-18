@@ -549,16 +549,56 @@ function openAddUserModal(ctx, onDone) {
 }
 
 // ====================== IMAGES ============================================
+// Extract the Firebase Storage object path from a download URL. Download
+// URLs look like `.../o/stories%2F<uid>%2Fimages%2F<hash>.webp?alt=media&token=…`,
+// and the decoded path segment is the stable ID of the object (the token
+// rotates on each upload-override). We match library entries to article
+// references on this path so token drift and URL param reordering don't
+// produce false negatives.
+function storagePathFromUrl(url) {
+  if (!url || typeof url !== "string") return null;
+  const m = url.match(/\/o\/([^?]+)/);
+  if (!m) return null;
+  try { return decodeURIComponent(m[1]); } catch { return m[1]; }
+}
+
+// Walk every Firestore story doc and collect the Firebase Storage paths
+// referenced in coverImage + body HTML. Anything NOT in this set is a
+// candidate for deletion.
+async function buildUsedImagePathSet() {
+  const used = new Set();
+  const snap = await getDocs(collection(db, "stories"));
+  snap.forEach((d) => {
+    const data = d.data() || {};
+    const cover = storagePathFromUrl(data.coverImage);
+    if (cover) used.add(cover);
+    const body = typeof data.body === "string" ? data.body : "";
+    // Cheap HTML scan — any `.../o/<path>?...` reference in the body HTML.
+    const re = /\/o\/([^"'?\s]+)/g;
+    let match;
+    while ((match = re.exec(body)) !== null) {
+      try { used.add(decodeURIComponent(match[1])); }
+      catch { used.add(match[1]); }
+    }
+  });
+  return used;
+}
+
 async function mountImages(ctx, container) {
   const card = el("div", { class: "card" });
   card.innerHTML = `
     <div class="card-header">
       <div>
         <div class="card-title">Image library</div>
-        <div class="card-subtitle">Every image uploaded by any writer. Click to copy the URL, hover to delete.</div>
+        <div class="card-subtitle">Every image uploaded by any writer. Click to copy the URL, hover to delete. Unused images are flagged so you can safely clean them up.</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <input class="input" id="img-search" placeholder="Filter by writer or filename" style="min-width:240px;" />
+        <select class="select" id="img-filter-usage" style="min-width:160px;">
+          <option value="all">All images</option>
+          <option value="unused">Unused only</option>
+          <option value="used">Used only</option>
+        </select>
         <select class="select" id="img-sort" style="min-width:160px;">
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
@@ -582,14 +622,23 @@ async function mountImages(ctx, container) {
   const countEl = card.querySelector("#img-count");
   const sizeTotalEl = card.querySelector("#img-size-total");
   const searchEl = card.querySelector("#img-search");
+  const usageEl = card.querySelector("#img-filter-usage");
   const sortEl = card.querySelector("#img-sort");
   const errorEl = card.querySelector("#img-error");
 
   let entries = [];
   let ownerNames = new Map(); // uid → display name
+  let usedPaths = new Set();
 
   try {
-    entries = await loadImageLibrary(null);
+    [entries, usedPaths] = await Promise.all([
+      loadImageLibrary(null),
+      buildUsedImagePathSet().catch((err) => {
+        // Don't fail the whole view if we can't read stories — just skip the badge.
+        console.warn("[admin-images] usage scan failed", err);
+        return new Set();
+      }),
+    ]);
   } catch (err) {
     errorEl.textContent = "Could not load images: " + (err?.message || err);
     grid.innerHTML = "";
@@ -615,15 +664,23 @@ async function mountImages(ctx, container) {
     if (ownerNames.has(e.owner)) e.ownerName = ownerNames.get(e.owner);
   });
 
+  const isUsed = (entry) => usedPaths.has(entry.fullPath);
+
   const refresh = () => {
     const q = searchEl.value.trim().toLowerCase();
+    const usageMode = usageEl.value;
     let filtered = entries.filter((e) => {
-      if (!q) return true;
-      return (
-        (e.name || "").toLowerCase().includes(q) ||
-        (e.ownerName || "").toLowerCase().includes(q) ||
-        (e.owner || "").toLowerCase().includes(q)
-      );
+      if (q) {
+        const matches = (
+          (e.name || "").toLowerCase().includes(q) ||
+          (e.ownerName || "").toLowerCase().includes(q) ||
+          (e.owner || "").toLowerCase().includes(q)
+        );
+        if (!matches) return false;
+      }
+      if (usageMode === "unused" && isUsed(e)) return false;
+      if (usageMode === "used" && !isUsed(e)) return false;
+      return true;
     });
     const sort = sortEl.value;
     if (sort === "oldest") filtered.sort((a, b) => a.updated - b.updated);
@@ -631,7 +688,9 @@ async function mountImages(ctx, container) {
     else filtered.sort((a, b) => b.updated - a.updated);
 
     const totalBytes = filtered.reduce((sum, e) => sum + (e.size || 0), 0);
-    countEl.textContent = `${filtered.length} of ${entries.length} image${entries.length === 1 ? "" : "s"}`;
+    const unusedCount = entries.reduce((n, e) => n + (isUsed(e) ? 0 : 1), 0);
+    const unusedNote = unusedCount ? ` · ${unusedCount} unused` : "";
+    countEl.textContent = `${filtered.length} of ${entries.length} image${entries.length === 1 ? "" : "s"}${unusedNote}`;
     sizeTotalEl.textContent = totalBytes ? `Total size: ${formatBytes(totalBytes)}` : "";
 
     // Decorate each entry so the tile caption shows the writer's name.
@@ -643,12 +702,14 @@ async function mountImages(ctx, container) {
     }));
 
     if (!decorated.length) {
-      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">No images match "${esc(q)}".</div>`;
+      const msg = q ? `No images match "${esc(q)}".` : "No images match the current filter.";
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">${msg}</div>`;
       return;
     }
 
     renderLibraryGrid(grid, decorated, {
       allowDelete: true,
+      usageBadge: (entry) => (isUsed(entry) ? "used" : "unused"),
       onPick: async (entry) => {
         try {
           await navigator.clipboard.writeText(entry.url);
@@ -678,6 +739,7 @@ async function mountImages(ctx, container) {
   };
 
   searchEl.addEventListener("input", refresh);
+  usageEl.addEventListener("change", refresh);
   sortEl.addEventListener("change", refresh);
   refresh();
 }

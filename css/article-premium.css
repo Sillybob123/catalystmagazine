@@ -32,20 +32,93 @@ body[data-page="article"] .article-page { padding: 0; margin: 0; }
    .container at normal gutters so the footer doesn't touch the edges. */
 body[data-page="article"] .article-page > .container { max-width: none; padding: 0; }
 
-/* --- Reading progress bar -------------------------------------------------- */
+/* --- Reading progress bar --------------------------------------------------
+   Two elements at the top of the viewport:
+     1. A thin gradient track with a glowing fill that tracks progress through
+        the article body (not the full page — we don't want to count the
+        footer or related articles as "reading").
+     2. A pill on the right showing % read + estimated minutes remaining.
+        The pill animates into view once the reader is actually inside the
+        article and fades out when they finish. */
 .reading-progress {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 3px;
-  background: transparent;
+  height: 4px;
   z-index: 1000;
   pointer-events: none;
+  /* Fight the older stray .reading-progress { width:0% } rule in styles.css
+     so the outer bar always spans the viewport. */
+  width: 100% !important;
+  background: transparent !important;
+}
+.reading-progress__track {
+  position: relative;
+  height: 4px;
+  background: rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .reading-progress__fill {
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, var(--accent), var(--accent-soft));
-  transition: width 0.08s linear;
+  background: linear-gradient(90deg, var(--accent, #2563eb), var(--accent-soft, #60a5fa));
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.55), 0 0 18px rgba(37, 99, 235, 0.35);
+  transition: width 0.12s ease-out;
+  border-radius: 0 4px 4px 0;
+}
+.reading-progress__pill {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fff;
+  border-radius: 999px;
+  font: 600 11px/1 "Inter", system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.22);
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 220ms ease, transform 220ms ease;
+  pointer-events: none;
+}
+.reading-progress__pill::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent, #2563eb);
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.75);
+}
+.reading-progress__pct {
+  font-weight: 700;
+  font-size: 12px;
+  color: #fff;
+}
+.reading-progress__remaining {
+  font-weight: 500;
+  color: rgba(255,255,255,0.72);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.reading-progress__remaining:empty { display: none; }
+.reading-progress.is-active .reading-progress__pill {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reading-progress.is-complete .reading-progress__pill {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+}
+.reading-progress.is-complete .reading-progress__pill::before {
+  background: #fff;
+  box-shadow: 0 0 8px rgba(255,255,255,0.8);
+}
+@media (max-width: 640px) {
+  .reading-progress__pill { top: 12px; right: 12px; padding: 6px 12px; }
+  .reading-progress__remaining { display: none; }
 }
 
 /* --- Back link ------------------------------------------------------------- */
@@ -118,6 +191,36 @@ body[data-page="article"] .back-link:hover {
     rgba(0,0,0,0.85) 100%
   );
   z-index: -1;
+}
+
+/* Light-cover variant: writer flagged this cover as bright/white, so the
+   default scrim can't guarantee contrast on title/deck. Darken the whole
+   scrim and add a soft blurred container behind the text block itself. */
+.article-hero--light-cover::before {
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.25) 0%,
+    rgba(0,0,0,0.45) 45%,
+    rgba(0,0,0,0.75) 82%,
+    rgba(0,0,0,0.92) 100%
+  );
+}
+.article-hero--light-cover .article-hero__inner {
+  position: relative;
+  padding: 28px 28px 4px;
+  border-radius: 6px;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.28) 0%,
+    rgba(0,0,0,0.52) 100%
+  );
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+.article-hero--light-cover .article-hero__title,
+.article-hero--light-cover .article-hero__deck {
+  text-shadow: 0 2px 18px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.4);
 }
 .article-hero__inner {
   width: 100%;

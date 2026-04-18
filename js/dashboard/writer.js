@@ -62,6 +62,10 @@ function mountDraftEditor(ctx, container) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           Settings
         </button>
+        <button class="btn btn-ghost btn-sm" id="format-guide-btn" title="See an example of a professionally formatted article">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          How to format
+        </button>
         <button class="btn btn-ghost btn-sm" id="preview-btn" title="Open a full preview of how this article will look when published">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           Preview
@@ -157,12 +161,31 @@ function mountDraftEditor(ctx, container) {
         </div>
       </header>
 
-      <!-- Body — rendered with the same typography as the public article page -->
+      <!-- Body — rendered with the same typography as the public article page.
+           The ghost-template next to it shows a suggested structure (hero ¶,
+           sections, pull-quote, closing) and fades out as soon as the writer
+           starts typing. It's a sibling, not a child, so it can never end up
+           saved to Firestore. -->
       <div class="compose-body-wrap">
+        <div class="compose-body-ghost" id="f-body-ghost" aria-hidden="true">
+          <div class="compose-body-ghost-inner">
+            <p class="ghost-tag">Suggested structure · tap anywhere to start</p>
+            <p class="ghost-lead"><strong>Opening paragraph.</strong> Lead with a specific scene, detail, or question that earns the reader's attention — not a summary. This is the hook.</p>
+            <p>Add one or two setup paragraphs that establish context, stakes, or your angle. Who, what, and <em>why this matters right now.</em></p>
+            <h2 class="rt-section-heading">First section heading</h2>
+            <p>Use section headings to break the piece into 2–4 clear movements. Each section should move the story forward and flow logically from the last.</p>
+            <p>Support claims with a quote, a statistic, or a source. Pull-quotes highlight a powerful line:</p>
+            <figure class="rt-pullquote"><blockquote>A memorable quote or line from your piece pulled out for emphasis.</blockquote><figcaption>— Attribution (optional)</figcaption></figure>
+            <h2 class="rt-section-heading">Second section heading</h2>
+            <p>Deepen the argument here. Introduce a counterpoint, a new source, or zoom into a specific example. Insert images using the toolbar — captions and credits help.</p>
+            <h2 class="rt-section-heading">Closing</h2>
+            <p>End with a callback to your opening, a forward-looking implication, or the sharpest quote you saved for last. Land it.</p>
+            <p class="ghost-tip">Tip: use the toolbar for headings, quotes, lists, images, and dividers — or paste from a Google Doc to bring an outline straight in.</p>
+          </div>
+        </div>
         <div class="compose-body article-body"
              id="f-body"
              contenteditable="true"
-             data-placeholder="Start telling your story. Press ⌘B for bold, ⌘I for italic, or use the toolbar for headings, quotes, and images."
              spellcheck="true"></div>
       </div>
     </article>
@@ -200,6 +223,13 @@ function mountDraftEditor(ctx, container) {
           </div>
           <input class="input" id="f-cover" placeholder="https://… or upload above" style="margin-top:10px;">
           <div class="hint">Upload an image (auto-converts to WebP) or paste a public URL.</div>
+          <label class="cover-light-toggle">
+            <input type="checkbox" id="f-cover-light">
+            <span>
+              <strong>Cover image is light or bright</strong>
+              <span class="cover-light-toggle__hint">Adds a dark overlay so the title stays readable.</span>
+            </span>
+          </label>
         </div>
         <div class="field">
           <label class="label">Status</label>
@@ -297,6 +327,7 @@ function mountDraftEditor(ctx, container) {
   // Prefill when editing.
   if (editingId) loadDraft(editingId, wrap, ctx);
 
+  wrap.querySelector("#format-guide-btn").addEventListener("click", openFormatGuide);
   wrap.querySelector("#preview-btn").addEventListener("click", () => openArticlePreview(wrap, ctx));
   wrap.querySelector("#save-draft-btn").addEventListener("click", () => saveStory(ctx, wrap, "draft", editingId));
   wrap.querySelector("#submit-btn").addEventListener("click", () => saveStory(ctx, wrap, "pending", editingId));
@@ -437,12 +468,14 @@ function handleBlockAction(action, editorEl, ctx) {
 }
 
 // ===== Google Docs paste ====================================================
-// Opens a dialog where writers paste from a Google Doc; we sanitize the HTML,
-// map Docs' styles to our magazine blocks (headings, bold, italic, links,
-// lists, quotes), show a preview, and insert it into the editor body.
+// Opens a dialog where writers paste from a Google Doc (or upload a .docx).
+// We sanitize the HTML, map Docs' styles to our magazine blocks, extract any
+// images the Doc carried over, upload them to Firebase Storage, rewrite their
+// <img src> to point at the uploaded file, and then insert the result into
+// the article body.
 function openGoogleDocPasteDialog(editorEl, ctx) {
   const scrim = el("div", { class: "media-dialog-scrim" });
-  const modal = el("div", { class: "media-dialog", style: { maxWidth: "760px" } });
+  const modal = el("div", { class: "media-dialog", style: { maxWidth: "820px" } });
   modal.innerHTML = `
     <div class="media-dialog-head">
       <div class="media-dialog-title">Paste from Google Doc</div>
@@ -452,20 +485,33 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
     </div>
     <div class="media-dialog-body">
       <div class="hint" style="margin-bottom:10px;">
-        In your Google Doc: select all (⌘A / Ctrl+A), copy (⌘C / Ctrl+C), then click the box below and paste (⌘V / Ctrl+V).
-        Headings, bold, italic, links, lists, and block quotes will be kept.
+        Paste directly from your Google Doc below (⌘A, ⌘C, then ⌘V here). Headings, bold, italic, links, lists, quotes, and images all carry over.
+        If an image didn't come through, use the <strong>Upload .docx</strong> option — it's 100% reliable.
       </div>
       <div id="gdoc-paste-target"
            contenteditable="true"
            style="min-height:180px;max-height:260px;overflow:auto;border:1px dashed var(--hairline-2);border-radius:10px;padding:14px 16px;background:var(--surface-1);font-family:inherit;"
            data-placeholder="Paste your Google Doc content here…"></div>
       <div class="hint" id="gdoc-count" style="margin-top:8px;">Waiting for paste…</div>
+
+      <div style="margin-top:14px;padding-top:14px;border-top:1px dashed var(--hairline-2);">
+        <div class="hint" style="margin-bottom:8px;">
+          <strong>Fallback:</strong> export your Doc (File → Download → Microsoft Word .docx) and drop it here. This is the most reliable way to bring images across.
+        </div>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+          <input type="file" id="gdoc-docx" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none;" />
+          Upload .docx file
+        </label>
+        <span id="gdoc-docx-name" class="hint" style="margin-left:10px;"></span>
+      </div>
+
       <div class="field" style="margin-top:14px;">
         <label class="label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
           <input type="checkbox" id="gdoc-replace" />
           <span>Replace the entire article body (otherwise content is inserted at the cursor)</span>
         </label>
       </div>
+      <div id="gdoc-progress" class="hint" style="margin-top:10px;display:none;"></div>
       <div class="media-error" id="gdoc-error"></div>
     </div>
     <div class="media-dialog-foot">
@@ -482,6 +528,9 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
   const insertBtn = modal.querySelector("#gdoc-insert");
   const replaceBox = modal.querySelector("#gdoc-replace");
   const errorEl = modal.querySelector("#gdoc-error");
+  const progressEl = modal.querySelector("#gdoc-progress");
+  const docxInput = modal.querySelector("#gdoc-docx");
+  const docxName = modal.querySelector("#gdoc-docx-name");
 
   const close = () => {
     scrim.classList.remove("open");
@@ -493,37 +542,152 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
   scrim.addEventListener("click", close);
 
   let cleanedHtml = "";
+  let busy = false;
+
+  const setBusy = (on, message = "") => {
+    busy = on;
+    insertBtn.disabled = on || !cleanedHtml;
+    progressEl.style.display = on || message ? "block" : "none";
+    progressEl.textContent = message;
+  };
+
+  const updateCount = () => {
+    const words = (target.textContent || "").trim().split(/\s+/).filter(Boolean).length;
+    const imgs = target.querySelectorAll("img").length;
+    const parts = [];
+    if (words) parts.push(`about ${words.toLocaleString()} word${words === 1 ? "" : "s"}`);
+    if (imgs) parts.push(`${imgs} image${imgs === 1 ? "" : "s"}`);
+    countEl.textContent = cleanedHtml
+      ? `Ready to insert — ${parts.join(", ") || "content parsed"}.`
+      : "Nothing to paste yet.";
+  };
+
+  // Run the async import pipeline: convert clipboard HTML, upload every image
+  // to Firebase Storage, and rewrite <img src> to point at the uploaded file.
+  const runImport = async (rawHtml, plain) => {
+    errorEl.textContent = "";
+    if (!rawHtml && !plain) {
+      cleanedHtml = "";
+      target.innerHTML = `<p style="color:var(--muted-2)">Nothing to paste.</p>`;
+      updateCount();
+      insertBtn.disabled = true;
+      return;
+    }
+    if (!rawHtml) {
+      cleanedHtml = plainTextToHtml(plain);
+      target.innerHTML = cleanedHtml;
+      updateCount();
+      insertBtn.disabled = !cleanedHtml;
+      return;
+    }
+
+    setBusy(true, "Parsing your Doc…");
+    try {
+      const { html, imageNodes } = convertGoogleDocsHtml(rawHtml);
+
+      if (imageNodes.length) {
+        const failures = [];
+        let done = 0;
+        const total = imageNodes.length;
+        const updateProgress = () => {
+          progressEl.textContent = `Uploading images… ${done}/${total}`;
+        };
+        updateProgress();
+
+        // Upload in parallel (capped to 4 at a time to avoid hammering storage).
+        await runWithConcurrency(imageNodes, 4, async (node) => {
+          try {
+            const uploaded = await uploadPastedImage(node.src, node.filename, ctx);
+            node.el.setAttribute("src", uploaded);
+            node.el.setAttribute("data-uploaded", "1");
+          } catch (err) {
+            failures.push({ src: node.src, err });
+            // Leave the original src on the image and tag it so the writer
+            // sees which ones didn't transfer.
+            node.el.setAttribute("data-upload-failed", "1");
+          } finally {
+            done++;
+            updateProgress();
+          }
+        });
+
+        if (failures.length) {
+          errorEl.textContent = `${failures.length} image${failures.length === 1 ? "" : "s"} couldn't be uploaded automatically. Try the .docx upload below for those.`;
+        }
+      }
+
+      cleanedHtml = html;
+      target.innerHTML = cleanedHtml;
+      updateCount();
+      insertBtn.disabled = !cleanedHtml;
+    } catch (err) {
+      errorEl.textContent = "Could not parse the Doc: " + (err?.message || err);
+    } finally {
+      setBusy(false, "");
+    }
+  };
 
   // Intercept the paste so we can read Google Docs' HTML directly instead of
   // whatever the browser would insert into a contenteditable.
   target.addEventListener("paste", (e) => {
     e.preventDefault();
+    if (busy) return;
     const cd = e.clipboardData || window.clipboardData;
     const html = cd.getData("text/html") || "";
     const plain = cd.getData("text/plain") || "";
-    cleanedHtml = html
-      ? convertGoogleDocsHtml(html)
-      : plainTextToHtml(plain);
-    target.innerHTML = cleanedHtml || `<p style="color:var(--muted-2)">Nothing to paste.</p>`;
-    const words = (target.textContent || "").trim().split(/\s+/).filter(Boolean).length;
-    countEl.textContent = cleanedHtml
-      ? `Ready to insert — about ${words.toLocaleString()} word${words === 1 ? "" : "s"}.`
-      : "Nothing to paste.";
-    insertBtn.disabled = !cleanedHtml;
-    errorEl.textContent = "";
+    runImport(html, plain);
+  });
+
+  // .docx upload — use mammoth.js to convert to HTML, then run it through the
+  // same image-upload pipeline. mammoth gives us data:image URLs for embedded
+  // images, which always upload cleanly.
+  docxInput.addEventListener("change", async () => {
+    const file = docxInput.files && docxInput.files[0];
+    if (!file) return;
+    docxName.textContent = file.name;
+    setBusy(true, "Converting .docx…");
+    try {
+      const mammoth = await loadMammoth();
+      const buf = await file.arrayBuffer();
+      const result = await mammoth.convertToHtml(
+        { arrayBuffer: buf },
+        {
+          // Map Word heading styles explicitly so we get the right levels.
+          styleMap: [
+            "p[style-name='Title'] => h1:fresh",
+            "p[style-name='Heading 1'] => h1:fresh",
+            "p[style-name='Heading 2'] => h2:fresh",
+            "p[style-name='Heading 3'] => h3:fresh",
+            "p[style-name='Heading 4'] => h4:fresh",
+            "p[style-name='Quote'] => blockquote:fresh",
+            "p[style-name='Intense Quote'] => blockquote:fresh",
+          ],
+        }
+      );
+      setBusy(true, "Parsing document…");
+      await runImport(result.value, "");
+    } catch (err) {
+      errorEl.textContent = "Could not read .docx: " + (err?.message || err);
+      setBusy(false, "");
+    }
   });
 
   // Focus the target so the user can immediately paste.
   requestAnimationFrame(() => target.focus());
 
   insertBtn.addEventListener("click", () => {
-    if (!cleanedHtml) return;
+    if (!cleanedHtml || busy) return;
     try {
       if (replaceBox.checked) {
         editorEl.innerHTML = cleanedHtml;
       } else {
         insertBlockAtCaret(editorEl, cleanedHtml);
       }
+      // execCommand("insertHTML") and assigning innerHTML both sometimes nest
+      // a <figure> inside a <p> or drop contenteditable="false" — that breaks
+      // the click-to-edit handler. Walk every figure we just inserted and
+      // make sure it's at block level with the flags the toolbar expects.
+      normalizeEditorFigures(editorEl);
       editorEl.dispatchEvent(new Event("input", { bubbles: true }));
       ctx?.toast?.("Pasted from Google Doc.", "success");
       close();
@@ -533,10 +697,93 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
   });
 }
 
+// Repair pasted/inserted figures so the editor's click-to-edit flow works:
+//   - hoist figures out of any surrounding <p> (execCommand loves to nest them)
+//   - ensure contenteditable="false" so clicks don't drop a caret inside them
+//   - ensure a size class (defaults to rt-size-standard)
+//   - ensure data-rt-figure so the toolbar's click handler recognizes them
+function normalizeEditorFigures(editorEl) {
+  editorEl.querySelectorAll("figure.rt-figure").forEach((fig) => {
+    // Hoist out of <p> / <div> wrappers that the browser added around it.
+    let parent = fig.parentElement;
+    while (parent && parent !== editorEl && /^(p|div|span)$/i.test(parent.tagName)) {
+      parent.parentElement.insertBefore(fig, parent);
+      // If the wrapper is now empty, drop it; otherwise leave the other text.
+      if (!parent.textContent.trim() && !parent.querySelector("img, video, figure")) {
+        parent.remove();
+      }
+      parent = fig.parentElement;
+    }
+    fig.setAttribute("contenteditable", "false");
+    const isVideo = fig.classList.contains("rt-figure-video") || fig.querySelector("video");
+    if (!fig.hasAttribute("data-rt-figure")) {
+      fig.setAttribute("data-rt-figure", isVideo ? "video" : "image");
+    }
+    if (!/\brt-size-[a-z]+\b/.test(fig.className)) {
+      fig.classList.add("rt-size-standard");
+    }
+  });
+}
+
+// Dynamically load mammoth.js from a CDN the first time it's needed. We hang
+// it off `window.mammoth` so a second .docx in the same session reuses it.
+function loadMammoth() {
+  if (window.mammoth) return Promise.resolve(window.mammoth);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";
+    script.crossOrigin = "anonymous";
+    script.onload = () => {
+      if (window.mammoth) resolve(window.mammoth);
+      else reject(new Error("mammoth failed to register"));
+    };
+    script.onerror = () => reject(new Error("Could not load mammoth.js (check your connection)"));
+    document.head.appendChild(script);
+  });
+}
+
+// Run `task` across `items` with at most `limit` in flight at once.
+async function runWithConcurrency(items, limit, task) {
+  const results = new Array(items.length);
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++;
+      results[idx] = await task(items[idx], idx);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+// Convert a pasted <img src> into a File, push it to Firebase Storage via the
+// same content-hash pipeline used by the media dialog, and return the public
+// download URL. Works for:
+//   - data:image/… (Docs desktop app, mammoth.js .docx conversion)
+//   - https://lh*.googleusercontent.com/… (Docs browser paste) — subject to CORS
+//   - any other https image URL the Doc happened to carry
+async function uploadPastedImage(src, filename, ctx) {
+  let blob;
+  if (src.startsWith("data:")) {
+    blob = await (await fetch(src)).blob();
+  } else {
+    // Cross-origin fetch — if the remote blocks CORS this throws, which the
+    // caller catches and reports as a per-image failure.
+    const res = await fetch(src, { mode: "cors", credentials: "omit" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    blob = await res.blob();
+  }
+  if (!blob.type.startsWith("image/")) {
+    throw new Error(`Not an image (type: ${blob.type || "unknown"})`);
+  }
+  const safeName = (filename || "pasted-image").replace(/[^a-z0-9._-]/gi, "_").slice(0, 60);
+  const file = new File([blob], safeName, { type: blob.type });
+  return await uploadToFirebase(file, "image", ctx);
+}
+
 // Convert Google Docs clipboard HTML into our magazine structure.
-// We deliberately drop Docs' inline style soup (fonts, colors, margins) and
-// keep only semantic formatting the magazine renders: headings, paragraphs,
-// bold, italic, underline, links, ordered/unordered lists, and blockquotes.
+// Returns { html, imageNodes } where imageNodes is a live-ish list of
+// { el, src, filename } records the caller can upload and rewrite.
 function convertGoogleDocsHtml(rawHtml) {
   // Docs wraps the real content in a <b id="docs-internal-guid-…"> or similar;
   // parse with DOMParser so we never inject the raw string into the DOM.
@@ -553,19 +800,53 @@ function convertGoogleDocsHtml(rawHtml) {
     parent.removeChild(b);
   });
 
-  const out = [];
   const body = doc.body;
-  if (!body) return "";
+  if (!body) return { html: "", imageNodes: [] };
 
   // Walk the top-level children and convert each one to a magazine block.
+  const out = [];
   body.childNodes.forEach((node) => {
     const block = convertGDocBlock(node);
     if (block) out.push(block);
   });
 
   // Collapse consecutive empty paragraphs and trailing blanks.
-  const html = out.join("\n").replace(/(<p><br\/?><\/p>\s*){2,}/g, "<p><br/></p>");
-  return html.trim();
+  const rawJoined = out.join("\n").replace(/(<p><br\/?><\/p>\s*){2,}/g, "<p><br/></p>").trim();
+  const normalized = normalizeGDocText(rawJoined);
+
+  // Parse the final string once more so we can return live <img> references
+  // for the async upload step. The caller mutates these .el nodes in place
+  // and serializes back to HTML.
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = normalized;
+  const imageNodes = Array.from(wrapper.querySelectorAll("img"))
+    .map((img) => ({
+      el: img,
+      src: img.getAttribute("src") || "",
+      filename: (img.getAttribute("alt") || "pasted") + extFromMimeOrUrl(img.getAttribute("src") || ""),
+    }))
+    .filter((n) => n.src);
+
+  return { html: wrapper.innerHTML, imageNodes };
+}
+
+function extFromMimeOrUrl(src) {
+  if (src.startsWith("data:image/png")) return ".png";
+  if (src.startsWith("data:image/jpeg") || src.startsWith("data:image/jpg")) return ".jpg";
+  if (src.startsWith("data:image/webp")) return ".webp";
+  if (src.startsWith("data:image/gif")) return ".gif";
+  const m = src.match(/\.(png|jpe?g|webp|gif)(\?|$)/i);
+  return m ? `.${m[1].toLowerCase()}` : ".png";
+}
+
+// Tidy up the quirks Docs leaves in text: stray non-breaking spaces, weird
+// double-space runs, straight quotes where Docs already had curly ones, and
+// zero-width characters it sometimes sprinkles around.
+function normalizeGDocText(html) {
+  return html
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")  // zero-width joiners/space
+    .replace(/\u00A0/g, " ")                 // non-breaking → regular space
+    .replace(/ {2,}/g, " ");
 }
 
 function convertGDocBlock(node) {
@@ -577,10 +858,12 @@ function convertGDocBlock(node) {
   const tag = node.tagName.toLowerCase();
 
   // Google Docs maps heading levels to HEADING_1..HEADING_4 in HTML as h1-h4.
-  // Our editor uses h2 as "Heading 1", h3 as "Heading 2", h4 as "Section label".
+  // Our editor treats h2.rt-section-heading as the top-level magazine section
+  // break, h3 as a subheading inside a section, h4 as a small eyebrow label.
   if (tag === "h1" || tag === "h2") {
     const inner = convertGDocInline(node);
-    return inner ? `<h2 class="rt-section-heading">${inner}</h2>` : "";
+    // Empty gap before a new section so it visually separates in the editor.
+    return inner ? `<p><br/></p><h2 class="rt-section-heading">${inner}</h2>` : "";
   }
   if (tag === "h3") {
     const inner = convertGDocInline(node);
@@ -617,13 +900,33 @@ function convertGDocBlock(node) {
     });
     return rows.join("\n");
   }
+  if (tag === "figure") {
+    // Word/mammoth sometimes wraps images in <figure>. Dive in for the <img>
+    // and any <figcaption>.
+    const img = node.querySelector("img");
+    const cap = node.querySelector("figcaption");
+    if (img) {
+      const src = img.getAttribute("src") || "";
+      if (!src) return "";
+      const alt = img.getAttribute("alt") || "";
+      const captionHtml = cap ? `<figcaption><span class="fig-caption-text">${escapeHtml(cap.textContent.trim())}</span></figcaption>` : "";
+      return `<figure class="rt-figure rt-size-standard" contenteditable="false" data-rt-figure="image"><img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" />${captionHtml}</figure>`;
+    }
+    return "";
+  }
   if (tag === "img") {
     const src = node.getAttribute("src") || "";
     if (!src) return "";
     const alt = node.getAttribute("alt") || "";
-    return `<figure class="rt-figure rt-size-standard"><img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" /></figure>`;
+    return `<figure class="rt-figure rt-size-standard" contenteditable="false" data-rt-figure="image"><img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" /></figure>`;
   }
   if (tag === "p" || tag === "div") {
+    // If the paragraph is just an image (Docs loves to wrap <img> in <p>),
+    // hoist it to a figure block.
+    const onlyImg = node.children.length === 1 && node.children[0].tagName.toLowerCase() === "img" && !node.textContent.trim();
+    if (onlyImg) {
+      return convertGDocBlock(node.children[0]);
+    }
     // Docs sometimes wraps a heading inside a <p>; if the paragraph has a
     // single heading-ish child, recurse.
     if (node.children.length === 1 && /^h[1-6]$/i.test(node.children[0].tagName)) {
@@ -653,6 +956,14 @@ function convertGDocInline(node) {
   const tag = node.tagName.toLowerCase();
   if (tag === "br") return "<br/>";
 
+  // Inline image (rare — Docs almost always wraps img in a <p>), preserve it
+  // so the block-level pass picks it up when we walk the paragraph again.
+  if (tag === "img") {
+    const src = node.getAttribute("src") || "";
+    if (!src) return "";
+    return `<img src="${escapeAttr(src)}" alt="${escapeAttr(node.getAttribute("alt") || "")}" />`;
+  }
+
   // Recurse through children first, then wrap based on this element's styling.
   let inner = "";
   node.childNodes.forEach((child) => { inner += convertGDocInline(child); });
@@ -672,18 +983,27 @@ function convertGDocInline(node) {
     return `<a href="${escapeAttr(href)}" target="_blank" rel="noopener">${inner}</a>`;
   }
 
+  // Sub/superscript — useful for footnote markers and scientific notation.
+  if (tag === "sup") return `<sup>${inner}</sup>`;
+  if (tag === "sub") return `<sub>${inner}</sub>`;
+
   const style = (node.getAttribute("style") || "").toLowerCase();
   const weight = (style.match(/font-weight:\s*(\d+|bold|bolder)/) || [])[1];
+  const vAlign = (style.match(/vertical-align:\s*([a-z-]+)/) || [])[1];
   const isBold = tag === "b" || tag === "strong" || weight === "bold" || weight === "bolder" || (weight && parseInt(weight, 10) >= 600);
   const isItalic = tag === "i" || tag === "em" || /font-style:\s*italic/.test(style);
   const isUnderline = tag === "u" || /text-decoration[^;]*underline/.test(style);
   const isStrike = tag === "s" || tag === "strike" || tag === "del" || /text-decoration[^;]*line-through/.test(style);
+  const isSuper = vAlign === "super";
+  const isSub = vAlign === "sub";
 
   let out = inner;
   if (isBold)      out = `<strong>${out}</strong>`;
   if (isItalic)    out = `<em>${out}</em>`;
   if (isUnderline) out = `<u>${out}</u>`;
   if (isStrike)    out = `<s>${out}</s>`;
+  if (isSuper)     out = `<sup>${out}</sup>`;
+  if (isSub)       out = `<sub>${out}</sub>`;
   return out;
 }
 
@@ -860,6 +1180,261 @@ function escAttrJs(value) {
     .replace(/'/g, "\\'")
     .replace(/"/g, "&quot;")
     .replace(/\n/g, " ");
+}
+
+// ===== Format guide =========================================================
+// Opens a new tab showing a fully-formatted example article. The example uses
+// the same stylesheets as a real published article (css/styles.css +
+// article-premium.css) so what the writer sees here is literally how their
+// article will look — modeled after CNN / NYT magazine layouts.
+// Each block has a labeled callout on the left explaining what it is and
+// how to insert it from the toolbar.
+function openFormatGuide() {
+  const origin = window.location.origin;
+  const heroBg = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1800&q=80";
+  const inlineImg = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1600&q=80";
+  const sideImg = "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80";
+
+  // Each block in the example is tagged with data-guide="…" and a human label
+  // via data-guide-label. A small CSS pass then draws a gutter annotation to
+  // the left of each block with the label — exactly like a museum placard.
+  const doc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to format a Catalyst article</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="${origin}/css/styles.css">
+<link rel="stylesheet" href="${origin}/css/article-premium.css">
+<style>
+  body { background: var(--canvas, #fafafa); }
+  .guide-banner {
+    position: sticky; top: 0; z-index: 1000;
+    background: linear-gradient(90deg,#0b1220,#1f2a44);
+    color: #fff;
+    padding: 14px 22px;
+    font: 600 13px/1.4 Inter, system-ui, sans-serif;
+    letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .guide-banner .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex: 0 0 auto; box-shadow: 0 0 0 4px rgba(34,197,94,0.2); }
+  .guide-banner strong { font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .guide-banner span { opacity: 0.75; font-weight: 400; }
+  .guide-banner button {
+    margin-left: auto;
+    background: rgba(255,255,255,0.12); color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 7px 14px; border-radius: 8px;
+    font: 600 12px/1 Inter, system-ui, sans-serif;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    cursor: pointer;
+  }
+  .guide-banner button:hover { background: rgba(255,255,255,0.2); }
+
+  main { padding-top: 0; }
+  .article-page { padding: 40px 24px 100px; }
+  .article-page .container { max-width: 1280px; margin: 0 auto; }
+
+  /* Left-gutter annotations — show what each block is called and how to
+     insert it. On desktop the callout floats to the left of the article
+     in a single card (label + detail stacked inside one ::before so the
+     detail always sits right under the label, regardless of how tall the
+     annotated block is). On narrower screens the callout stacks above
+     each block so nothing gets clipped. */
+  .guide-annotation { position: relative; }
+  .guide-annotation::before {
+    content: attr(data-guide-label);
+    position: absolute;
+    left: -252px;
+    top: -4px;
+    width: 230px;
+    font: 700 11px/1.5 Inter, system-ui, sans-serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #2563eb;
+    padding: 10px 14px 6px;
+    background: #eff6ff;
+    border-left: 3px solid #2563eb;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+  }
+  .guide-annotation::after {
+    content: attr(data-guide-detail);
+    position: absolute;
+    left: -252px;
+    top: 34px;
+    width: 230px;
+    font: 400 12px/1.55 Inter, system-ui, sans-serif;
+    color: #475569;
+    padding: 0 14px 12px;
+    background: #eff6ff;
+    border-left: 3px solid #2563eb;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+  }
+  /* Short blocks like the divider need reserved vertical space so the
+     absolutely-positioned callout doesn't overlap whatever block follows. */
+  .guide-divider-wrap { min-height: 120px; margin: 28px 0; }
+  .guide-divider-wrap hr { margin: 0; }
+
+  @media (max-width: 1200px) {
+    .guide-annotation::before,
+    .guide-annotation::after {
+      position: static;
+      display: block;
+      width: auto;
+      max-width: 720px;
+      margin: 0 auto;
+      left: auto;
+      top: auto;
+      box-shadow: none;
+    }
+    .guide-annotation::before { margin-top: 10px; border-top-right-radius: 4px; }
+    .guide-annotation::after { margin-bottom: 14px; }
+    .guide-divider-wrap { min-height: 0; }
+  }
+</style>
+</head>
+<body data-page="article">
+  <div class="guide-banner">
+    <span class="dot"></span>
+    <strong>Formatting guide</strong>
+    <span>This is what a professionally formatted Catalyst article looks like. Match this structure in your own piece.</span>
+    <button onclick="window.close()">Close</button>
+  </div>
+  <main>
+    <section class="article-page">
+      <div class="container">
+        <div class="article-detail">
+          <header class="article-hero guide-annotation"
+            data-guide-label="① Hero"
+            data-guide-detail="Cover image + category + headline + deck. Set these from the Settings drawer and the title/subtitle fields above the body.">
+            <div class="article-hero__image" style="background-image:url('${heroBg}')"></div>
+            <div class="article-hero__inner">
+              <span class="article-hero__category">Feature</span>
+              <h1 class="article-hero__title">The Quiet Revolution Inside Your Cells</h1>
+              <p class="article-hero__deck">A new generation of researchers is rewriting what we thought we knew about cellular memory — and the implications reach far beyond the lab.</p>
+              <div class="article-hero__meta">
+                <span>By <strong>Example Writer</strong></span>
+                <span class="dot"></span>
+                <span>Apr 18, 2026</span>
+                <span class="dot"></span>
+                <span class="reading-time">6 min read</span>
+              </div>
+            </div>
+          </header>
+
+          <div class="article-body-wrap">
+            <article class="article-body">
+
+              <p class="guide-annotation"
+                data-guide-label="② Opening paragraph"
+                data-guide-detail="The first paragraph gets an automatic drop-cap. Open with a specific scene, detail, or question — not a summary. This is your hook.">
+                It was just past midnight in the basement lab when the cell lit up. For Dr. Lina Ortega, who had spent four years chasing a single blue flicker on a microscope screen, the glow meant everything — proof that a dying cell could be coaxed, briefly, to remember.
+              </p>
+
+              <p>That flicker, captured on February 14th in a cramped corner of the Weill Institute, may sound like a small result. But to researchers working at the edge of cellular biology, it is a kind of earthquake. For decades, the conventional wisdom held that memory lived strictly in neurons. Ortega's work — and a growing body of research behind it — suggests otherwise.</p>
+
+              <h2 class="rt-section-heading guide-annotation"
+                data-guide-label="③ Section heading"
+                data-guide-detail="Use these to break your article into 2–4 movements. Click 'New section' in the toolbar to insert one with a heading + paragraph.">What the cells were telling us</h2>
+
+              <p>The first hint came from an unassuming experiment. When Ortega exposed a line of skin cells to a specific chemical signal and then re-exposed them weeks later, the cells responded <em>faster</em> the second time — as if they had been waiting for it. Something had shifted inside them. Something had stuck.</p>
+
+              <p>"It looked like the cells were learning," Ortega said. "And that's a word we do not throw around casually in this field."</p>
+
+              <figure class="guide-annotation"
+                data-guide-label="④ Inline image"
+                data-guide-detail="Click the image button in the toolbar. Upload or paste a URL. You can add a caption — add ' — Credit' after the caption text to credit the source.">
+                <img src="${inlineImg}" alt="A microscope lab" loading="lazy" />
+                <figcaption><span class="fig-caption-text">A late-night session at Weill's cellular imaging bay.</span><span class="fig-caption-credit">Photo — Catalyst Magazine</span></figcaption>
+              </figure>
+
+              <p>The finding sits on a foundation laid by quieter work throughout the last decade. In 2019, a team in Kyoto showed that cell membranes could retain structural "echoes" of past stressors. In 2022, researchers in Toronto demonstrated that even bacteria could, in a crude sense, anticipate environments. Each paper was interesting on its own. Taken together, they start to form a pattern.</p>
+
+              <figure class="rt-pullquote guide-annotation"
+                data-guide-label="⑤ Pull-quote"
+                data-guide-detail="Use the quote icon in the toolbar. Pull-quotes highlight a single, powerful line — use them sparingly, once or twice per article.">
+                <blockquote>If cells can remember, the boundary between biology and computation gets much blurrier than anyone wants to admit.</blockquote>
+                <figcaption>— Dr. Lina Ortega, Weill Institute</figcaption>
+              </figure>
+
+              <h2 class="rt-section-heading">Why this matters beyond the lab</h2>
+
+              <p>The implications reach past pure biology. If cellular memory is real and durable, pharmacologists gain a new handle on chronic disease — the body's own recorded history of exposures could become a target. Ethicists raise different questions: what does it mean for a tissue to "remember" trauma? And what are we transplanting when we transplant cells?</p>
+
+              <ul class="guide-annotation"
+                data-guide-label="⑥ Bulleted list"
+                data-guide-detail="Use the list buttons in the toolbar. Lists are good for enumerating distinct items — but avoid relying on them as a replacement for strong paragraphs.">
+                <li><strong>Chronic-disease research</strong> could target the cellular record of past inflammation, not just the current flare-up.</li>
+                <li><strong>Organ transplantation</strong> may need to account for the "history" a donated tissue carries with it.</li>
+                <li><strong>Developmental biology</strong> has to grapple with the idea that early-life exposures might echo decades later at the cellular level.</li>
+              </ul>
+
+              <div class="guide-annotation guide-divider-wrap"
+                data-guide-label="⑦ Divider"
+                data-guide-detail="Use the divider button to mark a major transition — a new chapter of your argument, a time jump, or a shift in subject. Use sparingly.">
+                <hr class="rt-divider" />
+              </div>
+
+              <h2 class="rt-section-heading">The skeptics' case</h2>
+
+              <p>Not everyone is convinced. Dr. Rafael Chen, a cell biologist at Stanford who reviewed Ortega's pre-print, pushed back on the framing. "We have to be careful with the word <em>memory</em>," he said. "What we are seeing could be explained by simpler mechanisms — chromatin state, metabolic priming — that we already have names for. Calling it memory is marketing, not science."</p>
+
+              <p>Ortega takes the critique in stride. "Rafael is right that we need more replication," she said. "But dismissing the language is a way of pretending we already understand the phenomenon. We don't. That's why we're studying it."</p>
+
+              <p>Chen's lab is now running its own version of the experiment. Results are expected by the end of the year.</p>
+
+              <figure class="guide-annotation"
+                data-guide-label="⑧ Image with wider size"
+                data-guide-detail="When you click an image, a dialog lets you change its size (standard / wide / full) and caption. Use wider sizes sparingly for moments of visual emphasis.">
+                <img src="${sideImg}" alt="Abstract visualization" loading="lazy" />
+                <figcaption><span class="fig-caption-text">Data visualization of membrane-state echoes across 48 hours.</span><span class="fig-caption-credit">Illustration — Catalyst Magazine</span></figcaption>
+              </figure>
+
+              <h2 class="rt-section-heading">What comes next</h2>
+
+              <p>For now, the work continues at the pace that science actually moves: slowly, with long silences between breakthroughs. Ortega's lab has two more papers in the pipeline. Chen's results will either complicate or confirm the picture. Either way, the flicker at midnight is no longer just a quirk on a screen.</p>
+
+              <p class="guide-annotation"
+                data-guide-label="⑨ Closing"
+                data-guide-detail="Land it. End with a callback to your opening, a forward-looking implication, or the sharpest line you've saved for last. Don't trail off.">
+                "The cells aren't telling us what we want to hear yet," Ortega said. "They're telling us something harder — that we've been asking the wrong questions. We have to get better at listening."
+              </p>
+
+            </article>
+
+            <aside class="article-byline">
+              <div class="article-byline__avatar">EW</div>
+              <div>
+                <div class="article-byline__name">Example Writer</div>
+                <div class="article-byline__role">Contributing writer · The Catalyst Magazine</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>`;
+
+  const blob = new Blob([doc], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank", "noopener");
+  if (!win) {
+    alert("Please allow popups to see the format guide.");
+    URL.revokeObjectURL(url);
+    return;
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 // ===== Quiz dialog ==========================================================
@@ -1563,13 +2138,24 @@ async function listAllUserImagePaths() {
 }
 
 export function renderLibraryGrid(grid, entries, opts = {}) {
-  const { allowDelete = false, onPick, onDelete } = opts;
+  const { allowDelete = false, onPick, onDelete, usageBadge } = opts;
   grid.innerHTML = "";
   entries.forEach((entry) => {
     const tile = el("button", { class: "library-tile", type: "button", title: "Click to use this image" });
     const metaLine = entry.owner ? shortenOwner(entry.owner) : "";
+    let badgeHtml = "";
+    if (usageBadge) {
+      const status = usageBadge(entry); // "used" | "unused" | null
+      if (status === "unused") {
+        tile.classList.add("library-tile--unused");
+        badgeHtml = `<span class="library-tile-badge library-tile-badge--unused" title="This image isn't referenced by any article — safe to delete.">Unused</span>`;
+      } else if (status === "used") {
+        badgeHtml = `<span class="library-tile-badge library-tile-badge--used" title="Referenced by at least one article.">Used</span>`;
+      }
+    }
     tile.innerHTML = `
       <img src="${escapeAttr(entry.url)}" alt="" loading="lazy" />
+      ${badgeHtml}
       ${metaLine ? `<div class="library-tile-meta">${escapeHtml(metaLine)}</div>` : ""}
       ${allowDelete ? `<span class="library-tile-delete" role="button" aria-label="Delete image" title="Delete this image">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
@@ -1680,6 +2266,10 @@ function wireHeroPreview(wrap) {
   const refreshCategory = () => {
     heroCategory.textContent = (categoryEl.value || "Feature").toUpperCase();
   };
+  const lightCoverCb = wrap.querySelector("#f-cover-light");
+  const refreshLightCover = () => {
+    article.classList.toggle("article--light-cover", !!lightCoverCb?.checked);
+  };
   const refreshReadingTime = () => {
     const words = (body.textContent || "").trim().split(/\s+/).filter(Boolean).length;
     const mins = Math.max(1, Math.round(words / 220));
@@ -1689,7 +2279,8 @@ function wireHeroPreview(wrap) {
   coverInput.addEventListener("input", refreshCover);
   categoryEl.addEventListener("change", refreshCategory);
   body.addEventListener("input", refreshReadingTime);
-  refreshCover(); refreshCategory(); refreshReadingTime();
+  if (lightCoverCb) lightCoverCb.addEventListener("change", refreshLightCover);
+  refreshCover(); refreshCategory(); refreshReadingTime(); refreshLightCover();
 
   // Make title/dek single-line-ish: prevent Enter from creating <div>s inside them.
   ["#f-title", "#f-dek"].forEach((sel) => {
@@ -1785,6 +2376,11 @@ async function loadDraft(id, wrap, ctx) {
     wrap.querySelector("#f-title").textContent = d.title || "";
     wrap.querySelector("#f-category").value = d.category || "Feature";
     wrap.querySelector("#f-cover").value = d.coverImage || "";
+    const lightCoverCb = wrap.querySelector("#f-cover-light");
+    if (lightCoverCb) {
+      lightCoverCb.checked = !!d.lightCover;
+      lightCoverCb.dispatchEvent(new Event("change", { bubbles: true }));
+    }
     wrap.querySelector("#f-dek").textContent = d.dek || d.excerpt || "";
     wrap.querySelector("#f-body").innerHTML = d.body || "";
     // Restore the writer's checklist state so progress carries across sessions.
@@ -1812,6 +2408,7 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
   const title = (wrap.querySelector("#f-title").textContent || "").trim();
   const category = wrap.querySelector("#f-category").value;
   const coverImage = wrap.querySelector("#f-cover").value.trim();
+  const lightCover = !!wrap.querySelector("#f-cover-light")?.checked;
   const dek = (wrap.querySelector("#f-dek").textContent || "").trim();
   const bodyEl = wrap.querySelector("#f-body");
   // Strip any live suggestion marks before persisting — they're rendered on top, not saved.
@@ -1858,7 +2455,7 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
   }
 
   const payload = {
-    title, category, coverImage, dek, body,
+    title, category, coverImage, lightCover, dek, body,
     slug: slugify(title),
     writerChecklist,
     status: desiredStatus,

@@ -767,12 +767,14 @@ function initHomeArticles(data) {
 // ============================================
 let articlesDisplayed = 9;
 let currentFilter = 'all';
+let currentSearch = '';
 
 function initArticlesPage(data) {
     if (!Array.isArray(data)) return;
     initMagazineCover(data);
     initMagazineGrid(data);
     setupMagazineNav(data);
+    setupMagazineSearch(data);
     setupLoadMore();
 }
 
@@ -935,17 +937,51 @@ function renderMagazineGrid(filter, data) {
 
     currentFilter = filter;
 
-    // Skip the first article (it's the cover story)
-    const filtered = filter === 'all'
-        ? data.slice(1)
-        : data.slice(1).filter(a => {
+    // When the user is searching we include the cover story in the grid so
+    // they can't "miss" a match that happens to be the featured piece.
+    // Otherwise the first article is rendered separately as the cover story.
+    const searching = !!currentSearch;
+    const source = searching ? data : data.slice(1);
+
+    let filtered = filter === 'all'
+        ? source.slice()
+        : source.filter(a => {
             if (filter === 'editorial') {
                 return a.category === 'editorial' || a.category === 'op-ed';
             }
             return a.category === filter;
         });
 
+    if (searching) {
+        const needle = currentSearch.toLowerCase();
+        filtered = filtered.filter(a => {
+            const haystack = [
+                a.title, a.excerpt, a.deck, a.author, a.category,
+                Array.isArray(a.tags) ? a.tags.join(' ') : ''
+            ].filter(Boolean).join(' ').toLowerCase();
+            return haystack.includes(needle);
+        });
+    }
+
+    // Hide the cover-story card while searching so the search results stand alone.
+    const coverEl = document.getElementById('cover-story');
+    if (coverEl) coverEl.style.display = searching ? 'none' : '';
+
     const toShow = filtered.slice(0, articlesDisplayed);
+
+    if (!toShow.length) {
+        grid.innerHTML = `
+            <div class="magazine-empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <div class="magazine-empty-state__title">${searching ? 'No articles match your search' : 'No articles in this section yet'}</div>
+                ${searching ? `<div class="magazine-empty-state__hint">Try a different keyword or clear the search to browse everything.</div>` : ''}
+            </div>`;
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+        return;
+    }
 
     // Create magazine layout with improved pattern for better alignment
     // Pattern ensures no gaps: Large (2x2), then fill row with smalls, then mediums (2x1)
@@ -1012,6 +1048,38 @@ function setupMagazineNav(data) {
             renderMagazineGrid(item.dataset.category, data);
         });
     });
+}
+
+function setupMagazineSearch(data) {
+    const input = document.getElementById('magazine-search-input');
+    const clearBtn = document.getElementById('magazine-search-clear');
+    if (!input) return;
+
+    const apply = () => {
+        currentSearch = input.value.trim();
+        if (clearBtn) clearBtn.hidden = !currentSearch;
+        articlesDisplayed = 9;
+        renderMagazineGrid(currentFilter, data);
+    };
+
+    let debounce;
+    input.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(apply, 120);
+    });
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && input.value) {
+            input.value = '';
+            apply();
+        }
+    });
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
+            apply();
+            input.focus();
+        });
+    }
 }
 
 
@@ -1151,7 +1219,7 @@ function renderArticleDetail(article) {
     const shareText = encodeURIComponent(article.title);
 
     container.innerHTML = `
-        <header class="article-hero">
+        <header class="article-hero${article.lightCover ? ' article-hero--light-cover' : ''}">
             <div class="article-hero__image" style="background-image:url('${escapeHtmlAttr(heroImage)}')"></div>
             <div class="article-hero__inner">
                 <span class="article-hero__category">${category}</span>
@@ -1307,19 +1375,66 @@ function mountReadingProgress() {
     const bar = document.createElement('div');
     bar.id = 'reading-progress';
     bar.className = 'reading-progress';
-    bar.innerHTML = '<div class="reading-progress__fill"></div>';
+    bar.innerHTML = `
+        <div class="reading-progress__track"><div class="reading-progress__fill"></div></div>
+        <div class="reading-progress__pill" aria-hidden="true"><span class="reading-progress__pct">0%</span><span class="reading-progress__remaining"></span></div>
+    `;
     document.body.prepend(bar);
-    const fill = bar.firstElementChild;
+    const fill = bar.querySelector('.reading-progress__fill');
+    const pctEl = bar.querySelector('.reading-progress__pct');
+    const remainingEl = bar.querySelector('.reading-progress__remaining');
+
+    // Progress is measured against the article body, not the whole page, so
+    // the bar reflects "how far through the story am I" rather than how far
+    // through the footer / related articles. When the article element isn't
+    // mounted yet (shouldn't happen here, but defensively) we fall back to
+    // whole-document scroll.
+    const getArticleRange = () => {
+        const article = document.querySelector('.article-body');
+        if (!article) {
+            const doc = document.documentElement;
+            return { start: 0, end: (doc.scrollHeight - doc.clientHeight) || 1 };
+        }
+        const rect = article.getBoundingClientRect();
+        const scrolled = window.scrollY || window.pageYOffset || 0;
+        // Reading "starts" when the top of the article meets the top of the
+        // viewport, and "ends" when the bottom of the article is in view.
+        const start = rect.top + scrolled - 120;
+        const end = rect.bottom + scrolled - window.innerHeight + 40;
+        return { start, end: Math.max(end, start + 1) };
+    };
+
+    // Estimate remaining read time from remaining word count at 220 wpm.
+    let totalWords = 0;
+    const recomputeWords = () => {
+        const article = document.querySelector('.article-body');
+        totalWords = article ? (article.textContent || '').trim().split(/\s+/).filter(Boolean).length : 0;
+    };
+    recomputeWords();
 
     const update = () => {
-        const doc = document.documentElement;
-        const scrolled = doc.scrollTop || document.body.scrollTop;
-        const maxScroll = (doc.scrollHeight - doc.clientHeight) || 1;
-        const pct = Math.min(100, Math.max(0, (scrolled / maxScroll) * 100));
+        const { start, end } = getArticleRange();
+        const scrolled = window.scrollY || window.pageYOffset || 0;
+        const pct = Math.min(100, Math.max(0, ((scrolled - start) / (end - start)) * 100));
         fill.style.width = pct + '%';
+        pctEl.textContent = Math.round(pct) + '%';
+        // Reveal the bar + pill once the reader has scrolled into the article.
+        bar.classList.toggle('is-active', pct > 0.5);
+        bar.classList.toggle('is-complete', pct >= 99);
+        if (totalWords > 0) {
+            const remainingWords = Math.max(0, totalWords * (1 - pct / 100));
+            const mins = Math.max(0, Math.round(remainingWords / 220));
+            remainingEl.textContent = pct >= 99 ? 'Finished' : (mins <= 0 ? 'Almost done' : `${mins} min left`);
+        } else {
+            remainingEl.textContent = '';
+        }
     };
     window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
+    window.addEventListener('resize', () => { recomputeWords(); update(); });
+    // Content may hydrate (images loading, quizzes embedding) after we mount,
+    // which shifts the article height — recompute a few times.
+    setTimeout(() => { recomputeWords(); update(); }, 500);
+    setTimeout(() => { recomputeWords(); update(); }, 2000);
     update();
 }
 
@@ -1429,23 +1544,8 @@ async function loadArticles() {
         });
     }
 
-    try {
-        // Pull structured JSON posts (article2.json - article100.json).
-        // Use a stable id of "a<filenameIndex>" so that share links and
-        // server-rendered OG previews (functions/article.html.js) never
-        // break when the load order changes.
-        const jsonArticles = await loadFromJsonPosts(2, 100, baseByTitle);
-        jsonArticles.forEach(article => {
-            const stableId = article.sourceIndex ? `a${article.sourceIndex}` : `j${nextId++}`;
-            tryAdd({ ...article, id: stableId });
-        });
-    } catch (err) {
-        console.error('Article load failed', err);
-    }
-
-    // Merge in stories published via the editorial studio (Firestore).
-    // Done before data.js so a Firestore record wins if the same story was
-    // also baked into data.js by the local publisher.
+    // Load all published stories from Firestore (includes legacy JSON articles
+    // migrated to Firestore via scripts/import-json-to-firestore.js).
     try {
         const fsArticles = await loadFromFirestore();
         fsArticles.forEach(article => tryAdd(article));
@@ -1548,8 +1648,9 @@ function firestoreDocToArticle(doc) {
     if (!title) return null;
 
     const category = (str('category') || 'feature').toLowerCase();
-    const content = str('content');
-    const deck = str('deck');
+    const content = str('body') || str('content');
+    const deck = str('dek') || str('deck');
+    const lightCover = f.lightCover?.booleanValue === true;
     const excerpt = deck || (content ? content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220) : '');
 
     return {
@@ -1564,7 +1665,8 @@ function firestoreDocToArticle(doc) {
         tags: arr('tags'),
         excerpt,
         deck,
-        content
+        content,
+        lightCover
     };
 }
 

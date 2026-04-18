@@ -910,6 +910,43 @@ button { font-family: inherit; cursor: pointer; }
   background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.18) 40%, rgba(0,0,0,0.65) 85%, rgba(0,0,0,0.88) 100%);
   z-index: -1;
 }
+/* Mirrors the published .article-hero--light-cover treatment for the writer preview. */
+.compose-article.article--light-cover .compose-hero-overlay {
+  background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.45) 45%, rgba(0,0,0,0.75) 82%, rgba(0,0,0,0.92) 100%);
+}
+.compose-article.article--light-cover .compose-hero-inner {
+  padding: 24px 24px 4px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.52) 100%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+}
+
+/* Toggle under the cover-image field. */
+.cover-light-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: var(--compose-paper, #fff);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.cover-light-toggle:hover { border-color: var(--muted-2); }
+.cover-light-toggle input { margin-top: 2px; }
+.cover-light-toggle strong { display: block; font-weight: 600; color: var(--ink, #111); }
+.cover-light-toggle__hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted, #666);
+  font-weight: 400;
+}
 .compose-hero-inner {
   width: 100%;
   max-width: 960px;
@@ -977,6 +1014,7 @@ button { font-family: inherit; cursor: pointer; }
 .compose-body-wrap {
   background: var(--compose-paper);
   padding: 56px clamp(24px, 4vw, 56px) 80px;
+  position: relative;
 }
 .compose-body {
   max-width: 880px;
@@ -988,12 +1026,110 @@ button { font-family: inherit; cursor: pointer; }
   letter-spacing: -0.003em;
   outline: none;
   min-height: 360px;
+  position: relative;
+  z-index: 1;
 }
 .compose-body:empty::before {
   content: attr(data-placeholder);
   color: var(--compose-ink-faint);
   font-style: italic;
   pointer-events: none;
+}
+
+/* Ghost structure — renders a faded skeleton of a well-structured article
+   behind the editor so new writers see hero paragraph → sections → pull-
+   quote → closing at a glance. Fades out the moment they start typing.
+
+   The ghost is absolutely positioned inside .compose-body-wrap (which already
+   has padding: 56px clamp(24px,4vw,56px) 80px). We inset the ghost to land on
+   top of the editor's content box — the inset matches the wrap's padding so
+   the ghost sits exactly where .compose-body sits, then centers its own
+   content at the same max-width as the editor. */
+.compose-body-ghost {
+  position: absolute;
+  top: 56px;
+  left: clamp(24px, 4vw, 56px);
+  right: clamp(24px, 4vw, 56px);
+  bottom: 80px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+  transition: opacity 180ms ease;
+}
+.compose-body-ghost-inner {
+  max-width: 880px;
+  margin: 0 auto;
+  font-family: var(--compose-serif);
+  font-size: 20px;
+  line-height: 1.75;
+  color: var(--compose-ink-faint);
+  letter-spacing: -0.003em;
+}
+.compose-body-ghost p { margin: 0 0 26px 0; }
+.compose-body-ghost .ghost-tag {
+  font-family: var(--compose-sans, "Inter", system-ui, sans-serif);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--compose-ink-faint);
+  opacity: 0.75;
+  margin: 0 0 22px 0;
+  font-weight: 600;
+}
+/* Give the ghost's lead paragraph the same drop-cap the real editor renders
+   on its first paragraph — otherwise the ghost lead starts ~70px further
+   left than where the writer's actual first line will land. */
+.compose-body-ghost .ghost-lead::first-letter {
+  float: left;
+  font-family: var(--compose-serif);
+  font-weight: 700;
+  font-size: 4.8em;
+  line-height: 0.85;
+  padding: 6px 14px 0 0;
+  color: var(--compose-ink-faint);
+}
+.compose-body-ghost .ghost-tip {
+  font-family: var(--compose-sans, "Inter", system-ui, sans-serif);
+  font-size: 13px;
+  font-style: italic;
+  margin-top: 34px;
+  color: var(--compose-ink-faint);
+  opacity: 0.8;
+}
+.compose-body-ghost h2.rt-section-heading {
+  font-family: var(--compose-serif);
+  font-weight: 700;
+  font-size: 28px;
+  margin: 34px 0 16px;
+  color: var(--compose-ink-faint);
+  letter-spacing: -0.01em;
+}
+.compose-body-ghost figure.rt-pullquote {
+  border-left: 3px solid var(--compose-ink-faint);
+  padding: 6px 0 6px 22px;
+  margin: 22px 0 28px;
+}
+.compose-body-ghost figure.rt-pullquote blockquote {
+  margin: 0;
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.5;
+}
+.compose-body-ghost figure.rt-pullquote figcaption {
+  margin-top: 10px;
+  font-size: 12px;
+  font-family: var(--compose-sans, "Inter", system-ui, sans-serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+/* Hide the ghost as soon as the editor has any real content or the writer
+   focuses it — `:has` lets us react purely to DOM state, so loaded drafts
+   and focus-mode both hide it without any JS toggle. */
+.compose-body-wrap:has(.compose-body:not(:empty)) .compose-body-ghost,
+.compose-body-wrap:has(.compose-body:focus) .compose-body-ghost {
+  opacity: 0;
+  visibility: hidden;
 }
 .compose-body p { margin: 0 0 26px 0; }
 .compose-body > p:first-of-type:not(:empty)::first-letter {
@@ -1751,6 +1887,36 @@ button { font-family: inherit; cursor: pointer; }
 }
 .library-tile:hover .library-tile-delete { opacity: 1; }
 .library-tile-delete:hover { background: var(--danger, #d9434d); }
+
+/* Usage badge — shown only in the admin image library (opt-in via
+   renderLibraryGrid's usageBadge option). "Unused" flags images that
+   no article references, so they're safe to delete. */
+.library-tile-badge {
+  position: absolute;
+  top: 8px; left: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(10,12,20,0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: auto;
+  z-index: 2;
+}
+.library-tile-badge--used {
+  background: rgba(15, 118, 110, 0.88);
+}
+.library-tile-badge--unused {
+  background: rgba(217, 119, 6, 0.92);
+}
+.library-tile--unused {
+  outline: 2px solid rgba(217, 119, 6, 0.55);
+  outline-offset: -2px;
+}
 .library-grid-toolbar {
   display: flex;
   align-items: center;

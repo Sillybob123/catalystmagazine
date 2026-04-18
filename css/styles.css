@@ -3254,6 +3254,81 @@ img {
   margin: 0;
 }
 
+.magazine-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 560px;
+}
+.magazine-search-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.magazine-search-input {
+  width: 100%;
+  padding: 14px 44px 14px 44px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: white;
+  border: 1.5px solid rgba(15, 23, 42, 0.12);
+  border-radius: var(--radius-lg);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.magazine-search-input::placeholder { color: var(--text-muted); }
+.magazine-search-input:hover { border-color: rgba(15, 23, 42, 0.22); }
+.magazine-search-input:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.55);
+}
+.magazine-search-input::-webkit-search-decoration,
+.magazine-search-input::-webkit-search-cancel-button,
+.magazine-search-input::-webkit-search-results-button,
+.magazine-search-input::-webkit-search-results-decoration { display: none; }
+.magazine-search-clear {
+  position: absolute;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--text);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.magazine-search-clear:hover { background: rgba(15, 23, 42, 0.16); }
+
+.magazine-empty-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.magazine-empty-state svg { opacity: 0.7; }
+.magazine-empty-state__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.magazine-empty-state__hint {
+  font-size: 0.92rem;
+  max-width: 380px;
+  line-height: 1.5;
+}
+
 .magazine-nav {
   display: flex;
   gap: 12px;
