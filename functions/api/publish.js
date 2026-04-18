@@ -115,7 +115,7 @@ export const onRequestPost = async ({ request, env }) => {
         excerpt: row.data.excerpt || row.data.deck || "",
         category: row.data.category || "Feature",
         coverImage: row.data.coverImage || row.data.image || "",
-        url: row.data.url || row.data.link || `/articles.html`,
+        url: row.data.url || row.data.link || `/articles`,
       }));
 
       const subscribers = await firestoreRunQuery(env, {

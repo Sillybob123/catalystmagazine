@@ -109,7 +109,7 @@ export function buildNewsletter({
           <!-- CTA -->
           <tr>
             <td class="px-40" style="padding:24px 40px 44px 40px;text-align:center;">
-              <a href="${esc(siteUrl)}/articles.html" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:15px 34px;border-radius:980px;font-weight:500;font-size:15px;letter-spacing:-0.01em;">Read more on Catalyst</a>
+              <a href="${esc(siteUrl)}/articles" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:15px 34px;border-radius:980px;font-weight:500;font-size:15px;letter-spacing:-0.01em;">Read more on Catalyst</a>
             </td>
           </tr>
 

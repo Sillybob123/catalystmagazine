@@ -141,7 +141,7 @@ export function subscribeConfirmEmail({ firstName, siteUrl }) {
 
     <!-- Primary CTA -->
     <div style="text-align:center;margin:40px 0 0 0;">
-      <a href="${escapeAttr(siteUrl)}/articles.html" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:16px 38px;border-radius:980px;font-weight:500;font-size:15px;letter-spacing:-0.01em;">Start reading</a>
+      <a href="${escapeAttr(siteUrl)}/articles" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:16px 38px;border-radius:980px;font-weight:500;font-size:15px;letter-spacing:-0.01em;">Start reading</a>
     </div>
 
     <!-- Explore the community -->
@@ -156,7 +156,7 @@ export function subscribeConfirmEmail({ firstName, siteUrl }) {
                 <td style="padding:22px 24px;">
                   <div style="font-size:17px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Read our stories</div>
                   <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};margin-bottom:12px;">Browse the archive — features, investigations, and interviews from our student newsroom.</div>
-                  <a href="${escapeAttr(siteUrl)}/articles.html" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Visit the archive &rarr;</a>
+                  <a href="${escapeAttr(siteUrl)}/articles" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Visit the archive &rarr;</a>
                 </td>
               </tr>
             </table>
@@ -169,7 +169,7 @@ export function subscribeConfirmEmail({ firstName, siteUrl }) {
                 <td style="padding:22px 24px;">
                   <div style="font-size:17px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">Join our team</div>
                   <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};margin-bottom:12px;">Pitch a story, edit with us, or design our next cover. We're always looking for new voices.</div>
-                  <a href="${escapeAttr(siteUrl)}/collaborate.html" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Collaborate with us &rarr;</a>
+                  <a href="${escapeAttr(siteUrl)}/collaborate" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Collaborate with us &rarr;</a>
                 </td>
               </tr>
             </table>
@@ -182,7 +182,7 @@ export function subscribeConfirmEmail({ firstName, siteUrl }) {
                 <td style="padding:22px 24px;">
                   <div style="font-size:17px;font-weight:600;color:${COLORS.ink};margin-bottom:4px;letter-spacing:-0.01em;">About The Catalyst</div>
                   <div style="font-size:14px;line-height:1.55;color:${COLORS.inkSoft};margin-bottom:12px;">Meet the team, read our editorial standards, and learn how we got here.</div>
-                  <a href="${escapeAttr(siteUrl)}/about.html" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Our story &rarr;</a>
+                  <a href="${escapeAttr(siteUrl)}/about" style="font-size:14px;font-weight:600;color:${COLORS.ink};text-decoration:none;letter-spacing:-0.01em;">Our story &rarr;</a>
                 </td>
               </tr>
             </table>
