@@ -110,6 +110,10 @@ function mountDraftEditor(ctx, container) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span>New section</span>
         </button>
+        <button class="rt-btn rt-btn-wide" data-action="paste-gdoc" title="Paste from a Google Doc and keep headings, bold, italic, and links">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 6v14a2 2 0 0 0 2 2h10"/></svg>
+          <span>Paste from Google Doc</span>
+        </button>
       </div>
       <div class="rt-group">
         <button class="rt-btn" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">
@@ -165,6 +169,7 @@ function mountDraftEditor(ctx, container) {
           <label class="label">Category</label>
           <select class="select" id="f-category">
             <option value="Feature">Feature</option>
+            <option value="Profile">Profile</option>
             <option value="Interview">Interview</option>
             <option value="Op-Ed">Op-Ed</option>
             <option value="News">News</option>
@@ -372,6 +377,10 @@ function handleBlockAction(action, editorEl, ctx) {
     openMediaDialog("video", editorEl, ctx);
     return;
   }
+  if (action === "paste-gdoc") {
+    openGoogleDocPasteDialog(editorEl, ctx);
+    return;
+  }
   if (action === "new-section") {
     // Gap + heading + empty paragraph. The zero-width space in the <p>
     // keeps contenteditable from collapsing the empty paragraph.
@@ -391,6 +400,267 @@ function handleBlockAction(action, editorEl, ctx) {
   }
 }
 
+// ===== Google Docs paste ====================================================
+// Opens a dialog where writers paste from a Google Doc; we sanitize the HTML,
+// map Docs' styles to our magazine blocks (headings, bold, italic, links,
+// lists, quotes), show a preview, and insert it into the editor body.
+function openGoogleDocPasteDialog(editorEl, ctx) {
+  const scrim = el("div", { class: "media-dialog-scrim" });
+  const modal = el("div", { class: "media-dialog", style: { maxWidth: "760px" } });
+  modal.innerHTML = `
+    <div class="media-dialog-head">
+      <div class="media-dialog-title">Paste from Google Doc</div>
+      <button class="media-dialog-close" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="media-dialog-body">
+      <div class="hint" style="margin-bottom:10px;">
+        In your Google Doc: select all (⌘A / Ctrl+A), copy (⌘C / Ctrl+C), then click the box below and paste (⌘V / Ctrl+V).
+        Headings, bold, italic, links, lists, and block quotes will be kept.
+      </div>
+      <div id="gdoc-paste-target"
+           contenteditable="true"
+           style="min-height:180px;max-height:260px;overflow:auto;border:1px dashed var(--hairline-2);border-radius:10px;padding:14px 16px;background:var(--surface-1);font-family:inherit;"
+           data-placeholder="Paste your Google Doc content here…"></div>
+      <div class="hint" id="gdoc-count" style="margin-top:8px;">Waiting for paste…</div>
+      <div class="field" style="margin-top:14px;">
+        <label class="label" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" id="gdoc-replace" />
+          <span>Replace the entire article body (otherwise content is inserted at the cursor)</span>
+        </label>
+      </div>
+      <div class="media-error" id="gdoc-error"></div>
+    </div>
+    <div class="media-dialog-foot">
+      <button class="btn btn-ghost btn-sm" id="gdoc-cancel">Cancel</button>
+      <button class="btn btn-accent btn-sm" id="gdoc-insert" disabled>Insert into article</button>
+    </div>
+  `;
+  document.body.appendChild(scrim);
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); });
+
+  const target = modal.querySelector("#gdoc-paste-target");
+  const countEl = modal.querySelector("#gdoc-count");
+  const insertBtn = modal.querySelector("#gdoc-insert");
+  const replaceBox = modal.querySelector("#gdoc-replace");
+  const errorEl = modal.querySelector("#gdoc-error");
+
+  const close = () => {
+    scrim.classList.remove("open");
+    modal.classList.remove("open");
+    setTimeout(() => { scrim.remove(); modal.remove(); }, 200);
+  };
+  modal.querySelector(".media-dialog-close").addEventListener("click", close);
+  modal.querySelector("#gdoc-cancel").addEventListener("click", close);
+  scrim.addEventListener("click", close);
+
+  let cleanedHtml = "";
+
+  // Intercept the paste so we can read Google Docs' HTML directly instead of
+  // whatever the browser would insert into a contenteditable.
+  target.addEventListener("paste", (e) => {
+    e.preventDefault();
+    const cd = e.clipboardData || window.clipboardData;
+    const html = cd.getData("text/html") || "";
+    const plain = cd.getData("text/plain") || "";
+    cleanedHtml = html
+      ? convertGoogleDocsHtml(html)
+      : plainTextToHtml(plain);
+    target.innerHTML = cleanedHtml || `<p style="color:var(--muted-2)">Nothing to paste.</p>`;
+    const words = (target.textContent || "").trim().split(/\s+/).filter(Boolean).length;
+    countEl.textContent = cleanedHtml
+      ? `Ready to insert — about ${words.toLocaleString()} word${words === 1 ? "" : "s"}.`
+      : "Nothing to paste.";
+    insertBtn.disabled = !cleanedHtml;
+    errorEl.textContent = "";
+  });
+
+  // Focus the target so the user can immediately paste.
+  requestAnimationFrame(() => target.focus());
+
+  insertBtn.addEventListener("click", () => {
+    if (!cleanedHtml) return;
+    try {
+      if (replaceBox.checked) {
+        editorEl.innerHTML = cleanedHtml;
+      } else {
+        insertBlockAtCaret(editorEl, cleanedHtml);
+      }
+      editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+      ctx?.toast?.("Pasted from Google Doc.", "success");
+      close();
+    } catch (err) {
+      errorEl.textContent = "Could not insert: " + (err?.message || err);
+    }
+  });
+}
+
+// Convert Google Docs clipboard HTML into our magazine structure.
+// We deliberately drop Docs' inline style soup (fonts, colors, margins) and
+// keep only semantic formatting the magazine renders: headings, paragraphs,
+// bold, italic, underline, links, ordered/unordered lists, and blockquotes.
+function convertGoogleDocsHtml(rawHtml) {
+  // Docs wraps the real content in a <b id="docs-internal-guid-…"> or similar;
+  // parse with DOMParser so we never inject the raw string into the DOM.
+  const doc = new DOMParser().parseFromString(rawHtml, "text/html");
+
+  // Strip <style>, <meta>, <script>, and Google's comment wrappers.
+  doc.querySelectorAll("style, meta, script, link, title").forEach((n) => n.remove());
+
+  // If Docs wrapped everything in a single <b id="docs-internal-…">, unwrap it
+  // (otherwise the entire article would end up bold).
+  doc.querySelectorAll('b[id^="docs-internal-guid"]').forEach((b) => {
+    const parent = b.parentNode;
+    while (b.firstChild) parent.insertBefore(b.firstChild, b);
+    parent.removeChild(b);
+  });
+
+  const out = [];
+  const body = doc.body;
+  if (!body) return "";
+
+  // Walk the top-level children and convert each one to a magazine block.
+  body.childNodes.forEach((node) => {
+    const block = convertGDocBlock(node);
+    if (block) out.push(block);
+  });
+
+  // Collapse consecutive empty paragraphs and trailing blanks.
+  const html = out.join("\n").replace(/(<p><br\/?><\/p>\s*){2,}/g, "<p><br/></p>");
+  return html.trim();
+}
+
+function convertGDocBlock(node) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const t = node.nodeValue.replace(/\s+/g, " ").trim();
+    return t ? `<p>${escapeHtml(t)}</p>` : "";
+  }
+  if (node.nodeType !== Node.ELEMENT_NODE) return "";
+  const tag = node.tagName.toLowerCase();
+
+  // Google Docs maps heading levels to HEADING_1..HEADING_4 in HTML as h1-h4.
+  // Our editor uses h2 as "Heading 1", h3 as "Heading 2", h4 as "Section label".
+  if (tag === "h1" || tag === "h2") {
+    const inner = convertGDocInline(node);
+    return inner ? `<h2 class="rt-section-heading">${inner}</h2>` : "";
+  }
+  if (tag === "h3") {
+    const inner = convertGDocInline(node);
+    return inner ? `<h3>${inner}</h3>` : "";
+  }
+  if (tag === "h4" || tag === "h5" || tag === "h6") {
+    const inner = convertGDocInline(node);
+    return inner ? `<h4>${inner}</h4>` : "";
+  }
+  if (tag === "ul" || tag === "ol") {
+    const items = [];
+    node.querySelectorAll(":scope > li").forEach((li) => {
+      const inner = convertGDocInline(li);
+      if (inner) items.push(`<li>${inner}</li>`);
+    });
+    return items.length ? `<${tag}>${items.join("")}</${tag}>` : "";
+  }
+  if (tag === "blockquote") {
+    const inner = convertGDocInline(node);
+    return inner ? `<figure class="rt-pullquote"><blockquote>${inner}</blockquote></figure>` : "";
+  }
+  if (tag === "hr") return `<hr class="rt-divider" />`;
+  if (tag === "br") return "";
+  if (tag === "table") {
+    // Magazine doesn't style raw tables — flatten rows into paragraphs.
+    const rows = [];
+    node.querySelectorAll("tr").forEach((tr) => {
+      const cells = [];
+      tr.querySelectorAll("td, th").forEach((c) => {
+        const t = convertGDocInline(c);
+        if (t) cells.push(t);
+      });
+      if (cells.length) rows.push(`<p>${cells.join(" · ")}</p>`);
+    });
+    return rows.join("\n");
+  }
+  if (tag === "img") {
+    const src = node.getAttribute("src") || "";
+    if (!src) return "";
+    const alt = node.getAttribute("alt") || "";
+    return `<figure class="rt-figure rt-size-standard"><img src="${escapeAttr(src)}" alt="${escapeAttr(alt)}" /></figure>`;
+  }
+  if (tag === "p" || tag === "div") {
+    // Docs sometimes wraps a heading inside a <p>; if the paragraph has a
+    // single heading-ish child, recurse.
+    if (node.children.length === 1 && /^h[1-6]$/i.test(node.children[0].tagName)) {
+      return convertGDocBlock(node.children[0]);
+    }
+    const inner = convertGDocInline(node);
+    if (!inner) return `<p><br/></p>`;
+    return `<p>${inner}</p>`;
+  }
+  // Unknown element — recurse into children so we don't drop content.
+  const parts = [];
+  node.childNodes.forEach((child) => {
+    const b = convertGDocBlock(child);
+    if (b) parts.push(b);
+  });
+  return parts.join("\n");
+}
+
+// Convert inline runs inside a block. Looks at the element's inline style as
+// well as the tag name — Google Docs encodes bold/italic via
+// `font-weight: 700` and `font-style: italic` on <span>s rather than <b>/<i>.
+function convertGDocInline(node) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return escapeHtml(node.nodeValue);
+  }
+  if (node.nodeType !== Node.ELEMENT_NODE) return "";
+  const tag = node.tagName.toLowerCase();
+  if (tag === "br") return "<br/>";
+
+  // Recurse through children first, then wrap based on this element's styling.
+  let inner = "";
+  node.childNodes.forEach((child) => { inner += convertGDocInline(child); });
+  if (!inner) return "";
+
+  if (tag === "a") {
+    let href = node.getAttribute("href") || "";
+    // Docs wraps external links in a redirect: https://www.google.com/url?q=REAL&sa=…
+    try {
+      if (href.startsWith("https://www.google.com/url")) {
+        const u = new URL(href);
+        const real = u.searchParams.get("q");
+        if (real) href = real;
+      }
+    } catch { /* leave as-is */ }
+    if (!href) return inner;
+    return `<a href="${escapeAttr(href)}" target="_blank" rel="noopener">${inner}</a>`;
+  }
+
+  const style = (node.getAttribute("style") || "").toLowerCase();
+  const weight = (style.match(/font-weight:\s*(\d+|bold|bolder)/) || [])[1];
+  const isBold = tag === "b" || tag === "strong" || weight === "bold" || weight === "bolder" || (weight && parseInt(weight, 10) >= 600);
+  const isItalic = tag === "i" || tag === "em" || /font-style:\s*italic/.test(style);
+  const isUnderline = tag === "u" || /text-decoration[^;]*underline/.test(style);
+  const isStrike = tag === "s" || tag === "strike" || tag === "del" || /text-decoration[^;]*line-through/.test(style);
+
+  let out = inner;
+  if (isBold)      out = `<strong>${out}</strong>`;
+  if (isItalic)    out = `<em>${out}</em>`;
+  if (isUnderline) out = `<u>${out}</u>`;
+  if (isStrike)    out = `<s>${out}</s>`;
+  return out;
+}
+
+// Fallback when the clipboard has no HTML (rare — plain text copy).
+// Double newlines become paragraph breaks; single newlines become <br/>.
+function plainTextToHtml(text) {
+  if (!text) return "";
+  return text
+    .split(/\n{2,}/)
+    .map((para) => `<p>${escapeHtml(para).replace(/\n/g, "<br/>")}</p>`)
+    .join("\n");
+}
+
 function insertBlockAtCaret(editorEl, html) {
   editorEl.focus();
   // Make sure we have a selection in the editor; if not, append to end.
@@ -406,17 +676,38 @@ function insertBlockAtCaret(editorEl, html) {
 }
 
 // ===== Media upload dialog (images + videos) ================================
-function openMediaDialog(kind, editorEl, ctx) {
+// When `existingFigure` is passed, we edit it in place instead of inserting a
+// new one — lets writers click an already-placed image/video to change its
+// caption, alt text, or size.
+function openMediaDialog(kind, editorEl, ctx, existingFigure = null) {
   const isImage = kind === "image";
   const accept = isImage ? "image/*" : "video/*";
   const label = isImage ? "image" : "video";
+  const isEdit = !!existingFigure;
+
+  // Pull current values out of the figure so we can prefill the dialog.
+  let initialUrl = "";
+  let initialAlt = "";
+  let initialCaption = "";
+  let initialSize = "standard";
+  if (isEdit) {
+    const mediaEl = existingFigure.querySelector(isImage ? "img" : "video");
+    initialUrl = mediaEl?.getAttribute("src") || "";
+    initialAlt = (isImage ? mediaEl?.getAttribute("alt") : mediaEl?.getAttribute("aria-label")) || "";
+    initialCaption = existingFigure.querySelector("figcaption")?.textContent || "";
+    const sizeMatch = (existingFigure.className || "").match(/rt-size-(\w+)/);
+    if (sizeMatch) initialSize = sizeMatch[1];
+  }
 
   // Build the modal
   const scrim = el("div", { class: "media-dialog-scrim" });
   const modal = el("div", { class: "media-dialog" });
+  const sizeRadio = (value, title, detail) => `
+    <label class="media-size-opt"><input type="radio" name="m-size" value="${value}" ${initialSize === value ? "checked" : ""}><span><strong>${title}</strong><em>${detail}</em></span></label>`;
+
   modal.innerHTML = `
     <div class="media-dialog-head">
-      <div class="media-dialog-title">Insert ${label}</div>
+      <div class="media-dialog-title">${isEdit ? "Edit" : "Insert"} ${label}</div>
       <button class="media-dialog-close" aria-label="Close">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -428,7 +719,7 @@ function openMediaDialog(kind, editorEl, ctx) {
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <div class="media-dropzone-title">Drop a ${label} here, or <span class="link">browse your computer</span></div>
+        <div class="media-dropzone-title">${isEdit ? `Replace the ${label}` : `Drop a ${label} here`}, or <span class="link">browse your computer</span></div>
         <div class="media-dropzone-hint">${isImage ? "JPG, PNG, WebP, or GIF — up to 10 MB." : "MP4 or WebM — up to 100 MB."}</div>
         <input type="file" id="m-file" accept="${accept}" hidden />
       </div>
@@ -436,25 +727,25 @@ function openMediaDialog(kind, editorEl, ctx) {
       <div class="media-or"><span>or paste a URL</span></div>
 
       <div class="field">
-        <input class="input" id="m-url" placeholder="https://…" />
+        <input class="input" id="m-url" placeholder="https://…" value="${escapeAttr(initialUrl)}" />
       </div>
 
       <div class="field">
         <label class="label">${isImage ? "Alt text (for accessibility)" : "Caption / description"}</label>
-        <input class="input" id="m-alt" placeholder="${isImage ? "Describe what's in the image" : "What's happening in this video"}" />
+        <input class="input" id="m-alt" placeholder="${isImage ? "Describe what's in the image" : "What's happening in this video"}" value="${escapeAttr(initialAlt)}" />
       </div>
       <div class="field">
         <label class="label">Caption (optional)</label>
-        <input class="input" id="m-caption" placeholder="Shown beneath the ${label}" />
+        <input class="input" id="m-caption" placeholder="Shown beneath the ${label}" value="${escapeAttr(initialCaption)}" />
       </div>
       ${isImage ? `
       <div class="field">
         <label class="label">Size</label>
         <div class="media-size-picker" role="radiogroup" aria-label="Image size">
-          <label class="media-size-opt"><input type="radio" name="m-size" value="small"><span><strong>Small</strong><em>Inline thumb, ~320px</em></span></label>
-          <label class="media-size-opt"><input type="radio" name="m-size" value="compact"><span><strong>Compact</strong><em>Column width, ~520px</em></span></label>
-          <label class="media-size-opt"><input type="radio" name="m-size" value="standard" checked><span><strong>Standard</strong><em>Body width, ~720px</em></span></label>
-          <label class="media-size-opt"><input type="radio" name="m-size" value="large"><span><strong>Large</strong><em>Full-bleed, edge to edge</em></span></label>
+          ${sizeRadio("small", "Small", "Inline thumb, ~320px")}
+          ${sizeRadio("compact", "Compact", "Column width, ~520px")}
+          ${sizeRadio("standard", "Standard", "Body width, ~720px")}
+          ${sizeRadio("large", "Large", "Full-bleed, edge to edge")}
         </div>
       </div>` : ""}
 
@@ -466,8 +757,9 @@ function openMediaDialog(kind, editorEl, ctx) {
       <div class="media-error" id="m-error"></div>
     </div>
     <div class="media-dialog-foot">
+      ${isEdit ? `<button class="btn btn-ghost btn-sm" id="m-delete" style="color:var(--danger);margin-right:auto;">Remove ${label}</button>` : ""}
       <button class="btn btn-ghost btn-sm" id="m-cancel">Cancel</button>
-      <button class="btn btn-accent btn-sm" id="m-insert" disabled>Insert</button>
+      <button class="btn btn-accent btn-sm" id="m-insert" ${isEdit ? "" : "disabled"}>${isEdit ? "Save changes" : "Insert"}</button>
     </div>
   `;
 
@@ -809,16 +1101,19 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
     slug: slugify(title),
     writerChecklist,
     status: desiredStatus,
-    authorId: ctx.user.uid,
-    authorName: ctx.profile.name || ctx.user.email,
     updatedAt: new Date().toISOString(),
   };
 
   try {
     if (editingId) {
+      // Don't stamp author fields on updates — the doc already has them, and
+      // overwriting here would clobber bylines on admin-imported drafts when
+      // the admin opens them to tweak a cover image or field.
       await updateDoc(doc(db, "stories", editingId), payload);
       ctx.toast(desiredStatus === "pending" ? "Submitted for review." : "Draft saved.", "success");
     } else {
+      payload.authorId = ctx.user.uid;
+      payload.authorName = ctx.profile.name || ctx.user.email;
       payload.createdAt = new Date().toISOString();
       const ref = await addDoc(collection(db, "stories"), payload);
       ctx.toast(desiredStatus === "pending" ? "Submitted for review." : "Draft saved.", "success");

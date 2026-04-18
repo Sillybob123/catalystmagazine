@@ -70,11 +70,11 @@ export function buildNewsletter({
 
           <!-- Masthead with logo -->
           <tr>
-            <td class="px-40" style="padding:40px 40px 8px 40px;text-align:center;background:${COLORS.surface};">
+            <td class="px-40" style="padding:48px 40px 12px 40px;text-align:center;background:${COLORS.surface};">
               <a href="${esc(siteUrl)}" style="text-decoration:none;display:inline-block;">
-                <img src="${escAttr(logoUrl)}" alt="The Catalyst" width="140" style="width:140px;height:auto;display:block;margin:0 auto;border:0;">
+                <img src="${escAttr(logoUrl)}" alt="The Catalyst" width="440" style="width:440px;max-width:90%;height:auto;display:block;margin:0 auto;border:0;">
               </a>
-              <div style="margin-top:18px;font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${COLORS.muted};font-weight:600;">The Catalyst Magazine</div>
+              <div style="margin-top:22px;font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${COLORS.muted};font-weight:600;">The Catalyst Magazine</div>
             </td>
           </tr>
 
@@ -111,12 +111,23 @@ export function buildNewsletter({
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Footer (CAN-SPAM: opt-in reminder, physical address, unsubscribe) -->
           <tr>
-            <td style="padding:28px 40px 36px 40px;background:${COLORS.footerBg};border-top:1px solid ${COLORS.hairline};text-align:center;">
-              <div style="margin:0 auto 14px auto;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:${COLORS.muted};font-weight:600;">The Catalyst</div>
-              <p style="margin:0 0 8px 0;font-size:12px;line-height:1.6;color:${COLORS.muted};">You're receiving this because you subscribed at <a href="${esc(siteUrl)}" style="color:${COLORS.ink};text-decoration:none;font-weight:500;">catalyst-magazine.com</a>.</p>
-              <p style="margin:0;font-size:12px;line-height:1.6;color:${COLORS.muted};">${unsub} &nbsp;&middot;&nbsp; &copy; ${new Date().getFullYear()} The Catalyst Magazine</p>
+            <td style="padding:32px 40px 40px 40px;background:${COLORS.footerBg};border-top:1px solid ${COLORS.hairline};text-align:center;">
+              <div style="margin:0 auto 16px auto;font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:${COLORS.muted};font-weight:600;">The Catalyst</div>
+              <p style="margin:0 0 14px 0;font-size:12px;line-height:1.6;color:${COLORS.muted};">This email was sent to you because you opted in to receive communications.</p>
+              <p style="margin:0 0 14px 0;font-size:12px;line-height:1.6;color:${COLORS.inkSoft};font-weight:500;">
+                The Catalyst Magazine<br>
+                2212 Washington Cir NW, Washington, DC 20037
+              </p>
+              <p style="margin:0 0 12px 0;font-size:12px;line-height:1.6;color:${COLORS.muted};">
+                ${unsub}
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a href="${esc(siteUrl)}/privacy.html" style="color:${COLORS.muted};text-decoration:underline;">Privacy Policy</a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a href="${esc(siteUrl)}/contact.html" style="color:${COLORS.muted};text-decoration:underline;">Contact Us</a>
+              </p>
+              <p style="margin:0;font-size:12px;line-height:1.6;color:${COLORS.muted};">&copy; ${new Date().getFullYear()} The Catalyst Magazine. All rights reserved.</p>
             </td>
           </tr>
 

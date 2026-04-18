@@ -124,13 +124,16 @@ function renderRow(a, editors, ctx, reload) {
       const ok = await confirmDialog("Approve and publish this article? It will go live.", { confirmText: "Publish" });
       if (!ok) return;
       try {
-        await updateDoc(doc(db, "stories", a.id), {
+        const patch = {
           status: "published",
           approvedById: ctx.user.uid,
           approvedByName: ctx.profile.name || ctx.user.email,
-          publishedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-        });
+        };
+        // Preserve an existing publishedAt (e.g. original date from a Wix
+        // CSV import). Only stamp "now" when the story has never been dated.
+        if (!a.publishedAt) patch.publishedAt = new Date().toISOString();
+        await updateDoc(doc(db, "stories", a.id), patch);
         ctx.toast("Published.", "success");
         reload();
       } catch (err) { ctx.toast("Publish failed: " + err.message, "error"); }
@@ -314,7 +317,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       <div class="field">
         <label class="label">Category</label>
         <select class="select" id="sd-category">
-          ${["Feature","Interview","Op-Ed","News","Science"].map(c =>
+          ${["Feature","Profile","Interview","Op-Ed","News","Science"].map(c =>
             `<option ${c === (story.category || "Feature") ? "selected" : ""}>${c}</option>`).join("")}
         </select>
       </div>

@@ -132,7 +132,7 @@ async function mountReviewSurface(ctx, container, id) {
         <div class="grid grid-2">
           <div class="field"><label class="label">Category</label>
             <select class="select" id="e-category">
-              ${["Feature","Interview","Op-Ed","News","Science"].map(c => `<option ${c === (story.category || "Feature") ? "selected" : ""}>${c}</option>`).join("")}
+              ${["Feature","Profile","Interview","Op-Ed","News","Science"].map(c => `<option ${c === (story.category || "Feature") ? "selected" : ""}>${c}</option>`).join("")}
             </select>
           </div>
           <div class="field"><label class="label">Cover image URL</label><input class="input" id="e-cover" value="${escAttr(story.coverImage || "")}"></div>

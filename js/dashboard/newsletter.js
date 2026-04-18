@@ -30,14 +30,6 @@ async function mountBuilder(ctx, container) {
       <div class="grid" style="grid-template-columns: 1fr 1fr; gap:20px;">
         <div>
           <div class="field">
-            <label class="label">How many recent articles to include?</label>
-            <select class="select" id="f-count">
-              <option value="3">3 most recent articles (recommended)</option>
-              <option value="2">2 most recent articles</option>
-              <option value="1">1 most recent article</option>
-            </select>
-          </div>
-          <div class="field">
             <label class="label">Email subject line</label>
             <input class="input" id="f-subject" value="New from The Catalyst">
           </div>
@@ -53,8 +45,15 @@ async function mountBuilder(ctx, container) {
           <div id="builder-status" class="hint"></div>
           <div class="card" style="margin-top:20px;background:var(--surface-2);">
             <div class="card-body">
-              <div class="section-title" style="margin-top:0;">Articles included</div>
-              <div id="article-list"><div class="loading-state" style="padding:12px;"><div class="spinner"></div>Fetching…</div></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <div class="section-title" style="margin:0;">Articles in this issue</div>
+                <div style="display:flex;gap:6px;">
+                  <button type="button" class="btn btn-ghost btn-xs" id="btn-pick-top3">Pick 3 most recent</button>
+                  <button type="button" class="btn btn-ghost btn-xs" id="btn-clear-picks">Clear</button>
+                </div>
+              </div>
+              <div class="hint" style="margin-bottom:10px;">Check up to 3 articles. The 3 most recent are selected by default — override if you want a different mix.</div>
+              <div id="article-picker"><div class="loading-state" style="padding:12px;"><div class="spinner"></div>Loading articles…</div></div>
             </div>
           </div>
         </div>
@@ -74,12 +73,13 @@ async function mountBuilder(ctx, container) {
   container.appendChild(card);
 
   const els = {
-    count: card.querySelector("#f-count"),
     subject: card.querySelector("#f-subject"),
     headline: card.querySelector("#f-headline"),
     intro: card.querySelector("#f-intro"),
     status: card.querySelector("#builder-status"),
-    articleList: card.querySelector("#article-list"),
+    picker: card.querySelector("#article-picker"),
+    btnTop3: card.querySelector("#btn-pick-top3"),
+    btnClear: card.querySelector("#btn-clear-picks"),
     iframe: card.querySelector("#preview-frame"),
     frameWrap: card.querySelector("#preview-frame-wrap"),
     sizeHint: card.querySelector("#preview-size-hint"),
@@ -87,6 +87,11 @@ async function mountBuilder(ctx, container) {
     btnTest: card.querySelector("#btn-test"),
     btnSend: card.querySelector("#btn-send"),
   };
+
+  // Available published articles (most recent first). Populated once on mount.
+  let availableArticles = [];
+  const MAX_PICK = 3;
+  const selectedIds = new Set();
 
   // Preview-width toggle. Desktop mode simulates Gmail's wider reading pane
   // (~900px), mobile simulates phone clients (~420px). The email template is
@@ -109,17 +114,24 @@ async function mountBuilder(ctx, container) {
   let currentArticles = [];
 
   async function regenerate() {
+    const ids = Array.from(selectedIds);
+    if (!ids.length) {
+      els.status.textContent = "Pick at least one article to preview.";
+      renderPreview(els.iframe, "<html><body style='font-family:sans-serif;padding:40px;color:#666;text-align:center;'>Select one to three articles on the left to see the preview.</body></html>");
+      currentHtml = "";
+      currentArticles = [];
+      return;
+    }
     els.status.textContent = "Generating preview…";
-    els.articleList.innerHTML = `<div class="loading-state" style="padding:12px;"><div class="spinner"></div>Fetching…</div>`;
     try {
-      const count = parseInt(els.count.value, 10);
+      const count = ids.length;
       const headline = els.headline.value.trim() || (count === 1 ? "A fresh story from The Catalyst" : `${count} new stories from The Catalyst`);
       els.headline.value = headline;
 
       const res = await ctx.authedFetch("/api/newsletter/preview", {
         method: "POST",
         body: JSON.stringify({
-          count,
+          articleIds: ids,
           subject: els.subject.value,
           headline,
           intro: els.intro.value,
@@ -129,23 +141,79 @@ async function mountBuilder(ctx, container) {
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       currentHtml = data.html;
       currentArticles = data.articles || [];
-
-      renderArticleList(els.articleList, currentArticles);
       renderPreview(els.iframe, currentHtml);
       els.status.textContent = `Preview ready — ${currentArticles.length} article(s).`;
     } catch (err) {
       els.status.textContent = "Could not generate preview: " + err.message;
-      els.articleList.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
     }
   }
 
   els.btnRefresh.addEventListener("click", regenerate);
-  els.count.addEventListener("change", regenerate);
   ["input", "change"].forEach((evt) => {
     els.subject.addEventListener(evt, debounced(regenerate, 600));
     els.headline.addEventListener(evt, debounced(regenerate, 600));
     els.intro.addEventListener(evt, debounced(regenerate, 600));
   });
+
+  // ----- Article picker wiring -----
+  function renderPicker() {
+    if (!availableArticles.length) {
+      els.picker.innerHTML = `<div class="empty-state" style="padding:12px;">No published articles yet.</div>`;
+      return;
+    }
+    const atMax = selectedIds.size >= MAX_PICK;
+    els.picker.innerHTML = availableArticles.map((a) => {
+      const checked = selectedIds.has(a.id);
+      const disabled = !checked && atMax;
+      return `
+        <label class="article-row" style="margin-bottom:6px;padding:10px 12px;display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;cursor:${disabled ? "not-allowed" : "pointer"};opacity:${disabled ? "0.5" : "1"};">
+          <input type="checkbox" data-article-id="${esc(a.id)}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""} style="margin-top:3px;">
+          <div>
+            <div class="article-title" style="font-size:14px;">${esc(a.title || "Untitled")}</div>
+            <div class="article-meta">${esc(a.category || "Feature")}${a.author ? " · " + esc(a.author) : ""}${a.date ? " · " + esc(a.date) : ""}</div>
+          </div>
+        </label>`;
+    }).join("");
+  }
+
+  els.picker.addEventListener("change", (e) => {
+    const cb = e.target.closest('input[type="checkbox"][data-article-id]');
+    if (!cb) return;
+    const id = cb.dataset.articleId;
+    if (cb.checked) {
+      if (selectedIds.size >= MAX_PICK) { cb.checked = false; return; }
+      selectedIds.add(id);
+    } else {
+      selectedIds.delete(id);
+    }
+    renderPicker();
+    regenerate();
+  });
+
+  els.btnTop3.addEventListener("click", () => {
+    selectedIds.clear();
+    availableArticles.slice(0, MAX_PICK).forEach((a) => selectedIds.add(a.id));
+    renderPicker();
+    regenerate();
+  });
+
+  els.btnClear.addEventListener("click", () => {
+    selectedIds.clear();
+    renderPicker();
+    regenerate();
+  });
+
+  // Load published articles for the picker, preselect top 3, then regenerate.
+  loadPublishedArticles()
+    .then((list) => {
+      availableArticles = list;
+      list.slice(0, MAX_PICK).forEach((a) => selectedIds.add(a.id));
+      renderPicker();
+      regenerate();
+    })
+    .catch((err) => {
+      els.picker.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
+    });
 
   els.btnTest.addEventListener("click", async () => {
     const testEmail = prompt("Send a test to which email?", ctx.profile.email || ctx.user.email || "");
@@ -196,19 +264,55 @@ async function mountBuilder(ctx, container) {
     }
   });
 
-  // Initial generation.
-  regenerate();
+  // Initial load happens in loadPublishedArticles().then(... regenerate()).
 }
 
-function renderArticleList(mount, articles) {
-  if (!articles.length) { mount.innerHTML = `<div class="empty-state">No articles found.</div>`; return; }
-  mount.innerHTML = articles.map((a) => `
-    <div class="article-row" style="margin-bottom:8px;padding:10px 12px;">
-      <div>
-        <div class="article-title" style="font-size:14px;">${esc(a.title || "Untitled")}</div>
-        <div class="article-meta">${esc(a.category || "Feature")}${a.author ? " · " + esc(a.author) : ""}</div>
-      </div>
-    </div>`).join("");
+// Public Firestore REST query — stories with status=published are publicly
+// readable per firestore.rules, so no auth token is required. Mirrors the
+// query used by the public site in js/main.js.
+async function loadPublishedArticles() {
+  const projectId = "catalystwriters-5ce43";
+  const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
+  const body = {
+    structuredQuery: {
+      from: [{ collectionId: "stories" }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: "status" },
+          op: "EQUAL",
+          value: { stringValue: "published" },
+        },
+      },
+      orderBy: [{ field: { fieldPath: "publishedAt" }, direction: "DESCENDING" }],
+      limit: 40,
+    },
+  };
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Firestore ${res.status}`);
+  const rows = await res.json();
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((r) => r.document)
+    .filter(Boolean)
+    .map((doc) => {
+      const id = (doc.name || "").split("/").pop();
+      const f = doc.fields || {};
+      const str = (k) => f[k]?.stringValue ?? "";
+      const ts = f.publishedAt?.timestampValue || f.createdAt?.timestampValue || "";
+      const date = ts ? new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+      return {
+        id,
+        title: str("title"),
+        author: str("authorName") || str("author"),
+        category: str("category"),
+        date,
+      };
+    })
+    .filter((a) => a.id && a.title);
 }
 
 function renderPreview(iframe, html) {
