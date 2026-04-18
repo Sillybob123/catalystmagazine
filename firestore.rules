@@ -33,10 +33,11 @@ service cloud.firestore {
     // ---------- users ----------
     match /users/{uid} {
       allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin() || isEditor());
-      // Users can create their own doc on first login (role forced to 'reader').
+      // Users can create their own doc on first login.
+      // Only safe bootstrap roles allowed — no self-assigning admin/editor.
       allow create: if isSignedIn()
         && request.auth.uid == uid
-        && request.resource.data.role == 'reader';
+        && request.resource.data.role in ['reader', 'writer'];
       // Users can update safe fields on their own doc (but not role).
       allow update: if isSignedIn()
         && request.auth.uid == uid
