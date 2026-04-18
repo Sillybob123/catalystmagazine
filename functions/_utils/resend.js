@@ -2,7 +2,7 @@
 // Minimal Resend client (https://resend.com/docs/api-reference/emails/send-email)
 // Only dependency: fetch, which is built into Cloudflare Workers.
 
-export async function sendEmail(env, { to, subject, html, replyTo }) {
+export async function sendEmail(env, { to, subject, html, replyTo, cc }) {
   const apiKey = env.RESEND_API_KEY;
   const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
 
@@ -17,6 +17,7 @@ export async function sendEmail(env, { to, subject, html, replyTo }) {
     html,
   };
   if (replyTo) payload.reply_to = replyTo;
+  if (cc) payload.cc = Array.isArray(cc) ? cc : [cc];
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
