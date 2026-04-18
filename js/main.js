@@ -802,9 +802,8 @@ function renderArticles(filter = 'all', data = articleData) {
 }
 
 function createArticleCard(article) {
-    // For local published articles, use the direct path; otherwise use ID-based routing
-    const useDirectLink = article.link && article.link.startsWith('posts/published/');
-    const link = useDirectLink ? article.link : article.id;
+    // Use the article's link (slug URL) if available, else fall back to id
+    const link = article.link || `/article/${encodeURIComponent(titleToSlug(article.title))}`;
 
     const imageSrc = article.image || ARTICLE_FALLBACK_IMAGE;
     const category = article.category || 'feature';
@@ -1158,18 +1157,33 @@ function showNotification(message, type = 'success') {
 // ARTICLE DETAIL PAGE
 // ============================================
 function initArticleDetailPage(data) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const rawId = urlParams.get('id');
-    const articleId = rawId;
-
-    if (!rawId || !Array.isArray(data)) {
-        window.location.href = 'articles.html';
+    if (!Array.isArray(data)) {
+        window.location.href = '/articles';
         return;
     }
 
-    const article = data.find(a => String(a.id) === String(articleId));
+    // Support both /article/<slug> and legacy /article.html?id=<id>
+    const pathSlug = window.location.pathname.match(/\/article\/([^/?#]+)/)?.[1];
+    const urlParams = new URLSearchParams(window.location.search);
+    const rawId = urlParams.get('id');
+
+    let article;
+    if (pathSlug) {
+        // Prefer the article ID injected by the Cloudflare Function (no scan needed)
+        const injectedId = document.querySelector('meta[name="catalyst-article-id"]')?.content;
+        if (injectedId) {
+            article = data.find(a => String(a.id) === String(injectedId));
+        }
+        if (!article) {
+            const slug = decodeURIComponent(pathSlug).toLowerCase();
+            article = data.find(a => titleToSlug(a.title) === slug);
+        }
+    } else if (rawId) {
+        article = data.find(a => String(a.id) === String(rawId));
+    }
+
     if (!article) {
-        window.location.href = 'articles.html';
+        window.location.href = '/articles';
         return;
     }
 
@@ -1184,7 +1198,7 @@ function renderArticleDetail(article) {
     // --- Meta tags + page title -------------------------------------------
     document.title = `${article.title} | The Catalyst Magazine`;
 
-    const articleUrl = `${window.location.origin}/article.html?id=${article.id}`;
+    const articleUrl = `${window.location.origin}/article/${encodeURIComponent(titleToSlug(article.title))}`;
     const articleImage = article.image || 'NewLogoShape.png';
     const articleDescription = article.excerpt || article.deck || article.description || 'Read this story on The Catalyst Magazine';
 
@@ -1478,8 +1492,16 @@ function viewArticle(linkOrId) {
     const decoded = decodeURIComponent(linkOrId);
     if (decoded.startsWith('http') || decoded.startsWith('posts/')) {
         window.location.href = decoded;
+    } else if (decoded.startsWith('/article/')) {
+        window.location.href = decoded;
     } else {
-        window.location.href = `article.html?id=${decoded}`;
+        // Legacy id — find the article and navigate by slug
+        const article = articleData.find(a => String(a.id) === String(decoded));
+        if (article) {
+            window.location.href = `/article/${encodeURIComponent(titleToSlug(article.title))}`;
+        } else {
+            window.location.href = `/article/${encodeURIComponent(decoded)}`;
+        }
     }
 }
 
@@ -1499,9 +1521,7 @@ function formatCategory(category) {
 }
 
 function getArticleLink(article) {
-    // For local published articles, use the direct path; otherwise use ID-based routing
-    const useDirectLink = article.link && article.link.startsWith('posts/published/');
-    return useDirectLink ? article.link : article.id;
+    return article.link || `/article/${encodeURIComponent(titleToSlug(article.title))}`;
 }
 
 // ============================================
@@ -1564,8 +1584,8 @@ async function loadArticles() {
                 author: raw.author || 'The Catalyst',
                 date: raw.date || '',
                 image: raw.image || ARTICLE_FALLBACK_IMAGE,
-                link: link || `article?id=${raw.id || nextId}`,
-                url: link || `article?id=${raw.id || nextId}`,
+                link: link || `/article/${encodeURIComponent(titleToSlug(raw.title))}`,
+                url: link || `/article/${encodeURIComponent(titleToSlug(raw.title))}`,
                 category: (raw.category || 'feature').toLowerCase(),
                 tags: raw.tags || [],
                 excerpt: raw.deck || raw.excerpt || '',
@@ -1659,8 +1679,8 @@ function firestoreDocToArticle(doc) {
         author: str('authorName') || str('author') || 'The Catalyst',
         date: dateStr,
         image: str('coverImage') || ARTICLE_FALLBACK_IMAGE,
-        link: `article.html?id=${storyId}`,
-        url: `article.html?id=${storyId}`,
+        link: `/article/${encodeURIComponent(titleToSlug(title))}`,
+        url: `/article/${encodeURIComponent(titleToSlug(title))}`,
         category,
         tags: arr('tags'),
         excerpt,
@@ -1971,7 +1991,7 @@ function convertJsonToArticle(data = {}, baseByTitle = new Map()) {
     const excerpt = (meta.excerpt || buildExcerptFromBlocks(blocks) || baseMatch?.excerpt || '').trim();
     const category = normalizeCategory(meta.category || baseMatch?.category || guessCategoryFromTitle(title));
     const content = blocks?.length ? renderContentBlocks(blocks) : (baseMatch?.content || '');
-    const link = baseMatch?.link || '#';
+    const link = baseMatch?.link || `/article/${encodeURIComponent(titleToSlug(title))}`;
     const readingTime = estimateReadingTime({ content, excerpt });
 
     // Image display settings (optional)

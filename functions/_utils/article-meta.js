@@ -202,4 +202,14 @@ export async function listAllArticles(origin) {
   return all;
 }
 
+// Convert an article title to a URL-safe kebab-case slug.
+// Must stay in sync with the client-side titleToSlug() in js/main.js.
+export function titleToSlug(title) {
+  return String(title || "")
+    .toLowerCase()
+    .replace(/['']/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export { SITE_URL, FALLBACK_IMAGE };

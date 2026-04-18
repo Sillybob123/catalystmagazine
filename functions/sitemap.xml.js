@@ -3,7 +3,7 @@
 // stories. Cached at the edge for an hour — fresh enough for new publishes,
 // cheap enough to survive Googlebot hitting it regularly.
 
-import { listAllArticles, SITE_URL } from "./_utils/article-meta.js";
+import { listAllArticles, titleToSlug, SITE_URL } from "./_utils/article-meta.js";
 
 const STATIC_PAGES = [
   { path: "/", priority: "1.0", changefreq: "daily" },
@@ -29,7 +29,8 @@ export const onRequestGet = async ({ request }) => {
   }
 
   for (const a of articles) {
-    const loc = `${SITE_URL}/article?id=${encodeURIComponent(a.id)}`;
+    const slug = titleToSlug(a.title);
+    const loc = `${SITE_URL}/article/${encodeURIComponent(slug)}`;
     const lastmod = toIsoDate(a.publishedAt || a.date) || today;
     const image = a.image ? `<image:image><image:loc>${escapeXml(a.image)}</image:loc><image:title>${escapeXml(a.title)}</image:title></image:image>` : "";
     urls.push(

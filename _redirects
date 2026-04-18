@@ -1,0 +1,22 @@
+# Clean URL redirects — Cloudflare Pages
+# Remove .html from page URLs
+/index.html          /              301
+/articles.html       /articles      301
+/about.html          /about         301
+/collaborate.html    /collaborate   301
+/contact.html        /contact       301
+/privacy.html        /privacy       301
+/article.html        /articles      301
+
+# Serve .html files for clean paths (SPA-style)
+/articles            /articles.html  200
+/about               /about.html     200
+/collaborate         /collaborate.html 200
+/contact             /contact.html   200
+/privacy             /privacy.html   200
+
+# Slug-based article URLs — handled by Cloudflare Function at
+# /functions/article/[slug].js, which rewrites to article.html.
+# The 200 rewrite here ensures the static HTML shell is served
+# while the Function also runs for OG meta injection.
+/article/:slug       /article.html   200

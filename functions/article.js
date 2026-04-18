@@ -7,7 +7,7 @@
 // asset from Cloudflare Pages and use HTMLRewriter to patch the head in
 // place before returning it.
 
-import { fetchArticleById, SITE_URL, FALLBACK_IMAGE } from "./_utils/article-meta.js";
+import { fetchArticleById, titleToSlug, SITE_URL, FALLBACK_IMAGE } from "./_utils/article-meta.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
@@ -27,7 +27,9 @@ export const onRequestGet = async ({ request, next }) => {
   const ct = origin.headers.get("content-type") || "";
   if (!ct.includes("text/html")) return origin;
 
-  const canonical = `${SITE_URL}/article?id=${encodeURIComponent(id)}`;
+  const canonical = article.title
+    ? `${SITE_URL}/article/${encodeURIComponent(titleToSlug(article.title))}`
+    : `${SITE_URL}/article?id=${encodeURIComponent(id)}`;
   const title = `${article.title} | ${SITE_NAME}`;
   const description = truncate(article.excerpt, 200);
   const image = article.image || FALLBACK_IMAGE;
