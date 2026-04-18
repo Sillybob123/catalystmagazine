@@ -70,7 +70,7 @@ export async function mount(ctx, container) {
         <div class="card-title">Catalyst in the Capital — Editorial workflow</div>
         <div class="card-subtitle">Every story moves left-to-right: Topic Proposal → Interview → Writing → In Review → Reviewing Suggestions → Completed.</div>
       </div>
-      <a class="btn btn-secondary btn-sm" href="scheduler/dashboard.html">Open full scheduler &rarr;</a>
+      <a class="btn btn-secondary btn-sm" href="/admin/scheduler">Open full scheduler &rarr;</a>
     </div>
     <div id="pipeline-here"></div>`;
   container.appendChild(card);

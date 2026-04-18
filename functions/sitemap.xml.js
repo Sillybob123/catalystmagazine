@@ -18,7 +18,7 @@ export const onRequestGet = async ({ request }) => {
   const origin = new URL(request.url).origin;
   const today = new Date().toISOString().slice(0, 10);
 
-  const articles = await listAllArticles(origin).catch(() => []);
+  const articles = await listAllArticles().catch(() => []);
 
   const urls = [];
 

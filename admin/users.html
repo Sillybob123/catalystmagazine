@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management | The Catalyst Magazine</title>
 
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="/css/styles.css">
     <style>
         .dashboard-container {
             min-height: 100vh;
@@ -264,7 +264,7 @@
         <div class="dashboard-header">
             <h1 class="dashboard-title">User Management</h1>
             <div class="header-actions">
-                <a href="admin-dashboard.html" class="btn btn-secondary">
+                <a href="/admin" class="btn btn-secondary">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 12H5M12 19l-7-7 7-7"/>
                     </svg>
@@ -365,7 +365,7 @@
         // Check if user is admin (with first-user bootstrap)
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
-                window.location.href = 'writer-login.html';
+                window.location.href = '/admin/login';
                 return;
             }
 
@@ -374,7 +374,7 @@
 
             if (!userData || userData.role !== 'admin') {
                 alert('Access denied. Admin only.');
-                window.location.href = 'editorial-studio.html';
+                window.location.href = '/admin/dashboard';
                 return;
             }
 
@@ -384,7 +384,7 @@
         // Logout
         document.getElementById('logout-btn').addEventListener('click', async () => {
             await signOut(auth);
-            window.location.href = 'writer-login.html';
+            window.location.href = '/admin/login';
         });
 
         // Add new user

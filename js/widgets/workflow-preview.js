@@ -175,7 +175,7 @@ export class WorkflowPreviewWidget {
             <div class="workflow-summary-footer">
                 <p class="summary-footer-text">
                     This is a preview of your editorial workflow.
-                    <a href="scheduler/dashboard.html" class="summary-footer-link">Open Full Scheduler</a>
+                    <a href="/admin/scheduler" class="summary-footer-link">Open Full Scheduler</a>
                     to manage projects, assign editors, and update timelines.
                 </p>
             </div>
@@ -226,7 +226,7 @@ export class WorkflowPreviewWidget {
                     <rect x="3" y="14" width="7" height="7" rx="1"></rect>
                 </svg>
                 <div class="workflow-empty-text">No projects in this view</div>
-                <a href="scheduler/dashboard.html" class="btn btn-primary btn-small" style="margin-top: 16px;">
+                <a href="/admin/scheduler" class="btn btn-primary btn-small" style="margin-top: 16px;">
                     Go to Scheduler
                 </a>
             </div>

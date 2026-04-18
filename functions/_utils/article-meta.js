@@ -144,23 +144,10 @@ async function fetchJsonArticle(index, origin) {
 }
 
 // List every available article (for sitemap).
-export async function listAllArticles(origin) {
+// JSON posts have all been migrated to Firestore — only query Firestore.
+export async function listAllArticles() {
   const all = [];
 
-  // JSON posts: try 2..MAX. Stop after several consecutive misses.
-  let misses = 0;
-  for (let i = 2; i <= MAX_JSON_ARTICLE_INDEX; i++) {
-    const article = await fetchJsonArticle(i, origin);
-    if (article) {
-      all.push(article);
-      misses = 0;
-    } else {
-      misses += 1;
-      if (misses >= 5 && all.length) break;
-    }
-  }
-
-  // Firestore published stories
   try {
     const body = {
       structuredQuery: {
@@ -196,10 +183,58 @@ export async function listAllArticles(origin) {
       }
     }
   } catch {
-    // Firestore is optional — sitemap still works without it.
+    // Firestore unavailable — return empty list.
   }
 
   return all;
+}
+
+// Find a single published article by slug — one Firestore query, no scanning.
+export async function findArticleBySlug(slug) {
+  if (!slug) return null;
+  try {
+    const body = {
+      structuredQuery: {
+        from: [{ collectionId: "stories" }],
+        where: {
+          compositeFilter: {
+            op: "AND",
+            filters: [
+              {
+                fieldFilter: {
+                  field: { fieldPath: "status" },
+                  op: "EQUAL",
+                  value: { stringValue: "published" },
+                },
+              },
+              {
+                fieldFilter: {
+                  field: { fieldPath: "slug" },
+                  op: "EQUAL",
+                  value: { stringValue: slug },
+                },
+              },
+            ],
+          },
+        },
+        limit: 1,
+      },
+    };
+    const res = await fetch(
+      `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents:runQuery`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows[0]?.document) return null;
+    return firestoreDocToArticle(rows[0].document);
+  } catch {
+    return null;
+  }
 }
 
 // Convert an article title to a URL-safe kebab-case slug.

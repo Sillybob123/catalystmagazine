@@ -1,22 +1,31 @@
-# Clean URL redirects — Cloudflare Pages
-# Remove .html from page URLs
-/index.html          /              301
-/articles.html       /articles      301
-/about.html          /about         301
-/collaborate.html    /collaborate   301
-/contact.html        /contact       301
-/privacy.html        /privacy       301
-/article.html        /articles      301
+# ============================================================
+# Cloudflare Pages — URL rewrite & redirect rules
+# ============================================================
+# Cloudflare auto-serves foo.html at /foo (pretty-URL).
+# Admin files are named to match their clean URLs:
+#   admin/index.html   → /admin
+#   admin/login.html   → /admin/login
+#   admin/users.html   → /admin/users
+# ============================================================
 
-# Serve .html files for clean paths (SPA-style)
-/articles            /articles.html  200
-/about               /about.html     200
-/collaborate         /collaborate.html 200
-/contact             /contact.html   200
-/privacy             /privacy.html   200
+# ------ Strip .html from legacy bookmarked URLs ------------
+/index.html              /                         301
+/articles.html           /articles                 301
+/about.html              /about                    301
+/collaborate.html        /collaborate              301
+/contact.html            /contact                  301
+/privacy.html            /privacy                  301
+/brain-teaser.html       /brain-teaser             301
+/innovation.html         /innovation               301
 
-# Slug-based article URLs — handled by Cloudflare Function at
-# /functions/article/[slug].js, which rewrites to article.html.
-# The 200 rewrite here ensures the static HTML shell is served
-# while the Function also runs for OG meta injection.
-/article/:slug       /article.html   200
+# ------ Legacy admin URL cleanup ---------------------------
+/writer-login.html       /admin/login              301
+/admin/writer-login      /admin/login              301
+/writer-dashboard.html   /admin                    301
+/dashboard.html          /admin                    301
+/admin-dashboard.html    /admin                    301
+/admin-users.html        /admin/users              301
+/editorial-studio.html   /admin                    301
+/admin/writer            /admin                    301
+/admin/dashboard         /admin                    301
+/admin/studio            /admin                    301

@@ -3,7 +3,7 @@
 // We use it to (a) short-circuit CORS preflight requests and (b) attach CORS
 // headers to all responses.
 
-import { corsHeaders, handleOptions } from "./_utils/http.js";
+import { corsHeaders, handleOptions } from "../_utils/http.js";
 
 export async function onRequest(context) {
   const { request, next, env } = context;

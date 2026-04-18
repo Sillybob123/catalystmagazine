@@ -180,7 +180,7 @@ const GROUPS = [
 // ---------- auth bootstrap ----------
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "writer-login.html";
+    window.location.href = "/admin/login";
     return;
   }
   state.user = user;
@@ -198,7 +198,7 @@ onAuthStateChanged(auth, async (user) => {
       <div class="card">
         <div class="card-body empty-state">
           <p>You're signed in as <strong>${state.user.email}</strong> but you don't have staff access yet.</p>
-          <p style="margin-top:12px;">Ask an admin to assign you a role, or <a href="index.html">head back to the public site</a>.</p>
+          <p style="margin-top:12px;">Ask an admin to assign you a role, or <a href="/">head back to the public site</a>.</p>
         </div>
       </div>`;
     paintUserChip();
@@ -368,7 +368,7 @@ function attachGlobalHandlers() {
     e.preventDefault();
     try {
       await signOut(auth);
-      location.href = "writer-login.html";
+      location.href = "/admin/login";
     } catch (err) { toast("Sign-out failed: " + err.message, "error"); }
   });
 

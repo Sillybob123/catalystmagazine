@@ -16,7 +16,7 @@
 //   c) Fall back to serving the bare article.html shell (client JS will
 //      redirect to /articles if nothing is found).
 
-import { listAllArticles, titleToSlug, SITE_URL, FALLBACK_IMAGE } from "../_utils/article-meta.js";
+import { findArticleBySlug, listAllArticles, titleToSlug, SITE_URL, FALLBACK_IMAGE } from "../_utils/article-meta.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
@@ -24,16 +24,19 @@ export const onRequestGet = async ({ request, params, next }) => {
   const slug = params.slug || "";
   if (!slug) return next();
 
-  const origin = new URL(request.url).origin;
-  const articles = await listAllArticles(origin).catch(() => []);
-  const article = articles.find((a) => titleToSlug(a.title) === slug.toLowerCase());
+  // Try direct slug field match first (fast — one Firestore query).
+  // Fall back to title-derived slug scan only if needed.
+  let article = await findArticleBySlug(slug.toLowerCase()).catch(() => null);
+  if (!article) {
+    const articles = await listAllArticles().catch(() => []);
+    article = articles.find((a) => titleToSlug(a.title) === slug.toLowerCase()) || null;
+  }
 
-  // Always serve the HTML shell so the page loads even if we can't find the
-  // article server-side (client JS will handle the lookup).
-  const origin_response = await next();
+  // Fetch article.html shell by absolute URL to avoid Cloudflare Pages'
+  // automatic 308 redirect that fires when next() resolves article.html.
+  const origin = new URL(request.url).origin;
+  const origin_response = await fetch(`${origin}/article`);
   if (!origin_response.ok) return origin_response;
-  const ct = origin_response.headers.get("content-type") || "";
-  if (!ct.includes("text/html")) return origin_response;
 
   if (!article) return origin_response;
 
@@ -79,6 +82,7 @@ export const onRequestGet = async ({ request, params, next }) => {
 
   const response = rewriter.transform(origin_response);
   const headers = new Headers(response.headers);
+  headers.set("Content-Type", "text/html; charset=utf-8");
   headers.set("Cache-Control", "public, max-age=60, s-maxage=300");
   headers.set("X-Article-Id", String(article.id));
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });

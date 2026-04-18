@@ -142,21 +142,21 @@ let autosaveTimer = null;
 // ---------------------------------------------------------------------
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
-        location.href = 'writer-login.html';
+        location.href = '/admin/login';
         return;
     }
     try {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (!userDoc.exists()) {
             await signOut(auth);
-            location.href = 'writer-login.html';
+            location.href = '/admin/login';
             return;
         }
         const data = userDoc.data();
         const allowed = ['writer', 'editor', 'admin'];
         if (!allowed.includes(data.role) || data.status === 'pending' || data.status === 'disabled') {
             await signOut(auth);
-            location.href = 'writer-login.html';
+            location.href = '/admin/login';
             return;
         }
 
