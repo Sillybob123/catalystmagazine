@@ -62,6 +62,8 @@ export const onRequestGet = async ({ request, params, next }) => {
     .on('meta[name="twitter:description"]', { element: (el) => el.setAttribute("content", description) })
     .on('meta[name="twitter:image"]', { element: (el) => el.setAttribute("content", image) })
     .on('meta[name="twitter:url"]', { element: (el) => el.setAttribute("content", canonical) })
+    .on('meta[property="og:image:alt"]', { element: (el) => el.setAttribute("content", article.title) })
+    .on('meta[name="twitter:image:alt"]', { element: (el) => el.setAttribute("content", article.title) })
     .on("head", {
       element(el) {
         el.append(`<link rel="canonical" href="${escapeAttr(canonical)}">`, { html: true });

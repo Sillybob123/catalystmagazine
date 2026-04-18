@@ -1199,7 +1199,9 @@ function renderArticleDetail(article) {
     document.title = `${article.title} | The Catalyst Magazine`;
 
     const articleUrl = `${window.location.origin}/article/${encodeURIComponent(titleToSlug(article.title))}`;
-    const articleImage = article.image || 'NewLogoShape.png';
+    const articleImage = /^https?:\/\//i.test(article.image || '')
+        ? article.image
+        : `${window.location.origin}/${(article.image || 'NewLogoShape.png').replace(/^\/+/, '')}`;
     const articleDescription = article.excerpt || article.deck || article.description || 'Read this story on The Catalyst Magazine';
 
     document.getElementById('meta-description')?.setAttribute('content', articleDescription);
@@ -1207,10 +1209,12 @@ function renderArticleDetail(article) {
     document.getElementById('meta-og-title')?.setAttribute('content', article.title);
     document.getElementById('meta-og-description')?.setAttribute('content', articleDescription);
     document.getElementById('meta-og-image')?.setAttribute('content', articleImage);
+    document.getElementById('meta-og-image-alt')?.setAttribute('content', article.title);
     document.getElementById('meta-twitter-url')?.setAttribute('content', articleUrl);
     document.getElementById('meta-twitter-title')?.setAttribute('content', article.title);
     document.getElementById('meta-twitter-description')?.setAttribute('content', articleDescription);
     document.getElementById('meta-twitter-image')?.setAttribute('content', articleImage);
+    document.getElementById('meta-twitter-image-alt')?.setAttribute('content', article.title);
 
     // --- Content ----------------------------------------------------------
     const contentHtml = article.blocks?.length

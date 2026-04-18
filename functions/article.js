@@ -103,6 +103,16 @@ export const onRequestGet = async ({ request, next }) => {
         el.setAttribute("content", canonical);
       },
     })
+    .on('meta[property="og:image:alt"]', {
+      element(el) {
+        el.setAttribute("content", article.title);
+      },
+    })
+    .on('meta[name="twitter:image:alt"]', {
+      element(el) {
+        el.setAttribute("content", article.title);
+      },
+    })
     // Inject canonical + extra article meta + JSON-LD at the end of <head>.
     .on("head", {
       element(el) {
