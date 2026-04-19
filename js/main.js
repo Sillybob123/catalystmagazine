@@ -1244,20 +1244,22 @@ function renderArticleDetail(article) {
         <header class="article-hero${article.lightCover ? ' article-hero--light-cover' : ''}">
             <div class="article-hero__image" style="background-image:url('${escapeHtmlAttr(heroImage)}')"></div>
             <div class="article-hero__inner">
-                <span class="article-hero__category">${category}</span>
-                <h1 class="article-hero__title">${escapeHtmlAttr(article.title)}</h1>
-                ${deckHtml}
-                <div class="article-hero__meta">
-                    <span>By <strong>${escapeHtmlAttr(article.author || 'The Catalyst')}</strong></span>
-                    <span class="dot"></span>
-                    <span>${escapeHtmlAttr(article.date || '')}</span>
-                    <span class="dot"></span>
-                    <span class="reading-time">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        ${readingTime}
-                    </span>
+                <div class="article-hero__surface">
+                    <span class="article-hero__category">${category}</span>
+                    <h1 class="article-hero__title">${escapeHtmlAttr(article.title)}</h1>
+                    ${deckHtml}
+                    <div class="article-hero__meta">
+                        <span>By <strong>${escapeHtmlAttr(article.author || 'The Catalyst')}</strong></span>
+                        <span class="dot"></span>
+                        <span>${escapeHtmlAttr(article.date || '')}</span>
+                        <span class="dot"></span>
+                        <span class="reading-time">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            ${readingTime}
+                        </span>
+                    </div>
                 </div>
             </div>
         </header>

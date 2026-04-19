@@ -144,19 +144,21 @@ function mountDraftEditor(ctx, container) {
         <div class="compose-hero-image" id="hero-image"></div>
         <div class="compose-hero-overlay"></div>
         <div class="compose-hero-inner">
-          <div class="compose-hero-category" id="hero-category">FEATURE</div>
-          <h1 class="compose-hero-title" id="f-title"
-              contenteditable="true"
-              data-placeholder="Your headline…"
-              spellcheck="true"></h1>
-          <p class="compose-hero-deck" id="f-dek"
-             contenteditable="true"
-             data-placeholder="One-sentence deck that teases the story…"
-             spellcheck="true"></p>
-          <div class="compose-hero-meta">
-            <span class="compose-hero-byline">By ${esc(ctx.profile.name || ctx.user.email)}</span>
-            <span class="dot"></span>
-            <span id="hero-reading-time">1 min read</span>
+          <div class="compose-hero-surface">
+            <div class="compose-hero-category" id="hero-category">FEATURE</div>
+            <h1 class="compose-hero-title" id="f-title"
+                contenteditable="true"
+                data-placeholder="Your headline…"
+                spellcheck="true"></h1>
+            <p class="compose-hero-deck" id="f-dek"
+               contenteditable="true"
+               data-placeholder="One-sentence deck that teases the story…"
+               spellcheck="true"></p>
+            <div class="compose-hero-meta">
+              <span class="compose-hero-byline">By ${esc(ctx.profile.name || ctx.user.email)}</span>
+              <span class="dot"></span>
+              <span id="hero-reading-time">1 min read</span>
+            </div>
           </div>
         </div>
       </header>
@@ -1234,6 +1236,7 @@ function openArticlePreview(wrap, ctx) {
   const title = (wrap.querySelector("#f-title").textContent || "").trim() || "Untitled draft";
   const dek = (wrap.querySelector("#f-dek").textContent || "").trim();
   const cover = wrap.querySelector("#f-cover").value.trim();
+  const lightCover = !!wrap.querySelector("#f-cover-light")?.checked;
   const category = wrap.querySelector("#f-category").value || "Feature";
   const author = ctx.profile?.name || ctx.user?.email || "The Catalyst";
   // Strip live suggestion marks before rendering — they aren't part of the
@@ -1285,18 +1288,20 @@ function openArticlePreview(wrap, ctx) {
     <section class="article-page">
       <div class="container">
         <div class="article-detail">
-          <header class="article-hero">
+          <header class="article-hero${lightCover ? ' article-hero--light-cover' : ''}">
             <div class="article-hero__image" style="background-image:url('${escAttrJs(heroBg)}')"></div>
             <div class="article-hero__inner">
-              <span class="article-hero__category">${esc(category)}</span>
-              <h1 class="article-hero__title">${esc(title)}</h1>
-              ${dek ? `<p class="article-hero__deck">${esc(dek)}</p>` : ""}
-              <div class="article-hero__meta">
-                <span>By <strong>${esc(author)}</strong></span>
-                <span class="dot"></span>
-                <span>${esc(todayStr)}</span>
-                <span class="dot"></span>
-                <span class="reading-time">${esc(readingTime)}</span>
+              <div class="article-hero__surface">
+                <span class="article-hero__category">${esc(category)}</span>
+                <h1 class="article-hero__title">${esc(title)}</h1>
+                ${dek ? `<p class="article-hero__deck">${esc(dek)}</p>` : ""}
+                <div class="article-hero__meta">
+                  <span>By <strong>${esc(author)}</strong></span>
+                  <span class="dot"></span>
+                  <span>${esc(todayStr)}</span>
+                  <span class="dot"></span>
+                  <span class="reading-time">${esc(readingTime)}</span>
+                </div>
               </div>
             </div>
           </header>
@@ -1536,15 +1541,17 @@ function openFormatGuide() {
             data-guide-detail="Cover image + category + headline + deck. Set these from the Settings drawer and the title/subtitle fields above the body.">
             <div class="article-hero__image" style="background-image:url('${heroBg}')"></div>
             <div class="article-hero__inner">
-              <span class="article-hero__category">Feature</span>
-              <h1 class="article-hero__title">The Quiet Revolution Inside Your Cells</h1>
-              <p class="article-hero__deck">A new generation of researchers is rewriting what we thought we knew about cellular memory — and the implications reach far beyond the lab.</p>
-              <div class="article-hero__meta">
-                <span>By <strong>Example Writer</strong></span>
-                <span class="dot"></span>
-                <span>Apr 18, 2026</span>
-                <span class="dot"></span>
-                <span class="reading-time">6 min read</span>
+              <div class="article-hero__surface">
+                <span class="article-hero__category">Feature</span>
+                <h1 class="article-hero__title">The Quiet Revolution Inside Your Cells</h1>
+                <p class="article-hero__deck">A new generation of researchers is rewriting what we thought we knew about cellular memory — and the implications reach far beyond the lab.</p>
+                <div class="article-hero__meta">
+                  <span>By <strong>Example Writer</strong></span>
+                  <span class="dot"></span>
+                  <span>Apr 18, 2026</span>
+                  <span class="dot"></span>
+                  <span class="reading-time">6 min read</span>
+                </div>
               </div>
             </div>
           </header>
