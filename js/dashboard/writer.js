@@ -368,10 +368,26 @@ function wireRichToolbar(wrap, editorEl, ctx) {
 
   // Keyboard shortcuts are handled natively by contenteditable for B/I/U.
 
-  // Paste as plain text for safety (strip Google Docs / Word junk).
+  // Paste handling:
+  //   - If the clipboard has Google Docs / Word HTML (headings, styled runs,
+  //     or embedded images), run it through the same importer the "Paste from
+  //     Google Doc" button uses. Images are uploaded to Firebase Storage and
+  //     their <img src> rewritten to the CDN URL, so we never inline massive
+  //     base64 into the article body (which would blow Firestore's 1 MB doc
+  //     limit on save).
+  //   - Otherwise, insert plain text so we don't smuggle in foreign styles.
   editorEl.addEventListener("paste", (e) => {
+    const cd = e.clipboardData || window.clipboardData;
+    const html = cd.getData("text/html") || "";
+    const text = cd.getData("text/plain") || "";
+
+    if (html && looksLikeRichPaste(html)) {
+      e.preventDefault();
+      importRichPasteInline(html, editorEl, ctx);
+      return;
+    }
+
     e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData("text/plain");
     document.execCommand("insertText", false, text);
   });
 
@@ -756,6 +772,37 @@ async function runWithConcurrency(items, limit, task) {
   return results;
 }
 
+// Walk the editor body and upload any <img> that still has a data: URI src
+// (e.g. a paste import where an upload failed, or an image dropped into the
+// contenteditable directly by the browser). Replaces each data: src with the
+// uploaded Storage URL in place. Silently skips images that are already
+// pointing at https URLs.
+async function uploadInlineDataImages(bodyEl, ctx, onProgress) {
+  const imgs = Array.from(bodyEl.querySelectorAll("img")).filter((img) => {
+    const src = img.getAttribute("src") || "";
+    return src.startsWith("data:");
+  });
+  if (!imgs.length) return;
+
+  let done = 0;
+  const total = imgs.length;
+  onProgress && onProgress(done, total);
+
+  await runWithConcurrency(imgs, 3, async (img) => {
+    const src = img.getAttribute("src") || "";
+    const altName = (img.getAttribute("alt") || "pasted") + extFromMimeOrUrl(src);
+    try {
+      const uploaded = await uploadPastedImage(src, altName, ctx);
+      img.setAttribute("src", uploaded);
+      img.setAttribute("data-uploaded", "1");
+      img.removeAttribute("data-upload-failed");
+    } finally {
+      done++;
+      onProgress && onProgress(done, total);
+    }
+  });
+}
+
 // Convert a pasted <img src> into a File, push it to Firebase Storage via the
 // same content-hash pipeline used by the media dialog, and return the public
 // download URL. Works for:
@@ -779,6 +826,102 @@ async function uploadPastedImage(src, filename, ctx) {
   const safeName = (filename || "pasted-image").replace(/[^a-z0-9._-]/gi, "_").slice(0, 60);
   const file = new File([blob], safeName, { type: blob.type });
   return await uploadToFirebase(file, "image", ctx);
+}
+
+// Detect clipboard HTML that's worth running through the Google Docs
+// importer. We don't want to invoke the heavy pipeline for trivial pastes
+// (a single styled word from another tab), but we MUST catch anything that
+// carries images or Docs-shaped structure — otherwise base64 <img> URIs end
+// up in the body and Firestore rejects the save with "too many bytes".
+function looksLikeRichPaste(html) {
+  if (!html) return false;
+  // Images (base64 or remote) are the #1 reason we need to run the importer.
+  if (/<img\b/i.test(html)) return true;
+  // Google Docs always includes this marker wrapper.
+  if (/id="docs-internal-guid/i.test(html)) return true;
+  // Headings, lists, tables, blockquotes — import as magazine blocks.
+  if (/<(h[1-6]|ul|ol|blockquote|table|figure)\b/i.test(html)) return true;
+  return false;
+}
+
+// Run a pasted HTML blob through the Google Docs importer and insert the
+// result at the current caret. Image uploads happen in the background; we
+// insert placeholders first so the writer sees immediate feedback, then
+// swap each <img src> to the Storage URL as uploads complete.
+async function importRichPasteInline(rawHtml, editorEl, ctx) {
+  const savedRange = captureEditorRange(editorEl);
+
+  let converted;
+  try {
+    converted = convertGoogleDocsHtml(rawHtml);
+  } catch (err) {
+    console.warn("[paste] could not parse clipboard HTML, falling back to plain text", err);
+    const text = new DOMParser().parseFromString(rawHtml, "text/html").body?.textContent || "";
+    document.execCommand("insertText", false, text);
+    return;
+  }
+
+  const { html, imageNodes } = converted;
+  if (!html) return;
+
+  // Insert the converted HTML first so the writer sees the content land in
+  // place. Each <img> carries its original data:/https src for now; we'll
+  // rewrite them to uploaded URLs as the async uploads complete.
+  insertBlockAtCaret(editorEl, html, savedRange);
+  normalizeEditorFigures(editorEl);
+  editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+
+  if (!imageNodes.length) return;
+
+  // The <img> nodes that convertGoogleDocsHtml returned live in a detached
+  // wrapper, not in the editor. Group the live editor <img>s by src so we
+  // can update every copy when an upload finishes (dedupes by src, which is
+  // what writers expect — pasting the same image twice should upload once
+  // and share the URL).
+  const liveBySrc = new Map();
+  editorEl.querySelectorAll("img").forEach((img) => {
+    const s = img.getAttribute("src") || "";
+    if (!s) return;
+    if (!liveBySrc.has(s)) liveBySrc.set(s, []);
+    liveBySrc.get(s).push(img);
+  });
+
+  // One upload per distinct src (imageNodes may list the same src multiple
+  // times if the Doc repeats an image).
+  const uniqueSrcs = new Map();
+  imageNodes.forEach((n) => {
+    if (n.src && liveBySrc.has(n.src) && !uniqueSrcs.has(n.src)) {
+      uniqueSrcs.set(n.src, n);
+    }
+  });
+  const pending = Array.from(uniqueSrcs.values());
+  if (!pending.length) return;
+
+  ctx?.toast?.(`Uploading ${pending.length} pasted image${pending.length === 1 ? "" : "s"}…`, "info");
+  let failed = 0;
+
+  await runWithConcurrency(pending, 4, async (node) => {
+    const liveImgs = (liveBySrc.get(node.src) || []).filter((img) => editorEl.contains(img));
+    if (!liveImgs.length) return;
+    try {
+      const uploaded = await uploadPastedImage(node.src, node.filename, ctx);
+      liveImgs.forEach((img) => {
+        img.setAttribute("src", uploaded);
+        img.setAttribute("data-uploaded", "1");
+      });
+    } catch (err) {
+      failed++;
+      liveImgs.forEach((img) => img.setAttribute("data-upload-failed", "1"));
+      console.warn("[paste] image upload failed", err);
+    }
+  });
+
+  editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+  if (failed) {
+    ctx?.toast?.(`${failed} image${failed === 1 ? "" : "s"} couldn't upload. Click each to re-upload, or use the .docx option.`, "error");
+  } else {
+    ctx?.toast?.("Pasted images uploaded.", "success");
+  }
 }
 
 // Convert Google Docs clipboard HTML into our magazine structure.
@@ -2411,10 +2554,40 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
   const lightCover = !!wrap.querySelector("#f-cover-light")?.checked;
   const dek = (wrap.querySelector("#f-dek").textContent || "").trim();
   const bodyEl = wrap.querySelector("#f-body");
+  const msg = wrap.querySelector("#form-msg");
+
+  // Firestore rejects documents over 1 MB. An inline base64 image can easily
+  // be 1–5 MB on its own, so if a paste/upload leaves any data: URIs in the
+  // body we must ship them to Storage before writing the doc.
+  try {
+    await uploadInlineDataImages(bodyEl, ctx, (done, total) => {
+      msg.textContent = `Uploading ${done}/${total} embedded image${total === 1 ? "" : "s"}…`;
+    });
+    msg.textContent = "";
+  } catch (err) {
+    msg.textContent = "Could not upload embedded images: " + (err?.message || err);
+    ctx.toast("Couldn't upload embedded images. " + (err?.message || err), "error");
+    return;
+  }
+
   // Strip any live suggestion marks before persisting — they're rendered on top, not saved.
   const body = bodyEl.innerHTML.replace(/<mark class="sx-mark[^"]*"[^>]*>([\s\S]*?)<\/mark>/g, "$1");
   const bodyText = bodyEl.textContent || "";
-  const msg = wrap.querySelector("#form-msg");
+
+  // Last-resort guard: if anything is still a data: URI (upload genuinely
+  // failed) the body is going to be too large for Firestore. Fail early with
+  // a readable error instead of the cryptic "too many bytes" from the SDK.
+  if (/src="data:/i.test(body)) {
+    const failedCount = (body.match(/src="data:/gi) || []).length;
+    msg.textContent = `Save blocked: ${failedCount} image${failedCount === 1 ? "" : "s"} couldn't upload to storage. Click each and use the editor's image tool to re-add them.`;
+    ctx.toast("Can't save — some images are still inline. See the message above the toolbar.", "error");
+    return;
+  }
+  if (body.length > 900_000) {
+    msg.textContent = `Save blocked: body is ${(body.length/1024).toFixed(0)} KB — Firestore limits a single document to ~1 MB. Move some images into a follow-up draft, or contact an editor.`;
+    ctx.toast("Article body is too large to save. Try splitting it.", "error");
+    return;
+  }
 
   // Collect the writer's self-review checklist state.
   const writerChecklist = {};
