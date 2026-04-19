@@ -63,10 +63,18 @@ async function mountArticles(ctx, container) {
       if (!filtered.length) { body.innerHTML = `<div class="empty-state">Nothing here.</div>`; return; }
 
       body.innerHTML = "";
-      const table = el("table", { class: "table" });
+      const table = el("table", { class: "table admin-articles" });
       table.innerHTML = `
+        <colgroup>
+          <col class="col-article">
+          <col class="col-author">
+          <col class="col-status">
+          <col class="col-editor">
+          <col class="col-updated">
+          <col class="col-actions">
+        </colgroup>
         <thead><tr>
-          <th>Article</th><th>Author</th><th>Status</th><th>Assigned editor</th><th>Updated</th><th>Actions</th>
+          <th>Article</th><th>Author</th><th>Status</th><th>Assigned editor</th><th>Updated</th><th class="th-actions">Actions</th>
         </tr></thead>
         <tbody></tbody>`;
       const tbody = table.querySelector("tbody");
@@ -88,19 +96,23 @@ function renderRow(a, editors, ctx, reload) {
       ${editors.map((e) => `<option value="${esc(e.id)}" ${e.id === a.editorId ? "selected" : ""}>${esc(e.name || e.email)}</option>`).join("")}
     </select>`;
 
+  const categoryLabel = esc((a.category || "Feature").replace(/\b\w/g, (c) => c.toUpperCase()));
   tr.innerHTML = `
-    <td><strong>${esc(a.title || "Untitled")}</strong><br><span class="article-meta">${esc(a.category || "Feature")}</span></td>
-    <td>${esc(a.authorName || "Unknown")}</td>
-    <td>${statusPill(a.status)}</td>
-    <td>${editorSelect}</td>
-    <td>${fmtRelative(a.updatedAt)}</td>
-    <td>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
-        ${a.status !== "published" ? `<button class="btn btn-accent btn-xs" data-action="approve" data-id="${esc(a.id)}">Approve &amp; publish</button>` : ""}
+    <td class="cell-article">
+      <div class="cell-title">${esc(a.title || "Untitled")}</div>
+      <span class="category-chip">${categoryLabel}</span>
+    </td>
+    <td class="cell-author">${esc(a.authorName || "Unknown")}</td>
+    <td class="cell-status">${statusPill(a.status)}</td>
+    <td class="cell-editor">${editorSelect}</td>
+    <td class="cell-updated">${fmtRelative(a.updatedAt)}</td>
+    <td class="cell-actions">
+      <div class="row-actions">
+        ${a.status !== "published" ? `<button class="btn btn-accent btn-xs" data-action="approve" data-id="${esc(a.id)}">Publish</button>` : ""}
         ${a.status !== "rejected" ? `<button class="btn btn-secondary btn-xs" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
         <button class="btn btn-ghost btn-xs" data-action="view" data-id="${esc(a.id)}">Review</button>
-        <button class="btn btn-secondary btn-xs" data-action="edit-details" data-id="${esc(a.id)}">Edit details</button>
-        <button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(a.id)}" style="color:var(--danger);">Delete</button>
+        <button class="btn btn-secondary btn-xs" data-action="edit-details" data-id="${esc(a.id)}">Edit</button>
+        <button class="btn btn-ghost btn-xs row-action-danger" data-action="delete" data-id="${esc(a.id)}">Delete</button>
       </div>
     </td>`;
 
