@@ -179,7 +179,7 @@ if (forgotPasswordForm) {
 
         auth.sendPasswordResetEmail(email)
             .then(() => {
-                showForgotSuccess('Password reset email sent! Please check your inbox and spam folder. The email will come from CatalystTracker@catalystmonday.firebaseapp.com');
+                showForgotSuccess('Reset link sent. Check your inbox — and your spam/junk folder, as it often lands there. The email is from "catalystmagazine" (noreply@catalystwriters-5ce43.firebaseapp.com) with the subject "Reset your password for Catalyst".');
                 if (forgotEmailInput) forgotEmailInput.value = '';
             })
             .catch((error) => {

@@ -386,7 +386,7 @@
 
             try {
                 await sendPasswordResetEmail(auth, email);
-                showAlert(resetSuccess, 'Reset link sent — check your inbox (and spam folder).');
+                showAlert(resetSuccess, 'Reset link sent. Check your inbox — and your spam/junk folder, as it often lands there. The email is from "catalystmagazine" (noreply@catalystwriters-5ce43.firebaseapp.com) with the subject "Reset your password for Catalyst".');
                 resetForm.reset();
             } catch (err) {
                 showAlert(resetError, friendlyError(err));
