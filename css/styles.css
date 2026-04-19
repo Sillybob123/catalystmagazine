@@ -315,27 +315,12 @@ body {
   overflow: hidden;
 }
 
-/* Subtle grid overlay for magazine aesthetic */
+/* Background accent blob only — grid lines removed */
 .bg-blobs::after {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 20% 80%, rgba(15, 23, 42, 0.06) 0, rgba(15, 23, 42, 0.06) 32%, transparent 42%),
-    repeating-linear-gradient(
-      90deg,
-      rgba(15, 23, 42, 0.04) 0,
-      rgba(15, 23, 42, 0.04) 1px,
-      transparent 1px,
-      transparent 28px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(15, 23, 42, 0.04) 0,
-      rgba(15, 23, 42, 0.04) 1px,
-      transparent 1px,
-      transparent 28px
-    );
+  background: radial-gradient(circle at 20% 80%, rgba(15, 23, 42, 0.06) 0, rgba(15, 23, 42, 0.06) 32%, transparent 42%);
   mix-blend-mode: multiply;
 }
 
@@ -3136,6 +3121,8 @@ img {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: 800;
+  display: inline-block;
+  padding-bottom: 0.12em;
 }
 
 .magazine-hero-subtitle {
