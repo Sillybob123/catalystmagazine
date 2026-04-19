@@ -24,6 +24,7 @@ import {
   firestoreRunQuery,
   getProjectId,
 } from "../_utils/firebase.js";
+import { titleToSlug } from "../_utils/article-meta.js";
 import { sendBulkEmail } from "../_utils/resend.js";
 import { buildNewsletter } from "../_utils/newsletter-template.js";
 
@@ -68,10 +69,13 @@ export const onRequestPost = async ({ request, env }) => {
     if (!title.trim()) return badRequest("Story has no title");
 
     const now = new Date().toISOString();
+    const existingSlug = storyFields.slug?.stringValue || "";
+    const slug = existingSlug || titleToSlug(title);
     await firestoreUpdate(env, `stories/${storyId}`, {
       status: "published",
       publishedAt: now,
       publishedBy: claims.sub,
+      slug,
     });
 
     // --- Count published stories --------------------------------------------

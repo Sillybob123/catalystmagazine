@@ -126,10 +126,10 @@ export function slugify(title) {
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "") // strip combining marks
     .toLowerCase()
+    .replace(/[\u2018\u2019']/g, "")
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
+    .replace(/^-+|-+$/g, "");
 }
 
 export function statusPill(status) {

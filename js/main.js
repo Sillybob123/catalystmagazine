@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-const ARTICLE_FALLBACK_IMAGE = 'NewsletterHeader1.png';
+const ARTICLE_FALLBACK_IMAGE = '/NewsletterHeader1.png';
 const TRANSPARENT_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 const LOW_RES_PREVIEW_WIDTH = 520;
 const LOW_RES_PREVIEW_QUALITY = 60;
@@ -199,9 +199,8 @@ function getLowQualityUrl(src = '', width = 480, quality = 60) {
         // Wix static images support fill/quality transforms directly in the path
         if (url.hostname.includes('static.wixstatic.com')) {
             const parts = url.pathname.split('/').filter(Boolean);
-            const filename = parts.pop();
+            const filename = parts[parts.length - 1];
             const hasTransform = parts.includes('v1');
-            const basePath = parts.join('/');
             const height = Math.round(width * 0.66);
 
             if (hasTransform) {
@@ -210,7 +209,9 @@ function getLowQualityUrl(src = '', width = 480, quality = 60) {
                     .replace(/w_(\d{2,4})/g, `w_${width}`);
             }
 
-            return `${url.origin}/${basePath}/v1/fill/w_${width},h_${height},al_c,q_${quality},enc_auto/${filename}`;
+            // Wix 403s on /media/v1/fill/... without the asset ID in the path —
+            // the working form appends the transform *after* the asset filename.
+            return `${src}/v1/fill/w_${width},h_${height},al_c,q_${quality},enc_auto/${filename}`;
         }
     } catch (err) {
         return src;
@@ -1902,12 +1903,15 @@ function slugKey(link = '') {
 
 // Derive a Wix-style post slug from a title so JSON articles (which carry no
 // link) still dedupe against data.js entries whose link slug matches.
-function titleToSlug(title = '') {
+function titleToSlug(title = ‘’) {
     return String(title)
+        .normalize(‘NFKD’)
+        .replace(/[\u0300-\u036f]/g, ‘’)
         .toLowerCase()
-        .replace(/[’']/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
+        .replace(/[\u2018\u2019’]/g, ‘’)
+        .replace(/&/g, ‘ and ‘)
+        .replace(/[^a-z0-9]+/g, ‘-’)
+        .replace(/^-+|-+$/g, ‘’);
 }
 
 // Extract the Wix static asset ID (e.g. 11b1c4_9737d25c5ad74ba7...~mv2.jpeg)

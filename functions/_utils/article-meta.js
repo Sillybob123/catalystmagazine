@@ -6,8 +6,10 @@
 //   1. posts/article<N>.json — committed JSON files
 //   2. Firestore `stories` collection (status == "published")
 
-const SITE_URL = "https://www.catalyst-magazine.com";
-const FALLBACK_IMAGE = `${SITE_URL}/NewLogoShape.png`;
+const DEFAULT_SITE_URL = "https://catalyst-magazine.com";
+const SITE_URL = DEFAULT_SITE_URL;
+const FALLBACK_IMAGE_PATH = "/NewLogoShape.png";
+const FALLBACK_IMAGE = `${SITE_URL}${FALLBACK_IMAGE_PATH}`;
 const FIRESTORE_PROJECT = "catalystwriters-5ce43";
 
 const MAX_JSON_ARTICLE_INDEX = 100;
@@ -45,20 +47,53 @@ function buildExcerptFromBlocks(blocks) {
   return firstPara.content.replace(/\s+/g, " ").trim().slice(0, 220);
 }
 
+function normalizeSiteUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    return new URL(raw).origin.replace(/\/+$/, "");
+  } catch {
+    return "";
+  }
+}
+
+function isLocalOrigin(origin) {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch {
+    return true;
+  }
+}
+
+export function getSiteUrl(request, env) {
+  const requestOrigin = request?.url ? normalizeSiteUrl(new URL(request.url).origin) : "";
+  if (requestOrigin && !isLocalOrigin(requestOrigin)) return requestOrigin;
+
+  const envSiteUrl = normalizeSiteUrl(env?.SITE_URL);
+  if (envSiteUrl && !isLocalOrigin(envSiteUrl)) return envSiteUrl;
+
+  return SITE_URL;
+}
+
+export function getFallbackImage(siteUrl = SITE_URL) {
+  return `${siteUrl}${FALLBACK_IMAGE_PATH}`;
+}
+
 // Cover images in JSON posts are either (a) already-absolute URLs (Wix CDN)
 // or (b) repo-relative paths like "postimages/foo.webp". Resolve both.
-function resolveImage(src) {
-  if (!src) return FALLBACK_IMAGE;
+function resolveImage(src, siteUrl = SITE_URL) {
+  if (!src) return getFallbackImage(siteUrl);
   if (/^https?:\/\//i.test(src)) return src;
   const clean = src.replace(/^\/+/, "");
-  return `${SITE_URL}/${clean}`;
+  return `${siteUrl}/${clean}`;
 }
 
 // Return a 1200×630 cropped version of the image for OG tags.
 // Wix static images support path-based transforms; other URLs are returned as-is.
-export function resolveOgImage(src) {
-  const url = resolveImage(src);
-  if (!url || url === FALLBACK_IMAGE) return url;
+export function resolveOgImage(src, siteUrl = SITE_URL) {
+  const url = resolveImage(src, siteUrl);
+  if (!url || url === getFallbackImage(siteUrl)) return url;
   try {
     const u = new URL(url);
     if (u.hostname.includes("static.wixstatic.com")) {
@@ -261,11 +296,14 @@ export async function findArticleBySlug(slug) {
 }
 
 // Convert an article title to a URL-safe kebab-case slug.
-// Must stay in sync with the client-side titleToSlug() in js/main.js.
+// Must stay in sync with js/dashboard/ui.js:slugify and js/main.js:titleToSlug.
 export function titleToSlug(title) {
   return String(title || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "") // strip combining diacritics
     .toLowerCase()
     .replace(/[\u2018\u2019']/g, "")
+    .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
