@@ -248,12 +248,20 @@ onAuthStateChanged(auth, async (user) => {
 async function ensureProfile(user) {
   const ref = doc(db, "users", user.uid);
   const snap = await getDoc(ref);
-  if (snap.exists()) return snap.data();
-  // First-time login: create a reader profile. Admin will upgrade their role.
+  if (snap.exists()) {
+    const data = snap.data();
+    // If the doc exists but name is blank, backfill from Firebase Auth displayName.
+    if (!data.name && user.displayName) {
+      await setDoc(ref, { name: user.displayName }, { merge: true });
+      return { ...data, name: user.displayName };
+    }
+    return data;
+  }
+  // First-time login: create a reader/writer profile. Admin will upgrade their role.
   const profile = {
-    name: user.displayName || "",
+    name: user.displayName || user.email.split("@")[0],
     email: user.email || "",
-    role: "reader",
+    role: "writer",
     status: "active",
     createdAt: new Date().toISOString(),
     lastSeenAt: new Date().toISOString(),
