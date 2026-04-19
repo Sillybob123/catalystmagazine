@@ -42,7 +42,7 @@ async function mountArticles(ctx, container) {
         </select>
       </div>
     </div>
-    <div class="card-body" id="articles-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
+    <div class="card-body card-body--flush" id="articles-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
   container.appendChild(card);
 
   // Cache editors for assignment dropdown.
@@ -63,23 +63,9 @@ async function mountArticles(ctx, container) {
       if (!filtered.length) { body.innerHTML = `<div class="empty-state">Nothing here.</div>`; return; }
 
       body.innerHTML = "";
-      const table = el("table", { class: "table admin-articles" });
-      table.innerHTML = `
-        <colgroup>
-          <col class="col-article">
-          <col class="col-author">
-          <col class="col-status">
-          <col class="col-editor">
-          <col class="col-updated">
-          <col class="col-actions">
-        </colgroup>
-        <thead><tr>
-          <th>Article</th><th>Author</th><th>Status</th><th>Assigned editor</th><th>Updated</th><th class="th-actions">Actions</th>
-        </tr></thead>
-        <tbody></tbody>`;
-      const tbody = table.querySelector("tbody");
-      for (const a of filtered) tbody.appendChild(renderRow(a, editors, ctx, load));
-      body.appendChild(table);
+      const list = el("div", { class: "articles-list" });
+      for (const a of filtered) list.appendChild(renderRow(a, editors, ctx, load));
+      body.appendChild(list);
     } catch (err) {
       body.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
     }
@@ -90,31 +76,36 @@ async function mountArticles(ctx, container) {
 }
 
 function renderRow(a, editors, ctx, reload) {
-  const tr = el("tr", {});
-  const editorSelect = `<select class="select" style="min-width:160px;font-size:13px;padding:6px 8px;" data-action="assign-editor" data-id="${esc(a.id)}">
+  const tr = el("div", { class: "ar-row" });
+  const categoryLabel = esc((a.category || "Feature").replace(/\b\w/g, (c) => c.toUpperCase()));
+  const editorSelect = `<select class="select ar-editor-select" data-action="assign-editor" data-id="${esc(a.id)}">
       <option value="">— Unassigned —</option>
       ${editors.map((e) => `<option value="${esc(e.id)}" ${e.id === a.editorId ? "selected" : ""}>${esc(e.name || e.email)}</option>`).join("")}
     </select>`;
 
-  const categoryLabel = esc((a.category || "Feature").replace(/\b\w/g, (c) => c.toUpperCase()));
   tr.innerHTML = `
-    <td class="cell-article">
-      <div class="cell-title">${esc(a.title || "Untitled")}</div>
-      <span class="category-chip">${categoryLabel}</span>
-    </td>
-    <td class="cell-author">${esc(a.authorName || "Unknown")}</td>
-    <td class="cell-status">${statusPill(a.status)}</td>
-    <td class="cell-editor">${editorSelect}</td>
-    <td class="cell-updated">${fmtRelative(a.updatedAt)}</td>
-    <td class="cell-actions">
-      <div class="row-actions">
+    <div class="ar-main">
+      <div class="ar-title">${esc(a.title || "Untitled")}</div>
+      <div class="ar-meta">
+        <span class="category-chip">${categoryLabel}</span>
+        <span class="ar-author">${esc(a.authorName || "Unknown")}</span>
+        <span class="ar-sep">·</span>
+        <span class="ar-time">${fmtRelative(a.updatedAt)}</span>
+      </div>
+    </div>
+    <div class="ar-side">
+      <div class="ar-status-editor">
+        ${statusPill(a.status)}
+        ${editorSelect}
+      </div>
+      <div class="ar-actions">
         ${a.status !== "published" ? `<button class="btn btn-accent btn-xs" data-action="approve" data-id="${esc(a.id)}">Publish</button>` : ""}
         ${a.status !== "rejected" ? `<button class="btn btn-secondary btn-xs" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
         <button class="btn btn-ghost btn-xs" data-action="view" data-id="${esc(a.id)}">Review</button>
         <button class="btn btn-secondary btn-xs" data-action="edit-details" data-id="${esc(a.id)}">Edit</button>
-        <button class="btn btn-ghost btn-xs row-action-danger" data-action="delete" data-id="${esc(a.id)}">Delete</button>
+        <button class="btn btn-ghost btn-xs ar-danger" data-action="delete" data-id="${esc(a.id)}">Delete</button>
       </div>
-    </td>`;
+    </div>`;
 
   tr.addEventListener("change", async (e) => {
     const sel = e.target.closest('[data-action="assign-editor"]');
