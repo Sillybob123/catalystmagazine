@@ -150,6 +150,19 @@ service cloud.firestore {
     }
 
     // ---------- workflow projects ----------
+    // Author-match fallback: a project may have been seeded/migrated with an
+    // authorId that no longer equals the user's current Firebase UID. Match by
+    // authorName against the caller's user doc name/email as a backstop so the
+    // true author isn't locked out of their own project.
+    function isProjectAuthor() {
+      return resource.data.authorId == request.auth.uid
+        || (resource.data.authorName != null
+            && myUserDoc().data.name != null
+            && resource.data.authorName.lower() == myUserDoc().data.name.lower())
+        || (resource.data.authorName != null
+            && myUserDoc().data.email != null
+            && resource.data.authorName.lower() == myUserDoc().data.email.lower());
+    }
     match /projects/{projectId} {
       allow read: if isWriter();
       // Writers can only create proposals under their own uid.
@@ -159,11 +172,11 @@ service cloud.firestore {
       // Assigned editors (editorId matches) can update their assigned project.
       // Admins can update any project.
       allow update: if isAdmin()
-        || resource.data.authorId == request.auth.uid
+        || isProjectAuthor()
         || resource.data.editorId == request.auth.uid;
       // Only admin or the original author can delete.
       allow delete: if isAdmin()
-        || resource.data.authorId == request.auth.uid;
+        || isProjectAuthor();
     }
 
     // ---------- workflow tasks ----------

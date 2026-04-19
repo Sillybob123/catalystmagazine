@@ -468,7 +468,15 @@ function openDetailModal(projectId) {
   if (!project) return toast("Project not found.", "error");
 
   const isAdmin  = _role === "admin";
-  const isAuthor = project.authorId === _uid;
+  // Primary match is authorId == uid. Fall back to name/email match so legacy or
+  // seeded projects whose authorId drifted from the current Firebase UID still
+  // unlock for their true author. Firestore rules mirror this fallback.
+  const myName  = (_profile?.name || "").trim().toLowerCase();
+  const myEmail = (_ctx?.user?.email || "").trim().toLowerCase();
+  const projAuthorName = (project.authorName || "").trim().toLowerCase();
+  const isAuthor = project.authorId === _uid
+    || (!!myName  && projAuthorName === myName)
+    || (!!myEmail && projAuthorName === myEmail);
   const isEditor = project.editorId === _uid || _role === "editor";
   const canEdit  = isAdmin || isAuthor || isEditor;
 
@@ -695,6 +703,8 @@ function openDetailModal(projectId) {
         updatedAt: new Date().toISOString(),
         activity: arrayUnion({ text: `${checked ? "completed" : "uncompleted"}: ${step}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
       };
+      // Heal drifted authorId on the first successful write by the true author.
+      if (isAuthor && project.authorId !== _uid) updates.authorId = _uid;
       // Auto-approve proposal when author checks "Topic Proposal Complete"
       if (step === "Topic Proposal Complete" && checked && isAdmin) updates.proposalStatus = "approved";
       if (step === "Topic Proposal Complete" && !checked && isAdmin) updates.proposalStatus = "pending";
