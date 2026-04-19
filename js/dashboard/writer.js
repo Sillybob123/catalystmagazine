@@ -2003,7 +2003,7 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
 // Lists every image the current writer has previously uploaded (both inline
 // figures and cover images go to the same path prefix) and lets them pick
 // one to reuse. Called from the media dialog and the cover-image field.
-function openImageLibraryPicker(ctx, onPick) {
+export function openImageLibraryPicker(ctx, onPick) {
   const uid = ctx?.user?.uid;
   if (!uid) { ctx?.toast?.("Sign in to browse your library.", "error"); return; }
 
@@ -2181,7 +2181,7 @@ function shortenOwner(uid) {
 // Content-hash-based upload. The storage path is derived from the file's
 // SHA-256, so re-uploading the same image (even with a different filename)
 // lands on the same object — automatic dedupe, no orphan copies.
-async function uploadToFirebase(file, kind, ctx, onProgress) {
+export async function uploadToFirebase(file, kind, ctx, onProgress) {
   const uid = ctx?.user?.uid || "anonymous";
   const toUpload = kind === "image" ? await convertToWebp(file) : file;
   const hash = await hashFile(toUpload);

@@ -12,7 +12,7 @@ import {
 import { deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { el, esc, fmtRelative, fmtDate, statusPill, confirmDialog, openModal, slugify } from "./ui.js";
-import { loadImageLibrary, renderLibraryGrid } from "./writer.js";
+import { loadImageLibrary, renderLibraryGrid, uploadToFirebase, openImageLibraryPicker } from "./writer.js";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -347,8 +347,18 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     </div>
 
     <div class="field">
-      <label class="label">Cover image URL</label>
-      <input class="input" id="sd-cover" value="${escAttr(story.coverImage || story.image || "")}">
+      <label class="label">Cover image</label>
+      <div class="cover-picker">
+        <button type="button" class="btn btn-secondary btn-sm" id="sd-cover-upload-btn">Upload from computer</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="sd-cover-library-btn">Choose from library</button>
+        <input type="file" id="sd-cover-file" accept="image/*" hidden>
+        <div class="cover-picker-progress" id="sd-cover-progress" hidden>
+          <div class="cover-picker-progress-track"><div class="cover-picker-progress-fill" id="sd-cover-progress-fill"></div></div>
+          <div class="cover-picker-progress-text" id="sd-cover-progress-text">Uploading…</div>
+        </div>
+      </div>
+      <input class="input" id="sd-cover" placeholder="https://… or upload above" value="${escAttr(story.coverImage || story.image || "")}" style="margin-top:10px;">
+      <div class="hint">Upload an image (auto-converts to WebP), pick from the library, or paste a public URL.</div>
       <div id="sd-cover-preview" style="margin-top:8px;"></div>
       <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--ink-2);">
         <input type="checkbox" id="sd-light-cover" ${story.lightCover ? "checked" : ""} style="width:16px;height:16px;cursor:pointer;">
@@ -429,6 +439,50 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
   }
   coverInput.addEventListener("input", renderCoverPreview);
   renderCoverPreview();
+
+  // Cover upload + library picker — same flow writers get in the compose view.
+  const coverUploadBtn = body.querySelector("#sd-cover-upload-btn");
+  const coverLibraryBtn = body.querySelector("#sd-cover-library-btn");
+  const coverFileInput = body.querySelector("#sd-cover-file");
+  const coverProgress = body.querySelector("#sd-cover-progress");
+  const coverProgressFill = body.querySelector("#sd-cover-progress-fill");
+  const coverProgressText = body.querySelector("#sd-cover-progress-text");
+
+  coverUploadBtn.addEventListener("click", () => coverFileInput.click());
+  coverLibraryBtn.addEventListener("click", () => {
+    openImageLibraryPicker(ctx, (pickedUrl) => {
+      coverInput.value = pickedUrl;
+      coverInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+  });
+  coverFileInput.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { ctx.toast("Please choose an image file.", "error"); return; }
+    if (file.size > 15 * 1024 * 1024) { ctx.toast("Image must be under 15 MB.", "error"); return; }
+
+    coverProgress.hidden = false;
+    coverProgressFill.style.width = "0%";
+    coverProgressText.textContent = "Preparing…";
+    coverUploadBtn.disabled = true;
+
+    try {
+      const url = await uploadToFirebase(file, "image", ctx, (pct) => {
+        coverProgressFill.style.width = pct + "%";
+        coverProgressText.textContent = `Uploading… ${pct}%`;
+      });
+      coverInput.value = url;
+      coverInput.dispatchEvent(new Event("input", { bubbles: true }));
+      coverProgressText.textContent = "Uploaded.";
+      setTimeout(() => { coverProgress.hidden = true; }, 800);
+    } catch (err) {
+      ctx.toast("Cover upload failed: " + (err?.message || err), "error");
+      coverProgress.hidden = true;
+    } finally {
+      coverUploadBtn.disabled = false;
+      coverFileInput.value = "";
+    }
+  });
 
   const saveBtn = el("button", { class: "btn btn-accent" }, "Save changes");
   const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
