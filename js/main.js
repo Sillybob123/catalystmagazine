@@ -422,8 +422,8 @@ async function initApp() {
 
 function detectPage() {
     const path = window.location.pathname;
-    if (path.includes('article')) return 'article';
     if (path.includes('articles')) return 'articles';
+    if (path.includes('article')) return 'article';
     if (path.includes('collaborate')) return 'collaborate';
     if (path.includes('about')) return 'about';
     return 'home';
@@ -1903,15 +1903,15 @@ function slugKey(link = '') {
 
 // Derive a Wix-style post slug from a title so JSON articles (which carry no
 // link) still dedupe against data.js entries whose link slug matches.
-function titleToSlug(title = ‘’) {
+function titleToSlug(title = '') {
     return String(title)
-        .normalize(‘NFKD’)
-        .replace(/[\u0300-\u036f]/g, ‘’)
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/[\u2018\u2019’]/g, ‘’)
-        .replace(/&/g, ‘ and ‘)
-        .replace(/[^a-z0-9]+/g, ‘-’)
-        .replace(/^-+|-+$/g, ‘’);
+        .replace(/[\u2018\u2019’]/g, '')
+        .replace(/&/g, ' and ')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
 }
 
 // Extract the Wix static asset ID (e.g. 11b1c4_9737d25c5ad74ba7...~mv2.jpeg)
