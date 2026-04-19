@@ -808,7 +808,8 @@ function createArticleCard(article) {
     const link = article.link || `/article/${encodeURIComponent(titleToSlug(article.title))}`;
 
     const imageSrc = article.image || ARTICLE_FALLBACK_IMAGE;
-    const category = article.category || 'feature';
+    const rawCategory = article.category || 'feature';
+    const category = rawCategory === 'article' ? 'feature' : rawCategory;
     const readingTime = article.readingTime || estimateReadingTime(article);
     const imageMarkup = createProgressiveImage(
         imageSrc,
@@ -816,7 +817,7 @@ function createArticleCard(article) {
         'article-image',
         false,
         article.imageSettings,
-        `<span class="article-category ${category}">${formatCategory(category)}</span>`
+        `<span class="article-category ${category}">${formatCategory(rawCategory)}</span>`
     );
 
     return `
@@ -1521,7 +1522,9 @@ function formatCategory(category) {
         'interview': 'Interview',
         'op-ed': 'Op-Ed',
         'oped': 'Op-Ed',
-        'editorial': 'Editorial'
+        'editorial': 'Editorial',
+        'article': 'Feature',
+        'news': 'News',
     };
     return map[category] || category.charAt(0).toUpperCase() + category.slice(1);
 }
@@ -1679,12 +1682,20 @@ function firestoreDocToArticle(doc) {
     const lightCover = f.lightCover?.booleanValue === true;
     const excerpt = deck || (content ? content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220) : '');
 
+    const rawImage = str('coverImage');
+    let image = ARTICLE_FALLBACK_IMAGE;
+    if (rawImage) {
+        image = /^https?:\/\//i.test(rawImage)
+            ? rawImage
+            : `${window.location.origin}/${rawImage.replace(/^\/+/, '')}`;
+    }
+
     return {
         id: storyId,
         title,
         author: str('authorName') || str('author') || 'The Catalyst',
         date: dateStr,
-        image: str('coverImage') || ARTICLE_FALLBACK_IMAGE,
+        image,
         link: `/article/${encodeURIComponent(titleToSlug(title))}`,
         url: `/article/${encodeURIComponent(titleToSlug(title))}`,
         category,

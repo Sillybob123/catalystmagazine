@@ -56,6 +56,28 @@ function resolveImage(src) {
   return `${SITE_URL}/${clean}`;
 }
 
+// Return a 1200×630 cropped version of the image for OG tags.
+// Wix static images support path-based transforms; other URLs are returned as-is.
+export function resolveOgImage(src) {
+  const url = resolveImage(src);
+  if (!url || url === FALLBACK_IMAGE) return url;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("static.wixstatic.com")) {
+      // Strip any existing /v1/fill/ segment and rebuild at OG dimensions.
+      const parts = u.pathname.split("/").filter(Boolean);
+      const filename = parts[parts.length - 1];
+      // Remove old transform segments (v1, fill, w_*, h_*, etc.)
+      const baseParts = parts.filter(p => !/^(v1|fill|w_\d+|h_\d+|al_\w+|q_\d+|enc_\w+)$/.test(p));
+      const base = baseParts.slice(0, -1).join("/"); // everything before filename
+      return `${u.origin}/${base}/v1/fill/w_1200,h_630,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/${filename}`;
+    }
+  } catch {
+    // not a valid URL — fall through
+  }
+  return url;
+}
+
 function firestoreDocToArticle(doc) {
   const name = doc?.name || "";
   const id = name.split("/").pop();
