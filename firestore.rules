@@ -152,11 +152,18 @@ service cloud.firestore {
     // ---------- workflow projects ----------
     match /projects/{projectId} {
       allow read: if isWriter();
+      // Writers can only create proposals under their own uid.
       allow create: if isWriter()
         && request.resource.data.authorId == request.auth.uid;
-      allow update: if isWriter()
-        && (resource.data.authorId == request.auth.uid || isEditor());
-      allow delete: if isEditor();
+      // Authors can update their own project.
+      // Assigned editors (editorId matches) can update their assigned project.
+      // Admins can update any project.
+      allow update: if isAdmin()
+        || resource.data.authorId == request.auth.uid
+        || resource.data.editorId == request.auth.uid;
+      // Only admin or the original author can delete.
+      allow delete: if isAdmin()
+        || resource.data.authorId == request.auth.uid;
     }
 
     // ---------- workflow tasks ----------

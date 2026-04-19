@@ -469,8 +469,22 @@ function openDetailModal(projectId) {
 
   const isAdmin  = _role === "admin";
   const isAuthor = project.authorId === _uid;
-  const isEditor = project.editorId === _uid;
-  const canEdit  = isAdmin || isAuthor;
+  const isEditor = project.editorId === _uid || _role === "editor";
+  const canEdit  = isAdmin || isAuthor || isEditor;
+
+  // Which timeline steps each role can toggle
+  // Admins can toggle all. Authors toggle their own work steps. Editors toggle review steps.
+  const AUTHOR_STEPS = new Set([
+    "Topic Proposal Complete", "Interview Scheduled", "Interview Complete",
+    "Article Writing Complete", "Suggestions Reviewed",
+  ]);
+  const EDITOR_STEPS = new Set(["Review In Progress", "Review Complete"]);
+  function canToggleStep(step) {
+    if (isAdmin) return true;
+    if (isAuthor && AUTHOR_STEPS.has(step)) return true;
+    if (isEditor && EDITOR_STEPS.has(step)) return true;
+    return false;
+  }
   const state    = getProjectState(project, _view, _uid);
   const tl       = project.timeline || {};
   const deadlines = project.deadlines || {};
@@ -482,11 +496,12 @@ function openDetailModal(projectId) {
   const pillBg = { green:"#dcfce7", yellow:"#fef3c7", blue:"#dbeafe", red:"#fee2e2", default:"#f1f5f9" }[state.color] || "#f1f5f9";
   const pillFg = { green:"#15803d", yellow:"#b45309", blue:"#1d4ed8", red:"#b91c1c", default:"#475569" }[state.color] || "#475569";
 
-  // Timeline checklist
+  // Timeline checklist — each step enabled only for users who own that step
   const stepsHtml = TIMELINE_STEPS.map(step => {
-    const checked = !!tl[step];
-    return `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:${checked?"#f0fdf4":"#f8fafc"};border:1px solid ${checked?"#86efac":"#e5e7eb"};cursor:${isAdmin?"pointer":"default"};user-select:none;transition:background .1s;">
-      <input type="checkbox" data-step="${esc(step)}" ${checked?"checked":""} ${isAdmin?"":"disabled"} style="width:15px;height:15px;flex-shrink:0;accent-color:#0f766e;">
+    const checked  = !!tl[step];
+    const editable = canToggleStep(step);
+    return `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:${checked?"#f0fdf4":"#f8fafc"};border:1px solid ${checked?"#86efac":"#e5e7eb"};cursor:${editable?"pointer":"default"};user-select:none;transition:background .1s;">
+      <input type="checkbox" data-step="${esc(step)}" ${checked?"checked":""} ${editable?"":"disabled"} style="width:15px;height:15px;flex-shrink:0;accent-color:#0f766e;${editable?"":"opacity:.4;"}">
       <span style="font-size:13px;color:${checked?"#6b7280":"#1f2937"};${checked?"text-decoration:line-through;":""}">${esc(step)}</span>
     </label>`;
   }).join("");
@@ -662,22 +677,23 @@ function openDetailModal(projectId) {
 
   // ── Wire interactions ──────────────────────────────────────────────────────
 
-  // Timeline checkboxes
-  if (isAdmin) {
+  // Timeline checkboxes — wired for any user who can toggle at least one step
+  if (canEdit) {
     body.querySelector("#tl-steps")?.addEventListener("change", async e => {
       const cb = e.target.closest("input[type=checkbox][data-step]");
       if (!cb) return;
       const step = cb.dataset.step;
+      if (!canToggleStep(step)) { cb.checked = !cb.checked; return; } // safety guard
       const checked = cb.checked;
       const updates = {
         [`timeline.${step}`]: checked,
         lastActivity: serverTimestamp(),
         updatedAt: new Date().toISOString(),
-        activity: arrayUnion({ text: `marked "${step}" as ${checked ? "complete" : "incomplete"}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
+        activity: arrayUnion({ text: `${checked ? "completed" : "uncompleted"}: ${step}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
       };
-      // Auto-approve on "Topic Proposal Complete" check
-      if (step === "Topic Proposal Complete" && checked) updates.proposalStatus = "approved";
-      if (step === "Topic Proposal Complete" && !checked) updates.proposalStatus = "pending";
+      // Auto-approve proposal when author checks "Topic Proposal Complete"
+      if (step === "Topic Proposal Complete" && checked && isAdmin) updates.proposalStatus = "approved";
+      if (step === "Topic Proposal Complete" && !checked && isAdmin) updates.proposalStatus = "pending";
       try {
         await updateDoc(doc(workflowDb, "projects", project.id), updates);
         toast(checked ? "Step marked complete." : "Step unchecked.", "success");
