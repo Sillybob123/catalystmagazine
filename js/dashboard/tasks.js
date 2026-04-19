@@ -7,7 +7,7 @@
  * - Assignees mark tasks complete.
  */
 
-import { workflowDb } from "../firebase-dual-config.js";
+import { db as workflowDb } from "../firebase-dual-config.js";
 import {
   collection,
   doc,
@@ -149,17 +149,8 @@ export async function mount(ctx, container) {
 
 async function loadUsers() {
   try {
-    // Try workflowDb first
     const snap = await getDocs(collection(workflowDb, "users"));
     _allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch { /* ignore */ }
-  // Supplement from primary db
-  try {
-    const { db } = await import("../firebase-config.js");
-    const { getDocs: gd, collection: col } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-    const snap = await gd(col(db, "users"));
-    const ids = new Set(_allUsers.map(u => u.id));
-    snap.forEach(d => { if (!ids.has(d.id)) _allUsers.push({ id: d.id, ...d.data() }); });
   } catch { /* ignore */ }
 }
 

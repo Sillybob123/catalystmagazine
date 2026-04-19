@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Seed Workflow Data — One-time migration tool</title>
+<style>
+  body { font-family: -apple-system, sans-serif; max-width: 700px; margin: 60px auto; padding: 0 24px; }
+  h1 { font-size: 20px; }
+  p { color: #555; }
+  button { background: #111; color: #fff; border: none; padding: 12px 28px; border-radius: 8px; font-size: 15px; cursor: pointer; }
+  button:disabled { background: #999; cursor: not-allowed; }
+  #log { margin-top: 24px; background: #f4f4f4; border-radius: 8px; padding: 16px; font-family: monospace; font-size: 13px; white-space: pre-wrap; max-height: 500px; overflow-y: auto; }
+  .ok  { color: #15803d; }
+  .err { color: #b91c1c; }
+  .done { color: #1d4ed8; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>Seed Workflow Data → catalystwriters-5ce43</h1>
+<p>This page writes all projects, settings, and meetings from the old catalystmonday database into the primary catalystwriters Firebase project. Run this once while signed in as an admin.</p>
+<button id="btn">Run Migration</button>
+<div id="log">Click "Run Migration" to begin…</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, doc, setDoc, Timestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyDY2KhiDrOqRTdHKB1XfEndM_q0hS6tx-0",
+  authDomain: "catalystwriters-5ce43.firebaseapp.com",
+  projectId: "catalystwriters-5ce43",
+  storageBucket: "catalystwriters-5ce43.firebasestorage.app",
+  messagingSenderId: "450537311266",
+  appId: "1:450537311266:web:d0c286d8a5553eb92a0e7b",
+});
+const db = getFirestore(app);
+
+const log = document.getElementById("log");
+const btn = document.getElementById("btn");
+
+function line(msg, cls="") {
+  const span = document.createElement("span");
+  if (cls) span.className = cls;
+  span.textContent = msg + "\n";
+  log.appendChild(span);
+  log.scrollTop = log.scrollHeight;
+}
+
+function ts(iso) {
+  if (!iso) return null;
+  return Timestamp.fromDate(new Date(iso));
+}
+
+// ── All 14 projects ───────────────────────────────────────────────────────────
+const PROJECTS = [
+  {
+    id: "0zwX1WQezowukvz7FFLQ",
+    authorId: "ambIEY71lSbeZ1cn94h0kOht3lZ2", authorName: "Alexis Tamm",
+    title: "STIA at Georgetown", type: "Interview",
+    proposal: "(going to come up with a better title don't worry) - planning on interviewing the director of STIA and other STIA profs/students about how the major is uniquely poised to prepare students for a career in science and foreign affairs!",
+    proposalStatus: "approved", deadline: "2026-02-23",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-02-23", review:"" },
+    editorId: "E4ImUZWrRNRNm0KFT9PGCeXZm4a2", editorName: "Lori Preci",
+    createdAt: "2026-01-25T23:38:39Z", updatedAt: "2026-04-02T15:37:46Z", lastActivity: "2026-04-16T19:07:22Z",
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":true,"Review In Progress":true,"Suggestions Reviewed":true,"Review Complete":false },
+    activity: [
+      { authorName:"Alexis Tamm", text:"created the project.", timestamp:"2026-01-25T23:38:39Z" },
+      { authorName:"Alexis Tamm", text:"completed: Interview Scheduled", timestamp:"2026-01-25T23:38:59Z" },
+      { authorName:"Alexis Tamm", text:'commented: "Interview with Emily Mendenhall (director of STIA) on Monday 1/26"', timestamp:"2026-01-25T23:39:46Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2026-01-28T18:32:53Z" },
+      { authorName:"Alexis Tamm", text:`commented: "I have an interview with a different professor scheduled tomorrow, and am hoping to get a student interview this week!"`, timestamp:"2026-02-01T15:34:20Z" },
+      { authorName:"Alexis Tamm", text:"completed: Interview Complete", timestamp:"2026-02-23T17:44:38Z" },
+      { authorName:"Alexis Tamm", text:"completed: Article Writing Complete", timestamp:"2026-02-27T03:01:00Z" },
+      { authorName:"Aidan Schurr", text:"assigned Le Nguyen as editor", timestamp:"2026-03-04T19:12:02Z" },
+      { authorName:"Yair Ben-Dor", text:"reassigned editor from Le Nguyen to Lori Preci", timestamp:"2026-03-08T21:00:03Z" },
+      { authorName:"Yair Ben-Dor", text:"reassigned editor from Lori Preci to Lori Preci", timestamp:"2026-03-08T21:00:04Z" },
+      { authorName:"Aidan Schurr", text:"completed: Review In Progress", timestamp:"2026-04-02T15:36:42Z" },
+      { authorName:"Aidan Schurr", text:"reassigned editor from Lori Preci to Lori Preci", timestamp:"2026-04-02T15:37:46Z" },
+      { authorName:"Alexis Tamm", text:"completed: Suggestions Reviewed", timestamp:"2026-04-16T19:07:07Z" },
+      { authorName:"Alexis Tamm", text:'commented: "Waiting for a final look from a different editor (I believe Le?)"', timestamp:"2026-04-16T19:07:22Z" },
+    ],
+  },
+  {
+    id: "6jJBPmhpIKpDXQ1AzCrR",
+    authorId: "yj6KYUqyo3dmv9pSnCUTMxmT0j63", authorName: "Belinda Li",
+    title: "Why we forget / The science of forgetting (or something better)", type: "Interview",
+    proposal: "There's a considerable amount of media and public attention on the science of memory formation and how that's disrupted by disease. But there's also a counter process of forgetting memories, purposeful forgetting, that is considerably important as well. Forgetting enhances memory flexibility and promotes generalization. It's also involved in the pathophysiology of disorders such as schizophrenia and PTSD. The Cervantes lab at Georgetown studies this, specifically the role of a scaffolding protein in the process, and I'll be speaking with Prof Isaac Cervantes next week to discuss his research.",
+    proposalStatus: "approved", deadline: "2026-02-22",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-02-22", review:"" },
+    editorId: null, editorName: null,
+    createdAt: "2026-01-27T17:13:31Z", updatedAt: "2026-01-27T17:13:31Z", lastActivity: null,
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":true,"Suggestions Reviewed":true,"Review In Progress":false,"Review Complete":false },
+    activity: [
+      { authorName:"Belinda Li", text:"created the project.", timestamp:"2026-01-27T17:13:30Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2026-01-28T18:33:21Z" },
+      { authorName:"Yair Ben-Dor", text:'commented: "Sounds really cool!"', timestamp:"2026-01-28T18:33:22Z" },
+      { authorName:"Belinda Li", text:"completed: Interview Scheduled", timestamp:"2026-01-30T20:59:45Z" },
+      { authorName:"Belinda Li", text:"completed: Interview Complete", timestamp:"2026-02-04T18:05:58Z" },
+      { authorName:"Belinda Li", text:"completed: Article Writing Complete", timestamp:"2026-02-18T13:43:04Z" },
+      { authorName:"Belinda Li", text:`commented: "It's currently at the professor undergoing science review. I also need to know whether I should cut out the anesthesia study part. Other than that I think it's good to go."`, timestamp:"2026-02-26T16:35:27Z" },
+      { authorName:"Belinda Li", text:'commented: "Approved by professor. Anesthesia chunk taken out. Ready for final pass!"', timestamp:"2026-02-27T18:56:39Z" },
+      { authorName:"Belinda Li", text:"completed: Suggestions Reviewed", timestamp:"2026-02-28T16:06:48Z" },
+    ],
+  },
+  {
+    id: "7khJMTyI5yJCilp7Xqhn",
+    authorId: "qvOamGsq7FVcYMeBK6P4NQtvRHh1", authorName: "Cameron Fields",
+    title: "What's on your plate? A look at the new 2025 US Dietary Guidelines", type: "Op-Ed",
+    proposal: "I want to take a look at the previous dietary guideline and compare it to the new guideline published in January. Specifically looking at its pros/cons and how it differed from what experts projected it would be. I am looking to interview Dr. Erin Hager from the Bloomberg School for Public Health. (She focuses on children's healthy growth and development through research on policies and programs for families, schools, and communities).",
+    proposalStatus: "approved", deadline: "2026-04-25",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-04-25", review:"" },
+    editorId: null, editorName: null,
+    createdAt: "2026-03-25T15:18:12Z", updatedAt: "2026-03-25T15:18:12Z", lastActivity: "2026-03-26T18:39:28Z",
+    timeline: { "Topic Proposal Complete":true,"Article Writing Complete":false,"Review In Progress":false,"Review Complete":false,"Suggestions Reviewed":false },
+    activity: [
+      { authorName:"Cameron Fields", text:"created the project.", timestamp:"2026-03-25T15:18:11Z" },
+      { authorName:"Aidan Schurr", text:"approved the proposal", timestamp:"2026-03-26T18:39:28Z" },
+    ],
+  },
+  {
+    id: "MOHBEUE6Slchk0Bmvb3v",
+    authorId: "qse3g0G5JcWXi0Paj8yxGiaQ6ww2", authorName: "beonguyen2005",
+    title: "Dementia DataHub with Dr. Melinda Power", type: "Interview",
+    proposal: "The Dementia DataHub was created by NORC at the University of Chicago in partnership with the Milken Institute School of Public Health at GWU. The database provides the first-ever publicly available on the accounts and rates of diagnosed dementia by state and county in the US. Dr. Melinda Power played a leading role in the creation of the Dementia DataHub, and I'd like to interview her on its transformative impact on public health understanding. In addition to being an academic leader in the field of dementia, Dr. Power is also an expert in epidemiology, and one of her research interests is understanding how environmental pollutants or toxins contribute to accelerated cognitive deterioration in older adults. My article will focus on Dr. Power's academic journey, the history of the creation of the Dementia DataHub, and what she's currently researching in this field.",
+    proposalStatus: "pending", deadline: "2026-05-31",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-05-31", review:"" },
+    editorId: null, editorName: null,
+    createdAt: "2026-04-11T18:42:54Z", updatedAt: "2026-04-11T18:42:54Z", lastActivity: null,
+    timeline: { "Topic Proposal Complete":false,"Interview Scheduled":false,"Interview Complete":false,"Article Writing Complete":false,"Review In Progress":false,"Review Complete":false,"Suggestions Reviewed":false },
+    activity: [
+      { authorName:"beonguyen2005", text:"created the project.", timestamp:"2026-04-11T18:42:54Z" },
+    ],
+  },
+  {
+    id: "QeLcefWaiiR1XmAicQvw",
+    authorId: "R1npCarvaWX9wV9HrQ0cj60UltH2", authorName: "jada.traynor",
+    title: "NVC Article #3", type: "Interview",
+    proposal: "No proposal provided.",
+    proposalStatus: "pending", deadline: "2026-04-23",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-04-23", review:"" },
+    editorId: null, editorName: null,
+    createdAt: "2026-04-16T21:25:45Z", updatedAt: "2026-04-16T21:25:45Z", lastActivity: "2026-04-16T21:27:17Z",
+    timeline: { "Topic Proposal Complete":false,"Interview Scheduled":true,"Interview Complete":false,"Article Writing Complete":false,"Review In Progress":false,"Review Complete":false,"Suggestions Reviewed":false },
+    activity: [
+      { authorName:"jada.traynor", text:"created the project.", timestamp:"2026-04-16T21:25:46Z" },
+      { authorName:"jada.traynor", text:"completed: Interview Scheduled", timestamp:"2026-04-16T21:26:05Z" },
+      { authorName:"jada.traynor", text:`commented: "Had some delays in scheduling interview due to the team's field work."`, timestamp:"2026-04-16T21:27:18Z" },
+      { authorName:"jada.traynor", text:"uncompleted: Interview Scheduled", timestamp:"2026-04-16T21:27:32Z" },
+      { authorName:"jada.traynor", text:"completed: Interview Scheduled", timestamp:"2026-04-16T21:27:33Z" },
+      { authorName:"jada.traynor", text:"completed: Interview Complete", timestamp:"2026-04-16T21:27:34Z" },
+      { authorName:"jada.traynor", text:"uncompleted: Interview Scheduled", timestamp:"2026-04-16T21:27:36Z" },
+      { authorName:"jada.traynor", text:"completed: Interview Scheduled", timestamp:"2026-04-16T21:27:37Z" },
+      { authorName:"jada.traynor", text:"uncompleted: Interview Complete", timestamp:"2026-04-16T21:27:39Z" },
+    ],
+  },
+  {
+    id: "UmQx8VvfQFDGpXR0zWBQ",
+    authorId: "GvoNsm6rspW8pdGCHoSvLKAO4413", authorName: "Izzy Lubinsky",
+    title: "Microbes as a Mechanism for Environmental Adaptation", type: "Interview",
+    proposal: "Interview with Dr. Anny Cárdenas, American University professor, on her lab work which investigates microbiome-mediated adaptations that support adaptation to environmental change.",
+    proposalStatus: "approved", deadline: "2026-02-21",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-02-21", review:"" },
+    editorId: "ZPBFhEEO3cWzjUbNDNfhRxr5c102", editorName: "Naama Ben-Dor",
+    createdAt: "2026-01-02T14:33:59Z", updatedAt: "2026-04-05T21:44:58Z", lastActivity: "2026-04-05T21:44:58Z",
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":true,"Review In Progress":true,"Suggestions Reviewed":true,"Review Complete":false },
+    activity: [
+      { authorName:"Izzy Lubinsky", text:"created the project.", timestamp:"2026-01-02T14:33:58Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2026-01-20T21:05:56Z" },
+      { authorName:"Yair Ben-Dor", text:"assigned Aidan Schurr as editor", timestamp:"2026-01-22T19:34:11Z" },
+      { authorName:"Izzy Lubinsky", text:"completed: Interview Scheduled", timestamp:"2026-02-19T17:43:53Z" },
+      { authorName:"Izzy Lubinsky", text:"completed: Interview Complete", timestamp:"2026-02-19T17:43:53Z" },
+      { authorName:"Izzy Lubinsky", text:"completed: Article Writing Complete", timestamp:"2026-03-17T16:24:25Z" },
+      { authorName:"Yair Ben-Dor", text:"completed: Review In Progress", timestamp:"2026-04-05T21:44:25Z" },
+      { authorName:"Yair Ben-Dor", text:"reassigned editor from Aidan Schurr to Naama Ben-Dor", timestamp:"2026-04-05T21:44:58Z" },
+      { authorName:"Izzy Lubinsky", text:"completed: Suggestions Reviewed", timestamp:"2026-04-07T16:17:52Z" },
+    ],
+  },
+  {
+    id: "WByLObJXSxzQYk3UltNk",
+    authorId: "qse3g0G5JcWXi0Paj8yxGiaQ6ww2", authorName: "Le Nguyen",
+    title: "The Neuroscience behind Nighttime Anxiety", type: "Op-Ed",
+    proposal: "Nighttime anxiety can interfere with sleep, making it difficult to fall asleep or stay asleep. In the absence of timely intervention, chronic nighttime anxiety can contribute to insomnia and affect a person's quality of life. In this piece, I seek to explore nighttime anxiety from a neuroscience perspective. I'm interested in answering three fundamental questions: What happens inside the brain that gives rise to nighttime anxiety? What factors can intensify or reduce the likelihood of experiencing nighttime anxiety? How do we leverage this understanding to make appropriate lifestyle changes to avoid or address underlying issues that contribute to nighttime anxiety?",
+    proposalStatus: "approved", deadline: "2025-11-08",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2025-11-08", review:"" },
+    editorId: "8LdHnkyhEITmcEE0h93DIC4ZDXv2", editorName: "Aidan Schurr",
+    createdAt: "2025-10-20T14:34:14Z", updatedAt: "2025-10-20T14:34:14Z", lastActivity: null,
+    timeline: { "Topic Proposal Complete":true,"Article Writing Complete":true,"Suggestions Reviewed":true,"Review In Progress":false,"Review Complete":false },
+    activity: [
+      { authorName:"Le Nguyen", text:"created the project.", timestamp:"2025-10-20T14:34:14Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2025-10-22T23:23:36Z" },
+      { authorName:"Le Nguyen", text:"completed: Article Writing Complete", timestamp:"2025-11-09T15:43:55Z" },
+      { authorName:"Yair Ben-Dor", text:"assigned Aidan Schurr as editor", timestamp:"2025-11-09T16:06:03Z" },
+      { authorName:"beonguyen2005", text:"completed: Suggestions Reviewed", timestamp:"2026-02-07T14:37:57Z" },
+    ],
+  },
+  {
+    id: "a1LRwLYGRx2Hx55GK96l",
+    authorId: "ZPBFhEEO3cWzjUbNDNfhRxr5c102", authorName: "Naama Ben-Dor",
+    title: "Misfolded Proteins and the Future of Neurodegeneration Research: An Interiew with Dr. Kathy Maguire-Zeiss", type: "Interview",
+    proposal: "This article will center on Dr. Kathy Maguire-Zeiss's work as a researcher of neurodegeneration and as an award-winning educator at Georgetown University. It will provide an overview about the global rise in neurodegenerative diseases, the role of misfolded proteins in these disorders, and Dr. KMZ's work to study them. It will then transition into a brief discussion about the future of research and scientific collaboration (which she has worked to promote at Georgetown).",
+    proposalStatus: "approved", deadline: "2025-12-16",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2025-12-16", review:"" },
+    editorId: "cdOpwcOHHsj3JVHkF497", editorName: "Le Nguyen",
+    createdAt: "2025-12-02T23:36:30Z", updatedAt: "2025-12-02T23:36:30Z", lastActivity: null,
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":true,"Review In Progress":true,"Review Complete":true,"Suggestions Reviewed":true },
+    activity: [
+      { authorName:"Naama Ben-Dor", text:"created the project.", timestamp:"2025-12-02T23:36:29Z" },
+      { authorName:"Naama Ben-Dor", text:"completed: Interview Complete", timestamp:"2025-12-02T23:36:44Z" },
+      { authorName:"Naama Ben-Dor", text:"completed: Interview Scheduled", timestamp:"2025-12-02T23:36:46Z" },
+      { authorName:"Naama Ben-Dor", text:"completed: Article Writing Complete", timestamp:"2025-12-02T23:37:09Z" },
+      { authorName:"Naama Ben-Dor", text:"uncompleted: Article Writing Complete", timestamp:"2025-12-02T23:37:10Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2025-12-02T23:38:27Z" },
+      { authorName:"Yair Ben-Dor", text:"assigned Le Nguyen as editor", timestamp:"2026-01-22T19:34:21Z" },
+      { authorName:"Yair Ben-Dor", text:"completed: Article Writing Complete", timestamp:"2026-01-25T22:16:24Z" },
+      { authorName:"Yair Ben-Dor", text:"completed: Review In Progress", timestamp:"2026-01-25T22:16:25Z" },
+      { authorName:"Yair Ben-Dor", text:"completed: Review Complete", timestamp:"2026-01-25T22:16:27Z" },
+      { authorName:"Aidan Schurr", text:"completed: Suggestions Reviewed", timestamp:"2026-04-02T15:35:56Z" },
+    ],
+  },
+  {
+    id: "h63SjIilU8u7rJ8LxYYX",
+    authorId: "yj6KYUqyo3dmv9pSnCUTMxmT0j63", authorName: "Belinda Li",
+    title: "Male infertility in black-footed ferrets", type: "Interview",
+    proposal: "I'd like to write about the work of my professor, Alexandra DeCandia, on male infertility of black-footed ferrets. This summer, she was the lead author of a published a paper on altered sperm DNA methylation in ex situ reared black-footed ferrets. I might focus on that paper, but I think I really want the focus to be that line of research rather than profiling her as a scientist/individual or highlighting her (which does a ton of other research). I think this idea could be interesting from both a genetics and conservation angle. I'd speak with collaborators from scientists also working on black-footed ferret conservation across the country.",
+    proposalStatus: "approved", deadline: "2026-02-27",
+    deadlines: {},
+    editorId: null, editorName: null,
+    createdAt: "2026-01-28T01:27:07Z", updatedAt: "2026-02-06T21:29:03Z", lastActivity: "2026-03-12T19:50:25Z",
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":false,"Review In Progress":false,"Review Complete":false,"Suggestions Reviewed":false },
+    activity: [
+      { authorName:"Belinda Li", text:"created the project.", timestamp:"2026-01-28T01:27:06Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2026-01-28T18:33:50Z" },
+      { authorName:"Belinda Li", text:"updated the proposal", timestamp:"2026-02-06T21:29:03Z" },
+      { authorName:"Belinda Li", text:"requested deadline changes. Reason: Been a process trying to secure interviews", timestamp:"2026-02-26T16:35:54Z" },
+      { authorName:"Belinda Li", text:'commented: "Hoping to get a draft done by around 3/15"', timestamp:"2026-02-27T17:04:22Z" },
+      { authorName:"Belinda Li", text:"completed: Interview Scheduled", timestamp:"2026-02-27T18:56:51Z" },
+      { authorName:"Belinda Li", text:`commented: "Interview scheduled for 3/11 with Allie DeCandia, getting some written emailed responses from the Smithsonian, and currently trying to get an interview from Robyn Bortner at the USFWS National Black-Footed Ferret Conservation Center!"`, timestamp:"2026-02-27T18:58:16Z" },
+      { authorName:"Yair Ben-Dor", text:"approved deadline change request", timestamp:"2026-03-07T17:26:30Z" },
+      { authorName:"Belinda Li", text:"completed: Interview Complete", timestamp:"2026-03-12T19:49:59Z" },
+      { authorName:"Belinda Li", text:'commented: "Might be a while before this gets written..."', timestamp:"2026-03-12T19:50:25Z" },
+    ],
+  },
+  {
+    id: "j5OHzU3CeqmwLAyWbcTs",
+    authorId: "X2KxbnbjRReXZnynPMEbGJPVqw43", authorName: "Aidan Brown",
+    title: "The Role of Education In the Growing AI World", type: "Interview",
+    proposal: "I want to write an article that explores the intersection of AI and education, more specifically how colleges are prioritizing AI in a world where it is becoming increasingly common, and a shift towards education that doesn't just include AI, but prioritizes it through coursework or other methods will put students at the top. There are some exciting groups working on this in the DMV, such as the Artificial Intelligence Interdisciplinary Institute (AIM) at UMD. There is also the broader TRAILS (Trustworthy AI in Law and Society) which is a multi institution group including people from GW, UMD, and Cornell.",
+    proposalStatus: "approved", deadline: "2025-12-10",
+    deadlines: { contact:"2025-10-21", draft:"", edits:"", interview:"", publication:"2025-12-10", review:"" },
+    editorId: "E4ImUZWrRNRNm0KFT9PGCeXZm4a2", editorName: "Lori Preci",
+    createdAt: "2025-10-16T02:45:52Z", updatedAt: "2025-10-16T02:45:52Z", lastActivity: null,
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":true,"Review In Progress":true,"Review Complete":true,"Suggestions Reviewed":true },
+    activity: [
+      { authorName:"Aidan Brown", text:"created the project.", timestamp:"2025-10-16T02:45:51Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2025-10-16T16:16:33Z" },
+      { authorName:"Yair Ben-Dor", text:'commented: "Sounds really interesting!!! Best of luck!"', timestamp:"2025-10-16T16:16:54Z" },
+      { authorName:"Yair Ben-Dor", text:"updated project deadlines (Contact Professor)", timestamp:"2025-10-16T16:47:56Z" },
+      { authorName:"Aidan Brown", text:"completed: Interview Scheduled", timestamp:"2025-11-06T23:13:15Z" },
+      { authorName:"Aidan Brown", text:"completed: Interview Complete", timestamp:"2025-11-13T16:23:44Z" },
+      { authorName:"Yair Ben-Dor", text:"assigned Lori Preci as editor", timestamp:"2025-12-02T00:46:06Z" },
+      { authorName:"Yair Ben-Dor", text:"reassigned editor from Lori Preci to Lori Preci", timestamp:"2025-12-02T00:46:09Z" },
+      { authorName:"Aidan Brown", text:"completed: Article Writing Complete", timestamp:"2026-02-01T20:03:03Z" },
+      { authorName:"Aidan Brown", text:"completed: Suggestions Reviewed", timestamp:"2026-02-16T18:43:02Z" },
+      { authorName:"Yair Ben-Dor", text:"uncompleted: Suggestions Reviewed", timestamp:"2026-02-23T15:39:44Z" },
+      { authorName:"Yair Ben-Dor", text:"completed: Review In Progress", timestamp:"2026-02-23T15:40:03Z" },
+      { authorName:"Yair Ben-Dor", text:"completed: Review Complete", timestamp:"2026-02-23T15:40:04Z" },
+      { authorName:"Aidan Brown", text:"completed: Suggestions Reviewed", timestamp:"2026-03-16T19:32:26Z" },
+      { authorName:"Aidan Brown", text:"uncompleted: Suggestions Reviewed", timestamp:"2026-04-05T21:41:14Z" },
+      { authorName:"Aidan Brown", text:"completed: Suggestions Reviewed", timestamp:"2026-04-05T21:41:17Z" },
+    ],
+  },
+  {
+    id: "oLiamUBKaF6uQFTFIYuR",
+    authorId: "X2KxbnbjRReXZnynPMEbGJPVqw43", authorName: "Aidan Brown",
+    title: "NVC Article", type: "Interview",
+    proposal: "Interviewed Savor SNAP, which is a team of two that are finalists in the NVC",
+    proposalStatus: "approved", deadline: "2026-04-05",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-04-05", review:"" },
+    editorId: "ZPBFhEEO3cWzjUbNDNfhRxr5c102", editorName: "Naama Ben-Dor",
+    createdAt: "2026-04-02T16:47:47Z", updatedAt: "2026-04-05T21:40:18Z", lastActivity: "2026-04-05T21:40:18Z",
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":true,"Review In Progress":true,"Review Complete":false,"Suggestions Reviewed":false },
+    activity: [
+      { authorName:"Aidan Brown", text:"created the project.", timestamp:"2026-04-02T16:47:47Z" },
+      { authorName:"Aidan Brown", text:"completed: Interview Scheduled", timestamp:"2026-04-02T16:47:55Z" },
+      { authorName:"Aidan Brown", text:"completed: Interview Complete", timestamp:"2026-04-02T16:47:56Z" },
+      { authorName:"Aidan Schurr", text:"approved the proposal", timestamp:"2026-04-05T19:15:41Z" },
+      { authorName:"Aidan Brown", text:"completed: Article Writing Complete", timestamp:"2026-04-05T21:40:13Z" },
+      { authorName:"Yair Ben-Dor", text:"assigned Naama Ben-Dor as editor", timestamp:"2026-04-05T21:40:18Z" },
+      { authorName:"Yair Ben-Dor", text:"completed: Review In Progress", timestamp:"2026-04-17T02:19:28Z" },
+    ],
+  },
+  {
+    id: "rQIfMIr0uaUUeq7LNeHS",
+    authorId: "pX8Kp88nzibiAiu0KsbZJD0UYjT2", authorName: "Sydney Reiser",
+    title: "The Future of Super Conductors", type: "Interview",
+    proposal: "Speaking with another PhD in my group who is about to graduate about his work on superconductors. Angle: Future of the field? being a PhD?",
+    proposalStatus: "approved", deadline: "2026-03-31",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-03-31", review:"" },
+    editorId: null, editorName: null,
+    createdAt: "2026-02-08T21:41:48Z", updatedAt: "2026-02-08T21:41:48Z", lastActivity: null,
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":false,"Review In Progress":false,"Review Complete":false,"Suggestions Reviewed":false },
+    activity: [
+      { authorName:"Sydney Reiser", text:"created the project.", timestamp:"2026-02-08T21:41:47Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2026-02-09T16:40:39Z" },
+      { authorName:"Sydney Reiser", text:"completed: Interview Scheduled", timestamp:"2026-03-25T13:53:45Z" },
+      { authorName:"Sydney Reiser", text:"completed: Interview Complete", timestamp:"2026-04-05T21:49:09Z" },
+    ],
+  },
+  {
+    id: "sMZE0SBlvbepcgFFMZHD",
+    authorId: "qse3g0G5JcWXi0Paj8yxGiaQ6ww2", authorName: "Le Nguyen",
+    title: "AI-Driven Imaging Tool for Stroke Detection", type: "Interview",
+    proposal: "Annually, about 800,000 people in the U.S. have strokes. Every stroke is slightly different in size and location in the brain. These differences make it difficult to study recovery from stroke because each survivor will face various challenges depending on the size and location of the stroke, such as weakness on one side of the body or difficulty speaking. Recently, stroke physician-scientists at Georgetown University Medical Center launched a new, first-of-its-kind AI-powered brain imaging platform that is expected to revolutionize the way stroke recovery research is conducted, as well as assist in the detection of stroke. I'm planning to interview Dr. Peter E. Turkeltaub for this piece.",
+    proposalStatus: "approved", deadline: "2025-12-21",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2025-12-21", review:"" },
+    editorId: "ambIEY71lSbeZ1cn94h0kOht3lZ2", editorName: "Alexis Tamm",
+    createdAt: "2025-10-20T14:33:34Z", updatedAt: "2026-04-02T15:37:13Z", lastActivity: "2026-04-02T15:37:13Z",
+    timeline: { "Topic Proposal Complete":true,"Interview Scheduled":true,"Interview Complete":true,"Article Writing Complete":true,"Review In Progress":true,"Review Complete":true,"Suggestions Reviewed":true },
+    activity: [
+      { authorName:"Le Nguyen", text:"created the project.", timestamp:"2025-10-20T14:33:34Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2025-10-22T21:53:13Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2025-10-22T21:53:14Z" },
+      { authorName:"Le Nguyen", text:"completed: Interview Scheduled", timestamp:"2025-11-17T23:47:37Z" },
+      { authorName:"Le Nguyen", text:"completed: Interview Complete", timestamp:"2025-12-06T14:44:30Z" },
+      { authorName:"beonguyen2005", text:"completed: Article Writing Complete", timestamp:"2026-03-08T15:51:02Z" },
+      { authorName:"Yair Ben-Dor", text:"assigned Naama Ben-Dor as editor", timestamp:"2026-03-08T20:50:13Z" },
+      { authorName:"Aidan Schurr", text:"completed: Review In Progress", timestamp:"2026-04-02T15:36:53Z" },
+      { authorName:"Aidan Schurr", text:"completed: Review Complete", timestamp:"2026-04-02T15:37:07Z" },
+      { authorName:"Aidan Schurr", text:"reassigned editor from Naama Ben-Dor to Alexis Tamm", timestamp:"2026-04-02T15:37:12Z" },
+      { authorName:"Yair Ben-Dor", text:"completed: Suggestions Reviewed", timestamp:"2026-04-05T21:48:55Z" },
+      { authorName:"Yair Ben-Dor", text:"uncompleted: Suggestions Reviewed", timestamp:"2026-04-05T21:48:56Z" },
+      { authorName:"beonguyen2005", text:"completed: Suggestions Reviewed", timestamp:"2026-04-11T18:30:17Z" },
+    ],
+  },
+  {
+    id: "v9MlLEvbaPvCs5Iy45JU",
+    authorId: "E4ImUZWrRNRNm0KFT9PGCeXZm4a2", authorName: "Lori Preci",
+    title: "Breaking Into the Biotech Canon: The Rise of the BioHealth Capital Region", type: "Op-Ed",
+    proposal: "This first installment of the blog series aims to introduce the overarching purpose, scope, and structure of this project. I'm still experimenting with voice and format.",
+    proposalStatus: "approved", deadline: "2026-01-10",
+    deadlines: { contact:"", draft:"", edits:"", interview:"", publication:"2026-01-10", review:"" },
+    editorId: null, editorName: null,
+    createdAt: "2025-12-03T00:54:15Z", updatedAt: "2025-12-03T00:54:15Z", lastActivity: null,
+    timeline: { "Topic Proposal Complete":true,"Article Writing Complete":false,"Review In Progress":false,"Review Complete":false,"Suggestions Reviewed":false },
+    activity: [
+      { authorName:"Lori Preci", text:"created the project.", timestamp:"2025-12-03T00:54:14Z" },
+      { authorName:"Yair Ben-Dor", text:"approved the proposal", timestamp:"2025-12-07T00:01:20Z" },
+    ],
+  },
+];
+
+function prepareProject(p) {
+  const { id, activity, createdAt, updatedAt, lastActivity, ...rest } = p;
+  return {
+    ...rest,
+    createdAt: ts(createdAt),
+    updatedAt: ts(updatedAt),
+    lastActivity: ts(lastActivity),
+    activity: activity.map(a => ({ ...a, timestamp: ts(a.timestamp) })),
+  };
+}
+
+btn.addEventListener("click", async () => {
+  btn.disabled = true;
+  log.textContent = "";
+  let ok = 0, fail = 0;
+
+  try {
+    // ── Projects ──────────────────────────────────────────────────────────────
+    line("── Writing 14 projects ──────────────────────────────────────────────");
+    for (const p of PROJECTS) {
+      try {
+        await setDoc(doc(db, "projects", p.id), prepareProject(p), { merge: true });
+        line(`  ✓ projects/${p.id}  "${p.title}"`, "ok");
+        ok++;
+      } catch (e) {
+        line(`  ✗ projects/${p.id}: ${e.message}`, "err");
+        fail++;
+      }
+    }
+
+    // ── Settings/workflow ─────────────────────────────────────────────────────
+    line("\n── Settings ─────────────────────────────────────────────────────────");
+    const overrides = {
+      "6itakqYvuAbBMKLc12C6rRjgNVb2": { status:"hidden", updatedAt: ts("2026-02-23T16:30:42Z"), updatedBy:"bendoryair@gmail.com" },
+      "BidKP0Zdxmbw05Gr9XN4AnKJ1Wp1": { status:"hidden", updatedAt: ts("2026-01-20T21:08:03Z"), updatedBy:"bendoryair@gmail.com" },
+      "DPEAbD1P3USQScqUluDuwwrhMcx2": { status:"hidden", updatedAt: ts("2026-02-23T15:39:22Z"), updatedBy:"bendoryair@gmail.com" },
+      "GijuxelRGuWNMCgXoNDlNMoIolN2": { status:"hidden", updatedAt: ts("2026-04-16T18:51:52Z"), updatedBy:"bendoryair@gmail.com" },
+      "OgS7dL57bEUnPLPxWg0xIN1z0hF3": { status:"active", updatedAt: ts("2025-12-02T23:22:01Z"), updatedBy:"bendoryair@gmail.com" },
+      "ambIEY71lSbeZ1cn94h0kOht3lZ2": { status:"active", updatedAt: ts("2025-12-02T23:50:27Z"), updatedBy:"bendoryair@gmail.com" },
+      "wUuM5fJOlEhEdfeIlNFRaRJqPzZ2": { status:"hidden", updatedAt: ts("2026-01-23T00:59:09Z"), updatedBy:"bendoryair@gmail.com" },
+    };
+    await setDoc(doc(db, "settings", "workflow"), {
+      lastUpdated: ts("2026-04-16T18:51:53Z"),
+      overrides,
+    }, { merge: true });
+    line("  ✓ settings/workflow", "ok"); ok++;
+
+    // ── Settings/meetings ─────────────────────────────────────────────────────
+    await setDoc(doc(db, "settings", "meetings"), {
+      nextMeetingTime: ts("2026-04-05T21:30:00Z"),
+      nextMeetingTimezone: "America/New_York",
+      zoomLink: "https://gwu-edu.zoom.us/j/99827812988",
+    }, { merge: true });
+    line("  ✓ settings/meetings", "ok"); ok++;
+
+    line(`\n✓ Done! ${ok} documents written, ${fail} failed.`, "done");
+    line("\nThe dashboard will now read from catalystwriters-5ce43 only.", "done");
+    line("You can deploy the updated JS to make it permanent.", "done");
+
+  } catch (err) {
+    line(`\n✗ Fatal error: ${err.message}`, "err");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Run Again";
+});
+</script>
+</body>
+</html>

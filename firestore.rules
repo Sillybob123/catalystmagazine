@@ -149,6 +149,30 @@ service cloud.firestore {
       allow write: if isSignedIn() && request.auth.uid == uid;
     }
 
+    // ---------- workflow projects ----------
+    match /projects/{projectId} {
+      allow read: if isWriter();
+      allow create: if isWriter()
+        && request.resource.data.authorId == request.auth.uid;
+      allow update: if isWriter()
+        && (resource.data.authorId == request.auth.uid || isEditor());
+      allow delete: if isEditor();
+    }
+
+    // ---------- workflow tasks ----------
+    match /tasks/{taskId} {
+      allow read: if isWriter();
+      allow create: if isWriter();
+      allow update: if isWriter();
+      allow delete: if isEditor();
+    }
+
+    // ---------- workflow settings (meetings, overrides) ----------
+    match /settings/{docId} {
+      allow read: if isWriter();
+      allow write: if isAdmin();
+    }
+
     // ---------- default deny ----------
     match /{document=**} {
       allow read, write: if false;

@@ -5,11 +5,11 @@
  *   mount(ctx, container)  →  renders the full pipeline page
  *     ctx.mountKey: "interviews" | "opeds" | "mine" | undefined (defaults "interviews")
  *
- * Data lives in the catalystmonday Firestore project (workflowDb).
- * Collections: projects, users (editors), tasks
+ * Data lives in catalystwriters-5ce43 (primary Firebase project).
+ * Collections: projects, users (editors), tasks, settings
  */
 
-import { workflowDb } from "../firebase-dual-config.js";
+import { db as workflowDb } from "../firebase-dual-config.js";
 import {
   collection,
   doc,
@@ -300,8 +300,6 @@ function canPropose() {
 
 async function loadEditors() {
   try {
-    // editors from the catalystwriters-5ce43 db via ctx.authedFetch isn't reliable
-    // so we also load from workflowDb users collection
     const snap = await getDocs(collection(workflowDb, "users"));
     _allEditors = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
@@ -313,20 +311,7 @@ async function loadEditors() {
 }
 
 async function loadUsers() {
-  // already done in loadEditors for workflowDb, but also pull from primary db
-  try {
-    const { db } = await import("../firebase-config.js");
-    const { getDocs: gd, collection: col } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
-    const snap = await gd(col(db, "users"));
-    const primary = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Merge: prefer workflowDb entries but supplement with primary db
-    const ids = new Set(_allUsers.map(u => u.id));
-    for (const u of primary) if (!ids.has(u.id)) _allUsers.push(u);
-    const editorIds = new Set(_allEditors.map(e => e.id));
-    for (const u of primary) {
-      if (!editorIds.has(u.id) && ["admin", "editor"].includes(u.role)) _allEditors.push(u);
-    }
-  } catch (e) { /* ignore */ }
+  // No-op: workflowDb IS the primary db now — users already loaded in loadEditors
 }
 
 // ─── Board rendering ──────────────────────────────────────────────────────────
