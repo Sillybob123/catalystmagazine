@@ -453,6 +453,11 @@ body[data-page="article"] .back-link:hover {
   margin: 48px auto;
   border-radius: 4px;
 }
+/* height: auto prevents HTML width/height attributes (e.g. from a Google
+   Docs paste) from squishing the image into the wrong aspect ratio once
+   max-width kicks in. */
+.article-body img { height: auto; }
+.article-body figure img { height: auto; }
 .article-body figure { text-align: center; }
 /* Editorial figure caption — matches the compose editor so WYSIWYG holds.
    Hairline rule over a serif italic caption, with an optional small-caps

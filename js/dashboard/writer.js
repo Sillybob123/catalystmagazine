@@ -709,7 +709,9 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
       // a <figure> inside a <p> or drop contenteditable="false" — that breaks
       // the click-to-edit handler. Walk every figure we just inserted and
       // make sure it's at block level with the flags the toolbar expects.
-      // Also wrap any stray <img> that landed outside a figure.
+      // Also wrap any stray <img> that landed outside a figure, and strip
+      // width/height attributes so CSS can control sizing.
+      stripInlineImgDimensions(editorEl);
       upgradeLegacyImages(editorEl);
       normalizeEditorFigures(editorEl);
       editorEl.dispatchEvent(new Event("input", { bubbles: true }));
@@ -745,6 +747,27 @@ function normalizeEditorFigures(editorEl) {
     }
     if (!/\brt-size-[a-z]+\b/.test(fig.className)) {
       fig.classList.add("rt-size-standard");
+    }
+  });
+}
+
+// Google Docs (and Word) paste <img width="..." height="..." style="width: ..."
+// ...>, and those attributes win against "max-width: 100%" — the image gets
+// resized to a different aspect ratio and looks cropped/stretched. Strip
+// them so our CSS controls sizing purely from the figure's size class.
+function stripInlineImgDimensions(editorEl) {
+  editorEl.querySelectorAll("img").forEach((img) => {
+    img.removeAttribute("width");
+    img.removeAttribute("height");
+    const style = img.getAttribute("style") || "";
+    if (style) {
+      const cleaned = style
+        .split(";")
+        .map((rule) => rule.trim())
+        .filter((rule) => rule && !/^(width|height|max-width|max-height|min-width|min-height|aspect-ratio)\s*:/i.test(rule))
+        .join("; ");
+      if (cleaned) img.setAttribute("style", cleaned);
+      else img.removeAttribute("style");
     }
   });
 }
@@ -913,6 +936,7 @@ async function importRichPasteInline(rawHtml, editorEl, ctx) {
   // place. Each <img> carries its original data:/https src for now; we'll
   // rewrite them to uploaded URLs as the async uploads complete.
   insertBlockAtCaret(editorEl, html, savedRange);
+  stripInlineImgDimensions(editorEl);
   upgradeLegacyImages(editorEl);
   normalizeEditorFigures(editorEl);
   editorEl.dispatchEvent(new Event("input", { bubbles: true }));
@@ -2577,7 +2601,9 @@ async function loadDraft(id, wrap, ctx) {
     // may be missing contenteditable="false" or the data-rt-figure flag, and
     // without those the click-to-edit handler can't match them. Also upgrade
     // any bare <img> that never got wrapped in a .rt-figure so writers can
-    // edit size/alt/caption on old inline images too.
+    // edit size/alt/caption on old inline images too. Strip stale width/
+    // height attrs that old Docs pastes persisted so CSS can size the image.
+    stripInlineImgDimensions(bodyEl);
     upgradeLegacyImages(bodyEl);
     normalizeEditorFigures(bodyEl);
     // Restore the writer's checklist state so progress carries across sessions.
@@ -2626,7 +2652,9 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
 
   // Wrap any stray <img> in a figure and re-apply contenteditable="false" /
   // data-rt-figure on every figure, so the persisted HTML is clickable when
-  // the draft is reopened.
+  // the draft is reopened. Strip any width/height attrs a paste left behind
+  // so the saved HTML also renders cleanly on the public article page.
+  stripInlineImgDimensions(bodyEl);
   upgradeLegacyImages(bodyEl);
   normalizeEditorFigures(bodyEl);
 

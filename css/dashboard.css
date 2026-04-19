@@ -1335,6 +1335,11 @@ button { font-family: inherit; cursor: pointer; }
 .compose-body video {
   display: block;
   max-width: 100%;
+  /* height: auto is critical — Google Docs pastes <img width=... height=...>
+     attributes, and without this override the image gets squished to the
+     HTML-attribute height while width scales to the container, producing
+     weirdly cropped tall-thin or wide-short images. */
+  height: auto;
   margin: 0 auto;
   border-radius: 4px;
 }
@@ -1344,7 +1349,7 @@ button { font-family: inherit; cursor: pointer; }
 .compose-body figure.rt-size-compact { max-width: 520px; }
 .compose-body figure.rt-size-standard { max-width: 720px; }
 .compose-body figure.rt-size-large   { max-width: none; margin-left: -20px; margin-right: -20px; }
-.compose-body figure.rt-size-large img { width: 100%; max-width: none; border-radius: 0; }
+.compose-body figure.rt-size-large img { width: 100%; height: auto; max-width: none; border-radius: 0; }
 .article-body figure.rt-size-small   { max-width: 320px; margin-left: auto; margin-right: auto; }
 .article-body figure.rt-size-compact { max-width: 520px; margin-left: auto; margin-right: auto; }
 .article-body figure.rt-size-standard { max-width: 720px; margin-left: auto; margin-right: auto; }
