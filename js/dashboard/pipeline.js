@@ -496,8 +496,12 @@ function openDetailModal(projectId) {
   const pillBg = { green:"#dcfce7", yellow:"#fef3c7", blue:"#dbeafe", red:"#fee2e2", default:"#f1f5f9" }[state.color] || "#f1f5f9";
   const pillFg = { green:"#15803d", yellow:"#b45309", blue:"#1d4ed8", red:"#b91c1c", default:"#475569" }[state.color] || "#475569";
 
-  // Timeline checklist — each step enabled only for users who own that step
-  const stepsHtml = TIMELINE_STEPS.map(step => {
+  // Timeline checklist — each step enabled only for users who own that step.
+  // Op-Eds skip the interview-specific steps (they're not part of the op-ed flow).
+  const relevantSteps = TIMELINE_STEPS.filter(step =>
+    !(project.type === "Op-Ed" && (step === "Interview Scheduled" || step === "Interview Complete"))
+  );
+  const stepsHtml = relevantSteps.map(step => {
     const checked  = !!tl[step];
     const editable = canToggleStep(step);
     return `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:${checked?"#f0fdf4":"#f8fafc"};border:1px solid ${checked?"#86efac":"#e5e7eb"};cursor:${editable?"pointer":"default"};user-select:none;transition:background .1s;">

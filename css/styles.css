@@ -966,6 +966,16 @@ img {
   gap: 0.3em;
   overflow: visible;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.hero-title-nowrap {
+  display: inline-flex;
+  gap: 0.3em;
+  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .hero-word {
@@ -4451,6 +4461,11 @@ img {
     font-size: clamp(2.5rem, 10vw, 4rem);
     margin-bottom: 24px;
     line-height: 1.2;
+  }
+
+  .hero-title-nowrap {
+    display: contents;
+    white-space: normal;
   }
 
   .hero-badge {
