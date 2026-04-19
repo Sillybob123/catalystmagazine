@@ -599,7 +599,7 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
 
     setBusy(true, "Parsing your Doc…");
     try {
-      const { html, imageNodes } = convertGoogleDocsHtml(rawHtml);
+      const { wrapper, imageNodes } = convertGoogleDocsHtml(rawHtml);
 
       if (imageNodes.length) {
         const failures = [];
@@ -632,7 +632,9 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
         }
       }
 
-      cleanedHtml = html;
+      // Re-serialize AFTER uploads so the rewritten src="firebase://..." URLs
+      // land in the inserted HTML instead of the original data: URIs.
+      cleanedHtml = wrapper.innerHTML;
       target.innerHTML = cleanedHtml;
       updateCount();
       insertBtn.disabled = !cleanedHtml;
@@ -929,12 +931,14 @@ async function importRichPasteInline(rawHtml, editorEl, ctx) {
     return;
   }
 
-  const { html, imageNodes } = converted;
+  const { wrapper, imageNodes } = converted;
+  const html = wrapper ? wrapper.innerHTML : "";
   if (!html) return;
 
   // Insert the converted HTML first so the writer sees the content land in
   // place. Each <img> carries its original data:/https src for now; we'll
-  // rewrite them to uploaded URLs as the async uploads complete.
+  // rewrite them to uploaded URLs as the async uploads complete via the
+  // liveBySrc map below.
   insertBlockAtCaret(editorEl, html, savedRange);
   stripInlineImgDimensions(editorEl);
   upgradeLegacyImages(editorEl);
@@ -1029,7 +1033,8 @@ function convertGoogleDocsHtml(rawHtml) {
 
   // Parse the final string once more so we can return live <img> references
   // for the async upload step. The caller mutates these .el nodes in place
-  // and serializes back to HTML.
+  // and must re-serialize wrapper.innerHTML AFTER uploads run — that's why we
+  // return the live wrapper, not a pre-serialized string.
   const wrapper = document.createElement("div");
   wrapper.innerHTML = normalized;
   const imageNodes = Array.from(wrapper.querySelectorAll("img"))
@@ -1040,7 +1045,7 @@ function convertGoogleDocsHtml(rawHtml) {
     }))
     .filter((n) => n.src);
 
-  return { html: wrapper.innerHTML, imageNodes };
+  return { wrapper, imageNodes };
 }
 
 function extFromMimeOrUrl(src) {
