@@ -693,16 +693,24 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
 
   insertBtn.addEventListener("click", () => {
     if (!cleanedHtml || busy) return;
+    // Pull the LIVE preview HTML, not the snapshot from the last paste — the
+    // writer may have deleted paragraphs or edited text inside the preview
+    // before hitting Insert. Fall back to the snapshot if the preview is
+    // somehow empty.
+    const liveHtml = (target.innerHTML || "").trim();
+    const htmlToInsert = liveHtml || cleanedHtml;
     try {
       if (replaceBox.checked) {
-        editorEl.innerHTML = cleanedHtml;
+        editorEl.innerHTML = htmlToInsert;
       } else {
-        insertBlockAtCaret(editorEl, cleanedHtml);
+        insertBlockAtCaret(editorEl, htmlToInsert);
       }
       // execCommand("insertHTML") and assigning innerHTML both sometimes nest
       // a <figure> inside a <p> or drop contenteditable="false" — that breaks
       // the click-to-edit handler. Walk every figure we just inserted and
       // make sure it's at block level with the flags the toolbar expects.
+      // Also wrap any stray <img> that landed outside a figure.
+      upgradeLegacyImages(editorEl);
       normalizeEditorFigures(editorEl);
       editorEl.dispatchEvent(new Event("input", { bubbles: true }));
       ctx?.toast?.("Pasted from Google Doc.", "success");
@@ -738,6 +746,43 @@ function normalizeEditorFigures(editorEl) {
     if (!/\brt-size-[a-z]+\b/.test(fig.className)) {
       fig.classList.add("rt-size-standard");
     }
+  });
+}
+
+// Wrap any bare <img> that isn't already inside a .rt-figure. Legacy drafts
+// and some rich pastes can leave raw <img> tags in the body, which the click
+// handler ignores (it only matches figure.rt-figure). This converts each one
+// into a proper editable figure so writers can click to edit size/alt/caption.
+function upgradeLegacyImages(editorEl) {
+  const bareImgs = Array.from(editorEl.querySelectorAll("img")).filter((img) => !img.closest("figure.rt-figure"));
+  bareImgs.forEach((img) => {
+    const src = img.getAttribute("src") || "";
+    if (!src) { img.remove(); return; }
+    const alt = img.getAttribute("alt") || "";
+
+    const figure = document.createElement("figure");
+    figure.className = "rt-figure rt-size-standard";
+    figure.setAttribute("contenteditable", "false");
+    figure.setAttribute("data-rt-figure", "image");
+    const newImg = document.createElement("img");
+    newImg.setAttribute("src", src);
+    newImg.setAttribute("alt", alt);
+    figure.appendChild(newImg);
+
+    // Swap the bare img for the figure. If the img's only ancestor up to the
+    // editor is a <p>/<div> that held nothing else, drop the wrapper too so
+    // we don't leave an empty paragraph behind.
+    let replaceTarget = img;
+    let wrapper = img.parentElement;
+    while (
+      wrapper && wrapper !== editorEl &&
+      /^(p|div|span)$/i.test(wrapper.tagName) &&
+      wrapper.childNodes.length === 1
+    ) {
+      replaceTarget = wrapper;
+      wrapper = wrapper.parentElement;
+    }
+    replaceTarget.parentNode.replaceChild(figure, replaceTarget);
   });
 }
 
@@ -868,6 +913,7 @@ async function importRichPasteInline(rawHtml, editorEl, ctx) {
   // place. Each <img> carries its original data:/https src for now; we'll
   // rewrite them to uploaded URLs as the async uploads complete.
   insertBlockAtCaret(editorEl, html, savedRange);
+  upgradeLegacyImages(editorEl);
   normalizeEditorFigures(editorEl);
   editorEl.dispatchEvent(new Event("input", { bubbles: true }));
 
@@ -2525,7 +2571,15 @@ async function loadDraft(id, wrap, ctx) {
       lightCoverCb.dispatchEvent(new Event("change", { bubbles: true }));
     }
     wrap.querySelector("#f-dek").textContent = d.dek || d.excerpt || "";
-    wrap.querySelector("#f-body").innerHTML = d.body || "";
+    const bodyEl = wrap.querySelector("#f-body");
+    bodyEl.innerHTML = d.body || "";
+    // Repair figures on reload: historical drafts (and older paste imports)
+    // may be missing contenteditable="false" or the data-rt-figure flag, and
+    // without those the click-to-edit handler can't match them. Also upgrade
+    // any bare <img> that never got wrapped in a .rt-figure so writers can
+    // edit size/alt/caption on old inline images too.
+    upgradeLegacyImages(bodyEl);
+    normalizeEditorFigures(bodyEl);
     // Restore the writer's checklist state so progress carries across sessions.
     const saved = d.writerChecklist || {};
     document.querySelectorAll('#writer-checklist-body input[type="checkbox"]').forEach((cb) => {
@@ -2569,6 +2623,12 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
     ctx.toast("Couldn't upload embedded images. " + (err?.message || err), "error");
     return;
   }
+
+  // Wrap any stray <img> in a figure and re-apply contenteditable="false" /
+  // data-rt-figure on every figure, so the persisted HTML is clickable when
+  // the draft is reopened.
+  upgradeLegacyImages(bodyEl);
+  normalizeEditorFigures(bodyEl);
 
   // Strip any live suggestion marks before persisting — they're rendered on top, not saved.
   const body = bodyEl.innerHTML.replace(/<mark class="sx-mark[^"]*"[^>]*>([\s\S]*?)<\/mark>/g, "$1");
