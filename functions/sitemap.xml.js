@@ -15,7 +15,6 @@ const STATIC_PAGES = [
 ];
 
 export const onRequestGet = async ({ request }) => {
-  const origin = new URL(request.url).origin;
   const today = new Date().toISOString().slice(0, 10);
 
   const articles = await listAllArticles().catch(() => []);
@@ -29,7 +28,7 @@ export const onRequestGet = async ({ request }) => {
   }
 
   for (const a of articles) {
-    const slug = titleToSlug(a.title);
+    const slug = a.slug || titleToSlug(a.title);
     const loc = `${SITE_URL}/article/${encodeURIComponent(slug)}`;
     const lastmod = toIsoDate(a.publishedAt || a.date) || today;
     const image = a.image ? `<image:image><image:loc>${escapeXml(a.image)}</image:loc><image:title>${escapeXml(a.title)}</image:title></image:image>` : "";

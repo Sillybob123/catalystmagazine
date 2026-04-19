@@ -2,17 +2,7 @@ User-agent: *
 Allow: /
 
 # Private / admin surfaces
-Disallow: /dashboard.html
-Disallow: /dashboard
-Disallow: /admin-dashboard.html
-Disallow: /admin-users.html
-Disallow: /editorial-studio.html
-Disallow: /writer-dashboard.html
-Disallow: /writer-login.html
-Disallow: /editor-header.html
-Disallow: /editor-footer.html
-Disallow: /header.html
-Disallow: /footer.html
+Disallow: /admin/
 Disallow: /functions/
 Disallow: /api/
 

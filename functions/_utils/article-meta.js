@@ -6,9 +6,7 @@
 //   1. posts/article<N>.json — committed JSON files
 //   2. Firestore `stories` collection (status == "published")
 
-// Use the Cloudflare Pages host until DNS cutover — www.catalyst-magazine.com
-// still points at Wix and returns 404 for our pages.
-const SITE_URL = "https://catalystmagazine.pages.dev";
+const SITE_URL = "https://www.catalyst-magazine.com";
 const FALLBACK_IMAGE = `${SITE_URL}/NewLogoShape.png`;
 const FIRESTORE_PROJECT = "catalystwriters-5ce43";
 
@@ -64,13 +62,13 @@ export function resolveOgImage(src) {
   try {
     const u = new URL(url);
     if (u.hostname.includes("static.wixstatic.com")) {
-      // Strip any existing /v1/fill/ segment and rebuild at OG dimensions.
-      const parts = u.pathname.split("/").filter(Boolean);
-      const filename = parts[parts.length - 1];
-      // Remove old transform segments (v1, fill, w_*, h_*, etc.)
-      const baseParts = parts.filter(p => !/^(v1|fill|w_\d+|h_\d+|al_\w+|q_\d+|enc_\w+)$/.test(p));
-      const base = baseParts.slice(0, -1).join("/"); // everything before filename
-      return `${u.origin}/${base}/v1/fill/w_1200,h_630,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/${filename}`;
+      // Strip any existing /v1/... transform segment and append a fresh one.
+      // Wix 403s if the asset filename isn't present before /v1/, so the
+      // transform goes *after* the asset path, not in place of it.
+      const v1Idx = u.pathname.indexOf("/v1/");
+      const assetPath = v1Idx >= 0 ? u.pathname.slice(0, v1Idx) : u.pathname;
+      const filename = assetPath.split("/").filter(Boolean).pop();
+      return `${u.origin}${assetPath}/v1/fill/w_1200,h_630,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/${filename}`;
     }
   } catch {
     // not a valid URL — fall through
@@ -112,6 +110,7 @@ function firestoreDocToArticle(doc) {
   return {
     id,
     title,
+    slug: str("slug") || "",
     author: str("authorName") || str("author") || "The Catalyst",
     date,
     image: resolveImage(str("coverImage")),
@@ -266,7 +265,7 @@ export async function findArticleBySlug(slug) {
 export function titleToSlug(title) {
   return String(title || "")
     .toLowerCase()
-    .replace(/['']/g, "")
+    .replace(/[\u2018\u2019']/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
