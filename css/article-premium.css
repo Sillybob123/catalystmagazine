@@ -43,8 +43,8 @@ body[data-page="article"] .article-page > .container { max-width: none; padding:
 .reading-progress {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 4px;
-  z-index: 1000;
+  height: 5px;
+  z-index: 1100;
   pointer-events: none;
   /* Fight the older stray .reading-progress { width:0% } rule in styles.css
      so the outer bar always spans the viewport. */
@@ -53,18 +53,18 @@ body[data-page="article"] .article-page > .container { max-width: none; padding:
 }
 .reading-progress__track {
   position: relative;
-  height: 4px;
-  background: rgba(15, 23, 42, 0.06);
+  height: 5px;
+  background: rgba(15, 23, 42, 0.14);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
 .reading-progress__fill {
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, var(--accent, #2563eb), var(--accent-soft, #60a5fa));
-  box-shadow: 0 0 10px rgba(37, 99, 235, 0.55), 0 0 18px rgba(37, 99, 235, 0.35);
+  background: linear-gradient(90deg, #0f766e, #14b8a6);
+  box-shadow: 0 0 10px rgba(20, 184, 166, 0.55), 0 0 18px rgba(20, 184, 166, 0.35);
   transition: width 0.12s ease-out;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 5px 5px 0;
 }
 .reading-progress__pill {
   position: fixed;

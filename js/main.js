@@ -1440,8 +1440,8 @@ function mountReadingProgress() {
         const pct = Math.min(100, Math.max(0, ((scrolled - start) / (end - start)) * 100));
         fill.style.width = pct + '%';
         pctEl.textContent = Math.round(pct) + '%';
-        // Reveal the bar + pill once the reader has scrolled into the article.
-        bar.classList.toggle('is-active', pct > 0.5);
+        // Reveal the pill as soon as the reader starts scrolling the article.
+        bar.classList.toggle('is-active', scrolled > 40);
         bar.classList.toggle('is-complete', pct >= 99);
         if (totalWords > 0) {
             const remainingWords = Math.max(0, totalWords * (1 - pct / 100));
