@@ -2478,7 +2478,7 @@ function initAboutPage() {
 
     teamGrid.innerHTML = teamMembers.map(member => `
         <div class="team-member-card">
-            <img src="${member.image}" alt="${member.name}" class="team-member-image" onerror="this.src='NewsletterHeader1.png'">
+            <img src="${member.image}" alt="${member.name}" class="team-member-image" loading="lazy" decoding="async" onerror="this.src='NewsletterHeader1.png'">
             <div class="team-member-info">
                 <h3 class="team-member-name">${member.name}</h3>
                 <div class="team-member-role">${member.role}</div>
