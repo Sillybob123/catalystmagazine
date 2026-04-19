@@ -16,11 +16,11 @@
 //   c) Fall back to serving the bare article.html shell (client JS will
 //      redirect to /articles if nothing is found).
 
-import { findArticleBySlug, listAllArticles, titleToSlug, resolveOgImage, SITE_URL, FALLBACK_IMAGE } from "../_utils/article-meta.js";
+import { findArticleBySlug, listAllArticles, titleToSlug, resolveOgImage, getSiteUrl, getFallbackImage } from "../_utils/article-meta.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
-export const onRequestGet = async ({ request, params, next }) => {
+export const onRequestGet = async ({ request, env, params, next }) => {
   const slug = params.slug || "";
   if (!slug) return next();
 
@@ -32,6 +32,8 @@ export const onRequestGet = async ({ request, params, next }) => {
     article = articles.find((a) => titleToSlug(a.title) === slug.toLowerCase()) || null;
   }
 
+  const siteUrl = getSiteUrl(request, env);
+
   // Fetch article.html shell by absolute URL to avoid Cloudflare Pages'
   // automatic 308 redirect that fires when next() resolves article.html.
   const origin = new URL(request.url).origin;
@@ -40,15 +42,15 @@ export const onRequestGet = async ({ request, params, next }) => {
 
   if (!article) return origin_response;
 
-  const canonical = `${SITE_URL}/article/${encodeURIComponent(slug)}`;
+  const canonical = `${siteUrl}/article/${encodeURIComponent(slug)}`;
   const title = `${article.title} | ${SITE_NAME}`;
   const description = truncate(article.excerpt || article.deck || "", 200);
-  const image = resolveOgImage(article.image) || FALLBACK_IMAGE;
+  const image = resolveOgImage(article.image, siteUrl) || getFallbackImage(siteUrl);
   const author = article.author || SITE_NAME;
   const published = toIsoDate(article.publishedAt || article.date);
   const section = formatCategory(article.category);
 
-  const jsonLd = buildArticleJsonLd({ title: article.title, description, image, author, published, section, canonical });
+  const jsonLd = buildArticleJsonLd({ title: article.title, description, image, author, published, section, canonical, siteUrl });
 
   const rewriter = new HTMLRewriter()
     .on("title", { element: (el) => el.setInnerContent(escapeHtml(title)) })
@@ -112,7 +114,7 @@ function formatCategory(cat) {
   return map[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
 }
 
-function buildArticleJsonLd({ title, description, image, author, published, section, canonical }) {
+function buildArticleJsonLd({ title, description, image, author, published, section, canonical, siteUrl }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -120,7 +122,7 @@ function buildArticleJsonLd({ title, description, image, author, published, sect
     description,
     image: [image],
     author: [{ "@type": "Person", name: author }],
-    publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: `${SITE_URL}/NewLogoShape.png` } },
+    publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: `${siteUrl}/NewLogoShape.png` } },
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
     url: canonical,
     articleSection: section,

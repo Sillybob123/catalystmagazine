@@ -7,11 +7,11 @@
 // asset from Cloudflare Pages and use HTMLRewriter to patch the head in
 // place before returning it.
 
-import { fetchArticleById, titleToSlug, resolveOgImage, SITE_URL, FALLBACK_IMAGE } from "./_utils/article-meta.js";
+import { fetchArticleById, titleToSlug, resolveOgImage, getSiteUrl, getFallbackImage } from "./_utils/article-meta.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
-export const onRequestGet = async ({ request, next }) => {
+export const onRequestGet = async ({ request, env, next }) => {
   const url = new URL(request.url);
   const id = url.searchParams.get("id");
 
@@ -21,6 +21,8 @@ export const onRequestGet = async ({ request, next }) => {
   const article = await fetchArticleById(id, url.origin).catch(() => null);
   if (!article) return next();
 
+  const siteUrl = getSiteUrl(request, env);
+
   // Pull the static article.html asset from Pages.
   const origin = await next();
   if (!origin.ok) return origin;
@@ -28,11 +30,11 @@ export const onRequestGet = async ({ request, next }) => {
   if (!ct.includes("text/html")) return origin;
 
   const canonical = article.title
-    ? `${SITE_URL}/article/${encodeURIComponent(titleToSlug(article.title))}`
-    : `${SITE_URL}/article?id=${encodeURIComponent(id)}`;
+    ? `${siteUrl}/article/${encodeURIComponent(titleToSlug(article.title))}`
+    : `${siteUrl}/article?id=${encodeURIComponent(id)}`;
   const title = `${article.title} | ${SITE_NAME}`;
   const description = truncate(article.excerpt, 200);
-  const image = resolveOgImage(article.image) || FALLBACK_IMAGE;
+  const image = resolveOgImage(article.image, siteUrl) || getFallbackImage(siteUrl);
   const author = article.author || SITE_NAME;
   const published = toIsoDate(article.date);
   const section = formatCategory(article.category);
@@ -45,6 +47,7 @@ export const onRequestGet = async ({ request, next }) => {
     published,
     section,
     canonical,
+    siteUrl,
   });
 
   const rewriter = new HTMLRewriter()
@@ -190,7 +193,7 @@ function formatCategory(cat) {
   return map[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
 }
 
-function buildArticleJsonLd({ title, description, image, author, published, section, canonical }) {
+function buildArticleJsonLd({ title, description, image, author, published, section, canonical, siteUrl }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -203,7 +206,7 @@ function buildArticleJsonLd({ title, description, image, author, published, sect
       name: SITE_NAME,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL}/NewLogoShape.png`,
+        url: `${siteUrl}/NewLogoShape.png`,
       },
     },
     mainEntityOfPage: {
