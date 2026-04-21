@@ -60,6 +60,14 @@ service cloud.firestore {
         && resource.data.authorId == request.auth.uid
         && request.resource.data.status in ['draft', 'pending'];
 
+      // Final-review publish: once an admin has approved the piece, the author
+      // can flip status from 'approved' to 'published' from the final-review
+      // page. No other transitions out of 'approved' are permitted for writers.
+      allow update: if isWriter()
+        && resource.data.authorId == request.auth.uid
+        && resource.data.status == 'approved'
+        && request.resource.data.status == 'published';
+
       // Author can delete their own draft/pending piece (before it ships).
       allow delete: if isWriter()
         && resource.data.authorId == request.auth.uid

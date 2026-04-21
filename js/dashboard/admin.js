@@ -12,7 +12,7 @@ import {
 import { deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { el, esc, fmtRelative, fmtDate, statusPill, confirmDialog, openModal, slugify } from "./ui.js";
-import { loadImageLibrary, renderLibraryGrid, uploadToFirebase, openImageLibraryPicker } from "./writer.js";
+import { loadImageLibrary, renderLibraryGrid, uploadToFirebase, openImageLibraryPicker, openArticlePreviewFromData } from "./writer.js";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -99,7 +99,12 @@ function renderRow(a, editors, ctx, reload) {
         ${editorSelect}
       </div>
       <div class="ar-actions">
-        ${a.status !== "published" ? `<button class="btn btn-accent btn-xs" data-action="approve" data-id="${esc(a.id)}">Publish</button>` : ""}
+        ${a.status === "approved"
+          ? `<button class="btn btn-ghost btn-xs" data-action="final-review" data-id="${esc(a.id)}" title="Open the final-review page">Open review link</button>
+             <button class="btn btn-accent btn-xs" data-action="publish" data-id="${esc(a.id)}" title="Skip the writer's final review and publish now">Publish now</button>`
+          : (a.status !== "published"
+              ? `<button class="btn btn-accent btn-xs" data-action="approve" data-id="${esc(a.id)}" title="Approve and send to the writer for final review">Approve</button>`
+              : "")}
         ${a.status !== "rejected" ? `<button class="btn btn-secondary btn-xs" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
         <button class="btn btn-ghost btn-xs" data-action="view" data-id="${esc(a.id)}">Review</button>
         <button class="btn btn-secondary btn-xs" data-action="edit-details" data-id="${esc(a.id)}">Edit</button>
@@ -129,22 +134,56 @@ function renderRow(a, editors, ctx, reload) {
     if (action === "view") { location.hash = `#/editor/queue?review=${a.id}`; return; }
     if (action === "edit-details") { openStoryDetailsModal(ctx, a.id, reload); return; }
     if (action === "approve") {
-      const ok = await confirmDialog("Approve and publish this article? It will go live.", { confirmText: "Publish" });
+      // Two-step publish: admin approves, which stages the article and gives
+      // us a shareable final-review URL to send to the writer. Only when the
+      // writer (or admin) opens that URL and clicks "Publish now" does the
+      // article actually go live.
+      const ok = await confirmDialog(
+        "Approve this article and generate a final-review link to send to the writer? It won't be published until they (or you) click Publish on the review page.",
+        { confirmText: "Approve" }
+      );
+      if (!ok) return;
+      try {
+        const patch = {
+          status: "approved",
+          approvedById: ctx.user.uid,
+          approvedByName: ctx.profile.name || ctx.user.email,
+          approvedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        await updateDoc(doc(db, "stories", a.id), patch);
+        await showFinalReviewLinkModal(ctx, a.id, a.title || "Untitled");
+        reload();
+      } catch (err) { ctx.toast("Approve failed: " + err.message, "error"); }
+      return;
+    }
+    if (action === "final-review") {
+      location.hash = `#/final-review?id=${encodeURIComponent(a.id)}`;
+      return;
+    }
+    if (action === "publish") {
+      // Admin override: skip the writer's final review and ship now. Useful
+      // for tiny corrections or time-critical pieces where the admin has
+      // already done a full review.
+      const ok = await confirmDialog(
+        "Publish this article now? It will go live immediately — the writer will not get a chance to approve it first.",
+        { confirmText: "Publish" }
+      );
       if (!ok) return;
       try {
         const patch = {
           status: "published",
-          approvedById: ctx.user.uid,
-          approvedByName: ctx.profile.name || ctx.user.email,
+          finalApprovedById: ctx.user.uid,
+          finalApprovedByName: ctx.profile.name || ctx.user.email,
+          finalApprovedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        // Preserve an existing publishedAt (e.g. original date from a Wix
-        // CSV import). Only stamp "now" when the story has never been dated.
         if (!a.publishedAt) patch.publishedAt = new Date().toISOString();
         await updateDoc(doc(db, "stories", a.id), patch);
         ctx.toast("Published.", "success");
         reload();
       } catch (err) { ctx.toast("Publish failed: " + err.message, "error"); }
+      return;
     }
     if (action === "reject") {
       const ok = await confirmDialog("Reject this article? The writer will see it's been declined.", { confirmText: "Reject", danger: true });
@@ -489,8 +528,35 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
 
   const saveBtn = el("button", { class: "btn btn-accent" }, "Save changes");
   const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
-  const m = openModal({ title: `Edit story — ${story.title || "Untitled"}`, body, footer: [cancelBtn, saveBtn] });
+  const previewBtn = el("button", {
+    class: "btn btn-ghost",
+    title: "Open a full preview of how this article will look when published — with cover, headers, and sections.",
+  }, "Preview as published");
+  const m = openModal({ title: `Edit story — ${story.title || "Untitled"}`, body, footer: [cancelBtn, previewBtn, saveBtn] });
   cancelBtn.addEventListener("click", m.close);
+
+  previewBtn.addEventListener("click", () => {
+    const cleanAuthors = authors
+      .map((a) => ({ ...a, name: (a.name || "").trim() }))
+      .filter((a) => a.name);
+    const authorName = cleanAuthors.length
+      ? cleanAuthors.map((a) => a.name).join(", ")
+      : (story.authorName || "The Catalyst");
+    const publishedLocal = body.querySelector("#sd-published").value;
+    const publishedDate = publishedLocal
+      ? new Date(publishedLocal)
+      : (story.publishedAt ? new Date(story.publishedAt) : new Date());
+    openArticlePreviewFromData({
+      title: body.querySelector("#sd-title").value.trim(),
+      dek: body.querySelector("#sd-dek").value.trim(),
+      cover: body.querySelector("#sd-cover").value.trim(),
+      lightCover: !!body.querySelector("#sd-light-cover")?.checked,
+      category: body.querySelector("#sd-category").value || "Feature",
+      author: authorName,
+      bodyHtml: body.querySelector("#sd-body").value || story.body || story.content || "",
+      publishedDate,
+    }, ctx);
+  });
 
   saveBtn.addEventListener("click", async () => {
     const msg = body.querySelector("#sd-msg");
@@ -558,6 +624,51 @@ function toDatetimeLocal(v) {
 }
 
 function escAttr(s) { return esc(s); }
+
+// Shown after an admin presses Approve. Hands the admin the shareable URL
+// they need to paste into an email/Slack to the writer. The writer (or the
+// admin) opens that URL to land on the final-review page where they can
+// push the piece live.
+async function showFinalReviewLinkModal(ctx, storyId, title) {
+  const url = `${window.location.origin}/admin/#/final-review?id=${encodeURIComponent(storyId)}`;
+  const body = el("div", {});
+  body.innerHTML = `
+    <p style="margin:0 0 10px;">
+      <strong>${esc(title)}</strong> is now approved and staged for final review.
+      It <strong>won't appear on the public site</strong> until someone clicks Publish on the review page below.
+    </p>
+    <p style="margin:0 0 6px;color:var(--muted);">Send this link to the writer so they can approve it as the last step:</p>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input class="input" id="fr-link-input" readonly value="${escAttr(url)}" style="flex:1;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">
+      <button class="btn btn-secondary btn-sm" id="fr-link-copy">Copy</button>
+    </div>
+    <p class="hint" style="margin-top:10px;">You can also open the review page yourself and publish it directly.</p>`;
+
+  const openBtn = el("button", { class: "btn btn-accent" }, "Open review page");
+  const doneBtn = el("button", { class: "btn btn-secondary" }, "Done");
+  const m = openModal({ title: "Article approved", body, footer: [doneBtn, openBtn] });
+  doneBtn.addEventListener("click", m.close);
+  openBtn.addEventListener("click", () => {
+    m.close();
+    location.hash = `#/final-review?id=${encodeURIComponent(storyId)}`;
+  });
+  body.querySelector("#fr-link-copy").addEventListener("click", async () => {
+    const input = body.querySelector("#fr-link-input");
+    try {
+      await navigator.clipboard.writeText(input.value);
+      ctx.toast("Review link copied.", "success");
+    } catch {
+      input.select();
+      try { document.execCommand("copy"); ctx.toast("Copied.", "success"); }
+      catch { ctx.toast("Copy failed — select and copy manually.", "info"); }
+    }
+  });
+  // Pre-select the URL so the admin can grab it with ⌘C immediately.
+  setTimeout(() => {
+    const inp = body.querySelector("#fr-link-input");
+    if (inp) { inp.focus(); inp.select(); }
+  }, 50);
+}
 
 function openAddUserModal(ctx, onDone) {
   const body = el("div", {});

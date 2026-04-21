@@ -62,6 +62,135 @@ const DEADLINE_FIELDS = [
   { key: "edits",     label: "Review Edits" },
 ];
 
+// Gated-step checklists. Before a user can flip "Article Writing Complete"
+// (writer) or "Review Complete" (editor) to true, they must confirm every
+// item below. This mirrors the editorial standards doc.
+const WRITER_CHECKLIST = [
+  "Is my lead surprising, specific, and impossible to skip?",
+  "Have I found a concrete angle, not just a topic?",
+  "Is my headline active, specific, and does it stress the stakes?",
+  "Have I avoided prescriptive opinion language in the piece?",
+  "Is every technical claim verified against primary sources?",
+  "Did I flag any uncertain science with a comment for my editor?",
+  "Does the piece read like a story, not a literature review?",
+  "Does my ending land — quote, callback, or implication?",
+];
+
+const EDITOR_CHECKLIST = [
+  "Does the lead earn the reader's attention — surprising, specific, not a summary?",
+  "Does the piece have a clear, concrete angle — not just a broad topic?",
+  "Is the headline active, specific, and honest about the stakes?",
+  "Has the writer avoided prescriptive or editorial opinion language?",
+  "Are all technical claims accurate and verified against primary sources?",
+  "Has every flagged uncertainty been addressed or resolved?",
+  "Does the piece read like a story, not a literature review?",
+  "Is the writer's voice consistent and credible throughout?",
+  "Are all quotes properly attributed and placed in context?",
+  "Is all scientific terminology defined for a college-level audience?",
+  "Does the ending resonate — quote, callback, or forward-looking implication?",
+  "Has the piece been reviewed for grammar, clarity, and overall flow?",
+];
+
+// Maps gated timeline step → checklist config.
+const STEP_CHECKLISTS = {
+  "Article Writing Complete": {
+    modalTitle: "Writer Self-Review Checklist",
+    intro: "Before marking your draft as complete, confirm you have completed every item below. Use this checklist to ensure your draft meets all Catalyst writing standards before your editor reviews it.",
+    items: WRITER_CHECKLIST,
+    storageKey: "writerChecklist",
+    confirmLabel: "Mark draft complete",
+  },
+  "Review Complete": {
+    modalTitle: "Editor Review Checklist",
+    intro: "Before marking this article as reviewed, confirm you have completed every item below. Use this checklist to ensure the article meets Catalyst editorial standards before it moves forward in the workflow.",
+    items: EDITOR_CHECKLIST,
+    storageKey: "editorChecklist",
+    confirmLabel: "Mark review complete",
+  },
+};
+
+/**
+ * Opens a modal showing a required checklist. The returned promise resolves
+ * with the signed confirmation payload on confirm, or null on cancel.
+ * Every item must be ticked before the confirm button unlocks.
+ */
+function openChecklistModal(cfg) {
+  return new Promise((resolve) => {
+    const body = el("div", { style: { fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" } });
+    const itemsHtml = cfg.items.map((text, i) => `
+      <label class="checklist-item" data-idx="${i}">
+        <input type="checkbox" class="cl-cb">
+        <span>${esc(text)}</span>
+      </label>`).join("");
+
+    body.innerHTML = `
+      <p style="margin:0 0 14px;font-size:13.5px;color:#475569;line-height:1.5;">${esc(cfg.intro)}</p>
+      <div class="checklist-progress" id="cl-progress">
+        <span id="cl-progress-label">0 of ${cfg.items.length} confirmed</span>
+      </div>
+      <div class="checklist-items" id="cl-items">${itemsHtml}</div>`;
+
+    ensureChecklistStyles();
+
+    const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
+    const confirmBtn = el("button", { class: "btn btn-accent" }, cfg.confirmLabel);
+    confirmBtn.disabled = true;
+
+    const m = openModal({ title: cfg.modalTitle, body, footer: [cancelBtn, confirmBtn] });
+
+    const progressLabel = body.querySelector("#cl-progress-label");
+    const allBoxes = () => [...body.querySelectorAll(".cl-cb")];
+    const updateProgress = () => {
+      const boxes = allBoxes();
+      const checked = boxes.filter(b => b.checked).length;
+      progressLabel.textContent = `${checked} of ${boxes.length} confirmed`;
+      confirmBtn.disabled = checked !== boxes.length;
+      body.querySelectorAll(".checklist-item").forEach((row, i) => {
+        row.classList.toggle("checked", boxes[i].checked);
+      });
+    };
+    body.querySelector("#cl-items").addEventListener("change", updateProgress);
+
+    cancelBtn.onclick = () => { m.close(); resolve(null); };
+    confirmBtn.onclick = () => {
+      const payload = {
+        storageKey: cfg.storageKey,
+        items: cfg.items,
+        checkedAt: new Date().toISOString(),
+      };
+      m.close();
+      resolve(payload);
+    };
+  });
+}
+
+function ensureChecklistStyles() {
+  if (document.getElementById("checklist-styles")) return;
+  const s = document.createElement("style");
+  s.id = "checklist-styles";
+  s.textContent = `
+    .checklist-progress {
+      font-size:12px; font-weight:600; color:#64748b;
+      padding:8px 12px; background:#f8fafc; border:1px solid #e5e7eb;
+      border-radius:8px; margin-bottom:14px;
+    }
+    .checklist-items { display:flex; flex-direction:column; gap:8px; }
+    .checklist-item {
+      display:flex; align-items:flex-start; gap:10px;
+      padding:11px 14px; background:#f8fafc; border:1px solid #e5e7eb;
+      border-radius:8px; cursor:pointer; user-select:none;
+      font-size:13px; line-height:1.45; color:#1f2937;
+      transition:background .12s, border-color .12s;
+    }
+    .checklist-item:hover { background:#f1f5f9; }
+    .checklist-item.checked { background:#f0fdf4; border-color:#86efac; color:#15803d; }
+    .checklist-item input[type=checkbox] {
+      margin-top:2px; width:16px; height:16px; flex-shrink:0; accent-color:#0f766e; cursor:pointer;
+    }
+  `;
+  document.head.appendChild(s);
+}
+
 function getProjectState(project, view, uid) {
   const tl = project.timeline || {};
 
@@ -697,12 +826,41 @@ function openDetailModal(projectId) {
       const step = cb.dataset.step;
       if (!canToggleStep(step)) { cb.checked = !cb.checked; return; } // safety guard
       const checked = cb.checked;
+
+      // Gate: when *completing* a step that has a required checklist,
+      // open the checklist modal first. Unchecking bypasses the gate so
+      // users can always reverse a premature click.
+      let checklistPayload = null;
+      const gate = checked ? STEP_CHECKLISTS[step] : null;
+      if (gate) {
+        cb.checked = false; // keep UI honest until the user actually confirms
+        checklistPayload = await openChecklistModal(gate);
+        if (!checklistPayload) {
+          toast("Checklist not completed — step left unchecked.", "info");
+          return;
+        }
+        cb.checked = true;
+      }
+
       const updates = {
         [`timeline.${step}`]: checked,
         lastActivity: serverTimestamp(),
         updatedAt: new Date().toISOString(),
         activity: arrayUnion({ text: `${checked ? "completed" : "uncompleted"}: ${step}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
       };
+      if (checklistPayload) {
+        // Stamp who/when confirmed the checklist so admins can audit it later.
+        updates[`checklists.${checklistPayload.storageKey}`] = {
+          confirmedBy: _profile.name || _ctx.user.email,
+          confirmedById: _uid,
+          confirmedAt: checklistPayload.checkedAt,
+          items: checklistPayload.items,
+        };
+        updates.activity = arrayUnion(
+          { text: `${checked ? "completed" : "uncompleted"}: ${step}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() },
+          { text: `confirmed the ${gate.modalTitle.toLowerCase()}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() },
+        );
+      }
       // Heal drifted authorId on the first successful write by the true author.
       if (isAuthor && project.authorId !== _uid) updates.authorId = _uid;
       // Auto-approve proposal when author checks "Topic Proposal Complete"

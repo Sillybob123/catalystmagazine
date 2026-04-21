@@ -198,6 +198,17 @@ const ROUTES = {
     group: "admin",
     loader: () => import("./activity.js"),
   },
+  // Final-review page — the shareable link the admin sends to the writer after
+  // approving. Either the writer (story author) or any admin/editor can land
+  // here and push the article live. Hidden from the nav (no label shown in the
+  // sidebar because it isn't grouped); accessed via ?id=<storyId>.
+  "#/final-review": {
+    label: "Final review",
+    icon: ICONS.check,
+    roles: ["admin", "editor", "writer"],
+    hidden: true,
+    loader: () => import("./final-review.js"),
+  },
 };
 
 const GROUPS = [
@@ -304,6 +315,7 @@ function renderSidebar() {
   const byGroup = new Map();
   for (const [hash, route] of Object.entries(ROUTES)) {
     if (!userIsAllowed(route.roles)) continue;
+    if (route.hidden) continue;
     const g = route.group || "main";
     if (!byGroup.has(g)) byGroup.set(g, []);
     byGroup.get(g).push({ hash, ...route });

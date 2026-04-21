@@ -2679,3 +2679,77 @@ button { font-family: inherit; cursor: pointer; }
   overflow-x: auto;
   padding: 14px 18px 18px;
 }
+
+/* ---------- Final review surface --------------------------------------- */
+/* The stage wraps the full-bleed article preview so the public-site CSS
+   can style it without fighting the dashboard's card layout. */
+.final-review-stage {
+  background: var(--canvas, #fafafa);
+  border-radius: 14px;
+  border: 1px solid var(--hairline, #e5e7eb);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.final-review-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #0b1220;
+  color: #fff;
+}
+.final-review-bar__title {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.final-review-bar__sub {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 2px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.final-review-bar__status .pill {
+  vertical-align: middle;
+}
+.final-review-bar__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.final-review-banner {
+  padding: 10px 20px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--hairline, #e5e7eb);
+}
+.final-review-banner--done {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.final-review-banner--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+.final-review-article {
+  padding: 0;
+  background: #fff;
+}
+/* The public-site article CSS assumes a wider container than our card
+   provides — cap the inner body so long lines stay readable. */
+.final-review-article .article-body-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 24px 60px;
+}
+.final-review-article .article-hero {
+  border-radius: 0;
+}

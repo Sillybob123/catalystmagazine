@@ -1233,21 +1233,41 @@ function convertGDocInline(node) {
 // and mount the same `.article-detail` structure that js/main.js produces, so
 // the writer sees a true-to-life preview without needing to publish.
 function openArticlePreview(wrap, ctx) {
-  const title = (wrap.querySelector("#f-title").textContent || "").trim() || "Untitled draft";
-  const dek = (wrap.querySelector("#f-dek").textContent || "").trim();
-  const cover = wrap.querySelector("#f-cover").value.trim();
-  const lightCover = !!wrap.querySelector("#f-cover-light")?.checked;
-  const category = wrap.querySelector("#f-category").value || "Feature";
-  const author = ctx.profile?.name || ctx.user?.email || "The Catalyst";
-  // Strip live suggestion marks before rendering — they aren't part of the
-  // published article and would otherwise show up as highlighted text.
-  const bodyHtml = wrap.querySelector("#f-body").innerHTML
+  const rawBody = wrap.querySelector("#f-body").innerHTML
     .replace(/<mark class="sx-mark[^"]*"[^>]*>([\s\S]*?)<\/mark>/g, "$1");
+  return openArticlePreviewFromData({
+    title: (wrap.querySelector("#f-title").textContent || "").trim(),
+    dek: (wrap.querySelector("#f-dek").textContent || "").trim(),
+    cover: wrap.querySelector("#f-cover").value.trim(),
+    lightCover: !!wrap.querySelector("#f-cover-light")?.checked,
+    category: wrap.querySelector("#f-category").value || "Feature",
+    author: ctx.profile?.name || ctx.user?.email || "The Catalyst",
+    bodyHtml: rawBody,
+    bodyText: (wrap.querySelector("#f-body").textContent || ""),
+  }, ctx);
+}
+
+// Data-driven twin of openArticlePreview — admin edits don't have the writer's
+// compose form, so they build a data object from the details modal and call
+// this directly. Kept as a separate function so the writer path stays identical.
+export function openArticlePreviewFromData(data, ctx) {
+  const title = (data.title || "").trim() || "Untitled draft";
+  const dek = (data.dek || "").trim();
+  const cover = (data.cover || "").trim();
+  const lightCover = !!data.lightCover;
+  const category = data.category || "Feature";
+  const author = data.author || "The Catalyst";
+  const bodyHtml = data.bodyHtml || "";
+  const publishedDate = data.publishedDate instanceof Date && !isNaN(data.publishedDate)
+    ? data.publishedDate : new Date();
 
   // Reading time mirrors the public-site estimator: 220 wpm against the body.
-  const wordCount = (wrap.querySelector("#f-body").textContent || "").trim().split(/\s+/).filter(Boolean).length;
+  const bodyText = data.bodyText != null
+    ? String(data.bodyText)
+    : (bodyHtml ? bodyHtml.replace(/<[^>]+>/g, " ") : "");
+  const wordCount = bodyText.trim().split(/\s+/).filter(Boolean).length;
   const readingTime = `${Math.max(1, Math.round(wordCount / 220))} min read`;
-  const todayStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const todayStr = publishedDate.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
   const initials = author.split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 
   // Resolve the absolute origin so preview stylesheets, fonts, and the quiz
@@ -2941,6 +2961,8 @@ function renderArticleRows(mount, snap, allowEdit) {
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
+        ${a.status === "approved"
+          ? `<a class="btn btn-accent btn-xs" href="#/final-review?id=${esc(d.id)}" title="Review how the article will look and publish it">Review &amp; publish</a>` : ""}
         ${allowEdit ? `<a class="btn btn-secondary btn-xs" href="#/writer/draft?edit=${esc(d.id)}">Open</a>` : ""}
         ${a.status === "published" && a.url
           ? `<a class="btn btn-ghost btn-xs" href="${esc(a.url)}" target="_blank" rel="noopener">View</a>` : ""}
