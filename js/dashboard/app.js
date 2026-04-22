@@ -119,6 +119,13 @@ const ROUTES = {
     loader: () => import("./writer.js"),
     mountKey: "feed",
   },
+  "#/writer/guidelines": {
+    label: "Editorial standards",
+    icon: ICONS.book,
+    roles: ["admin", "editor", "writer"],
+    group: "write",
+    loader: () => import("./guidelines.js"),
+  },
   "#/editor/queue": {
     label: "Editing queue",
     icon: ICONS.check,
