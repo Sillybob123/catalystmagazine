@@ -74,6 +74,14 @@ export async function mount(ctx, container) {
   container.appendChild(recent);
   loadRecentArticles(recent.querySelector("#recent-body"), ctx);
 
+  // Newsletter reminder (admin only)
+  if (ctx.role === "admin" || ctx.role === "newsletter_builder") {
+    const nlCard = el("div", { class: "card", style: { marginTop: "20px" } });
+    nlCard.innerHTML = `<div class="card-body" id="nl-reminder"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
+    container.appendChild(nlCard);
+    loadNewsletterReminder(nlCard.querySelector("#nl-reminder"), ctx);
+  }
+
   // Staff directory
   const staff = el("div", { class: "card", style: { marginTop: "20px" } });
   staff.innerHTML = `
@@ -233,6 +241,53 @@ function getInitials(nameOrEmail) {
   const parts = s.split(/\s+/);
   if (parts.length === 1) return parts[0][0].toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+async function loadNewsletterReminder(mount, ctx) {
+  try {
+    const res = await ctx.authedFetch("/api/newsletter/history");
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+    const sent = (data.campaigns || []).filter((c) => c.status === "sent");
+    const last = sent[0] || null;
+    const lastDate = last ? new Date(last.sentAt || last.createdAt) : null;
+    const now = Date.now();
+    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+    const overdue = !lastDate || (now - lastDate.getTime()) > TWO_WEEKS;
+    const daysSince = lastDate ? Math.floor((now - lastDate.getTime()) / (24 * 60 * 60 * 1000)) : null;
+
+    const bannerColor = overdue ? "var(--accent, #e85d04)" : "var(--success, #0f766e)";
+    const bannerBg   = overdue ? "#fff7ed" : "#f0fdf4";
+    const bannerBorder = overdue ? "#fed7aa" : "#bbf7d0";
+
+    mount.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:${bannerBg};border:1px solid ${bannerBorder};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${bannerColor}" stroke-width="2"><path d="M4 4h16v16H4z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:15px;color:var(--ink);">
+              ${overdue
+                ? (lastDate ? `Newsletter overdue — last sent ${daysSince} day${daysSince === 1 ? "" : "s"} ago` : "No newsletter has been sent yet")
+                : `Newsletter sent ${daysSince === 0 ? "today" : daysSince + " day" + (daysSince === 1 ? "" : "s") + " ago"}`}
+            </div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px;">
+              ${last
+                ? `Last issue: <strong>${esc(last.subject || "(no subject)")}</strong> · ${last.recipientCount || 0} recipients · sent by ${esc(last.createdBy || "unknown")}`
+                : "Send your first newsletter to keep subscribers engaged."}
+            </div>
+          </div>
+        </div>
+        <a class="btn ${overdue ? "btn-accent" : "btn-secondary"} btn-sm" href="#/newsletter/builder">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><polyline points="22,6 12,13 2,6"/></svg>
+          ${overdue ? "Send newsletter now" : "Build next issue"}
+        </a>
+      </div>`;
+  } catch (err) {
+    mount.innerHTML = `<div class="hint">Could not load newsletter status.</div>`;
+  }
 }
 
 async function loadRecentArticles(mount, ctx) {
