@@ -23,6 +23,12 @@ export async function sendEmail(env, { to, subject, html, replyTo, cc, unsubscri
     subject,
     html: personalizedHtml,
     reply_to: replyTo || replyToAddr,
+    // Disable Resend click-tracking wrapper. When enabled, Resend rewrites
+    // every href to route through its own redirect domain, which (a) mangles
+    // our ?email= param and (b) makes Gmail's List-Unsubscribe header refer
+    // to a URL that doesn't match the body link — so Gmail won't render its
+    // native unsubscribe button. Opening URLs must match the header.
+    track: { click: false, open: false },
   };
   if (cc) payload.cc = Array.isArray(cc) ? cc : [cc];
   if (unsubscribeEmail) {
@@ -87,6 +93,7 @@ export async function sendBulkEmail(env, { recipients, subject, html, htmlBuilde
             subject,
             html: recipientHtml,
             reply_to: replyToAddr,
+            track: { click: false, open: false },
             headers: {
               "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe?email=${encodeURIComponent(email)}>`,
               "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
