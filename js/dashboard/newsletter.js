@@ -31,7 +31,7 @@ async function mountBuilder(ctx, container) {
         <div>
           <div class="field">
             <label class="label">Email subject line</label>
-            <input class="input" id="f-subject" value="New from The Catalyst">
+            <input class="input" id="f-subject" value="The Catalyst Newsletter">
           </div>
           <div class="field">
             <label class="label">Headline</label>

@@ -5,18 +5,27 @@
 export async function sendEmail(env, { to, subject, html, replyTo, cc }) {
   const apiKey = env.RESEND_API_KEY;
   const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
+  const replyToAddr = env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com";
+  const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
 
   if (!apiKey) {
     throw new Error("RESEND_API_KEY is not configured");
   }
 
+  const toList = Array.isArray(to) ? to : [to];
   const payload = {
     from,
-    to: Array.isArray(to) ? to : [to],
+    to: toList,
     subject,
     html,
+    reply_to: replyTo || replyToAddr,
+    headers: {
+      // Tells Gmail this is a newsletter the recipient asked for → Primary inbox
+      "List-Unsubscribe": `<${siteUrl}/api/unsubscribe?email=${encodeURIComponent(toList[0] || "")}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      "Precedence": "bulk",
+    },
   };
-  if (replyTo) payload.reply_to = replyTo;
   if (cc) payload.cc = Array.isArray(cc) ? cc : [cc];
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -43,11 +52,12 @@ export async function sendBulkEmail(env, { recipients, subject, html }) {
     chunks.push(recipients.slice(i, i + 45));
   }
 
+  const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
+  const replyToAddr = env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com";
+  const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+
   const results = [];
   for (const chunk of chunks) {
-    // Send one message, BCC the chunk. The visible "to" is the from address
-    // so that subscribers don't see each other's emails.
-    const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -60,6 +70,12 @@ export async function sendBulkEmail(env, { recipients, subject, html }) {
         bcc: chunk,
         subject,
         html,
+        reply_to: replyToAddr,
+        headers: {
+          "List-Unsubscribe": `<${siteUrl}/api/unsubscribe>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          "Precedence": "bulk",
+        },
       }),
     });
     if (!res.ok) {
