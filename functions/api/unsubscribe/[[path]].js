@@ -1,8 +1,12 @@
-// /api/unsubscribe/<email>
+// /api/unsubscribe/<email>          ← path-based (resilient to URL rewriters)
+// /api/unsubscribe?email=<email>     ← legacy query-param form
+// /api/unsubscribe                   ← no email → redirect to entry form
 //
-// Path-based unsubscribe endpoint. Using the email as a path segment (rather
-// than a ?email= query param) is resilient against URL rewriters and
-// click-tracking middleware that strip or re-encode query strings.
+// GET: click-through from a newsletter.
+// POST: RFC 8058 one-click unsubscribe from mailbox providers.
+//
+// The path form survives Resend click-tracking, email client safebrowsing
+// redirects, and other middleware that strips or re-encodes query strings.
 
 import { firestoreGet, firestoreUpdate } from "../../_utils/firebase.js";
 import { isValidEmail } from "../../_utils/http.js";
@@ -12,16 +16,23 @@ export const onRequestPost = async (ctx) => handle(ctx, "one-click");
 
 async function handle({ request, env, params }, mode) {
   const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
-  const raw = (params?.email || "").toString();
-  // Path param comes in URL-encoded; decode once.
+  const url = new URL(request.url);
+
+  // Prefer the path segment, fall back to ?email=.
+  const pathParts = params?.path;
+  const pathEmail = Array.isArray(pathParts) ? pathParts[0] : pathParts;
+  const rawEmail = pathEmail || url.searchParams.get("email") || "";
+
   let email = "";
   try {
-    email = decodeURIComponent(raw).trim().toLowerCase();
+    email = decodeURIComponent(rawEmail).trim().toLowerCase();
   } catch {
-    email = raw.trim().toLowerCase();
+    email = rawEmail.trim().toLowerCase();
   }
 
   if (!isValidEmail(email)) {
+    // Missing/malformed email from a click-through: redirect to the
+    // unsubscribe form so the user can still remove themselves.
     return mode === "one-click"
       ? new Response("", { status: 400 })
       : Response.redirect(`${siteUrl}/unsubscribe`, 302);
