@@ -11,6 +11,9 @@ firebase-functions/node_modules/
 .env.*
 .dev.vars
 
+# Firebase service account keys
+*-firebase-adminsdk-*.json
+
 # Cloudflare + build artifacts
 .wrangler/
 cloudflare-dist/
