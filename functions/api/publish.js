@@ -133,26 +133,30 @@ export const onRequestPost = async ({ request, env }) => {
           },
         },
         limit: 5000,
-        select: { fields: [{ fieldPath: "email" }] },
       });
 
-      const emails = subscribers
-        .map((s) => s.data.email)
-        .filter(Boolean)
-        .filter((v, i, arr) => arr.indexOf(v) === i);
+      const seen = new Set();
+      const recipients = subscribers
+        .map((s) => ({ email: s.data?.email, firstName: s.data?.firstName || "" }))
+        .filter(({ email }) => {
+          if (!email || seen.has(email)) return false;
+          seen.add(email);
+          return true;
+        });
 
       const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+      const newsletterSubject = `New from The Catalyst: ${articles[0].title}`;
       const html = buildNewsletter({
-        subject: `New from The Catalyst: ${articles[0].title}`,
+        subject: newsletterSubject,
         preheader: `${articles[0].title} — and more inside.`,
         articles,
         siteUrl,
       });
 
-      if (emails.length > 0) {
+      if (recipients.length > 0) {
         newsletterResult = await sendBulkEmail(env, {
-          recipients: emails,
-          subject: `New from The Catalyst: ${articles[0].title}`,
+          recipients,
+          subject: newsletterSubject,
           html,
         });
       } else {

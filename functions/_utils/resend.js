@@ -27,7 +27,10 @@ export async function sendEmail(env, { to, subject, html, replyTo, cc, unsubscri
   if (cc) payload.cc = Array.isArray(cc) ? cc : [cc];
   if (unsubscribeEmail) {
     payload.headers = {
-      "List-Unsubscribe": `<${siteUrl}/api/unsubscribe?email=${encodeURIComponent(recipient)}>`,
+      // Gmail requires both a mailto: and an https: URL to show its native
+      // unsubscribe button. The mailto: is the legacy fallback; the https:
+      // is the RFC 8058 one-click endpoint. Both must be present.
+      "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe?email=${encodeURIComponent(recipient)}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     };
   }
@@ -85,7 +88,7 @@ export async function sendBulkEmail(env, { recipients, subject, html, htmlBuilde
             html: recipientHtml,
             reply_to: replyToAddr,
             headers: {
-              "List-Unsubscribe": `<${siteUrl}/api/unsubscribe?email=${encodeURIComponent(email)}>`,
+              "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe?email=${encodeURIComponent(email)}>`,
               "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
             },
           };
@@ -106,8 +109,12 @@ function personalizeUnsubscribeLinks(html, recipient, siteUrl) {
   if (!content || !recipient) return content;
 
   const encoded = encodeURIComponent(recipient);
-  return content.replaceAll(
-    `${siteUrl}/api/unsubscribe?email=`,
+
+  // Replace any origin variant of the unsubscribe URL so that mismatches
+  // between the template's hardcoded siteUrl and env.SITE_URL don't leave
+  // email= empty. Matches both absolute URLs and the /api/unsubscribe path.
+  return content.replace(
+    /https?:\/\/[^"']*\/api\/unsubscribe\?email=/g,
     `${siteUrl}/api/unsubscribe?email=${encoded}`
   );
 }
