@@ -238,32 +238,24 @@ export function buildInboxNewsletter({
   function supportingBlock(a) {
     if (!a) return "";
     const href = buildArticleUrl(a, siteUrl);
-    const img = a.coverImage || a.image || "";
     const title = a.title || "Untitled";
     const excerpt = a.excerpt || a.dek || "";
     const byline = a.author ? `By ${esc(a.author)}` : "";
     const category = (a.category || "Feature").toUpperCase();
-    // Thumbnail (110px) left, text right — classic editorial digest row
+    // Text-only card — no image
     return `
           <tr>
             <td style="padding:0 0 18px 0;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                style="border:1px solid #e8e8ed;border-radius:10px;overflow:hidden;background:#fafafa;">
+                style="border:1px solid #e8e8ed;border-radius:10px;background:#fafafa;">
                 <tr>
-                  ${img ? `
-                  <td width="110" valign="top" style="padding:0;width:110px;min-width:110px;">
-                    <a href="${esc(href)}" style="display:block;line-height:0;font-size:0;">
-                      <img src="${escAttr(img)}" alt="${escAttr(title)}" width="110"
-                        style="width:110px;height:110px;object-fit:cover;display:block;border:0;">
-                    </a>
-                  </td>` : ""}
-                  <td valign="top" style="padding:14px 16px;">
+                  <td valign="top" style="padding:16px 18px;">
                     <p style="margin:0 0 4px 0;font-size:10px;font-weight:700;letter-spacing:0.16em;color:#6e6e73;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">${esc(category)}</p>
                     <p style="margin:0 0 5px 0;font-size:15px;font-weight:700;line-height:1.3;color:#1d1d1f;font-family:Georgia,'Times New Roman',serif;">
                       <a href="${esc(href)}" style="color:#1d1d1f;text-decoration:none;">${esc(title)}</a>
                     </p>
                     ${byline ? `<p style="margin:0 0 5px 0;font-size:12px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;font-style:italic;">${byline}</p>` : ""}
-                    ${excerpt ? `<p style="margin:0 0 8px 0;font-size:13px;line-height:1.55;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(excerpt.slice(0, 120))}${excerpt.length > 120 ? "…" : ""}</p>` : ""}
+                    ${excerpt ? `<p style="margin:0 0 8px 0;font-size:13px;line-height:1.55;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(excerpt.slice(0, 140))}${excerpt.length > 140 ? "…" : ""}</p>` : ""}
                     <a href="${esc(href)}" style="font-size:12px;color:#1d1d1f;font-family:Arial,Helvetica,sans-serif;text-decoration:underline;font-weight:600;">Read &rarr;</a>
                   </td>
                 </tr>
@@ -349,13 +341,10 @@ export function buildInboxNewsletter({
             </td>
           </tr>
 
-          <!-- Reply invitation -->
+          <!-- Sign-off -->
           <tr>
             <td style="padding:4px 36px 28px 36px;">
-              <div style="background:#f5f5f7;border-radius:10px;padding:18px 20px;">
-                <p style="margin:0 0 10px 0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Which story caught your eye? Just hit reply and let me know — I read every response.</p>
-                <p style="margin:0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Thanks for reading,<br><strong style="color:#1d1d1f;">The Catalyst Team</strong></p>
-              </div>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Thanks for reading,<br><strong style="color:#1d1d1f;">The Catalyst Team</strong></p>
             </td>
           </tr>
 
