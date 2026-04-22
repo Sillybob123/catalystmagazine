@@ -403,9 +403,16 @@ export function computeAdminDigest({ projects, users, now }) {
     return (a.writerName || "").localeCompare(b.writerName || "");
   });
 
-  // Attach a copy-paste message for each flagged writer.
+  // Attach a copy-paste message for each flagged writer. Alternate the signoff
+  // across actual generated messages so admins get:
+  //   Yair and Aidan
+  //   Aidan and Yair
+  //   Yair and Aidan
+  //   ...
+  let signoffIndex = 0;
   for (const row of rows) {
-    row.copyPasteMessage = buildCopyPasteMessage(row);
+    row.copyPasteMessage = buildCopyPasteMessage(row, signoffIndex);
+    if (row.copyPasteMessage) signoffIndex++;
   }
 
   return rows;
@@ -426,7 +433,11 @@ function currentStageLabel(project) {
   return "Ready to publish";
 }
 
-function buildCopyPasteMessage(row) {
+function digestMessageSignoff(index = 0) {
+  return index % 2 === 0 ? "Yair and Aidan" : "Aidan and Yair";
+}
+
+function buildCopyPasteMessage(row, signoffIndex = 0) {
   if (row.exemption) return null;
   const flagged = row.projects.filter((p) => p.flags.length > 0);
   if (!flagged.length) return null;
@@ -448,7 +459,7 @@ function buildCopyPasteMessage(row) {
   lines.push("");
   lines.push("Let us know how it's going or if anything's blocking you — we're happy to help. Thanks for all you do for The Catalyst!");
   lines.push("");
-  lines.push("— The Catalyst editorial team");
+  lines.push(`— ${digestMessageSignoff(signoffIndex)}`);
 
   return lines.join("\n");
 }
