@@ -151,6 +151,14 @@ const ROUTES = {
     loader: () => import("./marketing.js"),
     mountKey: "analytics",
   },
+  "#/marketing/subscribers": {
+    label: "Subscriber list",
+    icon: ICONS.users,
+    roles: ["admin", "marketing"],
+    group: "marketing",
+    loader: () => import("./marketing.js"),
+    mountKey: "subscribers",
+  },
   "#/marketing/collabs": {
     label: "Collaboration requests",
     icon: ICONS.users,
