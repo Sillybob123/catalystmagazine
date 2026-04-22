@@ -203,28 +203,74 @@ export function buildInboxNewsletter({
   const defaultIntro = intro ||
     `I wanted to share the latest ${articles.length === 1 ? "story" : `${articles.length} stories`} from The Catalyst — our student journalism magazine covering science, policy, and society.`;
 
-  const articleBlocks = articles.map((a, i) => {
+  // Article 0 → full-width hero with cover image (one image = fine for inbox placement)
+  // Articles 1–2 → thumbnail left + text right inside a subtle card
+  const heroArticle = articles[0];
+  const supportingArticles = articles.slice(1);
+
+  function heroBlock(a) {
+    if (!a) return "";
     const href = buildArticleUrl(a, siteUrl);
+    const img = a.coverImage || a.image || "";
     const title = a.title || "Untitled";
     const excerpt = a.excerpt || a.dek || "";
-    const byline = a.author ? `by ${esc(a.author)}` : "";
+    const byline = a.author ? `By ${esc(a.author)}` : "";
     const category = (a.category || "Feature").toUpperCase();
     return `
+          <!-- Hero article -->
           <tr>
-            <td style="padding:0 0 ${i < articles.length - 1 ? "28px" : "0"} 0;">
-              <p style="margin:0 0 3px 0;font-size:11px;font-weight:600;letter-spacing:0.15em;color:#6e6e73;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">${esc(category)}</p>
-              <p style="margin:0 0 5px 0;font-size:18px;font-weight:700;line-height:1.3;color:#1d1d1f;font-family:Georgia,'Times New Roman',serif;">
+            <td style="padding:0 0 28px 0;">
+              ${img ? `
+              <a href="${esc(href)}" style="display:block;text-decoration:none;line-height:0;font-size:0;border-radius:12px;overflow:hidden;margin-bottom:18px;">
+                <img src="${escAttr(img)}" alt="${escAttr(title)}" width="560" style="width:100%;max-width:560px;height:auto;display:block;border-radius:12px;border:0;">
+              </a>` : ""}
+              <p style="margin:0 0 5px 0;font-size:11px;font-weight:700;letter-spacing:0.18em;color:#6e6e73;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">${esc(category)}</p>
+              <p style="margin:0 0 8px 0;font-size:22px;font-weight:700;line-height:1.25;color:#1d1d1f;font-family:Georgia,'Times New Roman',serif;">
                 <a href="${esc(href)}" style="color:#1d1d1f;text-decoration:none;">${esc(title)}</a>
               </p>
-              ${byline ? `<p style="margin:0 0 7px 0;font-size:13px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;">${byline}</p>` : ""}
-              ${excerpt ? `<p style="margin:0 0 9px 0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(excerpt)}</p>` : ""}
-              <p style="margin:0;font-size:14px;font-family:Arial,Helvetica,sans-serif;">
-                <a href="${esc(href)}" style="color:#0066cc;text-decoration:underline;">Read the full story &rarr;</a>
-              </p>
+              ${byline ? `<p style="margin:0 0 9px 0;font-size:13px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;font-style:italic;">${byline}</p>` : ""}
+              ${excerpt ? `<p style="margin:0 0 12px 0;font-size:15px;line-height:1.65;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(excerpt)}</p>` : ""}
+              <a href="${esc(href)}" style="font-size:14px;color:#1d1d1f;font-family:Arial,Helvetica,sans-serif;text-decoration:underline;font-weight:600;">Read the full story &rarr;</a>
             </td>
           </tr>`;
-  }).join(`
-          <tr><td style="padding:0;"><div style="height:1px;background:#d2d2d7;margin:0 0 28px 0;font-size:1px;line-height:1px;">&nbsp;</div></td></tr>`);
+  }
+
+  function supportingBlock(a) {
+    if (!a) return "";
+    const href = buildArticleUrl(a, siteUrl);
+    const img = a.coverImage || a.image || "";
+    const title = a.title || "Untitled";
+    const excerpt = a.excerpt || a.dek || "";
+    const byline = a.author ? `By ${esc(a.author)}` : "";
+    const category = (a.category || "Feature").toUpperCase();
+    // Thumbnail (110px) left, text right — classic editorial digest row
+    return `
+          <tr>
+            <td style="padding:0 0 18px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="border:1px solid #e8e8ed;border-radius:10px;overflow:hidden;background:#fafafa;">
+                <tr>
+                  ${img ? `
+                  <td width="110" valign="top" style="padding:0;width:110px;min-width:110px;">
+                    <a href="${esc(href)}" style="display:block;line-height:0;font-size:0;">
+                      <img src="${escAttr(img)}" alt="${escAttr(title)}" width="110"
+                        style="width:110px;height:110px;object-fit:cover;display:block;border:0;">
+                    </a>
+                  </td>` : ""}
+                  <td valign="top" style="padding:14px 16px;">
+                    <p style="margin:0 0 4px 0;font-size:10px;font-weight:700;letter-spacing:0.16em;color:#6e6e73;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">${esc(category)}</p>
+                    <p style="margin:0 0 5px 0;font-size:15px;font-weight:700;line-height:1.3;color:#1d1d1f;font-family:Georgia,'Times New Roman',serif;">
+                      <a href="${esc(href)}" style="color:#1d1d1f;text-decoration:none;">${esc(title)}</a>
+                    </p>
+                    ${byline ? `<p style="margin:0 0 5px 0;font-size:12px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;font-style:italic;">${byline}</p>` : ""}
+                    ${excerpt ? `<p style="margin:0 0 8px 0;font-size:13px;line-height:1.55;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(excerpt.slice(0, 120))}${excerpt.length > 120 ? "…" : ""}</p>` : ""}
+                    <a href="${esc(href)}" style="font-size:12px;color:#1d1d1f;font-family:Arial,Helvetica,sans-serif;text-decoration:underline;font-weight:600;">Read &rarr;</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`;
+  }
 
   const unsub = unsubscribeUrl
     ? `<a href="${esc(unsubscribeUrl)}" style="color:#6e6e73;text-decoration:underline;">unsubscribe</a>`
@@ -244,62 +290,84 @@ export function buildInboxNewsletter({
   body,table,td,a{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
   table,td{mso-table-lspace:0;mso-table-rspace:0;}
   img{-ms-interpolation-mode:bicubic;border:0;display:block;}
-  body{margin:0!important;padding:0!important;width:100%!important;background:#ffffff;}
-  a{color:#0066cc;}
+  body{margin:0!important;padding:0!important;width:100%!important;background:#f5f5f7;}
+  a{color:#1d1d1f;}
   @media screen and (max-width:600px){
-    .wrap{width:100%!important;padding:24px 20px!important;}
+    .wrap{width:100%!important;}
+    .wrap-pad{padding:24px 20px 40px 20px!important;}
+    .hero-img{border-radius:8px!important;}
+    .support-thumb{width:80px!important;min-width:80px!important;}
+    .support-thumb img{width:80px!important;height:80px!important;}
   }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1d1d1f;">
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:Arial,Helvetica,sans-serif;color:#1d1d1f;">
   <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;max-height:0;max-width:0;overflow:hidden;font-size:1px;line-height:1px;">${esc(preheader)}</span>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f7;">
     <tr>
-      <td align="center" style="padding:40px 16px 48px 16px;">
-        <table role="presentation" class="wrap" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px;max-width:560px;">
+      <td align="center" style="padding:32px 16px 48px 16px;">
+        <table role="presentation" class="wrap" width="580" cellpadding="0" cellspacing="0" border="0"
+          style="width:580px;max-width:580px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.07);">
 
-          <!-- Wordmark -->
+          <!-- Logo masthead -->
           <tr>
-            <td style="padding:0 0 28px 0;border-bottom:2px solid #1d1d1f;margin-bottom:28px;">
-              <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#1d1d1f;font-family:Arial,Helvetica,sans-serif;">THE CATALYST</p>
+            <td style="padding:28px 36px 22px 36px;border-bottom:1px solid #e8e8ed;text-align:center;background:#ffffff;">
+              <a href="${esc(siteUrl)}" style="display:inline-block;text-decoration:none;">
+                <img src="${escAttr(LOGO_URL)}" alt="The Catalyst" width="260"
+                  style="width:260px;max-width:100%;height:auto;display:block;margin:0 auto;border:0;">
+              </a>
             </td>
           </tr>
 
           <!-- Greeting + intro -->
           <tr>
-            <td style="padding:28px 0 24px 0;">
-              <p style="margin:0 0 14px 0;font-size:16px;line-height:1.6;color:#1d1d1f;font-family:Georgia,'Times New Roman',serif;">${greeting}</p>
-              <p style="margin:0;font-size:16px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(defaultIntro)}</p>
+            <td class="wrap-pad" style="padding:28px 36px 8px 36px;">
+              <p style="margin:0 0 10px 0;font-size:16px;line-height:1.6;color:#1d1d1f;font-family:Georgia,'Times New Roman',serif;">${greeting}</p>
+              <p style="margin:0;font-size:15px;line-height:1.65;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(defaultIntro)}</p>
             </td>
           </tr>
 
-          <!-- Article list -->
+          <!-- Thin rule -->
           <tr>
-            <td style="padding:0 0 32px 0;">
+            <td style="padding:20px 36px 0 36px;">
+              <div style="height:1px;background:#e8e8ed;font-size:1px;line-height:1px;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- Articles -->
+          <tr>
+            <td class="wrap-pad" style="padding:24px 36px 8px 36px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                ${articleBlocks}
+                ${heroBlock(heroArticle)}
+                ${supportingArticles.length ? `
+                <tr><td style="padding:0 0 20px 0;">
+                  <div style="height:1px;background:#e8e8ed;font-size:1px;line-height:1px;">&nbsp;</div>
+                </td></tr>` : ""}
+                ${supportingArticles.map(supportingBlock).join("")}
               </table>
             </td>
           </tr>
 
           <!-- Reply invitation -->
           <tr>
-            <td style="padding:0 0 32px 0;border-top:1px solid #d2d2d7;padding-top:24px;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Which story caught your eye? Just hit reply and let me know — I read every response.</p>
-              <p style="margin:12px 0 0 0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Thanks for reading,<br><strong style="color:#1d1d1f;">The Catalyst Team</strong></p>
+            <td style="padding:4px 36px 28px 36px;">
+              <div style="background:#f5f5f7;border-radius:10px;padding:18px 20px;">
+                <p style="margin:0 0 10px 0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Which story caught your eye? Just hit reply and let me know — I read every response.</p>
+                <p style="margin:0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Thanks for reading,<br><strong style="color:#1d1d1f;">The Catalyst Team</strong></p>
+              </div>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="padding:20px 0 0 0;border-top:1px solid #d2d2d7;">
-              <p style="margin:0;font-size:12px;line-height:1.6;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;">
-                You're receiving this because you subscribed at <a href="${esc(siteUrl)}" style="color:#6e6e73;text-decoration:underline;">catalyst-magazine.com</a>.
-                &nbsp;·&nbsp; ${unsub}
+            <td style="padding:20px 36px 28px 36px;border-top:1px solid #e8e8ed;text-align:center;">
+              <p style="margin:0 0 6px 0;font-size:12px;line-height:1.6;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;">
+                You subscribed at <a href="${esc(siteUrl)}" style="color:#6e6e73;text-decoration:underline;">catalyst-magazine.com</a>
+                &nbsp;&middot;&nbsp; ${unsub}
               </p>
-              <p style="margin:8px 0 0 0;font-size:12px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;">
-                The Catalyst Magazine &nbsp;·&nbsp; 2212 Washington Cir NW, Washington, DC 20037
+              <p style="margin:0;font-size:11px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;">
+                The Catalyst Magazine &nbsp;&middot;&nbsp; 2212 Washington Cir NW, Washington, DC 20037
               </p>
             </td>
           </tr>
