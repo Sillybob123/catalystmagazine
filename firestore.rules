@@ -133,6 +133,14 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ---------- catalyst bot reminder log ----------
+    // Written exclusively by the server-side bot (service account bypasses
+    // these rules). Admins may read it for debugging/audit.
+    match /bot_reminder_log/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // ---------- collaboration requests (contact / collaborate form) ----------
     match /collaboration_requests/{reqId} {
       // Anyone (even anonymous) can submit the contact form.

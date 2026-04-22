@@ -7,7 +7,7 @@
 import { db, auth, storage } from "../firebase-config.js";
 import {
   collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy,
-  where, getDoc, setDoc,
+  where, getDoc, setDoc, deleteField,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -228,7 +228,7 @@ async function mountUsers(ctx, container) {
     <div class="card-header">
       <div>
         <div class="card-title">Users &amp; roles</div>
-        <div class="card-subtitle">Assign roles and check who's active. Last-seen is updated every 5 minutes while a user has the dashboard open.</div>
+        <div class="card-subtitle">Assign roles, check who's active, and pause Catalyst bot reminders for specific writers when needed.</div>
       </div>
       <button class="btn btn-accent btn-sm" id="add-user-btn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
@@ -258,7 +258,7 @@ async function loadUsers(mount, ctx, reload) {
     const table = el("table", { class: "table" });
     table.innerHTML = `
       <thead><tr>
-        <th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Last seen</th><th>Actions</th>
+        <th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Bot reminders</th><th>Created</th><th>Last seen</th><th>Actions</th>
       </tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
 
@@ -266,6 +266,7 @@ async function loadUsers(mount, ctx, reload) {
       const u = d.data();
       const p = presence.get(d.id);
       const last = p?.lastSeenAt || u.lastSeenAt;
+      const reminderStatus = getBotReminderExemptionState(u);
       const tr = el("tr", {});
       tr.innerHTML = `
         <td><strong>${esc(u.name || "—")}</strong></td>
@@ -277,10 +278,12 @@ async function loadUsers(mount, ctx, reload) {
           </select>
         </td>
         <td><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}">${esc(u.status || "active")}</span></td>
+        <td>${renderBotReminderStatus(reminderStatus)}</td>
         <td>${u.createdAt ? fmtDate(u.createdAt) : "—"}</td>
         <td>${last ? `${fmtRelative(last)} <div style="color:var(--muted);font-size:11px;">${fmtDate(last)}</div>` : "—"}</td>
         <td>
           <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}">Edit bot</button>
             <button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid ? "disabled" : ""} style="color:var(--danger);">Delete</button>
           </div>
         </td>`;
@@ -298,6 +301,15 @@ async function loadUsers(mount, ctx, reload) {
     });
 
     tbody.addEventListener("click", async (e) => {
+      const exemptBtn = e.target.closest('[data-action="bot-exemption"]');
+      if (exemptBtn) {
+        const uid = exemptBtn.dataset.id;
+        const userDoc = snap.docs.find((docSnap) => docSnap.id === uid);
+        if (!userDoc) return;
+        openBotReminderExemptionModal(ctx, { id: uid, ...userDoc.data() }, reload);
+        return;
+      }
+
       const btn = e.target.closest('[data-action="delete"]');
       if (!btn || btn.disabled) return;
       const uid = btn.dataset.id;
@@ -324,6 +336,200 @@ function roleLabel(r) {
     marketing: "Marketing",
     reader: "Reader",
   }[r] || r;
+}
+
+const BOT_REMINDER_TIMEZONE = "America/New_York";
+
+function dateKeyInTimeZone(date, timeZone = BOT_REMINDER_TIMEZONE) {
+  const d = toJsDate(date);
+  if (!d) return null;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  if (!byType.year || !byType.month || !byType.day) return null;
+  return `${byType.year}-${byType.month}-${byType.day}`;
+}
+
+function toJsDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  if (value?.toDate) return value.toDate();
+  if (value?.seconds) return new Date(value.seconds * 1000);
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function normalizeBotReminderDate(value) {
+  if (!value) return null;
+  if (typeof value === "string") {
+    const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (match) return match[1];
+  }
+  return dateKeyInTimeZone(value);
+}
+
+function formatBotReminderDate(value) {
+  if (!value) return "";
+  const d = new Date(`${value}T12:00:00`);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function getBotReminderExemptionState(user, now = new Date()) {
+  const raw = user?.botReminderExemption;
+  if (!raw || typeof raw !== "object") {
+    return {
+      exists: false,
+      active: false,
+      label: "Active",
+      reason: null,
+      untilDate: null,
+      updatedAt: null,
+      updatedByName: null,
+    };
+  }
+
+  const untilDate = normalizeBotReminderDate(raw.untilDate || raw.until || null);
+  const today = dateKeyInTimeZone(now);
+  const active = !untilDate || !today || untilDate >= today;
+  const updatedAt = toJsDate(raw.updatedAt);
+
+  return {
+    exists: true,
+    active,
+    label: !untilDate
+      ? "Paused indefinitely"
+      : active
+        ? `Paused until ${formatBotReminderDate(untilDate)}`
+        : `Expired ${formatBotReminderDate(untilDate)}`,
+    reason: typeof raw.reason === "string" && raw.reason.trim() ? raw.reason.trim() : null,
+    untilDate: untilDate || null,
+    updatedAt: updatedAt ? updatedAt.toISOString() : null,
+    updatedByName: raw.updatedByName || null,
+  };
+}
+
+function renderBotReminderStatus(state) {
+  if (!state.exists) {
+    return `<div style="min-width:190px;"><span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#f8fafc;color:#475569;font-size:12px;font-weight:600;">Active</span></div>`;
+  }
+
+  const tone = state.active
+    ? { bg: "#eff6ff", ink: "#1d4ed8", sub: "#1e40af" }
+    : { bg: "#f8fafc", ink: "#475569", sub: "#64748b" };
+
+  return `
+    <div style="min-width:190px;display:grid;gap:4px;">
+      <span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:${tone.bg};color:${tone.ink};font-size:12px;font-weight:700;width:max-content;">${esc(state.label)}</span>
+      ${state.reason ? `<div style="font-size:12px;color:${tone.sub};line-height:1.45;">${esc(state.reason)}</div>` : ""}
+    </div>
+  `;
+}
+
+function openBotReminderExemptionModal(ctx, user, onDone) {
+  const current = getBotReminderExemptionState(user);
+  const today = dateKeyInTimeZone(new Date()) || "";
+
+  const body = el("div", {});
+  body.innerHTML = `
+    <div class="field">
+      <label class="label">Writer</label>
+      <div style="font-weight:700;color:var(--ink);">${esc(user.name || user.email || "Unknown user")}</div>
+      ${user.email ? `<div style="font-size:12px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px;">${esc(user.email)}</div>` : ""}
+    </div>
+    <div class="field">
+      <label class="label">Reminder behavior</label>
+      <select class="select" id="bre-mode">
+        <option value="none" ${!current.exists ? "selected" : ""}>Send reminders normally</option>
+        <option value="indefinite" ${current.exists && !current.untilDate ? "selected" : ""}>Pause indefinitely</option>
+        <option value="until" ${current.untilDate ? "selected" : ""}>Pause until a specific date</option>
+      </select>
+      <div class="hint">This pauses automatic writer reminder emails and suppresses writer nudge suggestions in the Saturday admin digest.</div>
+    </div>
+    <div class="field" id="bre-until-wrap">
+      <label class="label">Pause through</label>
+      <input class="input" id="bre-until" type="date" min="${escAttr(today)}" value="${escAttr(current.untilDate || today)}">
+      <div class="hint">The writer becomes eligible again the day after this date.</div>
+    </div>
+    <div class="field">
+      <label class="label">Reason (optional)</label>
+      <textarea class="textarea" id="bre-reason" rows="3" placeholder="Emergency, approved break, paused assignment…">${esc(current.reason || "")}</textarea>
+    </div>
+    ${current.exists ? `<div class="hint">Current setting: ${esc(current.label)}${current.updatedByName ? ` · last updated by ${esc(current.updatedByName)}` : ""}${current.updatedAt ? ` · ${esc(fmtDate(current.updatedAt))}` : ""}</div>` : ""}
+    <div id="bre-msg" class="hint" style="color:var(--danger);"></div>
+  `;
+
+  const saveBtn = el("button", { class: "btn btn-accent" }, "Save");
+  const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
+  const modal = openModal({
+    title: `Catalyst bot reminders — ${user.name || user.email || "User"}`,
+    body,
+    footer: [cancelBtn, saveBtn],
+  });
+
+  const modeEl = body.querySelector("#bre-mode");
+  const untilWrap = body.querySelector("#bre-until-wrap");
+  const untilEl = body.querySelector("#bre-until");
+  const msgEl = body.querySelector("#bre-msg");
+
+  const syncMode = () => {
+    untilWrap.style.display = modeEl.value === "until" ? "" : "none";
+  };
+  syncMode();
+  modeEl.addEventListener("change", syncMode);
+  cancelBtn.addEventListener("click", modal.close);
+
+  saveBtn.addEventListener("click", async () => {
+    msgEl.textContent = "";
+    const mode = modeEl.value;
+    const reason = body.querySelector("#bre-reason").value.trim();
+
+    if (mode === "until") {
+      const untilDate = untilEl.value;
+      if (!untilDate) {
+        msgEl.textContent = "Choose the date through which reminders should stay paused.";
+        return;
+      }
+      if (today && untilDate < today) {
+        msgEl.textContent = "The pause date can't be in the past.";
+        return;
+      }
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+
+    try {
+      if (mode === "none") {
+        await updateDoc(doc(db, "users", user.id), {
+          botReminderExemption: deleteField(),
+        });
+        ctx.toast("Catalyst bot reminders re-enabled.", "success");
+      } else {
+        await updateDoc(doc(db, "users", user.id), {
+          botReminderExemption: {
+            untilDate: mode === "until" ? untilEl.value : null,
+            reason: reason || null,
+            updatedAt: new Date().toISOString(),
+            updatedById: ctx.user.uid,
+            updatedByName: ctx.profile.name || ctx.user.email,
+          },
+        });
+        ctx.toast("Catalyst bot reminder pause saved.", "success");
+      }
+
+      modal.close();
+      onDone && onDone();
+    } catch (err) {
+      msgEl.textContent = err.message || String(err);
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save";
+    }
+  });
 }
 
 // ====================== STORY DETAILS (full admin override) ================

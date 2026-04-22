@@ -10,13 +10,30 @@ firebase-functions/node_modules/
 .env.local
 .env.*
 .dev.vars
+.dev.vars.*
+!.dev.vars.example
+**/.dev.vars
+**/.env
 
-# Firebase service account keys
+# Firebase service account keys (any location, any naming)
 *-firebase-adminsdk-*.json
+**/firebase-adminsdk*.json
+serviceAccount*.json
+service-account*.json
+
+# Secrets / credentials — catch-all safety net
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+credentials.json
 
 # Cloudflare + build artifacts
 .wrangler/
+**/.wrangler/
 cloudflare-dist/
+worker-configuration.d.ts
 
 # OS files
 .DS_Store

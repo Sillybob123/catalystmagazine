@@ -16,6 +16,7 @@ const excludedDirectories = new Set([
   "node_modules",
   "tools",
   "scripts",
+  "scheduler-worker",
   "__pycache__"
   // NOTE: "functions" is intentionally NOT excluded — Cloudflare Pages
   // auto-deploys anything under cloudflare-dist/functions/ as a Function.

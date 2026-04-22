@@ -41,3 +41,11 @@ MAIL_FROM=Catalyst Magazine <onboarding@resend.dev>
 #  - TESTING: your Cloudflare Pages URL, e.g. https://catalystmagazine.pages.dev
 #  - PRODUCTION: https://catalyst-magazine.com
 SITE_URL=https://catalystmagazine.pages.dev
+
+# === Catalyst bot (editorial reminder bot) ==================================
+# SECRET. Shared secret used by the scheduler-worker Cron Trigger to call
+# POST /api/bot/run. Generate once (e.g. `openssl rand -hex 32`) and set the
+# SAME value here (Pages env) and in the scheduler-worker Worker secret.
+# Admins can also trigger the bot manually from the dashboard Overview page
+# using their Firebase ID token — the cron secret is only needed for cron.
+BOT_CRON_SECRET=replace-with-long-random-string

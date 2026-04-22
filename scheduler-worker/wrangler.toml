@@ -1,0 +1,17 @@
+name = "catalyst-bot-cron"
+main = "worker.js"
+compatibility_date = "2026-04-16"
+
+# Run every day at 14:00 UTC (10am America/New_York in EST, 10am EDT in DST).
+# Writer reminders fire daily. Admin digest fires only when the bot detects
+# it's Saturday in America/New_York — handled inside functions/api/bot/run.js.
+[triggers]
+crons = ["0 14 * * *"]
+
+[vars]
+BOT_ENDPOINT = "https://catalyst-magazine.com/api/bot/run"
+
+# Set the secret via:
+#   npx wrangler secret put BOT_CRON_SECRET
+# The same value must be configured in the Cloudflare Pages project
+# (Settings → Environment variables) under the name BOT_CRON_SECRET.
