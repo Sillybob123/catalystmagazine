@@ -1,29 +1,27 @@
-// /api/unsubscribe?email=<email>
+// /api/unsubscribe/<email>
 //
-// GET: called when a reader clicks the unsubscribe link in a newsletter.
-// POST: handles RFC 8058 one-click unsubscribe requests from mailbox providers.
+// Path-based unsubscribe endpoint. Using the email as a path segment (rather
+// than a ?email= query param) is resilient against URL rewriters and
+// click-tracking middleware that strip or re-encode query strings.
 
-import { firestoreGet, firestoreUpdate } from "../_utils/firebase.js";
-import { isValidEmail } from "../_utils/http.js";
+import { firestoreGet, firestoreUpdate } from "../../_utils/firebase.js";
+import { isValidEmail } from "../../_utils/http.js";
 
-export const onRequestGet = async ({ request, env }) => {
-  return handleUnsubscribe({ request, env, mode: "redirect" });
-};
+export const onRequestGet = async (ctx) => handle(ctx, "redirect");
+export const onRequestPost = async (ctx) => handle(ctx, "one-click");
 
-export const onRequestPost = async ({ request, env }) => {
-  return handleUnsubscribe({ request, env, mode: "one-click" });
-};
-
-async function handleUnsubscribe({ request, env, mode }) {
-  const url = new URL(request.url);
-  const email = (url.searchParams.get("email") || "").trim().toLowerCase();
+async function handle({ request, env, params }, mode) {
   const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+  const raw = (params?.email || "").toString();
+  // Path param comes in URL-encoded; decode once.
+  let email = "";
+  try {
+    email = decodeURIComponent(raw).trim().toLowerCase();
+  } catch {
+    email = raw.trim().toLowerCase();
+  }
 
   if (!isValidEmail(email)) {
-    // Missing/malformed email from a click-through: redirect to the
-    // unsubscribe form so the user can still remove themselves. The
-    // original "?error=invalid" message was confusing and suggested
-    // something was permanently broken.
     return mode === "one-click"
       ? new Response("", { status: 400 })
       : Response.redirect(`${siteUrl}/unsubscribe`, 302);

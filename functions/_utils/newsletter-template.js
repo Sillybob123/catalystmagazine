@@ -36,7 +36,7 @@ export function buildNewsletter({
   const cardHtml = articles.map((a, i) => articleCard(a, siteUrl, i === 0)).join("");
   const unsub = unsubscribeUrl
     ? `<a href="${esc(unsubscribeUrl)}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`
-    : `<a href="${esc(siteUrl)}/api/unsubscribe?email=${encodeURIComponent(recipientEmail || "")}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`;
+    : `<a href="${esc(siteUrl)}/api/unsubscribe/${encodeURIComponent(recipientEmail || "__RECIPIENT__")}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`;
 
   return `<!doctype html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -266,7 +266,7 @@ export function buildInboxNewsletter({
 
   const unsub = unsubscribeUrl
     ? `<a href="${esc(unsubscribeUrl)}" style="color:#6e6e73;text-decoration:underline;">unsubscribe</a>`
-    : `<a href="${esc(siteUrl)}/api/unsubscribe?email=${encodeURIComponent(recipientEmail || "")}" style="color:#6e6e73;text-decoration:underline;">unsubscribe</a>`;
+    : `<a href="${esc(siteUrl)}/api/unsubscribe/${encodeURIComponent(recipientEmail || "__RECIPIENT__")}" style="color:#6e6e73;text-decoration:underline;">unsubscribe</a>`;
 
   return `<!doctype html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">

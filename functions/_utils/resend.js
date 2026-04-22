@@ -36,7 +36,7 @@ export async function sendEmail(env, { to, subject, html, replyTo, cc, unsubscri
       // Gmail requires both a mailto: and an https: URL to show its native
       // unsubscribe button. The mailto: is the legacy fallback; the https:
       // is the RFC 8058 one-click endpoint. Both must be present.
-      "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe?email=${encodeURIComponent(recipient)}>`,
+      "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe/${encodeURIComponent(recipient)}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     };
   }
@@ -95,7 +95,7 @@ export async function sendBulkEmail(env, { recipients, subject, html, htmlBuilde
             reply_to: replyToAddr,
             track: { click: false, open: false },
             headers: {
-              "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe?email=${encodeURIComponent(email)}>`,
+              "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe/${encodeURIComponent(email)}>`,
               "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
             },
           };
@@ -117,11 +117,17 @@ function personalizeUnsubscribeLinks(html, recipient, siteUrl) {
 
   const encoded = encodeURIComponent(recipient);
 
-  // Replace any origin variant of the unsubscribe URL so that mismatches
-  // between the template's hardcoded siteUrl and env.SITE_URL don't leave
-  // email= empty. Matches both absolute URLs and the /api/unsubscribe path.
-  return content.replace(
-    /https?:\/\/[^"']*\/api\/unsubscribe\?email=/g,
-    `${siteUrl}/api/unsubscribe?email=${encoded}`
-  );
+  // Templates embed a literal __RECIPIENT__ token in the path. Swap it for
+  // the encoded email. Also rewrites legacy ?email= query-based URLs and
+  // normalizes the origin so template / env.SITE_URL mismatches don't leave
+  // the email blank.
+  return content
+    .replace(
+      /https?:\/\/[^"']*\/api\/unsubscribe\/__RECIPIENT__/g,
+      `${siteUrl}/api/unsubscribe/${encoded}`
+    )
+    .replace(
+      /https?:\/\/[^"']*\/api\/unsubscribe\?email=[^"'&]*/g,
+      `${siteUrl}/api/unsubscribe/${encoded}`
+    );
 }
