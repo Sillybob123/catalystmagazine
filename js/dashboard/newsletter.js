@@ -20,11 +20,18 @@ async function mountBuilder(ctx, container) {
         <div class="card-title">Newsletter builder</div>
         <div class="card-subtitle">Generate a Gmail-safe issue from your most recent published articles.</div>
       </div>
-      <div style="display:flex;gap:8px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div role="tablist" aria-label="Newsletter theme" style="display:inline-flex;border:1px solid var(--hairline);border-radius:8px;overflow:hidden;">
+          <button type="button" class="btn btn-ghost btn-xs" data-theme="classic" aria-pressed="true" style="border-radius:0;border:0;padding:6px 14px;font-weight:600;background:var(--surface-2);">Classic</button>
+          <button type="button" class="btn btn-ghost btn-xs" data-theme="inbox" aria-pressed="false" style="border-radius:0;border:0;border-left:1px solid var(--hairline);padding:6px 14px;font-weight:600;">Inbox version</button>
+        </div>
         <button class="btn btn-secondary btn-sm" id="btn-refresh">Regenerate</button>
         <button class="btn btn-primary btn-sm" id="btn-test">Send a test</button>
         <button class="btn btn-accent btn-sm" id="btn-send">Send to all subscribers</button>
       </div>
+    </div>
+    <div id="theme-notice" style="display:none;margin:0 0 0 0;padding:10px 20px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:13px;color:#0369a1;line-height:1.5;">
+      <strong>Inbox version</strong> — Plain-text letter style designed to land in Gmail Primary (not Promotions). Each subscriber sees their first name in the greeting. Your classic template is preserved; switch back any time.
     </div>
     <div class="card-body">
       <div class="grid" style="grid-template-columns: 1fr 1fr; gap:20px;">
@@ -86,12 +93,38 @@ async function mountBuilder(ctx, container) {
     btnRefresh: card.querySelector("#btn-refresh"),
     btnTest: card.querySelector("#btn-test"),
     btnSend: card.querySelector("#btn-send"),
+    themeNotice: card.querySelector("#theme-notice"),
   };
+
+  // Active theme — "classic" (default, existing template) or "inbox" (new delivery-optimized)
+  let activeTheme = "classic";
 
   // Available published articles (most recent first). Populated once on mount.
   let availableArticles = [];
   const MAX_PICK = 3;
   const selectedIds = new Set();
+
+  // Theme toggle — switches between "classic" (branded card template) and
+  // "inbox" (plain letter style optimized for Gmail Primary placement).
+  card.querySelectorAll("[data-theme]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeTheme = btn.dataset.theme;
+      card.querySelectorAll("[data-theme]").forEach((b) => {
+        const active = b === btn;
+        b.setAttribute("aria-pressed", active ? "true" : "false");
+        b.style.background = active ? "var(--surface-2)" : "";
+        b.style.fontWeight = active ? "700" : "600";
+      });
+      els.themeNotice.style.display = activeTheme === "inbox" ? "block" : "none";
+      // Swap intro placeholder text to match the expected tone for each theme.
+      if (activeTheme === "inbox" && els.intro.value === "Here is the latest reporting from our team of student writers. Tap any card to read the full piece.") {
+        els.intro.value = "";
+      } else if (activeTheme === "classic" && !els.intro.value.trim()) {
+        els.intro.value = "Here is the latest reporting from our team of student writers. Tap any card to read the full piece.";
+      }
+      regenerate();
+    });
+  });
 
   // Preview-width toggle. Desktop mode simulates Gmail's wider reading pane
   // (~900px), mobile simulates phone clients (~420px). The email template is
@@ -135,6 +168,7 @@ async function mountBuilder(ctx, container) {
           subject: els.subject.value,
           headline,
           intro: els.intro.value,
+          theme: activeTheme,
         }),
       });
       const data = await res.json();
@@ -142,7 +176,7 @@ async function mountBuilder(ctx, container) {
       currentHtml = data.html;
       currentArticles = data.articles || [];
       renderPreview(els.iframe, currentHtml);
-      els.status.textContent = `Preview ready — ${currentArticles.length} article(s).`;
+      els.status.textContent = `Preview ready — ${currentArticles.length} article(s).${activeTheme === "inbox" ? " (Inbox version — preview shows \"Hi Reader\" greeting; real sends use each subscriber's first name.)" : ""}`;
     } catch (err) {
       els.status.textContent = "Could not generate preview: " + err.message;
     }
@@ -215,18 +249,32 @@ async function mountBuilder(ctx, container) {
       els.picker.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
     });
 
+  // Build the inboxParams payload needed by the server to re-render per subscriber.
+  // Only used when activeTheme === "inbox".
+  function buildInboxParams() {
+    return {
+      headline: els.headline.value.trim(),
+      intro: els.intro.value.trim(),
+      articles: currentArticles,
+      siteUrl: "https://catalyst-magazine.com",
+    };
+  }
+
   els.btnTest.addEventListener("click", async () => {
     const testEmail = prompt("Send a test to which email?", ctx.profile.email || ctx.user.email || "");
     if (!testEmail) return;
     try {
       els.status.textContent = "Sending test…";
+      const payload = {
+        subject: els.subject.value,
+        html: currentHtml,
+        testEmail,
+        theme: activeTheme,
+      };
+      if (activeTheme === "inbox") payload.inboxParams = buildInboxParams();
       const res = await ctx.authedFetch("/api/newsletter/send", {
         method: "POST",
-        body: JSON.stringify({
-          subject: els.subject.value,
-          html: currentHtml,
-          testEmail,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -240,17 +288,21 @@ async function mountBuilder(ctx, container) {
 
   els.btnSend.addEventListener("click", async () => {
     if (!currentHtml) { ctx.toast("Regenerate the preview first.", "error"); return; }
-    const ok = await confirmDialog("Send this newsletter to every active subscriber? This cannot be undone.", { confirmText: "Send to all", danger: true });
+    const themeLabel = activeTheme === "inbox" ? "Inbox version (personalized)" : "Classic";
+    const ok = await confirmDialog(`Send this newsletter (${themeLabel}) to every active subscriber? This cannot be undone.`, { confirmText: "Send to all", danger: true });
     if (!ok) return;
     try {
       els.status.textContent = "Sending…";
       els.btnSend.disabled = true;
+      const payload = {
+        subject: els.subject.value,
+        html: currentHtml,
+        theme: activeTheme,
+      };
+      if (activeTheme === "inbox") payload.inboxParams = buildInboxParams();
       const res = await ctx.authedFetch("/api/newsletter/send", {
         method: "POST",
-        body: JSON.stringify({
-          subject: els.subject.value,
-          html: currentHtml,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);

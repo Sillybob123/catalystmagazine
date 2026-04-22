@@ -80,6 +80,51 @@ export function getFallbackImage(siteUrl = SITE_URL) {
   return `${siteUrl}${FALLBACK_IMAGE_PATH}`;
 }
 
+function stripOrigin(input) {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(raw);
+    return `${url.pathname || ""}${url.search || ""}${url.hash || ""}`;
+  } catch {
+    return raw;
+  }
+}
+
+function normalizeArticleSlug(value) {
+  const raw = stripOrigin(value)
+    .split(/[?#]/, 1)[0]
+    .trim()
+    .replace(/^\/+|\/+$/g, "");
+  if (!raw) return "";
+  if (raw.startsWith("article/")) return raw.slice("article/".length);
+  if (raw.includes("/")) return "";
+  return raw;
+}
+
+export function buildArticlePath(article = {}) {
+  const slug =
+    normalizeArticleSlug(article.slug) ||
+    titleToSlug(article.title) ||
+    normalizeArticleSlug(article.url) ||
+    normalizeArticleSlug(article.link);
+  if (slug) return `/article/${encodeURIComponent(slug)}`;
+
+  const rawFallback = String(article.url || article.link || "").trim();
+  if (/^https?:\/\//i.test(rawFallback)) return rawFallback;
+
+  const fallback = stripOrigin(rawFallback);
+  if (!fallback) return "/articles";
+  return fallback.startsWith("/") ? fallback : `/${fallback}`;
+}
+
+export function buildArticleUrl(article = {}, siteUrl = SITE_URL) {
+  const base = String(siteUrl || SITE_URL).replace(/\/+$/, "");
+  const path = buildArticlePath(article);
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 // Cover images in JSON posts are either (a) already-absolute URLs (Wix CDN)
 // or (b) repo-relative paths like "postimages/foo.webp". Resolve both.
 function resolveImage(src, siteUrl = SITE_URL) {

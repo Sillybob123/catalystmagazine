@@ -4,6 +4,8 @@
 // the Catalyst logo in the masthead. Hand-written table-based layout so it
 // renders cleanly in Gmail, Apple Mail, Outlook.
 
+import { buildArticleUrl } from "./article-meta.js";
+
 const COLORS = {
   pageBg:   "#f5f5f7", // apple-style soft gray page
   surface:  "#ffffff",
@@ -142,7 +144,7 @@ export function buildNewsletter({
 }
 
 function articleCard(a, siteUrl, isFirst) {
-  const href = absoluteUrl(siteUrl, a.url || a.slug || "");
+  const href = buildArticleUrl(a, siteUrl);
   const img = a.coverImage || a.image || "";
   const category = (a.category || "Feature").toUpperCase();
   const title = a.title || "Untitled";
@@ -175,12 +177,139 @@ function articleCard(a, siteUrl, isFirst) {
     </table>`;
 }
 
-function absoluteUrl(siteUrl, path) {
-  if (!path) return siteUrl;
-  if (/^https?:/i.test(path)) return path;
-  const cleanBase = siteUrl.replace(/\/$/, "");
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  return cleanBase + cleanPath;
+// ─── Inbox-optimized "letter" template ───────────────────────────────────────
+// Plain single-column, no banner images, text links only, personal greeting.
+// Designed to look like a human wrote it — avoids every "Promotions" trigger:
+//  • No multi-column layout, no colored buttons, no social icons
+//  • Only 3 links per article (title + "read" text link + one CTA at the end)
+//  • Personal "Hi [FirstName]" opener signals a 1-to-1 message to Gmail's AI
+//  • Ends with a reply invitation — the single strongest Primary-inbox signal
+
+export function buildInboxNewsletter({
+  subject = "New from The Catalyst",
+  preheader = "",
+  headline = "New Stories From The Catalyst",
+  intro = "",
+  articles = [],
+  siteUrl = "https://catalyst-magazine.com",
+  unsubscribeUrl = null,
+  recipientEmail = null,
+  recipientFirstName = null,
+}) {
+  const greeting = recipientFirstName
+    ? `Hi ${esc(recipientFirstName)},`
+    : "Hi there,";
+
+  const defaultIntro = intro ||
+    `I wanted to share the latest ${articles.length === 1 ? "story" : `${articles.length} stories`} from The Catalyst — our student journalism magazine covering science, policy, and society.`;
+
+  const articleBlocks = articles.map((a, i) => {
+    const href = buildArticleUrl(a, siteUrl);
+    const title = a.title || "Untitled";
+    const excerpt = a.excerpt || a.dek || "";
+    const byline = a.author ? `by ${esc(a.author)}` : "";
+    const category = (a.category || "Feature").toUpperCase();
+    return `
+          <tr>
+            <td style="padding:0 0 ${i < articles.length - 1 ? "28px" : "0"} 0;">
+              <p style="margin:0 0 3px 0;font-size:11px;font-weight:600;letter-spacing:0.15em;color:#6e6e73;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">${esc(category)}</p>
+              <p style="margin:0 0 5px 0;font-size:18px;font-weight:700;line-height:1.3;color:#1d1d1f;font-family:Georgia,'Times New Roman',serif;">
+                <a href="${esc(href)}" style="color:#1d1d1f;text-decoration:none;">${esc(title)}</a>
+              </p>
+              ${byline ? `<p style="margin:0 0 7px 0;font-size:13px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;">${byline}</p>` : ""}
+              ${excerpt ? `<p style="margin:0 0 9px 0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(excerpt)}</p>` : ""}
+              <p style="margin:0;font-size:14px;font-family:Arial,Helvetica,sans-serif;">
+                <a href="${esc(href)}" style="color:#0066cc;text-decoration:underline;">Read the full story &rarr;</a>
+              </p>
+            </td>
+          </tr>`;
+  }).join(`
+          <tr><td style="padding:0;"><div style="height:1px;background:#d2d2d7;margin:0 0 28px 0;font-size:1px;line-height:1px;">&nbsp;</div></td></tr>`);
+
+  const unsub = unsubscribeUrl
+    ? `<a href="${esc(unsubscribeUrl)}" style="color:#6e6e73;text-decoration:underline;">unsubscribe</a>`
+    : `<a href="${esc(siteUrl)}/api/unsubscribe?email=${encodeURIComponent(recipientEmail || "")}" style="color:#6e6e73;text-decoration:underline;">unsubscribe</a>`;
+
+  return `<!doctype html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light only">
+<meta name="supported-color-schemes" content="light only">
+<title>${esc(subject)}</title>
+<style>
+  body,table,td,a{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
+  table,td{mso-table-lspace:0;mso-table-rspace:0;}
+  img{-ms-interpolation-mode:bicubic;border:0;display:block;}
+  body{margin:0!important;padding:0!important;width:100%!important;background:#ffffff;}
+  a{color:#0066cc;}
+  @media screen and (max-width:600px){
+    .wrap{width:100%!important;padding:24px 20px!important;}
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1d1d1f;">
+  <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;max-height:0;max-width:0;overflow:hidden;font-size:1px;line-height:1px;">${esc(preheader)}</span>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;">
+    <tr>
+      <td align="center" style="padding:40px 16px 48px 16px;">
+        <table role="presentation" class="wrap" width="560" cellpadding="0" cellspacing="0" border="0" style="width:560px;max-width:560px;">
+
+          <!-- Wordmark -->
+          <tr>
+            <td style="padding:0 0 28px 0;border-bottom:2px solid #1d1d1f;margin-bottom:28px;">
+              <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#1d1d1f;font-family:Arial,Helvetica,sans-serif;">THE CATALYST</p>
+            </td>
+          </tr>
+
+          <!-- Greeting + intro -->
+          <tr>
+            <td style="padding:28px 0 24px 0;">
+              <p style="margin:0 0 14px 0;font-size:16px;line-height:1.6;color:#1d1d1f;font-family:Georgia,'Times New Roman',serif;">${greeting}</p>
+              <p style="margin:0;font-size:16px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(defaultIntro)}</p>
+            </td>
+          </tr>
+
+          <!-- Article list -->
+          <tr>
+            <td style="padding:0 0 32px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                ${articleBlocks}
+              </table>
+            </td>
+          </tr>
+
+          <!-- Reply invitation -->
+          <tr>
+            <td style="padding:0 0 32px 0;border-top:1px solid #d2d2d7;padding-top:24px;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Which story caught your eye? Just hit reply and let me know — I read every response.</p>
+              <p style="margin:12px 0 0 0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Thanks for reading,<br><strong style="color:#1d1d1f;">The Catalyst Team</strong></p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 0 0 0;border-top:1px solid #d2d2d7;">
+              <p style="margin:0;font-size:12px;line-height:1.6;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;">
+                You're receiving this because you subscribed at <a href="${esc(siteUrl)}" style="color:#6e6e73;text-decoration:underline;">catalyst-magazine.com</a>.
+                &nbsp;·&nbsp; ${unsub}
+              </p>
+              <p style="margin:8px 0 0 0;font-size:12px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;">
+                The Catalyst Magazine &nbsp;·&nbsp; 2212 Washington Cir NW, Washington, DC 20037
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 function esc(s) {

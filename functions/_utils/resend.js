@@ -2,7 +2,7 @@
 // Minimal Resend client (https://resend.com/docs/api-reference/emails/send-email)
 // Only dependency: fetch, which is built into Cloudflare Workers.
 
-export async function sendEmail(env, { to, subject, html, replyTo, cc }) {
+export async function sendEmail(env, { to, subject, html, replyTo, cc, unsubscribeEmail = null }) {
   const apiKey = env.RESEND_API_KEY;
   const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
   const replyToAddr = env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com";
@@ -13,20 +13,24 @@ export async function sendEmail(env, { to, subject, html, replyTo, cc }) {
   }
 
   const toList = Array.isArray(to) ? to : [to];
+  const recipient = unsubscribeEmail || toList[0] || "";
+  const personalizedHtml = unsubscribeEmail
+    ? personalizeUnsubscribeLinks(html, recipient, siteUrl)
+    : html;
   const payload = {
     from,
     to: toList,
     subject,
-    html,
+    html: personalizedHtml,
     reply_to: replyTo || replyToAddr,
-    headers: {
-      // Tells Gmail this is a newsletter the recipient asked for → Primary inbox
-      "List-Unsubscribe": `<${siteUrl}/api/unsubscribe?email=${encodeURIComponent(toList[0] || "")}>`,
-      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-      "Precedence": "bulk",
-    },
   };
   if (cc) payload.cc = Array.isArray(cc) ? cc : [cc];
+  if (unsubscribeEmail) {
+    payload.headers = {
+      "List-Unsubscribe": `<${siteUrl}/api/unsubscribe?email=${encodeURIComponent(recipient)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    };
+  }
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -44,12 +48,16 @@ export async function sendEmail(env, { to, subject, html, replyTo, cc }) {
   return res.json();
 }
 
-// Resend allows up to 50 "to" recipients per call. Chunk a larger list
-// and send one BCC'd email per chunk so subscribers don't see each other.
-export async function sendBulkEmail(env, { recipients, subject, html }) {
+// Send newsletters in per-recipient batches so each message can carry a
+// recipient-specific one-click unsubscribe URL instead of a shared BCC header.
+//
+// recipients can be either strings (email) or objects { email, firstName? }.
+// When objects are passed, htmlBuilder(recipient) is called per-recipient so
+// the inbox template can embed a personalized greeting.
+export async function sendBulkEmail(env, { recipients, subject, html, htmlBuilder }) {
   const chunks = [];
-  for (let i = 0; i < recipients.length; i += 45) {
-    chunks.push(recipients.slice(i, i + 45));
+  for (let i = 0; i < recipients.length; i += 100) {
+    chunks.push(recipients.slice(i, i + 100));
   }
 
   const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
@@ -58,31 +66,48 @@ export async function sendBulkEmail(env, { recipients, subject, html }) {
 
   const results = [];
   for (const chunk of chunks) {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.resend.com/emails/batch", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${env.RESEND_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from,
-        to: [from.match(/<(.+?)>/)?.[1] || from],
-        bcc: chunk,
-        subject,
-        html,
-        reply_to: replyToAddr,
-        headers: {
-          "List-Unsubscribe": `<${siteUrl}/api/unsubscribe>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-          "Precedence": "bulk",
-        },
-      }),
+      body: JSON.stringify(
+        chunk.map((recipient) => {
+          const email = typeof recipient === "string" ? recipient : recipient.email;
+          const recipientHtml = htmlBuilder
+            ? htmlBuilder(recipient)
+            : personalizeUnsubscribeLinks(html, email, siteUrl);
+          return {
+            from,
+            to: [email],
+            subject,
+            html: recipientHtml,
+            reply_to: replyToAddr,
+            headers: {
+              "List-Unsubscribe": `<${siteUrl}/api/unsubscribe?email=${encodeURIComponent(email)}>`,
+              "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+            },
+          };
+        })
+      ),
     });
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`Resend bulk error ${res.status}: ${text}`);
+      throw new Error(`Resend batch error ${res.status}: ${text}`);
     }
     results.push(await res.json());
   }
   return results;
+}
+
+function personalizeUnsubscribeLinks(html, recipient, siteUrl) {
+  const content = String(html || "");
+  if (!content || !recipient) return content;
+
+  const encoded = encodeURIComponent(recipient);
+  return content.replaceAll(
+    `${siteUrl}/api/unsubscribe?email=`,
+    `${siteUrl}/api/unsubscribe?email=${encoded}`
+  );
 }

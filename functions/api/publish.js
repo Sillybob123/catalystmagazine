@@ -24,7 +24,7 @@ import {
   firestoreRunQuery,
   getProjectId,
 } from "../_utils/firebase.js";
-import { titleToSlug } from "../_utils/article-meta.js";
+import { titleToSlug, buildArticlePath } from "../_utils/article-meta.js";
 import { sendBulkEmail } from "../_utils/resend.js";
 import { buildNewsletter } from "../_utils/newsletter-template.js";
 
@@ -119,7 +119,8 @@ export const onRequestPost = async ({ request, env }) => {
         excerpt: row.data.excerpt || row.data.deck || "",
         category: row.data.category || "Feature",
         coverImage: row.data.coverImage || row.data.image || "",
-        url: row.data.url || row.data.link || `/articles`,
+        slug: row.data.slug || "",
+        url: buildArticlePath(row.data),
       }));
 
       const subscribers = await firestoreRunQuery(env, {

@@ -11,7 +11,8 @@
 import { json, badRequest, serverError } from "../../_utils/http.js";
 import { firestoreRunQuery, firestoreGet } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
-import { buildNewsletter } from "../../_utils/newsletter-template.js";
+import { buildNewsletter, buildInboxNewsletter } from "../../_utils/newsletter-template.js";
+import { buildArticlePath } from "../../_utils/article-meta.js";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -22,9 +23,10 @@ export const onRequestPost = async ({ request, env }) => {
     try { body = await request.json(); } catch { /* empty body OK */ }
 
     const count = clamp(parseInt(body.count, 10) || 3, 1, 3);
+    const theme = body.theme === "inbox" ? "inbox" : "classic";
     const subject = body.subject || "New from The Catalyst";
     const headline = body.headline || "New Stories From The Catalyst";
-    const intro = body.intro || "Here is the latest reporting from our team of student writers. Tap any card to read the full piece.";
+    const intro = body.intro || (theme === "inbox" ? "" : "Here is the latest reporting from our team of student writers. Tap any card to read the full piece.");
     const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
     // Let the template default handle the logo unless an env override is set.
     // The template ships with the Firebase-hosted WebLogo used in emails.
@@ -55,17 +57,28 @@ export const onRequestPost = async ({ request, env }) => {
 
     if (!articles.length) return badRequest("No published stories found.");
 
-    const html = buildNewsletter({
-      subject,
-      preheader: articles[0]?.title || "",
-      headline,
-      intro,
-      articles: articles.slice(0, count),
-      siteUrl,
-      logoUrl,
-    });
+    const slicedArticles = articles.slice(0, count);
+    const html = theme === "inbox"
+      ? buildInboxNewsletter({
+          subject,
+          preheader: articles[0]?.title || "",
+          headline,
+          intro,
+          articles: slicedArticles,
+          siteUrl,
+          recipientFirstName: "Reader",
+        })
+      : buildNewsletter({
+          subject,
+          preheader: articles[0]?.title || "",
+          headline,
+          intro,
+          articles: slicedArticles,
+          siteUrl,
+          logoUrl,
+        });
 
-    return json({ ok: true, html, subject, articles });
+    return json({ ok: true, html, subject, articles, theme });
   } catch (err) {
     return serverError(err);
   }
@@ -76,15 +89,18 @@ function clamp(n, min, max) {
 }
 
 function rowToArticle(a) {
-  return {
+  const article = {
     id: a.id,
     title: a.title || "Untitled",
     excerpt: a.excerpt || a.dek || "",
     coverImage: a.coverImage || a.image || "",
     category: a.category || "Feature",
     author: a.author || a.authorName || "",
-    url: a.url || a.slug || (a.id ? `/posts/${a.id}.html` : ""),
+    slug: a.slug || "",
+    url: a.url || a.link || "",
   };
+  article.url = buildArticlePath(article);
+  return article;
 }
 
 function docToArticle(firestoreDoc) {
@@ -92,13 +108,16 @@ function docToArticle(firestoreDoc) {
   const f = firestoreDoc.fields || {};
   const pick = (k) => (f[k]?.stringValue ?? f[k]?.integerValue ?? "");
   const id = firestoreDoc.name ? firestoreDoc.name.split("/").pop() : null;
-  return {
+  const article = {
     id,
     title: pick("title") || "Untitled",
     excerpt: pick("excerpt") || pick("dek") || "",
     coverImage: pick("coverImage") || pick("image") || "",
     category: pick("category") || "Feature",
     author: pick("author") || pick("authorName") || "",
-    url: pick("url") || pick("slug") || (id ? `/posts/${id}.html` : ""),
+    slug: pick("slug") || "",
+    url: pick("url") || pick("link") || "",
   };
+  article.url = buildArticlePath(article);
+  return article;
 }

@@ -20,6 +20,7 @@ import {
   arrayUnion,
   serverTimestamp,
   getDocs,
+  deleteField,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, fmtDate, confirmDialog } from "./ui.js";
 
@@ -666,11 +667,16 @@ function openDetailModal(projectId) {
     <input type="date" class="dl-input" data-dlkey="publication" value="${esc(deadlines.publication||project.deadline||"")}" ${isAdmin?"":"disabled"} style="${dlInputStyle}font-weight:600;${!isAdmin?"background:#f8fafc;color:#94a3b8;":""}">
   </div>`;
 
+  const reqDatesHtml = req?.requestedDeadlines && Object.keys(req.requestedDeadlines).length
+    ? `<div style="color:#78350f;margin-top:4px;">Requested dates: ${Object.entries(req.requestedDeadlines).map(([k,v])=>`<strong>${esc(k)}</strong>: ${esc(v)}`).join(" · ")}</div>`
+    : (req?.requestedDate ? `<div style="color:#78350f;margin-top:4px;">Requested publication: <strong>${esc(req.requestedDate)}</strong></div>` : "");
+
   const deadlineRequestHtml = hasRequest ? `
     <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;">
       <div style="font-weight:700;color:#92400e;margin-bottom:6px;">⏳ Pending deadline change request</div>
       <div style="color:#78350f;">Requested by: <strong>${esc(req.requestedBy||"")}</strong></div>
       <div style="color:#78350f;margin-top:2px;">Reason: ${esc(req.reason||"—")}</div>
+      ${reqDatesHtml}
       ${isAdmin?`<div style="display:flex;gap:8px;margin-top:10px;">
         <button class="btn btn-accent btn-xs" id="dl-approve-req">Approve</button>
         <button class="btn btn-secondary btn-xs" id="dl-reject-req" style="color:#b91c1c;">Reject</button>
@@ -918,16 +924,25 @@ function openDetailModal(projectId) {
 
   // Deadline request approve/reject
   body.querySelector("#dl-approve-req")?.addEventListener("click", async () => {
-    const updates = { "deadlineRequest.status": "approved", "deadlineChangeRequest.status": "approved", updatedAt: new Date().toISOString() };
+    const updates = { updatedAt: new Date().toISOString() };
+    // Apply the requested deadlines
     if (req?.requestedDate) updates["deadlines.publication"] = req.requestedDate;
     if (req?.requestedDeadlines) Object.entries(req.requestedDeadlines).forEach(([k, v]) => { updates[`deadlines.${k}`] = v; });
+    // Clear whichever request field is set
+    if (project.deadlineChangeRequest) updates.deadlineChangeRequest = deleteField();
+    if (project.deadlineRequest) updates.deadlineRequest = deleteField();
+    updates.lastActivity = serverTimestamp();
     updates.activity = arrayUnion({ text: "approved the deadline change request", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() });
     try { await updateDoc(doc(workflowDb, "projects", project.id), updates); toast("Request approved.", "success"); m.close(); }
     catch (e) { toast(e.message, "error"); }
   });
 
   body.querySelector("#dl-reject-req")?.addEventListener("click", async () => {
-    const updates = { "deadlineRequest.status": "rejected", "deadlineChangeRequest.status": "rejected", updatedAt: new Date().toISOString() };
+    const updates = { updatedAt: new Date().toISOString() };
+    // Clear whichever request field is set
+    if (project.deadlineChangeRequest) updates.deadlineChangeRequest = deleteField();
+    if (project.deadlineRequest) updates.deadlineRequest = deleteField();
+    updates.lastActivity = serverTimestamp();
     updates.activity = arrayUnion({ text: "rejected the deadline change request", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() });
     try { await updateDoc(doc(workflowDb, "projects", project.id), updates); toast("Request rejected.", "info"); m.close(); }
     catch (e) { toast(e.message, "error"); }
@@ -1059,7 +1074,6 @@ function openProposalModal(existing) {
 // ─── Deadline change request modal ───────────────────────────────────────────
 
 function openDeadlineRequestModal(project, parentModal) {
-  parentModal?.close();
   const deadlines = project.deadlines || {};
 
   const fields = DEADLINE_FIELDS
@@ -1096,16 +1110,19 @@ function openDeadlineRequestModal(project, parentModal) {
     if (!reason) { errEl.textContent = "Please explain the reason for the request."; return; }
     const requested = {};
     body.querySelectorAll("input[data-dlkey]").forEach(inp => { if (inp.value) requested[inp.dataset.dlkey] = inp.value; });
+    if (!Object.keys(requested).length) { errEl.textContent = "Please select at least one new deadline date."; return; }
     submitBtn.disabled = true;
     try {
       await updateDoc(doc(workflowDb, "projects", project.id), {
         deadlineChangeRequest: { requestedBy: _profile.name || _ctx.user.email, reason, requestedDeadlines: requested, status: "pending", requestedAt: new Date().toISOString() },
+        deadlineRequest: deleteField(),
         lastActivity: serverTimestamp(),
         updatedAt: new Date().toISOString(),
         activity: arrayUnion({ text: "requested a deadline change", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
       });
       toast("Request submitted — awaiting admin approval.", "success", 4000);
       m.close();
+      parentModal?.close();
     } catch (e) { errEl.textContent = e.message; submitBtn.disabled = false; }
   };
 }
