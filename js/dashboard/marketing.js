@@ -318,17 +318,11 @@ async function firestoreAdd(authedFetch, collection, fields) {
 //   - "New Article" badge pill top-left with logo icon
 
 function loadImage(src) {
-  // Firebase Storage download URLs already have CORS headers (Access-Control-Allow-Origin: *)
-  // so they can be drawn onto Canvas directly with crossOrigin="anonymous".
-  // Everything else (Wix CDN, etc.) goes through our server-side proxy.
+  // All external URLs go through our server-side proxy which adds
+  // Access-Control-Allow-Origin: * so Canvas can drawImage() without taint.
+  // data: URLs (uploaded files) load directly — no proxy needed.
   const isDataUrl = src.startsWith("data:");
-  const isFirebaseStorage = !isDataUrl && (
-    src.includes("firebasestorage.googleapis.com") ||
-    src.includes("firebasestorage.app")
-  );
-  const finalSrc = (isDataUrl || isFirebaseStorage)
-    ? src
-    : `/api/image-proxy?url=${encodeURIComponent(src)}`;
+  const finalSrc = isDataUrl ? src : `/api/image-proxy?url=${encodeURIComponent(src)}`;
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -337,7 +331,7 @@ function loadImage(src) {
       console.error("[loadImage] failed to load", finalSrc, e);
       reject(new Error(`Failed to load image: ${finalSrc}`));
     };
-    console.log("[loadImage]", isFirebaseStorage ? "direct (Firebase Storage)" : isDataUrl ? "direct (data URL)" : "via proxy", "→", finalSrc.slice(0, 120));
+    console.log("[loadImage]", isDataUrl ? "direct (data URL)" : "via proxy", "→", finalSrc.slice(0, 120));
     img.src = finalSrc;
   });
 }

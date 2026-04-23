@@ -21,9 +21,11 @@ export const onRequestGet = async ({ request }) => {
     return new Response("Missing url param", { status: 400 });
   }
 
+  // searchParams.get() already URL-decodes once — do NOT call decodeURIComponent again
+  // or double-encoded paths like %252F get corrupted to %2F then /.
   let parsed;
   try {
-    parsed = new URL(decodeURIComponent(raw));
+    parsed = new URL(raw);
   } catch {
     return new Response("Invalid url param", { status: 400 });
   }
