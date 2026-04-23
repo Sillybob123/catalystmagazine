@@ -11,31 +11,28 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Collaborate with The Catalyst Magazine - Submit articles, join our team, or participate in our writing contest.">
-    <meta name="keywords" content="submit article, join STEM magazine, science writing, student journalism, collaborate">
+    <meta name="description" content="Collaborate with The Catalyst Magazine — Submit articles, join our team, and help shape the future of STEM storytelling in Washington D.C.">
+    <meta name="keywords" content="submit article, join STEM magazine, science writing, student journalism, collaborate, Washington DC">
     <title>Collaborate | The Catalyst Magazine</title>
     <link rel="canonical" href="https://www.catalyst-magazine.com/collaborate">
 
-    <!-- Open Graph / Social Media -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://www.catalyst-magazine.com/collaborate">
     <meta property="og:title" content="Collaborate | The Catalyst Magazine">
-    <meta property="og:description" content="Collaborate with The Catalyst Magazine - Submit articles or join our team.">
+    <meta property="og:description" content="Join The Catalyst — submit articles or become part of our growing team of STEM storytellers.">
     <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="The Catalyst Magazine logo">
     <meta property="og:site_name" content="The Catalyst Magazine">
-    <meta property="og:locale" content="en_US">
     <meta name="robots" content="index, follow">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Collaborate | The Catalyst Magazine">
-    <meta name="twitter:description" content="Collaborate with The Catalyst Magazine - Submit articles or join our team.">
+    <meta name="twitter:description" content="Join The Catalyst — submit articles or become part of our growing team.">
     <meta name="twitter:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
     <meta name="twitter:site" content="@catalystmagdc">
-    <meta name="twitter:url" content="https://www.catalyst-magazine.com/collaborate">
 
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -45,207 +42,493 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
 
     <style>
-        /* ── Collaborate Hero ─────────────────────────────────── */
-        .collab-hero {
-            padding: 140px 0 100px;
+        /* ══════════════════════════════════════════
+           COLLABORATE PAGE — Apple-grade aesthetic
+           ══════════════════════════════════════════ */
+
+        /* ── CSS Custom Properties ─────────────────── */
+        :root {
+            --indigo: #5c5ff5;
+            --indigo-dark: #4244d4;
+            --indigo-light: rgba(92, 95, 245, 0.08);
+            --indigo-glow: rgba(92, 95, 245, 0.18);
+            --surface: #ffffff;
+            --surface-alt: #f9f9fb;
+            --border: rgba(0,0,0,0.07);
+            --border-strong: rgba(0,0,0,0.12);
+            --ink: #1d1d1f;
+            --ink-2: #3a3a3c;
+            --muted: #6e6e73;
+            --muted-light: #8e8e93;
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* ── Hero ──────────────────────────────────── */
+        .hero {
+            padding: 160px 24px 80px;
             text-align: center;
             position: relative;
             overflow: hidden;
         }
-        .collab-hero::before {
-            content: '';
+        .hero-bg {
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.08) 0%, transparent 70%);
             pointer-events: none;
         }
-        .collab-hero-eyebrow {
-            display: inline-block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: #6366f1;
-            margin-bottom: 20px;
-            background: rgba(99,102,241,0.08);
-            padding: 6px 16px;
-            border-radius: 100px;
-            border: 1px solid rgba(99,102,241,0.2);
+        /* Radial aurora blobs */
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 900px;
+            height: 600px;
+            background: radial-gradient(ellipse at center, rgba(92,95,245,0.1) 0%, rgba(99,102,241,0.05) 40%, transparent 70%);
+            border-radius: 50%;
         }
-        .collab-hero-title {
-            font-size: clamp(2.8rem, 6vw, 5rem);
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.05;
-            color: #1d1d1f;
-            margin: 0 0 20px;
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(ellipse at center, rgba(168,85,247,0.05) 0%, transparent 65%);
+            border-radius: 50%;
         }
-        .collab-hero-subtitle {
-            font-size: clamp(1.05rem, 2vw, 1.25rem);
-            color: #6e6e73;
-            max-width: 520px;
+        .hero-inner {
+            position: relative;
+            max-width: 720px;
             margin: 0 auto;
-            line-height: 1.6;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--indigo);
+            background: var(--indigo-light);
+            padding: 7px 18px;
+            border-radius: 100px;
+            border: 1px solid rgba(92,95,245,0.2);
+            margin-bottom: 28px;
+        }
+        .hero-title {
+            font-size: clamp(3rem, 7vw, 5.5rem);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1.12;
+            color: var(--ink);
+            margin: 0 0 24px;
+            padding-bottom: 0.12em;
+        }
+        .hero-title-accent {
+            display: inline-block;
+            padding-bottom: 0.08em;
+            background: linear-gradient(135deg, #5c5ff5 0%, #a855f7 60%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-subtitle {
+            font-size: clamp(1.05rem, 2vw, 1.3rem);
+            color: var(--muted);
+            max-width: 560px;
+            margin: 0 auto 48px;
+            line-height: 1.65;
             font-weight: 400;
         }
+        .hero-ctas {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .hero-cta-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 16px 32px;
+            background: var(--indigo);
+            color: #fff;
+            border-radius: 100px;
+            font-size: 0.97rem;
+            font-weight: 700;
+            font-family: inherit;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 24px rgba(92,95,245,0.35);
+        }
+        .hero-cta-primary:hover {
+            background: var(--indigo-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(92,95,245,0.45);
+        }
+        .hero-cta-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 16px 32px;
+            background: var(--surface);
+            color: var(--ink);
+            border-radius: 100px;
+            font-size: 0.97rem;
+            font-weight: 600;
+            font-family: inherit;
+            border: 1.5px solid var(--border-strong);
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s, border-color 0.2s;
+            text-decoration: none;
+        }
+        .hero-cta-secondary:hover {
+            background: var(--surface-alt);
+            transform: translateY(-2px);
+            border-color: rgba(0,0,0,0.18);
+        }
 
-        /* ── Cards Section ────────────────────────────────────── */
-        .collab-section {
-            padding: 0 0 120px;
+        /* ── Stats strip ───────────────────────────── */
+        .stats-strip {
+            padding: 0 24px 72px;
         }
-        .collab-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 24px;
-            max-width: 960px;
+        .stats-inner {
+            max-width: 860px;
             margin: 0 auto;
-            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.04);
         }
-        .collab-card {
-            background: #fff;
-            border-radius: 24px;
-            padding: 48px 44px;
-            border: 1px solid rgba(0,0,0,0.07);
-            box-shadow: 0 2px 12px rgba(0,0,0,0.04), 0 8px 40px rgba(0,0,0,0.04);
+        .stat-item {
+            background: var(--surface);
+            padding: 36px 28px;
+            text-align: center;
+        }
+        .stat-num {
+            font-size: 2.4rem;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            color: var(--ink);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--muted);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        /* ── "Why join" section ────────────────────── */
+        .why-section {
+            padding: 0 24px 96px;
+        }
+        .section-eyebrow {
+            text-align: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--indigo);
+            margin-bottom: 16px;
+        }
+        .section-title {
+            text-align: center;
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--ink);
+            margin-bottom: 16px;
+            line-height: 1.1;
+        }
+        .section-sub {
+            text-align: center;
+            font-size: 1.05rem;
+            color: var(--muted);
+            max-width: 520px;
+            margin: 0 auto 60px;
+            line-height: 1.65;
+        }
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .why-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 36px 32px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+            transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+        }
+        .why-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.09);
+        }
+        .why-card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+        }
+        .why-card-desc {
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        /* ── Role showcase ─────────────────────────── */
+        .roles-section {
+            padding: 0 24px 96px;
+            background: var(--surface-alt);
+        }
+        .roles-section-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding-top: 80px;
+            padding-bottom: 80px;
+        }
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 48px;
+        }
+        .role-chip {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            min-height: 140px;
+            padding: 24px 22px;
             display: flex;
             flex-direction: column;
-            transition: box-shadow 0.3s ease, transform 0.3s ease;
-        }
-        .collab-card:hover {
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 16px 60px rgba(0,0,0,0.08);
-            transform: translateY(-4px);
-        }
-        .collab-card-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
             justify-content: center;
-            margin-bottom: 28px;
-            flex-shrink: 0;
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+            cursor: pointer;
         }
-        .collab-card-icon.purple { background: linear-gradient(135deg, #818cf8, #6366f1); }
-        .collab-card-icon.dark   { background: linear-gradient(135deg, #374151, #1f2937); }
-        .collab-card-icon svg { width: 26px; height: 26px; color: #fff; }
-        .collab-card-title {
-            font-size: 1.45rem;
+        .role-chip:hover {
+            border-color: var(--indigo);
+            box-shadow: 0 0 0 3px var(--indigo-light);
+            transform: translateY(-3px);
+        }
+        .role-chip-name {
+            font-size: 0.95rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            color: #1d1d1f;
-            margin: 0 0 12px;
+            color: var(--ink);
+            margin-bottom: 4px;
         }
-        .collab-card-desc {
-            font-size: 1rem;
-            color: #6e6e73;
-            line-height: 1.7;
-            margin: 0 0 28px;
-            flex-grow: 1;
+        .role-chip-desc {
+            font-size: 0.78rem;
+            color: var(--muted-light);
+            line-height: 1.5;
         }
-        .collab-card-meta {
-            font-size: 0.875rem;
-            color: #1d1d1f;
-            margin-bottom: 8px;
+
+        /* ── Main action cards ─────────────────────── */
+        .action-section {
+            padding: 80px 24px 120px;
+        }
+        .action-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 28px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .action-card {
+            background: var(--surface);
+            border-radius: 28px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
+        }
+        .action-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        }
+        .action-card-header {
+            padding: 44px 44px 0;
+            min-height: 248px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+        }
+        .action-card-header-alt {
+            background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+        }
+        .action-card-header-alt .action-card-title { color: #fff; }
+        .action-card-header-alt .action-card-tagline { color: rgba(255,255,255,0.6); }
+        .action-card-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--ink);
+            margin: 0 auto 10px;
+        }
+        .action-card-tagline {
+            font-size: 0.95rem;
+            color: var(--muted);
+            line-height: 1.65;
+            margin-bottom: 0;
+            margin-left: auto;
+            margin-right: auto;
+            max-width: 30ch;
+        }
+        .action-card-body {
+            padding: 32px 44px 44px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .action-card-detail {
+            margin-bottom: 14px;
+        }
+        .action-card-detail-text {
+            font-size: 0.88rem;
+            color: var(--muted);
             line-height: 1.6;
         }
-        .collab-card-meta strong { font-weight: 600; }
-        .collab-card-hint {
-            font-size: 0.84rem;
-            color: #8e8e93;
-            margin-bottom: 32px;
-            line-height: 1.55;
+        .action-card-detail-text strong {
+            color: var(--ink-2);
+            font-weight: 600;
         }
-        .collab-btn {
+        .action-card-spacer { flex: 1; }
+        .action-card-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 28px 0;
+        }
+
+        /* Buttons */
+        .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 14px 28px;
+            gap: 9px;
+            padding: 16px 32px;
             border-radius: 100px;
-            font-size: 0.95rem;
-            font-weight: 600;
+            font-size: 0.97rem;
+            font-weight: 700;
             font-family: inherit;
             cursor: pointer;
-            border: 0;
-            text-decoration: none;
-            transition: opacity 0.2s, transform 0.2s;
+            border: none;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
             width: 100%;
+            letter-spacing: -0.01em;
         }
-        .collab-btn:hover { opacity: 0.85; transform: scale(0.98); }
-        .collab-btn-primary {
+        .btn-indigo {
+            background: var(--indigo);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(92,95,245,0.32);
+        }
+        .btn-indigo:hover {
+            background: var(--indigo-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(92,95,245,0.45);
+        }
+        .btn-dark {
             background: #1d1d1f;
             color: #fff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.18);
         }
-        .collab-btn-alt {
-            background: linear-gradient(135deg, #818cf8, #6366f1);
-            color: #fff;
+        .btn-dark:hover {
+            background: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.28);
         }
 
-        /* ── Modal ────────────────────────────────────────────── */
+        /* ── Modal ─────────────────────────────────── */
         .collab-modal-backdrop {
             position: fixed; inset: 0;
-            background: rgba(0,0,0,0.45);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             display: none; align-items: center; justify-content: center;
             z-index: 1000; padding: 20px; overflow-y: auto;
         }
         .collab-modal-backdrop.is-open { display: flex; }
         .collab-modal {
             background: #fff;
-            border-radius: 24px;
+            border-radius: 28px;
             width: 100%;
-            max-width: 520px;
-            padding: 40px;
-            box-shadow: 0 32px 80px rgba(0,0,0,0.2);
+            max-width: 760px;
+            padding: 48px 52px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.25);
             max-height: calc(100vh - 40px);
             overflow-y: auto;
             position: relative;
-            animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+            animation: modalIn 0.3s var(--ease-spring);
         }
         @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.94) translateY(16px); }
+            from { opacity: 0; transform: scale(0.92) translateY(20px); }
             to   { opacity: 1; transform: scale(1) translateY(0); }
         }
-        .collab-modal h2 {
-            margin: 0 0 6px;
-            font-size: 1.5rem;
+        .modal-header { margin-bottom: 28px; }
+        .modal-eyebrow {
+            font-size: 0.7rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            color: #1d1d1f;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--indigo);
+            margin-bottom: 8px;
+        }
+        .collab-modal h2 {
+            margin: 0 0 8px;
+            font-size: 1.7rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--ink);
+            line-height: 1.1;
         }
         .collab-modal .modal-sub {
-            margin: 0 0 28px;
-            color: #6e6e73;
-            font-size: 0.95rem;
-            line-height: 1.6;
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.93rem;
+            line-height: 1.65;
         }
         .collab-modal .modal-close {
-            position: absolute; top: 16px; right: 16px;
+            position: absolute; top: 18px; right: 18px;
             background: #f2f2f7;
-            border: 0;
-            width: 32px; height: 32px;
+            border: none;
+            width: 34px; height: 34px;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
-            font-size: 1.1rem;
-            line-height: 1;
-            color: #6e6e73;
-            transition: background 0.15s;
+            font-size: 1rem;
+            color: var(--muted);
+            transition: background 0.15s, color 0.15s;
         }
-        .collab-modal .modal-close:hover { background: #e5e5ea; color: #1d1d1f; }
-        .collab-form .field { margin-bottom: 16px; }
+        .collab-modal .modal-close:hover { background: #e5e5ea; color: var(--ink); }
+        .modal-divider { height: 1px; background: var(--border); margin: 0 0 24px; }
+
+        /* Form */
+        .collab-form .field { margin-bottom: 18px; }
         .collab-form label {
             display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.73rem;
+            font-weight: 700;
             margin-bottom: 7px;
-            color: #1d1d1f;
-            letter-spacing: 0.05em;
+            color: var(--ink);
+            letter-spacing: 0.06em;
             text-transform: uppercase;
         }
         .collab-form input,
@@ -253,35 +536,70 @@
         .collab-form textarea {
             width: 100%;
             box-sizing: border-box;
-            padding: 12px 14px;
+            padding: 13px 15px;
             font-size: 0.97rem;
             font-family: inherit;
             border: 1.5px solid #e5e5ea;
-            border-radius: 12px;
+            border-radius: 14px;
             background: #fafafa;
-            color: #1d1d1f;
+            color: var(--ink);
             transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
         }
         .collab-form input:focus,
         .collab-form select:focus,
         .collab-form textarea:focus {
             outline: none;
-            border-color: #6366f1;
+            border-color: var(--indigo);
             background: #fff;
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+            box-shadow: 0 0 0 3.5px rgba(92,95,245,0.14);
         }
-        .collab-form textarea { min-height: 110px; resize: vertical; }
-        .collab-form .help { font-size: 0.8rem; color: #8e8e93; margin-top: 5px; }
-        .collab-form button[type="submit"] { width: 100%; margin-top: 8px; }
-        .collab-form-status { margin-top: 12px; font-size: 0.875rem; min-height: 1.2em; border-radius: 10px; padding: 0; }
-        .collab-form-status.is-error   { color: #dc2626; background: #fef2f2; padding: 10px 14px; }
-        .collab-form-status.is-success { color: #047857; background: #f0fdf4; padding: 10px 14px; }
+        .collab-form textarea { min-height: 120px; resize: vertical; }
+        .collab-form .help { font-size: 0.78rem; color: var(--muted-light); margin-top: 5px; }
+        .collab-form button[type="submit"] { width: 100%; margin-top: 10px; }
+        .collab-form-status {
+            margin-top: 14px;
+            font-size: 0.875rem;
+            min-height: 1.2em;
+            border-radius: 12px;
+            padding: 0;
+        }
+        .collab-form-status.is-error   { color: #dc2626; background: #fef2f2; padding: 12px 16px; }
+        .collab-form-status.is-success { color: #047857; background: #f0fdf4; padding: 12px 16px; }
 
-        @media (max-width: 600px) {
-            .collab-hero { padding: 110px 24px 72px; }
-            .collab-cards { grid-template-columns: 1fr; padding: 0 16px; }
-            .collab-card { padding: 36px 28px; }
-            .collab-modal { padding: 28px 24px; }
+        /* ── Scroll reveal ─────────────────────────── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .reveal-delay-1 { transition-delay: 0.08s; }
+        .reveal-delay-2 { transition-delay: 0.16s; }
+        .reveal-delay-3 { transition-delay: 0.24s; }
+        .reveal-delay-4 { transition-delay: 0.32s; }
+        .reveal-delay-5 { transition-delay: 0.40s; }
+        .reveal-delay-6 { transition-delay: 0.48s; }
+
+        /* ── Responsive ────────────────────────────── */
+        @media (max-width: 860px) {
+            .why-grid { grid-template-columns: repeat(2, 1fr); }
+            .roles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+            .hero { padding: 120px 20px 60px; }
+            .hero-ctas { flex-direction: column; align-items: center; }
+            .hero-cta-primary, .hero-cta-secondary { width: 100%; justify-content: center; }
+            .stats-inner { grid-template-columns: 1fr; }
+            .why-grid { grid-template-columns: 1fr; }
+            .action-cards { grid-template-columns: 1fr; }
+            .action-card-header { min-height: auto; }
+            .action-card-header, .action-card-body { padding: 28px; }
+            .collab-modal { padding: 28px 22px; }
+            .roles-grid { grid-template-columns: 1fr; }
+            .role-chip { min-height: auto; }
         }
     </style>
 </head>
@@ -289,131 +607,257 @@
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-    <!-- End Google Tag Manager (noscript) -->
 
     <div id="site-header"></div>
 
     <main>
-        <!-- Hero -->
-        <section class="collab-hero">
-            <div class="container">
-                <span class="collab-hero-eyebrow">Get Involved</span>
-                <h1 class="collab-hero-title">Collaborate With Us</h1>
-                <p class="collab-hero-subtitle">Join us in shaping the future of STEM storytelling — your voice matters here.</p>
+
+        <!-- ═══════ HERO ═══════ -->
+        <section class="hero">
+            <div class="hero-bg"></div>
+            <div class="hero-inner">
+                <div class="hero-badge reveal">
+                    Now accepting applications
+                </div>
+                <h1 class="hero-title reveal reveal-delay-1">
+                    Your story<br>
+                    <span class="hero-title-accent">belongs here.</span>
+                </h1>
+                <p class="hero-subtitle reveal reveal-delay-2">
+                    The Catalyst is Washington D.C.'s premier student-run STEM magazine — and we're looking for bold voices to help shape what science storytelling looks like next.
+                </p>
+                <div class="hero-ctas reveal reveal-delay-3">
+                    <button type="button" class="hero-cta-primary" data-open-modal="join-team-modal">
+                        Join Our Team
+                    </button>
+                    <button type="button" class="hero-cta-secondary" data-open-modal="proposal-modal">
+                        Submit an Article
+                    </button>
+                </div>
             </div>
         </section>
 
-        <!-- Cards -->
-        <section class="collab-section">
-            <div class="collab-cards">
+        <!-- ═══════ STATS STRIP ═══════ -->
+        <section class="stats-strip">
+            <div class="stats-inner reveal">
+                <div class="stat-item">
+                    <div class="stat-num">5+</div>
+                    <div class="stat-label">Universities represented</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">100%</div>
+                    <div class="stat-label">Student-run &amp; independent</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">D.C.</div>
+                    <div class="stat-label">Based in the nation's capital</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ WHY JOIN ═══════ -->
+        <section class="why-section">
+            <p class="section-eyebrow reveal">Why Catalyst</p>
+            <h2 class="section-title reveal reveal-delay-1">More than a byline.</h2>
+            <p class="section-sub reveal reveal-delay-2">
+                Joining The Catalyst means real work, real readers, and real growth — not just another club to list on your résumé.
+            </p>
+            <div class="why-grid">
+                <div class="why-card reveal reveal-delay-1">
+                    <div class="why-card-title">Published Work, Real Audiences</div>
+                    <div class="why-card-desc">Your articles, essays, and features reach real readers across D.C.'s top universities and beyond — not just a class assignment nobody sees.</div>
+                </div>
+                <div class="why-card reveal reveal-delay-2">
+                    <div class="why-card-title">Cross-Campus Community</div>
+                    <div class="why-card-desc">Connect with passionate students from GW, Georgetown, Howard, American, and more — a network that extends well past graduation.</div>
+                </div>
+                <div class="why-card reveal reveal-delay-3">
+                    <div class="why-card-title">Portfolio-Worthy Experience</div>
+                    <div class="why-card-desc">Every piece you write, edit, or design is a tangible asset for graduate school, jobs, and grants — with editorial mentorship along the way.</div>
+                </div>
+                <div class="why-card reveal reveal-delay-4">
+                    <div class="why-card-title">Editorial Freedom</div>
+                    <div class="why-card-desc">Pitch the stories you care about. No corporate gatekeepers — just a collaborative editorial process that trusts your curiosity and voice.</div>
+                </div>
+                <div class="why-card reveal reveal-delay-5">
+                    <div class="why-card-title">Work on Real Impact</div>
+                    <div class="why-card-desc">STEM journalism shapes how the public understands science. At Catalyst, your work contributes to an informed, scientifically literate D.C.</div>
+                </div>
+                <div class="why-card reveal reveal-delay-6">
+                    <div class="why-card-title">Your Work, Your Credit</div>
+                    <div class="why-card-desc">Every contributor is credited by name. Your contributions are yours — we're here to amplify your voice, not absorb it.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ OPEN ROLES ═══════ -->
+        <section class="roles-section">
+            <div class="roles-section-inner">
+                <p class="section-eyebrow reveal">Open Roles</p>
+                <h2 class="section-title reveal reveal-delay-1">Find your place on the team.</h2>
+                <p class="section-sub reveal reveal-delay-2">
+                    Whether you write, design, or organize — there's a role shaped around what you do best.
+                </p>
+                <div class="roles-grid">
+                    <div class="role-chip reveal reveal-delay-1" data-open-modal="join-team-modal">
+                        <div class="role-chip-name">Writer</div>
+                        <div class="role-chip-desc">Report, profile, and tell STEM stories that matter</div>
+                    </div>
+                    <div class="role-chip reveal reveal-delay-2" data-open-modal="join-team-modal">
+                        <div class="role-chip-name">Editor</div>
+                        <div class="role-chip-desc">Shape and elevate pitches into polished features</div>
+                    </div>
+                    <div class="role-chip reveal reveal-delay-3" data-open-modal="join-team-modal">
+                        <div class="role-chip-name">Designer</div>
+                        <div class="role-chip-desc">Craft the visual identity of our stories and brand</div>
+                    </div>
+                    <div class="role-chip reveal reveal-delay-4" data-open-modal="join-team-modal">
+                        <div class="role-chip-name">Operations</div>
+                        <div class="role-chip-desc">Keep the machine running — events, logistics, growth</div>
+                    </div>
+                    <div class="role-chip reveal reveal-delay-5" data-open-modal="join-team-modal">
+                        <div class="role-chip-name">Campus Ambassador</div>
+                        <div class="role-chip-desc">Grow Catalyst's presence at your university</div>
+                    </div>
+                    <div class="role-chip reveal reveal-delay-6" data-open-modal="join-team-modal">
+                        <div class="role-chip-name">Other</div>
+                        <div class="role-chip-desc">Have a skill we haven't listed? Let's hear it</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════ ACTION CARDS ═══════ -->
+        <section class="action-section">
+            <p class="section-eyebrow reveal">Get Involved</p>
+            <h2 class="section-title reveal reveal-delay-1">Ready to contribute?</h2>
+            <p class="section-sub reveal reveal-delay-2">Pick the path that fits — we'll take it from there.</p>
+            <div class="action-cards">
 
                 <!-- Submit Article Card -->
-                <div class="collab-card">
-                    <div class="collab-card-icon purple">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                        </svg>
+                <div class="action-card reveal reveal-delay-1">
+                    <div class="action-card-header" style="padding: 44px 44px 32px; background: linear-gradient(145deg, #f4f3ff 0%, #eef2ff 100%);">
+                        <h2 class="action-card-title">Submit an Article<br>or Opinion</h2>
+                        <p class="action-card-tagline">Have a story to tell? A perspective that needs a platform? Send us your pitch — our editors read every one.</p>
                     </div>
-                    <h2 class="collab-card-title">Submit an Article or Opinion</h2>
-                    <p class="collab-card-desc">Have an article idea or a thought-provoking opinion piece? We'd love to hear from you. Send it our way and our editors will review your submission.</p>
-                    <p class="collab-card-meta"><strong>Formats accepted:</strong> DOC, PDF, JPG, MP3, MP4 &nbsp;·&nbsp; Max 40 MB</p>
-                    <p class="collab-card-hint">Share a link to your article or proposal via Google Drive, Dropbox, or similar.</p>
-                    <button type="button" class="collab-btn collab-btn-alt" data-open-modal="proposal-modal">
-                        Send Proposal
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="22" y1="2" x2="11" y2="13"/>
-                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
-                    </button>
+                    <div class="action-card-body">
+                        <div class="action-card-detail">
+                            <div class="action-card-detail-text"><strong>Formats accepted:</strong> DOC, PDF, JPG, MP3, MP4 · Max 40 MB</div>
+                        </div>
+                        <div class="action-card-detail">
+                            <div class="action-card-detail-text"><strong>Response time:</strong> We aim to reply within 5–7 business days</div>
+                        </div>
+                        <div class="action-card-detail">
+                            <div class="action-card-detail-text"><strong>Submission method:</strong> Google Drive, Dropbox, or any shareable link</div>
+                        </div>
+                        <div class="action-card-spacer"></div>
+                        <div class="action-card-divider"></div>
+                        <button type="button" class="btn btn-indigo" data-open-modal="proposal-modal">
+                            Send a Proposal
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Join Team Card -->
-                <div class="collab-card">
-                    <div class="collab-card-icon dark">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
+                <div class="action-card reveal reveal-delay-2">
+                    <div class="action-card-header action-card-header-alt" style="padding: 44px 44px 32px;">
+                        <h2 class="action-card-title">Join Our Team</h2>
+                        <p class="action-card-tagline">We're building something worth being part of. If you're passionate about STEM and great writing, we want to hear from you.</p>
                     </div>
-                    <h2 class="collab-card-title">Join Our Team</h2>
-                    <p class="collab-card-desc">We're always looking for passionate individuals to join our growing team. If you want to shape the future of STEM storytelling, reach out — we review every application.</p>
-                    <p class="collab-card-meta"><strong>Open roles:</strong> Writer, Editor, Designer, Operations, Campus Ambassador</p>
-                    <p class="collab-card-hint">Share a link to your CV or portfolio via LinkedIn, Google Drive, or your personal site.</p>
-                    <button type="button" class="collab-btn collab-btn-primary" data-open-modal="join-team-modal">
-                        Apply Now
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14"/>
-                            <path d="M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
+                    <div class="action-card-body">
+                        <div class="action-card-detail">
+                            <div class="action-card-detail-text"><strong>Open roles:</strong> Writer, Editor, Designer, Operations, Campus Ambassador</div>
+                        </div>
+                        <div class="action-card-detail">
+                            <div class="action-card-detail-text"><strong>We review every application</strong> — no automatic rejections, no algorithms</div>
+                        </div>
+                        <div class="action-card-detail">
+                            <div class="action-card-detail-text"><strong>Submission method:</strong> LinkedIn, Google Drive, or personal portfolio link</div>
+                        </div>
+                        <div class="action-card-spacer"></div>
+                        <div class="action-card-divider"></div>
+                        <button type="button" class="btn btn-dark" data-open-modal="join-team-modal">
+                            Apply Now
+                        </button>
+                    </div>
                 </div>
 
             </div>
         </section>
+
     </main>
 
     <div id="site-footer"></div>
 
-    <!-- Send Proposal Modal -->
+    <!-- ══════════════════════════════════════
+         SEND PROPOSAL MODAL
+    ══════════════════════════════════════ -->
     <div class="collab-modal-backdrop" id="proposal-modal" role="dialog" aria-modal="true" aria-labelledby="proposal-modal-title">
         <div class="collab-modal">
             <button type="button" class="modal-close" aria-label="Close" data-close-modal>&times;</button>
-            <h2 id="proposal-modal-title">Send a Proposal</h2>
-            <p class="modal-sub">Tell us about your article or opinion piece. Our editors will review and follow up by email.</p>
+            <div class="modal-header">
+                <p class="modal-eyebrow">Article &amp; Opinion</p>
+                <h2 id="proposal-modal-title">Send a Proposal</h2>
+                <p class="modal-sub">Tell us about your article or opinion piece. Our editors will review and follow up within 5–7 business days.</p>
+            </div>
+            <div class="modal-divider"></div>
             <form class="collab-form" data-collab-form data-source="proposal" novalidate>
                 <div class="field">
                     <label for="p-name">Full name</label>
-                    <input type="text" id="p-name" name="name" required autocomplete="name">
+                    <input type="text" id="p-name" name="name" required autocomplete="name" placeholder="Jane Smith">
                 </div>
                 <div class="field">
                     <label for="p-email">Email address</label>
-                    <input type="email" id="p-email" name="email" required autocomplete="email">
+                    <input type="email" id="p-email" name="email" required autocomplete="email" placeholder="jane@university.edu">
                 </div>
                 <div class="field">
-                    <label for="p-title">Article / proposal title</label>
-                    <input type="text" id="p-title" name="articleTitle">
+                    <label for="p-title">Article or proposal title</label>
+                    <input type="text" id="p-title" name="articleTitle" placeholder="What will this piece be called?">
                 </div>
                 <div class="field">
                     <label for="p-portfolio">Link to document</label>
-                    <input type="url" id="p-portfolio" name="portfolio" placeholder="https://docs.google.com/...">
-                    <p class="help">Google Drive, Dropbox, OneDrive — make sure we can view it.</p>
+                    <input type="url" id="p-portfolio" name="portfolio" placeholder="https://docs.google.com/…">
+                    <p class="help">Google Drive, Dropbox, or OneDrive — make sure we have view access.</p>
                 </div>
                 <div class="field">
                     <label for="p-message">Brief description</label>
-                    <textarea id="p-message" name="message" required placeholder="What's it about, and why are you the right person to tell this story?"></textarea>
+                    <textarea id="p-message" name="message" required placeholder="What's the story about, and why are you the right person to tell it?"></textarea>
                 </div>
-                <button type="submit" class="collab-btn collab-btn-alt">Submit Proposal</button>
+                <button type="submit" class="btn btn-indigo">
+                    Submit Proposal
+                </button>
                 <p class="collab-form-status" data-status></p>
             </form>
         </div>
     </div>
 
-    <!-- Join the Team Modal -->
+    <!-- ══════════════════════════════════════
+         JOIN TEAM MODAL
+    ══════════════════════════════════════ -->
     <div class="collab-modal-backdrop" id="join-team-modal" role="dialog" aria-modal="true" aria-labelledby="join-modal-title">
         <div class="collab-modal">
             <button type="button" class="modal-close" aria-label="Close" data-close-modal>&times;</button>
-            <h2 id="join-modal-title">Join Our Team</h2>
-            <p class="modal-sub">Tell us a bit about yourself. We review every application and reply by email.</p>
+            <div class="modal-header">
+                <p class="modal-eyebrow">Join the Team</p>
+                <h2 id="join-modal-title">Apply Now</h2>
+                <p class="modal-sub">Tell us who you are and what you'd like to contribute. We review every application and reply by email.</p>
+            </div>
+            <div class="modal-divider"></div>
             <form class="collab-form" data-collab-form data-source="join-team" novalidate>
                 <div class="field">
                     <label for="j-name">Full name</label>
-                    <input type="text" id="j-name" name="name" required autocomplete="name">
+                    <input type="text" id="j-name" name="name" required autocomplete="name" placeholder="Jane Smith">
                 </div>
                 <div class="field">
                     <label for="j-email">Email address</label>
-                    <input type="email" id="j-email" name="email" required autocomplete="email">
+                    <input type="email" id="j-email" name="email" required autocomplete="email" placeholder="jane@university.edu">
                 </div>
                 <div class="field">
                     <label for="j-phone">Phone (optional)</label>
-                    <input type="tel" id="j-phone" name="phone" autocomplete="tel">
+                    <input type="tel" id="j-phone" name="phone" autocomplete="tel" placeholder="+1 (202) 555-0100">
                 </div>
                 <div class="field">
-                    <label for="j-role">Position of interest</label>
+                    <label for="j-role">Role you're interested in</label>
                     <select id="j-role" name="role" required>
                         <option value="">Select a role…</option>
                         <option>Writer</option>
@@ -425,15 +869,17 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label for="j-portfolio">CV / portfolio link</label>
-                    <input type="url" id="j-portfolio" name="portfolio" placeholder="https://linkedin.com/in/...">
-                    <p class="help">LinkedIn, Google Drive, personal website — anywhere we can view your CV or past work.</p>
+                    <label for="j-portfolio">CV or portfolio link</label>
+                    <input type="url" id="j-portfolio" name="portfolio" placeholder="https://linkedin.com/in/…">
+                    <p class="help">LinkedIn, Google Drive, or your personal website — wherever we can see your work.</p>
                 </div>
                 <div class="field">
                     <label for="j-message">Why do you want to join?</label>
                     <textarea id="j-message" name="message" required placeholder="Tell us about yourself and what draws you to The Catalyst."></textarea>
                 </div>
-                <button type="submit" class="collab-btn collab-btn-primary">Submit Application</button>
+                <button type="submit" class="btn btn-dark">
+                    Submit Application
+                </button>
                 <p class="collab-form-status" data-status></p>
             </form>
         </div>
@@ -442,13 +888,25 @@
     <script defer src="/js/layout.js"></script>
     <script>
         (function () {
+            /* ── Scroll reveal ── */
+            const revealObserver = new IntersectionObserver((entries) => {
+                entries.forEach((e) => {
+                    if (e.isIntersecting) {
+                        e.target.classList.add("visible");
+                        revealObserver.unobserve(e.target);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: "0px 0px -40px 0px" });
+            document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
+
+            /* ── Modal helpers ── */
             const openModal = (id) => {
                 const modal = document.getElementById(id);
                 if (!modal) return;
                 modal.classList.add("is-open");
                 document.body.style.overflow = "hidden";
                 const first = modal.querySelector("input, select, textarea");
-                if (first) setTimeout(() => first.focus(), 50);
+                if (first) setTimeout(() => first.focus(), 60);
             };
             const closeModal = (modal) => {
                 modal.classList.remove("is-open");
@@ -461,9 +919,7 @@
                 btn.addEventListener("click", () => openModal(btn.getAttribute("data-open-modal")));
             });
             document.querySelectorAll(".collab-modal-backdrop").forEach((backdrop) => {
-                backdrop.addEventListener("click", (e) => {
-                    if (e.target === backdrop) closeModal(backdrop);
-                });
+                backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(backdrop); });
                 backdrop.querySelectorAll("[data-close-modal]").forEach((btn) => {
                     btn.addEventListener("click", () => closeModal(backdrop));
                 });
@@ -474,6 +930,7 @@
                 }
             });
 
+            /* ── Form submission ── */
             document.querySelectorAll("[data-collab-form]").forEach((form) => {
                 form.addEventListener("submit", async (e) => {
                     e.preventDefault();
@@ -483,14 +940,14 @@
                     data.source = form.getAttribute("data-source") || "collaborate-form";
 
                     if (!data.name || !data.email || !data.message) {
-                        status.textContent = "Please fill in name, email, and message.";
+                        status.textContent = "Please fill in your name, email, and message.";
                         status.className = "collab-form-status is-error";
                         return;
                     }
 
                     submitBtn.disabled = true;
-                    const originalLabel = submitBtn.textContent;
-                    submitBtn.textContent = "Sending…";
+                    const originalHTML = submitBtn.innerHTML;
+                    submitBtn.innerHTML = "Sending…";
                     status.textContent = "";
                     status.className = "collab-form-status";
 
@@ -501,22 +958,20 @@
                             body: JSON.stringify(data),
                         });
                         const result = await res.json().catch(() => ({}));
-                        if (!res.ok || !result.ok) {
-                            throw new Error(result.error || "Something went wrong. Please try again.");
-                        }
-                        status.textContent = "Thanks! We received your submission and will be in touch.";
+                        if (!res.ok || !result.ok) throw new Error(result.error || "Something went wrong. Please try again.");
+                        status.textContent = "✓ Received! We'll be in touch soon.";
                         status.className = "collab-form-status is-success";
                         form.reset();
                         setTimeout(() => {
                             const backdrop = form.closest(".collab-modal-backdrop");
                             if (backdrop) closeModal(backdrop);
-                        }, 2500);
+                        }, 2800);
                     } catch (err) {
                         status.textContent = err.message || "Something went wrong. Please try again.";
                         status.className = "collab-form-status is-error";
                     } finally {
                         submitBtn.disabled = false;
-                        submitBtn.textContent = originalLabel;
+                        submitBtn.innerHTML = originalHTML;
                     }
                 });
             });
