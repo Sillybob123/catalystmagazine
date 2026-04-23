@@ -204,6 +204,26 @@ const STATUS_PILL = {
   posted:   "pill-published",
 };
 
+// Shared Firestore value serialiser used by write helpers.
+function toFsValue(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === "boolean") return { booleanValue: v };
+  if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (typeof v === "string") return { stringValue: v };
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(toFsValue) } };
+  if (typeof v === "object") {
+    const out = {};
+    for (const [k, val] of Object.entries(v)) out[k] = toFsValue(val);
+    return { mapValue: { fields: out } };
+  }
+  return { stringValue: String(v) };
+}
+function toFsFields(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) out[k] = toFsValue(v);
+  return out;
+}
+
 async function firestoreQuery(authedFetch, structuredQuery) {
   const res = await authedFetch(
     `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents:runQuery`,
@@ -238,75 +258,184 @@ async function firestoreQuery(authedFetch, structuredQuery) {
 }
 
 async function firestoreWrite(authedFetch, path, fields) {
-  // Use authedFetch to POST through our own proxy so auth is handled server-side,
-  // but social_posts writes need service-account auth. We POST to a lightweight
-  // wrapper endpoint; fall back to direct Firestore REST with the user's ID token.
-  // Since we don't have a dedicated endpoint, use the Firebase JS SDK via the
-  // existing authedFetch pattern but target Firestore REST directly with the
-  // user's bearer token (Firestore rules must allow writes for authed users).
-  const toFsValue = (v) => {
-    if (v === null || v === undefined) return { nullValue: null };
-    if (typeof v === "boolean") return { booleanValue: v };
-    if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
-    if (typeof v === "string") return { stringValue: v };
-    if (Array.isArray(v)) return { arrayValue: { values: v.map(toFsValue) } };
-    if (typeof v === "object") {
-      const out = {};
-      for (const [k2, v2] of Object.entries(v)) out[k2] = toFsValue(v2);
-      return { mapValue: { fields: out } };
-    }
-    return { stringValue: String(v) };
-  };
-  const fsFields = {};
-  for (const [k, v] of Object.entries(fields)) fsFields[k] = toFsValue(v);
-
   const res = await authedFetch(
     `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/${path}`,
-    { method: "PATCH", body: JSON.stringify({ fields: fsFields }) }
+    { method: "PATCH", body: JSON.stringify({ fields: toFsFields(fields) }) }
   );
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Firestore write failed ${res.status}: ${txt}`);
-  }
+  if (!res.ok) throw new Error(`Firestore write failed ${res.status}: ${await res.text()}`);
   return res.json();
 }
 
 async function firestoreAdd(authedFetch, collection, fields) {
-  const toFsValue = (v) => {
-    if (v === null || v === undefined) return { nullValue: null };
-    if (typeof v === "boolean") return { booleanValue: v };
-    if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
-    if (typeof v === "string") return { stringValue: v };
-    if (Array.isArray(v)) return { arrayValue: { values: v.map(toFsValue) } };
-    if (typeof v === "object") {
-      const out = {};
-      for (const [k2, v2] of Object.entries(v)) out[k2] = toFsValue(v2);
-      return { mapValue: { fields: out } };
-    }
-    return { stringValue: String(v) };
-  };
-  const fsFields = {};
-  for (const [k, v] of Object.entries(fields)) fsFields[k] = toFsValue(v);
-
   const res = await authedFetch(
     `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/${collection}`,
-    { method: "POST", body: JSON.stringify({ fields: fsFields }) }
+    { method: "POST", body: JSON.stringify({ fields: toFsFields(fields) }) }
   );
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`Firestore add failed ${res.status}: ${txt}`);
-  }
+  if (!res.ok) throw new Error(`Firestore add failed ${res.status}: ${await res.text()}`);
   const doc = await res.json();
   return doc.name ? doc.name.split("/").pop() : null;
 }
 
+// ── Canvas image generator ──────────────────────────────────────────────────
+// Produces a 1080×1080 PNG matching the style in the example:
+//   - Full-bleed cover photo
+//   - Dark gradient over bottom ~45%
+//   - Bold white title text (wrapped)
+//   - "New Article" badge pill top-left with logo icon
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    img.src = src;
+  });
+}
+
+function wrapText(ctx, text, x, maxWidth, lineHeight) {
+  const words = text.split(" ");
+  const lines = [];
+  let line = "";
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+async function generatePostImage(title, coverImageUrl) {
+  const SIZE = 1080;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+
+  // ── Cover photo ────────────────────────────────────────────────────────────
+  if (coverImageUrl) {
+    // Use Wix square crop if possible
+    let src = coverImageUrl;
+    try {
+      const u = new URL(coverImageUrl);
+      if (u.hostname.includes("static.wixstatic.com")) {
+        const v1 = u.pathname.indexOf("/v1/");
+        const asset = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
+        const fname = asset.split("/").filter(Boolean).pop();
+        src = `${u.origin}${asset}/v1/fill/w_1080,h_1080,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/${fname}`;
+      }
+    } catch { /* not Wix, use as-is */ }
+
+    try {
+      const img = await loadImage(src);
+      // Draw cover centred + cropped to fill the square
+      const scale = Math.max(SIZE / img.width, SIZE / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      ctx.drawImage(img, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
+    } catch {
+      // Fallback: solid dark bg
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(0, 0, SIZE, SIZE);
+    }
+  } else {
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, SIZE, SIZE);
+  }
+
+  // ── Bottom gradient overlay ────────────────────────────────────────────────
+  const gradH = SIZE * 0.55;
+  const grad = ctx.createLinearGradient(0, SIZE - gradH, 0, SIZE);
+  grad.addColorStop(0, "rgba(0,0,0,0)");
+  grad.addColorStop(0.4, "rgba(0,0,0,0.75)");
+  grad.addColorStop(1, "rgba(0,0,0,0.95)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, SIZE - gradH, SIZE, gradH);
+
+  // ── Title text ─────────────────────────────────────────────────────────────
+  const pad = 54;
+  const maxW = SIZE - pad * 2;
+  const bottomPad = 70;
+
+  // Pick font size to keep title readable: start large, shrink to fit
+  let fontSize = 88;
+  ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  let lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
+  while (lines.length > 4 && fontSize > 52) {
+    fontSize -= 4;
+    ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
+  }
+
+  const lineH = fontSize * 1.18;
+  const blockH = lines.length * lineH;
+  let y = SIZE - bottomPad - blockH + lineH * 0.8;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.textBaseline = "alphabetic";
+  ctx.shadowColor = "rgba(0,0,0,0.6)";
+  ctx.shadowBlur = 12;
+  for (const line of lines) {
+    ctx.fillText(line, pad, y);
+    y += lineH;
+  }
+  ctx.shadowBlur = 0;
+
+  // ── "New Article" badge (top-left) ─────────────────────────────────────────
+  const badgeX = 36, badgeY = 36;
+  const badgeH = 52, badgeR = badgeH / 2;
+
+  // Try to load the logo icon
+  let logoImg = null;
+  try {
+    logoImg = await loadImage("/NewGlassLogo.png");
+  } catch { /* skip logo if unavailable */ }
+
+  const iconSize = 32;
+  const textLabel = "New Article";
+  ctx.font = `700 22px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  const labelW = ctx.measureText(textLabel).width;
+  const badgeW = (logoImg ? iconSize + 10 : 0) + labelW + 36;
+
+  // Pill background
+  ctx.fillStyle = "rgba(20,20,30,0.72)";
+  ctx.beginPath();
+  ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeR);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Logo icon inside pill
+  let textStartX = badgeX + 18;
+  if (logoImg) {
+    ctx.drawImage(logoImg, badgeX + 12, badgeY + (badgeH - iconSize) / 2, iconSize, iconSize);
+    textStartX = badgeX + 12 + iconSize + 10;
+  }
+
+  // Label
+  ctx.fillStyle = "#ffffff";
+  ctx.textBaseline = "middle";
+  ctx.font = `700 22px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  ctx.fillText(textLabel, textStartX, badgeY + badgeH / 2);
+
+  return canvas.toDataURL("image/png");
+}
+
 async function mountSocialPosts(ctx, container) {
-  // ── Shell ──────────────────────────────────────────────────────────────────
+  // ── Page shell ─────────────────────────────────────────────────────────────
   container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
       <div>
         <h2 style="font-size:18px;font-weight:700;margin:0;">Social media posts</h2>
-        <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Draft, review, and track Instagram &amp; LinkedIn posts.</p>
+        <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Generate cover images and captions for Instagram &amp; LinkedIn.</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <select class="input select" id="sp-platform-filter" style="width:150px;">
@@ -323,88 +452,117 @@ async function mountSocialPosts(ctx, container) {
           <option value="assigned">Assigned</option>
           <option value="posted">Posted</option>
         </select>
-        <button class="btn btn-primary btn-sm" id="sp-new-btn">+ New post</button>
+        <button class="btn btn-primary btn-sm" id="sp-generate-btn">✦ Generate post image</button>
       </div>
     </div>
+    <div id="sp-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
 
-    <div id="sp-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
-
-    <!-- Detail / edit modal -->
-    <div class="modal-backdrop" id="sp-modal" style="display:none;">
-      <div class="modal" style="max-width:660px;">
-        <div class="modal-header">
-          <div class="modal-title" id="sp-modal-title">Post</div>
-          <button class="btn btn-ghost btn-sm" id="sp-modal-close" style="margin-left:auto;">✕</button>
-        </div>
-        <div class="modal-body" id="sp-modal-body"></div>
-        <div class="modal-footer" id="sp-modal-footer" style="display:flex;gap:8px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border);flex-wrap:wrap;"></div>
+  // ── Modals appended to body so they cover the full viewport ────────────────
+  const detailModal = document.createElement("div");
+  detailModal.className = "modal-backdrop";
+  detailModal.id = "sp-detail-modal";
+  detailModal.style.cssText = "display:none;";
+  detailModal.innerHTML = `
+    <div class="modal" style="width:min(680px,92vw);max-height:90vh;">
+      <div class="modal-header">
+        <div class="modal-title" id="sp-detail-title">Post</div>
+        <button class="btn btn-ghost btn-sm" id="sp-detail-close" style="margin-left:auto;">✕</button>
       </div>
-    </div>
+      <div class="modal-body" id="sp-detail-body"></div>
+      <div class="modal-footer" id="sp-detail-footer" style="flex-wrap:wrap;gap:8px;"></div>
+    </div>`;
+  document.body.appendChild(detailModal);
 
-    <!-- New post modal -->
-    <div class="modal-backdrop" id="sp-create-modal" style="display:none;">
-      <div class="modal" style="max-width:580px;">
-        <div class="modal-header">
-          <div class="modal-title">New post draft</div>
-          <button class="btn btn-ghost btn-sm" id="sp-create-close" style="margin-left:auto;">✕</button>
-        </div>
-        <div class="modal-body">
-          <div style="display:flex;flex-direction:column;gap:14px;">
-            <label style="font-size:13px;font-weight:600;">Title <span style="color:var(--danger)">*</span>
-              <input class="input" id="sp-new-title" placeholder="e.g. Instagram: Can AI Transform Speech Therapy?" style="margin-top:4px;width:100%;">
-            </label>
-            <label style="font-size:13px;font-weight:600;">Platform <span style="color:var(--danger)">*</span>
-              <select class="input select" id="sp-new-platform" style="margin-top:4px;width:100%;">
-                <option value="">Select platform…</option>
-                <option value="instagram">📸 Instagram</option>
-                <option value="linkedin">💼 LinkedIn</option>
-                <option value="twitter">🐦 Twitter</option>
-                <option value="facebook">📘 Facebook</option>
+  const generateModal = document.createElement("div");
+  generateModal.className = "modal-backdrop";
+  generateModal.id = "sp-generate-modal";
+  generateModal.style.cssText = "display:none;";
+  generateModal.innerHTML = `
+    <div class="modal" style="width:min(860px,95vw);max-height:95vh;">
+      <div class="modal-header">
+        <div class="modal-title">Generate post image</div>
+        <button class="btn btn-ghost btn-sm" id="sp-gen-close" style="margin-left:auto;">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start;">
+
+          <!-- Left: controls -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <label style="font-size:13px;font-weight:600;">Select published article
+              <select class="input select" id="sp-gen-article" style="margin-top:6px;width:100%;">
+                <option value="">Loading articles…</option>
               </select>
             </label>
-            <label style="font-size:13px;font-weight:600;">Caption / copy <span style="color:var(--danger)">*</span>
-              <textarea class="input textarea" id="sp-new-content" rows="6" placeholder="Write your post copy here…" style="margin-top:4px;width:100%;min-height:130px;"></textarea>
-              <span style="font-size:12px;color:var(--muted);" id="sp-char-count">0 characters</span>
+
+            <label style="font-size:13px;font-weight:600;">Platform
+              <select class="input select" id="sp-gen-platform" style="margin-top:6px;width:100%;">
+                <option value="instagram">📸 Instagram</option>
+                <option value="linkedin">💼 LinkedIn</option>
+              </select>
             </label>
-            <label style="font-size:13px;font-weight:600;">Notes / image link
-              <textarea class="input textarea" id="sp-new-notes" rows="3" placeholder="Paste image URL, extra context, etc." style="margin-top:4px;width:100%;min-height:70px;"></textarea>
+
+            <label style="font-size:13px;font-weight:600;">Caption
+              <textarea class="input textarea" id="sp-gen-caption" rows="7"
+                style="margin-top:6px;width:100%;min-height:140px;font-size:13px;"></textarea>
+              <span style="font-size:12px;color:var(--muted);" id="sp-gen-char">0 characters</span>
             </label>
-            <label style="font-size:13px;font-weight:600;">Post-by deadline
-              <input class="input" type="date" id="sp-new-deadline" style="margin-top:4px;width:180px;">
-            </label>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-sm" id="sp-gen-preview-btn">Preview image</button>
+              <button class="btn btn-primary btn-sm" id="sp-gen-download-btn" disabled>Download image</button>
+            </div>
+            <button class="btn btn-accent btn-sm" id="sp-gen-save-btn" disabled>Save draft to board</button>
           </div>
-        </div>
-        <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end;padding:16px 24px;border-top:1px solid var(--border);">
-          <button class="btn btn-secondary btn-sm" id="sp-create-cancel">Cancel</button>
-          <button class="btn btn-primary btn-sm" id="sp-create-submit">Create draft</button>
+
+          <!-- Right: canvas preview -->
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Preview</div>
+            <div id="sp-gen-preview-wrap" style="width:100%;aspect-ratio:1;background:var(--surface-3);border-radius:12px;border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;">
+              <span style="color:var(--muted);font-size:13px;">Select an article and click Preview</span>
+            </div>
+            <div id="sp-gen-status" style="font-size:12px;color:var(--muted);min-height:18px;"></div>
+          </div>
+
         </div>
       </div>
     </div>`;
+  document.body.appendChild(generateModal);
 
+  // ── Cleanup: remove body-level modals when module unmounts ─────────────────
+  const cleanup = () => {
+    detailModal.remove();
+    generateModal.remove();
+  };
+
+  // ── State ──────────────────────────────────────────────────────────────────
   let allPosts = [];
+  let publishedArticles = [];
+  let generatedDataUrl = null;
+  let selectedArticle = null;
+
   const listEl = container.querySelector("#sp-list");
   const platformFilter = container.querySelector("#sp-platform-filter");
   const statusFilter = container.querySelector("#sp-status-filter");
 
-  // ── Render list ─────────────────────────────────────────────────────────────
+  // ── Render post list ───────────────────────────────────────────────────────
   function render() {
     const pf = platformFilter.value;
     const sf = statusFilter.value;
     const posts = allPosts.filter((p) => (!pf || p.platform === pf) && (!sf || p.status === sf));
 
     if (!posts.length) {
-      listEl.innerHTML = `<div class="empty-state">No posts match your filters.</div>`;
+      listEl.innerHTML = `<div class="empty-state">No posts yet. Click "Generate post image" to create your first one.</div>`;
       return;
     }
 
     listEl.innerHTML = posts.map((p) => {
       const pm = PLATFORM_META[p.platform] || { label: p.platform, icon: "📱", pill: "pill-draft" };
       const sp = STATUS_PILL[p.status] || "pill-draft";
-      const preview = (p.content || "").slice(0, 120) + ((p.content || "").length > 120 ? "…" : "");
+      const preview = (p.content || "").slice(0, 130) + ((p.content || "").length > 130 ? "…" : "");
       return `
         <div class="card" style="margin-bottom:12px;cursor:pointer;" data-id="${esc(p.id)}">
           <div class="card-body" style="display:flex;gap:16px;align-items:flex-start;">
-            <div style="font-size:28px;line-height:1;">${pm.icon}</div>
+            <div style="font-size:28px;line-height:1;flex-shrink:0;">${pm.icon}</div>
             <div style="flex:1;min-width:0;">
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
                 <strong style="font-size:14px;">${esc(p.title)}</strong>
@@ -422,12 +580,12 @@ async function mountSocialPosts(ctx, container) {
         </div>`;
     }).join("");
 
-    listEl.querySelectorAll("[data-id]").forEach((card) => {
-      card.addEventListener("click", () => openPost(allPosts.find((p) => p.id === card.dataset.id)));
-    });
+    listEl.querySelectorAll("[data-id]").forEach((card) =>
+      card.addEventListener("click", () => openDetail(allPosts.find((p) => p.id === card.dataset.id)))
+    );
   }
 
-  // ── Load posts ──────────────────────────────────────────────────────────────
+  // ── Load posts ─────────────────────────────────────────────────────────────
   async function loadPosts() {
     listEl.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading…</div>`;
     try {
@@ -442,62 +600,54 @@ async function mountSocialPosts(ctx, container) {
     }
   }
 
-  // ── Detail modal ─────────────────────────────────────────────────────────────
-  const modal = container.querySelector("#sp-modal");
-  const modalTitle = container.querySelector("#sp-modal-title");
-  const modalBody = container.querySelector("#sp-modal-body");
-  const modalFooter = container.querySelector("#sp-modal-footer");
+  // ── Load published articles for the generator dropdown ─────────────────────
+  async function loadArticles() {
+    try {
+      publishedArticles = await firestoreQuery(ctx.authedFetch, {
+        from: [{ collectionId: "stories" }],
+        where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+        orderBy: [{ field: { fieldPath: "publishedAt" }, direction: "DESCENDING" }],
+        limit: 60,
+        select: { fields: [
+          { fieldPath: "title" }, { fieldPath: "authorName" }, { fieldPath: "author" },
+          { fieldPath: "coverImage" }, { fieldPath: "image" }, { fieldPath: "slug" },
+          { fieldPath: "category" }, { fieldPath: "deck" }, { fieldPath: "excerpt" },
+        ]},
+      });
+    } catch { publishedArticles = []; }
+  }
 
-  function openPost(p) {
+  // ── Detail modal ───────────────────────────────────────────────────────────
+  const closeDetail = () => { detailModal.style.display = "none"; };
+  detailModal.querySelector("#sp-detail-close").addEventListener("click", closeDetail);
+  detailModal.addEventListener("click", (e) => { if (e.target === detailModal) closeDetail(); });
+
+  function openDetail(p) {
     if (!p) return;
     const pm = PLATFORM_META[p.platform] || { label: p.platform, icon: "📱", pill: "pill-draft" };
     const sp = STATUS_PILL[p.status] || "pill-draft";
+    detailModal.querySelector("#sp-detail-title").textContent = p.title || "Post";
 
-    modalTitle.textContent = p.title || "Post";
-
-    // Check if content has an image URL in notes
-    const imageMatch = (p.notes || "").match(/https?:\/\/\S+\.(jpg|jpeg|png|webp|gif)/i) ||
-                       (p.notes || "").match(/https?:\/\/static\.wixstatic\.com\/\S+/i);
-    const imageUrl = imageMatch ? imageMatch[0].replace(/[,\s].*$/, "") : null;
-
-    modalBody.innerHTML = `
+    detailModal.querySelector("#sp-detail-body").innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
         <span class="pill ${pm.pill}">${pm.icon} ${esc(pm.label)}</span>
         <span class="pill ${sp}">${esc(p.status)}</span>
         ${p.deadline ? `<span class="pill pill-draft">Due ${esc(p.deadline)}</span>` : ""}
       </div>
-
-      ${imageUrl && p.platform === "instagram" ? `
-        <div style="margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Cover image (square)</div>
-          <img src="${esc(imageUrl)}" alt="Cover" style="width:180px;height:180px;object-fit:cover;border-radius:8px;border:1px solid var(--border);">
-          <div style="margin-top:6px;">
-            <a href="${esc(imageUrl)}" target="_blank" class="btn btn-secondary btn-xs">Download image ↗</a>
-          </div>
-        </div>` : ""}
-
       <div style="margin-bottom:16px;">
-        <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Caption / copy</div>
-        <div id="sp-detail-content-wrap">
-          <pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;background:var(--surface-2);border-radius:8px;padding:14px;margin:0;border:1px solid var(--border);">${esc(p.content || "—")}</pre>
-        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Caption</div>
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;background:var(--surface-2);border-radius:8px;padding:14px;margin:0;border:1px solid var(--border);max-height:260px;overflow-y:auto;">${esc(p.content || "—")}</pre>
       </div>
-
       ${p.notes ? `
-        <div style="margin-bottom:16px;">
-          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Notes</div>
-          <pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:12px;margin:0;border:1px solid var(--border);">${esc(p.notes)}</pre>
-        </div>` : ""}
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Notes</div>
+        <pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:12px;margin:0;border:1px solid var(--border);">${esc(p.notes)}</pre>
+      </div>` : ""}
+      <div style="font-size:12px;color:var(--muted);">By <strong>${esc(p.proposerName || "—")}</strong>${p.createdAt ? ` · ${fmtRelative(p.createdAt)}` : ""}</div>`;
 
-      <div style="font-size:12px;color:var(--muted);">
-        Proposed by <strong>${esc(p.proposerName || "—")}</strong>
-        ${p.createdAt ? ` · ${fmtRelative(p.createdAt)}` : ""}
-      </div>`;
+    const footer = detailModal.querySelector("#sp-detail-footer");
+    footer.innerHTML = "";
 
-    // Footer actions
-    modalFooter.innerHTML = "";
-
-    // Copy caption button
     const copyBtn = el("button", { class: "btn btn-secondary btn-sm" });
     copyBtn.textContent = "Copy caption";
     copyBtn.addEventListener("click", () => {
@@ -506,117 +656,187 @@ async function mountSocialPosts(ctx, container) {
         setTimeout(() => { copyBtn.textContent = "Copy caption"; }, 2000);
       });
     });
-    modalFooter.appendChild(copyBtn);
+    footer.appendChild(copyBtn);
 
-    // Status progression buttons (admin/editor only)
     if (["admin", "editor"].includes(ctx.role)) {
-      if (p.status === "proposed") {
-        const approveBtn = el("button", { class: "btn btn-accent btn-sm" });
-        approveBtn.textContent = "Approve";
-        approveBtn.addEventListener("click", () => updateStatus(p, "approved"));
-        modalFooter.appendChild(approveBtn);
-      }
-      if (p.status === "approved") {
-        const assignBtn = el("button", { class: "btn btn-primary btn-sm" });
-        assignBtn.textContent = "Mark assigned";
-        assignBtn.addEventListener("click", () => updateStatus(p, "assigned"));
-        modalFooter.appendChild(assignBtn);
-      }
-      if (p.status === "assigned") {
-        const postedBtn = el("button", { class: "btn btn-primary btn-sm" });
-        postedBtn.textContent = "Mark posted ✓";
-        postedBtn.addEventListener("click", () => updateStatus(p, "posted"));
-        modalFooter.appendChild(postedBtn);
+      const transitions = { proposed: "approved", approved: "assigned", assigned: "posted" };
+      const labels = { proposed: "Approve", approved: "Mark assigned", assigned: "Mark posted ✓" };
+      if (transitions[p.status]) {
+        const btn = el("button", { class: "btn btn-primary btn-sm" });
+        btn.textContent = labels[p.status];
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          try {
+            await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { status: transitions[p.status] });
+            ctx.toast(`Marked as ${transitions[p.status]}`, "success");
+            closeDetail();
+            await loadPosts();
+          } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
+        });
+        footer.appendChild(btn);
       }
     }
 
-    modal.style.display = "flex";
+    detailModal.style.display = "grid";
   }
 
-  async function updateStatus(p, newStatus) {
+  // ── Generate modal ─────────────────────────────────────────────────────────
+  const closeGenerate = () => { generateModal.style.display = "none"; generatedDataUrl = null; };
+  generateModal.querySelector("#sp-gen-close").addEventListener("click", closeGenerate);
+  generateModal.addEventListener("click", (e) => { if (e.target === generateModal) closeGenerate(); });
+
+  const articleSelect = generateModal.querySelector("#sp-gen-article");
+  const platformSelect = generateModal.querySelector("#sp-gen-platform");
+  const captionArea = generateModal.querySelector("#sp-gen-caption");
+  const charEl = generateModal.querySelector("#sp-gen-char");
+  const previewWrap = generateModal.querySelector("#sp-gen-preview-wrap");
+  const statusEl = generateModal.querySelector("#sp-gen-status");
+  const previewBtn = generateModal.querySelector("#sp-gen-preview-btn");
+  const downloadBtn = generateModal.querySelector("#sp-gen-download-btn");
+  const saveBtn = generateModal.querySelector("#sp-gen-save-btn");
+
+  captionArea.addEventListener("input", () => { charEl.textContent = `${captionArea.value.length} characters`; });
+
+  function buildCaption(article, platform) {
+    const author = article.authorName || article.author || "The Catalyst";
+    const deck = article.deck || article.excerpt || "";
+    const slug = article.slug || "";
+    const category = article.category || "Feature";
+    const tag = `#${category.replace(/\s+/g, "")}`;
+    const url = slug ? `https://www.catalyst-magazine.com/article/${slug}` : "https://www.catalyst-magazine.com";
+    if (platform === "linkedin") {
+      return `We just published a new article on The Catalyst Magazine!\n\n"${article.title}"\n\n${deck ? deck + "\n\n" : ""}Big shoutout to ${author} for writing this piece. Read it here:\n${url}\n\n#TheCatalyst #STEMJournalism #ScienceWriting #CatalystMagazine ${tag}`;
+    }
+    return `"${article.title}"\n\n${deck ? deck + "\n\n" : ""}Written by ${author} — link in bio to read the full article!\n\n${tag} #TheCatalyst #STEMJournalism #ScienceWriting #CatalystMagazine`;
+  }
+
+  function populateArticleDropdown() {
+    articleSelect.innerHTML = publishedArticles.length
+      ? `<option value="">Select an article…</option>` + publishedArticles.map((a, i) =>
+          `<option value="${i}">${esc(a.title)}</option>`).join("")
+      : `<option value="">No published articles found</option>`;
+  }
+
+  function onArticleOrPlatformChange() {
+    const idx = articleSelect.value;
+    if (idx === "") { selectedArticle = null; return; }
+    selectedArticle = publishedArticles[parseInt(idx, 10)];
+    captionArea.value = buildCaption(selectedArticle, platformSelect.value);
+    charEl.textContent = `${captionArea.value.length} characters`;
+    // Reset preview
+    generatedDataUrl = null;
+    downloadBtn.disabled = true;
+    saveBtn.disabled = true;
+    previewWrap.innerHTML = `<span style="color:var(--muted);font-size:13px;">Click "Preview image" to generate</span>`;
+    statusEl.textContent = "";
+  }
+
+  articleSelect.addEventListener("change", onArticleOrPlatformChange);
+  platformSelect.addEventListener("change", () => {
+    if (selectedArticle) {
+      captionArea.value = buildCaption(selectedArticle, platformSelect.value);
+      charEl.textContent = `${captionArea.value.length} characters`;
+    }
+  });
+
+  previewBtn.addEventListener("click", async () => {
+    if (!selectedArticle) { ctx.toast("Select an article first.", "error"); return; }
+    previewBtn.disabled = true;
+    previewBtn.textContent = "Generating…";
+    statusEl.textContent = "Drawing image…";
+    previewWrap.innerHTML = `<div class="spinner"></div>`;
     try {
-      await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { status: newStatus });
-      ctx.toast(`Marked as ${newStatus}`, "success");
-      modal.style.display = "none";
-      await loadPosts();
+      const coverUrl = selectedArticle.coverImage || selectedArticle.image || "";
+      generatedDataUrl = await generatePostImage(selectedArticle.title, coverUrl);
+      const img = document.createElement("img");
+      img.src = generatedDataUrl;
+      img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+      previewWrap.innerHTML = "";
+      previewWrap.appendChild(img);
+      statusEl.textContent = "1080 × 1080 px — ready to download";
+      downloadBtn.disabled = false;
+      saveBtn.disabled = false;
     } catch (err) {
-      ctx.toast("Failed to update: " + err.message, "error");
+      previewWrap.innerHTML = `<span style="color:var(--danger);font-size:13px;">Error: ${esc(err.message)}</span>`;
+      statusEl.textContent = "";
+    } finally {
+      previewBtn.disabled = false;
+      previewBtn.textContent = "Preview image";
     }
-  }
-
-  container.querySelector("#sp-modal-close").addEventListener("click", () => { modal.style.display = "none"; });
-  modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
-
-  // ── New post modal ──────────────────────────────────────────────────────────
-  const createModal = container.querySelector("#sp-create-modal");
-  const contentInput = container.querySelector("#sp-new-content");
-  const charCount = container.querySelector("#sp-char-count");
-
-  contentInput.addEventListener("input", () => {
-    charCount.textContent = `${contentInput.value.length} characters`;
   });
 
-  container.querySelector("#sp-new-btn").addEventListener("click", () => {
-    container.querySelector("#sp-new-title").value = "";
-    container.querySelector("#sp-new-platform").value = "";
-    contentInput.value = "";
-    container.querySelector("#sp-new-notes").value = "";
-    container.querySelector("#sp-new-deadline").value = new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0];
-    charCount.textContent = "0 characters";
-    createModal.style.display = "flex";
-    container.querySelector("#sp-new-title").focus();
+  downloadBtn.addEventListener("click", () => {
+    if (!generatedDataUrl) return;
+    const a = document.createElement("a");
+    const slug = selectedArticle?.slug || "post";
+    a.href = generatedDataUrl;
+    a.download = `catalyst-${slug}-instagram.png`;
+    a.click();
   });
 
-  const closeCreate = () => { createModal.style.display = "none"; };
-  container.querySelector("#sp-create-close").addEventListener("click", closeCreate);
-  container.querySelector("#sp-create-cancel").addEventListener("click", closeCreate);
-  createModal.addEventListener("click", (e) => { if (e.target === createModal) closeCreate(); });
-
-  container.querySelector("#sp-create-submit").addEventListener("click", async () => {
-    const title = container.querySelector("#sp-new-title").value.trim();
-    const platform = container.querySelector("#sp-new-platform").value;
-    const content = contentInput.value.trim();
-    const notes = container.querySelector("#sp-new-notes").value.trim();
-    const deadline = container.querySelector("#sp-new-deadline").value;
-
-    if (!title || !platform || !content) {
-      ctx.toast("Title, platform, and caption are required.", "error");
-      return;
-    }
-
-    const submitBtn = container.querySelector("#sp-create-submit");
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Creating…";
-
+  saveBtn.addEventListener("click", async () => {
+    if (!selectedArticle || !generatedDataUrl) return;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+    const platform = platformSelect.value;
+    const author = selectedArticle.authorName || selectedArticle.author || "The Catalyst";
+    const slug = selectedArticle.slug || "";
+    const coverUrl = selectedArticle.coverImage || selectedArticle.image || "";
     try {
       await firestoreAdd(ctx.authedFetch, "social_posts", {
-        title,
+        title: `${platform === "instagram" ? "Instagram" : "LinkedIn"}: ${selectedArticle.title}`,
         platform,
-        content,
-        notes: notes || null,
-        deadline: deadline || null,
+        content: captionArea.value,
+        notes: platform === "instagram"
+          ? `Cover image (square 1080×1080): ${coverUrl}\n\nDownload the generated PNG from the image generator.`
+          : `Article URL: https://www.catalyst-magazine.com/article/${slug}\nAuthor: ${author}`,
         status: "proposed",
         proposerId: ctx.user.uid,
         proposerName: ctx.profile.name || ctx.user.email,
         assigneeId: null,
         assigneeName: null,
+        deadline: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
         createdAt: new Date().toISOString(),
-        activity: [{ text: "created this post", authorName: ctx.profile.name || ctx.user.email, timestamp: new Date().toISOString() }],
+        activity: [{ text: "created via image generator", authorName: ctx.profile.name || ctx.user.email, timestamp: new Date().toISOString() }],
       });
-      ctx.toast("Post draft created!", "success");
-      closeCreate();
+      ctx.toast("Saved to social posts board!", "success");
+      closeGenerate();
       await loadPosts();
     } catch (err) {
-      ctx.toast("Failed to create post: " + err.message, "error");
+      ctx.toast("Failed to save: " + err.message, "error");
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = "Create draft";
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save draft to board";
     }
   });
 
-  // ── Filters ─────────────────────────────────────────────────────────────────
+  // ── Open generate modal ────────────────────────────────────────────────────
+  container.querySelector("#sp-generate-btn").addEventListener("click", async () => {
+    generatedDataUrl = null;
+    selectedArticle = null;
+    articleSelect.value = "";
+    platformSelect.value = "instagram";
+    captionArea.value = "";
+    charEl.textContent = "0 characters";
+    previewWrap.innerHTML = `<span style="color:var(--muted);font-size:13px;">Select an article and click Preview</span>`;
+    statusEl.textContent = "";
+    downloadBtn.disabled = true;
+    saveBtn.disabled = true;
+    generateModal.style.display = "grid";
+
+    if (!publishedArticles.length) {
+      articleSelect.innerHTML = `<option value="">Loading…</option>`;
+      await loadArticles();
+      populateArticleDropdown();
+    } else {
+      populateArticleDropdown();
+    }
+  });
+
+  // ── Filters ────────────────────────────────────────────────────────────────
   platformFilter.addEventListener("change", render);
   statusFilter.addEventListener("change", render);
 
   await loadPosts();
+  return cleanup;
 }
