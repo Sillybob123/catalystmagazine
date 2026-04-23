@@ -217,10 +217,7 @@ function handleCoverFile(file) {
         showToast('Please select an image file.', 'error');
         return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-        showToast('Image must be under 5MB.', 'error');
-        return;
-    }
+    if (file.size > 10 * 1024 * 1024) showToast('Preparing large image…');
     coverFile = file;
     const reader = new FileReader();
     reader.onload = (ev) => paintCover(ev.target.result);
@@ -429,11 +426,12 @@ function openInlineImagePicker(insertAt) {
     inlineImageInput.onchange = async (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('Image must be under 5MB.', 'error');
+        if (!file.type.startsWith('image/')) {
+            showToast('Please select an image file.', 'error');
             return;
         }
         try {
+            if (file.size > 10 * 1024 * 1024) showToast('Preparing large image…');
             showToast('Uploading image…');
             const toUpload = await convertToWebp(file);
             const imageRef = ref(storage, 'covers/inline-' + Date.now() + '-' + toUpload.name);

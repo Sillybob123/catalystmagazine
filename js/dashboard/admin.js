@@ -794,7 +794,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { ctx.toast("Please choose an image file.", "error"); return; }
-    if (file.size > 15 * 1024 * 1024) { ctx.toast("Image must be under 15 MB.", "error"); return; }
+    if (file.size > 10 * 1024 * 1024) ctx.toast("Preparing large image…");
 
     coverProgress.hidden = false;
     coverProgressFill.style.width = "0%";
