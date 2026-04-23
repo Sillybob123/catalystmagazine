@@ -145,7 +145,7 @@ export const onRequestPost = async ({ request, env }) => {
           return true;
         });
 
-      const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+      const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
       const newsletterSubject = `New from The Catalyst: ${articles[0].title}`;
       const html = buildNewsletter({
         subject: newsletterSubject,

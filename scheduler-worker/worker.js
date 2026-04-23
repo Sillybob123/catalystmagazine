@@ -9,7 +9,7 @@
 
 export default {
   async scheduled(controller, env, ctx) {
-    const target = env.BOT_ENDPOINT || "https://catalyst-magazine.com/api/bot/run";
+    const target = env.BOT_ENDPOINT || "https://www.catalyst-magazine.com/api/bot/run";
     const secret = env.BOT_CRON_SECRET;
 
     if (!secret) {
@@ -42,7 +42,7 @@ export default {
     if (!env.BOT_CRON_SECRET || secret !== env.BOT_CRON_SECRET) {
       return new Response("forbidden", { status: 403 });
     }
-    const target = env.BOT_ENDPOINT || "https://catalyst-magazine.com/api/bot/run";
+    const target = env.BOT_ENDPOINT || "https://www.catalyst-magazine.com/api/bot/run";
     const res = await fetch(target, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-bot-secret": env.BOT_CRON_SECRET },

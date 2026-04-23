@@ -29,7 +29,7 @@ export const onRequestPost = async ({ request, env }) => {
     if (!html || html.length < 50) return badRequest("html body is required");
     if (theme === "inbox" && !inboxParams) return badRequest("inboxParams required for inbox theme");
 
-    const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+    const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
 
     // ---- Test-send path (single recipient) --------------------------------
     if (body.testEmail) {

@@ -61,7 +61,7 @@ export const onRequestPost = async ({ request, env }) => {
     const now = new Date();
     const mode = body.mode || "auto";
     const dryRun = !!body.dryRun;
-    const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+    const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
 
     // ── Load data ────────────────────────────────────────────────────────────
     const [projects, users] = await Promise.all([

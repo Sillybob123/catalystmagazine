@@ -45,7 +45,7 @@ export const onRequestPost = async ({ request, env }) => {
     const existing = await firestoreGet(env, `subscribers/${docId}`);
 
     const now = new Date().toISOString();
-    const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+    const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
 
     if (existing) {
       // Already subscribed — refresh name/timestamp but don't resend confirm.

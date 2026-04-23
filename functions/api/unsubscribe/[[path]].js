@@ -15,7 +15,7 @@ export const onRequestGet = async (ctx) => handle(ctx, "redirect");
 export const onRequestPost = async (ctx) => handle(ctx, "one-click");
 
 async function handle({ request, env, params }, mode) {
-  const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+  const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
   const url = new URL(request.url);
 
   // Prefer the path segment, fall back to ?email=.

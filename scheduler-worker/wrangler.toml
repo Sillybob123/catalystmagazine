@@ -9,7 +9,7 @@ compatibility_date = "2026-04-16"
 crons = ["0 14 * * *"]
 
 [vars]
-BOT_ENDPOINT = "https://catalyst-magazine.com/api/bot/run"
+BOT_ENDPOINT = "https://www.catalyst-magazine.com/api/bot/run"
 
 # Set the secret via:
 #   npx wrangler secret put BOT_CRON_SECRET

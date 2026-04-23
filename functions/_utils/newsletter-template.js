@@ -16,11 +16,9 @@ const COLORS = {
   footerBg: "#fafafa",
 };
 
-// Served from Cloudflare Pages. We use the .pages.dev host (not the apex
-// www.catalyst-magazine.com) because the apex still points at Wix during
-// migration and returns HTTP 400 for our root-level image assets. JPEG
-// (not WebP) so Outlook on Windows renders correctly.
-const LOGO_URL = "https://catalystmagazine.pages.dev/WebLogo.jpg";
+// Served from the canonical www host so newsletter links and assets match the
+// live site exactly. JPEG (not WebP) so Outlook on Windows renders correctly.
+const LOGO_URL = "https://www.catalyst-magazine.com/WebLogo.jpg";
 
 export function buildNewsletter({
   subject = "New from The Catalyst",
@@ -28,7 +26,7 @@ export function buildNewsletter({
   headline = "New Stories From The Catalyst",
   intro = "Here is the latest reporting from our team of student writers.",
   articles = [],
-  siteUrl = "https://catalyst-magazine.com",
+  siteUrl = "https://www.catalyst-magazine.com",
   unsubscribeUrl = null,
   recipientEmail = null,
   logoUrl = LOGO_URL,
@@ -191,7 +189,7 @@ export function buildInboxNewsletter({
   headline = "New Stories From The Catalyst",
   intro = "",
   articles = [],
-  siteUrl = "https://catalyst-magazine.com",
+  siteUrl = "https://www.catalyst-magazine.com",
   unsubscribeUrl = null,
   recipientEmail = null,
   recipientFirstName = null,

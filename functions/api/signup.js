@@ -49,7 +49,7 @@ export const onRequestPost = async ({ request, env }) => {
     // Upsert users/{uid}.
     const existing = await firestoreGet(env, `users/${uid}`);
     const now = new Date().toISOString();
-    const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+    const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
 
     if (existing) {
       await firestoreUpdate(env, `users/${uid}`, {

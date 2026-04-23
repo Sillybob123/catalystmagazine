@@ -256,7 +256,7 @@ async function mountBuilder(ctx, container) {
       headline: els.headline.value.trim(),
       intro: els.intro.value.trim(),
       articles: currentArticles,
-      siteUrl: "https://catalyst-magazine.com",
+      siteUrl: "https://www.catalyst-magazine.com",
     };
   }
 

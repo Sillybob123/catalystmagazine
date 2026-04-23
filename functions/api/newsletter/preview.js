@@ -27,7 +27,7 @@ export const onRequestPost = async ({ request, env }) => {
     const subject = body.subject || "New from The Catalyst";
     const headline = body.headline || "New Stories From The Catalyst";
     const intro = body.intro || (theme === "inbox" ? "" : "Here is the latest reporting from our team of student writers. Tap any card to read the full piece.");
-    const siteUrl = env.SITE_URL || "https://catalyst-magazine.com";
+    const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
     // Let the template default handle the logo unless an env override is set.
     // The template ships with the Firebase-hosted WebLogo used in emails.
     const logoUrl = env.NEWSLETTER_LOGO_URL || undefined;

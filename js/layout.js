@@ -1,3 +1,33 @@
+const LEGACY_RUNTIME_CLEANUP_KEY = "catalyst-runtime-cleanup-v1";
+
+void cleanupLegacyRuntime();
+
+async function cleanupLegacyRuntime() {
+    if (typeof window === 'undefined') return;
+    if (!/(^|\.)catalyst-magazine\.com$/i.test(window.location.hostname)) return;
+
+    try {
+        if (window.localStorage?.getItem(LEGACY_RUNTIME_CLEANUP_KEY)) return;
+        window.localStorage?.setItem(LEGACY_RUNTIME_CLEANUP_KEY, '1');
+    } catch (err) {
+        // Storage can be blocked in private browsing; keep cleanup best-effort.
+    }
+
+    try {
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map((registration) => registration.unregister().catch(() => false)));
+        }
+
+        if ('caches' in window) {
+            const cacheKeys = await caches.keys();
+            await Promise.all(cacheKeys.map((key) => caches.delete(key).catch(() => false)));
+        }
+    } catch (error) {
+        console.warn('[Runtime] Legacy cache cleanup failed', error);
+    }
+}
+
 // Load shared header and footer so every page stays in sync
 async function loadFragment(targetId, path) {
     const target = document.getElementById(targetId);

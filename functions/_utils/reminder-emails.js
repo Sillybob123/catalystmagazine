@@ -18,7 +18,7 @@ const COLORS = {
   overdueInk: "#9b1c1c",
 };
 
-const LOGO_URL = "https://catalystmagazine.pages.dev/WebLogo.jpg";
+const LOGO_URL = "https://www.catalyst-magazine.com/WebLogo.jpg";
 
 function shell({ title, preheader = "", body, siteUrl }) {
   return `<!doctype html>
