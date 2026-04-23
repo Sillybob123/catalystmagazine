@@ -1076,8 +1076,36 @@ function initArticleDetailPage(data) {
         return;
     }
 
-    renderArticleDetail(article);
+    // Fetch the full Firestore document to get the article body (body/content),
+    // which is excluded from the listing query projection to keep it fast.
+    fetchFullArticleBody(article.id).then(full => {
+        if (full) {
+            if (full.content) article.content = full.content;
+            if (full.blocks && full.blocks.length) article.blocks = full.blocks;
+            if (full.author && full.author !== 'The Catalyst') article.author = full.author;
+            if (full.deck) article.deck = full.deck;
+            if (full.lightCover !== undefined) article.lightCover = full.lightCover;
+        }
+        renderArticleDetail(article);
+    }).catch(() => renderArticleDetail(article));
+
     renderRelatedArticles(article, data);
+}
+
+async function fetchFullArticleBody(storyId) {
+    if (!storyId) return null;
+    const projectId = 'catalystwriters-5ce43';
+    try {
+        const res = await fetch(
+            `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/stories/${encodeURIComponent(storyId)}`
+        );
+        if (!res.ok) return null;
+        const doc = await res.json();
+        if (doc.fields?.status?.stringValue !== 'published') return null;
+        return firestoreDocToArticle(doc);
+    } catch {
+        return null;
+    }
 }
 
 function renderArticleDetail(article) {
@@ -1510,7 +1538,7 @@ async function loadArticles() {
 async function loadFromFirestore() {
     // Session cache: Firestore is the slowest part of startup. Within one tab
     // session the article list doesn't change, so serve the cached copy instantly.
-    const CACHE_KEY = 'catalyst_fs_cache_v2';
+    const CACHE_KEY = 'catalyst_fs_cache_v3';
     try {
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) return JSON.parse(cached);
@@ -1537,6 +1565,7 @@ async function loadFromFirestore() {
             select: {
                 fields: [
                     { fieldPath: 'title' },
+                    { fieldPath: 'authorName' },
                     { fieldPath: 'author' },
                     { fieldPath: 'publishedAt' },
                     { fieldPath: 'createdAt' },
@@ -1544,10 +1573,12 @@ async function loadFromFirestore() {
                     { fieldPath: 'image' },
                     { fieldPath: 'excerpt' },
                     { fieldPath: 'deck' },
+                    { fieldPath: 'dek' },
                     { fieldPath: 'category' },
                     { fieldPath: 'tags' },
                     { fieldPath: 'slug' },
                     { fieldPath: 'status' },
+                    { fieldPath: 'lightCover' },
                 ]
             },
             limit: 60

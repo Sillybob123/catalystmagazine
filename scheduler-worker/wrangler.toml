@@ -10,6 +10,7 @@ crons = ["0 14 * * *"]
 
 [vars]
 BOT_ENDPOINT = "https://www.catalyst-magazine.com/api/bot/run"
+BOT_MODE = "auto"
 
 # Set the secret via:
 #   npx wrangler secret put BOT_CRON_SECRET

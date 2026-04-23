@@ -20,7 +20,9 @@ export const onRequestPost = async ({ request, env }) => {
 
     const email = (body.email || "").trim().toLowerCase();
     const name = (body.name || "").trim();
-    const role = (body.role || body.interest || body.position || "").trim();
+    const selectedRole = (body.role || body.interest || body.position || "").trim();
+    const otherRole = (body.otherRole || "").trim();
+    const role = selectedRole === "Other" ? (otherRole || "Other") : selectedRole;
     const message = (body.message || "").trim();
     const phone = (body.phone || "").trim();
     const portfolio = (body.portfolio || body.link || "").trim();
@@ -32,15 +34,20 @@ export const onRequestPost = async ({ request, env }) => {
     if (!message) return badRequest("Message is required");
 
     const now = new Date().toISOString();
+    const isJoinTeam = source === "join-team";
+
+    if (isJoinTeam && selectedRole === "Other" && !otherRole) {
+      return badRequest("Please tell us what role you'd like to do");
+    }
+
     await firestoreCreate(env, "collaboration_requests", {
-      email, name, role, message, phone, portfolio, articleTitle,
+      email, name, role, selectedRole, otherRole, message, phone, portfolio, articleTitle,
       status: "new",
       source,
       createdAt: now,
       ip,
     });
 
-    const isJoinTeam = source === "join-team";
     const subjectLabel = isJoinTeam ? "Team Application" : "Article/Proposal Submission";
 
     // Notify the team. This is the important one — replyTo so they can respond
@@ -52,7 +59,7 @@ export const onRequestPost = async ({ request, env }) => {
         replyTo: email,
         subject: `[${subjectLabel}] ${name}`,
         html: buildTeamEmail({
-          name, email, role, message, phone, portfolio, articleTitle,
+          name, email, role, selectedRole, otherRole, message, phone, portfolio, articleTitle,
           source, subjectLabel, ip, createdAt: now,
         }),
       });
@@ -64,8 +71,9 @@ export const onRequestPost = async ({ request, env }) => {
     try {
       await sendEmail(env, {
         to: email,
+        replyTo: TEAM_INBOX,
         subject: "Thanks for reaching out to The Catalyst",
-        html: `<p>Hi ${escapeHtml(name)},</p><p>Thanks for your interest in collaborating with The Catalyst. Our team will review your submission and be in touch soon.</p><p>&mdash; The Catalyst Editorial Team</p>`,
+        html: buildConfirmationEmail({ name, isJoinTeam }),
       });
     } catch (err) {
       console.error("Collaborate confirmation email failed:", err.message);
@@ -77,13 +85,15 @@ export const onRequestPost = async ({ request, env }) => {
   }
 };
 
-function buildTeamEmail({ name, email, role, message, phone, portfolio, articleTitle, source, subjectLabel, ip, createdAt }) {
+function buildTeamEmail({ name, email, role, selectedRole, otherRole, message, phone, portfolio, articleTitle, source, subjectLabel, ip, createdAt }) {
   const rows = [
     ["Submission type", subjectLabel],
     ["Name", name],
     ["Email", email],
     ["Phone", phone],
     ["Position / Interest", role],
+    ["Selected role", selectedRole === "Other" ? "Other" : ""],
+    ["Custom role", otherRole],
     ["Article title", articleTitle],
     ["Portfolio / link", portfolio ? `<a href="${escapeAttr(portfolio)}">${escapeHtml(portfolio)}</a>` : ""],
     ["Source", source],
@@ -105,6 +115,19 @@ function buildTeamEmail({ name, email, role, message, phone, portfolio, articleT
         <div style="white-space:pre-wrap;color:#1d1d1f;font-size:0.95rem;line-height:1.6;">${escapeHtml(message)}</div>
       </div>
     </div>
+  `;
+}
+
+function buildConfirmationEmail({ name, isJoinTeam }) {
+  const joinTeamFollowUp = isJoinTeam
+    ? `<p>Please also reply to this email with your CV or resume attached so our team can review it.</p>`
+    : "";
+
+  return `
+    <p>Hi ${escapeHtml(name)},</p>
+    <p>Thanks for your interest in collaborating with The Catalyst. Our team will review your submission and be in touch soon.</p>
+    ${joinTeamFollowUp}
+    <p>&mdash; The Catalyst Editorial Team</p>
   `;
 }
 

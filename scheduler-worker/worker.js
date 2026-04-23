@@ -24,9 +24,8 @@ export default {
           "Content-Type": "application/json",
           "x-bot-secret": secret,
         },
-        // "auto" mode runs writer reminders daily, and the digest only on
-        // Saturday (bot checks weekday internally in America/New_York).
-        body: JSON.stringify({ mode: "auto" }),
+        // "ping" mode during testing, "auto" for normal operation.
+        body: JSON.stringify({ mode: env.BOT_MODE || "auto" }),
       });
       const text = await res.text();
       console.log(`[catalyst-bot-cron] ${res.status} — ${text.slice(0, 500)}`);

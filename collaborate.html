@@ -471,12 +471,21 @@
             border-radius: 28px;
             width: 100%;
             max-width: 760px;
-            padding: 48px 52px;
             box-shadow: 0 40px 100px rgba(0,0,0,0.25);
             max-height: calc(100vh - 40px);
-            overflow-y: auto;
+            overflow: hidden;
             position: relative;
+            isolation: isolate;
             animation: modalIn 0.3s var(--ease-spring);
+        }
+        .collab-modal-scroll {
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            padding: 48px 52px;
+            border-radius: inherit;
+            background: #fff;
         }
         @keyframes modalIn {
             from { opacity: 0; transform: scale(0.92) translateY(20px); }
@@ -522,6 +531,7 @@
 
         /* Form */
         .collab-form .field { margin-bottom: 18px; }
+        .collab-form .field.is-hidden { display: none; }
         .collab-form label {
             display: block;
             font-size: 0.73rem;
@@ -597,7 +607,7 @@
             .action-cards { grid-template-columns: 1fr; }
             .action-card-header { min-height: auto; }
             .action-card-header, .action-card-body { padding: 28px; }
-            .collab-modal { padding: 28px 22px; }
+            .collab-modal-scroll { padding: 28px 22px; }
             .roles-grid { grid-template-columns: 1fr; }
             .role-chip { min-height: auto; }
         }
@@ -795,39 +805,41 @@
     <div class="collab-modal-backdrop" id="proposal-modal" role="dialog" aria-modal="true" aria-labelledby="proposal-modal-title">
         <div class="collab-modal">
             <button type="button" class="modal-close" aria-label="Close" data-close-modal>&times;</button>
-            <div class="modal-header">
-                <p class="modal-eyebrow">Article &amp; Opinion</p>
-                <h2 id="proposal-modal-title">Send a Proposal</h2>
-                <p class="modal-sub">Tell us about your article or opinion piece. Our editors will review and follow up within 5–7 business days.</p>
+            <div class="collab-modal-scroll">
+                <div class="modal-header">
+                    <p class="modal-eyebrow">Article &amp; Opinion</p>
+                    <h2 id="proposal-modal-title">Send a Proposal</h2>
+                    <p class="modal-sub">Tell us about your article or opinion piece. Our editors will review and follow up within 5–7 business days.</p>
+                </div>
+                <div class="modal-divider"></div>
+                <form class="collab-form" data-collab-form data-source="proposal" novalidate>
+                    <div class="field">
+                        <label for="p-name">Full name</label>
+                        <input type="text" id="p-name" name="name" required autocomplete="name" placeholder="Jane Smith">
+                    </div>
+                    <div class="field">
+                        <label for="p-email">Email address</label>
+                        <input type="email" id="p-email" name="email" required autocomplete="email" placeholder="jane@university.edu">
+                    </div>
+                    <div class="field">
+                        <label for="p-title">Article or proposal title</label>
+                        <input type="text" id="p-title" name="articleTitle" placeholder="What will this piece be called?">
+                    </div>
+                    <div class="field">
+                        <label for="p-portfolio">Link to document</label>
+                        <input type="url" id="p-portfolio" name="portfolio" placeholder="https://docs.google.com/…">
+                        <p class="help">Google Drive, Dropbox, or OneDrive — make sure we have view access.</p>
+                    </div>
+                    <div class="field">
+                        <label for="p-message">Brief description</label>
+                        <textarea id="p-message" name="message" required placeholder="What's the story about, and why are you the right person to tell it?"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-indigo">
+                        Submit Proposal
+                    </button>
+                    <p class="collab-form-status" data-status></p>
+                </form>
             </div>
-            <div class="modal-divider"></div>
-            <form class="collab-form" data-collab-form data-source="proposal" novalidate>
-                <div class="field">
-                    <label for="p-name">Full name</label>
-                    <input type="text" id="p-name" name="name" required autocomplete="name" placeholder="Jane Smith">
-                </div>
-                <div class="field">
-                    <label for="p-email">Email address</label>
-                    <input type="email" id="p-email" name="email" required autocomplete="email" placeholder="jane@university.edu">
-                </div>
-                <div class="field">
-                    <label for="p-title">Article or proposal title</label>
-                    <input type="text" id="p-title" name="articleTitle" placeholder="What will this piece be called?">
-                </div>
-                <div class="field">
-                    <label for="p-portfolio">Link to document</label>
-                    <input type="url" id="p-portfolio" name="portfolio" placeholder="https://docs.google.com/…">
-                    <p class="help">Google Drive, Dropbox, or OneDrive — make sure we have view access.</p>
-                </div>
-                <div class="field">
-                    <label for="p-message">Brief description</label>
-                    <textarea id="p-message" name="message" required placeholder="What's the story about, and why are you the right person to tell it?"></textarea>
-                </div>
-                <button type="submit" class="btn btn-indigo">
-                    Submit Proposal
-                </button>
-                <p class="collab-form-status" data-status></p>
-            </form>
         </div>
     </div>
 
@@ -837,51 +849,57 @@
     <div class="collab-modal-backdrop" id="join-team-modal" role="dialog" aria-modal="true" aria-labelledby="join-modal-title">
         <div class="collab-modal">
             <button type="button" class="modal-close" aria-label="Close" data-close-modal>&times;</button>
-            <div class="modal-header">
-                <p class="modal-eyebrow">Join the Team</p>
-                <h2 id="join-modal-title">Apply Now</h2>
-                <p class="modal-sub">Tell us who you are and what you'd like to contribute. We review every application and reply by email.</p>
+            <div class="collab-modal-scroll">
+                <div class="modal-header">
+                    <p class="modal-eyebrow">Join the Team</p>
+                    <h2 id="join-modal-title">Apply Now</h2>
+                    <p class="modal-sub">Tell us who you are and what you'd like to contribute. We review every application and reply by email.</p>
+                </div>
+                <div class="modal-divider"></div>
+                <form class="collab-form" data-collab-form data-source="join-team" novalidate>
+                    <div class="field">
+                        <label for="j-name">Full name</label>
+                        <input type="text" id="j-name" name="name" required autocomplete="name" placeholder="Jane Smith">
+                    </div>
+                    <div class="field">
+                        <label for="j-email">Email address</label>
+                        <input type="email" id="j-email" name="email" required autocomplete="email" placeholder="jane@university.edu">
+                    </div>
+                    <div class="field">
+                        <label for="j-phone">Phone (optional)</label>
+                        <input type="tel" id="j-phone" name="phone" autocomplete="tel" placeholder="+1 (202) 555-0100">
+                    </div>
+                    <div class="field">
+                        <label for="j-role">Role you're interested in</label>
+                        <select id="j-role" name="role" required>
+                            <option value="">Select a role…</option>
+                            <option>Writer</option>
+                            <option>Editor</option>
+                            <option>Designer</option>
+                            <option>Operations</option>
+                            <option>Campus Ambassador</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="field is-hidden" data-other-role-field hidden>
+                        <label for="j-other-role">Other role</label>
+                        <input type="text" id="j-other-role" name="otherRole" placeholder="Tell us the role you'd like to do" disabled>
+                    </div>
+                    <div class="field">
+                        <label for="j-portfolio">CV or portfolio link</label>
+                        <input type="url" id="j-portfolio" name="portfolio" placeholder="https://linkedin.com/in/…">
+                        <p class="help">LinkedIn, Google Drive, or your personal website — wherever we can see your work.</p>
+                    </div>
+                    <div class="field">
+                        <label for="j-message">Why do you want to join?</label>
+                        <textarea id="j-message" name="message" required placeholder="Tell us about yourself and what draws you to The Catalyst."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-dark">
+                        Submit Application
+                    </button>
+                    <p class="collab-form-status" data-status></p>
+                </form>
             </div>
-            <div class="modal-divider"></div>
-            <form class="collab-form" data-collab-form data-source="join-team" novalidate>
-                <div class="field">
-                    <label for="j-name">Full name</label>
-                    <input type="text" id="j-name" name="name" required autocomplete="name" placeholder="Jane Smith">
-                </div>
-                <div class="field">
-                    <label for="j-email">Email address</label>
-                    <input type="email" id="j-email" name="email" required autocomplete="email" placeholder="jane@university.edu">
-                </div>
-                <div class="field">
-                    <label for="j-phone">Phone (optional)</label>
-                    <input type="tel" id="j-phone" name="phone" autocomplete="tel" placeholder="+1 (202) 555-0100">
-                </div>
-                <div class="field">
-                    <label for="j-role">Role you're interested in</label>
-                    <select id="j-role" name="role" required>
-                        <option value="">Select a role…</option>
-                        <option>Writer</option>
-                        <option>Editor</option>
-                        <option>Designer</option>
-                        <option>Operations</option>
-                        <option>Campus Ambassador</option>
-                        <option>Other</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="j-portfolio">CV or portfolio link</label>
-                    <input type="url" id="j-portfolio" name="portfolio" placeholder="https://linkedin.com/in/…">
-                    <p class="help">LinkedIn, Google Drive, or your personal website — wherever we can see your work.</p>
-                </div>
-                <div class="field">
-                    <label for="j-message">Why do you want to join?</label>
-                    <textarea id="j-message" name="message" required placeholder="Tell us about yourself and what draws you to The Catalyst."></textarea>
-                </div>
-                <button type="submit" class="btn btn-dark">
-                    Submit Application
-                </button>
-                <p class="collab-form-status" data-status></p>
-            </form>
         </div>
     </div>
 
@@ -930,6 +948,34 @@
                 }
             });
 
+            const syncOtherRoleField = (form) => {
+                const roleSelect = form.querySelector('[name="role"]');
+                const otherRoleField = form.querySelector("[data-other-role-field]");
+                const otherRoleInput = otherRoleField?.querySelector("input");
+                if (!roleSelect || !otherRoleField || !otherRoleInput) return;
+
+                const shouldShow = roleSelect.value === "Other";
+                otherRoleField.hidden = !shouldShow;
+                otherRoleField.classList.toggle("is-hidden", !shouldShow);
+                otherRoleInput.disabled = !shouldShow;
+                otherRoleInput.required = shouldShow;
+
+                if (!shouldShow) {
+                    otherRoleInput.value = "";
+                }
+            };
+
+            document.querySelectorAll('[data-collab-form][data-source="join-team"]').forEach((form) => {
+                const roleSelect = form.querySelector('[name="role"]');
+                if (!roleSelect) return;
+
+                roleSelect.addEventListener("change", () => syncOtherRoleField(form));
+                form.addEventListener("reset", () => {
+                    requestAnimationFrame(() => syncOtherRoleField(form));
+                });
+                syncOtherRoleField(form);
+            });
+
             /* ── Form submission ── */
             document.querySelectorAll("[data-collab-form]").forEach((form) => {
                 form.addEventListener("submit", async (e) => {
@@ -941,6 +987,11 @@
 
                     if (!data.name || !data.email || !data.message) {
                         status.textContent = "Please fill in your name, email, and message.";
+                        status.className = "collab-form-status is-error";
+                        return;
+                    }
+                    if (data.source === "join-team" && data.role === "Other" && !(data.otherRole || "").trim()) {
+                        status.textContent = "Please tell us what role you'd like to do.";
                         status.className = "collab-form-status is-error";
                         return;
                     }
