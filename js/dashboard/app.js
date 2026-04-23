@@ -174,6 +174,14 @@ const ROUTES = {
     loader: () => import("./marketing.js"),
     mountKey: "collabs",
   },
+  "#/marketing/social": {
+    label: "Social media posts",
+    icon: ICONS.activity,
+    roles: ["admin", "marketing", "editor"],
+    group: "marketing",
+    loader: () => import("./marketing.js"),
+    mountKey: "social",
+  },
   "#/admin/articles": {
     label: "All articles & approvals",
     icon: ICONS.shield,

@@ -7,6 +7,7 @@
 //    publishedAt=now).
 // 3. Counts published stories. If the total is a multiple of 3, fetches the
 //    3 most recent published stories and emails the full subscriber list.
+// 4. Always creates Instagram + LinkedIn draft social posts in social_posts.
 //
 // The "every 3 stories, send a newsletter" rule lives right here.
 
@@ -22,12 +23,86 @@ import {
   firestoreGet,
   firestoreUpdate,
   firestoreRunQuery,
+  firestoreCreate,
   getProjectId,
 } from "../_utils/firebase.js";
-import { titleToSlug, buildArticlePath } from "../_utils/article-meta.js";
+import { titleToSlug, buildArticlePath, buildArticleUrl } from "../_utils/article-meta.js";
 import { sendBulkEmail } from "../_utils/resend.js";
 import { buildNewsletter } from "../_utils/newsletter-template.js";
 import { notifyArticlePublished } from "../_utils/seo-notify.js";
+
+// Return a square-cropped version of the cover image for Instagram.
+// Wix CDN images support path-based transforms; everything else is returned as-is.
+function resolveSquareImage(src) {
+  if (!src) return src;
+  try {
+    const u = new URL(src);
+    if (u.hostname.includes("static.wixstatic.com")) {
+      const v1Idx = u.pathname.indexOf("/v1/");
+      const assetPath = v1Idx >= 0 ? u.pathname.slice(0, v1Idx) : u.pathname;
+      const filename = assetPath.split("/").filter(Boolean).pop();
+      return `${u.origin}${assetPath}/v1/fill/w_1080,h_1080,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/${filename}`;
+    }
+  } catch {
+    // not a Wix URL — return as-is
+  }
+  return src;
+}
+
+async function createSocialDrafts(env, { title, slug, author, coverImage, category, deck, siteUrl, publishedBy, publisherName }) {
+  const articleUrl = buildArticleUrl({ title, slug }, siteUrl);
+  const squareImage = resolveSquareImage(coverImage);
+  const deadlineDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const now = new Date().toISOString();
+
+  const categoryTag = `#${(category || "Feature").replace(/\s+/g, "")}`;
+
+  const igCaption =
+    `"${title}"\n\n` +
+    `${deck ? deck + "\n\n" : ""}` +
+    `Written by ${author} — link in bio to read the full article!\n\n` +
+    `${categoryTag} #TheCatalyst #STEMJournalism #ScienceWriting #CatalystMagazine`;
+
+  const linkedInCaption =
+    `We just published a new article on The Catalyst Magazine!\n\n` +
+    `"${title}"\n\n` +
+    `${deck ? deck + "\n\n" : ""}` +
+    `Big shoutout to ${author} for writing this piece. Check it out here:\n` +
+    `${articleUrl}\n\n` +
+    `#TheCatalyst #STEMJournalism #ScienceWriting #CatalystMagazine ${categoryTag}`;
+
+  const basePost = {
+    status: "proposed",
+    proposerId: publishedBy,
+    proposerName: publisherName,
+    assigneeId: null,
+    assigneeName: null,
+    deadline: deadlineDate,
+    createdAt: now,
+    activity: [{ text: "auto-created on article publish", authorName: publisherName, timestamp: now }],
+  };
+
+  const [igPost, liPost] = await Promise.all([
+    firestoreCreate(env, "social_posts", {
+      ...basePost,
+      title: `Instagram: ${title}`,
+      platform: "instagram",
+      content: igCaption,
+      notes: squareImage
+        ? `Cover image (square crop): ${squareImage}\n\nDownload this image and post alongside the caption above.`
+        : "No cover image found — create a square graphic manually.",
+    }),
+    firestoreCreate(env, "social_posts", {
+      ...basePost,
+      title: `LinkedIn: ${title}`,
+      platform: "linkedin",
+      content: linkedInCaption,
+      notes: `Article URL: ${articleUrl}\nAuthor: ${author}`,
+    }),
+  ]);
+
+  return { instagram: igPost.id, linkedin: liPost.id };
+}
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -174,6 +249,19 @@ export const onRequestPost = async ({ request, env }) => {
       (e) => ({ error: String(e?.message || e) })
     );
 
+    // --- Auto-create Instagram + LinkedIn social post drafts ----------------
+    const socialResult = await createSocialDrafts(env, {
+      title,
+      slug,
+      author: storyFields.authorName?.stringValue || storyFields.author?.stringValue || "The Catalyst",
+      coverImage: storyFields.coverImage?.stringValue || storyFields.image?.stringValue || "",
+      category: storyFields.category?.stringValue || "Feature",
+      deck: storyFields.deck?.stringValue || storyFields.excerpt?.stringValue || "",
+      siteUrl: publishedSiteUrl,
+      publishedBy: claims.sub,
+      publisherName: userDoc.fields?.displayName?.stringValue || userDoc.fields?.name?.stringValue || "The Catalyst",
+    }).catch((e) => ({ error: String(e?.message || e) }));
+
     return json({
       ok: true,
       storyId,
@@ -181,6 +269,7 @@ export const onRequestPost = async ({ request, env }) => {
       newsletterSent: Boolean(shouldSendNewsletter && newsletterResult && !newsletterResult.skipped),
       newsletter: newsletterResult,
       seo: seoResult,
+      social: socialResult,
     });
   } catch (err) {
     return serverError(err);
