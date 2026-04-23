@@ -11,6 +11,10 @@ const ALLOWED_HOSTS = [
   "firebasestorage.googleapis.com",
   "firebasestorage.app",          // new Firebase Storage domain (*.firebasestorage.app)
   "storage.googleapis.com",       // GCS direct URLs
+  "upload.wikimedia.org",         // Wikipedia article images
+  "commons.wikimedia.org",        // Wikimedia Commons
+  "en.wikipedia.org",             // Wikipedia thumbnails
+  "wikipedia.org",                // Any Wikipedia subdomain
 ];
 
 export const onRequestGet = async ({ request }) => {

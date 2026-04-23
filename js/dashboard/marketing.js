@@ -318,21 +318,39 @@ async function firestoreAdd(authedFetch, collection, fields) {
 //   - "New Article" badge pill top-left with logo icon
 
 function loadImage(src) {
-  // All external URLs go through our server-side proxy which adds
-  // Access-Control-Allow-Origin: * so Canvas can drawImage() without taint.
-  // data: URLs (uploaded files) load directly — no proxy needed.
-  const isDataUrl = src.startsWith("data:");
-  const finalSrc = isDataUrl ? src : `/api/image-proxy?url=${encodeURIComponent(src)}`;
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = (e) => {
-      console.error("[loadImage] failed to load", finalSrc, e);
-      reject(new Error(`Failed to load image: ${finalSrc}`));
-    };
-    console.log("[loadImage]", isDataUrl ? "direct (data URL)" : "via proxy", "→", finalSrc.slice(0, 120));
-    img.src = finalSrc;
+  // data: URLs load directly — no proxy needed.
+  if (src.startsWith("data:")) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = (e) => reject(new Error(`Failed to load data URL`));
+      img.src = src;
+    });
+  }
+
+  // All external URLs first go through the server-side proxy (adds CORS headers).
+  // If the proxy itself 404s or errors (e.g. host not in allowlist), we
+  // fall back to a direct crossOrigin load — works if the image host already
+  // sends permissive CORS headers (Wikimedia, Firebase Storage, etc.).
+  const proxySrc = `/api/image-proxy?url=${encodeURIComponent(src)}`;
+
+  function tryLoad(url, label) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = (e) => {
+        console.warn(`[loadImage] ${label} failed:`, url.slice(0, 120));
+        reject(e);
+      };
+      img.src = url;
+    });
+  }
+
+  console.log("[loadImage] via proxy →", proxySrc.slice(0, 120));
+  return tryLoad(proxySrc, "proxy").catch(() => {
+    console.log("[loadImage] proxy failed, trying direct →", src.slice(0, 120));
+    return tryLoad(src, "direct");
   });
 }
 
