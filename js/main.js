@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 const ARTICLE_FALLBACK_IMAGE = '/NewsletterHeader1.png';
-const CARD_IMAGE_WIDTH = 480;
-const HERO_IMAGE_WIDTH = 900;
-const CARD_IMAGE_QUALITY = 72;
-const HERO_IMAGE_QUALITY = 78;
+const CARD_IMAGE_WIDTH = 1000;
+const HERO_IMAGE_WIDTH = 1100;
+const CARD_IMAGE_QUALITY = 88;
+const HERO_IMAGE_QUALITY = 65;
 let articleData = [];
 let fadeObserver = null;
 
@@ -105,6 +105,15 @@ function createProgressiveImage(src, alt, className = '', eager = false, imageSe
     const imgWidth = eager ? HERO_IMAGE_WIDTH : CARD_IMAGE_WIDTH;
     const imgHeight = Math.round(imgWidth * 0.66);
 
+    // If the resized URL fails (e.g. wsrv.nl's 71MP pixel-limit for huge
+    // Firebase Storage originals), fall back to the original URL before the
+    // generic placeholder. Encode both for safe embedding in the attribute.
+    const originalEncoded = imageSrc.replace(/'/g, '&apos;');
+    const fallbackEncoded = ARTICLE_FALLBACK_IMAGE.replace(/'/g, '&apos;');
+    const onErrorAttr = displaySrc === imageSrc
+        ? `this.onerror=null; this.src='${fallbackEncoded}'; this.classList.add('loaded');`
+        : `this.onerror=function(){this.onerror=null; this.src='${fallbackEncoded}'; this.classList.add('loaded');}; this.src='${originalEncoded}';`;
+
     return `<div class="card-img-wrap ${className}" style="${bgStyle}">
         <img
             src="${displaySrc}"
@@ -117,7 +126,7 @@ function createProgressiveImage(src, alt, className = '', eager = false, imageSe
             decoding="async"
             ${fetchPriority}
             onload="this.classList.add('loaded')"
-            onerror="this.onerror=null; this.src='${ARTICLE_FALLBACK_IMAGE}'; this.classList.add('loaded');">
+            onerror="${onErrorAttr}">
         ${overlayHtml || ''}
     </div>`;
 }
@@ -134,10 +143,25 @@ function bgImageUrl(el, raw) {
 function applyBgImage(el) {
     const raw = el.dataset.bgImage;
     if (!raw) return;
-    el.style.backgroundImage = `url('${bgImageUrl(el, raw)}')`;
-    if (el.dataset.bgPosition) el.style.backgroundPosition = el.dataset.bgPosition;
-    if (el.dataset.bgZoom) el.style.backgroundSize = `${parseFloat(el.dataset.bgZoom) * 100}%`;
-    el.classList.add('bg-loaded');
+    const proxied = bgImageUrl(el, raw);
+    const applyUrl = (url) => {
+        el.style.backgroundImage = `url('${url}')`;
+        if (el.dataset.bgPosition) el.style.backgroundPosition = el.dataset.bgPosition;
+        if (el.dataset.bgZoom) el.style.backgroundSize = `${parseFloat(el.dataset.bgZoom) * 100}%`;
+        el.classList.add('bg-loaded');
+    };
+    // Optimistically apply the proxied URL, and verify it loads. If the
+    // proxy rejects the image (wsrv.nl has a 71MP pixel-limit for huge
+    // Firebase originals), fall back to the original URL so the card
+    // never shows an empty gray slot.
+    if (proxied === raw) {
+        applyUrl(raw);
+        return;
+    }
+    applyUrl(proxied);
+    const probe = new Image();
+    probe.onerror = () => applyUrl(raw);
+    probe.src = proxied;
 }
 
 function initImageOptimization() {
