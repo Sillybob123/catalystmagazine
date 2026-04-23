@@ -44,6 +44,121 @@ function toDate(v) {
   return isNaN(d.getTime()) ? null : d;
 }
 
+function uniqueStrings(values) {
+  return [...new Set(
+    (values || [])
+      .filter((v) => typeof v === "string")
+      .map((v) => v.trim())
+      .filter(Boolean)
+  )];
+}
+
+function normalizeName(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function nameParts(value) {
+  return normalizeName(value).split(" ").filter(Boolean);
+}
+
+function firstLastSignature(value) {
+  const parts = nameParts(value);
+  if (!parts.length) return "";
+  return `${parts[0]}|${parts[parts.length - 1]}`;
+}
+
+function userNameVariants(user) {
+  return uniqueStrings([
+    user?.name,
+    user?.displayName,
+  ]);
+}
+
+function damerauLevenshtein(a, b, maxDistance = 2) {
+  if (a === b) return 0;
+  if (!a || !b) return Math.max(a.length, b.length);
+  if (Math.abs(a.length - b.length) > maxDistance) return maxDistance + 1;
+
+  const da = Object.create(null);
+  const rows = a.length + 2;
+  const cols = b.length + 2;
+  const max = a.length + b.length;
+  const d = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  d[0][0] = max;
+  for (let i = 0; i <= a.length; i++) {
+    d[i + 1][0] = max;
+    d[i + 1][1] = i;
+  }
+  for (let j = 0; j <= b.length; j++) {
+    d[0][j + 1] = max;
+    d[1][j + 1] = j;
+  }
+
+  for (const ch of new Set((a + b).split(""))) da[ch] = 0;
+
+  for (let i = 1; i <= a.length; i++) {
+    let db = 0;
+    for (let j = 1; j <= b.length; j++) {
+      const i1 = da[b[j - 1]] || 0;
+      const j1 = db;
+      let cost = 1;
+      if (a[i - 1] === b[j - 1]) {
+        cost = 0;
+        db = j;
+      }
+      d[i + 1][j + 1] = Math.min(
+        d[i][j] + cost,
+        d[i + 1][j] + 1,
+        d[i][j + 1] + 1,
+        d[i1][j1] + (i - i1 - 1) + 1 + (j - j1 - 1)
+      );
+    }
+    da[a[i - 1]] = i;
+  }
+
+  return d[a.length + 1][b.length + 1];
+}
+
+function namesLooselyMatch(a, b) {
+  const aNorm = normalizeName(a);
+  const bNorm = normalizeName(b);
+  if (!aNorm || !bNorm) return false;
+  if (aNorm === bNorm) return true;
+
+  const aParts = aNorm.split(" ");
+  const bParts = bNorm.split(" ");
+  if (aParts.length === bParts.length && aParts.length >= 2) {
+    let typoCount = 0;
+    for (let i = 0; i < aParts.length; i++) {
+      if (aParts[i] === bParts[i]) continue;
+      if (damerauLevenshtein(aParts[i], bParts[i], 1) > 1) return false;
+      typoCount++;
+    }
+    if (typoCount === 1) return true;
+  }
+
+  return false;
+}
+
+function userPreferenceScore(user) {
+  let score = 0;
+  if (user?.email) score += 1000;
+  if ((user?.status || "").toLowerCase() === "active") score += 40;
+  if (user?.role && user.role !== "reader") score += 10;
+  if (user?.lastSeenAt) score += 8;
+  if (user?.updatedAt) score += 4;
+  if (user?.createdAt) score += 4;
+  score += userNameVariants(user).length * 2;
+  return score;
+}
+
 function dateKeyInTimeZone(date, timeZone = BOT_REMINDER_EXEMPTION_TIMEZONE) {
   const d = toDate(date);
   if (!d) return null;
@@ -107,58 +222,78 @@ export function daysInactive(project, now) {
 }
 
 function findUser(users, { uid, name, email }) {
-  // Try every lookup strategy, then prefer whichever candidate actually has
-  // an email address. Projects can carry a stale authorId (the field was
-  // written when the user signed into a different Firebase project, or the
-  // project was seeded) that points at a user row with no email — in that
-  // case we'd rather fall back to name/email matching than claim "found but
-  // no email" and silently skip the writer.
-  const candidates = [];
+  // Projects can carry a stale authorId that points at an incomplete user row
+  // while a newer row for the same person has the real email. Rank matches by
+  // both confidence and record completeness so we pick the row we can actually
+  // contact, even if the project carries an old uid or a small name typo.
+  const matches = new Map();
+
+  const addMatch = (user, confidence) => {
+    if (!user) return;
+    const key = user.id || `${user.email || ""}|${user.name || ""}|${user.displayName || ""}`;
+    const prev = matches.get(key);
+    if (!prev || confidence > prev.confidence) {
+      matches.set(key, { user, confidence });
+    }
+  };
+
+  const addNameMatches = (target, scores = {}) => {
+    const {
+      exact = 85,
+      normalized = 82,
+      firstLast = 78,
+      loose = 72,
+    } = scores;
+    const raw = String(target || "").trim();
+    const norm = normalizeName(raw);
+    const signature = firstLastSignature(raw);
+    if (!raw && !norm) return;
+
+    for (const user of users) {
+      let best = 0;
+      for (const variant of userNameVariants(user)) {
+        if (variant === raw) {
+          best = Math.max(best, exact);
+        } else if (normalizeName(variant) === norm) {
+          best = Math.max(best, normalized);
+        } else if (signature && firstLastSignature(variant) === signature) {
+          best = Math.max(best, firstLast);
+        } else if (namesLooselyMatch(variant, raw)) {
+          best = Math.max(best, loose);
+        }
+      }
+      if (best) addMatch(user, best);
+    }
+  };
 
   if (uid) {
     const byUid = users.find((u) => u.id === uid);
-    if (byUid) candidates.push(byUid);
-  }
-  if (email) {
-    const lowered = email.toLowerCase();
-    const byEmail = users.find((u) => (u.email || "").toLowerCase() === lowered);
-    if (byEmail) candidates.push(byEmail);
-  }
-  if (name) {
-    const nameLower = name.toLowerCase().trim();
-    // Exact match first.
-    const byExactName = users.find((u) => (u.name || "").toLowerCase().trim() === nameLower);
-    if (byExactName) candidates.push(byExactName);
-
-    // Fallback: normalize whitespace and ignore common accents/typos by
-    // matching on the collapsed-space version of the name. Also try matching
-    // by first + last name pair so "Le Nguyen" still finds "Le Nugyen".
-    if (!byExactName) {
-      const normalize = (s) => (s || "").toLowerCase().replace(/\s+/g, " ").trim();
-      const nameNorm = normalize(name);
-      const byNorm = users.find((u) => normalize(u.name) === nameNorm);
-      if (byNorm) candidates.push(byNorm);
-
-      const parts = nameNorm.split(" ").filter(Boolean);
-      if (parts.length >= 2) {
-        const first = parts[0];
-        const last = parts[parts.length - 1];
-        const byFirstLast = users.find((u) => {
-          const uparts = normalize(u.name).split(" ").filter(Boolean);
-          if (uparts.length < 2) return false;
-          return uparts[0] === first && uparts[uparts.length - 1] === last;
-        });
-        if (byFirstLast) candidates.push(byFirstLast);
+    if (byUid) {
+      addMatch(byUid, 95);
+      for (const variant of userNameVariants(byUid)) {
+        addNameMatches(variant, { exact: 88, normalized: 85, firstLast: 82, loose: 74 });
       }
     }
   }
 
-  // Prefer the first candidate that actually has an email — that's the one
-  // we can email. Only fall back to a match-without-email as a last resort.
-  const withEmail = candidates.find((u) => u.email);
-  if (withEmail) return withEmail;
-  if (candidates.length) return candidates[0];
-  return null;
+  if (email) {
+    const lowered = email.toLowerCase();
+    users
+      .filter((u) => (u.email || "").toLowerCase() === lowered)
+      .forEach((u) => addMatch(u, 100));
+  }
+
+  if (name) {
+    addNameMatches(name);
+  }
+
+  const ranked = [...matches.values()].sort((a, b) => {
+    const aScore = a.confidence + userPreferenceScore(a.user);
+    const bScore = b.confidence + userPreferenceScore(b.user);
+    return bScore - aScore;
+  });
+
+  return ranked[0]?.user || null;
 }
 
 export function writerFor(project, users) {
