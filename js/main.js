@@ -62,9 +62,18 @@ function getResizedImageUrl(src, width, quality) {
         }
 
         // wsrv.nl: free image proxy/resizer, outputs WebP to supported browsers.
-        // Docs: https://wsrv.nl/docs/
+        // URLSearchParams will percent-encode the src, so any already-encoded
+        // sequence in it (e.g. Wikipedia's %28/%29) becomes double-encoded and
+        // 404s. Decode the src first — but preserve %2F, which Firebase Storage
+        // requires stay encoded to distinguish path segments.
+        const SENTINEL = 'ENCSLASH';
+        const protected_ = src.replace(/%2F/gi, SENTINEL);
+        let decoded;
+        try { decoded = decodeURIComponent(protected_); } catch { decoded = protected_; }
+        decoded = decoded.replace(new RegExp(SENTINEL, 'g'), '%2F');
+
         const params = new URLSearchParams({
-            url: src,
+            url: decoded,
             w: width,
             q: quality,
             output: 'webp',
@@ -814,12 +823,21 @@ function initMagazineCover(data) {
     if (!coverContainer || !data.length) return;
 
     const coverStory = data[0];
-    const coverLqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[coverStory.image] ? window.__LQIP_MANIFEST[coverStory.image] : '';
+    const rawSrc = coverStory.image || ARTICLE_FALLBACK_IMAGE;
+    // Cover image is above the fold and large (~640px wide on desktop,
+    // 1280px on retina). Load eagerly at 1400px so it appears instantly
+    // at full quality without waiting for IntersectionObserver.
+    const coverSrc = getResizedImageUrl(rawSrc, 1400, 85);
+    const coverLqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[rawSrc] ? window.__LQIP_MANIFEST[rawSrc] : '';
     const coverBgStyle = coverLqip ? `background-image: url('${coverLqip}'); background-size: cover; background-position: center;` : '';
 
     coverContainer.innerHTML = `
         <div class="magazine-cover-grid" onclick="viewArticle('${encodeURIComponent(getArticleLink(coverStory))}')">
-            <div class="magazine-cover-image lazy-bg" data-bg-image="${coverStory.image || ARTICLE_FALLBACK_IMAGE}" style="${coverBgStyle}"></div>
+            <div class="magazine-cover-image" style="${coverBgStyle}">
+                <img src="${coverSrc}" alt="${coverStory.title}" class="magazine-cover-img" loading="eager" fetchpriority="high" decoding="async"
+                     onload="this.classList.add('loaded')"
+                     onerror="this.onerror=null; this.src='${ARTICLE_FALLBACK_IMAGE}'; this.classList.add('loaded');">
+            </div>
             <div class="magazine-cover-content">
                 <div class="magazine-cover-label">Cover Story</div>
                 <h2 class="magazine-cover-title">${coverStory.title}</h2>
@@ -828,9 +846,6 @@ function initMagazineCover(data) {
             </div>
         </div>
     `;
-
-    // Register lazy background for cover
-    registerLazyBackgrounds(coverContainer);
 }
 
 function initMagazineGrid(data) {
@@ -923,7 +938,7 @@ function renderMagazineGrid(filter, data) {
             sizeClass = 'small';
         }
 
-        return createMagazineArticle(article, sizeClass);
+        return createMagazineArticle(article, sizeClass, index);
     }).join('');
 
     // Update load more visibility
@@ -936,16 +951,37 @@ function renderMagazineGrid(filter, data) {
     registerProgressiveImages(grid);
 }
 
-function createMagazineArticle(article, sizeClass = 'small') {
+function createMagazineArticle(article, sizeClass = 'small', gridIndex = 99) {
     const imageSrc = article.image || ARTICLE_FALLBACK_IMAGE;
     const category = article.category || 'feature';
-    const imageMarkup = createProgressiveImage(
-        imageSrc,
-        article.title,
-        'magazine-article-image-wrapper',
-        false,
-        article.imageSettings
-    );
+    // Large and medium magazine grid cards render at ~880px wide (span 2 cols).
+    // Small cards are ~420px wide. Small cards keep the original progressive
+    // image path (used on home too) so we don't affect the home page layout.
+    // Large/medium get an inline resized <img> at 1200px so they're crisp.
+    let imageMarkup;
+    if (sizeClass === 'large' || sizeClass === 'medium') {
+        const resized = getResizedImageUrl(imageSrc, 1200, 82);
+        const isAboveFold = sizeClass === 'large' && gridIndex === 0;
+        const loadingAttr = isAboveFold ? 'eager' : 'lazy';
+        const priorityAttr = isAboveFold ? 'fetchpriority="high"' : '';
+        const lqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[imageSrc] ? window.__LQIP_MANIFEST[imageSrc] : '';
+        const bgStyle = lqip ? `background-image: url('${lqip}'); background-size: cover; background-position: center;` : '';
+        imageMarkup = `
+            <div class="magazine-article-image-wrapper card-img-wrap" style="${bgStyle}">
+                <img src="${resized}" alt="${article.title}" class="card-img" loading="${loadingAttr}" decoding="async" ${priorityAttr}
+                     onload="this.classList.add('loaded')"
+                     onerror="this.onerror=null; this.src='${ARTICLE_FALLBACK_IMAGE}'; this.classList.add('loaded');">
+            </div>
+        `;
+    } else {
+        imageMarkup = createProgressiveImage(
+            imageSrc,
+            article.title,
+            'magazine-article-image-wrapper',
+            false,
+            article.imageSettings
+        );
+    }
 
     return `
         <article class="magazine-article ${sizeClass}" onclick="viewArticle('${encodeURIComponent(getArticleLink(article))}')">

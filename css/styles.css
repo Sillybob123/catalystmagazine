@@ -3144,6 +3144,22 @@ img {
   position: absolute;
   inset: 0;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.3) 0%, transparent 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.magazine-cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.magazine-cover-img.loaded {
+  opacity: 1;
 }
 
 .magazine-cover-content {
