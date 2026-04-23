@@ -97,6 +97,51 @@ app.post('/api/delete-article', (req, res) => {
     }
 });
 
+// Image proxy — mirrors the Cloudflare Pages Function at functions/api/image-proxy.js
+// so the Instagram image generator works on the local dev server too.
+const PROXY_ALLOWED_HOSTS = [
+    "static.wixstatic.com",
+    "images.unsplash.com",
+    "firebasestorage.googleapis.com",
+    "firebasestorage.app",
+    "storage.googleapis.com",
+    "upload.wikimedia.org",
+    "commons.wikimedia.org",
+    "en.wikipedia.org",
+    "wikipedia.org",
+];
+
+app.get('/api/image-proxy', async (req, res) => {
+    const raw = req.query.url;
+    if (!raw) return res.status(400).send('Missing url param');
+
+    let parsed;
+    try { parsed = new URL(raw); } catch { return res.status(400).send('Invalid url param'); }
+
+    const allowed = PROXY_ALLOWED_HOSTS.some(
+        (h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`)
+    );
+    if (!allowed) return res.status(403).send(`Host not allowed: ${parsed.hostname}`);
+
+    try {
+        const upstream = await fetch(parsed.toString(), {
+            headers: { 'User-Agent': 'CatalystMagazine/1.0 ImageProxy' },
+        });
+        if (!upstream.ok) {
+            const body = await upstream.text().catch(() => '');
+            return res.status(502).send(`Upstream ${upstream.status}: ${body.slice(0, 200)}`);
+        }
+        const contentType = upstream.headers.get('content-type') || 'image/jpeg';
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+        res.send(buffer);
+    } catch (err) {
+        res.status(502).send(`Proxy error: ${err.message}`);
+    }
+});
+
 // Start server
 app.use(express.static('.')); // Serve static files (after API routes to avoid intercepting POSTs)
 app.listen(PORT, () => {

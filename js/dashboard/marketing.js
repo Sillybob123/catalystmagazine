@@ -371,7 +371,7 @@ function wrapText(ctx, text, x, maxWidth, lineHeight) {
   return lines;
 }
 
-async function generatePostImage(title, coverImageUrl) {
+async function generatePostImage(title, coverImageUrl, titleStyle = "bold", imageScale = 1) {
   const SIZE = 1080;
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
@@ -410,96 +410,132 @@ async function generatePostImage(title, coverImageUrl) {
   // "New Article" badge bottom edge = 36 (badgeY) + 82 (badgeH) = 118px.
   // We shrink the font until the title block top sits at least 174px from the
   // canvas top — safely below the badge — so text never overlaps it.
-  const BADGE_BOTTOM = 36 + 82; // 118 px
-  const MIN_TITLE_TOP = BADGE_BOTTOM + 56; // ~174 px: badge + breathing room
+  const BADGE_BOTTOM = 36 + 100; // 136 px — matches badgeY + badgeH
   const pad = 54;
   const maxW = SIZE - pad * 2;
-  const bottomPad = 72;
+  // Title lives in the bottom ~26% of the canvas — image gets the rest
+  const bottomPad = 56;
+  const TEXT_ZONE_H = SIZE * 0.26; // ~281px reserved for text at the bottom
 
-  // Shrink from 82px → 36px (3px steps) until title top clears MIN_TITLE_TOP.
-  let fontSize = 82;
+  const isElegant = titleStyle === "elegant";
+  const titleFont = isElegant
+    ? (sz) => `italic 400 ${sz}px "Source Serif 4", Georgia, "Times New Roman", serif`
+    : (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+
+  // Start at 52px and shrink until text fits in TEXT_ZONE_H
+  let fontSize = isElegant ? 54 : 52;
   let lines;
   while (true) { // eslint-disable-line no-constant-condition
-    ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    ctx.font = titleFont(fontSize);
     lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
-    const lh = fontSize * 1.2;
-    const bh = lines.length * lh;
-    if ((SIZE - bottomPad - bh) >= MIN_TITLE_TOP || fontSize <= 36) break;
-    fontSize -= 3;
+    const lh = fontSize * (isElegant ? 1.32 : 1.22);
+    const bh = lines.length * lh + (isElegant ? 40 : 0); // rule + sub-label space
+    if (bh <= TEXT_ZONE_H - bottomPad || fontSize <= 28) break;
+    fontSize -= 2;
   }
 
-  const lineH  = fontSize * 1.2;
+  const lineH  = fontSize * (isElegant ? 1.32 : 1.22);
   const blockH = lines.length * lineH;
-  const titleTop = SIZE - bottomPad - blockH; // y where the text block starts
+  // Text block anchored to the bottom; titleTop is where text starts
+  const titleTop = SIZE - bottomPad - blockH - (isElegant ? 40 : 0);
 
   // ── Draw cover image ────────────────────────────────────────────────────────
   if (coverImg) {
     const iw = coverImg.naturalWidth, ih = coverImg.naturalHeight;
-    const aspect = iw / ih;
 
-    if (aspect >= 0.85 && aspect <= 1.18) {
-      // ── Near-square: full-bleed, same as before ─────────────────────────────
-      const scale = Math.max(SIZE / iw, SIZE / ih);
-      const dw = iw * scale, dh = ih * scale;
-      ctx.drawImage(coverImg, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
-    } else {
-      // ── Landscape / tall portrait: blurred bg + letterboxed sharp image ─────
-      // Blurred backdrop fills canvas.
-      ctx.save();
-      ctx.filter = "blur(28px) brightness(0.45) saturate(1.4)";
-      const bgScale = Math.max(SIZE / iw, SIZE / ih) * 1.1;
-      const bgW = iw * bgScale, bgH = ih * bgScale;
-      ctx.drawImage(coverImg, (SIZE - bgW) / 2, (SIZE - bgH) / 2, bgW, bgH);
-      ctx.filter = "none";
-      ctx.restore();
+    // ── Blurred backdrop via downsample-then-upsample (no filter API needed) ──
+    // Draw image into a 32×32 canvas — the tiny size acts as a strong blur kernel.
+    // Then stretch that pixelated thumbnail back to full SIZE with imageSmoothingQuality
+    // "high" which interpolates it into a soft bokeh-like blur.
+    const THUMB = 32;
+    const thumbCanvas = document.createElement("canvas");
+    thumbCanvas.width = THUMB;
+    thumbCanvas.height = THUMB;
+    const tctx = thumbCanvas.getContext("2d");
+    tctx.imageSmoothingEnabled = true;
+    tctx.imageSmoothingQuality = "high";
+    const tScale = Math.max(THUMB / iw, THUMB / ih);
+    const tw = iw * tScale, th = ih * tScale;
+    tctx.drawImage(coverImg, (THUMB - tw) / 2, (THUMB - th) / 2, tw, th);
 
-      // Dark radial vignette so text stays readable.
-      const vig = ctx.createRadialGradient(SIZE / 2, SIZE / 2, SIZE * 0.15, SIZE / 2, SIZE / 2, SIZE * 0.85);
-      vig.addColorStop(0, "rgba(0,0,0,0)");
-      vig.addColorStop(1, "rgba(0,0,0,0.55)");
-      ctx.fillStyle = vig;
-      ctx.fillRect(0, 0, SIZE, SIZE);
+    // Scale the thumbnail back up to canvas size — this gives a smooth blur effect
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(thumbCanvas, 0, 0, SIZE, SIZE);
 
-      // Sharp letterboxed image — constrained to the safe zone between badge and title.
-      const margin    = SIZE * 0.05;
-      const maxImgW   = SIZE - margin * 2;
-      const imgZoneTop = BADGE_BOTTOM + 24;
-      const imgZoneBot = titleTop - 24;
-      const zoneH     = Math.max(120, imgZoneBot - imgZoneTop);
-      const fitScale  = Math.min(maxImgW / iw, zoneH / ih);
-      const fw = iw * fitScale, fh = ih * fitScale;
-      const fx = (SIZE - fw) / 2;
-      const fy = imgZoneTop + (zoneH - fh) / 2;
+    // Heavy dark overlay so the bg reads as a dark, moody blurred field — not a photo
+    ctx.fillStyle = "rgba(0,0,0,0.70)";
+    ctx.fillRect(0, 0, SIZE, SIZE);
 
-      ctx.save();
-      const r = 18;
-      ctx.beginPath();
-      ctx.roundRect(fx, fy, fw, fh, r);
-      ctx.clip();
-      ctx.drawImage(coverImg, fx, fy, fw, fh);
-      ctx.restore();
+    // ── Sharp image card in the safe zone (badge → title) ───────────────────
+    const margin     = SIZE * 0.07;
+    const maxImgW    = SIZE - margin * 2;
+    const imgZoneTop = BADGE_BOTTOM + 24;
+    const imgZoneBot = titleTop - 24;
+    const zoneH      = Math.max(140, imgZoneBot - imgZoneTop);
+    const fitScale   = Math.min(maxImgW / iw, zoneH / ih) * imageScale;
+    const fw = iw * fitScale, fh = ih * fitScale;
+    const fx = (SIZE - fw) / 2;
+    const fy = imgZoneTop + (zoneH - fh) / 2;
+    const r = 20;
 
-      // Thin white border around the sharp image.
-      ctx.save();
-      ctx.strokeStyle = "rgba(255,255,255,0.18)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.roundRect(fx, fy, fw, fh, r);
-      ctx.stroke();
-      ctx.restore();
-    }
+    // Drop shadow behind the card
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.7)";
+    ctx.shadowBlur = 60;
+    ctx.shadowOffsetY = 16;
+    ctx.fillStyle = "rgba(0,0,0,0.01)";
+    ctx.beginPath();
+    ctx.roundRect(fx, fy, fw, fh, r);
+    ctx.fill();
+    ctx.restore();
+
+    // Sharp photo clipped to rounded rect
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(fx, fy, fw, fh, r);
+    ctx.clip();
+    ctx.drawImage(coverImg, fx, fy, fw, fh);
+    ctx.restore();
+
+    // Glossy top-edge sheen
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(fx, fy, fw, fh, r);
+    ctx.clip();
+    const gloss = ctx.createLinearGradient(0, fy, 0, fy + fh * 0.4);
+    gloss.addColorStop(0, "rgba(255,255,255,0.14)");
+    gloss.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gloss;
+    ctx.fillRect(fx, fy, fw, fh);
+    ctx.restore();
+
+    // Thin white border
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(fx, fy, fw, fh, r);
+    ctx.stroke();
+    ctx.restore();
   } else {
-    // No cover — rich dark gradient fallback.
+    // No cover — deep dark gradient with a blue accent glow
     const fbGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-    fbGrad.addColorStop(0, "#0d1f38");
-    fbGrad.addColorStop(1, "#0b1520");
+    fbGrad.addColorStop(0,   "#0d1f38");
+    fbGrad.addColorStop(0.5, "#131c30");
+    fbGrad.addColorStop(1,   "#0b1520");
     ctx.fillStyle = fbGrad;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    const accentGrad = ctx.createRadialGradient(SIZE * 0.78, SIZE * 0.22, 0, SIZE * 0.78, SIZE * 0.22, SIZE * 0.55);
+    accentGrad.addColorStop(0, "rgba(80,120,220,0.18)");
+    accentGrad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = accentGrad;
     ctx.fillRect(0, 0, SIZE, SIZE);
   }
 
   // ── Bottom gradient overlay — expands to cover the whole title block ────────
-  // For short titles the gradient is compact; for long ones it grows upward.
-  const gradStart = Math.min(titleTop - fontSize * 0.6, SIZE * 0.55);
+  // Gradient starts just above the text zone — always covers bottom ~28%
+  const gradStart = Math.min(titleTop - 40, SIZE * 0.72);
   const gradH = SIZE - gradStart;
   const grad = ctx.createLinearGradient(0, gradStart, 0, SIZE);
   grad.addColorStop(0,    "rgba(0,0,0,0)");
@@ -509,17 +545,55 @@ async function generatePostImage(title, coverImageUrl) {
   ctx.fillRect(0, gradStart, SIZE, gradH);
 
   // ── Title text ─────────────────────────────────────────────────────────────
-  let ty = SIZE - bottomPad - blockH + lineH * 0.82;
-
-  ctx.fillStyle = "#ffffff";
   ctx.textBaseline = "alphabetic";
-  ctx.shadowColor = "rgba(0,0,0,0.7)";
-  ctx.shadowBlur = 16;
-  for (const line of lines) {
-    ctx.fillText(line, pad, ty);
-    ty += lineH;
+  ctx.font = titleFont(fontSize);
+
+  if (isElegant) {
+    // ── Elegant editorial style ────────────────────────────────────────────
+    // Thin accent rule above the title — spans the width of the longest line
+    const ruleY = titleTop - 20;
+    const ruleW = Math.max(...lines.map((l) => ctx.measureText(l).width));
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.82)";
+    ctx.lineWidth   = 3;
+    ctx.beginPath();
+    ctx.moveTo(pad, ruleY);
+    ctx.lineTo(pad + ruleW, ruleY);
+    ctx.stroke();
+    ctx.restore();
+
+    // Title lines — warm white, generous letter spacing, soft shadow
+    ctx.fillStyle = "#f5f0ea";
+    ctx.shadowColor = "rgba(0,0,0,0.85)";
+    ctx.shadowBlur = 24;
+    ctx.letterSpacing = "0.01em";
+    let ty = titleTop + lineH * 0.82;
+    for (const line of lines) {
+      ctx.fillText(line, pad, ty);
+      ty += lineH;
+    }
+    ctx.shadowBlur = 0;
+
+    // "The Catalyst" sub-label below the title — small caps style
+    const subY = titleTop + blockH + 28;
+    ctx.save();
+    ctx.font = `600 22px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.52)";
+    ctx.letterSpacing = "0.18em";
+    ctx.fillText("THE CATALYST", pad, subY);
+    ctx.restore();
+  } else {
+    // ── Bold default style ─────────────────────────────────────────────────
+    let ty = SIZE - bottomPad - blockH + lineH * 0.82;
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.7)";
+    ctx.shadowBlur = 16;
+    for (const line of lines) {
+      ctx.fillText(line, pad, ty);
+      ty += lineH;
+    }
+    ctx.shadowBlur = 0;
   }
-  ctx.shadowBlur = 0;
 
   // ── "New Article" badge (top-left) ─────────────────────────────────────────
   // Load the 1024×1024 glass logo — draw it at high res then downscale for crispness
@@ -534,10 +608,10 @@ async function generatePostImage(title, coverImageUrl) {
   } catch { /* badge renders without icon */ }
 
   const badgeX = 36, badgeY = 36;
-  const badgeH = 82;           // bigger pill
+  const badgeH = 100;
   const badgeR = badgeH / 2;
-  const iconSize = 62;          // larger logo
-  const labelSize = 30;         // bigger text
+  const iconSize = 78;
+  const labelSize = 33;
   const textLabel = "New Article";
 
   ctx.font = `700 ${labelSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
@@ -650,6 +724,23 @@ async function mountSocialPosts(ctx, container) {
               </select>
             </label>
 
+            <label style="font-size:13px;font-weight:600;">Title style
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;" id="sp-gen-style-picker">
+                <label style="cursor:pointer;">
+                  <input type="radio" name="sp-gen-style" value="bold" checked style="display:none;">
+                  <div class="sp-style-card" data-val="bold" style="border:2px solid var(--accent);border-radius:10px;padding:10px 12px;background:var(--surface-2);transition:all .15s;">
+                    <div style="font-size:15px;font-weight:900;font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:var(--ink);line-height:1.15;letter-spacing:-.01em;">Bold<br><span style="font-size:11px;font-weight:500;color:var(--muted);">Strong & punchy</span></div>
+                  </div>
+                </label>
+                <label style="cursor:pointer;">
+                  <input type="radio" name="sp-gen-style" value="elegant" style="display:none;">
+                  <div class="sp-style-card" data-val="elegant" style="border:2px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface-2);transition:all .15s;">
+                    <div style="font-size:15px;font-weight:400;font-style:italic;font-family:'Source Serif 4','Georgia',serif;color:var(--ink);line-height:1.2;letter-spacing:.01em;">Elegant<br><span style="font-size:11px;font-weight:500;font-style:normal;font-family:'Inter',sans-serif;color:var(--muted);">Editorial serif</span></div>
+                  </div>
+                </label>
+              </div>
+            </label>
+
             <div>
               <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Cover image</div>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -658,6 +749,12 @@ async function mountSocialPosts(ctx, container) {
                 <button class="btn btn-ghost btn-xs" id="sp-gen-img-clear" style="display:none;">✕ Reset</button>
               </div>
               <input type="file" id="sp-gen-img-file" accept="image/*" style="display:none;">
+            </div>
+
+            <div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Image size <span id="sp-gen-scale-val" style="font-weight:400;color:var(--muted);">100%</span></div>
+              <input type="range" id="sp-gen-scale" min="50" max="130" value="100" step="5"
+                style="width:100%;accent-color:var(--accent);cursor:pointer;">
             </div>
 
             <label style="font-size:13px;font-weight:600;">Caption
@@ -854,6 +951,53 @@ async function mountSocialPosts(ctx, container) {
   const downloadBtn = generateModal.querySelector("#sp-gen-download-btn");
   const saveBtn = generateModal.querySelector("#sp-gen-save-btn");
 
+  // ── Image size slider ───────────────────────────────────────────────────────
+  const scaleSlider = generateModal.querySelector("#sp-gen-scale");
+  const scaleValEl  = generateModal.querySelector("#sp-gen-scale-val");
+  const getImageScale = () => parseInt(scaleSlider.value, 10) / 100;
+  scaleSlider.addEventListener("input", () => {
+    scaleValEl.textContent = `${scaleSlider.value}%`;
+    // Reset preview so user regenerates with new size
+    generatedDataUrl = null;
+    downloadBtn.disabled = true;
+    saveBtn.disabled = true;
+    previewWrap.innerHTML = `<span style="color:var(--muted);font-size:13px;">Size changed — click Preview to regenerate</span>`;
+    statusEl.textContent = "";
+  });
+
+  // ── Style picker ────────────────────────────────────────────────────────────
+  const styleCards = generateModal.querySelectorAll(".sp-style-card");
+  const getSelectedStyle = () => {
+    const checked = generateModal.querySelector("input[name='sp-gen-style']:checked");
+    return checked ? checked.value : "bold";
+  };
+  const updateStyleCards = () => {
+    styleCards.forEach((card) => {
+      const radio = card.closest("label").querySelector("input[type=radio]");
+      card.style.borderColor = radio.checked ? "var(--accent)" : "var(--border)";
+      card.style.background  = radio.checked ? "var(--surface-3)" : "var(--surface-2)";
+    });
+  };
+  generateModal.querySelectorAll("input[name='sp-gen-style']").forEach((radio) => {
+    radio.addEventListener("change", () => {
+      updateStyleCards();
+      // Reset preview so user re-generates with new style
+      generatedDataUrl = null;
+      downloadBtn.disabled = true;
+      saveBtn.disabled = true;
+      previewWrap.innerHTML = `<span style="color:var(--muted);font-size:13px;">Style changed — click Preview to regenerate</span>`;
+      statusEl.textContent = "";
+    });
+  });
+  // Clicking the card div itself toggles the hidden radio
+  styleCards.forEach((card) => {
+    card.addEventListener("click", () => {
+      const radio = card.closest("label").querySelector("input[type=radio]");
+      radio.checked = true;
+      radio.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
+
   captionArea.addEventListener("input", () => { charEl.textContent = `${captionArea.value.length} characters`; });
 
   // ── Custom image picker ────────────────────────────────────────────────────
@@ -957,7 +1101,7 @@ async function mountSocialPosts(ctx, container) {
       const coverUrl = customImageDataUrl || selectedArticle.coverImage || selectedArticle.image || "";
       console.log("[Preview] article:", selectedArticle.title, "| coverUrl:", coverUrl);
       statusEl.textContent = coverUrl ? `Loading cover…` : "No cover image found — using gradient";
-      generatedDataUrl = await generatePostImage(selectedArticle.title, coverUrl);
+      generatedDataUrl = await generatePostImage(selectedArticle.title, coverUrl, getSelectedStyle(), getImageScale());
       const img = document.createElement("img");
       img.src = generatedDataUrl;
       img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
@@ -1038,6 +1182,11 @@ async function mountSocialPosts(ctx, container) {
     statusEl.textContent = "";
     downloadBtn.disabled = true;
     saveBtn.disabled = true;
+    // Reset style picker to bold
+    const boldRadio = generateModal.querySelector("input[name='sp-gen-style'][value='bold']");
+    if (boldRadio) { boldRadio.checked = true; updateStyleCards(); }
+    scaleSlider.value = "100";
+    scaleValEl.textContent = "100%";
     generateModal.style.display = "grid";
 
     if (!publishedArticles.length) {
