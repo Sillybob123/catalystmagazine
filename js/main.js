@@ -1538,7 +1538,7 @@ async function loadArticles() {
 async function loadFromFirestore() {
     // Session cache: Firestore is the slowest part of startup. Within one tab
     // session the article list doesn't change, so serve the cached copy instantly.
-    const CACHE_KEY = 'catalyst_fs_cache_v3';
+    const CACHE_KEY = 'catalyst_fs_cache_v4';
     try {
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) return JSON.parse(cached);
