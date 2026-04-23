@@ -9,6 +9,8 @@ const ALLOWED_HOSTS = [
   "static.wixstatic.com",
   "images.unsplash.com",
   "firebasestorage.googleapis.com",
+  "firebasestorage.app",          // new Firebase Storage domain (*.firebasestorage.app)
+  "storage.googleapis.com",       // GCS direct URLs
 ];
 
 export const onRequestGet = async ({ request }) => {
@@ -27,7 +29,7 @@ export const onRequestGet = async ({ request }) => {
   }
 
   if (!ALLOWED_HOSTS.some((h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) {
-    return new Response("Host not allowed", { status: 403 });
+    return new Response(`Host not allowed: ${parsed.hostname}`, { status: 403 });
   }
 
   const upstream = await fetch(parsed.toString(), {
@@ -35,7 +37,8 @@ export const onRequestGet = async ({ request }) => {
   });
 
   if (!upstream.ok) {
-    return new Response(`Upstream ${upstream.status}`, { status: 502 });
+    const body = await upstream.text().catch(() => "");
+    return new Response(`Upstream ${upstream.status}: ${body.slice(0, 200)}`, { status: 502 });
   }
 
   const contentType = upstream.headers.get("content-type") || "image/jpeg";

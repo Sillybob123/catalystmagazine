@@ -264,11 +264,18 @@ async function firestoreQuery(authedFetch, structuredQuery) {
 }
 
 // Query helper for stories/articles — returns article objects with all relevant fields.
+// No select projection so we get every field stored on the document.
 async function firestoreQueryArticles(authedFetch, structuredQuery) {
   const docs = await firestoreRunQuery(authedFetch, structuredQuery);
   return docs.map((r) => {
     const f = r.document.fields || {};
     const str = (k) => fsStr(f, k);
+    // Log first doc's raw fields once so we can see the exact field names
+    if (r === docs[0]) {
+      console.log("[firestoreQueryArticles] raw fields on first doc:", Object.keys(f));
+      console.log("[firestoreQueryArticles] coverImage field raw:", f.coverImage);
+      console.log("[firestoreQueryArticles] image field raw:", f.image);
+    }
     return {
       id: r.document.name.split("/").pop(),
       title: str("title"),
@@ -671,11 +678,6 @@ async function mountSocialPosts(ctx, container) {
         where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
         orderBy: [{ field: { fieldPath: "publishedAt" }, direction: "DESCENDING" }],
         limit: 60,
-        select: { fields: [
-          { fieldPath: "title" }, { fieldPath: "authorName" }, { fieldPath: "author" },
-          { fieldPath: "coverImage" }, { fieldPath: "image" }, { fieldPath: "slug" },
-          { fieldPath: "category" }, { fieldPath: "deck" }, { fieldPath: "excerpt" },
-        ]},
       });
       console.log("[loadArticles] loaded", publishedArticles.length, "articles. First article coverImage:", publishedArticles[0]?.coverImage, "image:", publishedArticles[0]?.image);
     } catch (err) {
@@ -863,13 +865,17 @@ async function mountSocialPosts(ctx, container) {
     try {
       // Use uploaded custom image (data URL) or fall back to article cover URL
       const coverUrl = customImageDataUrl || selectedArticle.coverImage || selectedArticle.image || "";
+      console.log("[Preview] article:", selectedArticle.title, "| coverUrl:", coverUrl);
+      statusEl.textContent = coverUrl ? `Loading cover…` : "No cover image found — using gradient";
       generatedDataUrl = await generatePostImage(selectedArticle.title, coverUrl);
       const img = document.createElement("img");
       img.src = generatedDataUrl;
       img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
       previewWrap.innerHTML = "";
       previewWrap.appendChild(img);
-      statusEl.textContent = "1080 × 1080 px — ready to download";
+      statusEl.textContent = coverUrl
+        ? "1080 × 1080 px — ready to download"
+        : "No cover image in Firestore — upload one manually or set it in the editor";
       downloadBtn.disabled = false;
       saveBtn.disabled = false;
     } catch (err) {
