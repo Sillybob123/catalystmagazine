@@ -824,26 +824,24 @@ function initMagazineCover(data) {
 
     const coverStory = data[0];
     const rawSrc = coverStory.image || ARTICLE_FALLBACK_IMAGE;
-    // Cover image is above the fold and large (~640px wide on desktop,
-    // 1280px on retina). Load eagerly at 1400px so it appears instantly
-    // at full quality without waiting for IntersectionObserver.
     const coverSrc = getResizedImageUrl(rawSrc, 1600, 95);
-    const coverLqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[rawSrc] ? window.__LQIP_MANIFEST[rawSrc] : '';
-    const coverBgStyle = coverLqip ? `background-image: url('${coverLqip}'); background-size: cover; background-position: center;` : '';
 
-    // If the wsrv.nl proxy rejects the upstream (e.g. 429 from Wikipedia),
-    // fall back to the original URL so the image still renders. If that
-    // also fails, drop to the generic fallback.
-    const coverOnError = rawSrc && rawSrc !== coverSrc && rawSrc !== ARTICLE_FALLBACK_IMAGE
-        ? `this.onerror=function(){this.onerror=null;this.src='${ARTICLE_FALLBACK_IMAGE}';this.classList.add('loaded');};this.src='${rawSrc.replace(/'/g, "\\'")}';`
-        : `this.onerror=null;this.src='${ARTICLE_FALLBACK_IMAGE}';this.classList.add('loaded');`;
+    // Use a CSS background-image (not an <img>) so the image always fills the
+    // container via background-size: cover — no layout gymnastics, no opacity
+    // states, no gaps. Preload the image via a hidden <img> so onerror can
+    // swap in the original if the wsrv.nl proxy fails.
+    const safeSrc = coverSrc.replace(/'/g, "\\'");
+    const safeRaw = rawSrc.replace(/'/g, "\\'");
+    const safeFallback = ARTICLE_FALLBACK_IMAGE.replace(/'/g, "\\'");
+    const fallbackHandler = rawSrc && rawSrc !== coverSrc && rawSrc !== ARTICLE_FALLBACK_IMAGE
+        ? `var t=this.parentElement;t.style.backgroundImage=\"url('${safeRaw}')\";this.onerror=function(){t.style.backgroundImage=\"url('${safeFallback}')\";};this.src='${safeRaw}';`
+        : `this.parentElement.style.backgroundImage=\"url('${safeFallback}')\";this.onerror=null;`;
 
     coverContainer.innerHTML = `
         <div class="magazine-cover-grid" onclick="viewArticle('${encodeURIComponent(getArticleLink(coverStory))}')">
-            <div class="magazine-cover-image" style="${coverBgStyle}">
-                <img src="${coverSrc}" alt="${coverStory.title}" class="magazine-cover-img" loading="eager" fetchpriority="high" decoding="async"
-                     onload="this.classList.add('loaded')"
-                     onerror="${coverOnError}">
+            <div class="magazine-cover-image" style="background-image: url('${safeSrc}'); background-size: cover; background-position: center;">
+                <img src="${coverSrc}" alt="" aria-hidden="true" decoding="async" style="display:none"
+                     onerror="${fallbackHandler}">
             </div>
             <div class="magazine-cover-content">
                 <div class="magazine-cover-label">Cover Story</div>
