@@ -224,37 +224,64 @@ function toFsFields(obj) {
   return out;
 }
 
-async function firestoreQuery(authedFetch, structuredQuery) {
+async function firestoreRunQuery(authedFetch, structuredQuery) {
   const res = await authedFetch(
     `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents:runQuery`,
     { method: "POST", body: JSON.stringify({ structuredQuery }) }
   );
   if (!res.ok) throw new Error(`Firestore ${res.status}`);
   const rows = await res.json();
-  return rows
-    .filter((r) => r.document)
-    .map((r) => {
-      const f = r.document.fields || {};
-      const str = (k) => f[k]?.stringValue ?? "";
-      const arr = (k) => (f[k]?.arrayValue?.values || []).map((v) => {
-        const m = v.mapValue?.fields || {};
-        return { text: m.text?.stringValue ?? "", authorName: m.authorName?.stringValue ?? "", timestamp: m.timestamp?.stringValue ?? m.timestamp?.timestampValue ?? "" };
-      });
-      return {
-        id: r.document.name.split("/").pop(),
-        title: str("title"),
-        platform: str("platform"),
-        content: str("content"),
-        notes: str("notes"),
-        status: str("status"),
-        proposerName: str("proposerName"),
-        proposerId: str("proposerId"),
-        assigneeName: str("assigneeName"),
-        deadline: str("deadline"),
-        createdAt: str("createdAt") || (f.createdAt?.timestampValue ?? ""),
-        activity: arr("activity"),
-      };
+  return rows.filter((r) => r.document);
+}
+
+function fsStr(fields, k) { return fields[k]?.stringValue ?? ""; }
+
+// Query helper for social_posts — returns structured post objects.
+async function firestoreQuery(authedFetch, structuredQuery) {
+  const docs = await firestoreRunQuery(authedFetch, structuredQuery);
+  return docs.map((r) => {
+    const f = r.document.fields || {};
+    const str = (k) => fsStr(f, k);
+    const arr = (k) => (f[k]?.arrayValue?.values || []).map((v) => {
+      const m = v.mapValue?.fields || {};
+      return { text: m.text?.stringValue ?? "", authorName: m.authorName?.stringValue ?? "", timestamp: m.timestamp?.stringValue ?? m.timestamp?.timestampValue ?? "" };
     });
+    return {
+      id: r.document.name.split("/").pop(),
+      title: str("title"),
+      platform: str("platform"),
+      content: str("content"),
+      notes: str("notes"),
+      status: str("status"),
+      proposerName: str("proposerName"),
+      proposerId: str("proposerId"),
+      assigneeName: str("assigneeName"),
+      deadline: str("deadline"),
+      createdAt: str("createdAt") || (f.createdAt?.timestampValue ?? ""),
+      activity: arr("activity"),
+    };
+  });
+}
+
+// Query helper for stories/articles — returns article objects with all relevant fields.
+async function firestoreQueryArticles(authedFetch, structuredQuery) {
+  const docs = await firestoreRunQuery(authedFetch, structuredQuery);
+  return docs.map((r) => {
+    const f = r.document.fields || {};
+    const str = (k) => fsStr(f, k);
+    return {
+      id: r.document.name.split("/").pop(),
+      title: str("title"),
+      authorName: str("authorName"),
+      author: str("author"),
+      coverImage: str("coverImage"),
+      image: str("image"),
+      slug: str("slug"),
+      category: str("category"),
+      deck: str("deck"),
+      excerpt: str("excerpt"),
+    };
+  });
 }
 
 async function firestoreWrite(authedFetch, path, fields) {
@@ -293,7 +320,11 @@ function loadImage(src) {
     const img = new Image();
     if (!isDataUrl) img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image`));
+    img.onerror = (e) => {
+      console.error("[loadImage] failed to load", finalSrc, e);
+      reject(new Error(`Failed to load image: ${finalSrc}`));
+    };
+    console.log("[loadImage] fetching via proxy →", finalSrc);
     img.src = finalSrc;
   });
 }
@@ -327,6 +358,7 @@ async function generatePostImage(title, coverImageUrl) {
   ctx.fillStyle = "#0d1b2e";
   ctx.fillRect(0, 0, SIZE, SIZE);
 
+  console.log("[generatePostImage] coverImageUrl received:", coverImageUrl);
   if (coverImageUrl) {
     // Build a clean Wix square-crop URL — strip any existing /v1/... transform
     // segment first so we don't double-stack transforms (Wix 403s on that).
@@ -337,18 +369,22 @@ async function generatePostImage(title, coverImageUrl) {
         const v1 = u.pathname.indexOf("/v1/");
         const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
         const fname = assetPath.split("/").filter(Boolean).pop();
-        src = `${u.origin}${assetPath}/v1/fill/w_1080,h_1080,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/${fname}`;
+        // enc_jpg instead of enc_auto — avoids AVIF which Canvas can't decode in all browsers
+        src = `${u.origin}${assetPath}/v1/fill/w_1080,h_1080,al_c,q_90,usm_0.66_1.00_0.01,enc_jpg/${fname}`;
       }
     } catch { /* not a Wix URL, use as-is */ }
 
+    console.log("[generatePostImage] cover URL after transform:", src);
     try {
       const img = await loadImage(src);
+      console.log("[generatePostImage] image loaded, natural size:", img.naturalWidth, "×", img.naturalHeight);
       // Centre-crop to fill the square canvas
       const scale = Math.max(SIZE / img.width, SIZE / img.height);
       const dw = img.width * scale;
       const dh = img.height * scale;
       ctx.drawImage(img, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
-    } catch {
+    } catch (err) {
+      console.warn("[generatePostImage] image failed, using gradient fallback:", err.message);
       // Dark gradient fallback if image fails
       const fbGrad = ctx.createRadialGradient(SIZE / 2, SIZE / 2, 0, SIZE / 2, SIZE / 2, SIZE * 0.8);
       fbGrad.addColorStop(0, "#1e3a5f");
@@ -630,7 +666,7 @@ async function mountSocialPosts(ctx, container) {
   // ── Load published articles for the generator dropdown ─────────────────────
   async function loadArticles() {
     try {
-      publishedArticles = await firestoreQuery(ctx.authedFetch, {
+      publishedArticles = await firestoreQueryArticles(ctx.authedFetch, {
         from: [{ collectionId: "stories" }],
         where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
         orderBy: [{ field: { fieldPath: "publishedAt" }, direction: "DESCENDING" }],
@@ -641,7 +677,11 @@ async function mountSocialPosts(ctx, container) {
           { fieldPath: "category" }, { fieldPath: "deck" }, { fieldPath: "excerpt" },
         ]},
       });
-    } catch { publishedArticles = []; }
+      console.log("[loadArticles] loaded", publishedArticles.length, "articles. First article coverImage:", publishedArticles[0]?.coverImage, "image:", publishedArticles[0]?.image);
+    } catch (err) {
+      console.error("[loadArticles] error:", err);
+      publishedArticles = [];
+    }
   }
 
   // ── Detail modal ───────────────────────────────────────────────────────────
