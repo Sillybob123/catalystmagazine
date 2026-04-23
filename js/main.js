@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 const ARTICLE_FALLBACK_IMAGE = '/NewsletterHeader1.png';
-// Card images are never wider than ~700px, so cap at 800px — Wix will compress
-// and serve the right size which loads much faster than the 2000px original.
 const CARD_IMAGE_WIDTH = 480;
-const CARD_IMAGE_QUALITY = 75;
+const HERO_IMAGE_WIDTH = 900;
+const CARD_IMAGE_QUALITY = 72;
+const HERO_IMAGE_QUALITY = 78;
 let articleData = [];
 let fadeObserver = null;
 
@@ -37,27 +37,52 @@ let fadeObserver = null;
 // No JS decode() chains. No detached loaders. Just <img> + CSS.
 // ============================================
 
-// Build a Wix image URL capped at card display size.
-function getCardImageUrl(src) {
+// Rewrite image URLs to a size/quality/format appropriate for display.
+// - Local assets are served as-is (already sized correctly).
+// - Wix URLs use Wix's own transformer (free, built-in).
+// - Everything else (Firebase Storage, Wikipedia, etc.) is proxied through
+//   wsrv.nl — a free open-source image CDN that resizes, converts to WebP,
+//   and edge-caches. No account or API key needed.
+function getResizedImageUrl(src, width, quality) {
     if (!src || src === ARTICLE_FALLBACK_IMAGE || src.startsWith('data:') || src.startsWith('blob:')) return src;
     try {
+        const isAbsolute = /^https?:\/\//i.test(src);
+        if (!isAbsolute) return src; // local asset, already sized
+
         const url = new URL(src);
-        if (!url.hostname.includes('static.wixstatic.com')) return src;
-        const parts = url.pathname.split('/').filter(Boolean);
-        const filename = parts[parts.length - 1];
-        if (parts.includes('v1')) {
-            return src.replace(/q_\d+/g, `q_${CARD_IMAGE_QUALITY}`).replace(/w_\d+/g, `w_${CARD_IMAGE_WIDTH}`);
+
+        if (url.hostname.includes('static.wixstatic.com')) {
+            const parts = url.pathname.split('/').filter(Boolean);
+            const filename = parts[parts.length - 1];
+            if (parts.includes('v1')) {
+                return src.replace(/q_\d+/g, `q_${quality}`).replace(/w_\d+/g, `w_${width}`);
+            }
+            const h = Math.round(width * 0.66);
+            return `${src}/v1/fill/w_${width},h_${h},al_c,q_${quality},enc_auto/${filename}`;
         }
-        const h = Math.round(CARD_IMAGE_WIDTH * 0.66);
-        return `${src}/v1/fill/w_${CARD_IMAGE_WIDTH},h_${h},al_c,q_${CARD_IMAGE_QUALITY},enc_auto/${filename}`;
+
+        // wsrv.nl: free image proxy/resizer, outputs WebP to supported browsers.
+        // Docs: https://wsrv.nl/docs/
+        const params = new URLSearchParams({
+            url: src,
+            w: width,
+            q: quality,
+            output: 'webp',
+            fit: 'cover',
+            we: '',      // without-enlargement: never upscale
+        });
+        return `https://wsrv.nl/?${params}`;
     } catch { return src; }
 }
+
+function getCardImageUrl(src)  { return getResizedImageUrl(src, CARD_IMAGE_WIDTH, CARD_IMAGE_QUALITY); }
+function getHeroImageUrl(src)  { return getResizedImageUrl(src, HERO_IMAGE_WIDTH, HERO_IMAGE_QUALITY); }
 
 // Renders an <img> with a shimmer background while loading, then fades in.
 // The shimmer is pure CSS — no network, shows instantly.
 function createProgressiveImage(src, alt, className = '', eager = false, imageSettings = null, overlayHtml = '') {
     const imageSrc = src || ARTICLE_FALLBACK_IMAGE;
-    const displaySrc = getCardImageUrl(imageSrc);
+    const displaySrc = eager ? getHeroImageUrl(imageSrc) : getCardImageUrl(imageSrc);
     const customStyles = getImageStyles(imageSettings);
     const fetchPriority = eager ? 'fetchpriority="high"' : '';
     const loadingAttr = eager ? 'eager' : 'lazy';
@@ -68,12 +93,17 @@ function createProgressiveImage(src, alt, className = '', eager = false, imageSe
         ? `background-image: url('${inlineLqip}'); background-size: cover; background-position: center;`
         : '';
 
+    const imgWidth = eager ? HERO_IMAGE_WIDTH : CARD_IMAGE_WIDTH;
+    const imgHeight = Math.round(imgWidth * 0.66);
+
     return `<div class="card-img-wrap ${className}" style="${bgStyle}">
         <img
             src="${displaySrc}"
             alt="${alt}"
             class="card-img"
             style="${customStyles}"
+            width="${imgWidth}"
+            height="${imgHeight}"
             loading="${loadingAttr}"
             decoding="async"
             ${fetchPriority}
@@ -1138,7 +1168,7 @@ function renderArticleDetail(article) {
         ? renderContentBlocks(article.blocks)
         : (article.content || `<p>${article.excerpt || ''}</p>`);
     const readingTime = article.readingTime || estimateReadingTime(article);
-    const heroImage = article.image || ARTICLE_FALLBACK_IMAGE;
+    const heroImage = getResizedImageUrl(article.image || ARTICLE_FALLBACK_IMAGE, 1600, 80);
     const category = formatCategory(article.category || 'feature');
     const authorInitials = (article.author || 'TC')
         .split(/\s+/)
@@ -2009,9 +2039,10 @@ function renderContentBlocks(blocks = []) {
                 const alt = block.alt_text || 'Article image';
                 const caption = block.caption || '';
                 if (!url) return '';
+                const resized = getResizedImageUrl(url, 1200, 78);
                 return `
                     <figure class="article-block article-image">
-                        <img src="${url}" alt="${alt}" loading="lazy">
+                        <img src="${resized}" alt="${alt}" loading="lazy" decoding="async">
                         ${caption ? `<figcaption class="image-caption">${caption}</figcaption>` : ''}
                     </figure>
                 `;
@@ -2437,7 +2468,7 @@ const alumniMembers = [
 function renderMemberCard(member) {
     return `
         <div class="team-member-card">
-            <img src="${member.image}" alt="${member.name}" class="team-member-image" loading="lazy" decoding="async" onerror="this.src='NewsletterHeader1.png'">
+            <img src="${getResizedImageUrl(member.image, 320, 72)}" alt="${member.name}" class="team-member-image" loading="lazy" decoding="async" width="320" height="320" onerror="this.src='NewsletterHeader1.png'">
             <div class="team-member-info">
                 <h3 class="team-member-name">${member.name}</h3>
                 <div class="team-member-role">${member.role}</div>

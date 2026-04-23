@@ -47,16 +47,19 @@
     <!-- Preconnect to external resources for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://static.wixstatic.com" crossorigin>
+    <link rel="preconnect" href="https://wsrv.nl" crossorigin>
+    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+
 
     <!-- Preload critical images for instant display (viewport-aware to avoid double download) -->
     <link rel="preload" as="image" href="WebLogo.png" media="(min-width: 769px)" fetchpriority="high">
     <link rel="preload" as="image" href="NewLogoShape.png" media="(max-width: 768px)" fetchpriority="high">
 
     <!-- DNS prefetch for external image sources -->
-    <link rel="dns-prefetch" href="https://static.wixstatic.com">
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+    <link rel="preload" href="css/styles.css" as="style">
     <link rel="stylesheet" href="css/styles.css">
 
     <!-- Structured Data for SEO -->
