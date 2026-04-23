@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
 const ARTICLE_FALLBACK_IMAGE = '/NewsletterHeader1.png';
 // Card images are never wider than ~700px, so cap at 800px — Wix will compress
 // and serve the right size which loads much faster than the 2000px original.
-const CARD_IMAGE_WIDTH = 800;
-const CARD_IMAGE_QUALITY = 82;
+const CARD_IMAGE_WIDTH = 480;
+const CARD_IMAGE_QUALITY = 75;
 let articleData = [];
 let fadeObserver = null;
 
@@ -1508,6 +1508,14 @@ async function loadArticles() {
 // Public reads of documents where status == 'published' are permitted by
 // firestore.rules, so no auth token is required.
 async function loadFromFirestore() {
+    // Session cache: Firestore is the slowest part of startup. Within one tab
+    // session the article list doesn't change, so serve the cached copy instantly.
+    const CACHE_KEY = 'catalyst_fs_cache_v2';
+    try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) return JSON.parse(cached);
+    } catch {}
+
     const projectId = 'catalystwriters-5ce43';
     const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
 
@@ -1524,7 +1532,25 @@ async function loadFromFirestore() {
             orderBy: [
                 { field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }
             ],
-            limit: 100
+            // Only fetch the fields the listing UI needs — excludes the full
+            // article body which can be 50-200 KB per document.
+            select: {
+                fields: [
+                    { fieldPath: 'title' },
+                    { fieldPath: 'author' },
+                    { fieldPath: 'publishedAt' },
+                    { fieldPath: 'createdAt' },
+                    { fieldPath: 'coverImage' },
+                    { fieldPath: 'image' },
+                    { fieldPath: 'excerpt' },
+                    { fieldPath: 'deck' },
+                    { fieldPath: 'category' },
+                    { fieldPath: 'tags' },
+                    { fieldPath: 'slug' },
+                    { fieldPath: 'status' },
+                ]
+            },
+            limit: 60
         }
     };
 
@@ -1538,11 +1564,14 @@ async function loadFromFirestore() {
     const rows = await res.json();
     if (!Array.isArray(rows)) return [];
 
-    return rows
+    const articles = rows
         .map(row => row.document)
         .filter(Boolean)
         .map(firestoreDocToArticle)
         .filter(a => a && a.title);
+
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(articles)); } catch {}
+    return articles;
 }
 
 function firestoreDocToArticle(doc) {
