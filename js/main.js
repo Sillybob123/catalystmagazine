@@ -24,240 +24,82 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 const ARTICLE_FALLBACK_IMAGE = '/NewsletterHeader1.png';
-const TRANSPARENT_PLACEHOLDER = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
-// Tiny LQIP (~2-5 KB each) paints in <50 ms so cards look "done" almost instantly;
-// the blur hides the low resolution while the full image streams in.
-const LOW_RES_PREVIEW_WIDTH = 48;
-const LOW_RES_PREVIEW_QUALITY = 25;
-// Capped full-quality size — the rendered card is never wider than ~700 CSS px.
-const FULL_IMAGE_WIDTH = 900;
-const FULL_IMAGE_QUALITY = 80;
+// Card images are never wider than ~700px, so cap at 800px — Wix will compress
+// and serve the right size which loads much faster than the 2000px original.
+const CARD_IMAGE_WIDTH = 800;
+const CARD_IMAGE_QUALITY = 82;
 let articleData = [];
 let fadeObserver = null;
-let imageObserver = null;
 
 // ============================================
-// IMAGE OPTIMIZATION - Fast Loading System
-// Progressive Image Loading with Instant Display
+// IMAGE LOADING
+// Simple, fast: shimmer placeholder → image fades in on load.
+// No JS decode() chains. No detached loaders. Just <img> + CSS.
 // ============================================
 
-// Progressive image observer for blur-up effect
-let progressiveObserver = null;
-
-function initImageOptimization() {
-    if (imageObserver) return; // idempotent — safe to call from renderHeroEarly and initApp
-    // Create Intersection Observer for lazy loading background images
-    imageObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const element = entry.target;
-                const rawBgUrl = element.dataset.bgImage;
-                if (rawBgUrl) {
-                    // Cap the displayed image size so Wix returns a right-sized asset.
-                    const bgUrl = getDisplayQualityUrl(rawBgUrl);
-                    // Preload and fully decode before applying — keeps the
-                    // background swap atomic instead of a top-down repaint.
-                    const img = new Image();
-                    img.decoding = 'async';
-                    const apply = () => {
-                        element.style.backgroundImage = `url('${bgUrl}')`;
-                        if (element.dataset.bgPosition) {
-                            element.style.backgroundPosition = element.dataset.bgPosition;
-                        }
-                        if (element.dataset.bgZoom) {
-                            const zoom = parseFloat(element.dataset.bgZoom);
-                            element.style.backgroundSize = `${zoom * 100}%`;
-                        }
-                        element.classList.add('bg-loaded');
-                    };
-                    img.onload = () => {
-                        if (typeof img.decode === 'function') {
-                            img.decode().then(apply).catch(apply);
-                        } else {
-                            apply();
-                        }
-                    };
-                    img.src = bgUrl;
-                    imageObserver.unobserve(element);
-                }
-            }
-        });
-    }, {
-        rootMargin: '400px 0px', // Start loading 400px before visible for faster perceived load
-        threshold: 0.01
-    });
-
-    // Create observer for progressive images
-    progressiveObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                upgradeProgressiveImage(entry.target);
-            }
-        });
-    }, {
-        rootMargin: '300px 0px',
-        threshold: 0.01
-    });
-
-    // Observe all elements with data-bg-image attribute
-    document.querySelectorAll('[data-bg-image]').forEach(el => {
-        imageObserver.observe(el);
-    });
-
-    // Observe all progressive image wrappers
-    document.querySelectorAll('.progressive-image-wrapper').forEach(el => {
-        // Eager images should upgrade immediately
-        if (el.dataset.eager === 'true') {
-            upgradeProgressiveImage(el);
+// Build a Wix image URL capped at card display size.
+function getCardImageUrl(src) {
+    if (!src || src === ARTICLE_FALLBACK_IMAGE || src.startsWith('data:') || src.startsWith('blob:')) return src;
+    try {
+        const url = new URL(src);
+        if (!url.hostname.includes('static.wixstatic.com')) return src;
+        const parts = url.pathname.split('/').filter(Boolean);
+        const filename = parts[parts.length - 1];
+        if (parts.includes('v1')) {
+            return src.replace(/q_\d+/g, `q_${CARD_IMAGE_QUALITY}`).replace(/w_\d+/g, `w_${CARD_IMAGE_WIDTH}`);
         }
-        progressiveObserver.observe(el);
-    });
+        const h = Math.round(CARD_IMAGE_WIDTH * 0.66);
+        return `${src}/v1/fill/w_${CARD_IMAGE_WIDTH},h_${h},al_c,q_${CARD_IMAGE_QUALITY},enc_auto/${filename}`;
+    } catch { return src; }
 }
 
-// Swap low-quality previews to full images.
-// Load the full image in a detached <img>, wait for decode() so the pixel
-// buffer is ready, THEN set the visible <img>.src. Because the decoded image
-// is already in memory, the browser paints it in one frame — no top-down
-// streaming repaint. A CSS opacity transition crossfades from the LQIP.
-// Atomic image swap: load in a detached Image, decode(), then assign .src and
-// fade in. The visible <img> never paints partial bytes — the browser only
-// ever sees a fully-decoded pixel buffer.
-function swapImageWhenReady(targetImg, targetSrc, onDone) {
-    if (!targetImg || !targetSrc) { onDone && onDone(false); return; }
-    const loader = new Image();
-    loader.decoding = 'async';
-    const commit = () => {
-        targetImg.src = loader.src;
-        requestAnimationFrame(() => {
-            targetImg.classList.add('loaded');
-            onDone && onDone(true);
-        });
-    };
-    loader.onload = () => {
-        if (typeof loader.decode === 'function') {
-            loader.decode().then(commit).catch(commit);
-        } else {
-            commit();
-        }
-    };
-    loader.onerror = () => onDone && onDone(false);
-    loader.src = targetSrc;
-}
-
-function upgradeProgressiveImage(wrapper, done) {
-    const finish = typeof done === 'function' ? done : () => {};
-    if (!wrapper || !(wrapper instanceof Element)) { finish(); return; }
-    const fullImg = wrapper.querySelector('.progressive-full');
-    if (!fullImg) { finish(); return; }
-
-    if (['loading', 'done'].includes(fullImg.dataset.loadingState)) { finish(); return; }
-    const targetSrc = fullImg.dataset.src;
-    if (!targetSrc) { finish(); return; }
-
-    fullImg.dataset.loadingState = 'loading';
-
-    // Step 1: load the blurred LQIP atomically (if present) so the card goes
-    // straight from solid CSS color → clean blurred image, no streaming paint.
-    const lqipImg = wrapper.querySelector('.progressive-lqip');
-    const lqipSrc = lqipImg && lqipImg.dataset.lqipSrc;
-    const lqipPromise = new Promise(resolve => {
-        if (lqipImg && lqipSrc && !lqipImg.classList.contains('loaded')) {
-            swapImageWhenReady(lqipImg, lqipSrc, () => resolve());
-        } else {
-            resolve();
-        }
-    });
-
-    // Step 2: in parallel, load the full image. When both are ready we reveal
-    // the full image; the LQIP quietly fades under it.
-    const fullLoader = new Image();
-    fullLoader.decoding = 'async';
-    const revealFull = () => {
-        fullImg.src = fullLoader.src;
-        requestAnimationFrame(() => {
-            fullImg.classList.add('loaded');
-            wrapper.classList.add('loaded');
-            fullImg.dataset.loadingState = 'done';
-            finish();
-        });
-    };
-    const failFull = () => {
-        fullImg.src = ARTICLE_FALLBACK_IMAGE;
-        requestAnimationFrame(() => {
-            fullImg.classList.add('loaded');
-            wrapper.classList.add('loaded');
-            fullImg.dataset.loadingState = 'done';
-            finish();
-        });
-    };
-    fullLoader.onload = () => {
-        const afterDecode = () => {
-            // Don't show the full image before the LQIP has settled — avoids
-            // a jarring CSS-color → sharp-image jump when the network is fast.
-            lqipPromise.then(revealFull);
-        };
-        if (typeof fullLoader.decode === 'function') {
-            fullLoader.decode().then(afterDecode).catch(afterDecode);
-        } else {
-            afterDecode();
-        }
-    };
-    fullLoader.onerror = failFull;
-    fullLoader.src = targetSrc;
-
-    if (progressiveObserver) {
-        progressiveObserver.unobserve(wrapper);
-    }
-}
-
-// Create progressive image HTML with instant placeholder.
-// What paints during initial HTML render: a solid CSS gradient (no network, no decode).
-// Then JS loads the LQIP via a detached Image + decode() and fades it in atomically.
-// Then JS loads the full image the same way and fades it in over the LQIP.
-// Result: the user never sees a partial/streaming JPEG — only clean frame-perfect swaps.
+// Renders an <img> with a shimmer background while loading, then fades in.
+// The shimmer is pure CSS — no network, shows instantly.
 function createProgressiveImage(src, alt, className = '', eager = false, imageSettings = null, overlayHtml = '') {
     const imageSrc = src || ARTICLE_FALLBACK_IMAGE;
-    const placeholderColor = getPlaceholderColor(imageSrc);
+    const displaySrc = getCardImageUrl(imageSrc);
     const customStyles = getImageStyles(imageSettings);
-    const fullSrc = getDisplayQualityUrl(imageSrc);
-
-    // Prefer a build-time base64 LQIP (zero network, paints in first frame).
-    // Fall back to a small Wix-CDN preview only if the manifest misses.
-    const manifest = (typeof window !== 'undefined' && window.__LQIP_MANIFEST) || null;
-    const inlineLqip = manifest && manifest[imageSrc];
-    const remoteLqip = inlineLqip ? '' : getLowQualityUrl(imageSrc, LOW_RES_PREVIEW_WIDTH, LOW_RES_PREVIEW_QUALITY);
-    const hasInline = !!inlineLqip;
-    const hasRemotePreview = !hasInline && !!remoteLqip && remoteLqip !== imageSrc;
-    const usingPreview = hasInline || hasRemotePreview;
-
-    const eagerFlag = eager ? 'data-eager="true"' : '';
+    const fetchPriority = eager ? 'fetchpriority="high"' : '';
     const loadingAttr = eager ? 'eager' : 'lazy';
-    const fetchPriority = eager ? 'high' : 'auto';
 
-    // Inline LQIP → paint synchronously from first HTML frame (no network).
-    // Remote LQIP → start with transparent src, JS will decode-then-swap.
-    let lqipImg = '';
-    if (hasInline) {
-        lqipImg = `<img src="${inlineLqip}" alt="" aria-hidden="true" class="progressive-lqip loaded" style="${customStyles}" decoding="sync">`;
-    } else if (hasRemotePreview) {
-        lqipImg = `<img src="${TRANSPARENT_PLACEHOLDER}" data-lqip-src="${remoteLqip}" alt="" aria-hidden="true" class="progressive-lqip" style="${customStyles}" decoding="async">`;
-    }
+    // Check manifest for an inline base64 LQIP (zero-network blurred preview).
+    const inlineLqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[imageSrc];
+    const bgStyle = inlineLqip
+        ? `background-image: url('${inlineLqip}'); background-size: cover; background-position: center;`
+        : '';
 
-    return `<div class="progressive-image-wrapper ${className}" style="background: ${placeholderColor}">
-        ${lqipImg}
+    return `<div class="card-img-wrap ${className}" style="${bgStyle}">
         <img
-            src="${TRANSPARENT_PLACEHOLDER}"
-            data-src="${fullSrc}"
+            src="${displaySrc}"
             alt="${alt}"
-            class="progressive-full"
+            class="card-img"
             style="${customStyles}"
             loading="${loadingAttr}"
             decoding="async"
-            fetchpriority="${fetchPriority}"
-            ${eagerFlag}
+            ${fetchPriority}
+            onload="this.classList.add('loaded')"
             onerror="this.onerror=null; this.src='${ARTICLE_FALLBACK_IMAGE}'; this.classList.add('loaded');">
         ${overlayHtml || ''}
     </div>`;
+}
+
+function initImageOptimization() {
+    // Observe lazy-background cards (featured stories section)
+    const bgObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            const raw = el.dataset.bgImage;
+            if (!raw) return;
+            el.style.backgroundImage = `url('${getCardImageUrl(raw)}')`;
+            if (el.dataset.bgPosition) el.style.backgroundPosition = el.dataset.bgPosition;
+            if (el.dataset.bgZoom) el.style.backgroundSize = `${parseFloat(el.dataset.bgZoom) * 100}%`;
+            el.classList.add('bg-loaded');
+            bgObserver.unobserve(el);
+        });
+    }, { rootMargin: '400px 0px', threshold: 0.01 });
+
+    document.querySelectorAll('[data-bg-image]').forEach(el => bgObserver.observe(el));
 }
 
 // Generate a pleasant placeholder color based on image URL
@@ -281,47 +123,6 @@ function getPlaceholderColor(src) {
         hsl(${(hue + 30) % 360}, ${saturation - 3}%, ${lightness + 2}%) 100%)`;
 }
 
-// Build a capped-size full-quality URL so we don't pull 2000+px originals
-// into 600px-wide cards.
-function getDisplayQualityUrl(src = '', width = FULL_IMAGE_WIDTH, quality = FULL_IMAGE_QUALITY) {
-    return getLowQualityUrl(src, width, quality);
-}
-
-// Build a quick-loading low-quality URL (works well with Wix static assets)
-function getLowQualityUrl(src = '', width = 480, quality = 60) {
-    if (!src || src === ARTICLE_FALLBACK_IMAGE || src.startsWith('data:') || src.startsWith('blob:')) {
-        return src;
-    }
-
-    try {
-        const url = new URL(src);
-
-        // Wix static images support fill/quality transforms directly in the path
-        if (url.hostname.includes('static.wixstatic.com')) {
-            const parts = url.pathname.split('/').filter(Boolean);
-            const filename = parts[parts.length - 1];
-            const hasTransform = parts.includes('v1');
-            const height = Math.round(width * 0.66);
-
-            if (hasTransform) {
-                return src
-                    .replace(/q_(\d{1,3})/g, `q_${quality}`)
-                    .replace(/w_(\d{2,4})/g, `w_${width}`);
-            }
-
-            // Wix 403s on /media/v1/fill/... without the asset ID in the path —
-            // the working form appends the transform *after* the asset filename.
-            return `${src}/v1/fill/w_${width},h_${height},al_c,q_${quality},enc_auto/${filename}`;
-        }
-    } catch (err) {
-        return src;
-    }
-
-    // Fallback for other CDNs that honor width/quality query params
-    return src.includes('?')
-        ? `${src}&w=${width}&q=${quality}&auto=format`
-        : `${src}?w=${width}&q=${quality}&auto=format`;
-}
 
 // Generate inline styles for image customization
 // Settings: { position, zoom, offsetX, offsetY }
@@ -353,160 +154,24 @@ function getImageStyles(settings) {
     return styles.length > 0 ? styles.join('; ') + ';' : '';
 }
 
-// Optimized image element creation with lazy loading (legacy support)
-function createOptimizedImage(src, alt, className = '', eager = false) {
-    const imgHtml = `<img
-        src="${src}"
-        alt="${alt}"
-        class="${className}"
-        loading="${eager ? 'eager' : 'lazy'}"
-        decoding="async"
-        fetchpriority="${eager ? 'high' : 'auto'}"
-        onerror="this.onerror=null; this.src='${ARTICLE_FALLBACK_IMAGE}';">`;
-    return imgHtml;
-}
-
-// Preload critical images for faster display
-function preloadImage(src) {
-    if (!src || src === ARTICLE_FALLBACK_IMAGE) return;
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    // Preload the capped-size version we'll actually render, not the 2000+px original.
-    link.href = getDisplayQualityUrl(src);
-    link.fetchpriority = 'high';
-    document.head.appendChild(link);
-}
-
-// Register lazy background images within a scope
 function registerLazyBackgrounds(scope = document) {
-    if (!imageObserver) return;
-    const elements = Array.from(scope.querySelectorAll('[data-bg-image]'));
-    elements.forEach(el => {
-        imageObserver.observe(el);
-    });
-    // Eagerly kick off background upgrades too, once idle, so featured-story
-    // cards don't wait for the user to scroll before swapping to full-res.
-    scheduleBackgroundUpgrade(elements);
-}
-
-let bgQueue = [];
-let bgScheduled = false;
-let inflightBg = 0;
-const MAX_PARALLEL_BG = 3;
-
-function scheduleBackgroundUpgrade(elements) {
-    if (!elements || !elements.length) return;
-    bgQueue.push(...elements);
-    if (bgScheduled) return;
-    bgScheduled = true;
-    const kick = () => {
-        bgScheduled = false;
-        drainBgQueue();
-    };
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(kick, { timeout: 600 });
-    } else {
-        setTimeout(kick, 150);
-    }
-}
-
-function drainBgQueue() {
-    while (bgQueue.length && inflightBg < MAX_PARALLEL_BG) {
-        const element = bgQueue.shift();
-        if (!element || !element.isConnected) continue;
-        if (element.classList.contains('bg-loaded')) continue;
-        const rawBgUrl = element.dataset.bgImage;
-        if (!rawBgUrl) continue;
-        const bgUrl = getDisplayQualityUrl(rawBgUrl);
-        inflightBg++;
-        const img = new Image();
-        const finish = () => {
-            inflightBg = Math.max(0, inflightBg - 1);
-            drainBgQueue();
-        };
-        const apply = () => {
-            element.style.backgroundImage = `url('${bgUrl}')`;
-            if (element.dataset.bgPosition) {
-                element.style.backgroundPosition = element.dataset.bgPosition;
+    scope.querySelectorAll('[data-bg-image]').forEach(el => {
+        // Already handled by the observer in initImageOptimization
+        // but also trigger immediately if already in view
+        if (!el.classList.contains('bg-loaded')) {
+            const raw = el.dataset.bgImage;
+            if (raw) {
+                el.style.backgroundImage = `url('${getCardImageUrl(raw)}')`;
+                if (el.dataset.bgPosition) el.style.backgroundPosition = el.dataset.bgPosition;
+                if (el.dataset.bgZoom) el.style.backgroundSize = `${parseFloat(el.dataset.bgZoom) * 100}%`;
+                el.classList.add('bg-loaded');
             }
-            if (element.dataset.bgZoom) {
-                const zoom = parseFloat(element.dataset.bgZoom);
-                element.style.backgroundSize = `${zoom * 100}%`;
-            }
-            element.classList.add('bg-loaded');
-            if (imageObserver) imageObserver.unobserve(element);
-            finish();
-        };
-        img.decoding = 'async';
-        img.onload = () => {
-            // Decode in memory so the first paint is atomic — no top-down
-            // streaming repaint when the background-image is applied.
-            if (typeof img.decode === 'function') {
-                img.decode().then(apply).catch(apply);
-            } else {
-                apply();
-            }
-        };
-        img.onerror = finish;
-        img.src = bgUrl;
-    }
-}
-
-// Register progressive images within a scope
-function registerProgressiveImages(scope = document) {
-    if (!progressiveObserver) return;
-    const wrappers = Array.from(scope.querySelectorAll('.progressive-image-wrapper:not(.loaded)'));
-    wrappers.forEach(el => {
-        if (el.dataset.eager === 'true') {
-            upgradeProgressiveImage(el);
         }
-        progressiveObserver.observe(el);
     });
-    // Proactively upgrade every rendered card once the browser is idle — the LQIP
-    // has already painted, so kicking off the full swap without waiting for scroll
-    // means users see high-res images almost immediately after page load.
-    schedulePreemptiveUpgrade(wrappers.filter(el => el.dataset.eager !== 'true'));
 }
 
-let preemptiveQueue = [];
-let preemptiveScheduled = false;
-const MAX_PARALLEL_UPGRADES = 4;
-let inflightUpgrades = 0;
-
-function schedulePreemptiveUpgrade(wrappers) {
-    if (!wrappers || !wrappers.length) return;
-    preemptiveQueue.push(...wrappers);
-    if (preemptiveScheduled) return;
-    preemptiveScheduled = true;
-    const kick = () => {
-        preemptiveScheduled = false;
-        drainPreemptiveQueue();
-    };
-    if ('requestIdleCallback' in window) {
-        requestIdleCallback(kick, { timeout: 400 });
-    } else {
-        setTimeout(kick, 100);
-    }
-}
-
-function drainPreemptiveQueue() {
-    while (preemptiveQueue.length && inflightUpgrades < MAX_PARALLEL_UPGRADES) {
-        const wrapper = preemptiveQueue.shift();
-        if (!wrapper || !wrapper.isConnected) continue;
-        const fullImg = wrapper.querySelector('.progressive-full');
-        if (!fullImg) continue;
-        if (['loading', 'done'].includes(fullImg.dataset.loadingState)) continue;
-        inflightUpgrades++;
-        const cleanup = () => {
-            inflightUpgrades = Math.max(0, inflightUpgrades - 1);
-            drainPreemptiveQueue();
-        };
-        // Delegate to the shared upgrade path so decode()-before-swap applies
-        // uniformly and we don't get top-down repaints on scroll-queued cards.
-        upgradeProgressiveImage(wrapper, cleanup);
-    }
-}
+function registerProgressiveImages() { /* no-op: new system uses native onload */ }
+function preloadImage() { /* no-op: removed hardcoded preloads */ }
 
 // ============================================
 // COLLABORATION MAILTO HANDLERS
@@ -948,11 +613,12 @@ function initFeaturedStoriesGrid(data = []) {
         const dataAttrs = [];
         if (settings.position) dataAttrs.push(`data-bg-position="${settings.position}"`);
         if (settings.zoom) dataAttrs.push(`data-bg-zoom="${settings.zoom}"`);
-        const previewBg = getLowQualityUrl(article.image || ARTICLE_FALLBACK_IMAGE, LOW_RES_PREVIEW_WIDTH, LOW_RES_PREVIEW_QUALITY);
+        const lqipBg = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[article.image] ? window.__LQIP_MANIFEST[article.image] : '';
+        const bgStyle = lqipBg ? `background-image: url('${lqipBg}'); background-size: cover; background-position: center;` : '';
 
         return `
         <div class="featured-story-card" onclick="viewArticle('${encodeURIComponent(getArticleLink(article))}')">
-            <div class="featured-story-image lazy-bg" data-bg-image="${article.image || ARTICLE_FALLBACK_IMAGE}" style="background-image: url('${previewBg}');" ${dataAttrs.join(' ')}></div>
+            <div class="featured-story-image lazy-bg" data-bg-image="${article.image || ARTICLE_FALLBACK_IMAGE}" style="${bgStyle}" ${dataAttrs.join(' ')}></div>
             <div class="featured-story-content">
                 <span class="featured-story-badge">${formatCategory(article.category)}</span>
                 <h3 class="featured-story-title">${article.title}</h3>
@@ -1114,13 +780,12 @@ function initMagazineCover(data) {
     if (!coverContainer || !data.length) return;
 
     const coverStory = data[0];
-    // Preload cover image for instant display
-    preloadImage(coverStory.image);
-    const coverPreview = getLowQualityUrl(coverStory.image || ARTICLE_FALLBACK_IMAGE, 64, 25);
+    const coverLqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[coverStory.image] ? window.__LQIP_MANIFEST[coverStory.image] : '';
+    const coverBgStyle = coverLqip ? `background-image: url('${coverLqip}'); background-size: cover; background-position: center;` : '';
 
     coverContainer.innerHTML = `
         <div class="magazine-cover-grid" onclick="viewArticle('${encodeURIComponent(getArticleLink(coverStory))}')">
-            <div class="magazine-cover-image lazy-bg" data-bg-image="${coverStory.image || ARTICLE_FALLBACK_IMAGE}" style="background-image: url('${coverPreview}');"></div>
+            <div class="magazine-cover-image lazy-bg" data-bg-image="${coverStory.image || ARTICLE_FALLBACK_IMAGE}" style="${coverBgStyle}"></div>
             <div class="magazine-cover-content">
                 <div class="magazine-cover-label">Cover Story</div>
                 <h2 class="magazine-cover-title">${coverStory.title}</h2>
