@@ -827,7 +827,7 @@ function initMagazineCover(data) {
     // Cover image is above the fold and large (~640px wide on desktop,
     // 1280px on retina). Load eagerly at 1400px so it appears instantly
     // at full quality without waiting for IntersectionObserver.
-    const coverSrc = getResizedImageUrl(rawSrc, 1400, 85);
+    const coverSrc = getResizedImageUrl(rawSrc, 1600, 95);
     const coverLqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[rawSrc] ? window.__LQIP_MANIFEST[rawSrc] : '';
     const coverBgStyle = coverLqip ? `background-image: url('${coverLqip}'); background-size: cover; background-position: center;` : '';
 
@@ -967,7 +967,7 @@ function createMagazineArticle(article, sizeClass = 'small', gridIndex = 99) {
     // shared createProgressiveImage path so the home page is untouched.
     let imageMarkup;
     if (sizeClass === 'large' || sizeClass === 'medium') {
-        const resized = getResizedImageUrl(imageSrc, 1600, 85);
+        const resized = getResizedImageUrl(imageSrc, 1600, 95);
         const isAboveFold = sizeClass === 'large' && gridIndex === 0;
         const loadingAttr = isAboveFold ? 'eager' : 'lazy';
         const priorityAttr = isAboveFold ? 'fetchpriority="high"' : '';
