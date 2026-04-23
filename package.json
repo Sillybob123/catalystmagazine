@@ -5,10 +5,11 @@
   "main": "server.js",
   "scripts": {
     "build:cloudflare": "node scripts/build-cloudflare.js",
+    "lqip:generate": "node scripts/generate-lqip-manifest.js",
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "pages:dev": "npm run build:cloudflare && wrangler pages dev cloudflare-dist",
-    "pages:deploy": "npm run build:cloudflare && wrangler pages deploy cloudflare-dist --project-name=catalystmagazine"
+    "pages:dev": "npm run lqip:generate && npm run build:cloudflare && wrangler pages dev cloudflare-dist",
+    "pages:deploy": "npm run lqip:generate && npm run build:cloudflare && wrangler pages deploy cloudflare-dist --project-name=catalystmagazine"
   },
   "keywords": [
     "cms",

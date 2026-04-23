@@ -92,80 +92,67 @@ img {
   image-rendering: -webkit-optimize-contrast;
 }
 
-/* Progressive image wrapper - shows instantly */
+/* Progressive image wrapper — two stacked <img> tags:
+   - .progressive-lqip  : tiny, blurred, painted instantly; stays visible until swap
+   - .progressive-full  : invisible until the full image decodes, then crossfades in
+   Swap is atomic (via Image.decode() in JS), so no top-down streaming repaint. */
 .progressive-image-wrapper {
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e5e7eb 100%);
 }
 
-/* Skeleton shimmer animation */
-.progressive-image-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.6) 50%,
-    transparent 100%
-  );
-  animation: shimmer 1.5s infinite;
-  z-index: 1;
-}
-
-.progressive-image-wrapper.loaded::before {
-  display: none;
-}
-
+/* Skeleton shimmer animation (kept for .card-skeleton only) */
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
 
-/* Low quality placeholder - blurred and scaled */
-.progressive-placeholder {
+/* LQIP preview — blurred & scaled so the low-res pixel grid never shows.
+   Inline (base64) LQIPs paint with class .loaded already applied → visible on
+   first frame, no fade-in. Remote LQIPs start at opacity 0 and JS fades them
+   in after decode(). Fades out once the full image is ready. */
+.progressive-lqip {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(20px);
-  transform: scale(1.1);
-  transition: opacity 0.4s ease-out;
-  z-index: 2;
-}
-
-.progressive-placeholder.hidden {
+  filter: blur(18px);
+  transform: scale(1.08);
+  z-index: 1;
   opacity: 0;
+  will-change: opacity;
   pointer-events: none;
 }
 
-/* Full quality image - fades in on top */
+/* Only fade in for remote LQIPs — inline ones skip the transition entirely. */
+.progressive-lqip:not([src^="data:image/"]) {
+  transition: opacity 0.3s ease-out;
+}
+
+.progressive-lqip.loaded {
+  opacity: 1;
+}
+
+.progressive-image-wrapper.loaded .progressive-lqip {
+  opacity: 0;
+  transition: opacity 0.35s ease-out;
+}
+
+/* Full-quality image — invisible until decode completes, then fades in */
 .progressive-full {
   position: relative;
   width: 100%;
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.4s ease-out;
-  z-index: 3;
+  transition: opacity 0.35s ease-out;
+  z-index: 2;
 }
 
 .progressive-full.loaded {
   opacity: 1;
-}
-
-.progressive-full.lqip {
-  filter: blur(16px);
-  transform: scale(1.04);
-  opacity: 1;
-  transition: filter 0.4s ease, transform 0.4s ease, opacity 0.4s ease;
-}
-
-.progressive-image-wrapper.loaded .progressive-full {
-  filter: none;
-  transform: none;
 }
 
 /* Instant card skeleton - no image dependency */
