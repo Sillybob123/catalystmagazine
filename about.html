@@ -11,10 +11,241 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="About The Catalyst Magazine - Our mission, story, and team. A student-run STEM magazine based in Washington D.C. empowering tomorrow's scientists and innovators.">
-    <meta name="keywords" content="about Catalyst Magazine, STEM magazine team, student journalists, Washington DC science, our mission, science communication">
+    <meta name="description" content="About The Catalyst Magazine — Washington D.C.'s student-run STEM publication. Our mission, story, and team of student journalists covering science, research, and innovation across GW, Georgetown, Howard, and beyond.">
+    <meta name="keywords" content="about Catalyst Magazine, The Catalyst, Catalyst DC, Catalyst Magazine DC, STEM magazine team, student journalists, Washington DC science, our mission, science communication">
     <title>About Us | The Catalyst Magazine</title>
     <link rel="canonical" href="https://www.catalyst-magazine.com/about">
+
+    <!-- Structured Data: AboutPage + the 14-person team.
+         Each Person references the Catalyst Magazine Organization so Google
+         can associate searches like "catalyst yair" / "catalyst lori" with
+         both the person and the publication. -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "AboutPage",
+                "url": "https://www.catalyst-magazine.com/about",
+                "name": "About The Catalyst Magazine",
+                "description": "About The Catalyst Magazine — Washington D.C.'s student-run STEM publication.",
+                "inLanguage": "en-US",
+                "isPartOf": { "@id": "https://www.catalyst-magazine.com/#website" },
+                "about": { "@id": "https://www.catalyst-magazine.com/#organization" }
+            },
+            {
+                "@type": ["Organization", "NewsMediaOrganization"],
+                "@id": "https://www.catalyst-magazine.com/#organization",
+                "name": "The Catalyst Magazine",
+                "alternateName": [
+                    "The Catalyst",
+                    "Catalyst Magazine",
+                    "Catalyst DC",
+                    "Catalyst Magazine DC",
+                    "The Catalyst DC"
+                ],
+                "url": "https://www.catalyst-magazine.com",
+                "logo": "https://www.catalyst-magazine.com/NewLogoShape.png",
+                "foundingLocation": "Washington, D.C.",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Washington",
+                    "addressRegion": "DC",
+                    "addressCountry": "US"
+                },
+                "member": [
+                    { "@id": "https://www.catalyst-magazine.com/about#yair-ben-dor" },
+                    { "@id": "https://www.catalyst-magazine.com/about#aidan-schurr" },
+                    { "@id": "https://www.catalyst-magazine.com/about#lori-preci" },
+                    { "@id": "https://www.catalyst-magazine.com/about#naama-ben-dor" },
+                    { "@id": "https://www.catalyst-magazine.com/about#le-nguyen" },
+                    { "@id": "https://www.catalyst-magazine.com/about#ginger-taurek" },
+                    { "@id": "https://www.catalyst-magazine.com/about#aidan-brown" },
+                    { "@id": "https://www.catalyst-magazine.com/about#alexis-tamm" },
+                    { "@id": "https://www.catalyst-magazine.com/about#layla-abdoulaye" },
+                    { "@id": "https://www.catalyst-magazine.com/about#sydney-reiser" },
+                    { "@id": "https://www.catalyst-magazine.com/about#izzy-lubinsky" },
+                    { "@id": "https://www.catalyst-magazine.com/about#azza-uwhubetine" },
+                    { "@id": "https://www.catalyst-magazine.com/about#skye-schurr" },
+                    { "@id": "https://www.catalyst-magazine.com/about#rachel-lee" }
+                ],
+                "founder": [
+                    { "@id": "https://www.catalyst-magazine.com/about#yair-ben-dor" },
+                    { "@id": "https://www.catalyst-magazine.com/about#aidan-schurr" }
+                ],
+                "employee": [
+                    { "@id": "https://www.catalyst-magazine.com/about#yair-ben-dor" },
+                    { "@id": "https://www.catalyst-magazine.com/about#aidan-schurr" },
+                    { "@id": "https://www.catalyst-magazine.com/about#lori-preci" }
+                ]
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#yair-ben-dor",
+                "name": "Yair Ben-Dor",
+                "jobTitle": "Co-Founder, Editor-in-Chief, Website Developer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "worksFor": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                "description": "Co-Founder and Editor-in-Chief of The Catalyst Magazine. Summa cum laude graduate of George Washington University with a B.S. in Cellular and Molecular Biology and a minor in Chemistry. D.C.-area local applying to medical school.",
+                "knowsAbout": ["Cellular and Molecular Biology", "Chemistry", "Science communication", "Medicine"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#aidan-schurr",
+                "name": "Aidan Schurr",
+                "jobTitle": "Co-Founder, Editor-in-Chief",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "worksFor": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                "description": "Co-Founder and Editor-in-Chief of The Catalyst Magazine. Third-year at George Washington University pursuing a B.S. in Biomedical Engineering and Pre-Med Studies.",
+                "knowsAbout": ["Biomedical Engineering", "Medicine", "Machine learning", "Science policy"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#lori-preci",
+                "name": "Lori Preci",
+                "jobTitle": "Managing Editor, Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "worksFor": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": [
+                    { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                    { "@type": "CollegeOrUniversity", "name": "Johns Hopkins University" }
+                ],
+                "description": "Managing Editor at The Catalyst Magazine. Pursuing a master's in biotechnology at Johns Hopkins University; recent George Washington University dual-degree graduate in Cellular and Molecular Biology and Chemistry.",
+                "knowsAbout": ["Biotechnology", "Biochemistry", "Cellular and Molecular Biology", "Chemistry"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#naama-ben-dor",
+                "name": "Naama Ben-Dor",
+                "jobTitle": "Senior Writer, Editor, Media Specialist",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "worksFor": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "Georgetown University" },
+                "description": "Senior Writer, Editor, and Media Specialist at The Catalyst Magazine. Senior at Georgetown University majoring in Neurobiology with minors in Chemistry and Jewish Civilization.",
+                "knowsAbout": ["Neurobiology", "Chemistry", "Science journalism", "Digital media"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#le-nguyen",
+                "name": "Le Nguyen",
+                "jobTitle": "Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                "description": "Writer at The Catalyst Magazine. Summa cum laude graduate of George Washington University in Neuroscience with a minor in Creative Writing, with research experience at GWU School of Medicine, Johns Hopkins, and the Minneapolis Heart Institute.",
+                "knowsAbout": ["Neuroscience", "Neurodevelopment", "Cardiology", "Pulmonary medicine", "Health equity"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#ginger-taurek",
+                "name": "Ginger Taurek",
+                "jobTitle": "Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                "description": "Writer at The Catalyst Magazine. Third-year at GW School of Business studying Entrepreneurship and Innovation with a minor in Sustainability.",
+                "knowsAbout": ["Sustainability", "Wildlife conservation", "Climate resilience", "Science policy"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#aidan-brown",
+                "name": "Aidan Brown",
+                "jobTitle": "Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                "description": "Writer at The Catalyst Magazine. Senior at George Washington University pursuing a B.S./M.S. in Biology with a concentration in Ecology, Evolution, and Environment and a minor in Geographic Information Systems.",
+                "knowsAbout": ["Ecology", "Environmental science", "Data analysis", "Remote sensing", "Machine learning"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#alexis-tamm",
+                "name": "Alexis Tamm",
+                "jobTitle": "Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "Georgetown University" },
+                "description": "Writer at The Catalyst Magazine. Senior at Georgetown University majoring in English with minors in Psychology and Spanish.",
+                "knowsAbout": ["Journalism", "Science communication", "Academic storytelling"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#layla-abdoulaye",
+                "name": "Layla Abdoulaye",
+                "jobTitle": "Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "Howard University" },
+                "description": "Writer at The Catalyst Magazine. Sophomore studying Physics at Howard University, with interests in astronomy, quantum physics, and quantum materials.",
+                "knowsAbout": ["Physics", "Astronomy", "Quantum physics", "Quantum materials"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#sydney-reiser",
+                "name": "Sydney Reiser",
+                "jobTitle": "Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": [
+                    { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                    { "@type": "CollegeOrUniversity", "name": "Johns Hopkins University" }
+                ],
+                "description": "Writer at The Catalyst Magazine. First-year Chemistry PhD student at Johns Hopkins University; summa cum laude graduate of George Washington University with a B.S. in Chemistry.",
+                "knowsAbout": ["Chemistry", "Synthetic chemistry", "Physics education"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#izzy-lubinsky",
+                "name": "Izzy Lubinsky",
+                "jobTitle": "Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                "description": "Writer at The Catalyst Magazine. GW Presidential Scholar pursuing a double major in Biology and Environmental Science with concentrations in Ecology, Evolution, and Environment and Ecological Management.",
+                "knowsAbout": ["Biology", "Environmental science", "Urban ecology", "Climate resilience"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#azza-uwhubetine",
+                "name": "Azza Uwhubetine",
+                "jobTitle": "Writer",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                "description": "Writer at The Catalyst Magazine. Junior at George Washington University pursuing a degree in English with a minor in Astronomy.",
+                "knowsAbout": ["English", "Astronomy", "Physics", "Editorial writing"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#skye-schurr",
+                "name": "Skye Schurr",
+                "jobTitle": "Writer, Media Specialist",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "Rutgers University" },
+                "description": "Writer and Media Specialist at The Catalyst Magazine. Senior at Rutgers University pursuing a B.S. in Public Health with a minor in Business Administration and a certificate in Health Policy.",
+                "knowsAbout": ["Public health", "Health policy", "Reproductive and maternal health", "AI in healthcare"],
+                "url": "https://www.catalyst-magazine.com/about"
+            },
+            {
+                "@type": "Person",
+                "@id": "https://www.catalyst-magazine.com/about#rachel-lee",
+                "name": "Rachel Lee",
+                "jobTitle": "Photographer, Media Specialist",
+                "affiliation": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "alumniOf": { "@type": "CollegeOrUniversity", "name": "George Washington University" },
+                "description": "Photographer and Media Specialist at The Catalyst Magazine. Junior at George Washington University majoring in Communications and Business.",
+                "knowsAbout": ["Communications", "Visual storytelling", "Creative media", "Science journalism"],
+                "url": "https://www.catalyst-magazine.com/about"
+            }
+        ]
+    }
+    </script>
 
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website">

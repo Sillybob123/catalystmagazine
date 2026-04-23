@@ -3,7 +3,7 @@
 // stories. Cached at the edge for an hour — fresh enough for new publishes,
 // cheap enough to survive Googlebot hitting it regularly.
 
-import { listAllArticles, titleToSlug, SITE_URL } from "./_utils/article-meta.js";
+import { listAllArticles, titleToSlug, SITE_URL, getSiteUrl } from "./_utils/article-meta.js";
 
 const STATIC_PAGES = [
   { path: "/", priority: "1.0", changefreq: "daily" },
@@ -14,22 +14,33 @@ const STATIC_PAGES = [
   { path: "/privacy", priority: "0.3", changefreq: "yearly" },
 ];
 
-export const onRequestGet = async ({ request }) => {
+export const onRequestGet = async ({ request, env }) => {
+  const siteUrl = getSiteUrl(request, env) || SITE_URL;
   const today = new Date().toISOString().slice(0, 10);
 
   const articles = await listAllArticles().catch(() => []);
 
   const urls = [];
 
+  // Freshest article lastmod doubles as the homepage/articles lastmod
+  // so Google re-checks those pages whenever a new article is published.
+  const mostRecent = articles
+    .map((a) => toIsoDate(a.publishedAt || a.date))
+    .filter(Boolean)
+    .sort()
+    .pop() || today;
+
   for (const page of STATIC_PAGES) {
+    const pageMod = (page.path === "/" || page.path === "/articles") ? mostRecent : today;
     urls.push(
-      `<url><loc>${SITE_URL}${page.path}</loc><lastmod>${today}</lastmod><changefreq>${page.changefreq}</changefreq><priority>${page.priority}</priority></url>`
+      `<url><loc>${siteUrl}${page.path}</loc><lastmod>${pageMod}</lastmod><changefreq>${page.changefreq}</changefreq><priority>${page.priority}</priority></url>`
     );
   }
 
   for (const a of articles) {
     const slug = a.slug || titleToSlug(a.title);
-    const loc = `${SITE_URL}/article/${encodeURIComponent(slug)}`;
+    if (!slug) continue;
+    const loc = `${siteUrl}/article/${encodeURIComponent(slug)}`;
     const lastmod = toIsoDate(a.publishedAt || a.date) || today;
     const image = a.image ? `<image:image><image:loc>${escapeXml(a.image)}</image:loc><image:title>${escapeXml(a.title)}</image:title></image:image>` : "";
     urls.push(
@@ -46,7 +57,9 @@ ${urls.join("\n")}
     status: 200,
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, max-age=300, s-maxage=3600",
+      // Short TTL so a newly published article shows up in the sitemap
+      // within minutes even without a manual cache purge.
+      "Cache-Control": "public, max-age=60, s-maxage=120",
     },
   });
 };

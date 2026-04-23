@@ -6,7 +6,8 @@
 //   1. posts/article<N>.json — committed JSON files
 //   2. Firestore `stories` collection (status == "published")
 
-const DEFAULT_SITE_URL = "https://catalyst-magazine.com";
+// Canonical host matches the verified Google Search Console property.
+const DEFAULT_SITE_URL = "https://www.catalyst-magazine.com";
 const SITE_URL = DEFAULT_SITE_URL;
 const FALLBACK_IMAGE_PATH = "/NewLogoShape.png";
 const FALLBACK_IMAGE = `${SITE_URL}${FALLBACK_IMAGE_PATH}`;
@@ -66,12 +67,30 @@ function isLocalOrigin(origin) {
   }
 }
 
+// Force canonical host so SEO output always matches the GSC-verified property,
+// even when the request arrived on the naked domain or the *.pages.dev preview.
+function forceCanonicalHost(origin) {
+  if (!origin) return SITE_URL;
+  try {
+    const u = new URL(origin);
+    if (/(^|\.)catalyst-magazine\.com$/i.test(u.hostname)) {
+      return "https://www.catalyst-magazine.com";
+    }
+    if (u.hostname.endsWith(".pages.dev")) {
+      return SITE_URL;
+    }
+    return origin;
+  } catch {
+    return SITE_URL;
+  }
+}
+
 export function getSiteUrl(request, env) {
   const requestOrigin = request?.url ? normalizeSiteUrl(new URL(request.url).origin) : "";
-  if (requestOrigin && !isLocalOrigin(requestOrigin)) return requestOrigin;
+  if (requestOrigin && !isLocalOrigin(requestOrigin)) return forceCanonicalHost(requestOrigin);
 
   const envSiteUrl = normalizeSiteUrl(env?.SITE_URL);
-  if (envSiteUrl && !isLocalOrigin(envSiteUrl)) return envSiteUrl;
+  if (envSiteUrl && !isLocalOrigin(envSiteUrl)) return forceCanonicalHost(envSiteUrl);
 
   return SITE_URL;
 }
@@ -351,6 +370,30 @@ export function titleToSlug(title) {
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+// Produce a keyword-rich meta description that always has useful content.
+// Priority: provided excerpt → article deck → first content paragraph →
+// title-based fallback. Always ends with a subtle brand/category tag so
+// Google has context even for bare/empty-excerpt articles.
+export function buildArticleDescription(article, maxLength = 160) {
+  const clean = (s) => String(s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const sources = [article?.excerpt, article?.deck, article?.content, article?.body];
+  let base = "";
+  for (const s of sources) {
+    const v = clean(s);
+    if (v.length >= 40) { base = v; break; }
+  }
+  if (!base) {
+    const t = clean(article?.title);
+    base = t
+      ? `${t} — a STEM story from The Catalyst Magazine, Washington D.C.'s student-run science publication.`
+      : "A STEM story from The Catalyst Magazine, Washington D.C.'s student-run science publication.";
+  }
+  if (base.length > maxLength) {
+    base = base.slice(0, maxLength - 1).replace(/\s+\S*$/, "") + "…";
+  }
+  return base;
 }
 
 export { SITE_URL, FALLBACK_IMAGE };

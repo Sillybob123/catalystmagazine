@@ -27,6 +27,7 @@ import {
 import { titleToSlug, buildArticlePath } from "../_utils/article-meta.js";
 import { sendBulkEmail } from "../_utils/resend.js";
 import { buildNewsletter } from "../_utils/newsletter-template.js";
+import { notifyArticlePublished } from "../_utils/seo-notify.js";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -164,12 +165,22 @@ export const onRequestPost = async ({ request, env }) => {
       }
     }
 
+    // Best-effort SEO notification: IndexNow + Cloudflare cache purge for
+    // /sitemap.xml so Google sees the new article on its next sitemap crawl.
+    // Failures here must not fail the publish response.
+    const publishedSiteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
+    const articlePath = buildArticlePath({ title, slug });
+    const seoResult = await notifyArticlePublished(env, publishedSiteUrl, articlePath).catch(
+      (e) => ({ error: String(e?.message || e) })
+    );
+
     return json({
       ok: true,
       storyId,
       totalPublished,
       newsletterSent: Boolean(shouldSendNewsletter && newsletterResult && !newsletterResult.skipped),
       newsletter: newsletterResult,
+      seo: seoResult,
     });
   } catch (err) {
     return serverError(err);

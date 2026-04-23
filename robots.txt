@@ -7,3 +7,4 @@ Disallow: /functions/
 Disallow: /api/
 
 Sitemap: https://www.catalyst-magazine.com/sitemap.xml
+Host: www.catalyst-magazine.com

@@ -11,8 +11,8 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Explore Catalyst Magazine, a student-run hub for STEM enthusiasts, blending science, engineering, and art to inspire creativity and innovation.">
-    <meta name="keywords" content="Catalyst Magazine DC, STEM magazine Washington DC, student-run science magazine, science engineering art, student journalism DC, STEM stories, innovation, research profiles, science interviews">
+    <meta name="description" content="The Catalyst Magazine — Washington D.C.'s student-run STEM publication. Profiles, interviews, and features on science, research, and innovation from GW, Georgetown, Howard, and beyond.">
+    <meta name="keywords" content="The Catalyst Magazine, Catalyst Magazine, Catalyst DC, The Catalyst, Catalyst Magazine DC, STEM magazine Washington DC, student-run science magazine, science journalism DC, STEM stories, research profiles, science interviews">
     <meta name="author" content="The Catalyst Magazine">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#0d5eaf">
@@ -63,18 +63,53 @@
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "The Catalyst Magazine",
-        "description": "A student-run STEM magazine based in Washington D.C., featuring profiles, interviews, and features on science and innovation.",
-        "url": "https://www.catalyst-magazine.com",
-        "logo": "https://www.catalyst-magazine.com/NewLogoShape.png",
-        "sameAs": [],
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Washington",
-            "addressRegion": "DC",
-            "addressCountry": "US"
-        }
+        "@graph": [
+            {
+                "@type": ["Organization", "NewsMediaOrganization"],
+                "@id": "https://www.catalyst-magazine.com/#organization",
+                "name": "The Catalyst Magazine",
+                "alternateName": [
+                    "The Catalyst",
+                    "Catalyst Magazine",
+                    "Catalyst DC",
+                    "Catalyst Magazine DC",
+                    "The Catalyst DC"
+                ],
+                "description": "The Catalyst is a Washington, D.C.-based student-run STEM magazine publishing profiles, interviews, and features on science, research, and innovation.",
+                "url": "https://www.catalyst-magazine.com",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://www.catalyst-magazine.com/NewLogoShape.png",
+                    "width": 1200,
+                    "height": 630
+                },
+                "foundingLocation": "Washington, D.C.",
+                "areaServed": "US",
+                "sameAs": [],
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Washington",
+                    "addressRegion": "DC",
+                    "addressCountry": "US"
+                }
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://www.catalyst-magazine.com/#website",
+                "url": "https://www.catalyst-magazine.com",
+                "name": "The Catalyst Magazine",
+                "publisher": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "inLanguage": "en-US",
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "https://www.catalyst-magazine.com/articles?q={search_term_string}"
+                    },
+                    "query-input": "required name=search_term_string"
+                }
+            }
+        ]
     }
     </script>
     <script type="application/ld+json">

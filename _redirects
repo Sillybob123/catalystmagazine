@@ -8,6 +8,11 @@
 #   admin/users.html   → /admin/users
 # ============================================================
 
+# ------ Force canonical host (naked → www) ------------------
+# GSC verifies on www.catalyst-magazine.com — keep every URL
+# consolidating to that host so link equity doesn't split.
+https://catalyst-magazine.com/*   https://www.catalyst-magazine.com/:splat   301!
+
 # ------ Strip .html from legacy bookmarked URLs ------------
 /index.html              /                         301
 /articles.html           /articles                 301

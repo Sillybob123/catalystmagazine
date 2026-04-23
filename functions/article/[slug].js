@@ -16,7 +16,7 @@
 //   c) Fall back to serving the bare article.html shell (client JS will
 //      redirect to /articles if nothing is found).
 
-import { findArticleBySlug, listAllArticles, titleToSlug, resolveOgImage, getSiteUrl, getFallbackImage } from "../_utils/article-meta.js";
+import { findArticleBySlug, listAllArticles, titleToSlug, resolveOgImage, getSiteUrl, getFallbackImage, buildArticleDescription } from "../_utils/article-meta.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
@@ -44,7 +44,7 @@ export const onRequestGet = async ({ request, env, params, next }) => {
 
   const canonical = `${siteUrl}/article/${encodeURIComponent(slug)}`;
   const title = `${article.title} | ${SITE_NAME}`;
-  const description = truncate(article.excerpt || article.deck || "", 200);
+  const description = buildArticleDescription(article, 160);
   const image = resolveOgImage(article.image, siteUrl) || getFallbackImage(siteUrl);
   const author = article.author || SITE_NAME;
   const published = toIsoDate(article.publishedAt || article.date);
