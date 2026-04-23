@@ -255,10 +255,17 @@ async function loadUsers(mount, ctx, reload) {
     presenceSnap.forEach((d) => presence.set(d.id, d.data()));
 
     mount.innerHTML = "";
-    const table = el("table", { class: "table" });
+    const table = el("table", { class: "table users-table" });
     table.innerHTML = `
       <thead><tr>
-        <th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Bot reminders</th><th>Created</th><th>Last seen</th><th>Actions</th>
+        <th style="min-width:130px;">User</th>
+        <th style="min-width:180px;">Email</th>
+        <th style="min-width:150px;">Role</th>
+        <th style="min-width:80px;">Status</th>
+        <th style="min-width:200px;">Bot reminders</th>
+        <th style="min-width:90px;">Created</th>
+        <th style="min-width:120px;">Last seen</th>
+        <th style="min-width:130px;">Actions</th>
       </tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
 
@@ -267,10 +274,16 @@ async function loadUsers(mount, ctx, reload) {
       const p = presence.get(d.id);
       const last = p?.lastSeenAt || u.lastSeenAt;
       const reminderStatus = getBotReminderExemptionState(u);
+      const extraEmails = Array.isArray(u.extraEmails) ? u.extraEmails.filter(Boolean) : [];
       const tr = el("tr", {});
       tr.innerHTML = `
-        <td><strong>${esc(u.name || "—")}</strong></td>
-        <td>${esc(u.email || "")}</td>
+        <td style="white-space:nowrap;"><strong>${esc(u.name || "—")}</strong></td>
+        <td>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">${esc(u.email || "")}</span>
+            ${extraEmails.map(e => `<span style="display:inline-flex;align-items:center;gap:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:var(--bg-light,#f8fafc);color:var(--muted,#64748b);border:1px solid var(--hairline,#e2e8f0);border-radius:4px;padding:1px 6px;">${esc(e)}</span>`).join("")}
+          </div>
+        </td>
         <td>
           <select class="select" style="font-size:13px;padding:6px 8px;" data-action="role" data-id="${esc(d.id)}">
             ${["admin","editor","writer","newsletter_builder","marketing","reader"].map(r =>
@@ -279,10 +292,10 @@ async function loadUsers(mount, ctx, reload) {
         </td>
         <td><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}">${esc(u.status || "active")}</span></td>
         <td>${renderBotReminderStatus(reminderStatus)}</td>
-        <td>${u.createdAt ? fmtDate(u.createdAt) : "—"}</td>
-        <td>${last ? `${fmtRelative(last)} <div style="color:var(--muted);font-size:11px;">${fmtDate(last)}</div>` : "—"}</td>
+        <td style="white-space:nowrap;color:var(--muted);font-size:13px;">${u.createdAt ? fmtDate(u.createdAt) : "—"}</td>
+        <td style="white-space:nowrap;">${last ? `<span style="font-size:13px;">${fmtRelative(last)}</span><div style="color:var(--muted);font-size:11px;">${fmtDate(last)}</div>` : "—"}</td>
         <td>
-          <div style="display:flex;gap:6px;">
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;">
             <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}">Edit bot</button>
             <button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid ? "disabled" : ""} style="color:var(--danger);">Delete</button>
           </div>
@@ -433,6 +446,7 @@ function renderBotReminderStatus(state) {
 function openBotReminderExemptionModal(ctx, user, onDone) {
   const current = getBotReminderExemptionState(user);
   const today = dateKeyInTimeZone(new Date()) || "";
+  const existingExtras = Array.isArray(user.extraEmails) ? user.extraEmails.filter(Boolean) : [];
 
   const body = el("div", {});
   body.innerHTML = `
@@ -441,7 +455,15 @@ function openBotReminderExemptionModal(ctx, user, onDone) {
       <div style="font-weight:700;color:var(--ink);">${esc(user.name || user.email || "Unknown user")}</div>
       ${user.email ? `<div style="font-size:12px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px;">${esc(user.email)}</div>` : ""}
     </div>
-    <div class="field">
+
+    <div class="field" style="border-top:1px solid var(--hairline,#e2e8f0);padding-top:16px;margin-top:4px;">
+      <label class="label">Additional email addresses</label>
+      <div class="hint" style="margin-bottom:8px;">Bot reminders go to the primary email above <em>and</em> every address listed here. Useful for people who check multiple inboxes.</div>
+      <div id="bre-extra-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+      <button type="button" class="btn btn-ghost btn-xs" id="bre-add-email" style="align-self:flex-start;">+ Add another email</button>
+    </div>
+
+    <div class="field" style="border-top:1px solid var(--hairline,#e2e8f0);padding-top:16px;margin-top:4px;">
       <label class="label">Reminder behavior</label>
       <select class="select" id="bre-mode">
         <option value="none" ${!current.exists ? "selected" : ""}>Send reminders normally</option>
@@ -463,10 +485,48 @@ function openBotReminderExemptionModal(ctx, user, onDone) {
     <div id="bre-msg" class="hint" style="color:var(--danger);"></div>
   `;
 
+  // Build the extra-emails list dynamically so add/remove works without a re-render.
+  const extraList = body.querySelector("#bre-extra-list");
+  const extras = [...existingExtras];
+
+  function renderExtras() {
+    extraList.innerHTML = "";
+    if (!extras.length) {
+      extraList.innerHTML = `<div style="font-size:13px;color:var(--muted);">No additional addresses.</div>`;
+      return;
+    }
+    extras.forEach((email, i) => {
+      const row = el("div", { style: { display: "flex", gap: "8px", alignItems: "center" } });
+      row.innerHTML = `
+        <input class="input" type="email" data-extra-idx="${i}" value="${escAttr(email)}" placeholder="extra@example.com" style="flex:1;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;">
+        <button type="button" class="btn btn-ghost btn-xs" data-remove-extra="${i}" style="color:var(--danger);flex-shrink:0;">Remove</button>`;
+      extraList.appendChild(row);
+    });
+  }
+  renderExtras();
+
+  extraList.addEventListener("input", (e) => {
+    const inp = e.target.closest("[data-extra-idx]");
+    if (!inp) return;
+    extras[parseInt(inp.dataset.extraIdx, 10)] = inp.value.trim();
+  });
+  extraList.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-remove-extra]");
+    if (!btn) return;
+    extras.splice(parseInt(btn.dataset.removeExtra, 10), 1);
+    renderExtras();
+  });
+  body.querySelector("#bre-add-email").addEventListener("click", () => {
+    extras.push("");
+    renderExtras();
+    const inputs = extraList.querySelectorAll("input[data-extra-idx]");
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  });
+
   const saveBtn = el("button", { class: "btn btn-accent" }, "Save");
   const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
   const modal = openModal({
-    title: `Catalyst bot reminders — ${user.name || user.email || "User"}`,
+    title: `Bot settings — ${user.name || user.email || "User"}`,
     body,
     footer: [cancelBtn, saveBtn],
   });
@@ -488,6 +548,14 @@ function openBotReminderExemptionModal(ctx, user, onDone) {
     const mode = modeEl.value;
     const reason = body.querySelector("#bre-reason").value.trim();
 
+    // Validate extra emails.
+    const cleanExtras = extras.map((e) => e.trim()).filter(Boolean);
+    const invalidExtra = cleanExtras.find((e) => !e.includes("@"));
+    if (invalidExtra) {
+      msgEl.textContent = `"${invalidExtra}" doesn't look like a valid email address.`;
+      return;
+    }
+
     if (mode === "until") {
       const untilDate = untilEl.value;
       if (!untilDate) {
@@ -504,24 +572,22 @@ function openBotReminderExemptionModal(ctx, user, onDone) {
     saveBtn.textContent = "Saving…";
 
     try {
+      const patch = { extraEmails: cleanExtras };
+
       if (mode === "none") {
-        await updateDoc(doc(db, "users", user.id), {
-          botReminderExemption: deleteField(),
-        });
-        ctx.toast("Catalyst bot reminders re-enabled.", "success");
+        patch.botReminderExemption = deleteField();
       } else {
-        await updateDoc(doc(db, "users", user.id), {
-          botReminderExemption: {
-            untilDate: mode === "until" ? untilEl.value : null,
-            reason: reason || null,
-            updatedAt: new Date().toISOString(),
-            updatedById: ctx.user.uid,
-            updatedByName: ctx.profile.name || ctx.user.email,
-          },
-        });
-        ctx.toast("Catalyst bot reminder pause saved.", "success");
+        patch.botReminderExemption = {
+          untilDate: mode === "until" ? untilEl.value : null,
+          reason: reason || null,
+          updatedAt: new Date().toISOString(),
+          updatedById: ctx.user.uid,
+          updatedByName: ctx.profile.name || ctx.user.email,
+        };
       }
 
+      await updateDoc(doc(db, "users", user.id), patch);
+      ctx.toast(mode === "none" ? "Bot settings saved." : "Bot reminder pause saved.", "success");
       modal.close();
       onDone && onDone();
     } catch (err) {

@@ -152,9 +152,14 @@ export const onRequestPost = async ({ request, env }) => {
 
       if (!dryRun) {
         for (const r of builtReminders) {
+          // Collect all addresses: primary + any extras stored on the user doc.
+          const extraEmails = Array.isArray(r.writer.extraEmails)
+            ? r.writer.extraEmails.filter(Boolean)
+            : [];
+          const allRecipients = [r.writer.email, ...extraEmails].filter(Boolean);
           try {
             await sendEmail(env, {
-              to: r.writer.email,
+              to: allRecipients,
               subject: r.subject,
               html: r.html,
               replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
