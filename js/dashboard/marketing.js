@@ -388,70 +388,45 @@ async function generatePostImage(title, coverImageUrl) {
     }
   }
 
-  // ── Figure out title metrics early — we need them to size the image area ───
-  // "New Article" badge occupies top 36 + 82 + 20px gap = ~138px
-  // We require title block top to be at least this far from the badge bottom.
+  // ── Figure out title metrics early — we need them to size the gradient ──────
+  // "New Article" badge bottom edge = 36 (badgeY) + 82 (badgeH) = 118px.
+  // We shrink the font until the title block top sits at least 174px from the
+  // canvas top — safely below the badge — so text never overlaps it.
   const BADGE_BOTTOM = 36 + 82; // 118 px
-  const MIN_GAP_AFTER_BADGE = 56; // breathing room between badge and first title line
-  const MIN_TITLE_TOP = BADGE_BOTTOM + MIN_GAP_AFTER_BADGE; // ~174 px
+  const MIN_TITLE_TOP = BADGE_BOTTOM + 56; // ~174 px: badge + breathing room
   const pad = 54;
   const maxW = SIZE - pad * 2;
   const bottomPad = 72;
 
-  // Start large and shrink until the title block fits below MIN_TITLE_TOP.
+  // Shrink from 82px → 36px (3px steps) until title top clears MIN_TITLE_TOP.
   let fontSize = 82;
   let lines;
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
+  while (true) { // eslint-disable-line no-constant-condition
     ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
     lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
-    const lineH = fontSize * 1.2;
-    const blockH = lines.length * lineH;
-    const titleTop = SIZE - bottomPad - blockH; // approx top of text block
-    if (titleTop >= MIN_TITLE_TOP || fontSize <= 36) break;
+    const lh = fontSize * 1.2;
+    const bh = lines.length * lh;
+    if ((SIZE - bottomPad - bh) >= MIN_TITLE_TOP || fontSize <= 36) break;
     fontSize -= 3;
   }
 
-  const lineH = fontSize * 1.2;
+  const lineH  = fontSize * 1.2;
   const blockH = lines.length * lineH;
-  // titleTop is where the first baseline sits (offset by one ascender's worth)
-  const titleTop = SIZE - bottomPad - blockH;
+  const titleTop = SIZE - bottomPad - blockH; // y where the text block starts
 
+  // ── Draw cover image ────────────────────────────────────────────────────────
   if (coverImg) {
     const iw = coverImg.naturalWidth, ih = coverImg.naturalHeight;
     const aspect = iw / ih;
 
     if (aspect >= 0.85 && aspect <= 1.18) {
-      // ── Near-square: fill only the "safe" zone above the title, clipped ─────
-      // We scale so image fills the full width, then position it to sit between
-      // the badge (bottom ~118px) and the title block top, centred in that zone.
+      // ── Near-square: full-bleed, same as before ─────────────────────────────
       const scale = Math.max(SIZE / iw, SIZE / ih);
       const dw = iw * scale, dh = ih * scale;
-
-      // Available vertical zone for the image: badge_bottom → titleTop
-      const imageZoneTop = BADGE_BOTTOM + 20;
-      const imageZoneBot = titleTop - 20;
-      const imageZoneH = imageZoneBot - imageZoneTop;
-
-      // If there's barely any room (very long title), we still draw the full-bleed
-      // version but accept the overlap — at worst nothing is hidden behind text.
-      if (imageZoneH > 80) {
-        // Crop the image to the zone: centre the scaled image in the full canvas
-        // then clip to the safe zone.
-        const imgY = (SIZE - dh) / 2; // where the scaled image would start if unconstrained
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, imageZoneTop, SIZE, imageZoneH);
-        ctx.clip();
-        ctx.drawImage(coverImg, (SIZE - dw) / 2, imgY, dw, dh);
-        ctx.restore();
-      } else {
-        // Fallback: full-bleed (very short title, lots of room)
-        ctx.drawImage(coverImg, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
-      }
+      ctx.drawImage(coverImg, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
     } else {
-      // ── Landscape (or very tall portrait): blurred background + letterbox ──
-      // Step 1 — blurred full-bleed version of the image behind everything.
+      // ── Landscape / tall portrait: blurred bg + letterboxed sharp image ─────
+      // Blurred backdrop fills canvas.
       ctx.save();
       ctx.filter = "blur(28px) brightness(0.45) saturate(1.4)";
       const bgScale = Math.max(SIZE / iw, SIZE / ih) * 1.1;
@@ -460,25 +435,23 @@ async function generatePostImage(title, coverImageUrl) {
       ctx.filter = "none";
       ctx.restore();
 
-      // Dark vignette over the blurred bg so text stays readable
+      // Dark radial vignette so text stays readable.
       const vig = ctx.createRadialGradient(SIZE / 2, SIZE / 2, SIZE * 0.15, SIZE / 2, SIZE / 2, SIZE * 0.85);
       vig.addColorStop(0, "rgba(0,0,0,0)");
       vig.addColorStop(1, "rgba(0,0,0,0.55)");
       ctx.fillStyle = vig;
       ctx.fillRect(0, 0, SIZE, SIZE);
 
-      // Step 2 — sharp image letterboxed, constrained to the safe zone.
-      const margin = SIZE * 0.05;
-      const maxImgW = SIZE - margin * 2;
-      // Image sits between badge bottom and title top
-      const imgZoneTop = BADGE_BOTTOM + 20;
-      const imgZoneBot = titleTop - 20;
-      const maxImgH = Math.max(100, imgZoneBot - imgZoneTop);
-      const fitScale = Math.min(maxImgW / iw, maxImgH / ih);
+      // Sharp letterboxed image — constrained to the safe zone between badge and title.
+      const margin    = SIZE * 0.05;
+      const maxImgW   = SIZE - margin * 2;
+      const imgZoneTop = BADGE_BOTTOM + 24;
+      const imgZoneBot = titleTop - 24;
+      const zoneH     = Math.max(120, imgZoneBot - imgZoneTop);
+      const fitScale  = Math.min(maxImgW / iw, zoneH / ih);
       const fw = iw * fitScale, fh = ih * fitScale;
       const fx = (SIZE - fw) / 2;
-      // Centre within the safe zone
-      const fy = imgZoneTop + (maxImgH - fh) / 2;
+      const fy = imgZoneTop + (zoneH - fh) / 2;
 
       ctx.save();
       const r = 18;
@@ -488,6 +461,7 @@ async function generatePostImage(title, coverImageUrl) {
       ctx.drawImage(coverImg, fx, fy, fw, fh);
       ctx.restore();
 
+      // Thin white border around the sharp image.
       ctx.save();
       ctx.strokeStyle = "rgba(255,255,255,0.18)";
       ctx.lineWidth = 2;
@@ -497,7 +471,7 @@ async function generatePostImage(title, coverImageUrl) {
       ctx.restore();
     }
   } else {
-    // No cover — rich dark gradient fallback
+    // No cover — rich dark gradient fallback.
     const fbGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
     fbGrad.addColorStop(0, "#0d1f38");
     fbGrad.addColorStop(1, "#0b1520");
@@ -505,13 +479,14 @@ async function generatePostImage(title, coverImageUrl) {
     ctx.fillRect(0, 0, SIZE, SIZE);
   }
 
-  // ── Bottom gradient overlay — sized to cover the entire title block ─────────
-  const gradStart = Math.min(titleTop - fontSize * 0.5, SIZE * 0.62); // start just above title
+  // ── Bottom gradient overlay — expands to cover the whole title block ────────
+  // For short titles the gradient is compact; for long ones it grows upward.
+  const gradStart = Math.min(titleTop - fontSize * 0.6, SIZE * 0.55);
   const gradH = SIZE - gradStart;
   const grad = ctx.createLinearGradient(0, gradStart, 0, SIZE);
-  grad.addColorStop(0, "rgba(0,0,0,0)");
-  grad.addColorStop(0.3, "rgba(0,0,0,0.72)");
-  grad.addColorStop(1, "rgba(0,0,0,0.97)");
+  grad.addColorStop(0,    "rgba(0,0,0,0)");
+  grad.addColorStop(0.28, "rgba(0,0,0,0.7)");
+  grad.addColorStop(1,    "rgba(0,0,0,0.97)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, gradStart, SIZE, gradH);
 
