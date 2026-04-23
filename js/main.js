@@ -826,22 +826,22 @@ function initMagazineCover(data) {
     const rawSrc = coverStory.image || ARTICLE_FALLBACK_IMAGE;
     const coverSrc = getResizedImageUrl(rawSrc, 1600, 95);
 
-    // Use a CSS background-image (not an <img>) so the image always fills the
-    // container via background-size: cover — no layout gymnastics, no opacity
-    // states, no gaps. Preload the image via a hidden <img> so onerror can
-    // swap in the original if the wsrv.nl proxy fails.
-    const safeSrc = coverSrc.replace(/'/g, "\\'");
+    // Use a plain <img> with no positional tricks — the card's height flows
+    // from the image's intrinsic aspect ratio, and the content column stretches
+    // to match via grid align-items: stretch. No cropping, no gray gaps,
+    // always looks right regardless of what the user uploads.
     const safeRaw = rawSrc.replace(/'/g, "\\'");
     const safeFallback = ARTICLE_FALLBACK_IMAGE.replace(/'/g, "\\'");
-    const fallbackHandler = rawSrc && rawSrc !== coverSrc && rawSrc !== ARTICLE_FALLBACK_IMAGE
-        ? `var t=this.parentElement;t.style.backgroundImage=\"url('${safeRaw}')\";this.onerror=function(){t.style.backgroundImage=\"url('${safeFallback}')\";};this.src='${safeRaw}';`
-        : `this.parentElement.style.backgroundImage=\"url('${safeFallback}')\";this.onerror=null;`;
+    const onErr = rawSrc && rawSrc !== coverSrc && rawSrc !== ARTICLE_FALLBACK_IMAGE
+        ? `this.onerror=function(){this.onerror=null;this.src='${safeFallback}';};this.src='${safeRaw}';`
+        : `this.onerror=null;this.src='${safeFallback}';`;
 
     coverContainer.innerHTML = `
         <div class="magazine-cover-grid" onclick="viewArticle('${encodeURIComponent(getArticleLink(coverStory))}')">
-            <div class="magazine-cover-image" style="background-image: url('${safeSrc}'); background-size: cover; background-position: center;">
-                <img src="${coverSrc}" alt="" aria-hidden="true" decoding="async" style="display:none"
-                     onerror="${fallbackHandler}">
+            <div class="magazine-cover-image">
+                <img src="${coverSrc}" alt="${coverStory.title}" class="magazine-cover-img"
+                     loading="eager" fetchpriority="high" decoding="async"
+                     onerror="${onErr}">
             </div>
             <div class="magazine-cover-content">
                 <div class="magazine-cover-label">Cover Story</div>
