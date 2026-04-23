@@ -284,12 +284,15 @@ async function firestoreAdd(authedFetch, collection, fields) {
 //   - "New Article" badge pill top-left with logo icon
 
 function loadImage(src) {
+  // Route through our proxy so Wix CDN images arrive with CORS headers
+  // and can be drawn onto a Canvas without tainting it.
+  const proxied = `/api/image-proxy?url=${encodeURIComponent(src)}`;
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-    img.src = src;
+    img.onerror = () => reject(new Error(`Failed to load image`));
+    img.src = proxied;
   });
 }
 
@@ -318,34 +321,39 @@ async function generatePostImage(title, coverImageUrl) {
   const ctx = canvas.getContext("2d");
 
   // ── Cover photo ────────────────────────────────────────────────────────────
+  // Always paint the dark fallback first so we always have a background.
+  ctx.fillStyle = "#0d1b2e";
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
   if (coverImageUrl) {
-    // Use Wix square crop if possible
+    // Build a clean Wix square-crop URL — strip any existing /v1/... transform
+    // segment first so we don't double-stack transforms (Wix 403s on that).
     let src = coverImageUrl;
     try {
       const u = new URL(coverImageUrl);
       if (u.hostname.includes("static.wixstatic.com")) {
         const v1 = u.pathname.indexOf("/v1/");
-        const asset = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
-        const fname = asset.split("/").filter(Boolean).pop();
-        src = `${u.origin}${asset}/v1/fill/w_1080,h_1080,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/${fname}`;
+        const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
+        const fname = assetPath.split("/").filter(Boolean).pop();
+        src = `${u.origin}${assetPath}/v1/fill/w_1080,h_1080,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/${fname}`;
       }
-    } catch { /* not Wix, use as-is */ }
+    } catch { /* not a Wix URL, use as-is */ }
 
     try {
       const img = await loadImage(src);
-      // Draw cover centred + cropped to fill the square
+      // Centre-crop to fill the square canvas
       const scale = Math.max(SIZE / img.width, SIZE / img.height);
       const dw = img.width * scale;
       const dh = img.height * scale;
       ctx.drawImage(img, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
     } catch {
-      // Fallback: solid dark bg
-      ctx.fillStyle = "#0f172a";
+      // Dark gradient fallback if image fails
+      const fbGrad = ctx.createRadialGradient(SIZE / 2, SIZE / 2, 0, SIZE / 2, SIZE / 2, SIZE * 0.8);
+      fbGrad.addColorStop(0, "#1e3a5f");
+      fbGrad.addColorStop(1, "#0d1b2e");
+      ctx.fillStyle = fbGrad;
       ctx.fillRect(0, 0, SIZE, SIZE);
     }
-  } else {
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, 0, SIZE, SIZE);
   }
 
   // ── Bottom gradient overlay ────────────────────────────────────────────────
@@ -388,42 +396,48 @@ async function generatePostImage(title, coverImageUrl) {
 
   // ── "New Article" badge (top-left) ─────────────────────────────────────────
   const badgeX = 36, badgeY = 36;
-  const badgeH = 52, badgeR = badgeH / 2;
+  const badgeH = 64, badgeR = badgeH / 2;
+  const iconSize = 46; // bigger logo
+  const textLabel = "New Article";
 
-  // Try to load the logo icon
+  // Try to load the logo icon directly (not through proxy — it's local)
   let logoImg = null;
   try {
-    logoImg = await loadImage("/NewGlassLogo.png");
-  } catch { /* skip logo if unavailable */ }
+    logoImg = await new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = rej;
+      img.src = "/NewGlassLogo.png";
+    });
+  } catch { /* badge still renders without icon */ }
 
-  const iconSize = 32;
-  const textLabel = "New Article";
-  ctx.font = `700 22px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  ctx.font = `700 24px "Inter", "Helvetica Neue", Arial, sans-serif`;
   const labelW = ctx.measureText(textLabel).width;
-  const badgeW = (logoImg ? iconSize + 10 : 0) + labelW + 36;
+  const badgeW = (logoImg ? iconSize + 12 : 0) + labelW + 40;
 
   // Pill background
-  ctx.fillStyle = "rgba(20,20,30,0.72)";
+  ctx.fillStyle = "rgba(15,20,35,0.78)";
   ctx.beginPath();
   ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeR);
   ctx.fill();
 
   // Border
-  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // Logo icon inside pill
-  let textStartX = badgeX + 18;
+  let textStartX = badgeX + 20;
   if (logoImg) {
-    ctx.drawImage(logoImg, badgeX + 12, badgeY + (badgeH - iconSize) / 2, iconSize, iconSize);
-    textStartX = badgeX + 12 + iconSize + 10;
+    ctx.drawImage(logoImg, badgeX + 10, badgeY + (badgeH - iconSize) / 2, iconSize, iconSize);
+    textStartX = badgeX + 10 + iconSize + 12;
   }
 
   // Label
   ctx.fillStyle = "#ffffff";
   ctx.textBaseline = "middle";
-  ctx.font = `700 22px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  ctx.shadowBlur = 0;
+  ctx.font = `700 24px "Inter", "Helvetica Neue", Arial, sans-serif`;
   ctx.fillText(textLabel, textStartX, badgeY + badgeH / 2);
 
   return canvas.toDataURL("image/png");
