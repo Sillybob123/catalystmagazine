@@ -824,7 +824,7 @@ function initMagazineCover(data) {
 
     const coverStory = data[0];
     const rawSrc = coverStory.image || ARTICLE_FALLBACK_IMAGE;
-    const coverSrc = getResizedImageUrl(rawSrc, 1600, 95);
+    const coverSrc = getResizedImageUrl(rawSrc, 2400, 95);
 
     // Use a plain <img> with no positional tricks — the card's height flows
     // from the image's intrinsic aspect ratio, and the content column stretches

@@ -3125,29 +3125,25 @@ img {
     inset 0 1px 3px rgba(255, 255, 255, 0.7);
 }
 
+/* Magazine-cover layout: image on top (full width, natural aspect ratio),
+   content below. Simple and robust — the card height equals image height +
+   content height, never leaves gaps. */
 .magazine-cover-grid {
-  display: grid;
-  /* Image column sizes to its natural width (up to ~60% of the card),
-     content column fills the rest. Both rows stretch so the content matches
-     the image's height. */
-  grid-template-columns: minmax(0, auto) 1fr;
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
 }
 
 .magazine-cover-image {
   position: relative;
   overflow: hidden;
-  line-height: 0; /* kill the inline-image baseline gap */
-  contain: layout paint;
+  line-height: 0;
 }
 
-/* The card's height is driven by the image's natural aspect ratio at the
-   rendered column width. max-height keeps very tall images in check. */
 .magazine-cover-img {
   display: block;
   width: 100%;
-  height: 100%;
-  max-height: 620px;
+  height: auto;
+  max-height: 560px;
   object-fit: cover;
 }
 
@@ -3155,16 +3151,16 @@ img {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.3) 0%, transparent 100%);
+  background: linear-gradient(180deg, transparent 60%, rgba(15, 23, 42, 0.18) 100%);
   z-index: 1;
   pointer-events: none;
 }
 
 .magazine-cover-content {
-  padding: 60px;
+  padding: 48px 60px 52px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 12px;
 }
 
 .magazine-cover-label {
@@ -3761,13 +3757,12 @@ img {
 }
 
 @media (max-width: 1024px) {
-  .magazine-cover-grid {
-    grid-template-columns: 1fr;
-  }
-
-  /* Stacked on tablet: image fills full width at its natural aspect ratio. */
   .magazine-cover-img {
     max-height: 420px;
+  }
+
+  .magazine-cover-content {
+    padding: 32px 40px 36px;
   }
 
   .magazine-grid {
