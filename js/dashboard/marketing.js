@@ -204,10 +204,10 @@ const STATUS_PILL = {
   posted:   "pill-published",
 };
 
-async function firestoreQuery(structuredQuery) {
-  const res = await fetch(
+async function firestoreQuery(authedFetch, structuredQuery) {
+  const res = await authedFetch(
     `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents:runQuery`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ structuredQuery }) }
+    { method: "POST", body: JSON.stringify({ structuredQuery }) }
   );
   if (!res.ok) throw new Error(`Firestore ${res.status}`);
   const rows = await res.json();
@@ -431,7 +431,7 @@ async function mountSocialPosts(ctx, container) {
   async function loadPosts() {
     listEl.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading…</div>`;
     try {
-      allPosts = await firestoreQuery({
+      allPosts = await firestoreQuery(ctx.authedFetch, {
         from: [{ collectionId: "social_posts" }],
         orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
         limit: 200,
