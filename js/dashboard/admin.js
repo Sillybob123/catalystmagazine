@@ -255,17 +255,33 @@ async function loadUsers(mount, ctx, reload) {
     presenceSnap.forEach((d) => presence.set(d.id, d.data()));
 
     mount.innerHTML = "";
-    const table = el("table", { class: "table users-table" });
+
+    // Scroll wrapper so the table never breaks the card layout on any screen size.
+    const scrollWrap = el("div", { style: { overflowX: "auto", width: "100%" } });
+
+    const table = el("table", { class: "table" });
+    // colgroup lets us set proportional widths without fighting auto-layout.
+    table.style.cssText = "table-layout:fixed;min-width:860px;";
     table.innerHTML = `
+      <colgroup>
+        <col style="width:13%"><!-- User -->
+        <col style="width:20%"><!-- Email -->
+        <col style="width:13%"><!-- Role -->
+        <col style="width:8%"> <!-- Status -->
+        <col style="width:18%"><!-- Bot reminders -->
+        <col style="width:9%"> <!-- Created -->
+        <col style="width:11%"><!-- Last seen -->
+        <col style="width:8%"> <!-- Actions -->
+      </colgroup>
       <thead><tr>
-        <th style="min-width:130px;">User</th>
-        <th style="min-width:180px;">Email</th>
-        <th style="min-width:150px;">Role</th>
-        <th style="min-width:80px;">Status</th>
-        <th style="min-width:200px;">Bot reminders</th>
-        <th style="min-width:90px;">Created</th>
-        <th style="min-width:120px;">Last seen</th>
-        <th style="min-width:130px;">Actions</th>
+        <th>User</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Bot reminders</th>
+        <th>Created</th>
+        <th>Last seen</th>
+        <th>Actions</th>
       </tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
 
@@ -277,31 +293,35 @@ async function loadUsers(mount, ctx, reload) {
       const extraEmails = Array.isArray(u.extraEmails) ? u.extraEmails.filter(Boolean) : [];
       const tr = el("tr", {});
       tr.innerHTML = `
-        <td style="white-space:nowrap;"><strong>${esc(u.name || "—")}</strong></td>
-        <td>
-          <div style="display:flex;flex-direction:column;gap:4px;">
-            <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">${esc(u.email || "")}</span>
-            ${extraEmails.map(e => `<span style="display:inline-flex;align-items:center;gap:4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:var(--bg-light,#f8fafc);color:var(--muted,#64748b);border:1px solid var(--hairline,#e2e8f0);border-radius:4px;padding:1px 6px;">${esc(e)}</span>`).join("")}
-          </div>
+        <td style="font-weight:600;color:var(--ink);">${esc(u.name || "—")}</td>
+        <td style="word-break:break-all;">
+          <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--ink-2);">${esc(u.email || "")}</div>
+          ${extraEmails.map(e => `<div style="margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--muted);background:var(--surface-2,#f8fafc);border:1px solid var(--hairline,#e2e8f0);border-radius:4px;padding:1px 5px;display:inline-block;">${esc(e)}</div>`).join("")}
         </td>
         <td>
-          <select class="select" style="font-size:13px;padding:6px 8px;" data-action="role" data-id="${esc(d.id)}">
+          <select class="select" style="font-size:12px;padding:5px 6px;width:100%;" data-action="role" data-id="${esc(d.id)}">
             ${["admin","editor","writer","newsletter_builder","marketing","reader"].map(r =>
               `<option value="${r}" ${u.role === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}
           </select>
         </td>
-        <td><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}">${esc(u.status || "active")}</span></td>
+        <td><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}" style="font-size:11px;">${esc(u.status || "active")}</span></td>
         <td>${renderBotReminderStatus(reminderStatus)}</td>
-        <td style="white-space:nowrap;color:var(--muted);font-size:13px;">${u.createdAt ? fmtDate(u.createdAt) : "—"}</td>
-        <td style="white-space:nowrap;">${last ? `<span style="font-size:13px;">${fmtRelative(last)}</span><div style="color:var(--muted);font-size:11px;">${fmtDate(last)}</div>` : "—"}</td>
+        <td style="font-size:12px;color:var(--muted);white-space:nowrap;">${u.createdAt ? fmtDate(u.createdAt) : "—"}</td>
+        <td style="white-space:nowrap;">
+          ${last
+            ? `<div style="font-size:12px;color:var(--ink-2);">${fmtRelative(last)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(last)}</div>`
+            : `<span style="color:var(--muted);">—</span>`}
+        </td>
         <td>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;">
-            <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}">Edit bot</button>
-            <button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid ? "disabled" : ""} style="color:var(--danger);">Delete</button>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}" style="white-space:nowrap;">Edit bot</button>
+            <button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid ? "disabled" : ""} style="color:var(--danger);white-space:nowrap;">Delete</button>
           </div>
         </td>`;
       tbody.appendChild(tr);
     });
+
+    scrollWrap.appendChild(table);
 
     tbody.addEventListener("change", async (e) => {
       const sel = e.target.closest('[data-action="role"]');
@@ -334,7 +354,7 @@ async function loadUsers(mount, ctx, reload) {
       } catch (err) { ctx.toast("Delete failed: " + err.message, "error"); }
     });
 
-    mount.appendChild(table);
+    mount.appendChild(scrollWrap);
   } catch (err) {
     mount.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
   }
@@ -428,17 +448,17 @@ function getBotReminderExemptionState(user, now = new Date()) {
 
 function renderBotReminderStatus(state) {
   if (!state.exists) {
-    return `<div style="min-width:190px;"><span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#f8fafc;color:#475569;font-size:12px;font-weight:600;">Active</span></div>`;
+    return `<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:11px;font-weight:600;">Active</span>`;
   }
 
   const tone = state.active
     ? { bg: "#eff6ff", ink: "#1d4ed8", sub: "#1e40af" }
-    : { bg: "#f8fafc", ink: "#475569", sub: "#64748b" };
+    : { bg: "#f1f5f9", ink: "#475569", sub: "#64748b" };
 
   return `
-    <div style="min-width:190px;display:grid;gap:4px;">
-      <span style="display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:${tone.bg};color:${tone.ink};font-size:12px;font-weight:700;width:max-content;">${esc(state.label)}</span>
-      ${state.reason ? `<div style="font-size:12px;color:${tone.sub};line-height:1.45;">${esc(state.reason)}</div>` : ""}
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      <span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:${tone.bg};color:${tone.ink};font-size:11px;font-weight:700;width:max-content;">${esc(state.label)}</span>
+      ${state.reason ? `<div style="font-size:11px;color:${tone.sub};line-height:1.4;">${esc(state.reason)}</div>` : ""}
     </div>
   `;
 }
