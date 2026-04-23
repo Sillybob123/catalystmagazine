@@ -264,14 +264,14 @@ async function loadUsers(mount, ctx, reload) {
     table.style.cssText = "table-layout:fixed;min-width:860px;";
     table.innerHTML = `
       <colgroup>
-        <col style="width:13%"><!-- User -->
-        <col style="width:20%"><!-- Email -->
-        <col style="width:13%"><!-- Role -->
+        <col style="width:12%"><!-- User -->
+        <col style="width:18%"><!-- Email -->
+        <col style="width:12%"><!-- Role -->
         <col style="width:8%"> <!-- Status -->
-        <col style="width:18%"><!-- Bot reminders -->
+        <col style="width:16%"><!-- Bot reminders -->
         <col style="width:9%"> <!-- Created -->
-        <col style="width:11%"><!-- Last seen -->
-        <col style="width:8%"> <!-- Actions -->
+        <col style="width:13%"><!-- Last seen -->
+        <col style="width:12%"><!-- Actions -->
       </colgroup>
       <thead><tr>
         <th>User</th>

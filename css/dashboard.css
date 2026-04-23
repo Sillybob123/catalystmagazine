@@ -305,7 +305,7 @@ button { font-family: inherit; cursor: pointer; }
 .btn-ghost { background: transparent; color: var(--ink-2); border-color: transparent; }
 .btn-ghost:hover { background: var(--surface-3); }
 .btn-sm { padding: 7px 12px; font-size: 13px; }
-.btn-xs { padding: 5px 10px; font-size: 12px; }
+.btn-xs { padding: 5px 10px; font-size: 12px; white-space: nowrap; justify-content: center; }
 .btn-block { display: flex; width: 100%; justify-content: center; }
 
 /* Form */
