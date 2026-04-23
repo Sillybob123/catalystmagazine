@@ -959,38 +959,32 @@ function renderMagazineGrid(filter, data) {
 function createMagazineArticle(article, sizeClass = 'small', gridIndex = 99) {
     const imageSrc = article.image || ARTICLE_FALLBACK_IMAGE;
     const category = article.category || 'feature';
-    // Magazine grid: 3 cols in a 1200px container with 24px gap → each col is
-    // ~384px. Large/medium cards span 2 cols → ~792px rendered width. On 2×
-    // retina that's ~1584px needed to stay crisp. Small cards stay on the
-    // shared createProgressiveImage path so the home page is untouched.
-    let imageMarkup;
-    if (sizeClass === 'large' || sizeClass === 'medium') {
-        const resized = getResizedImageUrl(imageSrc, 1600, 95);
-        const isAboveFold = sizeClass === 'large' && gridIndex === 0;
-        const loadingAttr = isAboveFold ? 'eager' : 'lazy';
-        const priorityAttr = isAboveFold ? 'fetchpriority="high"' : '';
-        const lqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[imageSrc] ? window.__LQIP_MANIFEST[imageSrc] : '';
-        const bgStyle = lqip ? `background-image: url('${lqip}'); background-size: cover; background-position: center;` : '';
-        // If the resized proxy fails, try the original URL before the fallback.
-        const cardOnError = imageSrc && imageSrc !== resized && imageSrc !== ARTICLE_FALLBACK_IMAGE
-            ? `this.onerror=function(){this.onerror=null;this.src='${ARTICLE_FALLBACK_IMAGE}';this.classList.add('loaded');};this.src='${imageSrc.replace(/'/g, "\\'")}';`
-            : `this.onerror=null;this.src='${ARTICLE_FALLBACK_IMAGE}';this.classList.add('loaded');`;
-        imageMarkup = `
-            <div class="magazine-article-image-wrapper card-img-wrap" style="${bgStyle}">
-                <img src="${resized}" alt="${article.title}" class="card-img" loading="${loadingAttr}" decoding="async" ${priorityAttr}
-                     onload="this.classList.add('loaded')"
-                     onerror="${cardOnError}">
-            </div>
-        `;
-    } else {
-        imageMarkup = createProgressiveImage(
-            imageSrc,
-            article.title,
-            'magazine-article-image-wrapper',
-            false,
-            article.imageSettings
-        );
-    }
+    // Magazine grid on articles page: 3 cols in a 1200px container with 24px gap
+    // → each col ~384px. Large/medium cards span 2 cols (~792px rendered).
+    // On 2x retina: large/medium need ~1600px source, small need ~800px source.
+    // Render every card on the articles page with an explicit high-quality
+    // <img> so quality is under our control. The shared createProgressiveImage
+    // path (used on home page) is deliberately untouched.
+    const isBig = sizeClass === 'large' || sizeClass === 'medium';
+    const imgWidth = isBig ? 1600 : 900;
+    const imgQuality = isBig ? 95 : 90;
+    const resized = getResizedImageUrl(imageSrc, imgWidth, imgQuality);
+    const isAboveFold = sizeClass === 'large' && gridIndex === 0;
+    const loadingAttr = isAboveFold ? 'eager' : 'lazy';
+    const priorityAttr = isAboveFold ? 'fetchpriority="high"' : '';
+    const lqip = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[imageSrc] ? window.__LQIP_MANIFEST[imageSrc] : '';
+    const bgStyle = lqip ? `background-image: url('${lqip}'); background-size: cover; background-position: center;` : '';
+    // If the resized proxy fails, try the original URL before the fallback.
+    const cardOnError = imageSrc && imageSrc !== resized && imageSrc !== ARTICLE_FALLBACK_IMAGE
+        ? `this.onerror=function(){this.onerror=null;this.src='${ARTICLE_FALLBACK_IMAGE}';this.classList.add('loaded');};this.src='${imageSrc.replace(/'/g, "\\'")}';`
+        : `this.onerror=null;this.src='${ARTICLE_FALLBACK_IMAGE}';this.classList.add('loaded');`;
+    const imageMarkup = `
+        <div class="magazine-article-image-wrapper card-img-wrap" style="${bgStyle}">
+            <img src="${resized}" alt="${article.title}" class="card-img" loading="${loadingAttr}" decoding="async" ${priorityAttr}
+                 onload="this.classList.add('loaded')"
+                 onerror="${cardOnError}">
+        </div>
+    `;
 
     return `
         <article class="magazine-article ${sizeClass}" onclick="viewArticle('${encodeURIComponent(getArticleLink(article))}')">
