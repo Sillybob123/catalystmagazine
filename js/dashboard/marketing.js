@@ -388,22 +388,73 @@ async function generatePostImage(title, coverImageUrl) {
     }
   }
 
+  // ── Figure out title metrics early — we need them to size the image area ───
+  // "New Article" badge occupies top 36 + 82 + 20px gap = ~138px
+  // We require title block top to be at least this far from the badge bottom.
+  const BADGE_BOTTOM = 36 + 82; // 118 px
+  const MIN_GAP_AFTER_BADGE = 56; // breathing room between badge and first title line
+  const MIN_TITLE_TOP = BADGE_BOTTOM + MIN_GAP_AFTER_BADGE; // ~174 px
+  const pad = 54;
+  const maxW = SIZE - pad * 2;
+  const bottomPad = 72;
+
+  // Start large and shrink until the title block fits below MIN_TITLE_TOP.
+  let fontSize = 82;
+  let lines;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
+    const lineH = fontSize * 1.2;
+    const blockH = lines.length * lineH;
+    const titleTop = SIZE - bottomPad - blockH; // approx top of text block
+    if (titleTop >= MIN_TITLE_TOP || fontSize <= 36) break;
+    fontSize -= 3;
+  }
+
+  const lineH = fontSize * 1.2;
+  const blockH = lines.length * lineH;
+  // titleTop is where the first baseline sits (offset by one ascender's worth)
+  const titleTop = SIZE - bottomPad - blockH;
+
   if (coverImg) {
     const iw = coverImg.naturalWidth, ih = coverImg.naturalHeight;
     const aspect = iw / ih;
 
     if (aspect >= 0.85 && aspect <= 1.18) {
-      // ── Near-square: fill the whole canvas ──────────────────────────────────
+      // ── Near-square: fill only the "safe" zone above the title, clipped ─────
+      // We scale so image fills the full width, then position it to sit between
+      // the badge (bottom ~118px) and the title block top, centred in that zone.
       const scale = Math.max(SIZE / iw, SIZE / ih);
       const dw = iw * scale, dh = ih * scale;
-      ctx.drawImage(coverImg, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
+
+      // Available vertical zone for the image: badge_bottom → titleTop
+      const imageZoneTop = BADGE_BOTTOM + 20;
+      const imageZoneBot = titleTop - 20;
+      const imageZoneH = imageZoneBot - imageZoneTop;
+
+      // If there's barely any room (very long title), we still draw the full-bleed
+      // version but accept the overlap — at worst nothing is hidden behind text.
+      if (imageZoneH > 80) {
+        // Crop the image to the zone: centre the scaled image in the full canvas
+        // then clip to the safe zone.
+        const imgY = (SIZE - dh) / 2; // where the scaled image would start if unconstrained
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, imageZoneTop, SIZE, imageZoneH);
+        ctx.clip();
+        ctx.drawImage(coverImg, (SIZE - dw) / 2, imgY, dw, dh);
+        ctx.restore();
+      } else {
+        // Fallback: full-bleed (very short title, lots of room)
+        ctx.drawImage(coverImg, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
+      }
     } else {
       // ── Landscape (or very tall portrait): blurred background + letterbox ──
       // Step 1 — blurred full-bleed version of the image behind everything.
-      // We scale to fill, then blur heavily so it reads as a dark bokeh backdrop.
       ctx.save();
       ctx.filter = "blur(28px) brightness(0.45) saturate(1.4)";
-      const bgScale = Math.max(SIZE / iw, SIZE / ih) * 1.1; // slightly overscan to hide blur edges
+      const bgScale = Math.max(SIZE / iw, SIZE / ih) * 1.1;
       const bgW = iw * bgScale, bgH = ih * bgScale;
       ctx.drawImage(coverImg, (SIZE - bgW) / 2, (SIZE - bgH) / 2, bgW, bgH);
       ctx.filter = "none";
@@ -416,19 +467,19 @@ async function generatePostImage(title, coverImageUrl) {
       ctx.fillStyle = vig;
       ctx.fillRect(0, 0, SIZE, SIZE);
 
-      // Step 2 — sharp image letterboxed in the centre, scaled to fit width.
-      // For wide landscape images we fit to width and centre vertically.
-      // Leave ~10% margin on each side so the image has breathing room.
+      // Step 2 — sharp image letterboxed, constrained to the safe zone.
       const margin = SIZE * 0.05;
-      const maxW = SIZE - margin * 2;
-      const maxH = SIZE * 0.62; // image takes up ~62% of height, leaving room for title
-      const fitScale = Math.min(maxW / iw, maxH / ih);
+      const maxImgW = SIZE - margin * 2;
+      // Image sits between badge bottom and title top
+      const imgZoneTop = BADGE_BOTTOM + 20;
+      const imgZoneBot = titleTop - 20;
+      const maxImgH = Math.max(100, imgZoneBot - imgZoneTop);
+      const fitScale = Math.min(maxImgW / iw, maxImgH / ih);
       const fw = iw * fitScale, fh = ih * fitScale;
       const fx = (SIZE - fw) / 2;
-      // Position image in the upper ~60% of the frame so title sits below
-      const fy = SIZE * 0.04 + (maxH - fh) / 2;
+      // Centre within the safe zone
+      const fy = imgZoneTop + (maxImgH - fh) / 2;
 
-      // Subtle rounded-rect clip for the sharp image
       ctx.save();
       const r = 18;
       ctx.beginPath();
@@ -437,7 +488,6 @@ async function generatePostImage(title, coverImageUrl) {
       ctx.drawImage(coverImg, fx, fy, fw, fh);
       ctx.restore();
 
-      // Thin white border around the sharp image for definition
       ctx.save();
       ctx.strokeStyle = "rgba(255,255,255,0.18)";
       ctx.lineWidth = 2;
@@ -455,31 +505,17 @@ async function generatePostImage(title, coverImageUrl) {
     ctx.fillRect(0, 0, SIZE, SIZE);
   }
 
-  // ── Bottom gradient overlay (title area) ───────────────────────────────────
-  const gradH = SIZE * 0.48;
-  const grad = ctx.createLinearGradient(0, SIZE - gradH, 0, SIZE);
+  // ── Bottom gradient overlay — sized to cover the entire title block ─────────
+  const gradStart = Math.min(titleTop - fontSize * 0.5, SIZE * 0.62); // start just above title
+  const gradH = SIZE - gradStart;
+  const grad = ctx.createLinearGradient(0, gradStart, 0, SIZE);
   grad.addColorStop(0, "rgba(0,0,0,0)");
-  grad.addColorStop(0.35, "rgba(0,0,0,0.7)");
-  grad.addColorStop(1, "rgba(0,0,0,0.96)");
+  grad.addColorStop(0.3, "rgba(0,0,0,0.72)");
+  grad.addColorStop(1, "rgba(0,0,0,0.97)");
   ctx.fillStyle = grad;
-  ctx.fillRect(0, SIZE - gradH, SIZE, gradH);
+  ctx.fillRect(0, gradStart, SIZE, gradH);
 
   // ── Title text ─────────────────────────────────────────────────────────────
-  const pad = 54;
-  const maxW = SIZE - pad * 2;
-  const bottomPad = 72;
-
-  let fontSize = 82;
-  ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-  let lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
-  while (lines.length > 4 && fontSize > 48) {
-    fontSize -= 4;
-    ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
-  }
-
-  const lineH = fontSize * 1.2;
-  const blockH = lines.length * lineH;
   let ty = SIZE - bottomPad - blockH + lineH * 0.82;
 
   ctx.fillStyle = "#ffffff";
