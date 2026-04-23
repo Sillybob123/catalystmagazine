@@ -9,8 +9,12 @@
 //      Requires role=admin.
 //
 // Body (all optional): {
-//   mode: "auto" | "writers" | "digest"    // default "auto" (writers every day,
+//   mode: "auto" | "writers" | "digest" | "ping"
+//                                           // default "auto" (writers every day,
 //                                             digest additionally on Saturday)
+//                                           // "ping" sends a test email to BOT_PING_EMAIL
+//                                             (or bendoryair@gmail.com) — no cooldown,
+//                                             no project data, just proves the pipeline works
 //   dryRun: true                            // compute plan but don't send emails
 //   adminEmails: [email, email, ...]        // overrides the default digest list
 //   forceDigest: true                       // send digest regardless of weekday
@@ -62,6 +66,27 @@ export const onRequestPost = async ({ request, env }) => {
     const mode = body.mode || "auto";
     const dryRun = !!body.dryRun;
     const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
+
+    // ── Ping mode — no project data, just proves cron→Resend pipeline works ──
+    if (mode === "ping") {
+      const pingTo = env.BOT_PING_EMAIL || "bendoryair@gmail.com";
+      const sentAt = now.toISOString();
+      const pingResult = { ok: true, mode: "ping", calledBy: caller, sentAt, to: pingTo, sent: false, error: null };
+      if (!dryRun) {
+        try {
+          await sendEmail(env, {
+            to: pingTo,
+            subject: `Catalyst Bot ping — ${sentAt}`,
+            html: `<p>The Catalyst Bot cron fired successfully at <strong>${sentAt}</strong>.</p><p>Caller: ${caller}</p>`,
+            replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+          });
+          pingResult.sent = true;
+        } catch (err) {
+          pingResult.error = err?.message || String(err);
+        }
+      }
+      return json(pingResult);
+    }
 
     // ── Load data ────────────────────────────────────────────────────────────
     const [projects, users] = await Promise.all([
