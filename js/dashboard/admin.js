@@ -4,13 +4,14 @@
 //   - "images":   library manager — browse every image in Firebase Storage
 //                 and delete orphaned or duplicate files
 
-import { db, auth, storage } from "../firebase-config.js";
+import { app, db, auth, storage } from "../firebase-config.js";
 import {
   collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy,
   where, getDoc, setDoc, deleteField,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
-import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { el, esc, fmtRelative, fmtDate, statusPill, confirmDialog, openModal, slugify } from "./ui.js";
 import { loadImageLibrary, renderLibraryGrid, uploadToFirebase, openImageLibraryPicker, openArticlePreviewFromData } from "./writer.js";
 
@@ -991,24 +992,49 @@ function openAddUserModal(ctx, onDone) {
 
     if (!name || !email || !password) { msg.textContent = "Name, email, and password required."; return; }
     saveBtn.disabled = true; saveBtn.textContent = "Creating…";
+
+    // Spin up a secondary Firebase app using the same config as the primary.
+    // createUserWithEmailAndPassword auto-signs-in on whichever auth instance
+    // it's called with, so by using a throwaway app here we keep the admin's
+    // primary session untouched. The secondary app is signed out + deleted
+    // in the finally block so no state leaks.
+    let secondaryApp = null;
     try {
-      // This signs out the current admin on the client side — acceptable for a
-      // small staff; admin can sign back in afterward. A server-side admin SDK
-      // endpoint would be better long-term but requires service-account setup.
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      secondaryApp = initializeApp(app.options, `user-creator-${Date.now()}`);
+      const secondaryAuth = getAuth(secondaryApp);
+
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+      // displayName on the Auth user (shown in Firebase console + available
+      // as user.displayName anywhere). Firestore also gets `name` as the
+      // primary field the app reads for bylines, reminders, etc.
       await updateProfile(cred.user, { displayName: name });
+
       await setDoc(doc(db, "users", cred.user.uid), {
-        name, email, role,
+        name,
+        displayName: name,  // Keep the two fields aligned so any legacy reader gets the right value.
+        email,
+        role,
         status: "active",
         createdAt: new Date().toISOString(),
         createdBy: ctx.user.uid,
       });
-      ctx.toast(`User created: ${name} (${role}). You may be signed out — please sign back in.`, "success", 6000);
+
+      ctx.toast(`User created: ${name} (${role}).`, "success");
       m.close();
       onDone && onDone();
     } catch (err) {
       msg.textContent = err.message;
       saveBtn.disabled = false; saveBtn.textContent = "Create user";
+    } finally {
+      // Tear down the secondary app so its auth state doesn't linger in memory.
+      if (secondaryApp) {
+        try {
+          await signOut(getAuth(secondaryApp));
+        } catch { /* secondary session may already be gone */ }
+        try {
+          await deleteApp(secondaryApp);
+        } catch { /* nothing we can do if cleanup fails */ }
+      }
     }
   });
 }
