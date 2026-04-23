@@ -113,19 +113,31 @@ function createProgressiveImage(src, alt, className = '', eager = false, imageSe
     </div>`;
 }
 
+// Pick an image width bucket based on the element's rendered pixel width,
+// accounting for devicePixelRatio so retina screens stay sharp.
+function bgImageUrl(el, raw) {
+    const px = (el.offsetWidth || 640) * Math.min(window.devicePixelRatio || 1, 2);
+    // Round up to the nearest bucket so wsrv.nl cache stays warm.
+    const w = px <= 500 ? 640 : px <= 900 ? 1200 : 1800;
+    return getResizedImageUrl(raw, w, 80);
+}
+
+function applyBgImage(el) {
+    const raw = el.dataset.bgImage;
+    if (!raw) return;
+    el.style.backgroundImage = `url('${bgImageUrl(el, raw)}')`;
+    if (el.dataset.bgPosition) el.style.backgroundPosition = el.dataset.bgPosition;
+    if (el.dataset.bgZoom) el.style.backgroundSize = `${parseFloat(el.dataset.bgZoom) * 100}%`;
+    el.classList.add('bg-loaded');
+}
+
 function initImageOptimization() {
     // Observe lazy-background cards (featured stories section)
     const bgObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
-            const el = entry.target;
-            const raw = el.dataset.bgImage;
-            if (!raw) return;
-            el.style.backgroundImage = `url('${getCardImageUrl(raw)}')`;
-            if (el.dataset.bgPosition) el.style.backgroundPosition = el.dataset.bgPosition;
-            if (el.dataset.bgZoom) el.style.backgroundSize = `${parseFloat(el.dataset.bgZoom) * 100}%`;
-            el.classList.add('bg-loaded');
-            bgObserver.unobserve(el);
+            applyBgImage(entry.target);
+            bgObserver.unobserve(entry.target);
         });
     }, { rootMargin: '400px 0px', threshold: 0.01 });
 
@@ -186,16 +198,8 @@ function getImageStyles(settings) {
 
 function registerLazyBackgrounds(scope = document) {
     scope.querySelectorAll('[data-bg-image]').forEach(el => {
-        // Already handled by the observer in initImageOptimization
-        // but also trigger immediately if already in view
         if (!el.classList.contains('bg-loaded')) {
-            const raw = el.dataset.bgImage;
-            if (raw) {
-                el.style.backgroundImage = `url('${getCardImageUrl(raw)}')`;
-                if (el.dataset.bgPosition) el.style.backgroundPosition = el.dataset.bgPosition;
-                if (el.dataset.bgZoom) el.style.backgroundSize = `${parseFloat(el.dataset.bgZoom) * 100}%`;
-                el.classList.add('bg-loaded');
-            }
+            applyBgImage(el);
         }
     });
 }
