@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="The Catalyst Magazine at the AI+ EXPO 2026. Join 18,000 innovators at the Walter E. Washington Convention Center, May 7–9, 2026.">
+    <meta name="keywords" content="AI+ EXPO 2026, SCSP, GWU AI, George Washington University, AI conference, Washington DC, Catalyst Magazine">
+    <meta name="author" content="The Catalyst Magazine">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#000000">
+    <title>AI+ EXPO 2026 | The Catalyst Magazine</title>
+    <link rel="canonical" href="https://www.catalyst-magazine.com/ai-expo">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="The Catalyst Magazine">
+    <meta property="og:url" content="https://www.catalyst-magazine.com/ai-expo">
+    <meta property="og:title" content="AI+ EXPO 2026 | The Catalyst Magazine">
+    <meta property="og:description" content="The Catalyst covers GW's presence at the AI+ EXPO 2026. May 7–9, Walter E. Washington Convention Center.">
+    <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="image" href="/WebLogo.png" fetchpriority="high">
+    <link rel="preload" as="image" href="/NewLogoShape.png" fetchpriority="high">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+
+    <style>
+        /* ── AI+ EXPO 2026 ── */
+
+        /* Scroll-driven fade-in */
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 0.75s cubic-bezier(0.16,1,0.3,1), transform 0.75s cubic-bezier(0.16,1,0.3,1);
+        }
+        .reveal.in {
+            opacity: 1;
+            transform: none;
+        }
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.32s; }
+        .reveal-delay-4 { transition-delay: 0.44s; }
+
+        /* ── HERO ── */
+        .xhero {
+            position: relative;
+            min-height: 100svh;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* Ambient orbs — pure CSS, no JS */
+        .xhero-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            pointer-events: none;
+        }
+        .xhero-orb-1 {
+            width: 700px; height: 700px;
+            top: -180px; left: -120px;
+            background: radial-gradient(circle, rgba(56,189,248,0.18) 0%, transparent 70%);
+            animation: orb-drift-1 18s ease-in-out infinite alternate;
+        }
+        .xhero-orb-2 {
+            width: 600px; height: 600px;
+            bottom: -100px; right: -80px;
+            background: radial-gradient(circle, rgba(99,102,241,0.14) 0%, transparent 70%);
+            animation: orb-drift-2 22s ease-in-out infinite alternate;
+        }
+        .xhero-orb-3 {
+            width: 400px; height: 400px;
+            top: 40%; left: 55%;
+            background: radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%);
+            animation: orb-drift-3 15s ease-in-out infinite alternate;
+        }
+        @keyframes orb-drift-1 {
+            from { transform: translate(0,0) scale(1); }
+            to   { transform: translate(60px, 40px) scale(1.1); }
+        }
+        @keyframes orb-drift-2 {
+            from { transform: translate(0,0) scale(1); }
+            to   { transform: translate(-50px,-30px) scale(1.08); }
+        }
+        @keyframes orb-drift-3 {
+            from { transform: translate(0,0); }
+            to   { transform: translate(-40px, 50px); }
+        }
+
+        /* Fine grid */
+        .xhero-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 80px 80px;
+            pointer-events: none;
+        }
+        /* Vignette */
+        .xhero-vignette {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%);
+            pointer-events: none;
+        }
+
+        .xhero-inner {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 80px 40px 160px;
+        }
+
+        .xhero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.38);
+            margin-bottom: 32px;
+        }
+        .xhero-kicker-line {
+            width: 28px;
+            height: 1px;
+            background: rgba(255,255,255,0.25);
+        }
+
+        .xhero-title {
+            font-size: clamp(3.6rem, 9vw, 8rem);
+            font-weight: 900;
+            line-height: 0.95;
+            letter-spacing: -3px;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        .xhero-title-line2 {
+            background: linear-gradient(90deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .xhero-sub {
+            margin-top: 32px;
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            font-weight: 400;
+            color: rgba(255,255,255,0.48);
+            max-width: 520px;
+            line-height: 1.65;
+        }
+
+        .xhero-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            margin-top: 44px;
+            flex-wrap: wrap;
+        }
+        .xhero-meta {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: rgba(255,255,255,0.55);
+        }
+        .xhero-meta svg {
+            width: 14px;
+            height: 14px;
+            opacity: 0.5;
+            flex-shrink: 0;
+        }
+        .xhero-divider {
+            width: 1px;
+            height: 16px;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .xhero-cta-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 52px;
+            flex-wrap: wrap;
+        }
+        .xhero-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 36px;
+            border-radius: 999px;
+            font-size: 0.92rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+            letter-spacing: 0.2px;
+        }
+        .xhero-btn-primary {
+            background: #fff;
+            color: #000;
+        }
+        .xhero-btn-primary:hover {
+            background: rgba(255,255,255,0.88);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(255,255,255,0.15);
+        }
+        .xhero-btn-primary svg { width: 15px; height: 15px; }
+        .xhero-btn-ghost {
+            background: transparent;
+            color: rgba(255,255,255,0.55);
+            border: 1px solid rgba(255,255,255,0.14);
+        }
+        .xhero-btn-ghost:hover {
+            border-color: rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.85);
+        }
+
+        /* Scroll hint */
+        .xhero-scroll {
+            position: absolute;
+            bottom: 36px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .xhero-scroll-text {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+        }
+        .xhero-scroll-line {
+            width: 1px;
+            height: 48px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.25), transparent);
+            animation: scroll-line 2s ease-in-out infinite;
+        }
+        @keyframes scroll-line {
+            0%   { transform: scaleY(0); transform-origin: top; }
+            50%  { transform: scaleY(1); transform-origin: top; }
+            51%  { transform: scaleY(1); transform-origin: bottom; }
+            100% { transform: scaleY(0); transform-origin: bottom; }
+        }
+
+        /* Stats bar */
+        .xhero-stats {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 2;
+            background: rgba(0,0,0,0.45);
+            border-top: 1px solid rgba(255,255,255,0.07);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .xhero-stat {
+            padding: 24px 0;
+            text-align: center;
+            border-right: 1px solid rgba(255,255,255,0.06);
+        }
+        .xhero-stat:last-child { border-right: none; }
+        .xhero-stat-num {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+        .xhero-stat-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.28);
+            margin-top: 5px;
+        }
+
+        /* ── SECTION SHELL ── */
+        .xs { padding: 120px 0; }
+        .xs-sm { padding: 80px 0; }
+        .xs-dark { background: #000; color: #fff; }
+        .xs-light { background: #fff; }
+        .xs-off { background: #f8f9fa; }
+        .xcontainer {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        /* ── SECTION LABELS ── */
+        .xlabel {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(0,0,0,0.3);
+            margin-bottom: 24px;
+        }
+        .xlabel-dark { color: rgba(255,255,255,0.3); }
+        .xlabel::before {
+            content: '';
+            display: block;
+            width: 20px;
+            height: 1px;
+            background: currentColor;
+        }
+
+        /* ── ABOUT SECTION ── */
+        .xabout-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 100px;
+            align-items: start;
+        }
+        .xabout-headline {
+            font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -1.5px;
+            color: #000;
+            margin-bottom: 28px;
+        }
+        .xabout-body {
+            font-size: 1.05rem;
+            line-height: 1.75;
+            color: #4b5563;
+            margin-bottom: 36px;
+        }
+        .xabout-body strong { color: #000; font-weight: 600; }
+
+        .xabout-orgs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .xabout-org {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #6b7280;
+            padding: 5px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            letter-spacing: 0.2px;
+            transition: all 0.2s;
+        }
+        .xabout-org:hover { border-color: #000; color: #000; }
+
+        /* Why list */
+        .xwhy-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .xwhy-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 24px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .xwhy-item:first-child { border-top: 1px solid #f0f0f0; }
+        .xwhy-num {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #d1d5db;
+            padding-top: 3px;
+            min-width: 24px;
+            font-variant-numeric: tabular-nums;
+        }
+        .xwhy-text strong {
+            display: block;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 3px;
+        }
+        .xwhy-text span {
+            font-size: 0.88rem;
+            color: #6b7280;
+            line-height: 1.55;
+        }
+
+        /* ── SCHEDULE ── */
+        .xsched-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: end;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+        .xsched-headline {
+            font-size: clamp(2.2rem, 4vw, 3.2rem);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -1.2px;
+            color: #000;
+        }
+        .xsched-sub {
+            font-size: 0.95rem;
+            color: #6b7280;
+            margin-top: 12px;
+            line-height: 1.6;
+            max-width: 480px;
+        }
+        .xday-tabs {
+            display: flex;
+            gap: 2px;
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 4px;
+        }
+        .xday-tab {
+            padding: 9px 20px;
+            border-radius: 9px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+            white-space: nowrap;
+        }
+        .xday-tab.active {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+        }
+
+        .xday-panel { display: none; }
+        .xday-panel.on { display: block; animation: xfade 0.35s cubic-bezier(0.16,1,0.3,1); }
+        @keyframes xfade {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .xday-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 3.5px;
+            text-transform: uppercase;
+            color: #9ca3af;
+            margin-bottom: 20px;
+        }
+
+        /* Schedule rows */
+        .xsched-row {
+            display: grid;
+            grid-template-columns: 140px 1fr 1fr 1fr;
+            gap: 0;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background 0.15s;
+        }
+        .xsched-row:hover { background: #fafafa; }
+        .xsched-row.xsched-row-head {
+            border-bottom: 2px solid #f3f4f6;
+        }
+        .xsched-row.xsched-row-head:hover { background: transparent; }
+        .xsched-cell {
+            padding: 18px 16px;
+            font-size: 0.88rem;
+            color: #374151;
+        }
+        .xsched-cell:first-child { padding-left: 0; }
+        .xsched-cell:last-child { padding-right: 0; }
+        .xsched-head-cell {
+            padding: 0 16px 12px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #9ca3af;
+        }
+        .xsched-head-cell:first-child { padding-left: 0; }
+        .xsched-head-cell:last-child { padding-right: 0; }
+        .xsched-time {
+            font-weight: 700;
+            color: #000;
+            font-variant-numeric: tabular-nums;
+            font-size: 0.85rem;
+        }
+        .xsched-org { font-weight: 600; color: #111; }
+        .xsched-type {
+            display: inline-block;
+            margin-top: 4px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #9ca3af;
+        }
+        .xsched-desc { color: #6b7280; }
+        .xsched-contact { color: #6b7280; }
+        .xsched-contact a {
+            color: #374151;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+        .xsched-contact a:hover { color: #000; }
+        .xsched-row-tbd .xsched-cell { color: #c4c8cc; font-style: italic; }
+        .xsched-row-tbd:hover { background: transparent; }
+
+        /* ── SPONSORSHIP ── */
+        .xspon-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 100px;
+            align-items: center;
+        }
+        .xspon-headline {
+            font-size: clamp(2.2rem, 4vw, 3.2rem);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -1.2px;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .xspon-body {
+            font-size: 1rem;
+            line-height: 1.75;
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 36px;
+        }
+        .xspon-body strong { color: rgba(255,255,255,0.8); font-weight: 600; }
+        .xspon-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .xspon-contact-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .xspon-contact a {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .xspon-contact a:hover { color: #fff; }
+
+        /* Package list */
+        .xpkg-items {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .xpkg-item {
+            display: flex;
+            gap: 24px;
+            padding: 28px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            align-items: flex-start;
+        }
+        .xpkg-item:first-child { border-top: 1px solid rgba(255,255,255,0.07); }
+        .xpkg-n {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.2);
+            padding-top: 3px;
+            min-width: 20px;
+        }
+        .xpkg-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .xpkg-desc {
+            font-size: 0.88rem;
+            color: rgba(255,255,255,0.38);
+            line-height: 1.55;
+        }
+
+        /* Kill the light background the global styles set on the page */
+        body[data-page="ai-expo"] {
+            background: #000;
+        }
+
+        /* ── REGISTER STRIP ── */
+        .xreg {
+            padding: 160px 0;
+            background: #000;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .xreg-orb {
+            position: absolute;
+            width: 800px;
+            height: 400px;
+            border-radius: 50%;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse, rgba(56,189,248,0.12) 0%, transparent 70%);
+            filter: blur(60px);
+            pointer-events: none;
+        }
+        .xreg-inner {
+            position: relative;
+            z-index: 1;
+        }
+        .xreg-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+            margin-bottom: 24px;
+        }
+        .xreg-headline {
+            font-size: clamp(2.8rem, 6vw, 5rem);
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 1;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+        .xreg-sub {
+            font-size: 1.05rem;
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 52px;
+            line-height: 1.6;
+        }
+        .xreg-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .xreg-btn-main {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 18px 40px;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            background: #fff;
+            color: #000;
+            text-decoration: none;
+            transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+            letter-spacing: 0.2px;
+        }
+        .xreg-btn-main:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 48px rgba(255,255,255,0.12);
+        }
+        .xreg-btn-main svg { width: 15px; height: 15px; }
+        .xreg-btn-sec {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 18px 36px;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: transparent;
+            color: rgba(255,255,255,0.38);
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s;
+        }
+        .xreg-btn-sec:hover {
+            border-color: rgba(255,255,255,0.25);
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            .xabout-layout { grid-template-columns: 1fr; gap: 60px; }
+            .xspon-layout  { grid-template-columns: 1fr; gap: 56px; }
+            .xsched-header { grid-template-columns: 1fr; gap: 24px; }
+            .xday-tabs { width: fit-content; }
+            .xhero-stats { grid-template-columns: repeat(2, 1fr); }
+            .xhero-stat:nth-child(2) { border-right: none; }
+            .xhero-stat:nth-child(3) { border-top: 1px solid rgba(255,255,255,0.06); }
+            /* 2×2 grid is ~200px tall, so increase bottom padding */
+            .xhero-inner { padding-bottom: 240px; }
+        }
+        @media (max-width: 768px) {
+            .xs { padding: 80px 0; }
+            .xhero-title { letter-spacing: -2px; }
+            .xcontainer { padding: 0 24px; }
+            .xhero-inner { padding: 80px 24px 240px; }
+            .xsched-row { grid-template-columns: 110px 1fr 1fr; }
+            .xsched-row .xsched-cell:last-child { display: none; }
+            .xsched-row .xsched-head-cell:last-child { display: none; }
+        }
+        @media (max-width: 520px) {
+            .xhero-title { font-size: 3rem; letter-spacing: -1.5px; }
+            .xhero-stats { grid-template-columns: repeat(2, 1fr); }
+            .xsched-row { grid-template-columns: 100px 1fr; }
+            .xsched-row .xsched-cell:nth-child(3),
+            .xsched-row .xsched-cell:nth-child(4) { display: none; }
+            .xsched-row .xsched-head-cell:nth-child(3),
+            .xsched-row .xsched-head-cell:nth-child(4) { display: none; }
+        }
+    </style>
+</head>
+<body data-page="ai-expo">
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <div id="site-header"></div>
+
+    <main>
+
+        <!-- ─────────────── HERO ─────────────── -->
+        <section class="xhero">
+            <div class="xhero-orb xhero-orb-1"></div>
+            <div class="xhero-orb xhero-orb-2"></div>
+            <div class="xhero-orb xhero-orb-3"></div>
+            <div class="xhero-grid"></div>
+            <div class="xhero-vignette"></div>
+
+            <div class="xhero-inner">
+                <div class="xhero-kicker reveal">
+                    <span class="xhero-kicker-line"></span>
+                    The Catalyst Magazine
+                </div>
+
+                <h1 class="xhero-title reveal reveal-delay-1">
+                    AI+&thinsp;<span class="xhero-title-line2">EXPO</span><br>2026
+                </h1>
+
+                <p class="xhero-sub reveal reveal-delay-2">
+                    Exploring the Future of Technology<br>with GW's Leading Innovators
+                </p>
+
+                <div class="xhero-meta-row reveal reveal-delay-3">
+                    <div class="xhero-meta">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        May 7 – 9, 2026
+                    </div>
+                    <div class="xhero-divider"></div>
+                    <div class="xhero-meta">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        9:30 AM – 5:00 PM
+                    </div>
+                    <div class="xhero-divider"></div>
+                    <div class="xhero-meta">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        Walter E. Washington Convention Center
+                    </div>
+                </div>
+
+                <div class="xhero-cta-row reveal reveal-delay-4">
+                    <a href="https://expo.scsp.ai/register/" target="_blank" rel="noopener noreferrer" class="xhero-btn xhero-btn-primary">
+                        Register for Free
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                    <a href="#schedule" class="xhero-btn xhero-btn-ghost">
+                        GW Schedule ↓
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats bar -->
+            <div class="xhero-stats">
+                <div class="xhero-stat">
+                    <div class="xhero-stat-num">18K</div>
+                    <div class="xhero-stat-label">Attendees</div>
+                </div>
+                <div class="xhero-stat">
+                    <div class="xhero-stat-num">3</div>
+                    <div class="xhero-stat-label">Days</div>
+                </div>
+                <div class="xhero-stat">
+                    <div class="xhero-stat-num">9+</div>
+                    <div class="xhero-stat-label">GW Demos</div>
+                </div>
+                <div class="xhero-stat">
+                    <div class="xhero-stat-num">Free</div>
+                    <div class="xhero-stat-label">Entry</div>
+                </div>
+            </div>
+
+            <div class="xhero-scroll">
+                <div class="xhero-scroll-text">Scroll</div>
+                <div class="xhero-scroll-line"></div>
+            </div>
+        </section>
+
+        <!-- ─────────────── ABOUT ─────────────── -->
+        <section class="xs xs-light">
+            <div class="xcontainer">
+                <div class="xabout-layout">
+                    <div class="reveal">
+                        <div class="xlabel">About the Event</div>
+                        <h2 class="xabout-headline">What is the<br>AI+ EXPO?</h2>
+                        <p class="xabout-body">
+                            Join <strong>18,000 innovators</strong> from across industry, academia, and government to build the future of technology. Hosted by the <strong>Special Competitive Studies Project (SCSP)</strong>, the AI+ EXPO is a premier convening space for the next generation of AI leaders.
+                        </p>
+                        <div class="xabout-orgs">
+                            <span class="xabout-org">Google</span>
+                            <span class="xabout-org">Microsoft</span>
+                            <span class="xabout-org">Meta</span>
+                            <span class="xabout-org">OpenAI</span>
+                            <span class="xabout-org">DOD</span>
+                            <span class="xabout-org">DOE</span>
+                            <span class="xabout-org">NSF</span>
+                            <span class="xabout-org">+ more exhibitors</span>
+                        </div>
+                    </div>
+
+                    <div class="reveal reveal-delay-2">
+                        <ul class="xwhy-list">
+                            <li class="xwhy-item">
+                                <div class="xwhy-num">01</div>
+                                <div class="xwhy-text">
+                                    <strong>Discover Cutting-Edge Tech</strong>
+                                    <span>Leading sponsors will exhibit exciting new projects across AI, defense, and research.</span>
+                                </div>
+                            </li>
+                            <li class="xwhy-item">
+                                <div class="xwhy-num">02</div>
+                                <div class="xwhy-text">
+                                    <strong>Network</strong>
+                                    <span>Meet the people shaping AI in industry, policy, and research.</span>
+                                </div>
+                            </li>
+                            <li class="xwhy-item">
+                                <div class="xwhy-num">03</div>
+                                <div class="xwhy-text">
+                                    <strong>Explore Applications</strong>
+                                    <span>See real-world AI across healthcare, defense, and society.</span>
+                                </div>
+                            </li>
+                            <li class="xwhy-item">
+                                <div class="xwhy-num">04</div>
+                                <div class="xwhy-text">
+                                    <strong>Advance Your Career</strong>
+                                    <span>Find collaborators, internships, and career pathways.</span>
+                                </div>
+                            </li>
+                            <li class="xwhy-item">
+                                <div class="xwhy-num">05</div>
+                                <div class="xwhy-text">
+                                    <strong>Engage Locally</strong>
+                                    <span>Connect with the GW Trustworthy AI Initiative and see what student and faculty innovators are building.</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─────────────── SCHEDULE ─────────────── -->
+        <section class="xs xs-off" id="schedule">
+            <div class="xcontainer">
+                <div class="xsched-header reveal">
+                    <div>
+                        <div class="xlabel">GW Innovator Showcase</div>
+                        <h2 class="xsched-headline">Schedule</h2>
+                        <p class="xsched-sub">Come support local research. Below is the full schedule of GW laboratories and organizations demonstrating their technologies across all three days.</p>
+                    </div>
+                    <div class="xday-tabs">
+                        <button class="xday-tab active" onclick="switchDay('d1', this)">May 7</button>
+                        <button class="xday-tab" onclick="switchDay('d2', this)">May 8</button>
+                        <button class="xday-tab" onclick="switchDay('d3', this)">May 9</button>
+                    </div>
+                </div>
+
+                <!-- Day 1 -->
+                <div id="d1" class="xday-panel on">
+                    <div class="xday-label">Day 1 — Thursday, May 7th</div>
+                    <!-- Header row -->
+                    <div class="xsched-row xsched-row-head">
+                        <div class="xsched-head-cell">Time</div>
+                        <div class="xsched-head-cell">Lab / Organization</div>
+                        <div class="xsched-head-cell">Activity</div>
+                        <div class="xsched-head-cell">Contact</div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">9:00–11:00 AM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">CSPRI</div><div class="xsched-type">Forum</div></div>
+                        <div class="xsched-cell xsched-desc">AI Forum Poll</div>
+                        <div class="xsched-cell xsched-contact">Costis Toregas<br><a href="mailto:toregas1@gwu.edu">toregas1@gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">11:00 AM–1:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Dr. Taeyoung Lee's Lab</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell xsched-desc">Research Demo</div>
+                        <div class="xsched-cell xsched-contact">Ben &amp; Maneesha<br><a href="mailto:yubeomyeol@email.gwu.edu">yubeomyeol@email.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">1:00–2:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">GW TAI</div><div class="xsched-type">Q&amp;A</div></div>
+                        <div class="xsched-cell xsched-desc">Director (Zoe) Q&amp;A</div>
+                        <div class="xsched-cell xsched-contact">Aidan Furlong<br><a href="mailto:aidan.furlong@email.gwu.edu">aidan.furlong@email.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">2:00–3:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">GW TAI</div><div class="xsched-type">Q&amp;A</div></div>
+                        <div class="xsched-cell xsched-desc">PhD Student Research Q&amp;A</div>
+                        <div class="xsched-cell xsched-contact">Aidan Furlong<br><a href="mailto:aidan.furlong@email.gwu.edu">aidan.furlong@email.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">3:00–4:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Leblanc Lab</div><div class="xsched-type">Showcase</div></div>
+                        <div class="xsched-cell xsched-desc">Research Showcase</div>
+                        <div class="xsched-cell xsched-contact">Sumner Gubisch</div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">4:00–5:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Nagel Lab</div><div class="xsched-type">Showcase</div></div>
+                        <div class="xsched-cell xsched-desc">Research Showcase</div>
+                        <div class="xsched-cell xsched-contact">Contact at Booth</div>
+                    </div>
+                </div>
+
+                <!-- Day 2 -->
+                <div id="d2" class="xday-panel">
+                    <div class="xday-label">Day 2 — Friday, May 8th</div>
+                    <div class="xsched-row xsched-row-head">
+                        <div class="xsched-head-cell">Time</div>
+                        <div class="xsched-head-cell">Lab / Organization</div>
+                        <div class="xsched-head-cell">Activity</div>
+                        <div class="xsched-head-cell">Contact</div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">9:00–11:00 AM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Park Lab</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell xsched-desc">Robotics Demo</div>
+                        <div class="xsched-cell xsched-contact">Chung Hyuk Park<br><a href="mailto:chpark@email.gwu.edu">chpark@email.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row xsched-row-tbd">
+                        <div class="xsched-cell"><div class="xsched-time">11:00 AM–3:00 PM</div></div>
+                        <div class="xsched-cell" style="grid-column: span 3">Open / TBD</div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">3:00–5:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Dr. Daniel Donoho's Lab</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell xsched-desc">Suturing &amp; Medical Demo</div>
+                        <div class="xsched-cell xsched-contact"><a href="mailto:danieldonohomd@gmail.com">danieldonohomd@gmail.com</a></div>
+                    </div>
+                </div>
+
+                <!-- Day 3 -->
+                <div id="d3" class="xday-panel">
+                    <div class="xday-label">Day 3 — Saturday, May 9th</div>
+                    <div class="xsched-row xsched-row-head">
+                        <div class="xsched-head-cell">Time</div>
+                        <div class="xsched-head-cell">Lab / Organization</div>
+                        <div class="xsched-head-cell">Activity</div>
+                        <div class="xsched-head-cell">Contact</div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">9:30–11:00 AM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">GW LAiSER</div><div class="xsched-type">Policy</div></div>
+                        <div class="xsched-cell xsched-desc">Workforce Policy Project</div>
+                        <div class="xsched-cell xsched-contact">Mike Sanders<br><a href="mailto:micah.sanders@email.gwu.edu">micah.sanders@email.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">11:00 AM–12:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Cao Lab</div><div class="xsched-type">Showcase</div></div>
+                        <div class="xsched-cell xsched-desc">Research Showcase</div>
+                        <div class="xsched-cell xsched-contact">Weidong Cao<br><a href="mailto:weidong.cao@email.gwu.edu">weidong.cao@email.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row xsched-row-tbd">
+                        <div class="xsched-cell"><div class="xsched-time">12:00–2:00 PM</div></div>
+                        <div class="xsched-cell" style="grid-column: span 3">Open / TBD</div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">2:00–4:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">GW AI Law Forum</div><div class="xsched-type">Debate</div></div>
+                        <div class="xsched-cell xsched-desc">AI Debate</div>
+                        <div class="xsched-cell xsched-contact">Eren Karaburun<br><a href="mailto:Eren.Karaburun@gwmail.gwu.edu">Eren.Karaburun@gwmail.gwu.edu</a></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ─────────────── SPONSORSHIP ─────────────── -->
+        <section class="xs xs-dark">
+            <div class="xcontainer">
+                <div class="xspon-layout">
+                    <div class="reveal">
+                        <div class="xlabel xlabel-dark">Media Partnership</div>
+                        <h2 class="xspon-headline">Partner with<br>The Catalyst</h2>
+                        <p class="xspon-body">
+                            As an independent, student-run publication, The Catalyst Magazine amplifies the voices of STEM innovators. Exhibiting at the AI+ EXPO? We offer an exclusive <strong>Expo Media Sponsorship Package</strong> — covering your research to thousands of readers across GW and DC.
+                        </p>
+                        <div class="xspon-contact">
+                            <div class="xspon-contact-name">Aidan Schurr</div>
+                            <a href="mailto:aidan.schurr@gwu.edu">aidan.schurr@gwu.edu</a>
+                        </div>
+                    </div>
+
+                    <div class="reveal reveal-delay-2">
+                        <div class="xpkg-items">
+                            <div class="xpkg-item">
+                                <div class="xpkg-n">01</div>
+                                <div>
+                                    <div class="xpkg-title">Feature Article</div>
+                                    <div class="xpkg-desc">A dedicated write-up covering your lab's research and expo demo, published on The Catalyst Magazine website.</div>
+                                </div>
+                            </div>
+                            <div class="xpkg-item">
+                                <div class="xpkg-n">02</div>
+                                <div>
+                                    <div class="xpkg-title">Exclusive Interview</div>
+                                    <div class="xpkg-desc">An in-depth conversation with your lead researchers or founders, edited and published by our editorial team.</div>
+                                </div>
+                            </div>
+                            <div class="xpkg-item">
+                                <div class="xpkg-n">03</div>
+                                <div>
+                                    <div class="xpkg-title">Social Media Spotlight</div>
+                                    <div class="xpkg-desc">Dedicated posts across our Instagram and digital channels to boost your visibility and reach.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─────────────── REGISTER CTA ─────────────── -->
+        <section class="xreg">
+            <div class="xreg-orb"></div>
+            <div class="xcontainer">
+                <div class="xreg-inner reveal">
+                    <div class="xreg-label">Free Admission</div>
+                    <h2 class="xreg-headline">See You There.</h2>
+                    <p class="xreg-sub">18,000 innovators. Three days.<br>Register now — entry is completely free.</p>
+                    <div class="xreg-buttons">
+                        <a href="https://expo.scsp.ai/register/" target="_blank" rel="noopener noreferrer" class="xreg-btn-main">
+                            Register for Free Entry
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                        <a href="mailto:aidan.schurr@gwu.edu" class="xreg-btn-sec">
+                            Inquire About Coverage
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script defer src="/js/layout.js"></script>
+    <script defer src="/js/main.js"></script>
+
+    <script>
+        /* Day tab switcher */
+        function switchDay(id, btn) {
+            document.querySelectorAll('.xday-panel').forEach(p => p.classList.remove('on'));
+            document.querySelectorAll('.xday-tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('on');
+            btn.classList.add('active');
+        }
+
+        /* Scroll-driven reveal */
+        const io = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    </script>
+</body>
+</html>
