@@ -3765,6 +3765,15 @@ img {
 @media (max-width: 1024px) {
   .magazine-cover-grid {
     grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  /* Stacked cover: give the image row an explicit height so the absolutely
+     positioned <img> has something to fill. Without this, the wrapper
+     collapses and shows only an empty gray band under the cover. */
+  .magazine-cover-image {
+    height: 360px;
+    min-height: 360px;
   }
 
   .magazine-grid {
@@ -3817,6 +3826,11 @@ img {
   .magazine-hero-subtitle {
     font-size: clamp(0.9rem, 3vw, 1rem);
     max-width: 90%;
+  }
+
+  .magazine-cover-image {
+    height: 260px;
+    min-height: 260px;
   }
 
   .magazine-cover-content {
