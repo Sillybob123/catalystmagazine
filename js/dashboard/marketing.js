@@ -361,91 +361,139 @@ async function generatePostImage(title, coverImageUrl) {
   const ctx = canvas.getContext("2d");
 
   // ── Cover photo ────────────────────────────────────────────────────────────
-  // Always paint the dark fallback first so we always have a background.
-  ctx.fillStyle = "#0d1b2e";
+  // Dark base — always painted first so we have a fallback.
+  ctx.fillStyle = "#0b1520";
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  console.log("[generatePostImage] coverImageUrl received:", coverImageUrl);
+  let coverImg = null;
   if (coverImageUrl) {
-    // Build a clean Wix square-crop URL — strip any existing /v1/... transform
-    // segment first so we don't double-stack transforms (Wix 403s on that).
     let src = coverImageUrl;
     try {
       const u = new URL(coverImageUrl);
       if (u.hostname.includes("static.wixstatic.com")) {
+        // Request highest-res JPEG from Wix CDN — 2160px wide so it's crisp on retina
         const v1 = u.pathname.indexOf("/v1/");
         const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
         const fname = assetPath.split("/").filter(Boolean).pop();
-        // enc_jpg instead of enc_auto — avoids AVIF which Canvas can't decode in all browsers
-        src = `${u.origin}${assetPath}/v1/fill/w_1080,h_1080,al_c,q_90,usm_0.66_1.00_0.01,enc_jpg/${fname}`;
+        src = `${u.origin}${assetPath}/v1/fill/w_2160,h_2160,al_c,q_95,usm_0.33_1.00_0.00,enc_jpg/${fname}`;
       }
-    } catch { /* not a Wix URL, use as-is */ }
+      // Firebase Storage URLs are already full-resolution — use as-is
+    } catch { /* not a parseable URL */ }
 
-    console.log("[generatePostImage] cover URL after transform:", src);
     try {
-      const img = await loadImage(src);
-      console.log("[generatePostImage] image loaded, natural size:", img.naturalWidth, "×", img.naturalHeight);
-      // Centre-crop to fill the square canvas
-      const scale = Math.max(SIZE / img.width, SIZE / img.height);
-      const dw = img.width * scale;
-      const dh = img.height * scale;
-      ctx.drawImage(img, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
+      coverImg = await loadImage(src);
+      console.log("[generatePostImage] cover loaded:", coverImg.naturalWidth, "×", coverImg.naturalHeight);
     } catch (err) {
-      console.warn("[generatePostImage] image failed, using gradient fallback:", err.message);
-      // Dark gradient fallback if image fails
-      const fbGrad = ctx.createRadialGradient(SIZE / 2, SIZE / 2, 0, SIZE / 2, SIZE / 2, SIZE * 0.8);
-      fbGrad.addColorStop(0, "#1e3a5f");
-      fbGrad.addColorStop(1, "#0d1b2e");
-      ctx.fillStyle = fbGrad;
-      ctx.fillRect(0, 0, SIZE, SIZE);
+      console.warn("[generatePostImage] cover failed:", err.message);
     }
   }
 
-  // ── Bottom gradient overlay ────────────────────────────────────────────────
-  const gradH = SIZE * 0.55;
+  if (coverImg) {
+    const iw = coverImg.naturalWidth, ih = coverImg.naturalHeight;
+    const aspect = iw / ih;
+
+    if (aspect >= 0.85 && aspect <= 1.18) {
+      // ── Near-square: fill the whole canvas ──────────────────────────────────
+      const scale = Math.max(SIZE / iw, SIZE / ih);
+      const dw = iw * scale, dh = ih * scale;
+      ctx.drawImage(coverImg, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
+    } else {
+      // ── Landscape (or very tall portrait): blurred background + letterbox ──
+      // Step 1 — blurred full-bleed version of the image behind everything.
+      // We scale to fill, then blur heavily so it reads as a dark bokeh backdrop.
+      ctx.save();
+      ctx.filter = "blur(28px) brightness(0.45) saturate(1.4)";
+      const bgScale = Math.max(SIZE / iw, SIZE / ih) * 1.1; // slightly overscan to hide blur edges
+      const bgW = iw * bgScale, bgH = ih * bgScale;
+      ctx.drawImage(coverImg, (SIZE - bgW) / 2, (SIZE - bgH) / 2, bgW, bgH);
+      ctx.filter = "none";
+      ctx.restore();
+
+      // Dark vignette over the blurred bg so text stays readable
+      const vig = ctx.createRadialGradient(SIZE / 2, SIZE / 2, SIZE * 0.15, SIZE / 2, SIZE / 2, SIZE * 0.85);
+      vig.addColorStop(0, "rgba(0,0,0,0)");
+      vig.addColorStop(1, "rgba(0,0,0,0.55)");
+      ctx.fillStyle = vig;
+      ctx.fillRect(0, 0, SIZE, SIZE);
+
+      // Step 2 — sharp image letterboxed in the centre, scaled to fit width.
+      // For wide landscape images we fit to width and centre vertically.
+      // Leave ~10% margin on each side so the image has breathing room.
+      const margin = SIZE * 0.05;
+      const maxW = SIZE - margin * 2;
+      const maxH = SIZE * 0.62; // image takes up ~62% of height, leaving room for title
+      const fitScale = Math.min(maxW / iw, maxH / ih);
+      const fw = iw * fitScale, fh = ih * fitScale;
+      const fx = (SIZE - fw) / 2;
+      // Position image in the upper ~60% of the frame so title sits below
+      const fy = SIZE * 0.04 + (maxH - fh) / 2;
+
+      // Subtle rounded-rect clip for the sharp image
+      ctx.save();
+      const r = 18;
+      ctx.beginPath();
+      ctx.roundRect(fx, fy, fw, fh, r);
+      ctx.clip();
+      ctx.drawImage(coverImg, fx, fy, fw, fh);
+      ctx.restore();
+
+      // Thin white border around the sharp image for definition
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.18)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(fx, fy, fw, fh, r);
+      ctx.stroke();
+      ctx.restore();
+    }
+  } else {
+    // No cover — rich dark gradient fallback
+    const fbGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
+    fbGrad.addColorStop(0, "#0d1f38");
+    fbGrad.addColorStop(1, "#0b1520");
+    ctx.fillStyle = fbGrad;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+  }
+
+  // ── Bottom gradient overlay (title area) ───────────────────────────────────
+  const gradH = SIZE * 0.48;
   const grad = ctx.createLinearGradient(0, SIZE - gradH, 0, SIZE);
   grad.addColorStop(0, "rgba(0,0,0,0)");
-  grad.addColorStop(0.4, "rgba(0,0,0,0.75)");
-  grad.addColorStop(1, "rgba(0,0,0,0.95)");
+  grad.addColorStop(0.35, "rgba(0,0,0,0.7)");
+  grad.addColorStop(1, "rgba(0,0,0,0.96)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, SIZE - gradH, SIZE, gradH);
 
   // ── Title text ─────────────────────────────────────────────────────────────
   const pad = 54;
   const maxW = SIZE - pad * 2;
-  const bottomPad = 70;
+  const bottomPad = 72;
 
-  // Pick font size to keep title readable: start large, shrink to fit
-  let fontSize = 88;
+  let fontSize = 82;
   ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
   let lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
-  while (lines.length > 4 && fontSize > 52) {
+  while (lines.length > 4 && fontSize > 48) {
     fontSize -= 4;
     ctx.font = `900 ${fontSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
     lines = wrapText(ctx, title, pad, maxW, fontSize * 1.15);
   }
 
-  const lineH = fontSize * 1.18;
+  const lineH = fontSize * 1.2;
   const blockH = lines.length * lineH;
-  let y = SIZE - bottomPad - blockH + lineH * 0.8;
+  let ty = SIZE - bottomPad - blockH + lineH * 0.82;
 
   ctx.fillStyle = "#ffffff";
   ctx.textBaseline = "alphabetic";
-  ctx.shadowColor = "rgba(0,0,0,0.6)";
-  ctx.shadowBlur = 12;
+  ctx.shadowColor = "rgba(0,0,0,0.7)";
+  ctx.shadowBlur = 16;
   for (const line of lines) {
-    ctx.fillText(line, pad, y);
-    y += lineH;
+    ctx.fillText(line, pad, ty);
+    ty += lineH;
   }
   ctx.shadowBlur = 0;
 
   // ── "New Article" badge (top-left) ─────────────────────────────────────────
-  const badgeX = 36, badgeY = 36;
-  const badgeH = 64, badgeR = badgeH / 2;
-  const iconSize = 46; // bigger logo
-  const textLabel = "New Article";
-
-  // Try to load the logo icon directly (not through proxy — it's local)
+  // Load the 1024×1024 glass logo — draw it at high res then downscale for crispness
   let logoImg = null;
   try {
     logoImg = await new Promise((res, rej) => {
@@ -454,35 +502,48 @@ async function generatePostImage(title, coverImageUrl) {
       img.onerror = rej;
       img.src = "/NewGlassLogo.png";
     });
-  } catch { /* badge still renders without icon */ }
+  } catch { /* badge renders without icon */ }
 
-  ctx.font = `700 24px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  const badgeX = 36, badgeY = 36;
+  const badgeH = 82;           // bigger pill
+  const badgeR = badgeH / 2;
+  const iconSize = 62;          // larger logo
+  const labelSize = 30;         // bigger text
+  const textLabel = "New Article";
+
+  ctx.font = `700 ${labelSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
   const labelW = ctx.measureText(textLabel).width;
-  const badgeW = (logoImg ? iconSize + 12 : 0) + labelW + 40;
+  const gap = 14;
+  const innerPad = 22;
+  const badgeW = innerPad + (logoImg ? iconSize + gap : 0) + labelW + innerPad;
 
-  // Pill background
-  ctx.fillStyle = "rgba(15,20,35,0.78)";
+  // Frosted-glass pill background
+  ctx.fillStyle = "rgba(10,16,30,0.82)";
   ctx.beginPath();
   ctx.roundRect(badgeX, badgeY, badgeW, badgeH, badgeR);
   ctx.fill();
 
-  // Border
-  ctx.strokeStyle = "rgba(255,255,255,0.22)";
-  ctx.lineWidth = 1.5;
+  // Subtle white border
+  ctx.strokeStyle = "rgba(255,255,255,0.28)";
+  ctx.lineWidth = 2;
   ctx.stroke();
 
-  // Logo icon inside pill
-  let textStartX = badgeX + 20;
+  // Logo icon — draw at natural resolution into a high-res offscreen canvas first
+  // so it stays sharp when downscaled onto the 1080 canvas
+  let textStartX = badgeX + innerPad;
   if (logoImg) {
-    ctx.drawImage(logoImg, badgeX + 10, badgeY + (badgeH - iconSize) / 2, iconSize, iconSize);
-    textStartX = badgeX + 10 + iconSize + 12;
+    const iconX = badgeX + innerPad;
+    const iconY = badgeY + (badgeH - iconSize) / 2;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(logoImg, iconX, iconY, iconSize, iconSize);
+    textStartX = iconX + iconSize + gap;
   }
 
-  // Label
   ctx.fillStyle = "#ffffff";
   ctx.textBaseline = "middle";
   ctx.shadowBlur = 0;
-  ctx.font = `700 24px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  ctx.font = `700 ${labelSize}px "Inter", "Helvetica Neue", Arial, sans-serif`;
   ctx.fillText(textLabel, textStartX, badgeY + badgeH / 2);
 
   return canvas.toDataURL("image/png");
