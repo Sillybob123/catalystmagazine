@@ -284,15 +284,17 @@ async function firestoreAdd(authedFetch, collection, fields) {
 //   - "New Article" badge pill top-left with logo icon
 
 function loadImage(src) {
-  // Route through our proxy so Wix CDN images arrive with CORS headers
-  // and can be drawn onto a Canvas without tainting it.
-  const proxied = `/api/image-proxy?url=${encodeURIComponent(src)}`;
+  // data: URLs (uploaded files) load directly — no proxy needed.
+  // All external URLs go through our proxy so Wix CDN images arrive with
+  // CORS headers and can be drawn onto Canvas without tainting it.
+  const isDataUrl = src.startsWith("data:");
+  const finalSrc = isDataUrl ? src : `/api/image-proxy?url=${encodeURIComponent(src)}`;
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    if (!isDataUrl) img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`Failed to load image`));
-    img.src = proxied;
+    img.src = finalSrc;
   });
 }
 
@@ -515,6 +517,16 @@ async function mountSocialPosts(ctx, container) {
               </select>
             </label>
 
+            <div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Cover image</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div id="sp-gen-img-name" style="font-size:12px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Using article cover image</div>
+                <button class="btn btn-secondary btn-xs" id="sp-gen-img-btn">Replace image</button>
+                <button class="btn btn-ghost btn-xs" id="sp-gen-img-clear" style="display:none;">✕ Reset</button>
+              </div>
+              <input type="file" id="sp-gen-img-file" accept="image/*" style="display:none;">
+            </div>
+
             <label style="font-size:13px;font-weight:600;">Caption
               <textarea class="input textarea" id="sp-gen-caption" rows="7"
                 style="margin-top:6px;width:100%;min-height:140px;font-size:13px;"></textarea>
@@ -553,6 +565,7 @@ async function mountSocialPosts(ctx, container) {
   let publishedArticles = [];
   let generatedDataUrl = null;
   let selectedArticle = null;
+  let customImageDataUrl = null; // set when user uploads a replacement image
 
   const listEl = container.querySelector("#sp-list");
   const platformFilter = container.querySelector("#sp-platform-filter");
@@ -695,7 +708,7 @@ async function mountSocialPosts(ctx, container) {
   }
 
   // ── Generate modal ─────────────────────────────────────────────────────────
-  const closeGenerate = () => { generateModal.style.display = "none"; generatedDataUrl = null; };
+  const closeGenerate = () => { generateModal.style.display = "none"; generatedDataUrl = null; customImageDataUrl = null; };
   generateModal.querySelector("#sp-gen-close").addEventListener("click", closeGenerate);
   generateModal.addEventListener("click", (e) => { if (e.target === generateModal) closeGenerate(); });
 
@@ -711,17 +724,61 @@ async function mountSocialPosts(ctx, container) {
 
   captionArea.addEventListener("input", () => { charEl.textContent = `${captionArea.value.length} characters`; });
 
+  // ── Custom image picker ────────────────────────────────────────────────────
+  const imgFileInput = generateModal.querySelector("#sp-gen-img-file");
+  const imgBtn = generateModal.querySelector("#sp-gen-img-btn");
+  const imgClearBtn = generateModal.querySelector("#sp-gen-img-clear");
+  const imgNameEl = generateModal.querySelector("#sp-gen-img-name");
+
+  imgBtn.addEventListener("click", () => imgFileInput.click());
+
+  imgFileInput.addEventListener("change", () => {
+    const file = imgFileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      customImageDataUrl = e.target.result;
+      imgNameEl.textContent = file.name;
+      imgClearBtn.style.display = "";
+      // Reset any existing preview so user knows they need to re-generate
+      generatedDataUrl = null;
+      downloadBtn.disabled = true;
+      saveBtn.disabled = true;
+      previewWrap.innerHTML = `<span style="color:var(--muted);font-size:13px;">Image replaced — click Preview to regenerate</span>`;
+      statusEl.textContent = "";
+    };
+    reader.readAsDataURL(file);
+  });
+
+  imgClearBtn.addEventListener("click", () => {
+    customImageDataUrl = null;
+    imgFileInput.value = "";
+    imgNameEl.textContent = "Using article cover image";
+    imgClearBtn.style.display = "none";
+    generatedDataUrl = null;
+    downloadBtn.disabled = true;
+    saveBtn.disabled = true;
+    previewWrap.innerHTML = `<span style="color:var(--muted);font-size:13px;">Click "Preview image" to regenerate</span>`;
+    statusEl.textContent = "";
+  });
+
   function buildCaption(article, platform) {
-    const author = article.authorName || article.author || "The Catalyst";
+    const rawAuthor = (article.authorName || article.author || "").trim();
+    // Format: "Aidan Brown from The Catalyst" — but if the stored value IS
+    // already "The Catalyst" or is empty, fall back gracefully.
+    const isCatalystPlaceholder = !rawAuthor || rawAuthor.toLowerCase() === "the catalyst";
+    const authorCredit = isCatalystPlaceholder
+      ? "The Catalyst team"
+      : `${rawAuthor} from The Catalyst`;
     const deck = article.deck || article.excerpt || "";
     const slug = article.slug || "";
     const category = article.category || "Feature";
     const tag = `#${category.replace(/\s+/g, "")}`;
     const url = slug ? `https://www.catalyst-magazine.com/article/${slug}` : "https://www.catalyst-magazine.com";
     if (platform === "linkedin") {
-      return `We just published a new article on The Catalyst Magazine!\n\n"${article.title}"\n\n${deck ? deck + "\n\n" : ""}Big shoutout to ${author} for writing this piece. Read it here:\n${url}\n\n#TheCatalyst #STEMJournalism #ScienceWriting #CatalystMagazine ${tag}`;
+      return `We just published a new article on The Catalyst Magazine!\n\n"${article.title}"\n\n${deck ? deck + "\n\n" : ""}Big shoutout to ${authorCredit} for writing this piece. Read it here:\n${url}\n\n#TheCatalyst #STEMJournalism #ScienceWriting #CatalystMagazine ${tag}`;
     }
-    return `"${article.title}"\n\n${deck ? deck + "\n\n" : ""}Written by ${author} — link in bio to read the full article!\n\n${tag} #TheCatalyst #STEMJournalism #ScienceWriting #CatalystMagazine`;
+    return `"${article.title}"\n\n${deck ? deck + "\n\n" : ""}Written by ${authorCredit} — link in bio to read the full article!\n\n${tag} #TheCatalyst #STEMJournalism #ScienceWriting #CatalystMagazine`;
   }
 
   function populateArticleDropdown() {
@@ -737,8 +794,12 @@ async function mountSocialPosts(ctx, container) {
     selectedArticle = publishedArticles[parseInt(idx, 10)];
     captionArea.value = buildCaption(selectedArticle, platformSelect.value);
     charEl.textContent = `${captionArea.value.length} characters`;
-    // Reset preview
+    // Reset preview + custom image when article changes
     generatedDataUrl = null;
+    customImageDataUrl = null;
+    imgFileInput.value = "";
+    imgNameEl.textContent = "Using article cover image";
+    imgClearBtn.style.display = "none";
     downloadBtn.disabled = true;
     saveBtn.disabled = true;
     previewWrap.innerHTML = `<span style="color:var(--muted);font-size:13px;">Click "Preview image" to generate</span>`;
@@ -760,7 +821,8 @@ async function mountSocialPosts(ctx, container) {
     statusEl.textContent = "Drawing image…";
     previewWrap.innerHTML = `<div class="spinner"></div>`;
     try {
-      const coverUrl = selectedArticle.coverImage || selectedArticle.image || "";
+      // Use uploaded custom image (data URL) or fall back to article cover URL
+      const coverUrl = customImageDataUrl || selectedArticle.coverImage || selectedArticle.image || "";
       generatedDataUrl = await generatePostImage(selectedArticle.title, coverUrl);
       const img = document.createElement("img");
       img.src = generatedDataUrl;
@@ -827,11 +889,15 @@ async function mountSocialPosts(ctx, container) {
   // ── Open generate modal ────────────────────────────────────────────────────
   container.querySelector("#sp-generate-btn").addEventListener("click", async () => {
     generatedDataUrl = null;
+    customImageDataUrl = null;
     selectedArticle = null;
     articleSelect.value = "";
     platformSelect.value = "instagram";
     captionArea.value = "";
     charEl.textContent = "0 characters";
+    imgFileInput.value = "";
+    imgNameEl.textContent = "Using article cover image";
+    imgClearBtn.style.display = "none";
     previewWrap.innerHTML = `<span style="color:var(--muted);font-size:13px;">Select an article and click Preview</span>`;
     statusEl.textContent = "";
     downloadBtn.disabled = true;
