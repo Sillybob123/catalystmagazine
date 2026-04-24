@@ -2489,6 +2489,38 @@ const teamMembers = [
         image: "/JoshShapo.png",
         linkedin: "",
         email: ""
+    },
+    {
+        name: "Catherine May May Hubbard",
+        role: "Writer",
+        bio: "May May is a recent graduate from George Washington University with a B.S. in Chemistry and minor in Music. With a background in microbiology and infectious disease research, she fell in love with experimentation and piecing together the story that the research told. Teaching is a large part of her journey in education, and in college, she has had the opportunity to share her love for science as an Undergraduate Teaching Assistant for several biology laboratory courses. At The Catalyst, she hopes to use her writing to expand access to scientific knowledge and promote STEM education within the larger DMV community.",
+        image: "/maymay.png",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "LaMyla Hill",
+        role: "Writer",
+        bio: "LaMyla is a rising Junior at Howard University, majoring in physics, with a concentration in astrophysics, and a minor in math. She is also a part of the College of Arts and Sciences Honors program and is a proud member of the Society of Physics Students. Ever since elementary school, LaMyla's dream career was to be a physicist, and she has been following this thread of fascination until now. After completing her bachelor's degree, she intends to enroll in graduate school to become an astrophysics researcher.",
+        image: "/LaMayla.png",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Sienna",
+        role: "Writer",
+        bio: "Sienna is a neuroscience student with a minor in Mind and Brain Studies in the Philosophy Department at George Washington University. She is passionate about science communication and connecting people with educational resources that inspire curiosity, as that is how her own love of science, philosophy, and anthropology was cultivated. Her academic interests primarily focus on understanding the biology of consciousness and the complex interactions between health, culture, and the environment. Her current research at George Washington University's Department of Neuroscience focuses on the development of next-generation therapeutics through drug repurposing to address antimicrobial resistance in parasitic hookworms.",
+        image: "/Sienna.png",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Cameron",
+        role: "Writer",
+        bio: "Cameron is a recent graduate from Johns Hopkins University with a B.A. in Public Health Studies and a minor in Psychology. She will be beginning her Master's of Science in Public Health at the Johns Hopkins Bloomberg School of Public Health in maternal, fetal, and perinatal health. Through her research experiences in prenatal care, harm reduction, and HIV, Cameron has become passionate about interacting with community members to ensure they have resources and education about various health topics. Cameron is drawn to the community-based side of medicine and hopes to continue to share and expand on this passion through her writing with the Catalyst, research, and in the future professionally as a physician.",
+        image: "/cameron.png",
+        linkedin: "",
+        email: ""
     }
 ];
 

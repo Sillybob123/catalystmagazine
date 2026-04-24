@@ -2288,10 +2288,11 @@ img {
   filter: brightness(1.03) saturate(1.05);
 }
 
-/* Josh's source photo is square (2140x2140) while other team photos are taller
-   portraits (~1603x1884), so `contain` makes his render visually smaller.
-   Nudge his image up slightly so he appears the same size as the rest. */
-.team-member-card[data-member="josh-shapo"] .team-member-image {
+/* Square-aspect source photos (Josh 2140x2140, Cameron 2048x2048) render visually
+   smaller than the portrait-aspect photos (~1603x1884) inside a 240x240 contain
+   box, so nudge them up so every card looks the same size. */
+.team-member-card[data-member="josh-shapo"] .team-member-image,
+.team-member-card[data-member="cameron"] .team-member-image {
   transform: scale(1.12);
 }
 
