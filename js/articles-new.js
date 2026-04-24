@@ -300,10 +300,10 @@
         const rawSpot = article.image || FALLBACK_IMAGE;
         const imgSrc = getResizedImageUrl(rawSpot, 1400, 82);
 
+        const href = escapeHtml(article.link);
         spotlightEl.setAttribute('aria-busy', 'false');
         spotlightEl.innerHTML = `
-            <a class="an-spotlight-link" href="${escapeHtml(article.link)}">${escapeHtml(article.title)}</a>
-            <div class="an-spotlight-media">
+            <a class="an-spotlight-media" href="${href}" aria-label="${escapeHtml(article.title)}">
                 <img src="${escapeHtml(imgSrc)}"
                      alt="${escapeHtml(article.title)}"
                      loading="eager"
@@ -311,21 +311,23 @@
                      decoding="async"
                      onload="this.classList.add('loaded')"
                      onerror="${imageOnErrorAttr(rawSpot, imgSrc)}">
-            </div>
+            </a>
             <div class="an-spotlight-body">
                 <span class="an-spotlight-tag">${escapeHtml(formatCategory(article.category))}</span>
-                <h3 class="an-spotlight-title">${escapeHtml(article.title)}</h3>
+                <a class="an-spotlight-title-link" href="${href}">
+                    <h3 class="an-spotlight-title">${escapeHtml(article.title)}</h3>
+                </a>
                 ${article.excerpt ? `<p class="an-spotlight-excerpt">${escapeHtml(article.excerpt)}</p>` : ''}
                 <div class="an-spotlight-meta">
                     <span>${escapeHtml(article.author)}</span>
                     ${article.date ? `<span class="an-dot"></span><span>${escapeHtml(formatDate(article.date))}</span>` : ''}
                 </div>
-                <span class="an-spotlight-cta">
+                <a class="an-spotlight-cta" href="${href}">
                     Read the story
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14M13 5l7 7-7 7"/>
                     </svg>
-                </span>
+                </a>
             </div>
         `;
     }

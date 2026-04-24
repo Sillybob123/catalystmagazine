@@ -326,6 +326,7 @@
 }
 
 .articlesnew-body .an-spotlight-media {
+    display: block;
     position: relative;
     min-height: 560px;
     overflow: hidden;
@@ -407,7 +408,6 @@
     font-size: 15px;
     font-weight: 600;
     letter-spacing: -0.005em;
-    color: var(--an-ink);
     text-decoration: none;
     padding: 14px 22px;
     border-radius: 999px;
@@ -429,17 +429,16 @@
     transform: translateX(4px);
 }
 
-/* Make the whole card linkable without visually covering the inner button */
-.articlesnew-body .an-spotlight-link {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    text-indent: -9999px;
-    overflow: hidden;
+/* Title is a clickable link but inherits text color */
+.articlesnew-body .an-spotlight-title-link {
+    color: inherit;
+    text-decoration: none;
+    display: block;
+    transition: color 0.3s var(--an-ease);
 }
-
-.articlesnew-body .an-spotlight-body > * { position: relative; z-index: 2; }
-.articlesnew-body .an-spotlight-media { position: relative; z-index: 2; }
+.articlesnew-body .an-spotlight-title-link:hover .an-spotlight-title {
+    color: #000;
+}
 
 @media (max-width: 900px) {
     .articlesnew-body .an-spotlight {
