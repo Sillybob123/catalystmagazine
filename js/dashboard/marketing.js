@@ -442,17 +442,36 @@ async function extractCoverPalette(coverImageUrl) {
 
   // Pick a diverse top-N: walk down the ranked list, accept a color only if
   // it's perceptually distinct (Δ > 70 in RGB) from anything we've already
-  // accepted. Avoids a palette of "five shades of the same blue".
+  // accepted. Each pick absorbs the counts of nearby rejected buckets so the
+  // share % accurately reflects how much of the image that color (and its
+  // close neighbors) covers.
   const picks = [];
   for (const c of ranked) {
-    const tooClose = picks.some((p) => {
+    const closest = picks.find((p) => {
       const dr = p.r - c.r, dg = p.g - c.g, db = p.b - c.b;
       return Math.sqrt(dr * dr + dg * dg + db * db) < 70;
     });
-    if (!tooClose) picks.push(c);
-    if (picks.length >= 6) break;
+    if (closest) {
+      // Roll this bucket's count into its closer neighbor in the picked set.
+      closest.count += c.count;
+    } else if (picks.length < 6) {
+      picks.push({ ...c });
+    } else {
+      // Past 6 colors — still attribute counts to the closest pick so the
+      // total percentage reflects all sampled pixels.
+      let best = picks[0], bestDist = Infinity;
+      for (const p of picks) {
+        const dr = p.r - c.r, dg = p.g - c.g, db = p.b - c.b;
+        const d = dr * dr + dg * dg + db * db;
+        if (d < bestDist) { bestDist = d; best = p; }
+      }
+      best.count += c.count;
+    }
   }
   if (!picks.length) picks.push(ranked[0]);
+
+  const totalCount = picks.reduce((s, p) => s + p.count, 0) || 1;
+  picks.sort((a, b) => b.count - a.count);
 
   const toHex = (c) =>
     "#" + [c.r, c.g, c.b].map((n) => n.toString(16).padStart(2, "0")).join("");
@@ -464,10 +483,16 @@ async function extractCoverPalette(coverImageUrl) {
   });
   const accent = [...withSat].sort((a, b) => b.sat - a.sat)[0];
 
+  const swatchesWithShare = picks.map((c) => ({
+    hex: toHex(c),
+    share: Math.round((c.count / totalCount) * 100),
+  }));
+
   return {
     dominant: toHex(picks[0]),
     accent: toHex(accent),
-    swatches: picks.map(toHex),
+    swatches: swatchesWithShare.map((s) => s.hex),         // back-compat: hex array
+    swatchesWithShare,                                       // [{hex, share}, …]
   };
 }
 
@@ -543,11 +568,14 @@ async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageSca
     try {
       const u = new URL(coverImageUrl);
       if (u.hostname.includes("static.wixstatic.com")) {
-        // Request highest-res JPEG from Wix CDN — 2160px wide so it's crisp on retina
+        // Request the original asset at maximum quality from the Wix CDN.
+        // 2160px (2× the 1080 canvas — crisp on retina) at q_100, with a
+        // stronger unsharp mask so the downsample inside the canvas doesn't
+        // soften the image. enc_jpg keeps universal browser-canvas support.
         const v1 = u.pathname.indexOf("/v1/");
         const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
         const fname = assetPath.split("/").filter(Boolean).pop();
-        src = `${u.origin}${assetPath}/v1/fill/w_2160,h_2160,al_c,q_95,usm_0.33_1.00_0.00,enc_jpg/${fname}`;
+        src = `${u.origin}${assetPath}/v1/fill/w_2160,h_2160,al_c,q_100,usm_0.66_1.00_0.00,enc_jpg/${fname}`;
       }
       // Firebase Storage URLs are already full-resolution — use as-is
     } catch { /* not a parseable URL */ }
@@ -644,11 +672,15 @@ async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageSca
     ctx.fill();
     ctx.restore();
 
-    // Sharp photo clipped to rounded rect
+    // Sharp photo clipped to rounded rect — reaffirm high-quality smoothing
+    // so the downsample from 2160 → ~900 stays crisp (canvas state can flip
+    // smoothing back to "low" between save/restore on some browsers).
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(fx, fy, fw, fh, r);
     ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(coverImg, fx, fy, fw, fh);
     ctx.restore();
 
@@ -825,8 +857,61 @@ function paintColorBackground(ctx, SIZE, bg) {
   ctx.fillRect(0, 0, SIZE, SIZE);
 }
 
-// Draw the small "Catalyst" wordmark + glass icon in a corner. Used on most
-// pages so the carousel reads as one cohesive set.
+// Ensure Poppins is fully loaded into the browser font registry before we
+// hand it to canvas — without this the very first render falls back to the
+// browser's default sans-serif (canvas can't trigger font fetches itself).
+let _poppinsReady = null;
+function ensurePoppinsLoaded() {
+  if (_poppinsReady) return _poppinsReady;
+  if (!document.fonts || !document.fonts.load) {
+    _poppinsReady = Promise.resolve();
+    return _poppinsReady;
+  }
+  _poppinsReady = Promise.all([
+    document.fonts.load(`900 32px "Poppins"`),
+    document.fonts.load(`800 32px "Poppins"`),
+  ]).catch(() => {});
+  return _poppinsReady;
+}
+
+// Draw "THE CATALYST" wordmark — used as a footer on every non-cover,
+// non-closing page so the carousel reads as one cohesive set. Defaults to
+// the bottom-right corner with Poppins heavy bold. The color should be a
+// soft tint of the page bg so it matches without competing with the copy.
+async function drawCatalystWordmark(ctx, SIZE, opts = {}) {
+  await ensurePoppinsLoaded();
+  const {
+    color = "rgba(255,255,255,0.55)",
+    align = "right",
+    bottomPad = 50,
+    sidePad = 60,
+    size = 26,
+  } = opts;
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = align;
+  // Poppins 800 — heavy, modern. Tight letter-spacing via the canvas
+  // letterSpacing CSS property (Chrome/Safari support it; Firefox falls back
+  // to default tracking which still looks fine).
+  ctx.font = `800 ${size}px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.14em";
+  const x = align === "right" ? SIZE - sidePad : sidePad;
+  const y = SIZE - bottomPad;
+  ctx.fillText("THE CATALYST", x, y);
+  ctx.restore();
+}
+
+// Pick a wordmark color tuned to the page background — light/translucent
+// white on dark bgs, dim near-black on light bgs.
+function wordmarkColorFor(bg) {
+  return readableInk(bg) === "#ffffff"
+    ? "rgba(255,255,255,0.62)"
+    : "rgba(10,20,36,0.55)";
+}
+
+// Legacy — kept for compatibility with existing call sites that still use
+// the top-left logo+wordmark. New layouts use drawCatalystWordmark.
 async function drawCornerMark(ctx, SIZE, opts = {}) {
   const { color = "rgba(255,255,255,0.92)", x = 36, y = 36, withLogo = true } = opts;
   const logo = await loadLogo();
@@ -946,12 +1031,7 @@ async function renderEditorial(page) {
     }
   }
 
-  await drawCornerMark(ctx, SIZE, {
-    color: ink === "#ffffff" ? "rgba(255,255,255,0.78)" : "rgba(10,20,36,0.7)",
-    x: SIZE - pad - 200,
-    y: SIZE - 70,
-    withLogo: false,
-  });
+  await drawCatalystWordmark(ctx, SIZE, { color: wordmarkColorFor(bg) });
 
   return canvas.toDataURL("image/png");
 }
@@ -1033,7 +1113,8 @@ async function renderHook(page) {
       startSize: 32,
       minSize: 22,
       maxWidth: maxW,
-      maxHeight: SIZE - cursorY - 80,
+      // Reserve 110px for the THE CATALYST wordmark in the bottom-right
+      maxHeight: SIZE - cursorY - 110,
       lineHeightMul: 1.35,
     });
     ctx.fillStyle = ink;
@@ -1044,6 +1125,8 @@ async function renderHook(page) {
       y += ctaFit.lineHeight;
     }
   }
+
+  await drawCatalystWordmark(ctx, SIZE, { color: wordmarkColorFor(bg) });
 
   return canvas.toDataURL("image/png");
 }
@@ -1114,12 +1197,7 @@ async function renderQuote(page) {
     ctx.fillText(attribution.toUpperCase(), pad, attrY + 44);
   }
 
-  await drawCornerMark(ctx, SIZE, {
-    color: isDark ? "rgba(255,255,255,0.65)" : "rgba(10,20,36,0.6)",
-    x: pad,
-    y: SIZE - 76,
-    withLogo: false,
-  });
+  await drawCatalystWordmark(ctx, SIZE, { color: wordmarkColorFor(bg) });
 
   return canvas.toDataURL("image/png");
 }
@@ -2064,29 +2142,43 @@ async function mountSocialPosts(ctx, container) {
     const category = a.category || "Feature";
 
     // Build the color guidance section. If we successfully extracted a palette,
-    // tell the AI to use those exact hex codes (or close variants). Otherwise
-    // fall back to topic-based suggestions.
+    // tell the AI the exact hex codes AND each color's share of the cover so
+    // it knows which color is dominant. The AI is also encouraged to use
+    // complementary colors that harmonize with the palette — they don't have
+    // to be identical to the swatches, just clearly inspired by them.
     let colorGuidance;
-    if (coverPalette && coverPalette.swatches && coverPalette.swatches.length) {
-      const list = coverPalette.swatches.join(", ");
-      colorGuidance = `• bg: pick from this palette extracted from the article's cover image so every page matches the cover's mood: ${list}.
-   The dominant cover color is ${coverPalette.dominant} and the most saturated accent is ${coverPalette.accent}.
-   Use the dominant for foundational pages, the accent for the hook/stat page, and stay within this palette so the carousel feels like one designed set. Pick darker swatches for any page where you want white text to read clearly. Do not invent colors outside this palette.`;
+    if (coverPalette && coverPalette.swatchesWithShare && coverPalette.swatchesWithShare.length) {
+      const list = coverPalette.swatchesWithShare
+        .map((s) => `${s.hex} (${s.share}%)`)
+        .join(", ");
+      const top = coverPalette.swatchesWithShare[0];
+      colorGuidance = `• bg: design the carousel around the article's cover palette. Each color below shows its share of the cover image, so you know what's dominant:
+   ${list}
+   The dominant cover color is ${coverPalette.dominant} (${top.share}% of the image) and the most saturated accent is ${coverPalette.accent}.
+   Lean heavily into whichever color has the largest share — if blue is 55% and brown is 8%, the carousel should feel mostly blue with brown as an occasional accent. You may use the swatch hex codes verbatim, OR pick complementary / analogous hex colors that harmonize beautifully with them (slightly different tones, deeper or lighter shades, colors that share a similar mood). The result should feel like a designer hand-picked the palette to extend the cover image — not slavishly copy it. Always ensure dark backgrounds for any page with white text. Avoid clashing colors that fight the cover.`;
     } else {
       colorGuidance = `• bg: pick a hex color that fits the article's mood. Dark blues for science/space (#0a1f3d, #0c2545, #1a3270); purple for social/equity (#5b3fb8, #7a3fa3); deep green for environment (#0e3b29); warm red for urgency (#7a2418). Each page should feel like part of the same palette — pick 2 max.`;
     }
 
-    return `You are designing Instagram carousel copy for The Catalyst Magazine — a polished, editorial publication about science, tech, and social impact. Given the article info below, produce copy for 3 to 5 carousel pages that deliver the key ideas of the article in a scroll-stopping, beautiful way. The copy must feel like a premium magazine — confident, curious, human, never clickbait.
+    return `You are designing an Instagram carousel for The Catalyst Magazine — a polished, editorial publication about science, tech, and social impact. Given the article info below, produce a CAPTION for the post AND 3 to 5 carousel pages that deliver the key ideas of the article in a scroll-stopping, beautiful way. Everything must feel like a premium magazine — confident, curious, human, never clickbait.
 
 ── ARTICLE ──
 Title: ${title}
 Author: ${author}
 Category: ${category}
 Deck: ${deck || "(no deck — infer from title)"}
+Article URL: https://www.catalyst-magazine.com
 
-── OUTPUT RULES ──
-Return ONLY the page blocks. No preamble, no markdown, no commentary. Each page is separated by a line of exactly three dashes: ---
-Each page is a set of "key: value" lines. Valid keys per layout:
+── OUTPUT FORMAT ──
+Return ONLY the blocks below. No preamble, no markdown headers, no commentary.
+
+First, the caption block (single block at the top — NO --- before it):
+caption: <the full Instagram caption, 3-6 short lines separated by \\n\\n; engaging hook in line 1; a tight summary of the article's most interesting idea; ends with the line: Read more by ${author} at catalyst-magazine.com — link in bio. ✨> | hashtags should be a final \\n\\n line of 4-7 relevant hashtags including #TheCatalyst and #CatalystMagazine.
+
+Then a single line of exactly three dashes: ---
+
+Then the page blocks, each separated by a line of exactly three dashes: ---
+Each page is "key: value" lines. Valid keys per layout:
 
   layout: editorial      → headline, body, bg
   layout: hook           → headline, body, cta, bg
@@ -2096,6 +2188,7 @@ Do NOT include a cover page — one is added automatically from the article.
 Do NOT include a closing page — one is added automatically.
 
 ── COPY GUIDELINES ──
+• caption: write it like a great magazine teaser. Open with a sentence that makes someone stop scrolling — a striking fact, an unexpected angle, or a question. Then 1-2 lines that crystallize what the article is about and why it matters NOW. Close with: "Read more by ${author} at catalyst-magazine.com — link in bio. ✨" then a blank line, then 4-7 relevant hashtags. Use \\n\\n between paragraphs in the caption value. Total length 400-700 characters before hashtags.
 • headline: 6-12 words max. Punchy, concrete. End with a period or question mark.
 • body: 1-2 short sentences. Specific facts, names, numbers over generalities. ≤ 220 characters.
 • cta: optional on "hook" pages. One sentence that points to the article, e.g. 'Read "${title}" by ${author}. Link in bio.'
@@ -2111,6 +2204,8 @@ Aim for this arc:
 4. (Optional) A second editorial or hook page that adds a new angle.
 
 ── EXAMPLE (format only — your colors should come from the cover palette above) ──
+caption: Light from 13 billion years ago is teaching us how galaxies were born — and where ours is going next.\\n\\nDr. Duilia De Mello uses NASA's deep space telescopes to look so far back in time that she's watching the first galaxies form. Her work on cosmic collisions is rewriting what we know about our own origins.\\n\\nRead more by ${author} at catalyst-magazine.com — link in bio. ✨\\n\\n#TheCatalyst #CatalystMagazine #Astronomy #ScienceWriting #STEM #NASA #SpaceExploration
+---
 layout: editorial
 headline: A Window to the Dawn of Time.
 body: Dr. De Mello's work with deep space telescopes captures light that has traveled for billions of years, creating a direct view of how galaxies first formed.
@@ -2127,7 +2222,7 @@ quote: The universe keeps asking us the same question — not what we are, but w
 attribution: Dr. Duilia De Mello, NASA astronomer
 bg: #0c2545
 
-── NOW WRITE THE PAGES FOR "${title}" ──`;
+── NOW WRITE THE CAPTION + PAGES FOR "${title}" ──`;
   }
 
   function refreshAiPrompt() {
@@ -2166,11 +2261,14 @@ bg: #0c2545
       aiPaletteSwEl.innerHTML = `<div style="font-size:11px;color:var(--muted);">Reading colors from the cover image…</div>`;
       return;
     }
-    aiPaletteStatusEl.textContent = `${coverPalette.swatches.length} colors`;
-    aiPaletteSwEl.innerHTML = coverPalette.swatches.map((hex) => `
-      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
-        <div title="${hex}" style="width:30px;height:30px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:${hex};"></div>
-        <span style="font-size:9.5px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${hex}</span>
+    const items = coverPalette.swatchesWithShare || coverPalette.swatches.map((hex) => ({ hex, share: 0 }));
+    aiPaletteStatusEl.textContent = `${items.length} colors · sized by share`;
+    aiPaletteSwEl.innerHTML = items.map((item) => `
+      <div title="${item.hex} — ${item.share}% of cover" style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+        <div style="width:32px;height:32px;border-radius:6px;border:1px solid rgba(0,0,0,0.12);background:${item.hex};position:relative;overflow:hidden;">
+          <div style="position:absolute;inset:auto 0 0 0;height:18px;background:rgba(0,0,0,0.55);color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;letter-spacing:.02em;">${item.share}%</div>
+        </div>
+        <span style="font-size:9.5px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${item.hex}</span>
       </div>
     `).join("");
   }
@@ -2242,16 +2340,27 @@ bg: #0c2545
   function tryApplyAiPaste() {
     const text = aiPasteEl.value.trim();
     if (!text) return;
-    const parsed = parseAiBlock(text);
-    if (!parsed.length) return; // Don't toast-spam on partial input
-    const cover = pages[0] || defaultCoverPage();
-    pages = [cover, ...parsed];
-    if (!pages.some((p) => p.layout === "closing")) {
-      pages.push(defaultClosingPage());
+    const { caption, pages: parsedPages } = parseAiBlock(text);
+    // Don't toast-spam on partial input — wait until we have at least one page
+    // OR an explicit caption block.
+    if (!parsedPages.length && !caption) return;
+    if (parsedPages.length) {
+      const cover = pages[0] || defaultCoverPage();
+      pages = [cover, ...parsedPages];
+      if (!pages.some((p) => p.layout === "closing")) {
+        pages.push(defaultClosingPage());
+      }
+      activePageIdx = Math.min(1, pages.length - 1);
     }
-    activePageIdx = Math.min(1, pages.length - 1);
+    if (caption) {
+      captionArea.value = caption;
+      charEl.textContent = `${caption.length} characters`;
+    }
     aiPasteEl.value = "";
-    ctx.toast(`✨ Generated ${parsed.length} page${parsed.length === 1 ? "" : "s"} from AI.`, "success");
+    const bits = [];
+    if (parsedPages.length) bits.push(`${parsedPages.length} page${parsedPages.length === 1 ? "" : "s"}`);
+    if (caption) bits.push("caption");
+    ctx.toast(`✨ AI generated ${bits.join(" + ")}.`, "success");
     renderPageList();
     renderEditor();
     renderPreviewForActive();
@@ -2402,10 +2511,14 @@ bg: #0c2545
   // Accepts a block of text where pages are separated by lines containing only
   // dashes (e.g. `---`). Inside each section, `key: value` lines populate the
   // page's fields. Whitespace-tolerant; unknown keys are ignored.
+  // Returns { caption: string|null, pages: Page[] }. Sections without a
+  // `layout:` key are treated as caption-bearing blocks (the AI is instructed
+  // to put `caption: …` at the top, before the first `---`).
   function parseAiBlock(text) {
-    if (!text || !text.trim()) return [];
+    if (!text || !text.trim()) return { caption: null, pages: [] };
     const sections = text.split(/^\s*-{3,}\s*$/m).map((s) => s.trim()).filter(Boolean);
-    const out = [];
+    const pages = [];
+    let caption = null;
     for (const section of sections) {
       const obj = {};
       for (const rawLine of section.split(/\r?\n/)) {
@@ -2419,15 +2532,20 @@ bg: #0c2545
         const value = m[2].replace(/\\n/g, "\n").trim();
         obj[key] = value;
       }
+      // Top-level caption block — has no `layout:` field.
+      if (!obj.layout && obj.caption) {
+        caption = obj.caption;
+        continue;
+      }
       const layout = (obj.layout || "").toLowerCase();
       if (!["editorial", "hook", "quote", "closing"].includes(layout)) continue;
       const page = blankPage(layout);
       for (const k of ["headline", "body", "cta", "quote", "attribution", "tagline", "bg"]) {
         if (obj[k] !== undefined) page[k] = obj[k];
       }
-      out.push(page);
+      pages.push(page);
     }
-    return out;
+    return { caption, pages };
   }
 
   // ── Create view lifecycle ──────────────────────────────────────────────────
