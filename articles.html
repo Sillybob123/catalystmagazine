@@ -10,7 +10,7 @@
     <!-- End Google Tag Manager -->
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Browse all articles from The Catalyst Magazine - D.C. based STEM stories, profiles, interviews, and editorials.">
     <meta name="keywords" content="STEM articles, science magazine, Washington DC science, student journalism, science stories, research profiles, STEM interviews">
     <title>Articles | The Catalyst Magazine</title>
@@ -42,25 +42,24 @@
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="manifest" href="site.webmanifest">
+
     <!-- Preconnect to external resources for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://wsrv.nl" crossorigin>
     <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+    <link rel="dns-prefetch" href="https://static.wixstatic.com">
 
-
-    <!-- Preload critical images for instant display -->
+    <!-- Preload critical assets -->
     <link rel="preload" as="image" href="WebLogo.png" fetchpriority="high">
     <link rel="preload" as="image" href="NewLogoShape.png" fetchpriority="high">
 
-    <!-- DNS prefetch for external image sources -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&display=swap">
 
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
-    <link rel="preload" href="css/styles.css?v=cover2" as="style">
     <link rel="stylesheet" href="css/styles.css?v=cover2">
+    <link rel="stylesheet" href="css/articles-new.css?v=1">
 </head>
-<body data-page="articles">
+<body data-page="articles" class="articlesnew-body">
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -68,170 +67,107 @@
 
     <div id="site-header"></div>
 
-    <main>
-        <!-- Page Hero - Magazine Style -->
-        <section class="magazine-hero">
-            <div class="container">
-                <div class="magazine-hero-content">
-                    <span class="magazine-issue catalyst-issue-label">ISSUE 2026</span>
-                    <h1 class="magazine-hero-title catalyst-title">
-                        <span class="catalyst-word catalyst-word-1">The</span>
-                        <span class="catalyst-word catalyst-word-2">Catalyst</span>
-                        <br>
-                        <span class="catalyst-word catalyst-word-3 highlight">Magazine</span>
-                    </h1>
-                    <p class="magazine-hero-subtitle catalyst-subtitle">Exploring the intersection of science, innovation, and storytelling in the Nation's Capital</p>
+    <main class="an-main">
+        <!-- Cinematic Hero -->
+        <section class="an-hero" id="an-hero">
+            <div class="an-hero-backdrop" id="an-hero-backdrop" aria-hidden="true"></div>
+            <div class="an-hero-scrim" aria-hidden="true"></div>
+            <div class="an-hero-noise" aria-hidden="true"></div>
 
-                    <!-- Catalyst Spark Effect -->
-                    <div class="catalyst-sparks">
-                        <div class="spark spark-1"></div>
-                        <div class="spark spark-2"></div>
-                        <div class="spark spark-3"></div>
-                        <div class="spark spark-4"></div>
-                        <div class="spark spark-5"></div>
-                        <div class="spark spark-6"></div>
-                        <div class="spark spark-7"></div>
-                        <div class="spark spark-8"></div>
-                    </div>
+            <div class="an-hero-inner">
+                <h1 class="an-hero-title">
+                    <span class="an-line">Stories that</span>
+                    <span class="an-line an-italic">move science</span>
+                    <span class="an-line">forward.</span>
+                </h1>
+
+                <p class="an-hero-kicker">
+                    A living archive of features, profiles, interviews and editorials
+                    from the Nation's Capital.
+                </p>
+
+            </div>
+
+            <a href="#an-feed" class="an-scroll-caret" aria-label="Scroll to stories">
+                <span class="an-scroll-caret-label">Explore</span>
+                <svg class="an-scroll-caret-icon" width="22" height="12" viewBox="0 0 22 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M2 2l9 8 9-8"/>
+                </svg>
+            </a>
+        </section>
+
+        <!-- Cover Spotlight -->
+        <section class="an-spotlight-section" id="an-spotlight-section">
+            <div class="an-container">
+                <div class="an-section-head">
+                    <span class="an-kicker">Editor's Pick</span>
+                    <h2 class="an-section-title">On the cover</h2>
                 </div>
+                <article class="an-spotlight" id="an-spotlight" aria-busy="true">
+                    <div class="an-spotlight-skel"></div>
+                </article>
             </div>
         </section>
 
-        <!-- Featured Story - Magazine Cover -->
-        <section class="section" style="padding-top: 60px;">
-            <div class="container">
-                <div class="magazine-cover-story" id="cover-story">
-                    <!-- Rendered by JS -->
+        <!-- Sticky Filter Rail -->
+        <section class="an-filter-rail" id="an-filter-rail">
+            <div class="an-container an-filter-inner">
+                <div class="an-pill-group" role="tablist" aria-label="Filter stories by category">
+                    <span class="an-pill-indicator" id="an-pill-indicator" aria-hidden="true"></span>
+                    <button class="an-pill active" data-category="all" role="tab" aria-selected="true">All</button>
+                    <button class="an-pill" data-category="feature" role="tab" aria-selected="false">Features</button>
+                    <button class="an-pill" data-category="profile" role="tab" aria-selected="false">Profiles</button>
+                    <button class="an-pill" data-category="interview" role="tab" aria-selected="false">Interviews</button>
+                    <button class="an-pill" data-category="editorial" role="tab" aria-selected="false">Editorials</button>
                 </div>
+
+                <label class="an-search">
+                    <svg class="an-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="search" id="an-search-input" placeholder="Search stories…" autocomplete="off" spellcheck="false">
+                    <button type="button" class="an-search-clear" id="an-search-clear" aria-label="Clear search" hidden>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </label>
             </div>
         </section>
 
-        <!-- Category Navigation -->
-        <section class="section emagazine-nav-section">
-            <div class="container">
-                <div class="emagazine-filter-bar">
-                    <h3 class="filter-title">Browse By Section</h3>
-                    <div class="magazine-search">
-                        <svg class="magazine-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"/>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                        </svg>
-                        <input type="search" id="magazine-search-input" class="magazine-search-input" placeholder="Search articles by title, author, or keyword…" autocomplete="off">
-                        <button type="button" class="magazine-search-clear" id="magazine-search-clear" aria-label="Clear search" hidden>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
-                    </div>
-                    <div class="magazine-nav">
-                        <button class="magazine-nav-item active" data-category="all">
-                            <div class="nav-item-content">
-                                <span class="magazine-nav-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                                        <polyline points="9 22 9 12 15 12 15 22"/>
-                                    </svg>
-                                </span>
-                                <span class="magazine-nav-label">All Stories</span>
-                            </div>
-                        </button>
-                        <button class="magazine-nav-item" data-category="feature">
-                            <div class="nav-item-content">
-                                <span class="magazine-nav-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                    </svg>
-                                </span>
-                                <span class="magazine-nav-label">Features</span>
-                            </div>
-                        </button>
-                        <button class="magazine-nav-item" data-category="profile">
-                            <div class="nav-item-content">
-                                <span class="magazine-nav-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
-                                    </svg>
-                                </span>
-                                <span class="magazine-nav-label">Profiles</span>
-                            </div>
-                        </button>
-                        <button class="magazine-nav-item" data-category="interview">
-                            <div class="nav-item-content">
-                                <span class="magazine-nav-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                    </svg>
-                                </span>
-                                <span class="magazine-nav-label">Interviews</span>
-                            </div>
-                        </button>
-                        <button class="magazine-nav-item" data-category="editorial">
-                            <div class="nav-item-content">
-                                <span class="magazine-nav-icon">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                    </svg>
-                                </span>
-                                <span class="magazine-nav-label">Editorials</span>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Magazine Grid -->
-        <section class="section">
-            <div class="container">
-                <div class="magazine-grid" id="magazine-grid">
+        <!-- Story Feed -->
+        <section class="an-feed-section" id="an-feed">
+            <div class="an-container">
+                <div class="an-feed" id="an-feed-grid" aria-live="polite">
                     <!-- Rendered by JS -->
                 </div>
 
-                <!-- Load More -->
-                <div class="load-more-container">
-                    <button class="btn btn-primary" id="load-more-btn">
-                        Load More Stories
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                <div class="an-empty" id="an-empty" hidden>
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <h3>No stories found</h3>
+                    <p>Try a different search term or category.</p>
+                </div>
+
+                <div class="an-loadmore-wrap">
+                    <button class="an-loadmore" id="an-loadmore" hidden>
+                        <span>Show more stories</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9l6 6 6-6"/>
                         </svg>
                     </button>
                 </div>
             </div>
         </section>
-
-        <!-- Brain Teaser Section -->
-        <section class="section" id="brainteaser">
-            <div class="container">
-                <div class="section-header">
-                    <h2 class="section-title">Brain Teaser</h2>
-                    <p class="section-subtitle">Challenge your mind with our monthly STEM puzzles</p>
-                </div>
-
-                <div class="panel" style="max-width: 700px; margin: 0 auto; text-align: center;">
-                    <h3 class="panel-title">Monthly STEM Challenge</h3>
-                    <p class="panel-description">
-                        Each month, we drop a STEM puzzle with a story twist. Crack it, share your reasoning,
-                        and get highlighted in our next issue. Test your problem-solving skills with Fermi problems,
-                        logic puzzles, and design challenges.
-                    </p>
-                    <div class="tags" style="justify-content: center;">
-                        <span class="tag">Fermi Problems</span>
-                        <span class="tag">Logic Puzzles</span>
-                        <span class="tag">Design Challenges</span>
-                    </div>
-                    <button class="btn btn-primary" style="margin-top: 24px;" onclick="window.location.href='/brain-teaser'">Try This Month's Puzzle</button>
-                </div>
-            </div>
-        </section>
     </main>
 
-    
     <div id="site-footer"></div>
 
     <script defer src="js/layout.js"></script>
     <script defer src="js/newsletter-handler.js"></script>
     <script defer src="js/lqip-manifest.js"></script>
     <script defer src="js/data.js"></script>
-    <script defer src="js/main.js?v=hq1"></script>
+    <script defer src="js/articles-new.js?v=1"></script>
 </body>
 </html>

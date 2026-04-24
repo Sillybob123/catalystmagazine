@@ -55,3 +55,6 @@ build/
 
 # Local tooling
 .claude/
+
+# Local-only backups (never deployed; git history is the real record)
+*.backup
