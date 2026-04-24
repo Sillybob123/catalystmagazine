@@ -8,6 +8,10 @@
     'use strict';
 
     const FALLBACK_IMAGE = '/NewsletterHeader1.png';
+    // Neutral placeholder shown in the hero backdrop while the real cover
+    // for the newest story loads from Firestore. Kept intentionally generic
+    // so we never flash a stale article image.
+    const HERO_PLACEHOLDER = '/postimages/sustainable.webp';
     const PAGE_SIZE = 12;
 
     // ---------- DOM refs ----------
@@ -259,10 +263,17 @@
     }
 
     // ---------- Hero ----------
+    // Paint a neutral placeholder the moment the page renders. This avoids
+    // flashing a stale hardcoded cover (e.g. an old Wix image from data.js)
+    // while we wait for Firestore to resolve.
+    function paintHeroPlaceholder() {
+        heroBackdrop.style.backgroundImage = `url('${HERO_PLACEHOLDER}')`;
+        heroBackdrop.classList.add('ready');
+    }
+
     function paintHero(articles) {
         if (!articles.length) return;
 
-        // Use the newest article's image as the cinematic backdrop
         const src = articles[0].image || FALLBACK_IMAGE;
         const resized = getResizedImageUrl(src, 1800, 72);
 
@@ -523,6 +534,9 @@
 
     // ---------- Init ----------
     function start() {
+        // Show the neutral hero placeholder right away so the page never
+        // flashes a stale hardcoded image from data.js.
+        paintHeroPlaceholder();
         paintSkeletons();
         bindEvents();
 
@@ -550,22 +564,31 @@
     function kickFirestore() {
         loadFirestoreArticles()
             .then(fsList => {
-                if (!fsList.length) return;
-                // Firestore is the source of truth for published stories —
-                // it always wins on cover image, date, excerpt, author. Fall
-                // back to the hardcoded data.js list only for titles that
-                // don't exist in Firestore.
-                const merged = mergeArticles(fsList, allArticles);
-                allArticles = merged;
+                if (fsList.length) {
+                    // Firestore is the source of truth for published stories —
+                    // it always wins on cover image, date, excerpt, author. Fall
+                    // back to the hardcoded data.js list only for titles that
+                    // don't exist in Firestore.
+                    allArticles = mergeArticles(fsList, allArticles);
+                    renderSpotlight(allArticles[0]);
+                    renderFeed(true);
+                }
+                // Always paint the hero from the (now-fresh) newest article.
                 paintHero(allArticles);
-                renderSpotlight(allArticles[0]);
-                renderFeed(true);
             })
-            .catch(err => console.warn('[articlesnew] Firestore load failed', err));
+            .catch(err => {
+                console.warn('[articles] Firestore load failed', err);
+                // Last resort: use whatever data.js gave us so the hero isn't
+                // stuck on the placeholder forever.
+                paintHero(allArticles);
+            });
     }
 
     function paintAll() {
-        paintHero(allArticles);
+        // Intentionally don't paint the hero here — the placeholder stays up
+        // until Firestore resolves. data.js can carry stale cover images for
+        // articles that were later updated in the studio, and we don't want
+        // to flash those.
         renderSpotlight(allArticles[0]);
         renderFeed(true);
         // Position indicator after layout settles
