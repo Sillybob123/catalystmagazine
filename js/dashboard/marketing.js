@@ -1213,27 +1213,27 @@ async function renderClosing(page) {
   canvas.height = SIZE;
   const ctx = canvas.getContext("2d");
 
-  // ── Base fill — only ever shown if the cover image fails to load. ─────────
-  // We pick a graceful gradient instead of a flat black, so even the failure
-  // state looks intentional.
+  // Fallback if no cover loads — graceful gradient, never flat black.
   const fallbackGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
   fallbackGrad.addColorStop(0, "#13243f");
   fallbackGrad.addColorStop(1, "#0a1424");
   ctx.fillStyle = fallbackGrad;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // The user-picked tint (defaults to a near-neutral so the cover photo is
-  // what carries the color; tint just nudges the whole thing toward a hue).
+  // User-picked tint color (defaults to a deep neutral). Acts as a single-hue
+  // wash over the cover photo so the carousel's closing page has a recognizable
+  // mood — without obscuring the photo itself.
   const tint = (page.bg || "").trim() || "#0a1830";
 
-  let coverLoaded = false;
+  // ── Cover photo, lightly blurred — fills the whole canvas ─────────────────
+  // Single-pass blur (downsample → upsample) for that softly-defocused look.
+  // We deliberately keep the blur GENTLE so the photo is recognizable through
+  // the tint — that's what makes each closing slide feel custom to its post.
   if (page.coverImageUrl) {
     let src = page.coverImageUrl;
     try {
       const u = new URL(page.coverImageUrl);
       if (u.hostname.includes("static.wixstatic.com")) {
-        // Same q_100 high-quality fetch as the cover renderer — keeps the
-        // blur source crisp so the smoothed result has rich color, not mush.
         const v1 = u.pathname.indexOf("/v1/");
         const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
         const fname = assetPath.split("/").filter(Boolean).pop();
@@ -1244,176 +1244,69 @@ async function renderClosing(page) {
     try {
       const img = await loadImage(src);
       const iw = img.naturalWidth, ih = img.naturalHeight;
-
-      // ── Two-pass blur for depth ─────────────────────────────────────────
-      // Pass 1: heavy bloom (THUMB=20) for the soft underlying field.
-      // Pass 2: medium blur (THUMB=64) on top at low opacity, so the photo's
-      // shapes still register subtly. The result feels like real Gaussian
-      // depth-of-field rather than the flat pixelation of a single tiny
-      // thumbnail.
-      const drawBlurred = (thumbSize, alpha) => {
-        const tCanvas = document.createElement("canvas");
-        tCanvas.width = thumbSize;
-        tCanvas.height = thumbSize;
-        const tctx = tCanvas.getContext("2d");
-        tctx.imageSmoothingEnabled = true;
-        tctx.imageSmoothingQuality = "high";
-        const tScale = Math.max(thumbSize / iw, thumbSize / ih);
-        const tw = iw * tScale, th = ih * tScale;
-        tctx.drawImage(img, (thumbSize - tw) / 2, (thumbSize - th) / 2, tw, th);
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = "high";
-        ctx.drawImage(tCanvas, 0, 0, SIZE, SIZE);
-        ctx.restore();
-      };
-      drawBlurred(20, 1.0);   // soft base
-      drawBlurred(72, 0.55);  // sharper top layer adds shape and saturation
-      coverLoaded = true;
-    } catch { /* fall through to fallback */ }
+      // THUMB=64 gives a soft Gaussian-ish blur but preserves enough shape that
+      // the original photo is still readable. (Earlier versions used 20–32 which
+      // made the result look like an abstract gradient.)
+      const THUMB = 64;
+      const tCanvas = document.createElement("canvas");
+      tCanvas.width = THUMB;
+      tCanvas.height = THUMB;
+      const tctx = tCanvas.getContext("2d");
+      tctx.imageSmoothingEnabled = true;
+      tctx.imageSmoothingQuality = "high";
+      const tScale = Math.max(THUMB / iw, THUMB / ih);
+      const tw = iw * tScale, th = ih * tScale;
+      tctx.drawImage(img, (THUMB - tw) / 2, (THUMB - th) / 2, tw, th);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(tCanvas, 0, 0, SIZE, SIZE);
+    } catch { /* fall through to gradient fallback */ }
   }
 
-  // ── Color tint, but gentle ─────────────────────────────────────────────────
-  // The previous version used multiply + 60% black, which flattened the photo
-  // to near-black. Here we just add a soft, low-opacity tint so the user-picked
-  // color whispers through the photo without erasing it.
+  // ── Single-color tint wash ────────────────────────────────────────────────
+  // multiply with the chosen color at moderate opacity gives the slide one
+  // dominant hue while keeping the photo recognizable underneath. This is
+  // what produces the "purple wash" / "blue wash" look on the example slides.
   ctx.save();
   ctx.globalCompositeOperation = "multiply";
-  ctx.globalAlpha = 0.35;
+  ctx.globalAlpha = 0.65;
   ctx.fillStyle = tint;
   ctx.fillRect(0, 0, SIZE, SIZE);
   ctx.restore();
 
-  // ── Vignette: dark corners → bright center, focuses the eye on the logo ──
-  const vignette = ctx.createRadialGradient(
-    SIZE / 2, SIZE * 0.42, SIZE * 0.18,
-    SIZE / 2, SIZE * 0.50, SIZE * 0.78
-  );
-  vignette.addColorStop(0,   "rgba(0,0,0,0)");
-  vignette.addColorStop(0.7, "rgba(0,0,0,0.32)");
-  vignette.addColorStop(1,   "rgba(0,0,0,0.62)");
-  ctx.fillStyle = vignette;
+  // Light additional tint on top in normal mode — pushes the overall slide
+  // toward the chosen color so the photo never overwhelms the brand color.
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = tint;
   ctx.fillRect(0, 0, SIZE, SIZE);
-
-  // ── Soft luminous glow behind where the logo will sit ─────────────────────
-  const glow = ctx.createRadialGradient(
-    SIZE / 2, SIZE * 0.40, 0,
-    SIZE / 2, SIZE * 0.40, SIZE * 0.42
-  );
-  glow.addColorStop(0,   "rgba(255,255,255,0.18)");
-  glow.addColorStop(0.5, "rgba(255,255,255,0.06)");
-  glow.addColorStop(1,   "rgba(255,255,255,0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, SIZE, SIZE);
-
-  // ── Frosted-glass card holding the logo + wordmark ────────────────────────
-  // Apple-style: rounded rect, semi-translucent fill, soft top-edge sheen,
-  // thin bright border, drop shadow. This makes the brand mark feel like a
-  // physical object floating in front of the photo, not pasted on top of it.
-  const cardW = SIZE * 0.72;
-  const cardH = SIZE * 0.62;
-  const cardX = (SIZE - cardW) / 2;
-  const cardY = SIZE * 0.18;
-  const cardR = 32;
-
-  // Outer drop shadow
-  ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.55)";
-  ctx.shadowBlur = 60;
-  ctx.shadowOffsetY = 24;
-  ctx.fillStyle = "rgba(255,255,255,0.001)"; // near-zero so only the shadow renders
-  ctx.beginPath();
-  ctx.roundRect(cardX, cardY, cardW, cardH, cardR);
-  ctx.fill();
   ctx.restore();
 
-  // Glass fill — frosted white over the photo
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(cardX, cardY, cardW, cardH, cardR);
-  ctx.clip();
-
-  // Layered fills give the glass a subtle vertical gradient, like real frosted
-  // acrylic catching ambient light from above.
-  const glassGrad = ctx.createLinearGradient(0, cardY, 0, cardY + cardH);
-  glassGrad.addColorStop(0,    "rgba(255,255,255,0.18)");
-  glassGrad.addColorStop(0.5,  "rgba(255,255,255,0.10)");
-  glassGrad.addColorStop(1,    "rgba(255,255,255,0.05)");
-  ctx.fillStyle = glassGrad;
-  ctx.fillRect(cardX, cardY, cardW, cardH);
-
-  // Thin top-edge sheen
-  const sheen = ctx.createLinearGradient(0, cardY, 0, cardY + 80);
-  sheen.addColorStop(0, "rgba(255,255,255,0.28)");
-  sheen.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = sheen;
-  ctx.fillRect(cardX, cardY, cardW, 80);
-  ctx.restore();
-
-  // Bright thin border — gives the glass card its edge definition
-  ctx.save();
-  ctx.strokeStyle = "rgba(255,255,255,0.42)";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.roundRect(cardX + 0.75, cardY + 0.75, cardW - 1.5, cardH - 1.5, cardR - 1);
-  ctx.stroke();
-  // Inner softer border for that dual-stroke glassy look
-  ctx.strokeStyle = "rgba(255,255,255,0.12)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(cardX + 4, cardY + 4, cardW - 8, cardH - 8, cardR - 4);
-  ctx.stroke();
-  ctx.restore();
-
-  // ── Logo + wordmark INSIDE the glass card ─────────────────────────────────
+  // ── Logo, centered, large ─────────────────────────────────────────────────
   const logo = await loadLogo();
+  const logoSize = 220;
+  const logoY = SIZE * 0.42 - logoSize / 2;
   if (logo) {
-    const logoSize = 240;
-    const logoX = (SIZE - logoSize) / 2;
-    const logoY = cardY + cardH * 0.18;
-    // Subtle glow behind the logo for the levitating glass-orb effect
-    ctx.save();
-    ctx.shadowColor = "rgba(180,210,255,0.55)";
-    ctx.shadowBlur = 48;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-    ctx.restore();
+    ctx.drawImage(logo, (SIZE - logoSize) / 2, logoY, logoSize, logoSize);
   }
 
-  // "The Catalyst Magazine" — clean serif-y feel via Inter at light weight,
-  // sized large but not heavy so the glass aesthetic stays calm.
+  // ── "The Catalyst Magazine" wordmark + tagline ────────────────────────────
   ctx.save();
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.shadowColor = "rgba(0,0,0,0.45)";
-  ctx.shadowBlur = 12;
-  ctx.font = `500 56px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  // No drop shadow — examples are clean, flat type on the tinted photo.
+  ctx.font = `400 60px "Inter", "Helvetica Neue", Arial, sans-serif`;
   if ("letterSpacing" in ctx) ctx.letterSpacing = "-0.01em";
-  ctx.fillText("The Catalyst Magazine", SIZE / 2, cardY + cardH * 0.74);
+  ctx.fillText("The Catalyst Magazine", SIZE / 2, logoY + logoSize + 78);
 
-  // Tagline — softer, with letter-spacing for that editorial-print feel
   const tagline = (page.tagline || "Join the Changemakers.").trim();
-  ctx.shadowBlur = 8;
-  ctx.font = `400 26px "Inter", "Helvetica Neue", Arial, sans-serif`;
-  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.04em";
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  ctx.fillText(tagline, SIZE / 2, cardY + cardH * 0.86);
-  ctx.restore();
-
-  // ── catalyst-magazine.com URL pinned to the bottom edge of the canvas ────
-  // Tiny + tracked-out so the closing page can subtly remind viewers where to
-  // find more — without dominating the design.
-  await ensurePoppinsLoaded();
-  ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "alphabetic";
-  ctx.font = `700 22px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
-  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.18em";
-  ctx.fillText("CATALYST-MAGAZINE.COM", SIZE / 2, SIZE - 50);
+  ctx.font = `400 28px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.fillText(tagline, SIZE / 2, logoY + logoSize + 130);
   ctx.restore();
 
   return canvas.toDataURL("image/png");
@@ -2282,7 +2175,9 @@ async function mountSocialPosts(ctx, container) {
       colorGuidance = `• bg: pick a hex color that fits the article's mood. Dark blues for science/space (#0a1f3d, #0c2545, #1a3270); purple for social/equity (#5b3fb8, #7a3fa3); deep green for environment (#0e3b29); warm red for urgency (#7a2418). Each page should feel like part of the same palette — pick 2 max.`;
     }
 
-    return `You are designing an Instagram carousel for The Catalyst Magazine — a polished, editorial publication about science, tech, and social impact. Given the article info below, produce a CAPTION for the post AND 3 to 5 carousel pages that deliver the key ideas of the article in a scroll-stopping, beautiful way. Everything must feel like a premium magazine — confident, curious, human, never clickbait.
+    return `You are designing an Instagram carousel for The Catalyst Magazine — a polished, editorial publication about science, tech, and social impact. Given the article info below, produce a CAPTION for the post AND 3 to 5 carousel pages that walk a reader through the article in a scroll-stopping, beautiful, deeply readable way. Everything must feel like a premium magazine — confident, curious, human, never clickbait.
+
+ABSOLUTE RULE: do NOT use ANY emojis anywhere in your output. No emoji in the caption. No emoji in any page. No emoji in hashtags. Plain text only. If you instinctively reach for an emoji, replace it with a precise word.
 
 ── ARTICLE ──
 Title: ${title}
@@ -2295,7 +2190,7 @@ Article URL: https://www.catalyst-magazine.com
 Return ONLY the blocks below. No preamble, no markdown headers, no commentary.
 
 First, the caption block (single block at the top — NO --- before it):
-caption: <the full Instagram caption, 3-6 short lines separated by \\n\\n; engaging hook in line 1; a tight summary of the article's most interesting idea; ends with the line: Read more by ${author} at catalyst-magazine.com — link in bio. ✨> | hashtags should be a final \\n\\n line of 4-7 relevant hashtags including #TheCatalyst and #CatalystMagazine.
+caption: <the full Instagram caption, 3-5 short paragraphs separated by \\n\\n; engaging hook in paragraph 1; a tight summary of the article's most interesting idea; ends with this exact closing paragraph: Read more by ${author} at catalyst-magazine.com — link in bio.> Then a final \\n\\n line of 4-7 relevant hashtags including #TheCatalyst and #CatalystMagazine. NO EMOJIS anywhere.
 
 Then a single line of exactly three dashes: ---
 
@@ -2308,25 +2203,39 @@ Each page is "key: value" lines. Valid keys per layout:
 
 Do NOT include a cover page — one is added automatically from the article.
 Do NOT include a closing page — one is added automatically.
+Do NOT use emojis in headline, body, cta, quote, attribution, or anywhere else.
 
 ── COPY GUIDELINES ──
-• caption: write it like a great magazine teaser. Open with a sentence that makes someone stop scrolling — a striking fact, an unexpected angle, or a question. Then 1-2 lines that crystallize what the article is about and why it matters NOW. Close with: "Read more by ${author} at catalyst-magazine.com — link in bio. ✨" then a blank line, then 4-7 relevant hashtags. Use \\n\\n between paragraphs in the caption value. Total length 400-700 characters before hashtags.
-• headline: 6-12 words max. Punchy, concrete. End with a period or question mark.
-• body: 1-2 short sentences. Specific facts, names, numbers over generalities. ≤ 220 characters.
-• cta: optional on "hook" pages. One sentence that points to the article, e.g. 'Read "${title}" by ${author}. Link in bio.'
-• quote: an actual quotable line (real or faithfully paraphrased from the article) in 1-3 sentences. No quotation marks — they're added automatically.
-• attribution: person's name + 1 short role, e.g. "Dr. Duilia De Mello, NASA astronomer".
+• caption: write it like a great magazine teaser. Open with a sentence that makes someone stop scrolling — a striking fact, an unexpected angle, or a question. Then 1-2 paragraphs that crystallize what the article is about and why it matters NOW. Close with: "Read more by ${author} at catalyst-magazine.com — link in bio." then a blank line, then 4-7 relevant hashtags. Use \\n\\n between paragraphs. Total length 400-700 characters before hashtags. NO EMOJIS.
+• headline: 6-12 words max. Punchy, concrete. End with a period or question mark. NO EMOJIS.
+• body: 1-2 short sentences. Specific facts, names, numbers over generalities. ≤ 220 characters. NO EMOJIS.
+• cta: optional on "hook" pages. One sentence that points to the article, e.g. 'Read "${title}" by ${author}. Link in bio.' NO EMOJIS.
+• quote: an actual quotable line (real or faithfully paraphrased from the article) in 1-3 sentences. No quotation marks — they're added automatically. NO EMOJIS.
+• attribution: person's name + 1 short role, e.g. "Dr. Duilia De Mello, NASA astronomer". NO EMOJIS.
 ${colorGuidance}
 
-── STRUCTURE ──
-Aim for this arc:
-1. Editorial "what" page — establish the core idea with a crisp headline + body.
-2. Hook "why it matters" page — a surprising stat, consequence, or counter-intuitive point. Include a cta pointing readers to the full article.
-3. (Optional) Quote page — a human voice from the piece: a researcher, a person affected, a quotable line from the author.
-4. (Optional) A second editorial or hook page that adds a new angle.
+── NARRATIVE ARC (REQUIRED — pages MUST follow this order) ──
+The carousel should walk the reader through the article like a story — introduce, deepen, motivate. Pick exactly the right number of pages (3, 4, or 5) for THIS article. Use this arc:
 
-── EXAMPLE (format only — your colors should come from the cover palette above) ──
-caption: Light from 13 billion years ago is teaching us how galaxies were born — and where ours is going next.\\n\\nDr. Duilia De Mello uses NASA's deep space telescopes to look so far back in time that she's watching the first galaxies form. Her work on cosmic collisions is rewriting what we know about our own origins.\\n\\nRead more by ${author} at catalyst-magazine.com — link in bio. ✨\\n\\n#TheCatalyst #CatalystMagazine #Astronomy #ScienceWriting #STEM #NASA #SpaceExploration
+1. INTRODUCE THE TOPIC (layout: editorial)
+   — Establish what the article is about in one crisp idea. Set the scene. Make the reader curious. The headline should name the subject; the body should give just enough context to make them want to know more.
+
+2. SHOW THE ISSUE / TENSION (layout: hook)
+   — Reveal the problem, surprise, stat, or stakes. This is the "wait, really?" page — a number, a contrast, a counter-intuitive claim from the article. No CTA on this page yet.
+
+3. DEEPEN WITH A HUMAN VOICE (layout: quote) — RECOMMENDED for most articles
+   — Pull a single line from a researcher, source, or the author themselves. This is what turns an explainer into a story. Skip this page only if the article truly has no quotable voice.
+
+4. EXPAND THE INSIGHT (layout: editorial OR hook) — OPTIONAL
+   — Add a second angle: a consequence, a what-now, a related dimension that opens up the topic further. Use this only if the article genuinely has a second beat worth a page.
+
+5. MOTIVATE TO READ MORE (layout: hook with cta) — REQUIRED FINAL PAGE
+   — End on a call to action. The headline should tease what's still unsaid. The body should make the reader feel they're missing the full story by not clicking. The cta line MUST be: 'Read "${title}" by ${author}. Link in bio.'
+
+The total flow should feel like: "Here's the topic → here's why it's surprising → here's a human voice → (optional deeper beat) → go read it." Each page should logically follow the one before it. Do not repeat the same point twice. Do not put the cta on more than one page.
+
+── EXAMPLE (format only — your colors should come from the cover palette above; no emojis anywhere) ──
+caption: Light from 13 billion years ago is teaching us how galaxies were born — and where ours is going next.\\n\\nDr. Duilia De Mello uses NASA's deep space telescopes to look so far back in time that she is watching the first galaxies form. Her work on cosmic collisions is rewriting what we know about our own origins.\\n\\nRead more by ${author} at catalyst-magazine.com — link in bio.\\n\\n#TheCatalyst #CatalystMagazine #Astronomy #ScienceWriting #STEM #NASA #SpaceExploration
 ---
 layout: editorial
 headline: A Window to the Dawn of Time.
@@ -2334,17 +2243,22 @@ body: Dr. De Mello's work with deep space telescopes captures light that has tra
 bg: #0a1f3d
 ---
 layout: hook
-headline: In Washington D.C., a child's health can change dramatically from one zip code to the next.
-body: Children in some neighborhoods face asthma rates 3.5× higher than in others.
-cta: Read "The Geography of Risk" by Alexis Tamm. Link in bio.
-bg: #5b3fb8
+headline: We are seeing galaxies as they existed before our planet did.
+body: The James Webb telescope routinely resolves objects whose light is older than the Sun. Each image is a snapshot of a universe that no longer exists.
+bg: #0c2545
 ---
 layout: quote
 quote: The universe keeps asking us the same question — not what we are, but when we are.
 attribution: Dr. Duilia De Mello, NASA astronomer
-bg: #0c2545
+bg: #1a3270
+---
+layout: hook
+headline: What can the dawn of time tell us about our future?
+body: De Mello's research connects ancient cosmic collisions to the long-term fate of the Milky Way. The deeper we look back, the better we predict what comes next.
+cta: Read "${title}" by ${author}. Link in bio.
+bg: #0a1f3d
 
-── NOW WRITE THE CAPTION + PAGES FOR "${title}" ──`;
+── NOW WRITE THE CAPTION + PAGES FOR "${title}" — NO EMOJIS, FOLLOW THE NARRATIVE ARC ──`;
   }
 
   function refreshAiPrompt() {
@@ -2636,6 +2550,32 @@ bg: #0c2545
   // Returns { caption: string|null, pages: Page[] }. Sections without a
   // `layout:` key are treated as caption-bearing blocks (the AI is instructed
   // to put `caption: …` at the top, before the first `---`).
+  // Defensive emoji stripper — the AI is told NOT to use emojis, but we
+  // still belt-and-braces remove them on the way in. Covers the main Unicode
+  // emoji ranges (pictographs, symbols, dingbats, regional indicators, ZWJ,
+  // skin-tone modifiers, variation selectors). The remaining double-spaces
+  // get collapsed.
+  function stripEmojis(str) {
+    if (!str) return str;
+    return str
+      .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")        // regional indicators
+      .replace(/[\u{1F300}-\u{1F5FF}]/gu, "")        // misc symbols & pictographs
+      .replace(/[\u{1F600}-\u{1F64F}]/gu, "")        // emoticons
+      .replace(/[\u{1F680}-\u{1F6FF}]/gu, "")        // transport
+      .replace(/[\u{1F700}-\u{1F77F}]/gu, "")
+      .replace(/[\u{1F780}-\u{1F7FF}]/gu, "")
+      .replace(/[\u{1F800}-\u{1F8FF}]/gu, "")
+      .replace(/[\u{1F900}-\u{1F9FF}]/gu, "")        // supplemental symbols
+      .replace(/[\u{1FA00}-\u{1FA6F}]/gu, "")
+      .replace(/[\u{1FA70}-\u{1FAFF}]/gu, "")
+      .replace(/[\u{2600}-\u{26FF}]/gu, "")          // misc symbols (✨ etc.)
+      .replace(/[\u{2700}-\u{27BF}]/gu, "")          // dingbats
+      .replace(/[\u{FE00}-\u{FE0F}]/gu, "")          // variation selectors
+      .replace(/[\u{200D}]/gu, "")                   // zero-width joiner
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+  }
+
   function parseAiBlock(text) {
     if (!text || !text.trim()) return { caption: null, pages: [] };
     const sections = text.split(/^\s*-{3,}\s*$/m).map((s) => s.trim()).filter(Boolean);
@@ -2656,15 +2596,18 @@ bg: #0c2545
       }
       // Top-level caption block — has no `layout:` field.
       if (!obj.layout && obj.caption) {
-        caption = obj.caption;
+        caption = stripEmojis(obj.caption);
         continue;
       }
       const layout = (obj.layout || "").toLowerCase();
       if (!["editorial", "hook", "quote", "closing"].includes(layout)) continue;
       const page = blankPage(layout);
-      for (const k of ["headline", "body", "cta", "quote", "attribution", "tagline", "bg"]) {
-        if (obj[k] !== undefined) page[k] = obj[k];
+      // Strip emojis from every text field; bg is a hex color so it's left
+      // alone (the stripper would no-op on it anyway, but explicit is clearer).
+      for (const k of ["headline", "body", "cta", "quote", "attribution", "tagline"]) {
+        if (obj[k] !== undefined) page[k] = stripEmojis(obj[k]);
       }
+      if (obj.bg !== undefined) page.bg = obj.bg;
       pages.push(page);
     }
     return { caption, pages };
