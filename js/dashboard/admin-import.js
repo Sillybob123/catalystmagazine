@@ -7,7 +7,7 @@
 
 import { db } from "../firebase-config.js";
 import {
-  collection, addDoc, query, where, getDocs, orderBy,
+  collection, addDoc, query, where, getDocs,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, slugify } from "./ui.js";
 
@@ -65,8 +65,13 @@ export async function mount(ctx, container) {
     exportBtn.textContent = "Exporting…";
     exportStatus.textContent = "Fetching articles…";
     try {
-      const snap = await getDocs(query(collection(db, "stories"), orderBy("updatedAt", "desc")));
-      const stories = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      // No orderBy — Firestore drops any doc missing the order field, which
+      // silently excluded older articles that never had `updatedAt` stamped.
+      // We grab everything and sort client-side with a dated fallback chain.
+      const snap = await getDocs(collection(db, "stories"));
+      const stories = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => sortKey(b) - sortKey(a));
       const txt = storiesToTxt(stories);
       downloadText(`catalyst-articles-${dateStamp()}.txt`, txt);
       exportStatus.textContent = `Exported ${stories.length} article${stories.length === 1 ? "" : "s"}.`;
@@ -411,7 +416,43 @@ function toDatetimeLocal(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Sort key for stories: prefer publishedAt, then createdAt, then updatedAt.
+// Any of these can be a Firestore Timestamp, an ISO string, a millisecond
+// number, or missing. Returns 0 for anything unparseable so docs still sort
+// rather than being dropped.
+function sortKey(s) {
+  return tsToMillis(s.publishedAt)
+      || tsToMillis(s.createdAt)
+      || tsToMillis(s.updatedAt)
+      || 0;
+}
+
+function tsToMillis(v) {
+  if (v == null) return 0;
+  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
+  if (typeof v === "string") {
+    const t = Date.parse(v);
+    return Number.isFinite(t) ? t : 0;
+  }
+  // Firestore Timestamp SDK object
+  if (typeof v.toMillis === "function") {
+    try { return v.toMillis(); } catch { return 0; }
+  }
+  // Firestore REST shape { seconds, nanoseconds } or toDate()
+  if (typeof v.toDate === "function") {
+    try { return v.toDate().getTime(); } catch { return 0; }
+  }
+  if (typeof v.seconds === "number") {
+    return v.seconds * 1000 + Math.floor((v.nanoseconds || 0) / 1e6);
+  }
+  return 0;
+}
+
 // ---------- TXT export ----------
+// Dumps every field on every story. Body is rendered both as the raw HTML
+// (so the export is lossless) and as a plain-text version (so it's easy to
+// paste into an LLM). New schema fields land here automatically — we iterate
+// the doc's own keys instead of whitelisting.
 function storiesToTxt(stories) {
   const header = [
     "Catalyst articles export",
@@ -420,28 +461,78 @@ function storiesToTxt(stories) {
     "",
   ].join("\n");
 
+  // Fields that get special rendering and should be omitted from the generic
+  // "all other fields" dump at the bottom of each block.
+  const HANDLED = new Set([
+    "id", "title", "slug", "category", "status",
+    "authorName", "authorId", "author",
+    "publishedAt", "createdAt", "updatedAt",
+    "coverImage", "image", "lightCover",
+    "dek", "excerpt",
+    "body", "content",
+  ]);
+
   const blocks = stories.map((s, i) => {
-    const body = htmlToPlain(s.content || s.body || "");
-    const fields = [
+    const bodyHtml = s.body || s.content || "";
+    const bodyText = htmlToPlain(bodyHtml);
+
+    const topFields = [
       ["#", String(i + 1)],
       ["ID", s.id || ""],
       ["Title", s.title || ""],
       ["Slug", s.slug || ""],
       ["Category", s.category || ""],
       ["Status", s.status || ""],
-      ["Author", s.authorName || ""],
+      ["Author", s.authorName || s.author || ""],
       ["Author ID", s.authorId || ""],
-      ["Published at", s.publishedAt || ""],
-      ["Created at", s.createdAt || ""],
-      ["Updated at", s.updatedAt || ""],
-      ["URL", s.slug ? `/posts/${s.id}.html` : ""],
+      ["Published at", fmtDate(s.publishedAt)],
+      ["Created at", fmtDate(s.createdAt)],
+      ["Updated at", fmtDate(s.updatedAt)],
+      ["URL", s.slug ? `/article/${s.slug}` : (s.id ? `/posts/${s.id}.html` : "")],
       ["Cover image", s.coverImage || s.image || ""],
-      ["Excerpt", s.dek || s.excerpt || ""],
+      ["Light cover", s.lightCover || ""],
+      ["Excerpt / Dek", s.dek || s.excerpt || ""],
     ].map(([k, v]) => `${k}: ${v}`).join("\n");
-    return `${"=".repeat(72)}\n${fields}\n\nBODY:\n${body}\n`;
+
+    // Dump any remaining top-level fields so nothing gets silently dropped
+    // (tags, writerChecklist, sourceFile, etc.). Values stringified as JSON
+    // so nested structures are still human-readable.
+    const extraKeys = Object.keys(s).filter((k) => !HANDLED.has(k)).sort();
+    const extras = extraKeys.length
+      ? "\nOther fields:\n" + extraKeys.map((k) => `  ${k}: ${stringifyValue(s[k])}`).join("\n")
+      : "";
+
+    return [
+      "=".repeat(72),
+      topFields,
+      extras,
+      "",
+      "BODY (HTML):",
+      bodyHtml || "(empty)",
+      "",
+      "BODY (plain text):",
+      bodyText || "(empty)",
+      "",
+    ].join("\n");
   });
 
   return header + "\n" + blocks.join("\n");
+}
+
+function fmtDate(v) {
+  const ms = tsToMillis(v);
+  if (!ms) return v ? String(v) : "";
+  return new Date(ms).toISOString();
+}
+
+function stringifyValue(v) {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  // Firestore Timestamp → ISO
+  const ms = tsToMillis(v);
+  if (ms) return new Date(ms).toISOString();
+  try { return JSON.stringify(v); } catch { return String(v); }
 }
 
 function htmlToPlain(html) {
