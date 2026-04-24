@@ -56,12 +56,16 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           Public site
         </a>
-        <div class="user-chip" id="user-chip">
-          <div class="avatar" id="user-avatar">?</div>
-          <div class="user-meta">
-            <span class="user-meta-name" id="user-name">&hellip;</span>
-            <span class="user-meta-role" id="user-role">&hellip;</span>
-          </div>
+        <div class="user-chip-wrap" id="user-chip-wrap">
+          <button class="user-chip" id="user-chip" type="button" aria-haspopup="menu" aria-expanded="false">
+            <div class="avatar" id="user-avatar">?</div>
+            <div class="user-meta">
+              <span class="user-meta-name" id="user-name">&hellip;</span>
+              <span class="user-meta-role" id="user-role">&hellip;</span>
+            </div>
+            <svg class="user-chip-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="user-menu" id="user-menu" role="menu" hidden></div>
         </div>
       </div>
     </header>

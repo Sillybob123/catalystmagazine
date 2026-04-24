@@ -47,11 +47,23 @@ const ICONS = {
 const state = {
   user: null,          // Firebase user
   profile: null,       // Firestore users/{uid} doc data (includes role)
-  role: null,
+  role: null,          // Real role from Firestore (never changes during session)
+  previewRole: null,   // Admin-only: role being previewed; null when not previewing
   currentRoute: null,
   currentModule: null,
   moduleCleanup: null,
 };
+
+// Role an admin can preview. The admin's real role is loaded from Firestore;
+// when previewing, the sidebar/routing/context all use previewRole instead.
+// Write actions continue to run against the real admin identity (Firestore rules
+// check request.auth), so permissions are unaffected.
+const PREVIEW_ROLES = ["writer", "editor", "newsletter_builder", "marketing"];
+const PREVIEW_KEY = "catalyst.dashboard.previewRole";
+
+function getActiveRole() {
+  return state.previewRole || state.role;
+}
 
 // ---------- route config ----------
 // Each route is module-loaded lazily. Loader is an async () => module.
@@ -177,7 +189,7 @@ const ROUTES = {
   "#/marketing/social": {
     label: "Social media posts",
     icon: ICONS.activity,
-    roles: ["admin", "marketing", "editor"],
+    roles: ["admin", "marketing"],
     group: "marketing",
     loader: () => import("./marketing.js"),
     mountKey: "social",
@@ -271,6 +283,14 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
+  // Restore any previous preview role chosen this session (admin only).
+  if (state.role === "admin") {
+    const saved = sessionStorage.getItem(PREVIEW_KEY);
+    if (saved && PREVIEW_ROLES.includes(saved)) {
+      state.previewRole = saved;
+    }
+  }
+
   initPresencePing();
   paintUserChip();
   renderSidebar();
@@ -329,11 +349,14 @@ function initPresencePing() {
 // ---------- sidebar ----------
 function renderSidebar() {
   const nav = document.getElementById("nav");
+  const active = getActiveRole();
   // editors inherit writer permissions
-  const effectiveRoles = state.role === "editor"
-    ? [state.role, "writer"]
-    : [state.role];
-  const userIsAllowed = (roles) => roles.includes("*") || effectiveRoles.some(r => roles.includes(r)) || state.role === "admin";
+  const effectiveRoles = active === "editor"
+    ? [active, "writer"]
+    : [active];
+  // When previewing, admin access is suppressed so the sidebar reflects what
+  // the previewed role would actually see.
+  const userIsAllowed = (roles) => roles.includes("*") || effectiveRoles.some(r => roles.includes(r)) || active === "admin";
 
   const byGroup = new Map();
   for (const [hash, route] of Object.entries(ROUTES)) {
@@ -367,15 +390,25 @@ function renderSidebar() {
   // Ensure a default route exists
   if (!location.hash) location.hash = "#/overview";
 
+  const footerRoleLine = state.previewRole
+    ? `<div><span style="color:var(--muted);">Previewing as</span> ${ROLE_LABELS[state.previewRole] || state.previewRole}</div>`
+    : `<div>${ROLE_LABELS[state.role] || state.role}</div>`;
   document.getElementById("footer-user-info").innerHTML =
     `<div style="font-weight:600;color:var(--ink-2);">${state.profile.name || state.profile.email}</div>` +
-    `<div>${ROLE_LABELS[state.role] || state.role}</div>`;
+    footerRoleLine;
 }
 
 function paintUserChip() {
   document.getElementById("user-avatar").textContent = initials(state.profile.name, state.profile.email);
   document.getElementById("user-name").textContent = state.profile.name || state.profile.email;
-  document.getElementById("user-role").textContent = ROLE_LABELS[state.role] || state.role || "";
+  const roleEl = document.getElementById("user-role");
+  if (state.previewRole) {
+    roleEl.textContent = `Viewing as ${ROLE_LABELS[state.previewRole] || state.previewRole}`;
+    roleEl.style.color = "#b45309";
+  } else {
+    roleEl.textContent = ROLE_LABELS[state.role] || state.role || "";
+    roleEl.style.color = "";
+  }
 }
 
 // ---------- routing ----------
@@ -386,8 +419,9 @@ async function handleRoute() {
   let route = ROUTES[hashPath];
 
   if (!route) { location.hash = "#/overview"; return; }
-  const effectiveRoles = state.role === "editor" ? [state.role, "writer"] : [state.role];
-  const allowed = route.roles.includes("*") || effectiveRoles.some(r => route.roles.includes(r)) || state.role === "admin";
+  const active = getActiveRole();
+  const effectiveRoles = active === "editor" ? [active, "writer"] : [active];
+  const allowed = route.roles.includes("*") || effectiveRoles.some(r => route.roles.includes(r)) || active === "admin";
   if (!allowed) {
     toast("You don't have access to that page.", "error");
     location.hash = "#/overview";
@@ -415,17 +449,37 @@ async function handleRoute() {
     if (typeof maybeCleanup === "function") state.moduleCleanup = maybeCleanup;
     state.currentRoute = hash;
     state.currentModule = mod;
+    injectPreviewBanner(content);
   } catch (err) {
     console.error("[dashboard] route mount failed", err);
     content.innerHTML = `<div class="error-state">Failed to load this page: ${err?.message || err}</div>`;
   }
 }
 
+// Prepend a preview banner to the mounted content when the admin is previewing
+// as another role. Called after each module mount.
+function injectPreviewBanner(content) {
+  if (!state.previewRole) return;
+  const label = ROLE_LABELS[state.previewRole] || state.previewRole;
+  const banner = el("div", { class: "preview-banner", role: "status" });
+  banner.innerHTML = `
+    <span class="preview-banner-dot" aria-hidden="true"></span>
+    <span class="preview-banner-text">
+      Previewing as <strong>${label}</strong> &middot; your admin permissions are unchanged
+    </span>
+    <button type="button" class="preview-banner-exit">Exit preview</button>
+  `;
+  banner.querySelector(".preview-banner-exit").addEventListener("click", () => setPreviewRole(null));
+  content.prepend(banner);
+}
+
 function makeContext(route) {
   return {
     user: state.user,
     profile: state.profile,
-    role: state.role,
+    role: getActiveRole(),
+    realRole: state.role,
+    isPreviewing: !!state.previewRole,
     mountKey: route.mountKey || null,
     toast,
     // Helper to build authorized fetch requests to our own /api endpoints.
@@ -440,6 +494,109 @@ function makeContext(route) {
     },
     navigate: (hash) => { location.hash = hash; },
   };
+}
+
+// ---------- role preview (admin only) ----------
+// Switch the dashboard to render as if the admin were another role. Passing
+// null clears the preview and returns to the real admin view.
+function setPreviewRole(nextRole) {
+  if (state.role !== "admin") return;
+  if (nextRole && !PREVIEW_ROLES.includes(nextRole)) return;
+  if (nextRole === state.previewRole) { closeUserMenu(); return; }
+
+  state.previewRole = nextRole;
+  if (nextRole) {
+    sessionStorage.setItem(PREVIEW_KEY, nextRole);
+  } else {
+    sessionStorage.removeItem(PREVIEW_KEY);
+  }
+
+  paintUserChip();
+  renderSidebar();
+  closeUserMenu();
+
+  // If the current route is no longer allowed under the new role, handleRoute
+  // will redirect to #/overview. Either way, re-run it to remount with the new
+  // ctx.role so modules re-render their role-gated UI.
+  if (location.hash === "#/overview") {
+    handleRoute();
+  } else {
+    location.hash = "#/overview";
+  }
+
+  if (nextRole) {
+    toast(`Previewing dashboard as ${ROLE_LABELS[nextRole] || nextRole}.`, "info");
+  } else {
+    toast("Back to your admin view.", "info");
+  }
+}
+
+function renderUserMenu() {
+  const menu = document.getElementById("user-menu");
+  if (!menu) return;
+  const isAdmin = state.role === "admin";
+
+  const header = `
+    <div class="user-menu-header">
+      <div class="user-menu-header-label">Signed in</div>
+      <div class="user-menu-header-name">${state.profile.name || state.profile.email}</div>
+      <div class="user-menu-header-email">${state.profile.email || ""}</div>
+    </div>
+  `;
+
+  if (!isAdmin) {
+    // Non-admins get a simple menu (just sign out, for now).
+    menu.innerHTML = `
+      ${header}
+      <button type="button" class="user-menu-item" data-action="signout">
+        <span class="user-menu-item-dot"></span>
+        <span class="user-menu-item-label">Sign out</span>
+      </button>
+    `;
+  } else {
+    const activeRole = getActiveRole();
+    const roleItem = (role, tag = "") => {
+      const label = ROLE_LABELS[role] || role;
+      const current = role === activeRole;
+      return `
+        <button type="button" class="user-menu-item" data-action="preview" data-role="${role}" ${current ? 'aria-current="true"' : ""}>
+          <span class="user-menu-item-dot"></span>
+          <span class="user-menu-item-label">${label}</span>
+          ${tag ? `<span class="user-menu-item-tag">${tag}</span>` : ""}
+        </button>
+      `;
+    };
+
+    menu.innerHTML = `
+      ${header}
+      <div class="user-menu-section-label">View dashboard as</div>
+      ${roleItem("admin", "You")}
+      ${PREVIEW_ROLES.map((r) => roleItem(r)).join("")}
+      ${state.previewRole ? `
+        <div class="user-menu-divider"></div>
+        <button type="button" class="user-menu-item user-menu-exit" data-action="exit-preview">
+          <span class="user-menu-item-dot" style="background:currentColor;"></span>
+          <span class="user-menu-item-label">Exit preview</span>
+        </button>
+      ` : ""}
+      <div class="user-menu-divider"></div>
+      <button type="button" class="user-menu-item" data-action="signout">
+        <span class="user-menu-item-dot"></span>
+        <span class="user-menu-item-label">Sign out</span>
+      </button>
+    `;
+  }
+
+  menu.hidden = false;
+  document.getElementById("user-chip").setAttribute("aria-expanded", "true");
+}
+
+function closeUserMenu() {
+  const menu = document.getElementById("user-menu");
+  if (!menu) return;
+  menu.hidden = true;
+  const chip = document.getElementById("user-chip");
+  if (chip) chip.setAttribute("aria-expanded", "false");
 }
 
 // ---------- global handlers ----------
@@ -461,5 +618,50 @@ function attachGlobalHandlers() {
   scrim.addEventListener("click", () => {
     sidebar.classList.remove("open");
     scrim.classList.remove("open");
+  });
+
+  // User chip dropdown (open on click, close on outside click or Escape).
+  const chip = document.getElementById("user-chip");
+  const menu = document.getElementById("user-menu");
+  chip.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (menu.hidden) {
+      renderUserMenu();
+    } else {
+      closeUserMenu();
+    }
+  });
+  menu.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === "signout") {
+      try {
+        await signOut(auth);
+        location.href = "/admin/login";
+      } catch (err) { toast("Sign-out failed: " + err.message, "error"); }
+      return;
+    }
+    if (action === "exit-preview") {
+      setPreviewRole(null);
+      return;
+    }
+    if (action === "preview") {
+      const role = btn.dataset.role;
+      // Clicking "admin" while not previewing is a no-op; clicking it while
+      // previewing exits the preview.
+      if (role === "admin") {
+        setPreviewRole(null);
+      } else {
+        setPreviewRole(role);
+      }
+    }
+  });
+  document.addEventListener("click", (e) => {
+    if (menu.hidden) return;
+    if (!e.target.closest("#user-chip-wrap")) closeUserMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !menu.hidden) closeUserMenu();
   });
 }
