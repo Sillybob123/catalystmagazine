@@ -2271,22 +2271,28 @@ img {
 .team-member-card:nth-child(15):hover { background: linear-gradient(135deg, rgba(79, 172, 254, 0.18) 0%, rgba(0, 242, 254, 0.14) 100%), rgba(255, 255, 255, 0.92); }
 
 .team-member-image {
-  width: 100%;
-  height: auto;
-  max-height: 240px;
+  display: block;
+  width: 240px;
+  height: 240px;
+  max-width: 100%;
+  margin: 20px auto 0;
   object-fit: contain;
-  object-position: center top;
-  background: linear-gradient(135deg, rgba(245, 245, 245, 0.5), rgba(250, 250, 250, 0.3));
-  transition: all var(--transition-slow);
+  object-position: center;
+  background: transparent;
+  transition: filter var(--transition-slow);
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  transform: scale(0.85);
-  padding: 10px 0;
 }
 
 .team-member-card:hover .team-member-image {
-  transform: scale(0.9);
   filter: brightness(1.03) saturate(1.05);
+}
+
+/* Josh's source photo is square (2140x2140) while other team photos are taller
+   portraits (~1603x1884), so `contain` makes his render visually smaller.
+   Nudge his image up slightly so he appears the same size as the rest. */
+.team-member-card[data-member="josh-shapo"] .team-member-image {
+  transform: scale(1.12);
 }
 
 .team-member-info {
