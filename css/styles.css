@@ -2243,6 +2243,10 @@ img {
 .team-member-card:nth-child(13) { background: linear-gradient(135deg, rgba(0, 206, 201, 0.1) 0%, rgba(85, 239, 196, 0.08) 100%), rgba(255, 255, 255, 0.88); }
 .team-member-card:nth-child(14) { background: linear-gradient(135deg, rgba(250, 177, 160, 0.1) 0%, rgba(255, 195, 160, 0.08) 100%), rgba(255, 255, 255, 0.88); }
 .team-member-card:nth-child(15) { background: linear-gradient(135deg, rgba(79, 172, 254, 0.1) 0%, rgba(0, 242, 254, 0.08) 100%), rgba(255, 255, 255, 0.88); }
+.team-member-card:nth-child(16) { background: linear-gradient(135deg, rgba(255, 107, 157, 0.1) 0%, rgba(255, 179, 198, 0.08) 100%), rgba(255, 255, 255, 0.88); }
+.team-member-card:nth-child(17) { background: linear-gradient(135deg, rgba(162, 155, 254, 0.1) 0%, rgba(108, 255, 221, 0.08) 100%), rgba(255, 255, 255, 0.88); }
+.team-member-card:nth-child(18) { background: linear-gradient(135deg, rgba(255, 218, 121, 0.1) 0%, rgba(255, 177, 120, 0.08) 100%), rgba(255, 255, 255, 0.88); }
+.team-member-card:nth-child(19) { background: linear-gradient(135deg, rgba(95, 207, 227, 0.1) 0%, rgba(129, 236, 236, 0.08) 100%), rgba(255, 255, 255, 0.88); }
 
 .team-member-card:hover {
   transform: translateY(-8px) scale(1.02);
@@ -2269,6 +2273,10 @@ img {
 .team-member-card:nth-child(13):hover { background: linear-gradient(135deg, rgba(0, 206, 201, 0.18) 0%, rgba(85, 239, 196, 0.14) 100%), rgba(255, 255, 255, 0.92); }
 .team-member-card:nth-child(14):hover { background: linear-gradient(135deg, rgba(250, 177, 160, 0.18) 0%, rgba(255, 195, 160, 0.14) 100%), rgba(255, 255, 255, 0.92); }
 .team-member-card:nth-child(15):hover { background: linear-gradient(135deg, rgba(79, 172, 254, 0.18) 0%, rgba(0, 242, 254, 0.14) 100%), rgba(255, 255, 255, 0.92); }
+.team-member-card:nth-child(16):hover { background: linear-gradient(135deg, rgba(255, 107, 157, 0.18) 0%, rgba(255, 179, 198, 0.14) 100%), rgba(255, 255, 255, 0.92); }
+.team-member-card:nth-child(17):hover { background: linear-gradient(135deg, rgba(162, 155, 254, 0.18) 0%, rgba(108, 255, 221, 0.14) 100%), rgba(255, 255, 255, 0.92); }
+.team-member-card:nth-child(18):hover { background: linear-gradient(135deg, rgba(255, 218, 121, 0.18) 0%, rgba(255, 177, 120, 0.14) 100%), rgba(255, 255, 255, 0.92); }
+.team-member-card:nth-child(19):hover { background: linear-gradient(135deg, rgba(95, 207, 227, 0.18) 0%, rgba(129, 236, 236, 0.14) 100%), rgba(255, 255, 255, 0.92); }
 
 .team-member-image {
   display: block;
