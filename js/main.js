@@ -501,39 +501,10 @@ function createSkeletonArticleCard(type = 'article') {
 // ============================================
 // NAVIGATION
 // ============================================
-function setupNavigation() {
-    const menuToggle = document.querySelector('.menu-toggle');
-    const navMenu = document.querySelector('.nav-menu');
-
-    if (menuToggle && navMenu) {
-        menuToggle.addEventListener('click', () => {
-            navMenu.classList.toggle('open');
-        });
-
-        // Close on link click
-        navMenu.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
-                navMenu.classList.remove('open');
-            });
-        });
-    }
-
-    // Set active nav link
-    const currentPath = window.location.pathname;
-    const currentPage = currentPath.split('/').pop() || '';
-
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-        const href = link.getAttribute('href');
-
-        // Check if this is the current page
-        if (href === '/' && (currentPath === '/' || currentPath === '' || currentPath.endsWith('index.html'))) {
-            link.classList.add('active');
-        } else if (href !== '/' && currentPath.includes(href)) {
-            link.classList.add('active');
-        }
-    });
-}
+// The hamburger menu and active-link wiring now lives in js/layout.js so
+// every page (including ones that don't load main.js) gets the handler.
+// Keep this as a no-op to preserve any existing callers.
+function setupNavigation() {}
 
 // ============================================
 // NEWSLETTER MODAL

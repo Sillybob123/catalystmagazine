@@ -73,9 +73,46 @@ window.layoutReady = Promise.all([
     loadFragment('site-footer', footerPath)
 ]).then(() => {
     setupNewsletterModal();
+    setupMobileNav();
 }).catch(error => {
     console.error('[Layout] Error loading shared fragments', error);
 });
+
+// Mobile hamburger menu. Lives here so every page works — previously this
+// handler was only bound in main.js, which pages like /articles, /innovation
+// and /collaborate don't load.
+function setupMobileNav() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navMenu = document.querySelector('.nav-menu');
+    if (!menuToggle || !navMenu) return;
+
+    menuToggle.addEventListener('click', () => {
+        const isOpen = navMenu.classList.toggle('open');
+        menuToggle.classList.toggle('active', isOpen);
+        menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    navMenu.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            navMenu.classList.remove('open');
+            menuToggle.classList.remove('active');
+            menuToggle.setAttribute('aria-expanded', 'false');
+        });
+    });
+
+    // Mark the active nav link based on the current URL so the highlight
+    // stays correct on every page.
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        const href = link.getAttribute('href');
+        if (href === '/' && (currentPath === '/' || currentPath === '' || currentPath.endsWith('index.html'))) {
+            link.classList.add('active');
+        } else if (href && href !== '/' && currentPath.includes(href)) {
+            link.classList.add('active');
+        }
+    });
+}
 
 function setupNewsletterModal() {
     const newsletterModal = document.getElementById('newsletter-modal');
