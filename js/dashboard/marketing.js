@@ -1213,86 +1213,208 @@ async function renderClosing(page) {
   canvas.height = SIZE;
   const ctx = canvas.getContext("2d");
 
-  // Base — fall back to a deep blue if no cover.
-  ctx.fillStyle = "#0a1830";
+  // ── Base fill — only ever shown if the cover image fails to load. ─────────
+  // We pick a graceful gradient instead of a flat black, so even the failure
+  // state looks intentional.
+  const fallbackGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
+  fallbackGrad.addColorStop(0, "#13243f");
+  fallbackGrad.addColorStop(1, "#0a1424");
+  ctx.fillStyle = fallbackGrad;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Tint hue (lets each closing page feel unique to the carousel it ends).
+  // The user-picked tint (defaults to a near-neutral so the cover photo is
+  // what carries the color; tint just nudges the whole thing toward a hue).
   const tint = (page.bg || "").trim() || "#0a1830";
 
+  let coverLoaded = false;
   if (page.coverImageUrl) {
     let src = page.coverImageUrl;
     try {
       const u = new URL(page.coverImageUrl);
       if (u.hostname.includes("static.wixstatic.com")) {
+        // Same q_100 high-quality fetch as the cover renderer — keeps the
+        // blur source crisp so the smoothed result has rich color, not mush.
         const v1 = u.pathname.indexOf("/v1/");
         const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
         const fname = assetPath.split("/").filter(Boolean).pop();
-        src = `${u.origin}${assetPath}/v1/fill/w_2160,h_2160,al_c,q_95,usm_0.33_1.00_0.00,enc_jpg/${fname}`;
+        src = `${u.origin}${assetPath}/v1/fill/w_2160,h_2160,al_c,q_100,usm_0.66_1.00_0.00,enc_jpg/${fname}`;
       }
     } catch { /* not a URL */ }
 
     try {
       const img = await loadImage(src);
       const iw = img.naturalWidth, ih = img.naturalHeight;
-      // Heavy blur via downsample-then-upsample.
-      const THUMB = 24;
-      const tCanvas = document.createElement("canvas");
-      tCanvas.width = THUMB;
-      tCanvas.height = THUMB;
-      const tctx = tCanvas.getContext("2d");
-      tctx.imageSmoothingEnabled = true;
-      tctx.imageSmoothingQuality = "high";
-      const tScale = Math.max(THUMB / iw, THUMB / ih);
-      const tw = iw * tScale, th = ih * tScale;
-      tctx.drawImage(img, (THUMB - tw) / 2, (THUMB - th) / 2, tw, th);
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(tCanvas, 0, 0, SIZE, SIZE);
-    } catch { /* no cover available; tint alone */ }
+
+      // ── Two-pass blur for depth ─────────────────────────────────────────
+      // Pass 1: heavy bloom (THUMB=20) for the soft underlying field.
+      // Pass 2: medium blur (THUMB=64) on top at low opacity, so the photo's
+      // shapes still register subtly. The result feels like real Gaussian
+      // depth-of-field rather than the flat pixelation of a single tiny
+      // thumbnail.
+      const drawBlurred = (thumbSize, alpha) => {
+        const tCanvas = document.createElement("canvas");
+        tCanvas.width = thumbSize;
+        tCanvas.height = thumbSize;
+        const tctx = tCanvas.getContext("2d");
+        tctx.imageSmoothingEnabled = true;
+        tctx.imageSmoothingQuality = "high";
+        const tScale = Math.max(thumbSize / iw, thumbSize / ih);
+        const tw = iw * tScale, th = ih * tScale;
+        tctx.drawImage(img, (thumbSize - tw) / 2, (thumbSize - th) / 2, tw, th);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(tCanvas, 0, 0, SIZE, SIZE);
+        ctx.restore();
+      };
+      drawBlurred(20, 1.0);   // soft base
+      drawBlurred(72, 0.55);  // sharper top layer adds shape and saturation
+      coverLoaded = true;
+    } catch { /* fall through to fallback */ }
   }
 
-  // Color tint over the blurred image — gives the closing page a single
-  // dominant hue (matching the carousel's accent color if the user picked one).
+  // ── Color tint, but gentle ─────────────────────────────────────────────────
+  // The previous version used multiply + 60% black, which flattened the photo
+  // to near-black. Here we just add a soft, low-opacity tint so the user-picked
+  // color whispers through the photo without erasing it.
+  ctx.save();
   ctx.globalCompositeOperation = "multiply";
+  ctx.globalAlpha = 0.35;
   ctx.fillStyle = tint;
   ctx.fillRect(0, 0, SIZE, SIZE);
-  ctx.globalCompositeOperation = "source-over";
+  ctx.restore();
 
-  // Darkening overlay so the logo + text always read.
-  const overlay = ctx.createLinearGradient(0, 0, 0, SIZE);
-  overlay.addColorStop(0,   "rgba(0,0,0,0.55)");
-  overlay.addColorStop(0.5, "rgba(0,0,0,0.45)");
-  overlay.addColorStop(1,   "rgba(0,0,0,0.65)");
-  ctx.fillStyle = overlay;
+  // ── Vignette: dark corners → bright center, focuses the eye on the logo ──
+  const vignette = ctx.createRadialGradient(
+    SIZE / 2, SIZE * 0.42, SIZE * 0.18,
+    SIZE / 2, SIZE * 0.50, SIZE * 0.78
+  );
+  vignette.addColorStop(0,   "rgba(0,0,0,0)");
+  vignette.addColorStop(0.7, "rgba(0,0,0,0.32)");
+  vignette.addColorStop(1,   "rgba(0,0,0,0.62)");
+  ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Glass logo, large and centered.
+  // ── Soft luminous glow behind where the logo will sit ─────────────────────
+  const glow = ctx.createRadialGradient(
+    SIZE / 2, SIZE * 0.40, 0,
+    SIZE / 2, SIZE * 0.40, SIZE * 0.42
+  );
+  glow.addColorStop(0,   "rgba(255,255,255,0.18)");
+  glow.addColorStop(0.5, "rgba(255,255,255,0.06)");
+  glow.addColorStop(1,   "rgba(255,255,255,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  // ── Frosted-glass card holding the logo + wordmark ────────────────────────
+  // Apple-style: rounded rect, semi-translucent fill, soft top-edge sheen,
+  // thin bright border, drop shadow. This makes the brand mark feel like a
+  // physical object floating in front of the photo, not pasted on top of it.
+  const cardW = SIZE * 0.72;
+  const cardH = SIZE * 0.62;
+  const cardX = (SIZE - cardW) / 2;
+  const cardY = SIZE * 0.18;
+  const cardR = 32;
+
+  // Outer drop shadow
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 60;
+  ctx.shadowOffsetY = 24;
+  ctx.fillStyle = "rgba(255,255,255,0.001)"; // near-zero so only the shadow renders
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, cardR);
+  ctx.fill();
+  ctx.restore();
+
+  // Glass fill — frosted white over the photo
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, cardR);
+  ctx.clip();
+
+  // Layered fills give the glass a subtle vertical gradient, like real frosted
+  // acrylic catching ambient light from above.
+  const glassGrad = ctx.createLinearGradient(0, cardY, 0, cardY + cardH);
+  glassGrad.addColorStop(0,    "rgba(255,255,255,0.18)");
+  glassGrad.addColorStop(0.5,  "rgba(255,255,255,0.10)");
+  glassGrad.addColorStop(1,    "rgba(255,255,255,0.05)");
+  ctx.fillStyle = glassGrad;
+  ctx.fillRect(cardX, cardY, cardW, cardH);
+
+  // Thin top-edge sheen
+  const sheen = ctx.createLinearGradient(0, cardY, 0, cardY + 80);
+  sheen.addColorStop(0, "rgba(255,255,255,0.28)");
+  sheen.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = sheen;
+  ctx.fillRect(cardX, cardY, cardW, 80);
+  ctx.restore();
+
+  // Bright thin border — gives the glass card its edge definition
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.42)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(cardX + 0.75, cardY + 0.75, cardW - 1.5, cardH - 1.5, cardR - 1);
+  ctx.stroke();
+  // Inner softer border for that dual-stroke glassy look
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(cardX + 4, cardY + 4, cardW - 8, cardH - 8, cardR - 4);
+  ctx.stroke();
+  ctx.restore();
+
+  // ── Logo + wordmark INSIDE the glass card ─────────────────────────────────
   const logo = await loadLogo();
   if (logo) {
-    const sz = 260;
+    const logoSize = 240;
+    const logoX = (SIZE - logoSize) / 2;
+    const logoY = cardY + cardH * 0.18;
+    // Subtle glow behind the logo for the levitating glass-orb effect
+    ctx.save();
+    ctx.shadowColor = "rgba(180,210,255,0.55)";
+    ctx.shadowBlur = 48;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(logo, (SIZE - sz) / 2, SIZE * 0.34 - sz / 2, sz, sz);
+    ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+    ctx.restore();
   }
 
-  // "The Catalyst Magazine" wordmark
+  // "The Catalyst Magazine" — clean serif-y feel via Inter at light weight,
+  // sized large but not heavy so the glass aesthetic stays calm.
+  ctx.save();
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.shadowColor = "rgba(0,0,0,0.5)";
-  ctx.shadowBlur = 18;
-  ctx.font = `400 60px "Inter", "Helvetica Neue", Arial, sans-serif`;
-  ctx.fillText("The Catalyst Magazine", SIZE / 2, SIZE * 0.58);
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 12;
+  ctx.font = `500 56px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "-0.01em";
+  ctx.fillText("The Catalyst Magazine", SIZE / 2, cardY + cardH * 0.74);
 
-  // Tagline
+  // Tagline — softer, with letter-spacing for that editorial-print feel
   const tagline = (page.tagline || "Join the Changemakers.").trim();
-  ctx.font = `400 30px "Inter", "Helvetica Neue", Arial, sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,0.92)";
-  ctx.fillText(tagline, SIZE / 2, SIZE * 0.62 + 30);
+  ctx.shadowBlur = 8;
+  ctx.font = `400 26px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.04em";
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.fillText(tagline, SIZE / 2, cardY + cardH * 0.86);
+  ctx.restore();
 
-  ctx.shadowBlur = 0;
-  ctx.textAlign = "left";
+  // ── catalyst-magazine.com URL pinned to the bottom edge of the canvas ────
+  // Tiny + tracked-out so the closing page can subtly remind viewers where to
+  // find more — without dominating the design.
+  await ensurePoppinsLoaded();
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.font = `700 22px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.18em";
+  ctx.fillText("CATALYST-MAGAZINE.COM", SIZE / 2, SIZE - 50);
+  ctx.restore();
 
   return canvas.toDataURL("image/png");
 }
