@@ -9,7 +9,11 @@
 // Add new modules by extending the ROUTES map at the bottom.
 
 import { auth, db } from "../firebase-config.js";
-import { onAuthStateChanged, signOut, getIdToken } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  onAuthStateChanged, signOut, getIdToken,
+  EmailAuthProvider, reauthenticateWithCredential,
+  updatePassword, sendPasswordResetEmail,
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   doc,
   getDoc,
@@ -17,7 +21,7 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { el, toast, initials } from "./ui.js";
+import { el, toast, initials, openModal } from "./ui.js";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -545,9 +549,13 @@ function renderUserMenu() {
   `;
 
   if (!isAdmin) {
-    // Non-admins get a simple menu (just sign out, for now).
     menu.innerHTML = `
       ${header}
+      <button type="button" class="user-menu-item" data-action="change-password">
+        <span class="user-menu-item-dot"></span>
+        <span class="user-menu-item-label">Change password</span>
+      </button>
+      <div class="user-menu-divider"></div>
       <button type="button" class="user-menu-item" data-action="signout">
         <span class="user-menu-item-dot"></span>
         <span class="user-menu-item-label">Sign out</span>
@@ -580,6 +588,10 @@ function renderUserMenu() {
         </button>
       ` : ""}
       <div class="user-menu-divider"></div>
+      <button type="button" class="user-menu-item" data-action="change-password">
+        <span class="user-menu-item-dot"></span>
+        <span class="user-menu-item-label">Change password</span>
+      </button>
       <button type="button" class="user-menu-item" data-action="signout">
         <span class="user-menu-item-dot"></span>
         <span class="user-menu-item-label">Sign out</span>
@@ -599,6 +611,148 @@ function closeUserMenu() {
   if (chip) chip.setAttribute("aria-expanded", "false");
 }
 
+// ---------- change password ----------
+// Lets any signed-in user set a new password. We reauthenticate with their
+// current password first (Firebase requires this for updatePassword when the
+// session is older than a few minutes) and then call updatePassword. If the
+// user forgot their current password, they can fall back to the email reset
+// link — same flow as the public /admin/login "Forgot password" form.
+function openChangePasswordModal() {
+  const email = state.user?.email || state.profile?.email || "";
+
+  const form = el("form", { style: "display:grid;gap:12px;" });
+  form.innerHTML = `
+    <div style="color:var(--muted);font-size:13px;">
+      Signed in as <strong>${email || "(no email)"}</strong>.
+      Your new password must be at least 6 characters.
+    </div>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">Current password</span>
+      <input type="password" id="cp-current" autocomplete="current-password" required
+             style="padding:8px 10px;border:1px solid var(--hairline);border-radius:6px;">
+    </label>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">New password</span>
+      <input type="password" id="cp-new" autocomplete="new-password" minlength="6" required
+             style="padding:8px 10px;border:1px solid var(--hairline);border-radius:6px;">
+    </label>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">Confirm new password</span>
+      <input type="password" id="cp-confirm" autocomplete="new-password" minlength="6" required
+             style="padding:8px 10px;border:1px solid var(--hairline);border-radius:6px;">
+    </label>
+    <div id="cp-msg" style="color:var(--danger);font-size:13px;min-height:18px;"></div>
+    <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--hairline);padding-top:10px;">
+      Forgot your current password?
+      <a href="#" id="cp-reset-link" style="color:var(--accent);text-decoration:underline;">
+        Email me a reset link instead
+      </a>.
+    </div>
+  `;
+
+  const cancelBtn = el("button", { type: "button", class: "btn btn-secondary" }, "Cancel");
+  const saveBtn = el("button", { type: "submit", class: "btn btn-primary", form: "" }, "Update password");
+  saveBtn.setAttribute("form", "cp-form");
+  form.id = "cp-form";
+
+  const modal = openModal({
+    title: "Change password",
+    body: form,
+    footer: [cancelBtn, saveBtn],
+  });
+  if (!modal) {
+    toast("Could not open dialog.", "error");
+    return;
+  }
+
+  cancelBtn.addEventListener("click", () => modal.close());
+
+  const msgEl = form.querySelector("#cp-msg");
+  const currentInput = form.querySelector("#cp-current");
+  const newInput = form.querySelector("#cp-new");
+  const confirmInput = form.querySelector("#cp-confirm");
+  setTimeout(() => currentInput.focus(), 0);
+
+  form.querySelector("#cp-reset-link").addEventListener("click", async (e) => {
+    e.preventDefault();
+    if (!email) {
+      msgEl.textContent = "No email on file for this account — contact an admin.";
+      return;
+    }
+    msgEl.style.color = "";
+    msgEl.textContent = "Sending reset link…";
+    try {
+      await sendPasswordResetEmail(auth, email);
+      modal.close();
+      toast(`Reset link sent to ${email}. Check your inbox (and spam).`, "success");
+    } catch (err) {
+      msgEl.style.color = "var(--danger)";
+      msgEl.textContent = friendlyAuthError(err);
+    }
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msgEl.style.color = "var(--danger)";
+    msgEl.textContent = "";
+
+    const current = currentInput.value;
+    const next = newInput.value;
+    const confirm = confirmInput.value;
+
+    if (!current || !next || !confirm) {
+      msgEl.textContent = "Please fill in all three fields.";
+      return;
+    }
+    if (next.length < 6) {
+      msgEl.textContent = "New password must be at least 6 characters.";
+      return;
+    }
+    if (next !== confirm) {
+      msgEl.textContent = "New password and confirmation don't match.";
+      return;
+    }
+    if (next === current) {
+      msgEl.textContent = "New password must be different from your current one.";
+      return;
+    }
+    if (!auth.currentUser || !email) {
+      msgEl.textContent = "Not signed in — please reload the page and try again.";
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Updating…";
+    try {
+      const cred = EmailAuthProvider.credential(email, current);
+      await reauthenticateWithCredential(auth.currentUser, cred);
+      await updatePassword(auth.currentUser, next);
+      modal.close();
+      toast("Password updated. Use your new password next time you sign in.", "success");
+    } catch (err) {
+      msgEl.textContent = friendlyAuthError(err);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Update password";
+    }
+  });
+}
+
+function friendlyAuthError(err) {
+  const code = err?.code || "";
+  if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+    return "Current password is incorrect.";
+  }
+  if (code === "auth/weak-password") return "New password is too weak (at least 6 characters).";
+  if (code === "auth/too-many-requests") return "Too many attempts. Please wait a minute and try again.";
+  if (code === "auth/requires-recent-login") {
+    return "For security, please sign out and back in, then try again.";
+  }
+  if (code === "auth/user-not-found") return "No account found for this email.";
+  if (code === "auth/network-request-failed") return "Network error — check your connection and retry.";
+  return err?.message || "Something went wrong.";
+}
+
 // ---------- global handlers ----------
 function attachGlobalHandlers() {
   document.getElementById("sidebar-signout").addEventListener("click", async (e) => {
@@ -608,6 +762,14 @@ function attachGlobalHandlers() {
       location.href = "/admin/login";
     } catch (err) { toast("Sign-out failed: " + err.message, "error"); }
   });
+
+  const sidebarChangePwd = document.getElementById("sidebar-change-password");
+  if (sidebarChangePwd) {
+    sidebarChangePwd.addEventListener("click", (e) => {
+      e.preventDefault();
+      openChangePasswordModal();
+    });
+  }
 
   const sidebar = document.getElementById("sidebar");
   const scrim = document.getElementById("sidebar-scrim");
@@ -640,6 +802,11 @@ function attachGlobalHandlers() {
         await signOut(auth);
         location.href = "/admin/login";
       } catch (err) { toast("Sign-out failed: " + err.message, "error"); }
+      return;
+    }
+    if (action === "change-password") {
+      closeUserMenu();
+      openChangePasswordModal();
       return;
     }
     if (action === "exit-preview") {
