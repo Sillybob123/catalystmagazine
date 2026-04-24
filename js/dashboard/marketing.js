@@ -760,14 +760,15 @@ async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageSca
     }
     ctx.shadowBlur = 0;
 
-    // "The Catalyst" sub-label below the title — small caps style
-    const subY = titleTop + blockH + 28;
-    ctx.save();
-    ctx.font = `600 22px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.52)";
-    ctx.letterSpacing = "0.18em";
-    ctx.fillText("THE CATALYST", pad, subY);
-    ctx.restore();
+    // "THE CATALYST" wordmark — pinned to the bottom-right of the cover so it
+    // mirrors the corner mark on every other page in the carousel. Lives below
+    // the title block, in the right-side whitespace where the title's
+    // left-aligned text doesn't reach. Cover photos are dark from the gradient
+    // overlay, so we use a soft translucent white that matches every other
+    // slide in the set.
+    await drawCatalystWordmark(ctx, SIZE, {
+      color: "rgba(255,255,255,0.62)",
+    });
   } else {
     // ── Bold default style ─────────────────────────────────────────────────
     let ty = SIZE - bottomPad - blockH + lineH * 0.82;
