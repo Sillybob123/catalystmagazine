@@ -311,7 +311,38 @@ async function firestoreAdd(authedFetch, collection, fields) {
 }
 
 // ── Canvas image generator ──────────────────────────────────────────────────
-// Produces a 1080×1080 PNG matching the style in the example:
+// Designs are composed in 1080×1080 logical pixels, then exported at 2× for
+// sharper Instagram files without changing the visible layout.
+const SOCIAL_POST_CANVAS_SIZE = 1080;
+const SOCIAL_POST_EXPORT_SCALE = 2;
+const SOCIAL_POST_EXPORT_SIZE = SOCIAL_POST_CANVAS_SIZE * SOCIAL_POST_EXPORT_SCALE;
+const SOCIAL_POST_SOURCE_SIZE = 4096;
+
+function createSocialPostCanvas(size = SOCIAL_POST_CANVAS_SIZE) {
+  const canvas = document.createElement("canvas");
+  canvas.width = size * SOCIAL_POST_EXPORT_SCALE;
+  canvas.height = size * SOCIAL_POST_EXPORT_SCALE;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(SOCIAL_POST_EXPORT_SCALE, SOCIAL_POST_EXPORT_SCALE);
+  return { canvas, ctx };
+}
+
+function highResolutionCoverImageUrl(imageUrl) {
+  try {
+    const u = new URL(imageUrl);
+    // Firebase Storage / GCS download URLs already point at the uploaded object,
+    // so keep them untouched. Wix needs an explicit high-res rendition URL.
+    if (!u.hostname.includes("static.wixstatic.com")) return imageUrl;
+    const v1 = u.pathname.indexOf("/v1/");
+    const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
+    const fname = assetPath.split("/").filter(Boolean).pop();
+    return `${u.origin}${assetPath}/v1/fill/w_${SOCIAL_POST_SOURCE_SIZE},h_${SOCIAL_POST_SOURCE_SIZE},al_c,q_100,usm_0.66_1.00_0.00,enc_jpg/${fname}`;
+  } catch {
+    return imageUrl;
+  }
+}
+
+// Produces a square PNG matching the style in the example:
 //   - Full-bleed cover photo
 //   - Dark gradient over bottom ~45%
 //   - Bold white title text (wrapped)
@@ -551,11 +582,8 @@ async function loadLogo() {
 }
 
 async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageScale = 1 }) {
-  const SIZE = 1080;
-  const canvas = document.createElement("canvas");
-  canvas.width = SIZE;
-  canvas.height = SIZE;
-  const ctx = canvas.getContext("2d");
+  const SIZE = SOCIAL_POST_CANVAS_SIZE;
+  const { canvas, ctx } = createSocialPostCanvas(SIZE);
 
   // ── Cover photo ────────────────────────────────────────────────────────────
   // Dark base — always painted first so we have a fallback.
@@ -564,21 +592,7 @@ async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageSca
 
   let coverImg = null;
   if (coverImageUrl) {
-    let src = coverImageUrl;
-    try {
-      const u = new URL(coverImageUrl);
-      if (u.hostname.includes("static.wixstatic.com")) {
-        // Request the original asset at maximum quality from the Wix CDN.
-        // 2160px (2× the 1080 canvas — crisp on retina) at q_100, with a
-        // stronger unsharp mask so the downsample inside the canvas doesn't
-        // soften the image. enc_jpg keeps universal browser-canvas support.
-        const v1 = u.pathname.indexOf("/v1/");
-        const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
-        const fname = assetPath.split("/").filter(Boolean).pop();
-        src = `${u.origin}${assetPath}/v1/fill/w_2160,h_2160,al_c,q_100,usm_0.66_1.00_0.00,enc_jpg/${fname}`;
-      }
-      // Firebase Storage URLs are already full-resolution — use as-is
-    } catch { /* not a parseable URL */ }
+    const src = highResolutionCoverImageUrl(coverImageUrl);
 
     try {
       coverImg = await loadImage(src);
@@ -673,7 +687,7 @@ async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageSca
     ctx.restore();
 
     // Sharp photo clipped to rounded rect — reaffirm high-quality smoothing
-    // so the downsample from 2160 → ~900 stays crisp (canvas state can flip
+    // so the downsample from the high-res source stays crisp (canvas state can flip
     // smoothing back to "low" between save/restore on some browsers).
     ctx.save();
     ctx.beginPath();
@@ -811,7 +825,7 @@ async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageSca
   ctx.stroke();
 
   // Logo icon — draw at natural resolution into a high-res offscreen canvas first
-  // so it stays sharp when downscaled onto the 1080 canvas
+  // so it stays sharp when downscaled onto the high-res export canvas
   let textStartX = badgeX + innerPad;
   if (logoImg) {
     const iconX = badgeX + innerPad;
@@ -967,11 +981,8 @@ function readableInk(bg) {
 // Big headline at the top in white over solid color, optional body in a softer
 // frosted band at the bottom. Matches the "A Window to the Dawn of Time" card.
 async function renderEditorial(page) {
-  const SIZE = 1080;
-  const canvas = document.createElement("canvas");
-  canvas.width = SIZE;
-  canvas.height = SIZE;
-  const ctx = canvas.getContext("2d");
+  const SIZE = SOCIAL_POST_CANVAS_SIZE;
+  const { canvas, ctx } = createSocialPostCanvas(SIZE);
 
   const bg = pickBg(page, "#0a1f3d");
   paintColorBackground(ctx, SIZE, bg);
@@ -1041,11 +1052,8 @@ async function renderEditorial(page) {
 // Massive top statement (e.g. "In Washington D.C., a child's health…") with a
 // lighter body band underneath and a CTA line ("Read X by Y. Link in bio.").
 async function renderHook(page) {
-  const SIZE = 1080;
-  const canvas = document.createElement("canvas");
-  canvas.width = SIZE;
-  canvas.height = SIZE;
-  const ctx = canvas.getContext("2d");
+  const SIZE = SOCIAL_POST_CANVAS_SIZE;
+  const { canvas, ctx } = createSocialPostCanvas(SIZE);
 
   const bg = pickBg(page, "#5b3fb8");
   paintColorBackground(ctx, SIZE, bg);
@@ -1137,11 +1145,8 @@ async function renderHook(page) {
 // "Meet Dr. X" intro page (paste their bio as the quote, name as attribution)
 // or a real pull-quote from the article.
 async function renderQuote(page) {
-  const SIZE = 1080;
-  const canvas = document.createElement("canvas");
-  canvas.width = SIZE;
-  canvas.height = SIZE;
-  const ctx = canvas.getContext("2d");
+  const SIZE = SOCIAL_POST_CANVAS_SIZE;
+  const { canvas, ctx } = createSocialPostCanvas(SIZE);
 
   const bg = pickBg(page, "#0c2545");
   paintColorBackground(ctx, SIZE, bg);
@@ -1208,11 +1213,8 @@ async function renderQuote(page) {
 // logo and "Join the Changemakers" tagline. Auto-generated from the cover —
 // no separate image upload needed.
 async function renderClosing(page) {
-  const SIZE = 1080;
-  const canvas = document.createElement("canvas");
-  canvas.width = SIZE;
-  canvas.height = SIZE;
-  const ctx = canvas.getContext("2d");
+  const SIZE = SOCIAL_POST_CANVAS_SIZE;
+  const { canvas, ctx } = createSocialPostCanvas(SIZE);
 
   // Fallback if no cover loads — graceful gradient, never flat black.
   const fallbackGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
@@ -1227,40 +1229,24 @@ async function renderClosing(page) {
   const tint = (page.bg || "").trim() || "#0a1830";
 
   // ── Cover photo, lightly blurred — fills the whole canvas ─────────────────
-  // Single-pass blur (downsample → upsample) for that softly-defocused look.
+  // Single-pass canvas blur on the full-resolution cover for that softly-defocused look.
   // We deliberately keep the blur GENTLE so the photo is recognizable through
   // the tint — that's what makes each closing slide feel custom to its post.
   if (page.coverImageUrl) {
-    let src = page.coverImageUrl;
-    try {
-      const u = new URL(page.coverImageUrl);
-      if (u.hostname.includes("static.wixstatic.com")) {
-        const v1 = u.pathname.indexOf("/v1/");
-        const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
-        const fname = assetPath.split("/").filter(Boolean).pop();
-        src = `${u.origin}${assetPath}/v1/fill/w_2160,h_2160,al_c,q_100,usm_0.66_1.00_0.00,enc_jpg/${fname}`;
-      }
-    } catch { /* not a URL */ }
+    const src = highResolutionCoverImageUrl(page.coverImageUrl);
 
     try {
       const img = await loadImage(src);
       const iw = img.naturalWidth, ih = img.naturalHeight;
-      // THUMB=64 gives a soft Gaussian-ish blur but preserves enough shape that
-      // the original photo is still readable. (Earlier versions used 20–32 which
-      // made the result look like an abstract gradient.)
-      const THUMB = 64;
-      const tCanvas = document.createElement("canvas");
-      tCanvas.width = THUMB;
-      tCanvas.height = THUMB;
-      const tctx = tCanvas.getContext("2d");
-      tctx.imageSmoothingEnabled = true;
-      tctx.imageSmoothingQuality = "high";
-      const tScale = Math.max(THUMB / iw, THUMB / ih);
-      const tw = iw * tScale, th = ih * tScale;
-      tctx.drawImage(img, (THUMB - tw) / 2, (THUMB - th) / 2, tw, th);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(tCanvas, 0, 0, SIZE, SIZE);
+      ctx.save();
+      ctx.filter = "blur(24px)";
+      const bleed = 64;
+      const scale = Math.max((SIZE + bleed * 2) / iw, (SIZE + bleed * 2) / ih);
+      const dw = iw * scale, dh = ih * scale;
+      ctx.drawImage(img, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
+      ctx.restore();
     } catch { /* fall through to gradient fallback */ }
   }
 
@@ -2452,7 +2438,7 @@ bg: #0a1f3d
         }
       }
       renderPreviewForActive();
-      statusEl.textContent = `${pages.length} page${pages.length === 1 ? "" : "s"} ready · 1080 × 1080 px each`;
+      statusEl.textContent = `${pages.length} page${pages.length === 1 ? "" : "s"} ready · ${SOCIAL_POST_EXPORT_SIZE} × ${SOCIAL_POST_EXPORT_SIZE} px each`;
       downloadBtn.disabled = false;
       saveBtn.disabled = false;
     } catch (err) {
@@ -2521,7 +2507,7 @@ bg: #0a1f3d
         platform,
         content: captionArea.value,
         notes: platform === "instagram"
-          ? `Cover image (square 1080×1080): ${coverUrl}${carouselNote}`
+          ? `Cover image (square ${SOCIAL_POST_EXPORT_SIZE}×${SOCIAL_POST_EXPORT_SIZE}): ${coverUrl}${carouselNote}`
           : `Article URL: https://www.catalyst-magazine.com/article/${slug}\nAuthor: ${author}`,
         status: "proposed",
         proposerId: ctx.user.uid,
