@@ -310,6 +310,35 @@ async function firestoreAdd(authedFetch, collection, fields) {
   return doc.name ? doc.name.split("/").pop() : null;
 }
 
+// Fetch a single article's full `content` (HTML body) by its Firestore doc ID.
+// Returns plain text with HTML tags stripped, or "" on failure.
+async function firestoreGetArticleContent(authedFetch, docId) {
+  try {
+    const res = await authedFetch(
+      `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/stories/${docId}`,
+    );
+    if (!res.ok) return "";
+    const data = await res.json();
+    const html = data.fields?.content?.stringValue || "";
+    // Strip HTML tags and collapse whitespace to get readable plain text.
+    const txt = html
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+    return txt;
+  } catch {
+    return "";
+  }
+}
+
 // ── Canvas image generator ──────────────────────────────────────────────────
 // Designs are composed in 1080×1080 logical pixels, then exported at 2× for
 // sharper Instagram files without changing the visible layout.
@@ -1941,6 +1970,10 @@ async function mountSocialPosts(ctx, container) {
   // previous article doesn't overwrite a newer one.
   let paletteRequestId = 0;
 
+  // Full article body text — fetched on demand when an article is selected.
+  let articleBodyText = "";
+  let bodyRequestId = 0;
+
   captionArea.addEventListener("input", () => { charEl.textContent = `${captionArea.value.length} characters`; });
   themeSelect.addEventListener("change", () => {
     carouselTheme = themeSelect.value || "classic";
@@ -2450,6 +2483,13 @@ async function mountSocialPosts(ctx, container) {
       colorGuidance = `• bg: pick a hex color that fits the article's mood. Dark blues for science/space (#0a1f3d, #0c2545, #1a3270); purple for social/equity (#5b3fb8, #7a3fa3); deep green for environment (#0e3b29); warm red for urgency (#7a2418). Each page should feel like part of the same palette — pick 2 max.`;
     }
 
+    // Truncate article body to ~3000 chars so the prompt stays reasonable.
+    const bodySnippet = articleBodyText
+      ? articleBodyText.length > 3000
+        ? articleBodyText.slice(0, 3000) + "\n[…article continues…]"
+        : articleBodyText
+      : null;
+
     if (carouselTheme === "beautiful") {
       return `You are designing a premium Instagram carousel for The Catalyst Magazine. Use the BEAUTIFUL theme — a high-end editorial layout with a bold left accent bar, large headline, a single framing sentence, and clean bullet points. Each slide should look like it came from a professional magazine designer, not a template.
 
@@ -2460,7 +2500,7 @@ Title: ${title}
 Author: ${author}
 Category: ${category}
 Deck: ${deck || "(no deck — infer from title)"}
-Article URL: https://www.catalyst-magazine.com
+Article URL: https://www.catalyst-magazine.com${bodySnippet ? `\n\nFull article text:\n${bodySnippet}` : ""}
 
 ── OUTPUT FORMAT ──
 Return ONLY the blocks below. No preamble, no markdown headers, no commentary.
@@ -2544,7 +2584,7 @@ Title: ${title}
 Author: ${author}
 Category: ${category}
 Deck: ${deck || "(no deck — infer from title)"}
-Article URL: https://www.catalyst-magazine.com
+Article URL: https://www.catalyst-magazine.com${bodySnippet ? `\n\nFull article text:\n${bodySnippet}` : ""}
 
 ── OUTPUT FORMAT ──
 Return ONLY the blocks below. No preamble, no markdown headers, no commentary.
@@ -2634,13 +2674,19 @@ bg: #0a1f3d
     aiCopyBtn.style.opacity = ready ? "1" : ".55";
     aiCopyBtn.style.cursor  = ready ? "pointer" : "not-allowed";
     if (!ready) {
-      aiHintEl.textContent = "Pick an article above to enable the prompt — it will include the cover's colors.";
+      aiHintEl.textContent = "Pick an article above to enable the prompt — it will include the article text and cover colors.";
       aiHintEl.style.display = "";
-    } else if (coverPalette) {
-      aiHintEl.textContent = "Includes cover palette — paste the AI's reply below to auto-build pages.";
+    } else if (coverPalette && articleBodyText) {
+      aiHintEl.textContent = "Includes full article text + cover palette — paste the AI reply below to auto-build pages.";
+      aiHintEl.style.display = "";
+    } else if (coverPalette && !articleBodyText) {
+      aiHintEl.textContent = "Includes cover palette — loading article text…";
+      aiHintEl.style.display = "";
+    } else if (!coverPalette && articleBodyText) {
+      aiHintEl.textContent = "Includes full article text — sampling cover colors…";
       aiHintEl.style.display = "";
     } else {
-      aiHintEl.textContent = "Sampling cover colors…";
+      aiHintEl.textContent = "Loading article text and cover colors…";
       aiHintEl.style.display = "";
     }
   }
@@ -2688,6 +2734,21 @@ bg: #0a1f3d
       coverPalette = null;
     }
     renderPaletteCard();
+    updateAiCopyState();
+    refreshAiPrompt();
+  }
+
+  // Fetch the selected article's full body text from Firestore and refresh the
+  // prompt. Called whenever the article selection changes.
+  async function refreshArticleBody() {
+    const myId = ++bodyRequestId;
+    articleBodyText = "";
+    updateAiCopyState();
+    refreshAiPrompt();
+    if (!selectedArticle?.id) return;
+    const text = await firestoreGetArticleContent(ctx.authedFetch, selectedArticle.id);
+    if (myId !== bodyRequestId) return;
+    articleBodyText = text;
     updateAiCopyState();
     refreshAiPrompt();
   }
@@ -2777,7 +2838,9 @@ bg: #0a1f3d
     if (idx === "") {
       selectedArticle = null;
       coverPalette = null;
+      articleBodyText = "";
       paletteRequestId++;
+      bodyRequestId++;
       renderPaletteCard();
       updateAiCopyState();
       refreshAiPrompt();
@@ -2787,12 +2850,14 @@ bg: #0a1f3d
     captionArea.value = buildCaption(selectedArticle, platformSelect.value);
     charEl.textContent = `${captionArea.value.length} characters`;
     customCoverDataUrl = null;
+    articleBodyText = "";
     // The cover/closing depend on the article — invalidate and re-render.
     invalidateAll();
     renderEditor();
     renderPreviewForActive();
-    // Sample the new cover's palette in the background.
+    // Sample palette and fetch body text in parallel.
     refreshCoverPalette();
+    refreshArticleBody();
   }
   articleSelect.addEventListener("change", onArticleChange);
   platformSelect.addEventListener("change", () => {
