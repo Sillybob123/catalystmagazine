@@ -1188,16 +1188,17 @@ async function renderHook(page) {
 }
 
 // ─── Beautiful carousel layout ───────────────────────────────────────────────
-// Two distinct visual modes depending on whether the slide has bullets:
+// Unified visual language across every slide so the carousel reads as one set:
+//   • same gradient background
+//   • same accent glow placement
+//   • same left accent bar position and length
+//   • same eyebrow + headline header position
+//   • normal letter-spacing (no weird tracking)
+//   • all text auto-fits inside the safe area
 //
-//  STATEMENT mode (no bullets): cinematic, full-canvas. A large decorative
-//  accent shape in the background, oversized headline vertically centered,
-//  body text below in elegant larger italic type. Feels like a magazine spread.
-//
-//  BREAKDOWN mode (has bullets): compact editorial. Eyebrow + headline at top,
-//  then accent-bordered bullet rows in the lower half. Clean and informational.
-//
-// Both modes share: rich gradient bg, accent color glows, left bar, eyebrow.
+// The only difference between slides is what fills the body area: a single
+// elegant body sentence (statement slide) OR a tight bullet list (breakdown
+// slide). One slide per carousel uses bullets.
 async function renderBeautiful(page) {
   const SIZE = SOCIAL_POST_CANVAS_SIZE;
   const { canvas, ctx } = createSocialPostCanvas(SIZE);
@@ -1206,11 +1207,11 @@ async function renderBeautiful(page) {
   const ink = readableInk(bg);
   const isDark = ink === "#ffffff";
 
-  // ── Background gradient ──────────────────────────────────────────────────
+  // ── Background gradient — same on every slide ────────────────────────────
   const bgGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-  bgGrad.addColorStop(0, shadeHex(bg, 22));
+  bgGrad.addColorStop(0, shadeHex(bg, 18));
   bgGrad.addColorStop(0.65, bg);
-  bgGrad.addColorStop(1, shadeHex(bg, -28));
+  bgGrad.addColorStop(1, shadeHex(bg, -24));
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
@@ -1223,18 +1224,26 @@ async function renderBeautiful(page) {
   const ac = hexToRgb(accent);
   const acRgba = (a) => `rgba(${ac.r},${ac.g},${ac.b},${a})`;
 
-  // Corner accent glows — top-right bright, bottom-left softer
-  const tr = ctx.createRadialGradient(SIZE, 0, 0, SIZE, 0, SIZE * 0.78);
-  tr.addColorStop(0, acRgba(0.28)); tr.addColorStop(1, "rgba(0,0,0,0)");
+  // ── Corner accent glows — same placement on every slide ──────────────────
+  const tr = ctx.createRadialGradient(SIZE, 0, 0, SIZE, 0, SIZE * 0.75);
+  tr.addColorStop(0, acRgba(0.22)); tr.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = tr; ctx.fillRect(0, 0, SIZE, SIZE);
 
   const bl = ctx.createRadialGradient(0, SIZE, 0, 0, SIZE, SIZE * 0.55);
-  bl.addColorStop(0, acRgba(0.14)); bl.addColorStop(1, "rgba(0,0,0,0)");
+  bl.addColorStop(0, acRgba(0.10)); bl.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = bl; ctx.fillRect(0, 0, SIZE, SIZE);
 
-  const padL = 88;
-  const padR = 72;
-  const maxW = SIZE - padL - padR;
+  // ── Layout constants — all measured against the SAFE AREA ────────────────
+  const padL = 76;
+  const padR = 76;
+  const maxW = SIZE - padL - padR; // 928px
+
+  // Vertical anchors (match across every slide so the carousel reads as one set)
+  const HEADER_Y      = 120;   // eyebrow baseline
+  const HEADLINE_TOP  = 178;   // top of headline block
+  const BODY_BOTTOM   = 880;   // bottom of body/bullets safe area (above CTA/wordmark)
+  const CTA_Y         = SIZE - 132;
+
   const eyebrow = (page.eyebrow || "").trim();
   const headline = (page.headline || "").trim();
   const body = (page.body || "").trim();
@@ -1245,127 +1254,90 @@ async function renderBeautiful(page) {
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
 
-  // ── Left accent bar ──────────────────────────────────────────────────────
-  const barX = 52;
-  const barTop = 90;
-  const barBot = cta ? SIZE - 150 : SIZE - 96;
+  // ── Left accent bar — same dimensions on every slide ─────────────────────
+  const barX = 50;
+  const barTop = 100;
+  const barBot = cta ? CTA_Y - 60 : SIZE - 100;
   const barG = ctx.createLinearGradient(0, barTop, 0, barBot);
-  barG.addColorStop(0,    acRgba(1.0));
-  barG.addColorStop(0.42, acRgba(0.60));
-  barG.addColorStop(1,    acRgba(0.06));
+  barG.addColorStop(0,    acRgba(0.95));
+  barG.addColorStop(0.45, acRgba(0.55));
+  barG.addColorStop(1,    acRgba(0.05));
   ctx.fillStyle = barG;
-  ctx.beginPath(); ctx.roundRect(barX, barTop, 6, barBot - barTop, 3); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(barX, barTop, 5, barBot - barTop, 2.5); ctx.fill();
 
-  // ── Eyebrow ──────────────────────────────────────────────────────────────
+  // ── Eyebrow — small caps, NORMAL letter-spacing (not stretched) ──────────
   if (eyebrow) {
-    ctx.fillStyle = acRgba(0.90);
-    ctx.font = `700 19px "Poppins", "Inter", sans-serif`;
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0.22em";
-    ctx.fillText(eyebrow.toUpperCase(), padL, 132);
+    ctx.fillStyle = acRgba(0.92);
+    ctx.font = `700 20px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
+    // No letterSpacing — Inter/Poppins at small caps reads cleanly without it.
     if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+    ctx.fillText(eyebrow.toUpperCase(), padL, HEADER_Y);
   }
 
-  // ════════════════════════════════════════════════════════════════════════
-  // STATEMENT MODE — no bullets. Large, cinematic, vertically centered.
-  // ════════════════════════════════════════════════════════════════════════
-  if (!bullets.length) {
-    // Large decorative accent arc in the background — gives the slide art
-    ctx.save();
-    ctx.strokeStyle = acRgba(0.13);
-    ctx.lineWidth = 80;
-    ctx.beginPath();
-    ctx.arc(SIZE * 1.05, SIZE * 0.5, SIZE * 0.72, Math.PI * 0.55, Math.PI * 1.45);
-    ctx.stroke();
-    ctx.restore();
+  // ── Headline — same position, same sizing rules across every slide ───────
+  // Use fitText so the headline always fits inside the safe area, no overflow.
+  const headlineFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  const headFit = fitText(ctx, headline || " ", {
+    font: headlineFont,
+    startSize: bullets.length ? 64 : 76,
+    minSize: 38,
+    maxWidth: maxW,
+    maxHeight: bullets.length ? 200 : (body ? 280 : 380),
+    lineHeightMul: 1.10,
+  });
 
-    // Headline — very large, vertically centered in the canvas
-    const headlineFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    const headMaxH = body ? SIZE * 0.42 : SIZE * 0.58;
-    const headFit = fitText(ctx, headline || " ", {
-      font: headlineFont, startSize: 96, minSize: 48,
-      maxWidth: maxW, maxHeight: headMaxH, lineHeightMul: 1.05,
+  ctx.fillStyle = ink;
+  ctx.font = headlineFont(headFit.fontSize);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+  let y = HEADLINE_TOP + headFit.fontSize * 0.88;
+  for (const line of headFit.lines) {
+    ctx.fillText(line, padL, y);
+    y += headFit.lineHeight;
+  }
+
+  // ── Body / Bullets area — fits inside safe area, never overflows ─────────
+  if (!bullets.length && body) {
+    // Single elegant body paragraph — auto-fit so long bodies always fit.
+    const bodyFont = (sz) => `400 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const remaining = BODY_BOTTOM - (y + 40);
+    const bodyFit = fitText(ctx, body, {
+      font: bodyFont,
+      startSize: 32,
+      minSize: 22,
+      maxWidth: maxW,
+      maxHeight: Math.max(80, remaining),
+      lineHeightMul: 1.42,
     });
-
-    // Center the headline + body block vertically
-    const bodyLineH = 42;
-    const bodyLines = body
-      ? (() => { ctx.font = `300 36px "Inter", sans-serif`; return wrapText(ctx, body, 0, maxW, bodyLineH); })()
-      : [];
-    const bodyBlockH = bodyLines.length ? (bodyLines.length * bodyLineH + 40) : 0;
-    const totalH = headFit.blockHeight + bodyBlockH;
-    const blockTop = Math.max(160, (SIZE - totalH) / 2 - 20);
-
-    ctx.fillStyle = ink;
-    ctx.font = headlineFont(headFit.fontSize);
-    let y = blockTop + headFit.fontSize * 0.88;
-    for (const line of headFit.lines) {
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.78)" : "rgba(10,20,36,0.68)";
+    ctx.font = bodyFont(bodyFit.fontSize);
+    y += 38;
+    for (const line of bodyFit.lines) {
       ctx.fillText(line, padL, y);
-      y += headFit.lineHeight;
+      y += bodyFit.lineHeight;
     }
+  } else if (bullets.length) {
+    // Bullet rows — same accent bar marker on each row. Auto-fit each item.
+    const bulletFont = (sz) => `500 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
 
-    // Body — elegant light-weight italic, sits below headline with breathing room
-    if (bodyLines.length) {
-      y += 36;
-      ctx.fillStyle = isDark ? "rgba(255,255,255,0.62)" : "rgba(10,20,36,0.54)";
-      ctx.font = `300 italic 34px "Inter", "Helvetica Neue", Arial, sans-serif`;
-      for (const line of bodyLines) {
-        ctx.fillText(line, padL, y);
-        y += bodyLineH;
-      }
-    }
-
-    // Thin accent line at bottom of text block — decorative, not a separator
-    ctx.save();
-    const lineGrad = ctx.createLinearGradient(padL, 0, padL + 140, 0);
-    lineGrad.addColorStop(0, acRgba(0.70));
-    lineGrad.addColorStop(1, acRgba(0));
-    ctx.strokeStyle = lineGrad;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(padL, y + 28);
-    ctx.lineTo(padL + 140, y + 28);
-    ctx.stroke();
-    ctx.restore();
-
-  // ════════════════════════════════════════════════════════════════════════
-  // BREAKDOWN MODE — has bullets. Compact headline + accent bullet rows.
-  // ════════════════════════════════════════════════════════════════════════
-  } else {
-    // Headline — smaller to leave room for bullets
-    const headlineFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    const headFit = fitText(ctx, headline || " ", {
-      font: headlineFont, startSize: 76, minSize: 40,
-      maxWidth: maxW, maxHeight: 220, lineHeightMul: 1.08,
+    // Pick a font size that fits the LONGEST bullet on a single line within maxW.
+    const longest = bullets.reduce((a, b) => (a.length > b.length ? a : b), "");
+    const lf = fitText(ctx, longest, {
+      font: bulletFont, startSize: 30, minSize: 22, maxWidth: maxW - 28, maxHeight: 50, lineHeightMul: 1,
     });
+    const bSz = lf.fontSize;
+    const bLineH = bSz * 1.95;
 
-    ctx.fillStyle = ink;
-    ctx.font = headlineFont(headFit.fontSize);
-    let y = (eyebrow ? 190 : 160) + headFit.fontSize * 0.88;
-    for (const line of headFit.lines) {
-      ctx.fillText(line, padL, y);
-      y += headFit.lineHeight;
-    }
+    let by = Math.max(y + 50, 540);
+    ctx.font = bulletFont(bSz);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
 
-    // Body — one short sentence above the bullets if provided
-    if (body) {
-      const bodyFont = (sz) => `400 ${sz}px "Inter", sans-serif`;
-      const bodyFit = fitText(ctx, body, { font: bodyFont, startSize: 30, minSize: 22, maxWidth: maxW, maxHeight: 90, lineHeightMul: 1.45 });
-      ctx.fillStyle = isDark ? "rgba(255,255,255,0.62)" : "rgba(10,20,36,0.55)";
-      ctx.font = bodyFont(bodyFit.fontSize);
-      y += 22;
-      for (const line of bodyFit.lines) { ctx.fillText(line, padL, y); y += bodyFit.lineHeight; }
-    }
-
-    // Bullet rows — each row has a left accent bar fragment + text
-    const bFontSz = 32;
-    const bLineH = bFontSz * 2.0;
-    let by = Math.max(y + 48, 520);
-
-    ctx.font = `500 ${bFontSz}px "Inter", sans-serif`;
     for (const item of bullets) {
-      // Accent pill bar left of each row
-      ctx.fillStyle = acRgba(0.80);
-      ctx.beginPath(); ctx.roundRect(padL, by - bFontSz * 0.72, 4, bFontSz * 0.92, 2); ctx.fill();
+      if (by > BODY_BOTTOM) break; // never draw past the safe area
+      // Small accent bar marker to the left
+      ctx.fillStyle = acRgba(0.78);
+      ctx.beginPath();
+      ctx.roundRect(padL, by - bSz * 0.68, 4, bSz * 0.86, 2);
+      ctx.fill();
 
       ctx.fillStyle = isDark ? "rgba(255,255,255,0.92)" : "rgba(10,20,36,0.88)";
       ctx.fillText(item, padL + 20, by);
@@ -1373,18 +1345,21 @@ async function renderBeautiful(page) {
     }
   }
 
-  // ── CTA pill — accent-bordered, pinned near bottom ───────────────────────
+  // ── CTA pill — same look on the final slide ──────────────────────────────
   if (cta) {
-    const ctaFont = (sz) => `700 ${sz}px "Inter", sans-serif`;
-    const ctaFit = fitText(ctx, cta, { font: ctaFont, startSize: 27, minSize: 19, maxWidth: maxW - 56, maxHeight: 38, lineHeightMul: 1 });
+    const ctaFont = (sz) => `700 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const ctaFit = fitText(ctx, cta, {
+      font: ctaFont, startSize: 25, minSize: 18, maxWidth: maxW - 60, maxHeight: 36, lineHeightMul: 1,
+    });
     const pillH = 60;
-    const pillY = SIZE - 126;
+    const pillY = CTA_Y;
     ctx.font = ctaFont(ctaFit.fontSize);
-    const pillW = Math.min(maxW, ctx.measureText(ctaFit.lines[0] || cta).width + 76);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+    const pillW = Math.min(maxW, ctx.measureText(ctaFit.lines[0] || cta).width + 72);
 
     ctx.save();
-    ctx.fillStyle = acRgba(0.15);
-    ctx.strokeStyle = acRgba(0.72);
+    ctx.fillStyle = acRgba(0.14);
+    ctx.strokeStyle = acRgba(0.70);
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.roundRect(padL, pillY - pillH / 2, pillW, pillH, pillH / 2); ctx.fill(); ctx.stroke();
     ctx.restore();
@@ -2531,7 +2506,7 @@ Then 3 to 5 BEAUTIFUL page blocks, each separated by ---. Each block uses exactl
 layout: beautiful
 eyebrow: <1-3 word label: The hook, Key insight, The stakes, Hard truth, The shift, Why now, The science, Read next>
 headline: <8-13 words. Bold, precise. End with period or question mark. Concrete — a number, reversal, consequence, or discovery.>
-body: <1 sentence, 15-35 words. Elegant and specific. Leave BLANK if this slide has bullets.>
+body: <1 sentence, 15-25 words MAX. Elegant and specific. Must be short enough to fit cleanly in the slide. Leave BLANK if this slide has bullets.>
 bullets: <ONLY on exactly ONE slide across the whole carousel. Leave completely blank on all other slides. Format: 3-4 items separated by " | ", 4-10 words each, concrete facts.>
 cta: <blank on all pages except the last. Last page only: Read "${title}" by ${author}. Link in bio.>
 bg: <dark hex background>
@@ -2543,11 +2518,15 @@ Do NOT include a cover page — added automatically. Do NOT include a closing pa
 
 ── TWO SLIDE TYPES ──
 
-STATEMENT slide (headline + body, NO bullets) — this is most of your slides:
-The renderer makes these cinematic: the headline fills the canvas in large bold type, the body sits below in elegant light italic, and a decorative accent arc sweeps behind the text. These look like a magazine spread. Use for intro, tension, implication, and CTA slides.
+Every slide shares the same visual frame: the same gradient background, accent corner glows, left accent bar, eyebrow at the top, and headline below. The carousel reads as ONE coherent set. The only difference between slides is what fills the body area.
+
+STATEMENT slide (headline + body, NO bullets) — most of your slides:
+The body is one elegant sentence sitting below the headline. Use for intro, tension, implication, and CTA slides. Keep the body specific and direct.
 
 BREAKDOWN slide (headline + bullets, NO body) — exactly ONE per carousel:
-Shows compact bullet rows each with a colored accent bar on the left. Use for the one slide where data, steps, or contrasts need listing. Keep the headline short. Leave body blank.
+3-4 bullet rows below the headline, each with a small accent bar marker. Use for the one slide where data, steps, or contrasts need listing.
+
+Body sentences must be SHORT — 15-25 words max — so they fit cleanly without overflowing. Keep bullets tight too: 4-9 words each.
 
 ── COPY RULES ──
 • Statement slides: write the headline as if it will be printed on a billboard. It must land on its own.
