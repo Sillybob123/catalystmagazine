@@ -546,9 +546,10 @@ function wrapText(ctx, text, x, maxWidth, lineHeight) {
 
 // Public dispatcher — picks the right renderer for the page's layout.
 // `page` shape:
-//   { layout: "cover"|"editorial"|"hook"|"quote"|"closing",
+//   { layout: "cover"|"editorial"|"hook"|"quote"|"beautiful"|"closing",
 //     title, coverImageUrl, titleStyle, imageScale,   // cover
 //     headline, body, bg, accent,                     // editorial / hook
+//     bullets, eyebrow,                               // beautiful
 //     cta,                                            // hook
 //     quote, attribution,                             // quote
 //     tagline                                         // closing
@@ -558,6 +559,7 @@ async function generatePostImage(page) {
     case "editorial": return renderEditorial(page);
     case "hook":      return renderHook(page);
     case "quote":     return renderQuote(page);
+    case "beautiful": return renderBeautiful(page);
     case "closing":   return renderClosing(page);
     case "cover":
     default:          return renderCover(page);
@@ -584,6 +586,7 @@ async function loadLogo() {
 async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageScale = 1 }) {
   const SIZE = SOCIAL_POST_CANVAS_SIZE;
   const { canvas, ctx } = createSocialPostCanvas(SIZE);
+  const isBeautiful = titleStyle === "beautiful";
 
   // ── Cover photo ────────────────────────────────────────────────────────────
   // Dark base — always painted first so we have a fallback.
@@ -600,6 +603,126 @@ async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageSca
     } catch (err) {
       console.warn("[generatePostImage] cover failed:", err.message);
     }
+  }
+
+  if (isBeautiful) {
+    if (coverImg) {
+      const iw = coverImg.naturalWidth, ih = coverImg.naturalHeight;
+      const scale = Math.max(SIZE / iw, SIZE / ih) * imageScale;
+      const dw = iw * scale, dh = ih * scale;
+      const dx = (SIZE - dw) / 2;
+      const dy = (SIZE - dh) / 2;
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(coverImg, dx, dy, dw, dh);
+
+      const wash = ctx.createLinearGradient(0, 0, SIZE, SIZE);
+      wash.addColorStop(0, "rgba(4,10,24,0.42)");
+      wash.addColorStop(0.52, "rgba(4,10,24,0.58)");
+      wash.addColorStop(1, "rgba(4,10,24,0.92)");
+      ctx.fillStyle = wash;
+      ctx.fillRect(0, 0, SIZE, SIZE);
+    } else {
+      const fbGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
+      fbGrad.addColorStop(0, "#182d54");
+      fbGrad.addColorStop(0.52, "#101b3d");
+      fbGrad.addColorStop(1, "#050b16");
+      ctx.fillStyle = fbGrad;
+      ctx.fillRect(0, 0, SIZE, SIZE);
+    }
+
+    const accent = "#8bd3ff";
+    ctx.save();
+    ctx.globalAlpha = 0.95;
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    ctx.lineWidth = 1.4;
+    for (let i = -6; i < 8; i++) {
+      const x = i * 180;
+      ctx.beginPath();
+      ctx.moveTo(x, SIZE + 60);
+      ctx.lineTo(x + 560, -60);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    const glow = ctx.createRadialGradient(140, 120, 0, 140, 120, 560);
+    glow.addColorStop(0, "rgba(139,211,255,0.34)");
+    glow.addColorStop(1, "rgba(139,211,255,0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    ctx.restore();
+
+    const cachedLogo = await loadLogo();
+    const logoImg = cachedLogo || null;
+    const topX = 58;
+    const topY = 56;
+    if (logoImg) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(logoImg, topX, topY, 58, 58);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.86)";
+    ctx.font = `800 22px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0.12em";
+    ctx.textBaseline = "middle";
+    ctx.fillText("THE CATALYST", logoImg ? topX + 76 : topX, topY + 31);
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+
+    const label = "The question";
+    ctx.fillStyle = "rgba(255,255,255,0.13)";
+    ctx.beginPath();
+    ctx.roundRect(58, 190, 230, 54, 27);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.20)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = accent;
+    ctx.font = `800 21px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    ctx.textBaseline = "middle";
+    ctx.fillText(label.toUpperCase(), 84, 218);
+
+    const questionFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const qFit = fitText(ctx, title || " ", {
+      font: questionFont,
+      startSize: 70,
+      minSize: 42,
+      maxWidth: SIZE - 116,
+      maxHeight: 470,
+      lineHeightMul: 1.05,
+    });
+
+    const panelX = 48;
+    const panelY = 300;
+    const panelW = SIZE - 96;
+    const panelH = Math.min(560, qFit.blockHeight + 146);
+    ctx.fillStyle = "rgba(5,11,24,0.48)";
+    ctx.beginPath();
+    ctx.roundRect(panelX, panelY, panelW, panelH, 34);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.18)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = questionFont(qFit.fontSize);
+    ctx.textBaseline = "alphabetic";
+    let qy = panelY + 74 + qFit.fontSize * 0.9;
+    for (const line of qFit.lines) {
+      ctx.fillText(line, panelX + 42, qy);
+      qy += qFit.lineHeight;
+    }
+
+    ctx.fillStyle = accent;
+    ctx.fillRect(panelX + 42, panelY + panelH - 58, 124, 6);
+
+    ctx.fillStyle = "rgba(255,255,255,0.78)";
+    ctx.font = `600 26px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    ctx.fillText("Swipe for the answer.", panelX + 42, panelY + panelH - 86);
+
+    return canvas.toDataURL("image/png");
   }
 
   // ── Figure out title metrics early — we need them to size the gradient ──────
@@ -925,6 +1048,15 @@ function wordmarkColorFor(bg) {
     : "rgba(10,20,36,0.55)";
 }
 
+function normalizeBullets(value) {
+  if (!value) return [];
+  return String(value)
+    .split(/\n|\||;/)
+    .map((item) => item.replace(/^[-*]\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 5);
+}
+
 // Legacy — kept for compatibility with existing call sites that still use
 // the top-left logo+wordmark. New layouts use drawCatalystWordmark.
 async function drawCornerMark(ctx, SIZE, opts = {}) {
@@ -1136,6 +1268,206 @@ async function renderHook(page) {
   }
 
   await drawCatalystWordmark(ctx, SIZE, { color: wordmarkColorFor(bg) });
+
+  return canvas.toDataURL("image/png");
+}
+
+// ─── Beautiful carousel layout ───────────────────────────────────────────────
+// A more polished, designer-style content page for Instagram carousels. It
+// keeps the same text fields as the existing layouts, but adds bullet support
+// and richer visual hierarchy for pasted AI output.
+async function renderBeautiful(page) {
+  const SIZE = SOCIAL_POST_CANVAS_SIZE;
+  const { canvas, ctx } = createSocialPostCanvas(SIZE);
+
+  const bg = pickBg(page, "#101b3d");
+  const accent = (page.accent || "").trim() || shadeHex(bg, 86);
+  const ink = readableInk(bg);
+  const isDark = ink === "#ffffff";
+  const softInk = isDark ? "rgba(255,255,255,0.78)" : "rgba(10,20,36,0.74)";
+  const panel = isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.72)";
+  const panelStroke = isDark ? "rgba(255,255,255,0.22)" : "rgba(10,20,36,0.12)";
+
+  paintColorBackground(ctx, SIZE, bg);
+
+  const diagonal = ctx.createLinearGradient(0, 0, SIZE, SIZE);
+  diagonal.addColorStop(0, isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.55)");
+  diagonal.addColorStop(0.45, "rgba(255,255,255,0)");
+  diagonal.addColorStop(1, isDark ? "rgba(0,0,0,0.22)" : "rgba(10,20,36,0.08)");
+  ctx.fillStyle = diagonal;
+  ctx.fillRect(0, 0, SIZE, SIZE);
+
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = isDark ? "rgba(255,255,255,0.10)" : "rgba(10,20,36,0.08)";
+  ctx.lineWidth = 1.4;
+  for (let i = -5; i < 8; i++) {
+    const x = i * 170;
+    ctx.beginPath();
+    ctx.moveTo(x, SIZE + 40);
+    ctx.lineTo(x + 520, -40);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.beginPath();
+  ctx.roundRect(54, 48, SIZE - 108, SIZE - 96, 38);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.16)";
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  ctx.fillStyle = accent;
+  ctx.globalAlpha = 0.28;
+  ctx.beginPath();
+  ctx.roundRect(690, 72, 250, 76, 38);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(72, 910, 330, 18, 9);
+  ctx.fill();
+  ctx.restore();
+
+  const pad = 74;
+  const maxW = SIZE - pad * 2;
+  const eyebrow = (page.eyebrow || "The Catalyst").trim();
+  const headline = (page.headline || "").trim();
+  const body = (page.body || "").trim();
+  const bullets = normalizeBullets(page.bullets);
+  const cta = (page.cta || "").trim();
+
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = accent;
+  ctx.font = `800 24px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.13em";
+  ctx.fillText(eyebrow.toUpperCase(), pad, 104);
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+
+  ctx.fillStyle = ink;
+  ctx.fillRect(pad, 132, 112, 5);
+
+  const headlineFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  const headFit = fitText(ctx, headline || " ", {
+    font: headlineFont,
+    startSize: 74,
+    minSize: 42,
+    maxWidth: maxW,
+    maxHeight: 300,
+    lineHeightMul: 1.06,
+  });
+
+  ctx.fillStyle = ink;
+  ctx.font = headlineFont(headFit.fontSize);
+  let y = 194 + headFit.fontSize * 0.9;
+  for (const line of headFit.lines) {
+    ctx.fillText(line, pad, y);
+    y += headFit.lineHeight;
+  }
+
+  if (body) {
+    const bodyFont = (sz) => `500 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const bodyFit = fitText(ctx, body, {
+      font: bodyFont,
+      startSize: 32,
+      minSize: 24,
+      maxWidth: maxW,
+      maxHeight: 150,
+      lineHeightMul: 1.38,
+    });
+    ctx.fillStyle = softInk;
+    ctx.font = bodyFont(bodyFit.fontSize);
+    y += 22;
+    for (const line of bodyFit.lines) {
+      ctx.fillText(line, pad, y);
+      y += bodyFit.lineHeight;
+    }
+  }
+
+  const bulletTop = 560;
+  const bulletAreaBottom = cta ? 850 : 930;
+  const availableH = Math.max(180, bulletAreaBottom - bulletTop);
+  const rowGap = 14;
+  const rowH = bullets.length
+    ? Math.min(104, Math.max(56, (availableH - rowGap * (bullets.length - 1)) / bullets.length))
+    : 0;
+
+  bullets.forEach((item, idx) => {
+    const top = bulletTop + idx * (rowH + rowGap);
+    const rowGrad = ctx.createLinearGradient(pad, top, pad + maxW, top + rowH);
+    rowGrad.addColorStop(0, panel);
+    rowGrad.addColorStop(1, isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.44)");
+    ctx.fillStyle = rowGrad;
+    ctx.beginPath();
+    ctx.roundRect(pad, top, maxW, rowH, 24);
+    ctx.fill();
+    ctx.strokeStyle = panelStroke;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const numX = pad + 32;
+    const numY = top + rowH / 2;
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.arc(numX, numY, 20, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = isDark ? "#07111f" : "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `800 17px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    ctx.fillText(String(idx + 1).padStart(2, "0"), numX, numY + 1);
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    const bulletFont = (sz) => `700 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const bulletFit = fitText(ctx, item, {
+      font: bulletFont,
+      startSize: 28,
+      minSize: 20,
+      maxWidth: maxW - 104,
+      maxHeight: rowH - 24,
+      lineHeightMul: 1.18,
+    });
+    ctx.fillStyle = ink;
+    ctx.font = bulletFont(bulletFit.fontSize);
+    let by = top + (rowH - bulletFit.blockHeight) / 2 + bulletFit.fontSize * 0.85;
+    for (const line of bulletFit.lines) {
+      ctx.fillText(line, pad + 78, by);
+      by += bulletFit.lineHeight;
+    }
+  });
+
+  if (cta) {
+    const ctaY = 900;
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.roundRect(pad, ctaY, maxW, 74, 37);
+    ctx.fill();
+
+    const ctaFont = (sz) => `800 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const ctaFit = fitText(ctx, cta, {
+      font: ctaFont,
+      startSize: 25,
+      minSize: 18,
+      maxWidth: maxW - 64,
+      maxHeight: 48,
+      lineHeightMul: 1.14,
+    });
+    ctx.fillStyle = isDark ? "#07111f" : "#ffffff";
+    ctx.font = ctaFont(ctaFit.fontSize);
+    let cy = ctaY + (74 - ctaFit.blockHeight) / 2 + ctaFit.fontSize * 0.85;
+    for (const line of ctaFit.lines) {
+      ctx.fillText(line, pad + 32, cy);
+      cy += ctaFit.lineHeight;
+    }
+  }
+
+  await drawCatalystWordmark(ctx, SIZE, {
+    color: isDark ? "rgba(255,255,255,0.58)" : "rgba(10,20,36,0.50)",
+    bottomPad: 38,
+  });
 
   return canvas.toDataURL("image/png");
 }
@@ -1400,6 +1732,12 @@ async function mountSocialPosts(ctx, container) {
                 <span style="flex:1;">Multi-page carousel</span>
                 <span style="font-size:11px;color:var(--muted);font-weight:500;">Add up to ~10 pages</span>
               </label>
+              <label id="sp-gen-theme-wrap" style="display:none;font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">Carousel theme
+                <select class="input select" id="sp-gen-theme" style="margin-top:6px;width:100%;font-weight:500;text-transform:none;letter-spacing:0;">
+                  <option value="classic">Current layouts</option>
+                  <option value="beautiful">Beautiful</option>
+                </select>
+              </label>
             </div>
 
             <!-- AI helper (only visible in multi-page mode) -->
@@ -1544,6 +1882,7 @@ async function mountSocialPosts(ctx, container) {
   let pages = [];
   let activePageIdx = 0;
   let multiMode = false;
+  let carouselTheme = "classic";
   let customCoverDataUrl = null; // applies to the cover page only
 
   const listEl = container.querySelector("#sp-list");
@@ -1697,6 +2036,8 @@ async function mountSocialPosts(ctx, container) {
   const downloadBtn    = container.querySelector("#sp-gen-download-btn");
   const saveBtn        = container.querySelector("#sp-gen-save-btn");
   const multiToggle    = container.querySelector("#sp-gen-multi");
+  const themeWrap      = container.querySelector("#sp-gen-theme-wrap");
+  const themeSelect    = container.querySelector("#sp-gen-theme");
   const thumbsWrap     = container.querySelector("#sp-gen-thumbs-wrap");
   const pageListEl     = container.querySelector("#sp-gen-page-list");
   const addPageBtn     = container.querySelector("#sp-gen-add-page");
@@ -1720,6 +2061,18 @@ async function mountSocialPosts(ctx, container) {
   let paletteRequestId = 0;
 
   captionArea.addEventListener("input", () => { charEl.textContent = `${captionArea.value.length} characters`; });
+  themeSelect.addEventListener("change", () => {
+    carouselTheme = themeSelect.value || "classic";
+    if (pages[0]?.layout === "cover") {
+      pages[0].titleStyle = carouselTheme === "beautiful" ? "beautiful" : "bold";
+      if (carouselTheme === "beautiful" && !pages[0].coverQuestion && selectedArticle?.title) {
+        pages[0].coverQuestion = selectedArticle.title;
+      }
+      invalidatePage(0);
+      if (activePageIdx === 0) renderEditor();
+    }
+    refreshAiPrompt();
+  });
 
   // ── Caption builder (carried over from single-page version) ────────────────
   function buildCaption(article, platform) {
@@ -1760,6 +2113,7 @@ async function mountSocialPosts(ctx, container) {
     if (layout === "editorial") return { ...base, headline: "", body: "", bg: "#0a1f3d" };
     if (layout === "hook")      return { ...base, headline: "", body: "", cta: "", bg: "#5b3fb8" };
     if (layout === "quote")     return { ...base, quote: "", attribution: "", bg: "#0c2545" };
+    if (layout === "beautiful") return { ...base, eyebrow: "Key insight", headline: "", body: "", bullets: "", cta: "", bg: "#101b3d", accent: "#8bd3ff" };
     if (layout === "closing")   return defaultClosingPage();
     return defaultCoverPage();
   }
@@ -1775,9 +2129,10 @@ async function mountSocialPosts(ctx, container) {
   // fields with article-derived data (title, cover image).
   function renderInputFor(page) {
     if (page.layout === "cover") {
+      const articleTitle = selectedArticle ? selectedArticle.title : "";
       return {
         layout: "cover",
-        title: selectedArticle ? selectedArticle.title : "",
+        title: page.titleStyle === "beautiful" ? (page.coverQuestion || articleTitle) : articleTitle,
         coverImageUrl: articleCoverUrl(),
         titleStyle: page.titleStyle || "bold",
         imageScale: typeof page.imageScale === "number" ? page.imageScale : 1,
@@ -1820,10 +2175,11 @@ async function mountSocialPosts(ctx, container) {
     editorial: "Editorial",
     hook:      "Hook / Stat",
     quote:     "Quote",
+    beautiful: "Beautiful",
     closing:   "Closing",
   };
   const LAYOUT_ICONS = {
-    cover: "🖼️", editorial: "📰", hook: "💬", quote: "❝", closing: "✨",
+    cover: "🖼️", editorial: "📰", hook: "💬", quote: "❝", beautiful: "◆", closing: "✨",
   };
 
   // ── Page thumbnails (horizontal strip, multi-page only) ────────────────────
@@ -1880,6 +2236,7 @@ async function mountSocialPosts(ctx, container) {
           <option value="editorial" ${page.layout === "editorial" ? "selected" : ""}>📰 Editorial — headline + body</option>
           <option value="hook"      ${page.layout === "hook"      ? "selected" : ""}>💬 Hook — big stat + body + CTA</option>
           <option value="quote"     ${page.layout === "quote"     ? "selected" : ""}>❝ Quote — pull-quote + attribution</option>
+          <option value="beautiful" ${page.layout === "beautiful" ? "selected" : ""}>Beautiful — polished bullets</option>
           <option value="closing"   ${page.layout === "closing"   ? "selected" : ""}>✨ Closing — blurred cover + logo</option>
         </select>
       </label>
@@ -1892,8 +2249,16 @@ async function mountSocialPosts(ctx, container) {
           <select class="input select" data-bind="titleStyle" style="margin-top:6px;width:100%;">
             <option value="bold"    ${page.titleStyle === "bold"    ? "selected" : ""}>Bold — strong & punchy</option>
             <option value="elegant" ${page.titleStyle === "elegant" ? "selected" : ""}>Elegant — editorial serif</option>
+            <option value="beautiful" ${page.titleStyle === "beautiful" ? "selected" : ""}>Beautiful — designer carousel</option>
           </select>
         </label>
+        ${page.titleStyle === "beautiful" ? `
+          <label style="font-size:13px;font-weight:600;">Cover question
+            <textarea class="input textarea" data-bind="coverQuestion" rows="3"
+              style="margin-top:6px;width:100%;font-size:13px;"
+              placeholder="Dopamine & Learning: Does dopamine actually make tasks easier?">${esc(page.coverQuestion || "")}</textarea>
+          </label>
+        ` : ""}
         <div>
           <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Cover image</div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -1935,6 +2300,31 @@ async function mountSocialPosts(ctx, container) {
             placeholder='e.g. Read "The Geography of Risk" by Alexis Tamm. Link in bio.'>${esc(page.cta || "")}</textarea>
         </label>
         ${colorPickerHtml(page.bg, "#5b3fb8")}`;
+    } else if (page.layout === "beautiful") {
+      body = `
+        <label style="font-size:13px;font-weight:600;">Eyebrow
+          <input class="input" data-bind="eyebrow" type="text"
+            style="margin-top:6px;width:100%;font-size:13px;" value="${esc(page.eyebrow || "Key insight")}">
+        </label>
+        <label style="font-size:13px;font-weight:600;">Headline
+          <textarea class="input textarea" data-bind="headline" rows="3"
+            style="margin-top:6px;width:100%;font-size:14px;font-weight:700;">${esc(page.headline || "")}</textarea>
+        </label>
+        <label style="font-size:13px;font-weight:600;">Body
+          <textarea class="input textarea" data-bind="body" rows="3"
+            style="margin-top:6px;width:100%;font-size:13px;">${esc(page.body || "")}</textarea>
+        </label>
+        <label style="font-size:13px;font-weight:600;">Bullets
+          <textarea class="input textarea" data-bind="bullets" rows="5"
+            style="margin-top:6px;width:100%;font-size:13px;"
+            placeholder="One bullet per line">${esc(page.bullets || "")}</textarea>
+        </label>
+        <label style="font-size:13px;font-weight:600;">Call to action
+          <textarea class="input textarea" data-bind="cta" rows="2"
+            style="margin-top:6px;width:100%;font-size:13px;">${esc(page.cta || "")}</textarea>
+        </label>
+        ${colorPickerHtml(page.bg, "#101b3d")}
+        ${colorPickerHtml(page.accent, "#8bd3ff", "Accent color", "accent")}`;
     } else if (page.layout === "quote") {
       body = `
         <label style="font-size:13px;font-weight:600;">Quote / body
@@ -1966,17 +2356,17 @@ async function mountSocialPosts(ctx, container) {
     bindEditorInputs(page);
   }
 
-  function colorPickerHtml(value, fallback, label = "Background color") {
+  function colorPickerHtml(value, fallback, label = "Background color", bindKey = "bg") {
     const v = value || fallback;
     const swatches = ["#0a1f3d", "#0c2545", "#1a3270", "#5b3fb8", "#7a3fa3", "#0e3b29", "#7a2418", "#1a1a1a", "#f5f0ea"];
     return `
       <div>
         <div style="font-size:13px;font-weight:600;margin-bottom:6px;">${label}</div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <input type="color" data-bind="bg" value="${esc(v)}" style="width:46px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0;cursor:pointer;background:transparent;">
-          <input class="input" data-bind="bg" type="text" value="${esc(v)}" style="width:110px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">
+          <input type="color" data-bind="${bindKey}" value="${esc(v)}" style="width:46px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0;cursor:pointer;background:transparent;">
+          <input class="input" data-bind="${bindKey}" type="text" value="${esc(v)}" style="width:110px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">
           <div style="display:flex;gap:4px;flex-wrap:wrap;">
-            ${swatches.map((c) => `<button type="button" data-swatch="${c}" title="${c}" style="width:22px;height:22px;border-radius:4px;border:1px solid var(--border);background:${c};cursor:pointer;padding:0;"></button>`).join("")}
+            ${swatches.map((c) => `<button type="button" data-swatch="${c}" data-swatch-bind="${bindKey}" title="${c}" style="width:22px;height:22px;border-radius:4px;border:1px solid var(--border);background:${c};cursor:pointer;padding:0;"></button>`).join("")}
           </div>
         </div>
       </div>`;
@@ -1989,9 +2379,18 @@ async function mountSocialPosts(ctx, container) {
       const handler = (e) => {
         const v = e.target.value;
         page[key] = key === "imageScale" ? parseFloat(v) : v;
+        if (key === "titleStyle") {
+          carouselTheme = v === "beautiful" ? "beautiful" : "classic";
+          themeSelect.value = carouselTheme;
+          if (v === "beautiful" && !page.coverQuestion && selectedArticle?.title) {
+            page.coverQuestion = selectedArticle.title;
+          }
+          refreshAiPrompt();
+          renderEditor();
+        }
         // Keep paired color text/swatch inputs visually in sync
-        if (key === "bg") {
-          editorEl.querySelectorAll("[data-bind='bg']").forEach((other) => {
+        if (key === "bg" || key === "accent") {
+          editorEl.querySelectorAll(`[data-bind='${key}']`).forEach((other) => {
             if (other !== e.target) other.value = v;
           });
         }
@@ -2005,8 +2404,9 @@ async function mountSocialPosts(ctx, container) {
     editorEl.querySelectorAll("button[data-swatch]").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
-        page.bg = btn.dataset.swatch;
-        editorEl.querySelectorAll("[data-bind='bg']").forEach((el) => { el.value = page.bg; });
+        const key = btn.dataset.swatchBind || "bg";
+        page[key] = btn.dataset.swatch;
+        editorEl.querySelectorAll(`[data-bind='${key}']`).forEach((el) => { el.value = page[key]; });
         invalidatePage(activePageIdx);
       });
     });
@@ -2021,8 +2421,14 @@ async function mountSocialPosts(ctx, container) {
         const old = pages[activePageIdx];
         const fresh = blankPage(newLayout);
         if (old.bg) fresh.bg = old.bg;
+        if (old.accent && newLayout === "beautiful") fresh.accent = old.accent;
         if (old.headline && (newLayout === "editorial" || newLayout === "hook")) fresh.headline = old.headline;
         if (old.body     && (newLayout === "editorial" || newLayout === "hook")) fresh.body = old.body;
+        if (old.headline && newLayout === "beautiful") fresh.headline = old.headline;
+        if (old.body     && newLayout === "beautiful") fresh.body = old.body;
+        if (old.cta      && newLayout === "beautiful") fresh.cta = old.cta;
+        if (old.bullets  && newLayout === "beautiful") fresh.bullets = old.bullets;
+        if (old.eyebrow  && newLayout === "beautiful") fresh.eyebrow = old.eyebrow;
         pages[activePageIdx] = fresh;
         renderPageList();
         renderEditor();
@@ -2100,9 +2506,10 @@ async function mountSocialPosts(ctx, container) {
     if (multiMode) {
       thumbsWrap.style.display = "";
       aiPanel.style.display = "";
+      themeWrap.style.display = "";
       // Bootstrap a sensible default carousel: cover + editorial + closing
       if (pages.length === 1) {
-        pages.push(blankPage("editorial"));
+        pages.push(blankPage(carouselTheme === "beautiful" ? "beautiful" : "editorial"));
         pages.push(defaultClosingPage());
       }
       refreshAiPrompt();
@@ -2111,6 +2518,7 @@ async function mountSocialPosts(ctx, container) {
     } else {
       thumbsWrap.style.display = "none";
       aiPanel.style.display = "none";
+      themeWrap.style.display = "none";
       // Collapse back to just the cover
       pages = [pages[0] || defaultCoverPage()];
       activePageIdx = 0;
@@ -2124,7 +2532,7 @@ async function mountSocialPosts(ctx, container) {
     // Insert before any closing page so the closing always stays last.
     const closingIdx = pages.findIndex((p) => p.layout === "closing");
     const insertAt = closingIdx === -1 ? pages.length : closingIdx;
-    pages.splice(insertAt, 0, blankPage("editorial"));
+    pages.splice(insertAt, 0, blankPage(carouselTheme === "beautiful" ? "beautiful" : "editorial"));
     activePageIdx = insertAt;
     renderPageList();
     renderEditor();
@@ -2160,6 +2568,85 @@ async function mountSocialPosts(ctx, container) {
    Lean heavily into whichever color has the largest share — if blue is 55% and brown is 8%, the carousel should feel mostly blue with brown as an occasional accent. You may use the swatch hex codes verbatim, OR pick complementary / analogous hex colors that harmonize beautifully with them (slightly different tones, deeper or lighter shades, colors that share a similar mood). The result should feel like a designer hand-picked the palette to extend the cover image — not slavishly copy it. Always ensure dark backgrounds for any page with white text. Avoid clashing colors that fight the cover.`;
     } else {
       colorGuidance = `• bg: pick a hex color that fits the article's mood. Dark blues for science/space (#0a1f3d, #0c2545, #1a3270); purple for social/equity (#5b3fb8, #7a3fa3); deep green for environment (#0e3b29); warm red for urgency (#7a2418). Each page should feel like part of the same palette — pick 2 max.`;
+    }
+
+    if (carouselTheme === "beautiful") {
+      return `You are designing a premium Instagram carousel for The Catalyst Magazine. Use the BEAUTIFUL carousel theme: professional magazine-design pages with strong hierarchy, short bullet points, elegant pacing, and no clutter.
+
+ABSOLUTE RULE: do NOT use ANY emojis anywhere in your output. No emoji in the caption. No emoji in any page. No emoji in hashtags. Plain text only.
+
+── ARTICLE ──
+Title: ${title}
+Author: ${author}
+Category: ${category}
+Deck: ${deck || "(no deck — infer from title)"}
+Article URL: https://www.catalyst-magazine.com
+
+── OUTPUT FORMAT ──
+Return ONLY the blocks below. No preamble, no markdown headers, no commentary.
+
+First, the caption block:
+cover_question: <a curiosity-driving cover question in the style "Topic: Question?" Use the article topic before the colon, then a question the article answers. Examples: "Dopamine & Learning: Does dopamine actually make tasks easier?" or "Food Security: Can machine learning protect the food safety net for 40 million Americans?">
+caption: <the full Instagram caption, 3-5 short paragraphs separated by \\n\\n; engaging hook in paragraph 1; tight summary of the article's most interesting idea; ends with this exact closing paragraph: Read more by ${author} at catalyst-magazine.com — link in bio.> Then a final \\n\\n line of 4-7 relevant hashtags including #TheCatalyst and #CatalystMagazine. NO EMOJIS anywhere.
+
+Then a single line of exactly three dashes: ---
+
+Then 3 to 5 BEAUTIFUL page blocks. Each page block must use exactly this layout:
+
+layout: beautiful
+eyebrow: <1-3 word section label, such as Key insight, The stakes, Why it matters, What changed, Read next>
+headline: <6-12 words, precise and scroll-stopping>
+body: <1 short sentence that frames the page>
+bullets: <2-4 short bullet points separated by " | " on one line>
+cta: <only on the final page; otherwise leave blank or omit>
+bg: <hex color>
+accent: <hex color>
+
+Do NOT include a cover page block — one is added automatically. You MUST provide cover_question above so the cover becomes an irresistible question, not just the article title.
+Do NOT include a closing page — one is added automatically.
+Do NOT use emojis anywhere.
+
+── BEAUTIFUL THEME COPY RULES ──
+• Keep every page visually scannable: one headline, one framing sentence, then 2-4 short bullet points.
+• Bullets must be concrete and varied: use facts, contrasts, names, consequences, or "why it matters" points.
+• Bullet text should be 3-9 words each. No full paragraphs in bullets.
+• The final page must include a cta line exactly like: Read "${title}" by ${author}. Link in bio.
+• Use accent colors that harmonize with the cover. Do not make every page the exact same color unless the article needs a very restrained look.
+• Make it feel like a professional Instagram designer made it: crisp, editorial, modern, premium, and readable.
+${colorGuidance}
+
+── NARRATIVE ARC ──
+1. COVER QUESTION: ask the precise question the article answers.
+2. BEAUTIFUL INTRO: start answering the question and make the topic feel important now.
+3. BEAUTIFUL STAKES: show the tension, surprise, or problem.
+4. BEAUTIFUL DETAILS: use bullets to unpack the most interesting mechanism, discovery, person, or example.
+5. BEAUTIFUL IMPLICATION: explain why it matters beyond the article's first idea.
+6. BEAUTIFUL CTA: tease the full answer and include the required CTA.
+
+Pick exactly the right number of pages for this article: 3, 4, or 5. Each page should add something new. Do not repeat the same point twice.
+
+── EXAMPLE FORMAT ONLY — NO EMOJIS ──
+cover_question: Food Security: Can machine learning protect the food safety net for 40 million Americans?
+caption: One scientific image can hold a whole story: who gets seen, what gets measured, and why the answer matters now.\\n\\nThis article follows the people and ideas behind a discovery that changes how we understand the world around us.\\n\\nRead more by ${author} at catalyst-magazine.com — link in bio.\\n\\n#TheCatalyst #CatalystMagazine #ScienceWriting #STEM #Research
+---
+layout: beautiful
+eyebrow: Key insight
+headline: The smallest details can change the whole story.
+body: The article turns a complex scientific question into a human, visual narrative.
+bullets: One clear discovery | A human reason to care | Stakes beyond the lab
+bg: #101b3d
+accent: #8bd3ff
+---
+layout: beautiful
+eyebrow: Why it matters
+headline: Science becomes powerful when people can see it.
+body: The strongest ideas in the story connect evidence to everyday consequences.
+bullets: Better questions | Sharper public understanding | New paths for research
+cta: Read "${title}" by ${author}. Link in bio.
+bg: #0a1f3d
+accent: #f0c66e
+
+── NOW WRITE THE CAPTION + BEAUTIFUL PAGES FOR "${title}" — NO EMOJIS ──`;
     }
 
     return `You are designing an Instagram carousel for The Catalyst Magazine — a polished, editorial publication about science, tech, and social impact. Given the article info below, produce a CAPTION for the post AND 3 to 5 carousel pages that walk a reader through the article in a scroll-stopping, beautiful, deeply readable way. Everything must feel like a premium magazine — confident, curious, human, never clickbait.
@@ -2363,10 +2850,18 @@ bg: #0a1f3d
   function tryApplyAiPaste() {
     const text = aiPasteEl.value.trim();
     if (!text) return;
-    const { caption, pages: parsedPages } = parseAiBlock(text);
+    const { caption, pages: parsedPages, coverQuestion } = parseAiBlock(text);
     // Don't toast-spam on partial input — wait until we have at least one page
     // OR an explicit caption block.
-    if (!parsedPages.length && !caption) return;
+    if (!parsedPages.length && !caption && !coverQuestion) return;
+    if (coverQuestion) {
+      const cover = pages[0] || defaultCoverPage();
+      cover.titleStyle = "beautiful";
+      cover.coverQuestion = coverQuestion;
+      carouselTheme = "beautiful";
+      themeSelect.value = "beautiful";
+      invalidatePage(0);
+    }
     if (parsedPages.length) {
       const cover = pages[0] || defaultCoverPage();
       pages = [cover, ...parsedPages];
@@ -2381,6 +2876,7 @@ bg: #0a1f3d
     }
     aiPasteEl.value = "";
     const bits = [];
+    if (coverQuestion) bits.push("cover question");
     if (parsedPages.length) bits.push(`${parsedPages.length} page${parsedPages.length === 1 ? "" : "s"}`);
     if (caption) bits.push("caption");
     ctx.toast(`✨ AI generated ${bits.join(" + ")}.`, "success");
@@ -2534,7 +3030,7 @@ bg: #0a1f3d
   // Accepts a block of text where pages are separated by lines containing only
   // dashes (e.g. `---`). Inside each section, `key: value` lines populate the
   // page's fields. Whitespace-tolerant; unknown keys are ignored.
-  // Returns { caption: string|null, pages: Page[] }. Sections without a
+  // Returns { caption: string|null, coverQuestion: string|null, pages: Page[] }. Sections without a
   // `layout:` key are treated as caption-bearing blocks (the AI is instructed
   // to put `caption: …` at the top, before the first `---`).
   // Defensive emoji stripper — the AI is told NOT to use emojis, but we
@@ -2568,6 +3064,7 @@ bg: #0a1f3d
     const sections = text.split(/^\s*-{3,}\s*$/m).map((s) => s.trim()).filter(Boolean);
     const pages = [];
     let caption = null;
+    let coverQuestion = null;
     for (const section of sections) {
       const obj = {};
       for (const rawLine of section.split(/\r?\n/)) {
@@ -2582,22 +3079,24 @@ bg: #0a1f3d
         obj[key] = value;
       }
       // Top-level caption block — has no `layout:` field.
-      if (!obj.layout && obj.caption) {
-        caption = stripEmojis(obj.caption);
+      if (!obj.layout && (obj.caption || obj.cover_question || obj.coverquestion)) {
+        if (obj.caption) caption = stripEmojis(obj.caption);
+        if (obj.cover_question || obj.coverquestion) coverQuestion = stripEmojis(obj.cover_question || obj.coverquestion);
         continue;
       }
       const layout = (obj.layout || "").toLowerCase();
-      if (!["editorial", "hook", "quote", "closing"].includes(layout)) continue;
+      if (!["editorial", "hook", "quote", "beautiful", "closing"].includes(layout)) continue;
       const page = blankPage(layout);
       // Strip emojis from every text field; bg is a hex color so it's left
       // alone (the stripper would no-op on it anyway, but explicit is clearer).
-      for (const k of ["headline", "body", "cta", "quote", "attribution", "tagline"]) {
+      for (const k of ["headline", "body", "cta", "quote", "attribution", "tagline", "eyebrow", "bullets"]) {
         if (obj[k] !== undefined) page[k] = stripEmojis(obj[k]);
       }
       if (obj.bg !== undefined) page.bg = obj.bg;
+      if (obj.accent !== undefined) page.accent = obj.accent;
       pages.push(page);
     }
-    return { caption, pages };
+    return { caption, coverQuestion, pages };
   }
 
   // ── Create view lifecycle ──────────────────────────────────────────────────
@@ -2605,7 +3104,10 @@ bg: #0a1f3d
     selectedArticle = null;
     customCoverDataUrl = null;
     multiMode = false;
+    carouselTheme = "classic";
     multiToggle.checked = false;
+    themeSelect.value = "classic";
+    themeWrap.style.display = "none";
     thumbsWrap.style.display = "none";
     aiPanel.style.display = "none";
     pages = [defaultCoverPage()];
