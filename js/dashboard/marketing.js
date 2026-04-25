@@ -1188,8 +1188,9 @@ async function renderHook(page) {
 }
 
 // ─── Beautiful carousel layout ───────────────────────────────────────────────
-// Premium editorial design: rich gradient background, bold left accent bar,
-// large serif headline, clean bullet list with dot markers, CTA pill button.
+// Premium editorial design: colorful accent bar, large headline, optional body
+// sentence, optional bullets (only on dedicated breakdown slides). No separator
+// line before bullets. Accent color drives the bar, eyebrow, and dot markers.
 async function renderBeautiful(page) {
   const SIZE = SOCIAL_POST_CANVAS_SIZE;
   const { canvas, ctx } = createSocialPostCanvas(SIZE);
@@ -1199,26 +1200,41 @@ async function renderBeautiful(page) {
   const isDark = ink === "#ffffff";
 
   // ── Rich layered background ──────────────────────────────────────────────
-  // Deep gradient — slightly lighter at top-left, darker at bottom-right
-  const bgGrad = ctx.createLinearGradient(0, 0, SIZE * 0.7, SIZE);
-  bgGrad.addColorStop(0, shadeHex(bg, 28));
-  bgGrad.addColorStop(0.55, bg);
-  bgGrad.addColorStop(1, shadeHex(bg, -36));
+  const bgGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
+  bgGrad.addColorStop(0, shadeHex(bg, 22));
+  bgGrad.addColorStop(0.6, bg);
+  bgGrad.addColorStop(1, shadeHex(bg, -30));
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Subtle radial light bloom in top-right corner — adds depth without noise
-  const bloom = ctx.createRadialGradient(SIZE * 0.88, SIZE * 0.08, 0, SIZE * 0.88, SIZE * 0.08, SIZE * 0.62);
-  bloom.addColorStop(0, isDark ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.035)");
+  // Accent color — the AI provides this as a hex complementing bg.
+  // Fall back to a vivid shifted hue so slides always have visual color.
+  const accent = (page.accent || "").trim() || shadeHex(bg, 110);
+
+  // Parse accent as rgb for alpha compositing
+  function hexToRgb(hex) {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+    return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 255, g: 255, b: 255 };
+  }
+  const ac = hexToRgb(accent);
+  const accentRgba = (a) => `rgba(${ac.r},${ac.g},${ac.b},${a})`;
+
+  // Accent color wash in top-right corner — gives each slide warmth and color
+  const bloom = ctx.createRadialGradient(SIZE * 0.95, 0, 0, SIZE * 0.95, 0, SIZE * 0.85);
+  bloom.addColorStop(0, accentRgba(0.22));
+  bloom.addColorStop(0.5, accentRgba(0.07));
   bloom.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = bloom;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Parse accent color — derive from bg if not explicitly set
-  const accent = page.accent || shadeHex(bg, 90);
-  const accentAlpha = isDark ? "rgba(255,255,255,0.92)" : "rgba(10,20,36,0.88)";
+  // Subtle bottom accent glow
+  const bottomBloom = ctx.createRadialGradient(SIZE * 0.15, SIZE, 0, SIZE * 0.15, SIZE, SIZE * 0.6);
+  bottomBloom.addColorStop(0, accentRgba(0.12));
+  bottomBloom.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = bottomBloom;
+  ctx.fillRect(0, 0, SIZE, SIZE);
 
-  const padL = 88;  // generous left margin
+  const padL = 88;
   const padR = 72;
   const maxW = SIZE - padL - padR;
   const eyebrow = (page.eyebrow || "Key insight").trim();
@@ -1230,46 +1246,42 @@ async function renderBeautiful(page) {
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
 
-  // ── Vertical left accent bar ─────────────────────────────────────────────
-  const barX = 56;
-  const barTop = 96;
-  const barBot = cta ? SIZE - 148 : SIZE - 112;
+  // ── Vertical left accent bar — colored ───────────────────────────────────
+  const barX = 52;
+  const barTop = 92;
+  const barBot = cta ? SIZE - 148 : SIZE - 100;
   const barGrad = ctx.createLinearGradient(0, barTop, 0, barBot);
-  barGrad.addColorStop(0, isDark ? "rgba(255,255,255,0.90)" : "rgba(10,20,36,0.75)");
-  barGrad.addColorStop(0.5, isDark ? "rgba(255,255,255,0.55)" : "rgba(10,20,36,0.45)");
-  barGrad.addColorStop(1, isDark ? "rgba(255,255,255,0.10)" : "rgba(10,20,36,0.10)");
+  barGrad.addColorStop(0, accentRgba(0.95));
+  barGrad.addColorStop(0.45, accentRgba(0.65));
+  barGrad.addColorStop(1, accentRgba(0.08));
   ctx.fillStyle = barGrad;
   ctx.beginPath();
-  ctx.roundRect(barX, barTop, 5, barBot - barTop, 3);
+  ctx.roundRect(barX, barTop, 6, barBot - barTop, 3);
   ctx.fill();
 
-  // ── Eyebrow label ────────────────────────────────────────────────────────
+  // ── Eyebrow label — tinted with accent ───────────────────────────────────
   await ensurePoppinsLoaded();
-  ctx.fillStyle = isDark ? "rgba(255,255,255,0.52)" : "rgba(10,20,36,0.44)";
-  ctx.font = `700 21px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
-  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.18em";
-  ctx.fillText(eyebrow.toUpperCase(), padL, 136);
+  ctx.fillStyle = accentRgba(isDark ? 0.88 : 0.75);
+  ctx.font = `700 20px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.20em";
+  ctx.fillText(eyebrow.toUpperCase(), padL, 134);
   if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
 
-  // Thin rule under eyebrow — only as wide as the text
-  const eyebrowW = ctx.measureText(eyebrow.toUpperCase()).width;
-  ctx.fillStyle = isDark ? "rgba(255,255,255,0.30)" : "rgba(10,20,36,0.22)";
-  ctx.fillRect(padL, 148, Math.min(eyebrowW + 20, 160), 2);
-
-  // ── Headline — large, bold, tight leading ────────────────────────────────
+  // ── Headline — large, heavy, fills the middle ─────────────────────────────
   const headlineFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  const headMaxH = bullets.length ? 220 : body ? 280 : 420;
   const headFit = fitText(ctx, headline || " ", {
     font: headlineFont,
     startSize: 88,
     minSize: 44,
     maxWidth: maxW,
-    maxHeight: bullets.length ? 240 : (body ? 270 : 380),
+    maxHeight: headMaxH,
     lineHeightMul: 1.06,
   });
 
   ctx.fillStyle = ink;
   ctx.font = headlineFont(headFit.fontSize);
-  let y = 196 + headFit.fontSize * 0.9;
+  let y = 190 + headFit.fontSize * 0.9;
   for (const line of headFit.lines) {
     ctx.fillText(line, padL, y);
     y += headFit.lineHeight;
@@ -1283,89 +1295,73 @@ async function renderBeautiful(page) {
       startSize: 34,
       minSize: 24,
       maxWidth: maxW,
-      maxHeight: 120,
-      lineHeightMul: 1.45,
+      maxHeight: bullets.length ? 110 : 160,
+      lineHeightMul: 1.48,
     });
-    ctx.fillStyle = isDark ? "rgba(255,255,255,0.72)" : "rgba(10,20,36,0.64)";
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.68)" : "rgba(10,20,36,0.60)";
     ctx.font = bodyFont(bodyFit.fontSize);
-    y += 28;
+    y += 30;
     for (const line of bodyFit.lines) {
       ctx.fillText(line, padL, y);
       y += bodyFit.lineHeight;
     }
   }
 
-  // ── Bullet points — clean dots + medium weight text ──────────────────────
+  // ── Bullet points — only when the slide has them (not every slide) ────────
+  // No separator line. Accent-colored square markers instead of dots.
   if (bullets.length) {
     const bulletFontFn = (sz) => `500 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    // Measure max bullet width to choose a font size that fits all items
     const longestBullet = bullets.reduce((a, b) => (a.length > b.length ? a : b), "");
     const bulletFit = fitText(ctx, longestBullet, {
       font: bulletFontFn,
       startSize: 36,
       minSize: 24,
-      maxWidth: maxW - 28, // indent for dot
-      maxHeight: 58,
+      maxWidth: maxW - 30,
+      maxHeight: 56,
       lineHeightMul: 1,
     });
     const bFontSz = bulletFit.fontSize;
-    const bLineH = bFontSz * 1.72;
+    const bLineH = bFontSz * 1.76;
 
-    // Start bullets at least 48px below headline/body, and no higher than 520px
-    let by = Math.max(y + 48, 520);
-
-    // Horizontal separator before bullets
-    ctx.save();
-    const sepGrad = ctx.createLinearGradient(padL, 0, padL + maxW, 0);
-    sepGrad.addColorStop(0, isDark ? "rgba(255,255,255,0.35)" : "rgba(10,20,36,0.28)");
-    sepGrad.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.strokeStyle = sepGrad;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(padL, by - 20);
-    ctx.lineTo(padL + maxW, by - 20);
-    ctx.stroke();
-    ctx.restore();
+    // Place bullets: right after body with a gap, or anchored in lower half
+    let by = Math.max(y + 44, 530);
 
     ctx.font = bulletFontFn(bFontSz);
     for (const item of bullets) {
-      // Dot marker
-      const dotR = 5;
-      const dotX = padL + 4;
-      const dotY = by - bFontSz * 0.32;
-      ctx.fillStyle = isDark ? "rgba(255,255,255,0.70)" : "rgba(10,20,36,0.55)";
-      ctx.beginPath();
-      ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
-      ctx.fill();
+      // Small accent-colored square marker
+      const sqS = 8;
+      const sqX = padL + 2;
+      const sqY = by - bFontSz * 0.55;
+      ctx.fillStyle = accentRgba(0.85);
+      ctx.fillRect(sqX, sqY, sqS, sqS);
 
       // Bullet text
-      ctx.fillStyle = isDark ? "rgba(255,255,255,0.93)" : "rgba(10,20,36,0.90)";
-      ctx.fillText(item, padL + 22, by);
+      ctx.fillStyle = isDark ? "rgba(255,255,255,0.92)" : "rgba(10,20,36,0.88)";
+      ctx.fillText(item, padL + 24, by);
       by += bLineH;
     }
   }
 
-  // ── CTA pill at bottom ────────────────────────────────────────────────────
+  // ── CTA pill at bottom — accent-bordered ─────────────────────────────────
   if (cta) {
     const ctaFontFn = (sz) => `700 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
     const ctaFit = fitText(ctx, cta, {
       font: ctaFontFn,
       startSize: 28,
       minSize: 20,
-      maxWidth: maxW - 48,
-      maxHeight: 42,
+      maxWidth: maxW - 56,
+      maxHeight: 40,
       lineHeightMul: 1,
     });
-    const pillH = 64;
-    const pillY = SIZE - 130 - pillH / 2;
-    const pillW = Math.min(maxW, ctx.measureText(cta).width + 80);
+    const pillH = 62;
+    const pillY = SIZE - 128;
+    const pillW = Math.min(maxW, ctx.measureText(ctaFit.lines[0] || cta).width + 80);
     const pillX = padL;
 
-    // Pill background — semi-opaque tinted white/dark
     ctx.save();
-    ctx.fillStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(10,20,36,0.10)";
-    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.36)" : "rgba(10,20,36,0.30)";
-    ctx.lineWidth = 1.5;
+    ctx.fillStyle = accentRgba(0.14);
+    ctx.strokeStyle = accentRgba(0.70);
+    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(pillX, pillY - pillH / 2, pillW, pillH, pillH / 2);
     ctx.fill();
@@ -2514,37 +2510,39 @@ Then a single line of exactly three dashes: ---
 Then 3 to 5 BEAUTIFUL page blocks, each separated by ---. Each block uses exactly these keys:
 
 layout: beautiful
-eyebrow: <1-3 word label that names the slide's role. Use varied, specific labels: The hook, Key insight, The stakes, Hard truth, The shift, Why now, What changed, The science, Read next>
-headline: <7-12 words. Bold, precise, scroll-stopping. End with a period or question mark. No generic words like "important" or "interesting". Make it concrete — name a number, a reversal, a consequence, or a discovery.>
-body: <exactly 1 sentence, 15-30 words. Sets up the bullet points. Specific and direct — avoid vague filler phrases like "this article explores" or "here is why.">
-bullets: <3-4 bullet points separated by " | ". Each bullet is 4-10 words. Concrete: use facts, named people, statistics, contrasts, or consequences. No full sentences. No vague placeholders.>
-cta: <leave blank on all pages except the last. On the last page, write exactly: Read "${title}" by ${author}. Link in bio.>
-bg: <hex color>
+eyebrow: <1-3 word label. Varied, specific: The hook, Key insight, The stakes, Hard truth, The shift, Why now, What changed, The science, Read next>
+headline: <7-12 words. Bold, precise, scroll-stopping. End with a period or question mark. Concrete — name a number, a reversal, a consequence, or a discovery. No filler words.>
+body: <1 sentence, 15-30 words. Direct and specific. Avoid "this article explores" or "here is why." Leave blank if the slide has bullets — body + bullets together is too much.>
+bullets: <ONLY include on 1 or 2 slides maximum across the whole carousel. Leave blank on all other slides. When used: 3-4 items separated by " | ", 4-10 words each, concrete facts or contrasts.>
+cta: <leave blank on all pages except the last. On the last page write exactly: Read "${title}" by ${author}. Link in bio.>
+bg: <dark hex background color for this slide>
+accent: <a vivid hex color that contrasts beautifully with bg — used for the side bar, eyebrow text, and bullet markers. Pick colors that feel alive: electric blue, coral, amber, teal, violet, rose gold. Should feel harmonious with the cover palette but pop against bg.>
 
 Do NOT include a cover page — one is added automatically. You MUST provide cover_question so the cover becomes an irresistible question.
 Do NOT include a closing page — one is added automatically.
 Do NOT use emojis anywhere.
 
 ── VISUAL DESIGN CONTEXT ──
-Each BEAUTIFUL slide renders with: a rich gradient background in the chosen bg color, a vertical accent bar on the left edge, the eyebrow label in small caps at the top, the headline in heavy bold type below it, the body sentence in lighter weight underneath, then bullet points with dot markers. The last slide shows a pill-shaped CTA button. Design your copy with this visual hierarchy in mind — short eyebrow, punchy headline, tight body, scannable bullets.
+Each slide renders as: gradient bg with colored accent glows in the corners, a vertical bar on the left in the accent color that fades top-to-bottom, the eyebrow in accent color at top, the headline in large white bold type, an optional body sentence underneath in softer white, and — only on bullet slides — small accent-colored square markers before each item. The last slide has a pill CTA button bordered in the accent color. The accent color is what makes each slide feel alive — choose it like a designer, not a random hex.
 
-── COPY STANDARDS ──
-• Headline: never start with "The" three times in a row across slides. Vary the sentence structure.
-• Bullets: must feel like a listicle a smart reader would screenshot. Each one should either surprise, inform, or challenge the reader.
-• Body: acts as a bridge between the headline and bullets — do not repeat the headline.
-• CTA: only on the final page. No CTA on middle pages.
-• Tone: confident, curious, precise. Never hype. Never vague. Write like a science journalist, not a social media manager.
+── RULES ──
+• Bullets on at most 1-2 slides. Most slides should be headline + body only — that's the elegant look.
+• A slide with bullets should NOT also have a long body sentence — keep it tight.
+• Never repeat the same point across slides.
+• Vary accent colors across slides — don't use the same accent twice in a row.
+• Each slide's bg should feel like part of the same palette family, but vary the shade or tone.
+• Tone: confident, curious, precise. Write like a science journalist, not a social media manager.
 ${colorGuidance}
 
-── NARRATIVE ARC — follow this order ──
-1. COVER (auto-generated): the cover_question hooks the reader with the article's central question.
-2. INTRO slide: answer "what is this about" in one punchy frame. Set the scene. Make the stakes feel real.
-3. TENSION slide: the surprising fact, reversal, or problem at the heart of the article. This is the "wait, really?" page.
-4. DEPTH slide (optional but recommended): the mechanism, the person, the discovery, the data — what makes this article worth reading in full.
-5. IMPLICATION slide (optional): why does this matter beyond the article? What does it change, challenge, or open up?
-6. CTA slide (required last): tease what the reader still doesn't know. Make them feel they're missing something by not clicking. Include the cta line.
+── NARRATIVE ARC ──
+1. COVER (auto-generated from cover_question)
+2. INTRO: answer "what is this about" in one punchy frame. Headline + body only — no bullets.
+3. TENSION: the surprising fact, reversal, or problem. Headline + body. This is the "wait, really?" page.
+4. BREAKDOWN (bullets here): the mechanism, data, or key details. This is where bullets shine — concrete, specific, scannable.
+5. IMPLICATION (optional): why it matters beyond the article. Headline + body only.
+6. CTA (required last): tease what the reader still doesn't know. Include the cta line.
 
-Pick 3, 4, or 5 slides — whichever number this article genuinely needs. Do not pad. Do not repeat.
+Pick 3, 4, or 5 slides. Do not pad. Do not repeat.
 
 ── EXAMPLE FORMAT ONLY ──
 cover_question: Food Security: Can machine learning protect the food safety net for 40 million Americans?
@@ -2552,25 +2550,26 @@ caption: Forty million Americans depend on SNAP benefits to eat — and the syst
 ---
 layout: beautiful
 eyebrow: The stakes
-headline: One eligibility error can cut a family's food supply overnight.
-body: The SNAP system processes 65 million decisions a year — and a small error rate at that scale means millions of missed meals.
-bullets: 40 million Americans rely on SNAP | 1 in 6 eligible households never enrolls | Errors cluster in the most vulnerable zip codes | Machine learning flags gaps in hours, not months
+headline: Forty million Americans eat because of one program.
+body: SNAP is the largest hunger safety net in the US — and a single eligibility error can cut off a family's food supply overnight.
 bg: #0d2b1e
+accent: #3dffa0
 ---
 layout: beautiful
-eyebrow: The science
-headline: Researchers trained a model on 10 years of benefit data.
-body: The algorithm found patterns human case workers had no bandwidth to notice — predicting benefit cliffs weeks before they hit.
-bullets: Trained on 120 million anonymized records | Accuracy rate: 91% on held-out test data | Identifies at-risk households 3 weeks early | Already piloted in two states
-bg: #0e3b29
+eyebrow: The breakdown
+headline: One model. Ten years of data. Ninety-one percent accuracy.
+body:
+bullets: 120 million anonymized records | Flags at-risk households 3 weeks early | Already piloted in two states | Accuracy: 91% on held-out test data
+bg: #0e3420
+accent: #56e8b0
 ---
 layout: beautiful
 eyebrow: Hard truth
-headline: The model works. The policy pipeline does not.
-body: Even when the algorithm flags a household, caseworkers are too overloaded to act on every alert in time.
-bullets: Average caseload: 400 families per worker | Alerts acted on: fewer than half | The bottleneck is staffing, not software | Advocates are pushing for automatic renewals
+headline: The algorithm works. The system around it does not.
+body: Even when the model flags a household, caseworkers are too overloaded to act on every alert in time.
 cta: Read "${title}" by ${author}. Link in bio.
 bg: #0a2218
+accent: #29c97a
 
 ── NOW WRITE THE CAPTION + BEAUTIFUL PAGES FOR "${title}" — NO EMOJIS ──`;
     }
