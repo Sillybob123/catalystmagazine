@@ -921,8 +921,11 @@ function ensurePoppinsLoaded() {
     return _poppinsReady;
   }
   _poppinsReady = Promise.all([
-    document.fonts.load(`900 32px "Poppins"`),
+    document.fonts.load(`400 32px "Poppins"`),
+    document.fonts.load(`500 32px "Poppins"`),
+    document.fonts.load(`700 32px "Poppins"`),
     document.fonts.load(`800 32px "Poppins"`),
+    document.fonts.load(`900 32px "Poppins"`),
   ]).catch(() => {});
   return _poppinsReady;
 }
@@ -1265,40 +1268,48 @@ async function renderBeautiful(page) {
   ctx.fillStyle = barG;
   ctx.beginPath(); ctx.roundRect(barX, barTop, 5, barBot - barTop, 2.5); ctx.fill();
 
-  // ── Eyebrow — small caps, NORMAL letter-spacing (not stretched) ──────────
+  // All beautiful slides use Poppins — it's loaded on the page so canvas
+  // renders it (not a wide-tracking system fallback). Tight letter-spacing
+  // on the headline gives that crisp Instagram-designer look.
+  const SANS = `"Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
+
+  // Always reset letterSpacing before each text block so nothing leaks in.
+  const resetLetterSpacing = () => { if ("letterSpacing" in ctx) ctx.letterSpacing = "0"; };
+
+  // ── Eyebrow — small caps with light tracking, looks editorial ────────────
   if (eyebrow) {
     ctx.fillStyle = acRgba(0.92);
-    ctx.font = `700 20px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
-    // No letterSpacing — Inter/Poppins at small caps reads cleanly without it.
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+    ctx.font = `700 22px ${SANS}`;
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0.08em";
     ctx.fillText(eyebrow.toUpperCase(), padL, HEADER_Y);
+    resetLetterSpacing();
   }
 
-  // ── Headline — same position, same sizing rules across every slide ───────
-  // Use fitText so the headline always fits inside the safe area, no overflow.
-  const headlineFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+  // ── Headline — heavy bold with tight tracking ────────────────────────────
+  const headlineFont = (sz) => `800 ${sz}px ${SANS}`;
   const headFit = fitText(ctx, headline || " ", {
     font: headlineFont,
-    startSize: bullets.length ? 64 : 76,
+    startSize: bullets.length ? 62 : 74,
     minSize: 38,
     maxWidth: maxW,
-    maxHeight: bullets.length ? 200 : (body ? 280 : 380),
-    lineHeightMul: 1.10,
+    maxHeight: bullets.length ? 220 : (body ? 320 : 420),
+    lineHeightMul: 1.08,
   });
 
   ctx.fillStyle = ink;
   ctx.font = headlineFont(headFit.fontSize);
-  if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+  // Tight letter-spacing — large bold text reads better with -0.02em.
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "-0.02em";
   let y = HEADLINE_TOP + headFit.fontSize * 0.88;
   for (const line of headFit.lines) {
     ctx.fillText(line, padL, y);
     y += headFit.lineHeight;
   }
+  resetLetterSpacing();
 
-  // ── Body / Bullets area — fits inside safe area, never overflows ─────────
+  // ── Body / Bullets ───────────────────────────────────────────────────────
   if (!bullets.length && body) {
-    // Single elegant body paragraph — auto-fit so long bodies always fit.
-    const bodyFont = (sz) => `400 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const bodyFont = (sz) => `400 ${sz}px ${SANS}`;
     const remaining = BODY_BOTTOM - (y + 40);
     const bodyFit = fitText(ctx, body, {
       font: bodyFont,
@@ -1310,52 +1321,58 @@ async function renderBeautiful(page) {
     });
     ctx.fillStyle = isDark ? "rgba(255,255,255,0.78)" : "rgba(10,20,36,0.68)";
     ctx.font = bodyFont(bodyFit.fontSize);
+    resetLetterSpacing();
     y += 38;
     for (const line of bodyFit.lines) {
       ctx.fillText(line, padL, y);
       y += bodyFit.lineHeight;
     }
   } else if (bullets.length) {
-    // Bullet rows — same accent bar marker on each row. Auto-fit each item.
-    const bulletFont = (sz) => `500 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-
-    // Pick a font size that fits the LONGEST bullet on a single line within maxW.
-    const longest = bullets.reduce((a, b) => (a.length > b.length ? a : b), "");
-    const lf = fitText(ctx, longest, {
-      font: bulletFont, startSize: 30, minSize: 22, maxWidth: maxW - 28, maxHeight: 50, lineHeightMul: 1,
-    });
-    const bSz = lf.fontSize;
-    const bLineH = bSz * 1.95;
-
+    // Pick a font size where EVERY bullet fits on a single line. We test the
+    // widest bullet and shrink until it fits in (maxW - 32) so the marker +
+    // gap + text never run past the right padding.
+    const bulletFont = (sz) => `500 ${sz}px ${SANS}`;
+    const bulletMaxW = maxW - 32; // 24 indent + 8 safety margin
+    let bSz = 30;
+    while (bSz > 20) {
+      ctx.font = bulletFont(bSz);
+      const widest = bullets.reduce((m, b) => Math.max(m, ctx.measureText(b).width), 0);
+      if (widest <= bulletMaxW) break;
+      bSz -= 1;
+    }
+    const bLineH = bSz * 1.85;
     let by = Math.max(y + 50, 540);
+
     ctx.font = bulletFont(bSz);
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
+    resetLetterSpacing();
 
     for (const item of bullets) {
-      if (by > BODY_BOTTOM) break; // never draw past the safe area
-      // Small accent bar marker to the left
-      ctx.fillStyle = acRgba(0.78);
+      if (by > BODY_BOTTOM) break;
+      // Small accent bar marker to the left of each row
+      ctx.fillStyle = acRgba(0.85);
       ctx.beginPath();
-      ctx.roundRect(padL, by - bSz * 0.68, 4, bSz * 0.86, 2);
+      ctx.roundRect(padL, by - bSz * 0.70, 4, bSz * 0.86, 2);
       ctx.fill();
 
       ctx.fillStyle = isDark ? "rgba(255,255,255,0.92)" : "rgba(10,20,36,0.88)";
-      ctx.fillText(item, padL + 20, by);
+      ctx.fillText(item, padL + 24, by);
       by += bLineH;
     }
   }
 
-  // ── CTA pill — same look on the final slide ──────────────────────────────
+  // ── CTA pill ─────────────────────────────────────────────────────────────
   if (cta) {
-    const ctaFont = (sz) => `700 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const ctaFont = (sz) => `700 ${sz}px ${SANS}`;
     const ctaFit = fitText(ctx, cta, {
-      font: ctaFont, startSize: 25, minSize: 18, maxWidth: maxW - 60, maxHeight: 36, lineHeightMul: 1,
+      font: ctaFont, startSize: 24, minSize: 18,
+      maxWidth: maxW - 60, maxHeight: 36, lineHeightMul: 1,
     });
     const pillH = 60;
     const pillY = CTA_Y;
     ctx.font = ctaFont(ctaFit.fontSize);
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
-    const pillW = Math.min(maxW, ctx.measureText(ctaFit.lines[0] || cta).width + 72);
+    resetLetterSpacing();
+    const textW = ctx.measureText(ctaFit.lines[0] || cta).width;
+    const pillW = Math.min(maxW, textW + 72);
 
     ctx.save();
     ctx.fillStyle = acRgba(0.14);
