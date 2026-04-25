@@ -1385,7 +1385,73 @@ async function renderBeautiful(page) {
     ctx.fillText(ctaFit.lines[0] || cta, padL + 28, pillY + ctaFit.fontSize * 0.36);
   }
 
-  await drawCatalystWordmark(ctx, SIZE, { color: wordmarkColorFor(bg) });
+  // ── Footer: "THE CATALYST" wordmark on bottom-LEFT ───────────────────────
+  await drawCatalystWordmark(ctx, SIZE, {
+    color: wordmarkColorFor(bg),
+    align: "left",
+    sidePad: padL,
+    bottomPad: 56,
+    size: 22,
+  });
+
+  // ── Footer: "Read about <article title> →" on bottom-RIGHT ───────────────
+  // Skip when the slide has its own CTA pill — the pill already serves that
+  // purpose on the final slide. On every other slide this hook tells the
+  // reader what they will get if they click through.
+  const articleTitle = (page.articleTitle || "").trim();
+  if (!cta && articleTitle) {
+    // Truncate long titles so the hook always fits comfortably on one line.
+    let hookTitle = articleTitle;
+    if (hookTitle.length > 38) hookTitle = hookTitle.slice(0, 36).trimEnd() + "…";
+    const hookText = `Read about ${hookTitle}`;
+
+    // Pick a font size that fits within the right half of the canvas.
+    let hookSz = 22;
+    ctx.font = `600 ${hookSz}px ${SANS}`;
+    resetLetterSpacing();
+    const maxHookW = SIZE * 0.55; // ~594px — keeps it on the right side
+    while (ctx.measureText(hookText + "  →").width > maxHookW && hookSz > 16) {
+      hookSz -= 1;
+      ctx.font = `600 ${hookSz}px ${SANS}`;
+    }
+
+    const hookY = SIZE - 56;
+    const rightX = SIZE - padR;
+    const arrowGap = 12;
+    const arrowLen = hookSz * 0.95;
+
+    // Arrow first — measure so we can right-align text + arrow as a unit
+    const textW = ctx.measureText(hookText).width;
+    const arrowEndX = rightX;
+    const arrowStartX = arrowEndX - arrowLen;
+    const textRightX = arrowStartX - arrowGap;
+    const textX = textRightX - textW;
+
+    // Subtle text — soft white that does not compete with the headline
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.85)" : "rgba(10,20,36,0.78)";
+    ctx.font = `600 ${hookSz}px ${SANS}`;
+    resetLetterSpacing();
+    ctx.fillText(hookText, textX, hookY);
+
+    // Arrow — drawn as a thin horizontal line + chevron tip in accent color
+    ctx.save();
+    ctx.strokeStyle = acRgba(0.95);
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    const ay = hookY - hookSz * 0.32; // align with text x-height
+    ctx.beginPath();
+    ctx.moveTo(arrowStartX, ay);
+    ctx.lineTo(arrowEndX, ay);
+    // Chevron tip
+    const tipSz = hookSz * 0.30;
+    ctx.moveTo(arrowEndX - tipSz, ay - tipSz * 0.85);
+    ctx.lineTo(arrowEndX, ay);
+    ctx.lineTo(arrowEndX - tipSz, ay + tipSz * 0.85);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   return canvas.toDataURL("image/png");
 }
 
@@ -2065,6 +2131,14 @@ async function mountSocialPosts(ctx, container) {
         coverImageUrl: articleCoverUrl(),
         tagline: page.tagline || "Join the Changemakers.",
         bg: page.bg || "#0a1830",
+      };
+    }
+    // Beautiful pages get the article title so the renderer can show
+    // a "Read about <title>" hook in the bottom-right corner.
+    if (page.layout === "beautiful") {
+      return {
+        ...page,
+        articleTitle: selectedArticle?.title || "",
       };
     }
     return { ...page };
