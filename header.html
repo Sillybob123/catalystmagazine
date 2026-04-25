@@ -40,21 +40,22 @@
 <!-- Newsletter Modal -->
 <div class="newsletter-modal" id="newsletter-modal">
     <div class="newsletter-modal-overlay" id="newsletter-modal-overlay"></div>
-    <div class="newsletter-modal-content">
+    <div class="newsletter-modal-content" tabindex="-1">
         <button class="newsletter-modal-close" id="newsletter-modal-close" aria-label="Close">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
         </button>
-        <h3 class="newsletter-modal-title">Join the Changemakers</h3>
-        <p class="newsletter-modal-subtitle">Sign up for our newsletter to stay connected with exclusive stories and D.C. STEM spotlights.</p>
+        <p class="newsletter-modal-eyebrow">The Catalyst Dispatch</p>
+        <h3 class="newsletter-modal-title">Get thoughtful science stories in your inbox.</h3>
+        <p class="newsletter-modal-subtitle">A concise note with our strongest stories, D.C. STEM spotlights, and interviews from curious people.</p>
         <form action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d" method="post" id="mc-embedded-subscribe-form-modal" name="mc-embedded-subscribe-form" class="newsletter-form-glass" novalidate>
             <div class="newsletter-form-grid">
-                <input type="text" name="FNAME" class="form-input-glass" placeholder="First Name" required>
-                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last Name" required>
+                <input type="text" name="FNAME" class="form-input-glass" placeholder="First name" required autocomplete="given-name">
+                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last name" required autocomplete="family-name">
             </div>
-            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL-modal" placeholder="Email Address" required>
+            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL-modal" placeholder="Email address" required autocomplete="email" inputmode="email">
 
             <!-- Bot prevention -->
             <div aria-hidden="true" style="position: absolute; left: -5000px;">

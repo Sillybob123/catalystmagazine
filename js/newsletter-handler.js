@@ -20,6 +20,8 @@ function initForms() {
       'form#mc-embedded-subscribe-form, form#mc-embedded-subscribe-form-modal, form[data-newsletter-form]'
     )
     .forEach((form) => {
+      if (form.dataset.newsletterBound === '1') return;
+      form.dataset.newsletterBound = '1';
       const responseDiv =
         form.querySelector('.newsletter-response') ||
         document.getElementById(
@@ -30,6 +32,7 @@ function initForms() {
       wire(form, responseDiv);
     });
 }
+window.initNewsletterForms = initForms;
 
 function wire(form, responseDiv) {
   form.addEventListener('submit', async (e) => {
@@ -39,34 +42,44 @@ function wire(form, responseDiv) {
     const originalText = submit ? submit.innerHTML : '';
 
     const data = new FormData(form);
-    const email = String(data.get('EMAIL') || data.get('email') || '').trim();
-    const firstName = String(data.get('FNAME') || data.get('firstName') || '').trim();
-    const lastName = String(data.get('LNAME') || data.get('lastName') || '').trim();
+    const email = String(data.get('EMAIL') || data.get('email') || '').trim().toLowerCase();
+    const firstName = normalizeName(data.get('FNAME') || data.get('firstName') || '');
+    const lastName = normalizeName(data.get('LNAME') || data.get('lastName') || '');
 
-    // First name is required only when the form actually has the input
-    // (modal uses first+last; compact footer takes email only).
-    const requiresFirstName = !!form.querySelector(
-      'input[name="FNAME"], input[name="firstName"]'
-    );
-    if (!email || (requiresFirstName && !firstName)) {
-      showResponse(responseDiv, 'Please fill in all fields.', 'error');
+    const firstNameInput = form.querySelector('input[name="FNAME"], input[name="firstName"]');
+    const lastNameInput = form.querySelector('input[name="LNAME"], input[name="lastName"]');
+    const requiresFirstName = !!firstNameInput?.required;
+    const requiresLastName = !!lastNameInput?.required;
+
+    if (!email || (requiresFirstName && !firstName) || (requiresLastName && !lastName)) {
+      showResponse(responseDiv, 'Please enter your first name, last name, and email.', 'error');
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       showResponse(responseDiv, 'Please enter a valid email address.', 'error');
       return;
     }
+    if ((firstName && !isValidName(firstName)) || (lastName && !isValidName(lastName))) {
+      showResponse(responseDiv, 'Please enter your name without numbers or symbols.', 'error');
+      return;
+    }
 
     if (submit) {
       submit.disabled = true;
       submit.innerHTML = 'Subscribing…';
+      form.setAttribute('aria-busy', 'true');
     }
 
     try {
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, firstName, lastName }),
+        body: JSON.stringify({
+          email,
+          firstName,
+          lastName,
+          source: form.id || form.dataset.newsletterForm || 'website-form',
+        }),
       });
       const payload = await res.json().catch(() => ({}));
 
@@ -79,7 +92,7 @@ function wire(form, responseDiv) {
       } else if (payload.alreadySubscribed) {
         showResponse(
           responseDiv,
-          "You're already on the list — thanks for being here!",
+          "You're already on the list. Thanks for being here!",
           'success'
         );
         form.reset();
@@ -102,6 +115,7 @@ function wire(form, responseDiv) {
       if (submit) {
         submit.disabled = false;
         submit.innerHTML = originalText;
+        form.removeAttribute('aria-busy');
       }
       setTimeout(() => {
         if (responseDiv) responseDiv.style.display = 'none';
@@ -115,4 +129,13 @@ function showResponse(div, message, type) {
   div.textContent = message;
   div.className = 'newsletter-response ' + type;
   div.style.display = 'block';
+}
+
+function normalizeName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+function isValidName(value) {
+  if (value.length > 80) return false;
+  return /^[\p{L}\p{M}][\p{L}\p{M} .'-]*[\p{L}\p{M}]$|^[\p{L}\p{M}]$/u.test(value);
 }
