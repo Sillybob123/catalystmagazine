@@ -31,10 +31,15 @@ import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import {
   computeWriterReminders,
+  computeEditorReminders,
   computeAdminDigest,
+  computeAdminTasks,
+  groupRemindersByRecipient,
 } from "../../_utils/bot-logic.js";
 import {
   writerReminderEmail,
+  editorReminderEmail,
+  bundledReminderEmail,
   adminDigestEmail,
 } from "../../_utils/reminder-emails.js";
 
@@ -104,59 +109,109 @@ export const onRequestPost = async ({ request, env }) => {
       projectsScanned: projects.length,
       usersScanned: users.length,
       writerReminders: { planned: 0, sent: 0, skipped: 0, errors: [] },
+      editorReminders: { planned: 0, sent: 0, skipped: 0, errors: [] },
+      bundled:         { planned: 0, sent: 0, errors: [] },
       adminDigest:     { sent: false, recipientCount: 0, skipped: null, error: null },
     };
 
-    // ── Writer reminders ─────────────────────────────────────────────────────
+    // ── Writer + Editor reminders ────────────────────────────────────────────
+    //
+    // Compute writer and editor reminders separately, then group by recipient
+    // so a single person never gets more than one bundled email per day.
     if (mode === "auto" || mode === "writers") {
-      const { reminders, skipped } = computeWriterReminders({
-        projects,
-        users,
-        reminderLog,
-        now,
-      });
-      result.writerReminders.planned = reminders.length;
-      result.writerReminders.skippedCount = skipped.length;
-      result.writerReminders.skipped = skipped;
+      const writerOut = computeWriterReminders({ projects, users, reminderLog, now });
+      const editorOut = computeEditorReminders({ projects, users, reminderLog, now });
 
-      // Build each email once — used for sending AND for the dry-run preview.
-      const builtReminders = reminders.map((r) => {
-        const { subject, html } = writerReminderEmail({
-          kind: r.kind,
-          writer: r.writer,
-          project: r.project,
-          deadline: r.deadline,
-          daysUntilDeadline: r.daysUntilDeadline,
-          daysInactive: r.daysInactive,
-          siteUrl,
-        });
+      result.writerReminders.planned = writerOut.reminders.length;
+      result.writerReminders.skippedCount = writerOut.skipped.length;
+      result.writerReminders.skipped = writerOut.skipped;
+      result.editorReminders.planned = editorOut.reminders.length;
+      result.editorReminders.skippedCount = editorOut.skipped.length;
+      result.editorReminders.skipped = editorOut.skipped;
+
+      // Per-recipient bundling: anyone with 2+ items gets one bundled email.
+      const allReminders = [...writerOut.reminders, ...editorOut.reminders];
+      const { single, bundled } = groupRemindersByRecipient(allReminders);
+      result.bundled.planned = bundled.length;
+
+      // Build singles (one project per email).
+      const builtSingles = single.map((r) => {
+        const { subject, html } = r.editor
+          ? editorReminderEmail({
+              kind: r.kind,
+              editor: r.editor,
+              project: r.project,
+              deadline: r.deadline,
+              daysSinceAssigned: r.daysSinceAssigned,
+              daysInactive: r.daysInactive,
+              siteUrl,
+            })
+          : writerReminderEmail({
+              kind: r.kind,
+              writer: r.writer,
+              project: r.project,
+              deadline: r.deadline,
+              daysUntilDeadline: r.daysUntilDeadline,
+              daysInactive: r.daysInactive,
+              siteUrl,
+            });
         return { ...r, subject, html };
       });
 
-      result.writerReminders.items = builtReminders.map((r) => ({
+      // Build bundled emails (2+ items, one email per recipient).
+      const builtBundled = bundled.map((b) => {
+        const { subject, html } = bundledReminderEmail({
+          recipient: b.recipient,
+          role: b.role,
+          items: b.items,
+          siteUrl,
+        });
+        return { ...b, subject, html };
+      });
+
+      // Preview metadata for the admin UI.
+      result.writerReminders.items = builtSingles.filter((r) => r.writer).map((r) => ({
         kind: r.kind,
         projectId: r.projectId,
         projectTitle: r.project.title,
-        writerId: r.writer.id || null,
         writerEmail: r.writer.email,
         writerName: r.writer.name,
         daysUntilDeadline: r.daysUntilDeadline,
         daysInactive: r.daysInactive,
         subject: r.subject,
-        // Plain-text preview so the admin can read what the email says without
-        // rendering HTML. Trimmed to keep the payload small.
         preview: htmlToPlainPreview(r.html, 600),
-        // Full HTML so the dashboard can render a live preview if it wants.
         html: r.html,
+      }));
+      result.editorReminders.items = builtSingles.filter((r) => r.editor).map((r) => ({
+        kind: r.kind,
+        projectId: r.projectId,
+        projectTitle: r.project.title,
+        editorEmail: r.editor.email,
+        editorName: r.editor.name,
+        daysSinceAssigned: r.daysSinceAssigned,
+        daysInactive: r.daysInactive,
+        subject: r.subject,
+        preview: htmlToPlainPreview(r.html, 600),
+        html: r.html,
+      }));
+      result.bundled.items = builtBundled.map((b) => ({
+        recipientEmail: b.recipient.email,
+        recipientName: b.recipient.name,
+        role: b.role,
+        itemCount: b.items.length,
+        subject: b.subject,
+        preview: htmlToPlainPreview(b.html, 800),
+        html: b.html,
       }));
 
       if (!dryRun) {
-        for (const r of builtReminders) {
-          // Collect all addresses: primary + any extras stored on the user doc.
-          const extraEmails = Array.isArray(r.writer.extraEmails)
-            ? r.writer.extraEmails.filter(Boolean)
+        // Send singles.
+        for (const r of builtSingles) {
+          const recipient = r.editor || r.writer;
+          const extraEmails = Array.isArray(recipient.extraEmails)
+            ? recipient.extraEmails.filter(Boolean)
             : [];
-          const allRecipients = [r.writer.email, ...extraEmails].filter(Boolean);
+          const allRecipients = [recipient.email, ...extraEmails].filter(Boolean);
           try {
             await sendEmail(env, {
               to: allRecipients,
@@ -167,14 +222,41 @@ export const onRequestPost = async ({ request, env }) => {
             await recordReminderSent(env, r.key, {
               projectId: r.projectId,
               kind: r.kind,
-              writerEmail: r.writer.email,
+              recipientEmail: recipient.email,
               sentAt: now.toISOString(),
             });
-            result.writerReminders.sent++;
+            if (r.editor) result.editorReminders.sent++;
+            else result.writerReminders.sent++;
           } catch (err) {
-            result.writerReminders.errors.push({
+            const target = r.editor ? result.editorReminders : result.writerReminders;
+            target.errors.push({
               projectId: r.projectId,
-              writerEmail: r.writer.email,
+              recipientEmail: recipient.email,
+              error: err?.message || String(err),
+            });
+          }
+        }
+
+        // Send bundled. Each bundled email represents 2+ keys; stamp them all
+        // as sent so the cooldown applies per-(project, kind) the same way.
+        for (const b of builtBundled) {
+          try {
+            await sendEmail(env, {
+              to: [b.recipient.email],
+              subject: b.subject,
+              html: b.html,
+              replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+            });
+            for (const key of b.keys) {
+              await recordReminderSent(env, key, {
+                bundledFor: b.recipient.email,
+                sentAt: now.toISOString(),
+              });
+            }
+            result.bundled.sent++;
+          } catch (err) {
+            result.bundled.errors.push({
+              recipientEmail: b.recipient.email,
               error: err?.message || String(err),
             });
           }
@@ -198,7 +280,9 @@ export const onRequestPost = async ({ request, env }) => {
 
     if (shouldRunDigest) {
       const rows = computeAdminDigest({ projects, users, now });
-      const { subject, html } = adminDigestEmail({ rows, now, siteUrl });
+      const adminTasks = computeAdminTasks({ projects, users, now });
+      const { subject, html } = adminDigestEmail({ rows, adminTasks, now, siteUrl });
+      result.adminDigest.adminTasks = adminTasks;
       const adminRecipients = Array.isArray(body.adminEmails) && body.adminEmails.length
         ? body.adminEmails
         : DEFAULT_ADMIN_RECIPIENTS;

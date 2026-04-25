@@ -4,6 +4,41 @@
 // ===============================
 
 /**
+ * Fire an editorial event to the bot endpoint. Best-effort: the dashboard
+ * action that triggered this has already succeeded — we never want a flaky
+ * email send to break the user-visible flow. Errors are logged, not thrown.
+ *
+ * Idempotency lives on the server (bot_event_notify_log/{projectId}_{type})
+ * so re-firing the same event is a no-op.
+ */
+async function notifyEditorialEvent(type, projectId) {
+    try {
+        if (!firebase || !firebase.auth) return;
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            console.warn('[NOTIFY] No signed-in user, skipping notify');
+            return;
+        }
+        const token = await user.getIdToken();
+        const res = await fetch('/api/notify/event', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ type, projectId }),
+        });
+        const text = await res.text();
+        console.log(`[NOTIFY] ${type} ${projectId} → ${res.status}: ${text.slice(0, 200)}`);
+    } catch (err) {
+        // Non-fatal. The Firestore write that this notification accompanies
+        // has already happened; the daily bot will eventually catch anything
+        // we missed here.
+        console.warn(`[NOTIFY] ${type} ${projectId} failed:`, err?.message || err);
+    }
+}
+
+/**
  * Handle setting deadlines (backup function)
  * Primary implementation is in deadlineFixes_APPLY.js
  */
@@ -599,13 +634,19 @@ async function handleTaskCompletion(projectId, taskName, isCompleted, db, userNa
         console.log('[TASK COMPLETION] Update data:', updateData);
         
         await db.collection('projects').doc(projectId).update(updateData);
-        
+
         showNotification(
             isCompleted ? `Task "${taskName}" marked as complete!` : `Task "${taskName}" unmarked.`,
             'success'
         );
-        
+
         console.log('[TASK COMPLETION] Task updated successfully');
+
+        // Editorial bot: when writing finishes, admins need to assign an editor.
+        // Idempotent on the server, so re-checking the box won't spam.
+        if (isCompleted && taskName === 'Article Writing Complete') {
+            notifyEditorialEvent('writing-complete', projectId);
+        }
     } catch (error) {
         console.error('[TASK COMPLETION ERROR] Failed to update task:', error);
         console.error('[TASK COMPLETION ERROR] Error code:', error.code);

@@ -215,11 +215,17 @@ async function handleAssignEditor() {
         });
 
         showNotification(
-            isReassignment 
-                ? `Editor reassigned to ${editor.name} successfully!` 
-                : `Editor ${editor.name} assigned successfully!`, 
+            isReassignment
+                ? `Editor reassigned to ${editor.name} successfully!`
+                : `Editor ${editor.name} assigned successfully!`,
             'success'
         );
+
+        // Editorial bot: tell the editor they've been assigned. Idempotent
+        // per (project, editor) pair on the server, so reassignments still
+        // notify the new editor but reassigning back to a previous editor
+        // will not double-notify them.
+        notifyEditorialEvent('editor-assigned', currentlyViewedProjectId);
     } catch (error) {
         console.error('[ERROR] Failed to assign editor:', error);
         showNotification('Failed to assign editor. Please try again.', 'error');
@@ -4733,6 +4739,9 @@ async function handleProjectFormSubmit(e) {
         console.log('[PROJECT SUBMIT] Adding document to Firestore...');
         const docRef = await db.collection('projects').add(projectData);
         console.log('[PROJECT SUBMIT] ✅ Document added successfully! ID:', docRef.id);
+
+        // Editorial bot: notify admins so they can review the new proposal.
+        notifyEditorialEvent('proposal-pending', docRef.id);
 
         const nowSeconds = Math.floor(Date.now() / 1000);
         const localProject = {

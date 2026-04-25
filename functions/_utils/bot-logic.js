@@ -15,9 +15,10 @@
 
 // ─── Tunables ────────────────────────────────────────────────────────────────
 
-export const DEADLINE_WARN_DAYS = [3, 1];   // fire reminder at 3d and 1d before deadline
-export const IDLE_DAYS_THRESHOLD = 10;      // days of no activity → idle nudge
-export const REMINDER_COOLDOWN_DAYS = 7;    // don't re-nag the same kind within this window
+export const DEADLINE_WARN_DAYS = [3, 1];        // fire reminder at 3d and 1d before deadline
+export const IDLE_DAYS_THRESHOLD = 10;           // writer: days of no activity → idle nudge
+export const EDITOR_IDLE_DAYS_THRESHOLD = 5;     // editor: faster — they should respond quickly
+export const REMINDER_COOLDOWN_DAYS = 7;         // don't re-nag the same kind within this window
 export const BOT_REMINDER_EXEMPTION_TIMEZONE = "America/New_York";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -627,4 +628,256 @@ function flagLine(p, { short = false } = {}) {
       : `Your topic proposal is still waiting on approval — we'll get it looked at.`);
   }
   return parts.join(" ");
+}
+
+// ─── Editor reminders ────────────────────────────────────────────────────────
+//
+// Editors get nudged when a story is sitting in their court (writing complete,
+// editor assigned, but Review Complete not yet checked) and either:
+//   - it's been quiet for 5+ days (editor-idle), or
+//   - the publication deadline is 3d/1d away and review still isn't done.
+//
+// Same cooldown + exemption rules as writer reminders.
+
+export function editorFor(project, users) {
+  if (!project.editorId && !project.editorEmail && !project.editorName) return null;
+  const match = findUser(users, {
+    uid: project.editorId,
+    name: project.editorName,
+    email: project.editorEmail,
+  });
+  if (match && !match.email && project.editorEmail) {
+    return { ...match, email: project.editorEmail };
+  }
+  if (!match && project.editorEmail) {
+    return {
+      id: project.editorId || null,
+      name: project.editorName || project.editorEmail,
+      email: project.editorEmail,
+    };
+  }
+  return match;
+}
+
+// A project is "in the editor's court" when writing is complete, an editor is
+// assigned, and the editor's review hasn't been marked complete yet.
+function isAwaitingEditorReview(project) {
+  const tl = project.timeline || {};
+  return !!project.editorId
+    && !!tl["Article Writing Complete"]
+    && !tl["Review Complete"];
+}
+
+export function computeEditorReminders({ projects, users, reminderLog = {}, now }) {
+  const out = [];
+  const skipped = [];
+
+  const record = (projectId, projectTitle, reason, extra = {}) => {
+    skipped.push({ projectId, projectTitle, reason, ...extra });
+  };
+
+  for (const project of projects) {
+    const title = project.title || "(untitled)";
+
+    if (isProjectComplete(project)) continue;
+    if (!isAwaitingEditorReview(project)) continue;
+
+    const editor = editorFor(project, users);
+    if (!editor) {
+      record(project.id, title, "editor-not-found", {
+        editorId: project.editorId || null,
+        editorName: project.editorName || null,
+      });
+      continue;
+    }
+    if (!editor.email) {
+      record(project.id, title, "editor-has-no-email", {
+        editorName: editor.name,
+        editorId: editor.id,
+      });
+      continue;
+    }
+
+    const exemption = activeBotReminderExemption(editor, now);
+    if (exemption) {
+      record(project.id, title, "editor-exempt", {
+        editorEmail: editor.email,
+        editorName: editor.name,
+        exemption,
+      });
+      continue;
+    }
+
+    let queuedForProject = false;
+
+    // ── Deadline reminders for the editor ──
+    const deadlineStr = publicationDeadline(project);
+    if (deadlineStr) {
+      const deadline = toDate(deadlineStr + (deadlineStr.includes("T") ? "" : "T23:59:59"));
+      if (deadline) {
+        const days = daysBetween(deadline, now);
+        if (days === 1 || days === 3) {
+          const key = `${project.id}:editor-deadline-${days}d`;
+          if (shouldSkipReminder(reminderLog, key, now)) {
+            record(project.id, title, "cooldown-active", {
+              kind: `editor-deadline-${days}d`,
+              editorEmail: editor.email,
+            });
+          } else {
+            out.push({
+              kind: "editor-deadline-soon",
+              key,
+              projectId: project.id,
+              project,
+              editor,
+              deadline,
+              daysSinceAssigned: days,
+            });
+            queuedForProject = true;
+          }
+        }
+      }
+    }
+
+    // ── Editor idle nudge ──
+    if (!queuedForProject) {
+      const inactive = daysInactive(project, now);
+      if (inactive == null) {
+        record(project.id, title, "no-activity-data", {
+          editorEmail: editor.email,
+          editorName: editor.name,
+        });
+      } else if (inactive < EDITOR_IDLE_DAYS_THRESHOLD) {
+        if (inactive >= 3) {
+          record(project.id, title, "not-idle-yet", {
+            daysInactive: inactive,
+            threshold: EDITOR_IDLE_DAYS_THRESHOLD,
+            editorEmail: editor.email,
+          });
+        }
+      } else {
+        const key = `${project.id}:editor-idle`;
+        if (shouldSkipReminder(reminderLog, key, now)) {
+          record(project.id, title, "cooldown-active", {
+            kind: "editor-idle",
+            daysInactive: inactive,
+            editorEmail: editor.email,
+          });
+        } else {
+          out.push({
+            kind: "editor-idle",
+            key,
+            projectId: project.id,
+            project,
+            editor,
+            daysInactive: inactive,
+          });
+        }
+      }
+    }
+  }
+
+  return { reminders: out, skipped };
+}
+
+// ─── Admin tasks (daily — bundled into the digest, no per-event spam) ────────
+//
+// Things that need an admin's hands-on attention. The instant events
+// (proposal-pending, writing-complete) cover the most common cases; this
+// catches anything that lingers (e.g. deadline-change requests sitting open).
+
+export function computeAdminTasks({ projects, users, now }) {
+  const tasks = [];
+
+  for (const project of projects) {
+    if (isProjectComplete(project)) continue;
+
+    const writer = writerFor(project, users);
+    const flags = [];
+
+    // Proposal still pending — caught here in case the instant email failed.
+    if (project.proposalStatus === "pending") {
+      const created = toDate(project.createdAt);
+      const ageDays = created ? daysBetween(now, created) : null;
+      flags.push({ kind: "proposal-pending", days: ageDays });
+    }
+
+    // Writing complete but no editor assigned — same safety-net.
+    const tl = project.timeline || {};
+    if (tl["Article Writing Complete"] && !project.editorId) {
+      flags.push({ kind: "needs-editor" });
+    }
+
+    // Deadline-change request open.
+    const dlReq = project.deadlineRequest || project.deadlineChangeRequest;
+    if (dlReq && dlReq.status === "pending") {
+      flags.push({ kind: "deadline-request-pending" });
+    }
+
+    if (flags.length) {
+      tasks.push({
+        projectId: project.id,
+        title: project.title || "(untitled)",
+        writerName: writer?.name || project.authorName || "Unknown",
+        deadline: publicationDeadline(project),
+        flags,
+      });
+    }
+  }
+
+  // Sort: needs-editor and deadline-request-pending bubble up.
+  tasks.sort((a, b) => {
+    const score = (t) => t.flags.some((f) => f.kind === "needs-editor") ? 0
+      : t.flags.some((f) => f.kind === "deadline-request-pending") ? 1
+      : 2;
+    return score(a) - score(b);
+  });
+
+  return tasks;
+}
+
+// ─── Per-recipient bundling (daily cap) ──────────────────────────────────────
+//
+// Takes the raw reminder list (writers + editors) and groups by recipient
+// email. If a person has only one item, return it as a single-shot reminder
+// to use the kind-specific template. If they have two or more, return a
+// bundled "you have N items" payload to avoid sending several emails to
+// the same person on the same day.
+
+export function groupRemindersByRecipient(reminders) {
+  const buckets = new Map();
+  for (const r of reminders) {
+    const recipient = r.writer || r.editor;
+    const email = recipient?.email;
+    if (!email) continue;
+    const key = email.toLowerCase();
+    if (!buckets.has(key)) {
+      buckets.set(key, { recipient, role: r.writer ? "writer" : "editor", items: [] });
+    }
+    buckets.get(key).items.push(r);
+  }
+
+  const single = [];
+  const bundled = [];
+  for (const bucket of buckets.values()) {
+    if (bucket.items.length === 1) {
+      single.push(bucket.items[0]);
+    } else {
+      bundled.push({
+        recipient: bucket.recipient,
+        role: bucket.role,
+        items: bucket.items.map((r) => ({
+          kind: r.kind,
+          projectId: r.projectId,
+          projectTitle: r.project?.title || "(untitled)",
+          deadline: r.deadline || null,
+          daysUntilDeadline: r.daysUntilDeadline || null,
+          daysInactive: r.daysInactive || null,
+        })),
+        // Carry every key so the run.js loop can stamp all of them as sent.
+        keys: bucket.items.map((r) => r.key),
+      });
+    }
+  }
+  return { single, bundled };
 }

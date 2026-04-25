@@ -215,13 +215,14 @@ function buildStatusBlock({ rows, tone }) {
 
 // ─── Admin Saturday digest ───────────────────────────────────────────────────
 
-export function adminDigestEmail({ rows, now, siteUrl }) {
+export function adminDigestEmail({ rows, adminTasks = [], now, siteUrl }) {
   const dateLabel = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   const totalProjects = rows.reduce((n, r) => n + r.projects.length, 0);
   const flaggedWriters = rows.filter((r) => r.projects.some((p) => p.flags.length)).length;
   const flaggedProjects = rows.reduce((n, r) => n + r.projects.filter((p) => p.flags.length).length, 0);
 
   const writerBlocks = rows.map((row) => renderWriterBlock(row, siteUrl)).join("");
+  const adminTasksBlock = renderAdminTasksBlock(adminTasks, siteUrl);
 
   const body = `
     <div style="text-align:left;">
@@ -240,8 +241,11 @@ export function adminDigestEmail({ rows, now, siteUrl }) {
         ${renderStat("Writers", String(rows.length))}
         ${renderStat("Active stories", String(totalProjects))}
         ${renderStat("Need attention", String(flaggedProjects), flaggedProjects > 0)}
+        ${renderStat("Admin tasks", String(adminTasks.length), adminTasks.length > 0)}
       </tr>
     </table>
+
+    ${adminTasksBlock}
 
     <div style="margin:32px 0 0 0;">
       ${writerBlocks || `<p style="color:${COLORS.muted};font-size:15px;">No active projects. Nice empty desk.</p>`}
@@ -252,7 +256,7 @@ export function adminDigestEmail({ rows, now, siteUrl }) {
     </p>
   `;
 
-  const subject = `Catalyst editorial briefing — ${now.toLocaleDateString("en-US", { month: "short", day: "numeric" })} (${flaggedWriters} writer${flaggedWriters === 1 ? "" : "s"} to nudge)`;
+  const subject = `Catalyst editorial briefing — ${now.toLocaleDateString("en-US", { month: "short", day: "numeric" })} (${flaggedWriters} writer${flaggedWriters === 1 ? "" : "s"} to nudge${adminTasks.length ? `, ${adminTasks.length} admin task${adminTasks.length === 1 ? "" : "s"}` : ""})`;
   const preheader = flaggedProjects
     ? `${flaggedProjects} stor${flaggedProjects === 1 ? "y" : "ies"} need attention. Copy-paste messages inside.`
     : `All ${totalProjects} stor${totalProjects === 1 ? "y is" : "ies are"} on track.`;
@@ -261,6 +265,53 @@ export function adminDigestEmail({ rows, now, siteUrl }) {
     subject,
     html: shell({ title: subject, preheader, body, siteUrl }),
   };
+}
+
+function renderAdminTasksBlock(tasks, siteUrl) {
+  if (!tasks || !tasks.length) return "";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/all`;
+
+  const taskRows = tasks.map((t) => {
+    const flagText = t.flags.map((f) => adminFlagLabel(f)).join(" · ");
+    return `
+      <div style="padding:14px 0;border-bottom:1px solid ${COLORS.hairline};">
+        <div style="font-size:15px;font-weight:600;color:${COLORS.ink};letter-spacing:-0.01em;line-height:1.4;">${escapeHtml(t.title)}</div>
+        <div style="margin-top:6px;font-size:13px;color:${COLORS.muted};line-height:1.5;">
+          <span>${escapeHtml(t.writerName)}</span>
+          <span style="color:${COLORS.hairline};"> &middot; </span>
+          <span>${escapeHtml(flagText)}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div style="margin:32px 0 0 0;border:1px solid #fcd9a8;border-radius:16px;overflow:hidden;background:${COLORS.alertBg};">
+      <div style="padding:14px 20px;border-bottom:1px solid #fcd9a8;">
+        <div style="font-size:18px;font-weight:700;color:${COLORS.alertInk};letter-spacing:-0.01em;">
+          ${tasks.length} task${tasks.length === 1 ? "" : "s"} for you
+        </div>
+        <div style="margin-top:4px;font-size:13px;color:${COLORS.alertInk};">
+          Action required from an admin
+        </div>
+      </div>
+      <div style="padding:4px 20px 8px 20px;background:#fff;">
+        ${taskRows}
+      </div>
+      <div style="padding:14px 20px 18px 20px;background:#fff;">
+        <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-weight:600;font-size:13px;">Open the pipeline</a>
+      </div>
+    </div>
+  `;
+}
+
+function adminFlagLabel(f) {
+  if (f.kind === "proposal-pending") {
+    return f.days != null ? `Proposal pending ${f.days}d` : "Proposal pending review";
+  }
+  if (f.kind === "needs-editor") return "Draft ready — needs editor";
+  if (f.kind === "deadline-request-pending") return "Deadline change request open";
+  return f.kind;
 }
 
 function renderStat(label, value, highlight = false) {
@@ -345,6 +396,315 @@ function renderCopyPasteBlock(msg, email) {
       ${mailto ? `<div style="margin-top:12px;"><a href="${escapeAttr(mailto)}" style="display:inline-block;background:#ffffff;color:#0b0b0d;text-decoration:none;padding:10px 20px;border-radius:980px;font-weight:600;font-size:13px;letter-spacing:-0.01em;">Open in email &rarr;</a></div>` : ""}
     </div>
   `;
+}
+
+// ─── Event-driven emails (instant, fired by dashboard actions) ───────────────
+
+// Sent to admins the moment a writer submits a new proposal.
+export function adminProposalPendingEmail({ project, author, siteUrl }) {
+  const projectTitle = project.title || "(untitled story)";
+  const authorName = author?.name || project.authorName || "Unknown writer";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/all`;
+  const proposalText = String(project.proposal || "").trim();
+  const proposalPreview = proposalText
+    ? truncate(proposalText, 600)
+    : "(no proposal text on file)";
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Type", value: project.type || "—" },
+      { label: "Writer", value: authorName },
+      project.deadline ? { label: "Requested deadline", value: fmtDate(project.deadline) } : null,
+    ].filter(Boolean),
+    tone: "info",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi team,
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      A new proposal needs review.
+    </p>
+
+    ${statusBlock}
+
+    <div style="margin:0 0 18px 0;border:1px solid ${COLORS.hairline};border-radius:6px;padding:14px 16px;background:#fafafa;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:8px;">Proposal</div>
+      <div style="font-size:14px;line-height:1.6;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(proposalPreview)}</div>
+    </div>
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      Please review and approve or reject the proposal so ${escapeHtml(authorName.split(/\s+/)[0])} can get started.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Review proposal</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      — Catalyst editorial bot
+    </p>
+  `;
+
+  const subject = `New proposal needs review: "${truncate(projectTitle, 50)}"`;
+  const preheader = `${authorName} submitted a proposal for review.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// Sent to admins the moment a writer marks "Article Writing Complete" — admins
+// need to assign an editor.
+export function adminWritingCompleteEmail({ project, author, siteUrl }) {
+  const projectTitle = project.title || "(untitled story)";
+  const authorName = author?.name || project.authorName || "Unknown writer";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/all`;
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Type", value: project.type || "—" },
+      { label: "Writer", value: authorName },
+      project.deadline ? { label: "Publication deadline", value: fmtDate(project.deadline) } : null,
+    ].filter(Boolean),
+    tone: "alert",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi team,
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      A draft is ready — please assign an editor.
+    </p>
+
+    ${statusBlock}
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      ${escapeHtml(authorName)} just marked their writing complete on "${escapeHtml(projectTitle)}." It needs an editor before review can start.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Assign an editor</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      — Catalyst editorial bot
+    </p>
+  `;
+
+  const subject = `Draft ready, needs editor: "${truncate(projectTitle, 50)}"`;
+  const preheader = `${authorName} finished writing — assign an editor.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// Sent to the editor the moment they're assigned to a story.
+export function editorAssignedEmail({ project, editor, author, siteUrl }) {
+  const firstName = (editor.name || editor.email || "there").split(/\s+/)[0];
+  const projectTitle = project.title || "(untitled story)";
+  const authorName = author?.name || project.authorName || "the writer";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
+  const deadline = project.deadlines?.publication || project.deadline || null;
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Type", value: project.type || "—" },
+      { label: "Writer", value: authorName },
+      deadline ? { label: "Publication deadline", value: fmtDate(deadline) } : null,
+    ].filter(Boolean),
+    tone: "info",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      You've been assigned to edit a story.
+    </p>
+
+    ${statusBlock}
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      You're the editor for "${escapeHtml(projectTitle)}" by ${escapeHtml(authorName)}. The draft is in the pipeline — please open it, read through, and leave your edits and comments.
+    </p>
+    <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      When you're done, mark "Review Complete" so ${escapeHtml(authorName.split(/\s+/)[0])} knows to look at your feedback.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the story</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = `You're the editor for "${truncate(projectTitle, 50)}"`;
+  const preheader = `New editing assignment from The Catalyst.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// ─── Editor reminders (daily bot) ────────────────────────────────────────────
+//
+// Editors get nudged when a story they own has been sitting in their court
+// without a "Review Complete" mark. Distinct from writer reminders because the
+// thing they need to *do* is different.
+
+export function editorReminderEmail({ kind, editor, project, deadline, daysSinceAssigned, daysInactive, siteUrl }) {
+  const firstName = (editor.name || editor.email || "there").split(/\s+/)[0];
+  const projectTitle = project.title || "(untitled story)";
+  const authorName = project.authorName || "the writer";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
+
+  let headline, paragraphs, statusRows, statusTone;
+  if (kind === "editor-idle") {
+    headline = `Your edit on "${projectTitle}" is waiting.`;
+    paragraphs = [
+      `It's been ${daysInactive} days since there's been activity on "${projectTitle}" — and you're the assigned editor. ${authorName}'s draft needs your review.`,
+      `Please open the story, leave your comments, and mark "Review Complete" when you're done. If something's blocking you, reply to this email.`,
+    ];
+    statusRows = [
+      { label: "Story", value: projectTitle },
+      { label: "Writer", value: authorName },
+      { label: "Last activity", value: `${daysInactive} days ago` },
+      deadline ? { label: "Publication deadline", value: fmtDate(deadline) } : null,
+    ].filter(Boolean);
+    statusTone = "alert";
+  } else if (kind === "editor-deadline-soon") {
+    const dText = daysSinceAssigned == null
+      ? "soon"
+      : `in ${daysSinceAssigned} day${daysSinceAssigned === 1 ? "" : "s"}`;
+    headline = `Edit due ${dText}: "${projectTitle}"`;
+    paragraphs = [
+      `The publication deadline for "${projectTitle}" is ${dText}. As the editor, your review needs to be done before then.`,
+      `Please get your edits in soon and mark "Review Complete" when finished.`,
+    ];
+    statusRows = [
+      { label: "Story", value: projectTitle },
+      { label: "Writer", value: authorName },
+      { label: "Publication deadline", value: fmtDate(deadline) },
+    ];
+    statusTone = "alert";
+  } else {
+    headline = `Quick check-in on "${projectTitle}"`;
+    paragraphs = [`See details below, and reply if anything's blocking you.`];
+    statusRows = [{ label: "Story", value: projectTitle }];
+    statusTone = "info";
+  }
+
+  const statusBlock = buildStatusBlock({ rows: statusRows, tone: statusTone });
+  const paragraphHtml = paragraphs.map((p, i) => `
+    <p style="margin:${i === 0 ? "0" : "14"}px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      ${escapeHtml(p)}
+    </p>
+  `).join("");
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(headline)}
+    </p>
+
+    ${statusBlock}
+
+    ${paragraphHtml}
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the story</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = kind === "editor-idle"
+    ? `${daysInactive}d no activity (editor): "${truncate(projectTitle, 40)}"`
+    : `Edit due soon: "${truncate(projectTitle, 50)}"`;
+  const preheader = kind === "editor-idle"
+    ? `${daysInactive} days of editor inactivity. Please review.`
+    : `Editor review needed before deadline.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// ─── Bundled multi-project reminder (daily cap) ──────────────────────────────
+//
+// When one person would receive multiple reminder emails on the same day,
+// merge them into one to avoid spam. Used for both writers and editors.
+
+export function bundledReminderEmail({ recipient, role, items, siteUrl }) {
+  const firstName = (recipient.name || recipient.email || "there").split(/\s+/)[0];
+  const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
+  const count = items.length;
+
+  const headline = role === "editor"
+    ? `${count} stories need your editing attention.`
+    : `${count} of your stories need an update.`;
+
+  const itemRows = items.map((item) => {
+    const label = bundledItemLabel(item);
+    return `
+      <div style="padding:14px 0;border-bottom:1px solid ${COLORS.hairline};">
+        <div style="font-size:15px;font-weight:600;color:${COLORS.ink};letter-spacing:-0.01em;line-height:1.4;">${escapeHtml(item.projectTitle)}</div>
+        <div style="margin-top:6px;font-size:13px;color:${COLORS.muted};line-height:1.5;">${escapeHtml(label)}</div>
+      </div>
+    `;
+  }).join("");
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(headline)}
+    </p>
+
+    <div style="margin:18px 0 0 0;border:1px solid ${COLORS.hairline};border-radius:6px;padding:4px 16px 8px 16px;">
+      ${itemRows}
+    </div>
+
+    <p style="margin:18px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      Open the pipeline to update each story. Reply to this email if anything's blocking you.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the pipeline</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = role === "editor"
+    ? `${count} stories need editor review`
+    : `${count} of your stories need an update`;
+  const preheader = `${count} item${count === 1 ? "" : "s"} from The Catalyst editorial pipeline.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+function bundledItemLabel(item) {
+  if (item.kind === "deadline-overdue") {
+    const d = Math.abs(item.daysUntilDeadline || 0);
+    return `Past due by ${d} day${d === 1 ? "" : "s"}`;
+  }
+  if (item.kind === "deadline-1d") return `Due tomorrow`;
+  if (item.kind === "deadline-3d") return `Due in ${item.daysUntilDeadline} days`;
+  if (item.kind === "idle") return `${item.daysInactive} days with no activity`;
+  if (item.kind === "editor-idle") return `Editor: ${item.daysInactive} days idle, awaiting your review`;
+  if (item.kind === "editor-deadline-soon") return `Editor: deadline approaching`;
+  return item.kind;
 }
 
 // ─── Utils ───────────────────────────────────────────────────────────────────
