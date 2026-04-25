@@ -314,7 +314,7 @@ async function firestoreAdd(authedFetch, collection, fields) {
 // Designs are composed in 1080×1080 logical pixels, then exported at 2× for
 // sharper Instagram files without changing the visible layout.
 const SOCIAL_POST_CANVAS_SIZE = 1080;
-const SOCIAL_POST_EXPORT_SCALE = 2;
+const SOCIAL_POST_EXPORT_SCALE = 3;
 const SOCIAL_POST_EXPORT_SIZE = SOCIAL_POST_CANVAS_SIZE * SOCIAL_POST_EXPORT_SCALE;
 const SOCIAL_POST_SOURCE_SIZE = 4096;
 
@@ -330,13 +330,20 @@ function createSocialPostCanvas(size = SOCIAL_POST_CANVAS_SIZE) {
 function highResolutionCoverImageUrl(imageUrl) {
   try {
     const u = new URL(imageUrl);
-    // Firebase Storage / GCS download URLs already point at the uploaded object,
-    // so keep them untouched. Wix needs an explicit high-res rendition URL.
-    if (!u.hostname.includes("static.wixstatic.com")) return imageUrl;
-    const v1 = u.pathname.indexOf("/v1/");
-    const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
-    const fname = assetPath.split("/").filter(Boolean).pop();
-    return `${u.origin}${assetPath}/v1/fill/w_${SOCIAL_POST_SOURCE_SIZE},h_${SOCIAL_POST_SOURCE_SIZE},al_c,q_100,usm_0.66_1.00_0.00,enc_jpg/${fname}`;
+    // Wix CDN — rewrite to explicit 4096px rendition.
+    if (u.hostname.includes("static.wixstatic.com")) {
+      const v1 = u.pathname.indexOf("/v1/");
+      const assetPath = v1 >= 0 ? u.pathname.slice(0, v1) : u.pathname;
+      const fname = assetPath.split("/").filter(Boolean).pop();
+      return `${u.origin}${assetPath}/v1/fill/w_${SOCIAL_POST_SOURCE_SIZE},h_${SOCIAL_POST_SOURCE_SIZE},al_c,q_100,usm_0.66_1.00_0.00,enc_jpg/${fname}`;
+    }
+    // Firebase Storage — strip any width/height/size query params that cap resolution.
+    // The token and alt params are safe to keep; w= and size= must go.
+    if (u.hostname.includes("firebasestorage.googleapis.com") || u.hostname.includes("storage.googleapis.com")) {
+      ["w", "h", "width", "height", "size", "maxwidth", "maxheight"].forEach((k) => u.searchParams.delete(k));
+      return u.toString();
+    }
+    return imageUrl;
   } catch {
     return imageUrl;
   }
@@ -586,7 +593,6 @@ async function loadLogo() {
 async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageScale = 1 }) {
   const SIZE = SOCIAL_POST_CANVAS_SIZE;
   const { canvas, ctx } = createSocialPostCanvas(SIZE);
-  const isBeautiful = titleStyle === "beautiful";
 
   // ── Cover photo ────────────────────────────────────────────────────────────
   // Dark base — always painted first so we have a fallback.
@@ -603,126 +609,6 @@ async function renderCover({ title, coverImageUrl, titleStyle = "bold", imageSca
     } catch (err) {
       console.warn("[generatePostImage] cover failed:", err.message);
     }
-  }
-
-  if (isBeautiful) {
-    if (coverImg) {
-      const iw = coverImg.naturalWidth, ih = coverImg.naturalHeight;
-      const scale = Math.max(SIZE / iw, SIZE / ih) * imageScale;
-      const dw = iw * scale, dh = ih * scale;
-      const dx = (SIZE - dw) / 2;
-      const dy = (SIZE - dh) / 2;
-
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(coverImg, dx, dy, dw, dh);
-
-      const wash = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-      wash.addColorStop(0, "rgba(4,10,24,0.42)");
-      wash.addColorStop(0.52, "rgba(4,10,24,0.58)");
-      wash.addColorStop(1, "rgba(4,10,24,0.92)");
-      ctx.fillStyle = wash;
-      ctx.fillRect(0, 0, SIZE, SIZE);
-    } else {
-      const fbGrad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-      fbGrad.addColorStop(0, "#182d54");
-      fbGrad.addColorStop(0.52, "#101b3d");
-      fbGrad.addColorStop(1, "#050b16");
-      ctx.fillStyle = fbGrad;
-      ctx.fillRect(0, 0, SIZE, SIZE);
-    }
-
-    const accent = "#8bd3ff";
-    ctx.save();
-    ctx.globalAlpha = 0.95;
-    ctx.strokeStyle = "rgba(255,255,255,0.10)";
-    ctx.lineWidth = 1.4;
-    for (let i = -6; i < 8; i++) {
-      const x = i * 180;
-      ctx.beginPath();
-      ctx.moveTo(x, SIZE + 60);
-      ctx.lineTo(x + 560, -60);
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    ctx.save();
-    ctx.globalCompositeOperation = "screen";
-    const glow = ctx.createRadialGradient(140, 120, 0, 140, 120, 560);
-    glow.addColorStop(0, "rgba(139,211,255,0.34)");
-    glow.addColorStop(1, "rgba(139,211,255,0)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, SIZE, SIZE);
-    ctx.restore();
-
-    const cachedLogo = await loadLogo();
-    const logoImg = cachedLogo || null;
-    const topX = 58;
-    const topY = 56;
-    if (logoImg) {
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(logoImg, topX, topY, 58, 58);
-    }
-    ctx.fillStyle = "rgba(255,255,255,0.86)";
-    ctx.font = `800 22px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0.12em";
-    ctx.textBaseline = "middle";
-    ctx.fillText("THE CATALYST", logoImg ? topX + 76 : topX, topY + 31);
-    if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
-
-    const label = "The question";
-    ctx.fillStyle = "rgba(255,255,255,0.13)";
-    ctx.beginPath();
-    ctx.roundRect(58, 190, 230, 54, 27);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.20)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = accent;
-    ctx.font = `800 21px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    ctx.textBaseline = "middle";
-    ctx.fillText(label.toUpperCase(), 84, 218);
-
-    const questionFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    const qFit = fitText(ctx, title || " ", {
-      font: questionFont,
-      startSize: 70,
-      minSize: 42,
-      maxWidth: SIZE - 116,
-      maxHeight: 470,
-      lineHeightMul: 1.05,
-    });
-
-    const panelX = 48;
-    const panelY = 300;
-    const panelW = SIZE - 96;
-    const panelH = Math.min(560, qFit.blockHeight + 146);
-    ctx.fillStyle = "rgba(5,11,24,0.48)";
-    ctx.beginPath();
-    ctx.roundRect(panelX, panelY, panelW, panelH, 34);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.18)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = questionFont(qFit.fontSize);
-    ctx.textBaseline = "alphabetic";
-    let qy = panelY + 74 + qFit.fontSize * 0.9;
-    for (const line of qFit.lines) {
-      ctx.fillText(line, panelX + 42, qy);
-      qy += qFit.lineHeight;
-    }
-
-    ctx.fillStyle = accent;
-    ctx.fillRect(panelX + 42, panelY + panelH - 58, 124, 6);
-
-    ctx.fillStyle = "rgba(255,255,255,0.78)";
-    ctx.font = `600 26px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    ctx.fillText("Swipe for the answer.", panelX + 42, panelY + panelH - 86);
-
-    return canvas.toDataURL("image/png");
   }
 
   // ── Figure out title metrics early — we need them to size the gradient ──────
@@ -1273,64 +1159,40 @@ async function renderHook(page) {
 }
 
 // ─── Beautiful carousel layout ───────────────────────────────────────────────
-// A more polished, designer-style content page for Instagram carousels. It
-// keeps the same text fields as the existing layouts, but adds bullet support
-// and richer visual hierarchy for pasted AI output.
+// Premium editorial design: rich gradient background, bold left accent bar,
+// large serif headline, clean bullet list with dot markers, CTA pill button.
 async function renderBeautiful(page) {
   const SIZE = SOCIAL_POST_CANVAS_SIZE;
   const { canvas, ctx } = createSocialPostCanvas(SIZE);
 
-  const bg = pickBg(page, "#101b3d");
-  const accent = (page.accent || "").trim() || shadeHex(bg, 86);
+  const bg = pickBg(page, "#0d1b2e");
   const ink = readableInk(bg);
   const isDark = ink === "#ffffff";
-  const softInk = isDark ? "rgba(255,255,255,0.78)" : "rgba(10,20,36,0.74)";
-  const panel = isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.72)";
-  const panelStroke = isDark ? "rgba(255,255,255,0.22)" : "rgba(10,20,36,0.12)";
 
-  paintColorBackground(ctx, SIZE, bg);
-
-  const diagonal = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-  diagonal.addColorStop(0, isDark ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.55)");
-  diagonal.addColorStop(0.45, "rgba(255,255,255,0)");
-  diagonal.addColorStop(1, isDark ? "rgba(0,0,0,0.22)" : "rgba(10,20,36,0.08)");
-  ctx.fillStyle = diagonal;
+  // ── Rich layered background ──────────────────────────────────────────────
+  // Deep gradient — slightly lighter at top-left, darker at bottom-right
+  const bgGrad = ctx.createLinearGradient(0, 0, SIZE * 0.7, SIZE);
+  bgGrad.addColorStop(0, shadeHex(bg, 28));
+  bgGrad.addColorStop(0.55, bg);
+  bgGrad.addColorStop(1, shadeHex(bg, -36));
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  ctx.save();
-  ctx.globalAlpha = 0.9;
-  ctx.strokeStyle = isDark ? "rgba(255,255,255,0.10)" : "rgba(10,20,36,0.08)";
-  ctx.lineWidth = 1.4;
-  for (let i = -5; i < 8; i++) {
-    const x = i * 170;
-    ctx.beginPath();
-    ctx.moveTo(x, SIZE + 40);
-    ctx.lineTo(x + 520, -40);
-    ctx.stroke();
-  }
-  ctx.restore();
+  // Subtle radial light bloom in top-right corner — adds depth without noise
+  const bloom = ctx.createRadialGradient(SIZE * 0.88, SIZE * 0.08, 0, SIZE * 0.88, SIZE * 0.08, SIZE * 0.62);
+  bloom.addColorStop(0, isDark ? "rgba(255,255,255,0.055)" : "rgba(0,0,0,0.035)");
+  bloom.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = bloom;
+  ctx.fillRect(0, 0, SIZE, SIZE);
 
-  ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.08)";
-  ctx.beginPath();
-  ctx.roundRect(54, 48, SIZE - 108, SIZE - 96, 38);
-  ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.16)";
-  ctx.lineWidth = 1.6;
-  ctx.stroke();
-  ctx.fillStyle = accent;
-  ctx.globalAlpha = 0.28;
-  ctx.beginPath();
-  ctx.roundRect(690, 72, 250, 76, 38);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.roundRect(72, 910, 330, 18, 9);
-  ctx.fill();
-  ctx.restore();
+  // Parse accent color — derive from bg if not explicitly set
+  const accent = page.accent || shadeHex(bg, 90);
+  const accentAlpha = isDark ? "rgba(255,255,255,0.92)" : "rgba(10,20,36,0.88)";
 
-  const pad = 74;
-  const maxW = SIZE - pad * 2;
-  const eyebrow = (page.eyebrow || "The Catalyst").trim();
+  const padL = 88;  // generous left margin
+  const padR = 72;
+  const maxW = SIZE - padL - padR;
+  const eyebrow = (page.eyebrow || "Key insight").trim();
   const headline = (page.headline || "").trim();
   const body = (page.body || "").trim();
   const bullets = normalizeBullets(page.bullets);
@@ -1339,135 +1201,154 @@ async function renderBeautiful(page) {
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
 
-  ctx.fillStyle = accent;
-  ctx.font = `800 24px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
-  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.13em";
-  ctx.fillText(eyebrow.toUpperCase(), pad, 104);
+  // ── Vertical left accent bar ─────────────────────────────────────────────
+  const barX = 56;
+  const barTop = 96;
+  const barBot = cta ? SIZE - 148 : SIZE - 112;
+  const barGrad = ctx.createLinearGradient(0, barTop, 0, barBot);
+  barGrad.addColorStop(0, isDark ? "rgba(255,255,255,0.90)" : "rgba(10,20,36,0.75)");
+  barGrad.addColorStop(0.5, isDark ? "rgba(255,255,255,0.55)" : "rgba(10,20,36,0.45)");
+  barGrad.addColorStop(1, isDark ? "rgba(255,255,255,0.10)" : "rgba(10,20,36,0.10)");
+  ctx.fillStyle = barGrad;
+  ctx.beginPath();
+  ctx.roundRect(barX, barTop, 5, barBot - barTop, 3);
+  ctx.fill();
+
+  // ── Eyebrow label ────────────────────────────────────────────────────────
+  await ensurePoppinsLoaded();
+  ctx.fillStyle = isDark ? "rgba(255,255,255,0.52)" : "rgba(10,20,36,0.44)";
+  ctx.font = `700 21px "Poppins", "Inter", "Helvetica Neue", Arial, sans-serif`;
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0.18em";
+  ctx.fillText(eyebrow.toUpperCase(), padL, 136);
   if ("letterSpacing" in ctx) ctx.letterSpacing = "0";
 
-  ctx.fillStyle = ink;
-  ctx.fillRect(pad, 132, 112, 5);
+  // Thin rule under eyebrow — only as wide as the text
+  const eyebrowW = ctx.measureText(eyebrow.toUpperCase()).width;
+  ctx.fillStyle = isDark ? "rgba(255,255,255,0.30)" : "rgba(10,20,36,0.22)";
+  ctx.fillRect(padL, 148, Math.min(eyebrowW + 20, 160), 2);
 
+  // ── Headline — large, bold, tight leading ────────────────────────────────
   const headlineFont = (sz) => `900 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
   const headFit = fitText(ctx, headline || " ", {
     font: headlineFont,
-    startSize: 74,
-    minSize: 42,
+    startSize: 88,
+    minSize: 44,
     maxWidth: maxW,
-    maxHeight: 300,
+    maxHeight: bullets.length ? 240 : (body ? 270 : 380),
     lineHeightMul: 1.06,
   });
 
   ctx.fillStyle = ink;
   ctx.font = headlineFont(headFit.fontSize);
-  let y = 194 + headFit.fontSize * 0.9;
+  let y = 196 + headFit.fontSize * 0.9;
   for (const line of headFit.lines) {
-    ctx.fillText(line, pad, y);
+    ctx.fillText(line, padL, y);
     y += headFit.lineHeight;
   }
 
+  // ── Body framing sentence ────────────────────────────────────────────────
   if (body) {
-    const bodyFont = (sz) => `500 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const bodyFont = (sz) => `400 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
     const bodyFit = fitText(ctx, body, {
       font: bodyFont,
-      startSize: 32,
+      startSize: 34,
       minSize: 24,
       maxWidth: maxW,
-      maxHeight: 150,
-      lineHeightMul: 1.38,
+      maxHeight: 120,
+      lineHeightMul: 1.45,
     });
-    ctx.fillStyle = softInk;
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.72)" : "rgba(10,20,36,0.64)";
     ctx.font = bodyFont(bodyFit.fontSize);
-    y += 22;
+    y += 28;
     for (const line of bodyFit.lines) {
-      ctx.fillText(line, pad, y);
+      ctx.fillText(line, padL, y);
       y += bodyFit.lineHeight;
     }
   }
 
-  const bulletTop = 560;
-  const bulletAreaBottom = cta ? 850 : 930;
-  const availableH = Math.max(180, bulletAreaBottom - bulletTop);
-  const rowGap = 14;
-  const rowH = bullets.length
-    ? Math.min(104, Math.max(56, (availableH - rowGap * (bullets.length - 1)) / bullets.length))
-    : 0;
+  // ── Bullet points — clean dots + medium weight text ──────────────────────
+  if (bullets.length) {
+    const bulletFontFn = (sz) => `500 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    // Measure max bullet width to choose a font size that fits all items
+    const longestBullet = bullets.reduce((a, b) => (a.length > b.length ? a : b), "");
+    const bulletFit = fitText(ctx, longestBullet, {
+      font: bulletFontFn,
+      startSize: 36,
+      minSize: 24,
+      maxWidth: maxW - 28, // indent for dot
+      maxHeight: 58,
+      lineHeightMul: 1,
+    });
+    const bFontSz = bulletFit.fontSize;
+    const bLineH = bFontSz * 1.72;
 
-  bullets.forEach((item, idx) => {
-    const top = bulletTop + idx * (rowH + rowGap);
-    const rowGrad = ctx.createLinearGradient(pad, top, pad + maxW, top + rowH);
-    rowGrad.addColorStop(0, panel);
-    rowGrad.addColorStop(1, isDark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.44)");
-    ctx.fillStyle = rowGrad;
-    ctx.beginPath();
-    ctx.roundRect(pad, top, maxW, rowH, 24);
-    ctx.fill();
-    ctx.strokeStyle = panelStroke;
+    // Start bullets at least 48px below headline/body, and no higher than 520px
+    let by = Math.max(y + 48, 520);
+
+    // Horizontal separator before bullets
+    ctx.save();
+    const sepGrad = ctx.createLinearGradient(padL, 0, padL + maxW, 0);
+    sepGrad.addColorStop(0, isDark ? "rgba(255,255,255,0.35)" : "rgba(10,20,36,0.28)");
+    sepGrad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.strokeStyle = sepGrad;
     ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(padL, by - 20);
+    ctx.lineTo(padL + maxW, by - 20);
     ctx.stroke();
+    ctx.restore();
 
-    const numX = pad + 32;
-    const numY = top + rowH / 2;
-    ctx.fillStyle = accent;
-    ctx.beginPath();
-    ctx.arc(numX, numY, 20, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.font = bulletFontFn(bFontSz);
+    for (const item of bullets) {
+      // Dot marker
+      const dotR = 5;
+      const dotX = padL + 4;
+      const dotY = by - bFontSz * 0.32;
+      ctx.fillStyle = isDark ? "rgba(255,255,255,0.70)" : "rgba(10,20,36,0.55)";
+      ctx.beginPath();
+      ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.fillStyle = isDark ? "#07111f" : "#ffffff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `800 17px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    ctx.fillText(String(idx + 1).padStart(2, "0"), numX, numY + 1);
-
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-    const bulletFont = (sz) => `700 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    const bulletFit = fitText(ctx, item, {
-      font: bulletFont,
-      startSize: 28,
-      minSize: 20,
-      maxWidth: maxW - 104,
-      maxHeight: rowH - 24,
-      lineHeightMul: 1.18,
-    });
-    ctx.fillStyle = ink;
-    ctx.font = bulletFont(bulletFit.fontSize);
-    let by = top + (rowH - bulletFit.blockHeight) / 2 + bulletFit.fontSize * 0.85;
-    for (const line of bulletFit.lines) {
-      ctx.fillText(line, pad + 78, by);
-      by += bulletFit.lineHeight;
-    }
-  });
-
-  if (cta) {
-    const ctaY = 900;
-    ctx.fillStyle = accent;
-    ctx.beginPath();
-    ctx.roundRect(pad, ctaY, maxW, 74, 37);
-    ctx.fill();
-
-    const ctaFont = (sz) => `800 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
-    const ctaFit = fitText(ctx, cta, {
-      font: ctaFont,
-      startSize: 25,
-      minSize: 18,
-      maxWidth: maxW - 64,
-      maxHeight: 48,
-      lineHeightMul: 1.14,
-    });
-    ctx.fillStyle = isDark ? "#07111f" : "#ffffff";
-    ctx.font = ctaFont(ctaFit.fontSize);
-    let cy = ctaY + (74 - ctaFit.blockHeight) / 2 + ctaFit.fontSize * 0.85;
-    for (const line of ctaFit.lines) {
-      ctx.fillText(line, pad + 32, cy);
-      cy += ctaFit.lineHeight;
+      // Bullet text
+      ctx.fillStyle = isDark ? "rgba(255,255,255,0.93)" : "rgba(10,20,36,0.90)";
+      ctx.fillText(item, padL + 22, by);
+      by += bLineH;
     }
   }
 
-  await drawCatalystWordmark(ctx, SIZE, {
-    color: isDark ? "rgba(255,255,255,0.58)" : "rgba(10,20,36,0.50)",
-    bottomPad: 38,
-  });
+  // ── CTA pill at bottom ────────────────────────────────────────────────────
+  if (cta) {
+    const ctaFontFn = (sz) => `700 ${sz}px "Inter", "Helvetica Neue", Arial, sans-serif`;
+    const ctaFit = fitText(ctx, cta, {
+      font: ctaFontFn,
+      startSize: 28,
+      minSize: 20,
+      maxWidth: maxW - 48,
+      maxHeight: 42,
+      lineHeightMul: 1,
+    });
+    const pillH = 64;
+    const pillY = SIZE - 130 - pillH / 2;
+    const pillW = Math.min(maxW, ctx.measureText(cta).width + 80);
+    const pillX = padL;
+
+    // Pill background — semi-opaque tinted white/dark
+    ctx.save();
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(10,20,36,0.10)";
+    ctx.strokeStyle = isDark ? "rgba(255,255,255,0.36)" : "rgba(10,20,36,0.30)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY - pillH / 2, pillW, pillH, pillH / 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.fillStyle = isDark ? "rgba(255,255,255,0.96)" : "rgba(10,20,36,0.94)";
+    ctx.font = ctaFontFn(ctaFit.fontSize);
+    ctx.fillText(ctaFit.lines[0] || cta, pillX + 28, pillY + ctaFit.fontSize * 0.36);
+  }
+
+  await drawCatalystWordmark(ctx, SIZE, { color: wordmarkColorFor(bg) });
 
   return canvas.toDataURL("image/png");
 }
@@ -2249,7 +2130,7 @@ async function mountSocialPosts(ctx, container) {
           <select class="input select" data-bind="titleStyle" style="margin-top:6px;width:100%;">
             <option value="bold"    ${page.titleStyle === "bold"    ? "selected" : ""}>Bold — strong & punchy</option>
             <option value="elegant" ${page.titleStyle === "elegant" ? "selected" : ""}>Elegant — editorial serif</option>
-            <option value="beautiful" ${page.titleStyle === "beautiful" ? "selected" : ""}>Beautiful — designer carousel</option>
+            <option value="beautiful" ${page.titleStyle === "beautiful" ? "selected" : ""}>Beautiful — question + bullets</option>
           </select>
         </label>
         ${page.titleStyle === "beautiful" ? `
@@ -2323,8 +2204,7 @@ async function mountSocialPosts(ctx, container) {
           <textarea class="input textarea" data-bind="cta" rows="2"
             style="margin-top:6px;width:100%;font-size:13px;">${esc(page.cta || "")}</textarea>
         </label>
-        ${colorPickerHtml(page.bg, "#101b3d")}
-        ${colorPickerHtml(page.accent, "#8bd3ff", "Accent color", "accent")}`;
+        ${colorPickerHtml(page.bg, "#101b3d")}`;
     } else if (page.layout === "quote") {
       body = `
         <label style="font-size:13px;font-weight:600;">Quote / body
@@ -2571,7 +2451,7 @@ async function mountSocialPosts(ctx, container) {
     }
 
     if (carouselTheme === "beautiful") {
-      return `You are designing a premium Instagram carousel for The Catalyst Magazine. Use the BEAUTIFUL carousel theme: professional magazine-design pages with strong hierarchy, short bullet points, elegant pacing, and no clutter.
+      return `You are designing a premium Instagram carousel for The Catalyst Magazine. Use the BEAUTIFUL theme — a high-end editorial layout with a bold left accent bar, large headline, a single framing sentence, and clean bullet points. Each slide should look like it came from a professional magazine designer, not a template.
 
 ABSOLUTE RULE: do NOT use ANY emojis anywhere in your output. No emoji in the caption. No emoji in any page. No emoji in hashtags. Plain text only.
 
@@ -2586,65 +2466,71 @@ Article URL: https://www.catalyst-magazine.com
 Return ONLY the blocks below. No preamble, no markdown headers, no commentary.
 
 First, the caption block:
-cover_question: <a curiosity-driving cover question in the style "Topic: Question?" Use the article topic before the colon, then a question the article answers. Examples: "Dopamine & Learning: Does dopamine actually make tasks easier?" or "Food Security: Can machine learning protect the food safety net for 40 million Americans?">
-caption: <the full Instagram caption, 3-5 short paragraphs separated by \\n\\n; engaging hook in paragraph 1; tight summary of the article's most interesting idea; ends with this exact closing paragraph: Read more by ${author} at catalyst-magazine.com — link in bio.> Then a final \\n\\n line of 4-7 relevant hashtags including #TheCatalyst and #CatalystMagazine. NO EMOJIS anywhere.
+cover_question: <a curiosity-driving cover question in the style "Topic: Question?" Use the article topic before the colon, then a question the article answers. Examples: "Dopamine & Learning: Does dopamine actually make tasks easier?" or "Food Security: Can machine learning protect the food safety net for 40 million Americans?" or "The Science of Effort: Does mindless scrolling actually drain your motivation battery?">
+caption: <the full Instagram caption, 3-5 short paragraphs separated by \\n\\n; first paragraph opens with a striking question or fact that makes someone stop mid-scroll; second paragraph unpacks the article's most surprising or counter-intuitive idea; third paragraph explains why it matters right now; final paragraph is exactly: Read more by ${author} at catalyst-magazine.com — link in bio.> Then a blank line and 4-7 relevant hashtags including #TheCatalyst and #CatalystMagazine. NO EMOJIS anywhere.
 
 Then a single line of exactly three dashes: ---
 
-Then 3 to 5 BEAUTIFUL page blocks. Each page block must use exactly this layout:
+Then 3 to 5 BEAUTIFUL page blocks, each separated by ---. Each block uses exactly these keys:
 
 layout: beautiful
-eyebrow: <1-3 word section label, such as Key insight, The stakes, Why it matters, What changed, Read next>
-headline: <6-12 words, precise and scroll-stopping>
-body: <1 short sentence that frames the page>
-bullets: <2-4 short bullet points separated by " | " on one line>
-cta: <only on the final page; otherwise leave blank or omit>
+eyebrow: <1-3 word label that names the slide's role. Use varied, specific labels: The hook, Key insight, The stakes, Hard truth, The shift, Why now, What changed, The science, Read next>
+headline: <7-12 words. Bold, precise, scroll-stopping. End with a period or question mark. No generic words like "important" or "interesting". Make it concrete — name a number, a reversal, a consequence, or a discovery.>
+body: <exactly 1 sentence, 15-30 words. Sets up the bullet points. Specific and direct — avoid vague filler phrases like "this article explores" or "here is why.">
+bullets: <3-4 bullet points separated by " | ". Each bullet is 4-10 words. Concrete: use facts, named people, statistics, contrasts, or consequences. No full sentences. No vague placeholders.>
+cta: <leave blank on all pages except the last. On the last page, write exactly: Read "${title}" by ${author}. Link in bio.>
 bg: <hex color>
-accent: <hex color>
 
-Do NOT include a cover page block — one is added automatically. You MUST provide cover_question above so the cover becomes an irresistible question, not just the article title.
+Do NOT include a cover page — one is added automatically. You MUST provide cover_question so the cover becomes an irresistible question.
 Do NOT include a closing page — one is added automatically.
 Do NOT use emojis anywhere.
 
-── BEAUTIFUL THEME COPY RULES ──
-• Keep every page visually scannable: one headline, one framing sentence, then 2-4 short bullet points.
-• Bullets must be concrete and varied: use facts, contrasts, names, consequences, or "why it matters" points.
-• Bullet text should be 3-9 words each. No full paragraphs in bullets.
-• The final page must include a cta line exactly like: Read "${title}" by ${author}. Link in bio.
-• Use accent colors that harmonize with the cover. Do not make every page the exact same color unless the article needs a very restrained look.
-• Make it feel like a professional Instagram designer made it: crisp, editorial, modern, premium, and readable.
+── VISUAL DESIGN CONTEXT ──
+Each BEAUTIFUL slide renders with: a rich gradient background in the chosen bg color, a vertical accent bar on the left edge, the eyebrow label in small caps at the top, the headline in heavy bold type below it, the body sentence in lighter weight underneath, then bullet points with dot markers. The last slide shows a pill-shaped CTA button. Design your copy with this visual hierarchy in mind — short eyebrow, punchy headline, tight body, scannable bullets.
+
+── COPY STANDARDS ──
+• Headline: never start with "The" three times in a row across slides. Vary the sentence structure.
+• Bullets: must feel like a listicle a smart reader would screenshot. Each one should either surprise, inform, or challenge the reader.
+• Body: acts as a bridge between the headline and bullets — do not repeat the headline.
+• CTA: only on the final page. No CTA on middle pages.
+• Tone: confident, curious, precise. Never hype. Never vague. Write like a science journalist, not a social media manager.
 ${colorGuidance}
 
-── NARRATIVE ARC ──
-1. COVER QUESTION: ask the precise question the article answers.
-2. BEAUTIFUL INTRO: start answering the question and make the topic feel important now.
-3. BEAUTIFUL STAKES: show the tension, surprise, or problem.
-4. BEAUTIFUL DETAILS: use bullets to unpack the most interesting mechanism, discovery, person, or example.
-5. BEAUTIFUL IMPLICATION: explain why it matters beyond the article's first idea.
-6. BEAUTIFUL CTA: tease the full answer and include the required CTA.
+── NARRATIVE ARC — follow this order ──
+1. COVER (auto-generated): the cover_question hooks the reader with the article's central question.
+2. INTRO slide: answer "what is this about" in one punchy frame. Set the scene. Make the stakes feel real.
+3. TENSION slide: the surprising fact, reversal, or problem at the heart of the article. This is the "wait, really?" page.
+4. DEPTH slide (optional but recommended): the mechanism, the person, the discovery, the data — what makes this article worth reading in full.
+5. IMPLICATION slide (optional): why does this matter beyond the article? What does it change, challenge, or open up?
+6. CTA slide (required last): tease what the reader still doesn't know. Make them feel they're missing something by not clicking. Include the cta line.
 
-Pick exactly the right number of pages for this article: 3, 4, or 5. Each page should add something new. Do not repeat the same point twice.
+Pick 3, 4, or 5 slides — whichever number this article genuinely needs. Do not pad. Do not repeat.
 
-── EXAMPLE FORMAT ONLY — NO EMOJIS ──
+── EXAMPLE FORMAT ONLY ──
 cover_question: Food Security: Can machine learning protect the food safety net for 40 million Americans?
-caption: One scientific image can hold a whole story: who gets seen, what gets measured, and why the answer matters now.\\n\\nThis article follows the people and ideas behind a discovery that changes how we understand the world around us.\\n\\nRead more by ${author} at catalyst-magazine.com — link in bio.\\n\\n#TheCatalyst #CatalystMagazine #ScienceWriting #STEM #Research
+caption: Forty million Americans depend on SNAP benefits to eat — and the system that decides who qualifies is riddled with errors that machine learning could fix.\\n\\nA new wave of researchers is training models on government data to predict benefit cliffs, identify systemic gaps, and flag households that fall through before anyone notices.\\n\\nThe question is not whether the technology works. It is whether policymakers will use it.\\n\\nRead more by ${author} at catalyst-magazine.com — link in bio.\\n\\n#TheCatalyst #CatalystMagazine #FoodSecurity #PublicPolicy #MachineLearning #SNAP #DataScience
 ---
 layout: beautiful
-eyebrow: Key insight
-headline: The smallest details can change the whole story.
-body: The article turns a complex scientific question into a human, visual narrative.
-bullets: One clear discovery | A human reason to care | Stakes beyond the lab
-bg: #101b3d
-accent: #8bd3ff
+eyebrow: The stakes
+headline: One eligibility error can cut a family's food supply overnight.
+body: The SNAP system processes 65 million decisions a year — and a small error rate at that scale means millions of missed meals.
+bullets: 40 million Americans rely on SNAP | 1 in 6 eligible households never enrolls | Errors cluster in the most vulnerable zip codes | Machine learning flags gaps in hours, not months
+bg: #0d2b1e
 ---
 layout: beautiful
-eyebrow: Why it matters
-headline: Science becomes powerful when people can see it.
-body: The strongest ideas in the story connect evidence to everyday consequences.
-bullets: Better questions | Sharper public understanding | New paths for research
+eyebrow: The science
+headline: Researchers trained a model on 10 years of benefit data.
+body: The algorithm found patterns human case workers had no bandwidth to notice — predicting benefit cliffs weeks before they hit.
+bullets: Trained on 120 million anonymized records | Accuracy rate: 91% on held-out test data | Identifies at-risk households 3 weeks early | Already piloted in two states
+bg: #0e3b29
+---
+layout: beautiful
+eyebrow: Hard truth
+headline: The model works. The policy pipeline does not.
+body: Even when the algorithm flags a household, caseworkers are too overloaded to act on every alert in time.
+bullets: Average caseload: 400 families per worker | Alerts acted on: fewer than half | The bottleneck is staffing, not software | Advocates are pushing for automatic renewals
 cta: Read "${title}" by ${author}. Link in bio.
-bg: #0a1f3d
-accent: #f0c66e
+bg: #0a2218
 
 ── NOW WRITE THE CAPTION + BEAUTIFUL PAGES FOR "${title}" — NO EMOJIS ──`;
     }
