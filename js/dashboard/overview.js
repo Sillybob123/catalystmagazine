@@ -156,7 +156,7 @@ async function loadQuickStats(gridEl, ctx) {
 
 const ROLE_META = {
   admin:              { label: "Administrator",      group: "Leadership",  order: 1, color: "#7c3aed" },
-  editor:             { label: "Editor",             group: "Editorial",   order: 2, color: "#0f766e" },
+  editor:             { label: "Editor / Writer",    group: "Editorial",   order: 2, color: "#0f766e" },
   writer:             { label: "Writer",             group: "Editorial",   order: 3, color: "#0891b2" },
   newsletter_builder: { label: "Newsletter Builder", group: "Publishing",  order: 4, color: "#b45309" },
   marketing:          { label: "Marketing",          group: "Publishing",  order: 5, color: "#db2777" },
@@ -173,15 +173,53 @@ async function loadStaff(mount, ctx) {
       return;
     }
 
-    // Group by role-group, filter out readers unless viewer is admin.
-    const showReaders = ctx.role === "admin";
-    const people = [];
+    // Collect all user docs first, then dedupe.
+    //
+    // Background: a person can end up with multiple user docs (e.g. one
+    // created when they signed up to receive the newsletter as a 'reader',
+    // and another created later when an admin granted them an editor role).
+    // Without dedupe, the same human shows up twice in the directory — once
+    // as an Editor in Editorial, once as a Reader in Community. Dedupe by a
+    // stable identity key (lowercased email, or normalized name as a
+    // fallback) and keep the doc with the highest-priority role.
+    const raw = [];
     snap.forEach((d) => {
       const u = d.data();
-      const role = u.role || "reader";
-      if (role === "reader" && !showReaders) return;
       if ((u.status || "active") === "inactive") return;
-      people.push({ id: d.id, ...u, role });
+      const role = u.role || "reader";
+      raw.push({ id: d.id, ...u, role });
+    });
+
+    const byKey = new Map();
+    for (const p of raw) {
+      const key = identityKey(p);
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, p);
+        continue;
+      }
+      // Keep the entry whose role has the lowest order (higher priority).
+      const ao = ROLE_META[p.role]?.order ?? 99;
+      const bo = ROLE_META[existing.role]?.order ?? 99;
+      if (ao < bo) byKey.set(key, { ...existing, ...p });
+      // If same priority, prefer the one with a real name and email.
+      else if (ao === bo) {
+        const merged = {
+          ...existing,
+          name: existing.name || p.name,
+          email: existing.email || p.email,
+        };
+        byKey.set(key, merged);
+      }
+    }
+
+    // Filter out readers unless the viewer is an admin (community is admin-only).
+    const showReaders = ctx.role === "admin";
+    const people = Array.from(byKey.values()).filter((p) => {
+      if (p.role === "reader" && !showReaders) return false;
+      // Drop community entries with no usable identity at all.
+      if (p.role === "reader" && !p.name && !p.email) return false;
+      return true;
     });
 
     if (!people.length) {
@@ -240,6 +278,18 @@ async function loadStaff(mount, ctx) {
     console.warn("[overview] staff load failed", err);
     mount.innerHTML = `<div class="error-state">Could not load the team. ${esc(err?.message || "")}</div>`;
   }
+}
+
+// Identity key for staff dedupe. Prefer email (lowercased, trimmed) — that's
+// the most reliable cross-doc anchor. Fall back to a normalized name when
+// email is missing so the older readers-only docs (which sometimes lack an
+// email field entirely) still collapse against their editorial twin.
+function identityKey(person) {
+  const email = String(person.email || "").trim().toLowerCase();
+  if (email) return `email:${email}`;
+  const name = String(person.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (name) return `name:${name}`;
+  return `id:${person.id}`;
 }
 
 function getInitials(nameOrEmail) {
