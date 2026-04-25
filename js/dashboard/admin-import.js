@@ -729,7 +729,9 @@ function renderWelcomeRow(u, ctx, highlight) {
 function roleLabel(r) {
   const map = {
     admin: "Admin",
-    editor: "Editor",
+    // Editors at Catalyst are also expected to write — surface that here so
+    // the Welcome Bot list reads consistently with the welcome email body.
+    editor: "Editor / Writer",
     writer: "Writer",
     newsletter_builder: "Newsletter builder",
     marketing: "Marketing",

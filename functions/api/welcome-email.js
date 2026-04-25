@@ -147,38 +147,57 @@ function roleGuide(role) {
 
   if (r === "editor") {
     return {
-      title: "Your role: Editor",
-      blurb: "You're the second pair of eyes on every Catalyst piece. Writers send their drafts to you, you leave notes, and you sign off when the piece is publication-ready.",
+      title: "Your role: Editor / Writer",
+      blurb: "Editors at The Catalyst wear two hats. You're the second pair of eyes on other writers' pieces — reviewing drafts, leaving notes, and signing off when they're publication-ready — <strong>and</strong> you're expected to pitch and write your own articles too. Most weeks you'll be doing both at the same time.",
       steps: [
         ...common,
-        "Open the <strong>Pipeline</strong> in the sidebar — that's the master tracker for every article in flight. You'll spend most of your time here.",
-        "When a writer finishes a draft, the article moves into the <strong>In Review</strong> column on the tracker. Click into the article card to start reviewing.",
-        "Leave inline notes directly in the article editor — writers see them immediately. Be specific and kind: point at the sentence, suggest the fix.",
-        "When you've finished reviewing, open the article's <strong>Timeline</strong> panel and tick <strong>Review Complete</strong>. You'll be asked to confirm a 12-item editorial checklist before it'll let you mark it complete — this is the Catalyst editorial standards gate.",
+        "Open the <strong>Pipeline</strong> in the sidebar — that's the master tracker for every article in flight, both your own and the ones you're editing. You'll spend most of your time here.",
+        "Toggle between <strong>All articles</strong> and <strong>My articles</strong> at the top of the Pipeline to switch between the pieces you're editing and the pieces you're writing yourself.",
+        "<strong>For writing your own pieces:</strong> click <strong>+ New proposal</strong> to pitch an idea, wait for admin approval, then draft just like any other writer. The full writer workflow — proposal → writing → review → suggestions reviewed — applies to you too.",
+        "<strong>For editing others' pieces:</strong> when a writer finishes a draft, the article moves into the <strong>In Review</strong> column. Click into the article card to start reviewing. Leave inline notes directly in the editor — writers see them immediately. Be specific and kind: point at the sentence, suggest the fix.",
+        "When you've finished reviewing someone's draft, open the article's <strong>Timeline</strong> panel and tick <strong>Review Complete</strong>. You'll be asked to confirm a 12-item editorial checklist before it'll let you mark it complete — this is the Catalyst editorial standards gate.",
         "After the writer addresses your notes, they'll resubmit. Once you're satisfied, an admin will move it to publish.",
-        "If a writer goes quiet for more than 5 days on a piece you're reviewing, the bot will nudge you. Don't let drafts stall in your queue — turn them around quickly.",
+        "If a writer goes quiet for more than 5 days on a piece you're reviewing, the bot will nudge you. Don't let drafts stall in your queue — turn them around quickly. The bot will also nudge you on your own deadlines as a writer.",
       ],
       extraSections: [
+        {
+          heading: "Yes, editors write too",
+          body: `
+            <p style="margin:0 0 10px;">A quick note up front: at The Catalyst, the editor role is really an <strong>editor / writer</strong> role. We expect every editor to be pitching and drafting their own pieces alongside the editing work. The same Pipeline tracker, the same proposal-and-approval flow, and the same Timeline checkboxes apply to your own articles.</p>
+            <p style="margin:0 0 10px;">When you're editing, you're acting on someone else's project. When you're writing, you're driving your own — exactly the way our writers do. The sections below cover both sides; please read them all.</p>
+            <p style="margin:0;">A practical tip: when you open the Pipeline, use the <strong>My articles</strong> filter at the top to focus on your own work, and <strong>All articles</strong> to see the editing queue.</p>`,
+        },
         {
           heading: "How the tracker works (please read carefully)",
           body: `
             <p style="margin:0 0 10px;">Every article on The Catalyst lives as a <strong>project</strong> on the Pipeline tracker. A project moves through five columns, left to right:</p>
             <ol style="margin:0 0 12px;padding-left:22px;color:#1d1d1f;font-size:0.93rem;line-height:1.65;">
-              <li><strong>Topic Proposal</strong> — the writer has pitched the piece and is waiting for admin approval. You don't need to act here, but feel free to leave a comment if the angle could be sharpened.</li>
-              <li><strong>Writing</strong> — proposal is approved; the writer is drafting. Hands-off for editors at this stage.</li>
-              <li><strong>In Review</strong> — the writer has marked the draft complete and it's on your desk. <em>This is your queue.</em></li>
-              <li><strong>Reviewing Suggestions</strong> — you've left notes; the writer is addressing them.</li>
+              <li><strong>Topic Proposal</strong> — a writer has pitched the piece and is waiting for admin approval. (When the writer is <em>you</em>, this is where your own pitch sits while it waits for approval.)</li>
+              <li><strong>Writing</strong> — proposal is approved; the writer is drafting. Hands-off for you as an editor; this is where <em>your own</em> projects live while you're drafting them.</li>
+              <li><strong>In Review</strong> — the writer has marked the draft complete and it's on an editor's desk. <em>This is your editing queue.</em> Your own pieces will land here too once you finish drafting them — at which point another editor takes over.</li>
+              <li><strong>Reviewing Suggestions</strong> — an editor has left notes; the writer is addressing them.</li>
               <li><strong>Completed</strong> — fully reviewed and ready for an admin to publish.</li>
             </ol>
             <p style="margin:0 0 10px;">Each project also has a <strong>Timeline</strong> — six checkboxes that map the lifecycle of the piece:</p>
             <ul style="margin:0 0 12px;padding-left:22px;color:#1d1d1f;font-size:0.93rem;line-height:1.65;">
               <li><strong>Topic Proposal Complete</strong> — set automatically when a proposal is approved.</li>
-              <li><strong>Interview Scheduled</strong> · <strong>Interview Complete</strong> — checked by the writer.</li>
-              <li><strong>Article Writing Complete</strong> — checked by the writer (gated by the writer self-review checklist).</li>
-              <li><strong>Review Complete</strong> — <em>your job.</em> Gated by the 12-item Editor Review Checklist.</li>
-              <li><strong>Suggestions Reviewed</strong> — checked by the writer once they've addressed your notes. After this, the piece is done editorially.</li>
+              <li><strong>Interview Scheduled</strong> · <strong>Interview Complete</strong> — checked by the writer (you, on your own pieces).</li>
+              <li><strong>Article Writing Complete</strong> — checked by the writer (gated by an 8-item self-review checklist; you'll see this on your own pieces too).</li>
+              <li><strong>Review Complete</strong> — checked by the reviewing editor. Gated by the 12-item Editor Review Checklist.</li>
+              <li><strong>Suggestions Reviewed</strong> — checked by the writer once they've addressed editor notes. After this, the piece is done editorially.</li>
             </ul>
             <p style="margin:0;">A piece is only ready to publish when every box on the Timeline is ticked.</p>`,
+        },
+        {
+          heading: "Writing your own pieces — what gets a proposal approved",
+          body: `
+            <p style="margin:0 0 10px;">When you're pitching one of your own articles, the bar is the same as for any writer. Strong Catalyst pitches share three things:</p>
+            <ul style="margin:0 0 10px;padding-left:22px;color:#1d1d1f;font-size:0.93rem;line-height:1.65;">
+              <li><strong>A specific angle.</strong> "AI in healthcare" is a topic. "How a Tufts radiologist trained an LLM on 200,000 anonymized chest X-rays" is an angle.</li>
+              <li><strong>A reason it matters now.</strong> What changed? What's at stake? Why this month, not last year?</li>
+              <li><strong>A real source.</strong> A scientist you can interview, a paper just published, a primary document.</li>
+            </ul>
+            <p style="margin:0;">Approval still comes from an admin (not from another editor) — so submit your proposal and wait for the green light before drafting, just like a writer would.</p>`,
         },
         {
           heading: "Reviewing proposals",
