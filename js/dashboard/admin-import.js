@@ -7,9 +7,14 @@
 
 import { db } from "../firebase-config.js";
 import {
-  collection, addDoc, query, where, getDocs,
+  collection, addDoc, query, where, getDocs, orderBy,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, slugify } from "./ui.js";
+
+// A user is "recently joined" if their account was created within this many
+// days. The Welcome Bot panel surfaces these at the top so the admin can fire
+// off a welcome email to new arrivals without scrolling.
+const RECENT_JOIN_DAYS = 14;
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -52,6 +57,23 @@ export async function mount(ctx, container) {
         </div>
         <div id="export-status" class="hint" style="margin-top:10px;"></div>
       </div>
+
+      <div style="border:1px solid var(--hairline);border-radius:10px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:700;color:var(--ink-1);">Welcome Bot</div>
+            <div class="hint" style="margin-top:4px;max-width:640px;">
+              Send a new contributor an onboarding email with their sign-in details and a role-specific
+              walkthrough of the editorial suite. Recently joined users (last ${RECENT_JOIN_DAYS} days) are
+              highlighted at the top — but you can force-send the welcome email to any user.
+            </div>
+          </div>
+          <button id="welcome-refresh" class="btn btn-secondary btn-sm">Refresh list</button>
+        </div>
+        <div id="welcome-panel" style="margin-top:14px;">
+          <div class="loading-state"><div class="spinner"></div>Loading users…</div>
+        </div>
+      </div>
     </div>`;
   container.appendChild(card);
 
@@ -85,6 +107,17 @@ export async function mount(ctx, container) {
       exportBtn.textContent = "Export articles";
     }
   });
+
+  // ---------- Welcome Bot ----------
+  const welcomePanel = card.querySelector("#welcome-panel");
+  const welcomeRefresh = card.querySelector("#welcome-refresh");
+  const loadWelcome = () => loadWelcomeBot(ctx, welcomePanel);
+  // Attach the click delegate once — loadWelcomeBot only swaps innerHTML, so
+  // the panel element itself sticks around and a single listener handles
+  // every Send button across refreshes.
+  welcomePanel.addEventListener("click", (e) => handleWelcomeClick(e, ctx));
+  welcomeRefresh.addEventListener("click", loadWelcome);
+  loadWelcome();
 
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
@@ -568,4 +601,151 @@ function dateStamp() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+}
+
+// ---------- Welcome Bot ----------
+// Lists every user, sorted by createdAt desc. Recently joined users get a
+// "NEW" pill so the admin notices them. Each row has a Send button that
+// fires POST /api/welcome-email; the API resolves the user (server-side),
+// sends the onboarding email via Resend, and stamps welcomeEmailSentAt on
+// the user doc so we can show "Sent on …" on subsequent loads.
+async function loadWelcomeBot(ctx, mount) {
+  mount.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading users…</div>`;
+  let users;
+  try {
+    const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
+    users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error("welcome bot: load users failed", err);
+    mount.innerHTML = `<div class="error-state">Could not load users: ${esc(err.message)}</div>`;
+    return;
+  }
+  if (!users.length) {
+    mount.innerHTML = `<div class="empty-state">No users yet.</div>`;
+    return;
+  }
+
+  const cutoff = Date.now() - RECENT_JOIN_DAYS * 86400000;
+  const recent = users.filter((u) => parseDate(u.createdAt) >= cutoff);
+  const others = users.filter((u) => parseDate(u.createdAt) < cutoff);
+
+  mount.innerHTML = "";
+
+  if (recent.length) {
+    mount.appendChild(renderSection("Recently joined", recent, ctx, /* highlight */ true));
+  }
+  mount.appendChild(renderSection("All users", others.length ? others : users, ctx, false));
+}
+
+async function handleWelcomeClick(e, ctx) {
+  const btn = e.target.closest("[data-welcome-send]");
+  if (!btn) return;
+  const uid = btn.dataset.welcomeSend;
+  const email = btn.dataset.email || "";
+  const name = btn.dataset.name || "";
+  if (btn.dataset.sentAt && !confirm(`Welcome email was already sent to ${email}. Send it again?`)) return;
+
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = "Sending…";
+  try {
+    const res = await ctx.authedFetch("/api/welcome-email", {
+      method: "POST",
+      body: JSON.stringify({ uid, email, name }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    toast(`Welcome email sent to ${email}.`, "success");
+    btn.textContent = "Resend";
+    btn.dataset.sentAt = new Date().toISOString();
+    const sentLabel = btn.closest("[data-welcome-row]")?.querySelector("[data-sent-label]");
+    if (sentLabel) sentLabel.textContent = `Sent just now`;
+  } catch (err) {
+    console.error(err);
+    toast(`Send failed: ${err.message}`, "error");
+    btn.textContent = original;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSection(title, users, ctx, highlight) {
+  const wrap = el("div", { style: { marginBottom: "14px" } });
+  wrap.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin:8px 0 8px;">
+      ${esc(title)} <span style="color:var(--ink-2);font-weight:600;">· ${users.length}</span>
+    </div>`;
+  const list = el("div", { style: { display: "grid", gap: "6px" } });
+  users.forEach((u) => list.appendChild(renderWelcomeRow(u, ctx, highlight)));
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function renderWelcomeRow(u, ctx, highlight) {
+  const row = el("div", {
+    "data-welcome-row": "1",
+    style: {
+      display: "grid",
+      gridTemplateColumns: "1fr auto",
+      gap: "12px",
+      alignItems: "center",
+      padding: "10px 12px",
+      border: `1px solid ${highlight ? "rgba(168,132,58,0.4)" : "var(--hairline)"}`,
+      background: highlight ? "rgba(251,246,236,0.5)" : "var(--surface)",
+      borderRadius: "8px",
+    },
+  });
+
+  const name = u.name || "(no name)";
+  const email = u.email || "";
+  const role = u.role || "reader";
+  const joined = u.createdAt ? new Date(parseDate(u.createdAt)).toLocaleDateString() : "—";
+  const sentAt = u.welcomeEmailSentAt ? new Date(parseDate(u.welcomeEmailSentAt)) : null;
+  const sentLabel = sentAt ? `Sent ${sentAt.toLocaleDateString()}` : "Not sent yet";
+  const newPill = highlight
+    ? `<span style="display:inline-block;padding:1px 7px;border-radius:999px;background:#a8843a;color:#fff;font-size:10px;font-weight:700;letter-spacing:0.06em;margin-left:8px;">NEW</span>`
+    : "";
+
+  row.innerHTML = `
+    <div style="min-width:0;">
+      <div style="font-weight:600;color:var(--ink-1);font-size:14px;">
+        ${esc(name)} ${newPill}
+      </div>
+      <div style="font-size:12px;color:var(--ink-2);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(email)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:3px;">
+        ${esc(roleLabel(role))} · joined ${esc(joined)} · <span data-sent-label>${esc(sentLabel)}</span>
+      </div>
+    </div>
+    <button class="btn ${sentAt ? "btn-secondary" : "btn-accent"} btn-sm"
+            data-welcome-send="${esc(u.id)}"
+            data-email="${esc(email)}"
+            data-name="${esc(name)}"
+            ${sentAt ? `data-sent-at="${esc(sentAt.toISOString())}"` : ""}>
+      ${sentAt ? "Resend" : "Send welcome"}
+    </button>`;
+  return row;
+}
+
+function roleLabel(r) {
+  const map = {
+    admin: "Admin",
+    editor: "Editor",
+    writer: "Writer",
+    newsletter_builder: "Newsletter builder",
+    marketing: "Marketing",
+    reader: "Reader",
+  };
+  return map[r] || r;
+}
+
+function parseDate(v) {
+  if (!v) return 0;
+  if (typeof v === "number") return v;
+  if (typeof v === "string") {
+    const t = Date.parse(v);
+    return Number.isFinite(t) ? t : 0;
+  }
+  if (typeof v.toMillis === "function") { try { return v.toMillis(); } catch { return 0; } }
+  if (typeof v.seconds === "number") return v.seconds * 1000;
+  return 0;
 }
