@@ -16,7 +16,8 @@
 /contact.html            /contact                  301
 /privacy.html            /privacy                  301
 /brain-teaser.html       /brain-teaser             301
-/innovation.html         /innovation               301
+/innovation              /                         301
+/innovation.html         /                         301
 
 # ------ Legacy admin URL cleanup ---------------------------
 /writer-login.html       /admin/login              301

@@ -80,7 +80,7 @@ window.layoutReady = Promise.all([
 });
 
 // Mobile hamburger menu. Lives here so every page works — previously this
-// handler was only bound in main.js, which pages like /articles, /innovation
+// handler was only bound in main.js, which pages like /articles
 // and /collaborate don't load.
 function setupMobileNav() {
     const menuToggle = document.querySelector('.menu-toggle');
