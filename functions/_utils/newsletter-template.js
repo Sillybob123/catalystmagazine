@@ -143,7 +143,7 @@ export function buildNewsletter({
 
 function articleCard(a, siteUrl, isFirst) {
   const href = buildArticleUrl(a, siteUrl);
-  const img = a.coverImage || a.image || "";
+  const img = resizeForEmail(a.coverImage || a.image || "", 520);
   const category = (a.category || "Feature").toUpperCase();
   const title = a.title || "Untitled";
   const excerpt = a.excerpt || a.dek || "";
@@ -209,7 +209,7 @@ export function buildInboxNewsletter({
   function heroBlock(a) {
     if (!a) return "";
     const href = buildArticleUrl(a, siteUrl);
-    const img = a.coverImage || a.image || "";
+    const img = resizeForEmail(a.coverImage || a.image || "", 560);
     const title = a.title || "Untitled";
     const excerpt = a.excerpt || a.dek || "";
     const byline = a.author ? `By ${esc(a.author)}` : "";
@@ -381,5 +381,39 @@ function esc(s) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+// Rewrite a cover-image URL to a smaller, email-optimized variant. Big hero
+// JPEGs from Wix (often 2000px+ wide, 1MB+) tank the email's load time and
+// trip Gmail's "image-heavy = Promotions" heuristic. We target ~width
+// pixels at quality 80 so the visible image still looks crisp on retina
+// (the email container is 560px wide, and email images don't use srcset).
+//
+// Currently handles Wix only because Firebase Storage / GCS don't expose a
+// public resize endpoint. Anything else is returned unchanged.
+function resizeForEmail(src, width = 560) {
+  if (!src || typeof src !== "string") return src;
+  if (src.startsWith("data:") || src.startsWith("blob:")) return src;
+  let url;
+  try { url = new URL(src); } catch { return src; }
+
+  if (url.hostname.includes("static.wixstatic.com")) {
+    const h = Math.round(width * 0.66);
+    // If a v1 transform already exists, just rewrite its width + quality.
+    // Drop enc_auto so the result is plain JPEG (some email clients still
+    // mishandle WebP — JPEG is universally safe).
+    if (url.pathname.includes("/v1/")) {
+      return src
+        .replace(/w_\d+/g, `w_${width}`)
+        .replace(/h_\d+/g, `h_${h}`)
+        .replace(/q_\d+/g, "q_80")
+        .replace(/,enc_auto/g, "");
+    }
+    const parts = url.pathname.split("/").filter(Boolean);
+    const filename = parts[parts.length - 1];
+    return `${src}/v1/fill/w_${width},h_${h},al_c,q_80/${filename}`;
+  }
+
+  return src;
 }
 function escAttr(s) { return esc(s); }
