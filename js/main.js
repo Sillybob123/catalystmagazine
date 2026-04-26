@@ -1274,6 +1274,10 @@ function renderArticleDetail(article) {
     mountReadingProgress();
     registerProgressiveImages(container);
     hydrateQuizzes(container);
+    if (typeof window.applyGlossary === 'function') {
+        const body = container.querySelector('.article-body');
+        if (body) window.applyGlossary(body);
+    }
 }
 
 // Replace any quiz figures the writer dropped into the article body with the

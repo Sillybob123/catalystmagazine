@@ -1,0 +1,460 @@
+{
+  "A": {
+    "Abiogenesis": {
+      "definition": "The original evolution of life or living organisms from inorganic or inanimate substances."
+    },
+    "Absolute Zero": {
+      "definition": "The lowest possible temperature, at which all molecular motion ceases (0 Kelvin, or -273.15°C)."
+    },
+    "Action Potential": {
+      "definition": "A rapid change in voltage across a cellular membrane, typically in neurons, allowing the transmission of signals."
+    },
+    "Algorithm": {
+      "definition": "A finite set of unambiguous instructions that, given some set of initial conditions, can be performed in a prescribed sequence to achieve a certain goal."
+    },
+    "Allele": {
+      "definition": "One of two or more alternative forms of a gene that arise by mutation and are found at the same place on a chromosome."
+    },
+    "Angiosperm": {
+      "definition": "A plant that has flowers and produces seeds enclosed within a carpel."
+    },
+    "Antimatter": {
+      "definition": "Matter composed of the antiparticles of those that constitute normal matter, possessing the same mass but opposite charge."
+    },
+    "Apoptosis": {
+      "definition": "The death of cells which occurs as a normal and controlled part of an organism's growth or development."
+    },
+    "Astrocyte": {
+      "definition": "A star-shaped glial cell of the central nervous system that provides nutrients to neurons and maintains the blood-brain barrier."
+    },
+    "Astrophysics": {
+      "definition": "The branch of astronomy concerned with the physical nature of stars and other celestial bodies."
+    },
+    "Autophagy": {
+      "definition": "The natural, regulated mechanism of the cell that disassembles unnecessary or dysfunctional components."
+    }
+  },
+  "B": {
+    "Bacteriophage": {
+      "definition": "A virus that infects and replicates within bacteria."
+    },
+    "Baryon": {
+      "definition": "A subatomic particle, such as a proton or neutron, made up of three quarks."
+    },
+    "Beta Decay": {
+      "definition": "A type of radioactive decay in which a beta particle (fast energetic electron or positron) is emitted."
+    },
+    "Bioinformatics": {
+      "definition": "The use of computer technology to manage and analyze large sets of biological data."
+    },
+    "Biomimicry": {
+      "definition": "The design and production of materials, structures, and systems that are modeled on biological entities and processes."
+    },
+    "Black Hole": {
+      "definition": "A region of spacetime where gravity is so strong that nothing, including light, can escape from it."
+    },
+    "Blood-Brain Barrier": {
+      "definition": "A highly selective semipermeable border that prevents solutes in the circulating blood from non-selectively crossing into the extracellular fluid of the central nervous system."
+    },
+    "Bose-Einstein Condensate": {
+      "definition": "A state of matter of a dilute gas of bosons cooled to temperatures very close to absolute zero."
+    },
+    "Brownian Motion": {
+      "definition": "The random, uncontrolled movement of particles in a fluid as they collide with surrounding molecules."
+    }
+  },
+  "C": {
+    "Cambrian Explosion": {
+      "definition": "An event approximately 541 million years ago when most major animal phyla appeared in the fossil record."
+    },
+    "Capillary Action": {
+      "definition": "The ability of a liquid to flow in narrow spaces without the assistance of, or even in opposition to, external forces like gravity."
+    },
+    "Catalyst": {
+      "definition": "A substance that increases the rate of a chemical reaction without itself undergoing any permanent chemical change."
+    },
+    "Cellular Respiration": {
+      "definition": "The process by which organisms use oxygen to break down food molecules to get chemical energy for cell functions."
+    },
+    "Centripetal Force": {
+      "definition": "A force that acts on a body moving in a circular path and is directed toward the center around which the body is moving."
+    },
+    "Chaos Theory": {
+      "definition": "A branch of mathematics focusing on behavior that is highly sensitive to initial conditions, popularly known as the butterfly effect."
+    },
+    "Chemosynthesis": {
+      "definition": "The synthesis of organic compounds by bacteria or other living organisms using energy derived from reactions involving inorganic chemicals."
+    },
+    "Chirality": {
+      "definition": "A property of asymmetry important in several branches of science; an object or a system is chiral if it is distinguishable from its mirror image."
+    },
+    "CRISPR": {
+      "definition": "A technology that can be used to edit genes, allowing researchers to alter DNA sequences and modify gene function."
+    },
+    "Cryogenics": {
+      "definition": "The branch of physics that deals with the production and effects of very low temperatures."
+    },
+    "Cytoplasm": {
+      "definition": "The material or protoplasm within a living cell, excluding the nucleus."
+    }
+  },
+  "D": {
+    "Dark Matter": {
+      "definition": "A form of matter thought to account for approximately 85% of the matter in the universe, which does not emit or interact with electromagnetic radiation."
+    },
+    "Dark Energy": {
+      "definition": "A theoretical form of energy that tends to accelerate the expansion of the universe."
+    },
+    "Deep Learning": {
+      "definition": "A subset of machine learning based on artificial neural networks with multiple layers (hence 'deep')."
+    },
+    "Dendrite": {
+      "definition": "A short branched extension of a nerve cell, along which impulses received from other cells are transmitted to the cell body."
+    },
+    "DNA Sequencing": {
+      "definition": "The process of determining the nucleic acid sequence—the order of nucleotides in DNA."
+    },
+    "Doppler Effect": {
+      "definition": "An increase (or decrease) in the frequency of sound, light, or other waves as the source and observer move toward (or away from) each other."
+    },
+    "Dopamine": {
+      "definition": "A neurotransmitter that plays several important roles in the brain and body, including reward-motivated behavior."
+    },
+    "Drosophila": {
+      "definition": "A genus of small flies, frequently used in genetics research as a model organism."
+    },
+    "Dysbiosis": {
+      "definition": "An imbalance between the types of organism present in a person's natural microflora, especially that of the gut."
+    }
+  },
+  "E": {
+    "Ecliptic": {
+      "definition": "A great circle on the celestial sphere representing the sun's apparent path during the year."
+    },
+    "Eigenvalue": {
+      "definition": "Each of a set of values of a parameter for which a differential equation has a nonzero solution under given conditions."
+    },
+    "Electromagnetism": {
+      "definition": "One of the four fundamental forces of nature, responsible for the interaction between electrically charged particles."
+    },
+    "Endocytosis": {
+      "definition": "The taking in of matter by a living cell by invagination of its membrane to form a vacuole."
+    },
+    "Enthalpy": {
+      "definition": "A thermodynamic quantity equivalent to the total heat content of a system."
+    },
+    "Entropy": {
+      "definition": "A thermodynamic property that is a measure of the system's thermal energy per unit temperature that is unavailable for doing useful work; often described as a measure of disorder."
+    },
+    "Epigenetics": {
+      "definition": "The study of changes in organisms caused by modification of gene expression rather than alteration of the genetic code itself."
+    },
+    "Event Horizon": {
+      "definition": "The boundary surrounding a black hole from which no light or matter can escape."
+    },
+    "Evolution": {
+      "definition": "The change in the heritable characteristics of biological populations over successive generations."
+    },
+    "Exoplanet": {
+      "definition": "A planet that orbits a star outside the solar system."
+    }
+  },
+  "F": {
+    "Fermi Paradox": {
+      "definition": "The conflict between the high probability of extraterrestrial civilizations and the lack of evidence for, or contact with, such civilizations."
+    },
+    "Fibonacci Sequence": {
+      "definition": "A series of numbers where each number is the sum of the two preceding ones, often found in natural biological patterns."
+    },
+    "Fission": {
+      "definition": "A nuclear reaction in which a heavy nucleus splits spontaneously or on impact with another particle, releasing energy."
+    },
+    "Fluorescence": {
+      "definition": "The visible or invisible radiation emitted by certain substances as a result of incident radiation of a shorter wavelength."
+    },
+    "Fractal": {
+      "definition": "A complex geometric pattern that is self-similar across different scales."
+    },
+    "Fusion": {
+      "definition": "A nuclear reaction in which atomic nuclei of low atomic number fuse to form a heavier nucleus with the release of energy."
+    }
+  },
+  "G": {
+    "Gamete": {
+      "definition": "A mature haploid male or female germ cell which is able to unite with another of the opposite sex in sexual reproduction to form a zygote."
+    },
+    "Game Theory": {
+      "definition": "The study of mathematical models of strategic interaction among rational decision-makers."
+    },
+    "Gene Expression": {
+      "definition": "The process by which information from a gene is used in the synthesis of a functional gene product."
+    },
+    "General Relativity": {
+      "definition": "Einstein's theory of gravitation, where gravity is explained as the curvature of spacetime."
+    },
+    "Genetic Drift": {
+      "definition": "Variation in the relative frequency of different genotypes in a small population, owing to the chance disappearance of particular genes."
+    },
+    "Genome": {
+      "definition": "The complete set of genes or genetic material present in a cell or organism."
+    },
+    "Glassmorphism": {
+      "definition": "A UI design trend characterized by semi-transparent backgrounds with a background blur, resembling frosted glass."
+    },
+    "Gluon": {
+      "definition": "A subatomic particle of a class that is thought to bind quarks together."
+    },
+    "Graphene": {
+      "definition": "A form of carbon consisting of a single layer of atoms arranged in a two-dimensional honeycomb lattice."
+    },
+    "Graviton": {
+      "definition": "A hypothetical quantum of gravitational energy, regarded as a particle."
+    }
+  },
+  "H": {
+    "Hadron": {
+      "definition": "A subatomic composite particle made of quarks held together by the strong force."
+    },
+    "Half-life": {
+      "definition": "The time taken for the radioactivity of a specified isotope to fall to half its original value."
+    },
+    "Heisenberg Uncertainty Principle": {
+      "definition": "A fundamental theory in quantum mechanics stating that one cannot simultaneously know both the exact position and the exact momentum of a particle."
+    },
+    "Higgs Boson": {
+      "definition": "An elementary particle in the Standard Model of particle physics produced by the quantum excitation of the Higgs field, giving mass to other particles."
+    },
+    "Homeostasis": {
+      "definition": "The tendency toward a relatively stable equilibrium between interdependent elements, especially as maintained by physiological processes."
+    },
+    "Host-Associated Differentiation": {
+      "definition": "The process where populations of a parasite or herbivore evolve differences based on the host species they utilize."
+    },
+    "Hubble's Law": {
+      "definition": "The observation in physical cosmology that galaxies are moving away from the Earth at speeds proportional to their distance."
+    }
+  },
+  "I": {
+    "Inertia": {
+      "definition": "The tendency of objects in motion to stay in motion, and objects at rest to stay at rest, unless acted upon by an outside force."
+    },
+    "Ionization": {
+      "definition": "The process by which an atom or a molecule acquires a negative or positive charge by gaining or losing electrons."
+    },
+    "Isotope": {
+      "definition": "Each of two or more forms of the same element that contain equal numbers of protons but different numbers of neutrons."
+    }
+  },
+  "K": {
+    "Karyotype": {
+      "definition": "The number and visual appearance of the chromosomes in the cell nuclei of an organism or species."
+    },
+    "Kinetic Energy": {
+      "definition": "Energy which a body possesses by virtue of being in motion."
+    },
+    "Kugelblitz": {
+      "definition": "A theoretical concentration of light so intense that it forms an event horizon and becomes self-trapped, effectively a black hole made of radiation."
+    }
+  },
+  "L": {
+    "Lagrange Point": {
+      "definition": "Points in space where the gravitational forces of a two-body system like the Sun and Earth produce enhanced regions of attraction and repulsion."
+    },
+    "Lepton": {
+      "definition": "A subatomic particle, such as an electron, muon, or neutrino, that does not take part in the strong interaction."
+    },
+    "LIDAR": {
+      "definition": "A detection system that works on the principle of radar, but uses light from a laser to measure distances."
+    },
+    "Lymphocyte": {
+      "definition": "A form of small leukocyte (white blood cell) with a single round nucleus, occurring especially in the lymphatic system."
+    }
+  },
+  "M": {
+    "Machine Learning": {
+      "definition": "A branch of artificial intelligence (AI) and computer science which focuses on the use of data and algorithms to imitate the way that humans learn."
+    },
+    "Magnetosphere": {
+      "definition": "The region surrounding a planet in which its magnetic field is the predominant effective magnetic field."
+    },
+    "Meiosis": {
+      "definition": "A type of cell division that results in four daughter cells each with half the number of chromosomes of the parent cell."
+    },
+    "Metabolism": {
+      "definition": "The chemical processes that occur within a living organism in order to maintain life."
+    },
+    "Microbiome": {
+      "definition": "The collection of all microorganisms, such as bacteria, fungi, and viruses, that naturally live on and inside our bodies."
+    },
+    "Mitochondria": {
+      "definition": "Organelles in which the biochemical processes of respiration and energy production occur."
+    },
+    "Mitosis": {
+      "definition": "A type of cell division that results in two daughter cells each having the same number and kind of chromosomes as the parent nucleus."
+    }
+  },
+  "N": {
+    "Nanotechnology": {
+      "definition": "The branch of technology that deals with dimensions and tolerances of less than 100 nanometers, especially the manipulation of individual atoms and molecules."
+    },
+    "Natural Selection": {
+      "definition": "The process whereby organisms better adapted to their environment tend to survive and produce more offspring."
+    },
+    "Neural Network": {
+      "definition": "A computer system modeled on the human brain and nervous system."
+    },
+    "Neuroplasticity": {
+      "definition": "The ability of the brain to form and reorganize synaptic connections, especially in response to learning or experience."
+    },
+    "Neutron Star": {
+      "definition": "An extremely dense star composed almost entirely of neutrons, resulting from the gravitational collapse of a massive star after a supernova."
+    }
+  },
+  "O": {
+    "Obsidian": {
+      "definition": "A hard, dark, glasslike volcanic rock formed by the rapid solidification of lava without crystallization."
+    },
+    "Organelle": {
+      "definition": "Any of a number of organized or specialized structures within a living cell."
+    },
+    "Osmosis": {
+      "definition": "A process by which molecules of a solvent tend to pass through a semipermeable membrane from a less concentrated solution into a more concentrated one."
+    },
+    "Oxidation": {
+      "definition": "A chemical reaction that involves the loss of electrons or an increase in the oxidation state of a molecule, atom, or ion."
+    }
+  },
+  "P": {
+    "Parallax": {
+      "definition": "The apparent displacement or difference in the apparent position of an object viewed along two different lines of sight."
+    },
+    "Pathogen": {
+      "definition": "A bacterium, virus, or other microorganism that can cause disease."
+    },
+    "Phenotype": {
+      "definition": "The set of observable characteristics of an individual resulting from the interaction of its genotype with the environment."
+    },
+    "Photon": {
+      "definition": "A particle representing a quantum of light or other electromagnetic radiation."
+    },
+    "Photosynthesis": {
+      "definition": "The process by which green plants and some other organisms use sunlight to synthesize foods with the aid of chlorophyll."
+    },
+    "Plasma": {
+      "definition": "An ionized gas consisting of positive ions and free electrons in proportions that result in more or less no overall electric charge."
+    },
+    "Polymer": {
+      "definition": "A substance that has a molecular structure consisting chiefly or entirely of a large number of similar units bonded together."
+    },
+    "Positron": {
+      "definition": "A subatomic particle with the same mass as an electron and a numerically equal but positive charge."
+    },
+    "Prion": {
+      "definition": "An infectious protein particle similar to a virus but lacking nucleic acid."
+    }
+  },
+  "Q": {
+    "Quantum Entanglement": {
+      "definition": "A physical phenomenon that occurs when pairs or groups of particles are generated, interact, or share spatial proximity such that the quantum state of each particle cannot be described independently."
+    },
+    "Quantum Mechanics": {
+      "definition": "The branch of physics that deals with the behavior of matter and light on the atomic and subatomic scale."
+    },
+    "Quark": {
+      "definition": "Any of a number of subatomic particles carrying a fractional electric charge and postulated as building blocks of the hadrons."
+    },
+    "Quasar": {
+      "definition": "A massive and extremely remote celestial object, emitting exceptionally large amounts of energy, typically having a starlike image in a telescope."
+    }
+  },
+  "R": {
+    "Radioactivity": {
+      "definition": "The emission of ionizing radiation or particles caused by the spontaneous disintegration of atomic nuclei."
+    },
+    "Redshift": {
+      "definition": "The displacement of spectral lines toward longer wavelengths (the red end of the spectrum) in radiation from distant galaxies and celestial objects."
+    },
+    "Refraction": {
+      "definition": "The change in direction of a wave passing from one medium to another caused by its change in speed."
+    },
+    "Ribosome": {
+      "definition": "A minute particle consisting of RNA and associated proteins found in large numbers in the cytoplasm of living cells."
+    },
+    "RNA": {
+      "definition": "Ribonucleic acid, a nucleic acid present in all living cells, acting as a messenger carrying instructions from DNA."
+    }
+  },
+  "S": {
+    "Schrödinger's Cat": {
+      "definition": "A thought experiment that illustrates a paradox of quantum superposition."
+    },
+    "Singularity": {
+      "definition": "A point at which a function takes an infinite value, especially in space-time when matter is infinitely dense, as at the center of a black hole."
+    },
+    "Spacetime": {
+      "definition": "The four-dimensional continuum of one temporal and three spatial coordinates in which any physical event can be located."
+    },
+    "Speciation": {
+      "definition": "The formation of new and distinct species in the course of evolution."
+    },
+    "String Theory": {
+      "definition": "A theoretical framework in which the point-like particles of particle physics are replaced by one-dimensional objects called strings."
+    },
+    "Superconductivity": {
+      "definition": "The property of zero electrical resistance and expulsion of magnetic flux fields occurring in certain materials when cooled below a characteristic critical temperature."
+    },
+    "Symbiosis": {
+      "definition": "Interaction between two different organisms living in close physical association, typically to the advantage of both."
+    },
+    "Synapse": {
+      "definition": "A junction between two nerve cells, consisting of a minute gap across which impulses pass by diffusion of a neurotransmitter."
+    }
+  },
+  "T": {
+    "Teleportation": {
+      "definition": "The theoretical transfer of matter or energy from one point to another without traversing the physical space between them."
+    },
+    "Telomere": {
+      "definition": "A compound structure at the end of a chromosome."
+    },
+    "Thermodynamics": {
+      "definition": "The branch of physical science that deals with the relations between heat and other forms of energy."
+    },
+    "Transcription": {
+      "definition": "The process by which the information in a strand of DNA is copied into a new molecule of messenger RNA."
+    },
+    "Translation": {
+      "definition": "The process by which a sequence of nucleotide triplets in a messenger RNA molecule gives rise to a specific sequence of amino acids during synthesis of a polypeptide or protein."
+    }
+  },
+  "V": {
+    "Valence Electron": {
+      "definition": "An outer shell electron that is associated with an atom, and that can participate in the formation of a chemical bond."
+    },
+    "Virulence": {
+      "definition": "The severity or harmfulness of a disease or poison."
+    },
+    "Viscosity": {
+      "definition": "The state of being thick, sticky, and semi-fluid in consistency, due to internal friction."
+    }
+  },
+  "W": {
+    "Wave-Particle Duality": {
+      "definition": "The concept in quantum mechanics that every particle or quantum entity may be described as either a particle or a wave."
+    },
+    "Wormhole": {
+      "definition": "A theoretical passage through space-time that could create shortcuts for long journeys across the universe."
+    }
+  },
+  "Z": {
+    "Zero-point Energy": {
+      "definition": "The lowest possible energy that a quantum mechanical physical system may have."
+    },
+    "Zoonosis": {
+      "definition": "A disease which can be transmitted to humans from animals."
+    },
+    "Zygote": {
+      "definition": "A diploid cell resulting from the fusion of two haploid gametes; a fertilized ovum."
+    }
+  }
+}
