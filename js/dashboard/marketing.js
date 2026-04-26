@@ -1399,25 +1399,48 @@ async function renderBeautiful(page) {
     size: 22,
   });
 
-  // ── Footer: "Read about <article title> →" on bottom-RIGHT ───────────────
-  // Skip when the slide has its own CTA pill — the pill already serves that
-  // purpose on the final slide. On every other slide this hook tells the
-  // reader what they will get if they click through.
-  const articleTitle = (page.articleTitle || "").trim();
-  if (!cta && articleTitle) {
-    // Truncate long titles so the hook always fits comfortably on one line.
-    let hookTitle = articleTitle;
-    if (hookTitle.length > 38) hookTitle = hookTitle.slice(0, 36).trimEnd() + "…";
-    const hookText = `Read about ${hookTitle}`;
-
+  // ── Footer: per-slide cliffhanger + arrow on bottom-RIGHT ────────────────
+  // Each non-CTA slide gets a short cliffhanger that nudges the viewer to
+  // swipe — written by the AI per page (and parsed from `cliffhanger:`),
+  // with a stock fallback that varies so consecutive slides don't repeat.
+  // The text MUST always fit on one line: hard-capped at ~32 chars, then
+  // shrunk down to 14px if needed, then ellipsised as a last resort.
+  const STOCK_CLIFFHANGERS = [
+    "Keep reading",
+    "Swipe for more",
+    "Here's the twist",
+    "Wait — there's more",
+    "The reason why",
+    "What happens next",
+    "Don't miss this",
+    "More on the next slide",
+  ];
+  const cliffRaw = (page.cliffhanger || "").trim();
+  const fallbackIdx = (typeof page.pageIndex === "number" ? page.pageIndex : 0) % STOCK_CLIFFHANGERS.length;
+  let hookText = cliffRaw || STOCK_CLIFFHANGERS[fallbackIdx];
+  // Hard cap — anything longer than 32 chars almost certainly won't read
+  // cleanly at footer size. Trim cleanly at a word boundary.
+  if (hookText.length > 32) {
+    const cut = hookText.slice(0, 31);
+    const lastSp = cut.lastIndexOf(" ");
+    hookText = (lastSp > 16 ? cut.slice(0, lastSp) : cut).trimEnd() + "…";
+  }
+  if (!cta) {
     // Pick a font size that fits within the right half of the canvas.
-    let hookSz = 22;
+    // Floor is now 14px — every cliffhanger fits at or above that.
+    let hookSz = 24;
     ctx.font = `600 ${hookSz}px ${SANS}`;
     resetLetterSpacing();
     const maxHookW = SIZE * 0.55; // ~594px — keeps it on the right side
-    while (ctx.measureText(hookText + "  →").width > maxHookW && hookSz > 16) {
+    while (ctx.measureText(hookText + "  →").width > maxHookW && hookSz > 14) {
       hookSz -= 1;
       ctx.font = `600 ${hookSz}px ${SANS}`;
+    }
+    // If even 14px overflows (extremely long single word), ellipsise until
+    // the line fits. This is belt-and-braces — the hard cap above usually
+    // makes this branch unreachable.
+    while (ctx.measureText(hookText + "  →").width > maxHookW && hookText.length > 6) {
+      hookText = hookText.slice(0, -2).trimEnd() + "…";
     }
 
     const hookY = SIZE - 56;
@@ -2323,7 +2346,7 @@ async function mountSocialPosts(ctx, container) {
     if (layout === "editorial") return { ...base, headline: "", body: "", bg: "#0a1f3d" };
     if (layout === "hook")      return { ...base, headline: "", body: "", cta: "", bg: "#5b3fb8" };
     if (layout === "quote")     return { ...base, quote: "", attribution: "", bg: "#0c2545" };
-    if (layout === "beautiful") return { ...base, eyebrow: "Key insight", headline: "", body: "", bullets: "", cta: "", bg: "#101b3d", accent: "#8bd3ff" };
+    if (layout === "beautiful") return { ...base, eyebrow: "Key insight", headline: "", body: "", bullets: "", cliffhanger: "", cta: "", bg: "#101b3d", accent: "#8bd3ff" };
     if (layout === "closing")   return defaultClosingPage();
     return defaultCoverPage();
   }
@@ -2336,8 +2359,10 @@ async function mountSocialPosts(ctx, container) {
   }
 
   // Build the renderer-input for a given page — merges the page's editable
-  // fields with article-derived data (title, cover image).
-  function renderInputFor(page) {
+  // fields with article-derived data (title, cover image). pageIndex feeds
+  // the per-slide cliffhanger fallback so consecutive slides don't share the
+  // same stock teaser when the AI didn't supply one.
+  function renderInputFor(page, pageIndex = 0) {
     if (page.layout === "cover") {
       const articleTitle = selectedArticle ? selectedArticle.title : "";
       return {
@@ -2356,15 +2381,17 @@ async function mountSocialPosts(ctx, container) {
         bg: page.bg || "#0a1830",
       };
     }
-    // Beautiful pages get the article title so the renderer can show
-    // a "Read about <title>" hook in the bottom-right corner.
+    // Beautiful pages carry a per-page cliffhanger that the renderer puts in
+    // the bottom-right corner. pageIndex is forwarded so the renderer can pick
+    // a non-repeating stock fallback when the AI didn't provide one.
     if (page.layout === "beautiful") {
       return {
         ...page,
         articleTitle: selectedArticle?.title || "",
+        pageIndex,
       };
     }
-    return { ...page };
+    return { ...page, pageIndex };
   }
 
   // Marks a page (and the preview area) as needing re-render.
@@ -2536,6 +2563,13 @@ async function mountSocialPosts(ctx, container) {
           <textarea class="input textarea" data-bind="bullets" rows="5"
             style="margin-top:6px;width:100%;font-size:13px;"
             placeholder="One bullet per line">${esc(page.bullets || "")}</textarea>
+        </label>
+        <label style="font-size:13px;font-weight:600;">Cliffhanger
+          <input class="input" data-bind="cliffhanger" type="text" maxlength="32"
+            style="margin-top:6px;width:100%;font-size:13px;"
+            placeholder="2–5 words — what's coming next"
+            value="${esc(page.cliffhanger || "")}">
+          <span style="font-size:11px;color:var(--muted);font-weight:500;">Bottom-right teaser nudging the viewer to swipe. Max 32 characters.</span>
         </label>
         <label style="font-size:13px;font-weight:600;">Call to action
           <textarea class="input textarea" data-bind="cta" rows="2"
@@ -2822,6 +2856,7 @@ eyebrow: <1-3 word label: The hook, Key insight, The stakes, Hard truth, The shi
 headline: <8-13 words. Bold, precise. End with period or question mark. Concrete — a number, reversal, consequence, or discovery.>
 body: <1 sentence, 15-25 words MAX. Elegant and specific. Must be short enough to fit cleanly in the slide. Leave BLANK if this slide has bullets.>
 bullets: <ONLY on exactly ONE slide across the whole carousel. Leave completely blank on all other slides. Format: 3-4 items separated by " | ", 4-10 words each, concrete facts.>
+cliffhanger: <2-5 words MAX, max 28 characters total — a tiny teaser printed in the bottom-right that pulls the viewer to swipe to the NEXT slide. Must hint at what's coming without spoiling it. NEVER repeat the same cliffhanger across slides. Examples: "Then it got worse", "But here's the catch", "The number changed everything", "What they found next", "And it's not over", "Wait for the twist". Leave BLANK only on the very last slide (the one with cta).>
 cta: <blank on all pages except the last. Last page only: Read "${title}" by ${author}. Link in bio.>
 bg: <dark hex background>
 accent: <vivid hex that pops against bg — electric blue, coral, amber, teal, mint, violet, rose. Vary across slides.>
@@ -2869,6 +2904,7 @@ layout: beautiful
 eyebrow: The stakes
 headline: Forty million Americans eat because of one program.
 body: SNAP is the largest hunger safety net in the US — and a single eligibility error can cut off a family's food supply overnight.
+cliffhanger: Then errors started piling up
 bg: #0d2b1e
 accent: #3dffa0
 ---
@@ -2877,6 +2913,7 @@ eyebrow: The breakdown
 headline: One model. Ten years of data. Ninety-one percent accuracy.
 body:
 bullets: 120 million anonymized records | Flags at-risk households 3 weeks early | Already piloted in two states | Accuracy: 91% on held-out test data
+cliffhanger: But there's a catch
 bg: #0e3420
 accent: #56e8b0
 ---
@@ -3197,7 +3234,7 @@ bg: #0a1f3d
       for (let i = 0; i < pages.length; i++) {
         if (!pages[i].dataUrl) {
           statusEl.textContent = `Rendering page ${i + 1} / ${pages.length}…`;
-          pages[i].dataUrl = await generatePostImage(renderInputFor(pages[i]));
+          pages[i].dataUrl = await generatePostImage(renderInputFor(pages[i], i));
         }
       }
       renderPreviewForActive();
@@ -3360,7 +3397,7 @@ bg: #0a1f3d
       const page = blankPage(layout);
       // Strip emojis from every text field; bg is a hex color so it's left
       // alone (the stripper would no-op on it anyway, but explicit is clearer).
-      for (const k of ["headline", "body", "cta", "quote", "attribution", "tagline", "eyebrow", "bullets"]) {
+      for (const k of ["headline", "body", "cta", "quote", "attribution", "tagline", "eyebrow", "bullets", "cliffhanger"]) {
         if (obj[k] !== undefined) page[k] = stripEmojis(obj[k]);
       }
       if (obj.bg !== undefined) page.bg = obj.bg;
