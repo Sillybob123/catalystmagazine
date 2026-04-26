@@ -477,6 +477,27 @@ function injectPreviewBanner(content) {
   content.prepend(banner);
 }
 
+// When loaded from a dev/static server (Live Server, file://, etc.), our
+// /api/* endpoints aren't running locally — route them to the deployed
+// Cloudflare Pages origin so the dashboard stays fully functional in dev.
+// Honors window.__CATALYST_API_BASE__ as a manual override if set.
+const PROD_API_BASE = "https://catalystmagazine.pages.dev";
+function resolveApiUrl(url) {
+  if (typeof url !== "string" || !url.startsWith("/api/")) return url;
+  if (typeof window !== "undefined" && window.__CATALYST_API_BASE__) {
+    return window.__CATALYST_API_BASE__.replace(/\/$/, "") + url;
+  }
+  if (typeof location === "undefined") return url;
+  const host = location.hostname;
+  const isProd =
+    host.endsWith(".pages.dev") ||
+    host.endsWith("catalyst-magazine.com") ||
+    host.endsWith("catalystmagazine.com");
+  if (isProd) return url;
+  // Local dev (localhost, 127.0.0.1, file://, LAN IPs) — use prod API.
+  return PROD_API_BASE + url;
+}
+
 function makeContext(route) {
   return {
     user: state.user,
@@ -487,6 +508,11 @@ function makeContext(route) {
     mountKey: route.mountKey || null,
     toast,
     // Helper to build authorized fetch requests to our own /api endpoints.
+    // When the dashboard is loaded from a static dev server (VS Code Live
+    // Server, file:// preview, etc.) the local origin has no Cloudflare
+    // Functions, so /api/* requests would 404. In that case, route /api
+    // calls to the deployed Cloudflare Pages origin instead so previews
+    // and sends still work end-to-end during development.
     authedFetch: async (url, init = {}) => {
       const token = await getIdToken(state.user);
       const headers = new Headers(init.headers || {});
@@ -494,7 +520,8 @@ function makeContext(route) {
       if (init.body && !headers.has("Content-Type")) {
         headers.set("Content-Type", "application/json");
       }
-      return fetch(url, { ...init, headers });
+      const target = resolveApiUrl(url);
+      return fetch(target, { ...init, headers });
     },
     navigate: (hash) => { location.hash = hash; },
   };

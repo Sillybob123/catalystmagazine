@@ -60,10 +60,20 @@ export const onRequestPost = async ({ request, env }) => {
     });
 
     const recipients = subs
-      .map((d) => ({
-        email: d.data?.email,
-        firstName: d.data?.firstName || "",
-      }))
+      .map((d) => {
+        const data = d.data || {};
+        // Prefer firstName; fall back to first token of fullName for legacy
+        // records that pre-date the firstName column. Title-case the result
+        // so "yair" → "Yair" and the greeting reads naturally.
+        const rawFirst =
+          (data.firstName || "").trim() ||
+          ((data.fullName || "").trim().split(/\s+/)[0] || "") ||
+          ((data.name || "").trim().split(/\s+/)[0] || "");
+        return {
+          email: data.email,
+          firstName: titleCaseName(rawFirst),
+        };
+      })
       .filter((r) => typeof r.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email));
 
     if (!recipients.length) {
@@ -138,3 +148,16 @@ export const onRequestPost = async ({ request, env }) => {
     return serverError(err);
   }
 };
+
+// Title-cases a single first name. Handles compound names ("mary-jane",
+// "o'brien") by capitalizing each segment. Returns "" for empty/garbage
+// input so the template falls through to its "Hi there," fallback.
+function titleCaseName(s) {
+  const v = String(s || "").trim();
+  if (!v || v.length > 60) return "";
+  return v
+    .toLowerCase()
+    .split(/(\s+|-|')/)
+    .map((tok) => (/^\s+$|^[-']$/.test(tok) ? tok : tok.charAt(0).toUpperCase() + tok.slice(1)))
+    .join("");
+}

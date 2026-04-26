@@ -277,6 +277,9 @@ export function buildInboxNewsletter({
 <meta name="supported-color-schemes" content="light only">
 <title>${esc(subject)}</title>
 <style>
+  /* No web-font @import on purpose: external font fetches are a Gmail
+     Promotions signal and slow first paint. The wordmark falls back to
+     a heavy system stack (Helvetica/Arial) which renders instantly. */
   body,table,td,a{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
   table,td{mso-table-lspace:0;mso-table-rspace:0;}
   img{-ms-interpolation-mode:bicubic;border:0;display:block;}
@@ -300,12 +303,14 @@ export function buildInboxNewsletter({
         <table role="presentation" class="wrap" width="580" cellpadding="0" cellspacing="0" border="0"
           style="width:580px;max-width:580px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.07);">
 
-          <!-- Logo masthead -->
+          <!-- Wordmark masthead — text only (no image) so it loads instantly
+               and avoids the "image-heavy promo" signature that Gmail's
+               Promotions classifier keys on. System-font heavy stack so it
+               always renders without an external font fetch. -->
           <tr>
-            <td style="padding:28px 36px 22px 36px;border-bottom:1px solid #e8e8ed;text-align:center;background:#ffffff;">
-              <a href="${esc(siteUrl)}" style="display:inline-block;text-decoration:none;">
-                <img src="${escAttr(LOGO_URL)}" alt="The Catalyst" width="260"
-                  style="width:260px;max-width:100%;height:auto;display:block;margin:0 auto;border:0;">
+            <td style="padding:30px 36px 24px 36px;border-bottom:1px solid #e8e8ed;text-align:center;background:#ffffff;">
+              <a href="${esc(siteUrl)}" style="display:inline-block;text-decoration:none;color:#1d1d1f;">
+                <span style="display:inline-block;font-family:'Poppins','Helvetica Neue','Helvetica',Arial,'Arial Black',sans-serif;font-weight:900;font-size:26px;letter-spacing:-0.025em;color:#1d1d1f;line-height:1;">The Catalyst Newsletter</span>
               </a>
             </td>
           </tr>
