@@ -1,0 +1,17 @@
+name = "catalyst-newsletter-cron"
+main = "worker.js"
+compatibility_date = "2026-04-26"
+
+# Run every 5 minutes. Scheduled newsletters fire within ~5 min of their
+# requested time; admins get up to 5 min of warning to cancel a mistake.
+# 288 invocations/day — well within Cloudflare's free Workers tier.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+DISPATCH_ENDPOINT = "https://www.catalyst-magazine.com/api/newsletter/dispatch-due"
+
+# Set the secret via:
+#   npx wrangler secret put NEWSLETTER_CRON_SECRET
+# The same value must be configured in the Cloudflare Pages project
+# (Settings → Environment variables) under the name NEWSLETTER_CRON_SECRET.

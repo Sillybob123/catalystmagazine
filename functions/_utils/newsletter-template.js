@@ -374,6 +374,90 @@ export function buildInboxNewsletter({
 </html>`;
 }
 
+// ─── Plain-text versions ─────────────────────────────────────────────────────
+// Resend's #1 deliverability recommendation: include a plain-text alternative
+// alongside the HTML. Spam filters (and Gmail in particular) penalize emails
+// that ship as HTML-only because legitimate senders almost always include a
+// text fallback for accessibility and older clients. Both helpers below mirror
+// the structure of their HTML counterparts so the content is identical — only
+// the formatting differs.
+
+export function buildNewsletterText({
+  headline = "New Stories From The Catalyst",
+  intro = "Here is the latest reporting from our team of student writers.",
+  articles = [],
+  siteUrl = "https://www.catalyst-magazine.com",
+  recipientEmail = null,
+  unsubscribeUrl = null,
+} = {}) {
+  const lines = [];
+  lines.push(headline);
+  lines.push("=".repeat(Math.min(headline.length, 60)));
+  lines.push("");
+  if (intro) { lines.push(intro); lines.push(""); }
+
+  articles.forEach((a, i) => {
+    const href = buildArticleUrl(a, siteUrl);
+    if (i > 0) lines.push("---");
+    lines.push((a.category || "Feature").toUpperCase());
+    lines.push(a.title || "Untitled");
+    if (a.author) lines.push(`By ${a.author}`);
+    if (a.excerpt || a.dek) lines.push(a.excerpt || a.dek);
+    lines.push(`Read: ${href}`);
+    lines.push("");
+  });
+
+  lines.push(`More stories: ${siteUrl}/articles`);
+  lines.push("");
+  lines.push("---");
+  lines.push("The Catalyst Magazine");
+  lines.push("2212 Washington Cir NW, Washington, DC 20037");
+  const unsub = unsubscribeUrl ||
+    `${siteUrl}/api/unsubscribe/${encodeURIComponent(recipientEmail || "__RECIPIENT__")}`;
+  lines.push(`Unsubscribe: ${unsub}`);
+  return lines.join("\n");
+}
+
+export function buildInboxNewsletterText({
+  intro = "",
+  articles = [],
+  siteUrl = "https://www.catalyst-magazine.com",
+  recipientEmail = null,
+  recipientFirstName = null,
+  unsubscribeUrl = null,
+} = {}) {
+  const greeting = recipientFirstName ? `Hi ${recipientFirstName},` : "Hi there,";
+  const defaultIntro = intro ||
+    `I wanted to share the latest ${articles.length === 1 ? "story" : `${articles.length} stories`} from The Catalyst — our student journalism magazine covering science, policy, and society.`;
+
+  const lines = [];
+  lines.push(greeting);
+  lines.push("");
+  lines.push(defaultIntro);
+  lines.push("");
+
+  articles.forEach((a, i) => {
+    const href = buildArticleUrl(a, siteUrl);
+    if (i > 0) lines.push("");
+    lines.push((a.category || "Feature").toUpperCase());
+    lines.push(a.title || "Untitled");
+    if (a.author) lines.push(`By ${a.author}`);
+    if (a.excerpt || a.dek) lines.push(a.excerpt || a.dek);
+    lines.push(href);
+    lines.push("");
+  });
+
+  lines.push("Thanks for reading,");
+  lines.push("The Catalyst Team");
+  lines.push("");
+  lines.push("---");
+  lines.push("The Catalyst Magazine · 2212 Washington Cir NW, Washington, DC 20037");
+  const unsub = unsubscribeUrl ||
+    `${siteUrl}/api/unsubscribe/${encodeURIComponent(recipientEmail || "__RECIPIENT__")}`;
+  lines.push(`Unsubscribe: ${unsub}`);
+  return lines.join("\n");
+}
+
 function esc(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")

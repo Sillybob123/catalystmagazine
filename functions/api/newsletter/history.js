@@ -24,6 +24,7 @@ export const onRequestGet = async ({ request, env }) => {
       sentCount: r.data.sentCount || 0,
       createdAt: r.data.createdAt,
       sentAt: r.data.sentAt,
+      scheduledAt: r.data.scheduledAt || null,
       createdBy: r.data.createdByName || r.data.createdBy,
     }));
 

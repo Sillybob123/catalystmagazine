@@ -2,7 +2,12 @@
 // Minimal Resend client (https://resend.com/docs/api-reference/emails/send-email)
 // Only dependency: fetch, which is built into Cloudflare Workers.
 
-export async function sendEmail(env, { to, subject, html, replyTo, cc, unsubscribeEmail = null }) {
+// MAIL_FROM should ideally be a subdomain address (e.g.
+// "The Catalyst <newsletter@news.catalyst-magazine.com>") so newsletter
+// reputation is segmented from transactional mail. Set in Cloudflare Pages
+// env vars. The fallback below uses Resend's onboarding domain only as a
+// last-resort dev default — never use it for real sends.
+export async function sendEmail(env, { to, subject, html, text, replyTo, cc, unsubscribeEmail = null }) {
   const apiKey = env.RESEND_API_KEY;
   const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
   const replyToAddr = env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com";
@@ -17,6 +22,9 @@ export async function sendEmail(env, { to, subject, html, replyTo, cc, unsubscri
   const personalizedHtml = unsubscribeEmail
     ? personalizeUnsubscribeLinks(html, recipient, siteUrl)
     : html;
+  const personalizedText = unsubscribeEmail && text
+    ? personalizeUnsubscribeLinks(text, recipient, siteUrl)
+    : text;
   const payload = {
     from,
     to: toList,
@@ -30,6 +38,9 @@ export async function sendEmail(env, { to, subject, html, replyTo, cc, unsubscri
     // native unsubscribe button. Opening URLs must match the header.
     track: { click: false, open: false },
   };
+  // Plain-text alternative — Resend's #1 deliverability recommendation.
+  // Without this, Gmail/Outlook flag HTML-only mail as a spam signal.
+  if (personalizedText) payload.text = personalizedText;
   if (cc) payload.cc = Array.isArray(cc) ? cc : [cc];
   if (unsubscribeEmail) {
     payload.headers = {
@@ -62,8 +73,10 @@ export async function sendEmail(env, { to, subject, html, replyTo, cc, unsubscri
 //
 // recipients can be either strings (email) or objects { email, firstName? }.
 // When objects are passed, htmlBuilder(recipient) is called per-recipient so
-// the inbox template can embed a personalized greeting.
-export async function sendBulkEmail(env, { recipients, subject, html, htmlBuilder }) {
+// the inbox template can embed a personalized greeting. textBuilder mirrors
+// htmlBuilder for the plain-text alternative — strongly recommended for
+// deliverability, optional for backwards compatibility.
+export async function sendBulkEmail(env, { recipients, subject, html, text, htmlBuilder, textBuilder }) {
   const chunks = [];
   for (let i = 0; i < recipients.length; i += 100) {
     chunks.push(recipients.slice(i, i + 100));
@@ -87,7 +100,10 @@ export async function sendBulkEmail(env, { recipients, subject, html, htmlBuilde
           const recipientHtml = htmlBuilder
             ? htmlBuilder(recipient)
             : personalizeUnsubscribeLinks(html, email, siteUrl);
-          return {
+          const recipientText = textBuilder
+            ? textBuilder(recipient)
+            : (text ? personalizeUnsubscribeLinks(text, email, siteUrl) : null);
+          const message = {
             from,
             to: [email],
             subject,
@@ -99,6 +115,8 @@ export async function sendBulkEmail(env, { recipients, subject, html, htmlBuilde
               "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
             },
           };
+          if (recipientText) message.text = recipientText;
+          return message;
         })
       ),
     });

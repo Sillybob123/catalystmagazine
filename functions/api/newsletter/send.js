@@ -1,17 +1,24 @@
 // POST /api/newsletter/send
-// Sends a previously-built newsletter to every active subscriber via Resend.
-// Creates a campaign record in `newsletter_campaigns` for history + audit.
+// Either sends a newsletter immediately, schedules it for a future time, or
+// fires a single test email. Creates a campaign record in
+// `newsletter_campaigns` for history + audit.
 //
-// Body: { subject, html, testEmail?, theme?, inboxParams? }
-//  - If testEmail is set, sends only to that single address (for pre-flight).
-//  - theme: "inbox" uses buildInboxNewsletter() per-recipient with firstName.
-//  - inboxParams: { headline, intro, articles, siteUrl } needed to rebuild per-recipient.
+// Body: { subject, html, testEmail?, theme?, inboxParams?, scheduledAt? }
+//  - testEmail   → send only to that one address (pre-flight; no campaign).
+//  - scheduledAt → ISO 8601 UTC string. Stores the campaign with
+//                  status="scheduled" instead of sending. The newsletter
+//                  cron worker dispatches it at the requested time.
+//  - theme       → "inbox" uses buildInboxNewsletter() per-recipient.
+//  - inboxParams → { headline, intro, articles, siteUrl } needed to rebuild
+//                  per-recipient HTML at send time.
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
-import { firestoreRunQuery, firestoreCreate } from "../../_utils/firebase.js";
+import { firestoreCreate } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
-import { sendBulkEmail, sendEmail } from "../../_utils/resend.js";
-import { buildInboxNewsletter } from "../../_utils/newsletter-template.js";
+import {
+  dispatchCampaign,
+  sendNewsletterTest,
+} from "../../_utils/newsletter-send.js";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -31,133 +38,74 @@ export const onRequestPost = async ({ request, env }) => {
 
     const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
 
-    // ---- Test-send path (single recipient) --------------------------------
+    // ---- Test-send path (single recipient, no campaign record) -----------
     if (body.testEmail) {
-      const testHtml = theme === "inbox"
-        ? buildInboxNewsletter({ ...inboxParams, subject, siteUrl, recipientFirstName: "Reader", recipientEmail: body.testEmail })
-        : html;
-      await sendEmail(env, {
-        to: body.testEmail,
-        subject,
-        html: testHtml,
-        unsubscribeEmail: body.testEmail,
-      });
+      await sendNewsletterTest(env, { subject, html, theme, inboxParams, testEmail: body.testEmail, siteUrl });
       return json({ ok: true, test: true, sentTo: body.testEmail });
     }
 
-    // ---- Full send path ---------------------------------------------------
-    // Query active subscribers — for inbox theme we also need firstName.
-    const subs = await firestoreRunQuery(env, {
-      from: [{ collectionId: "subscribers" }],
-      where: {
-        fieldFilter: {
-          field: { fieldPath: "status" },
-          op: "EQUAL",
-          value: { stringValue: "active" },
-        },
-      },
-      limit: 5000,
-    });
-
-    const recipients = subs
-      .map((d) => {
-        const data = d.data || {};
-        // Prefer firstName; fall back to first token of fullName for legacy
-        // records that pre-date the firstName column. Title-case the result
-        // so "yair" → "Yair" and the greeting reads naturally.
-        const rawFirst =
-          (data.firstName || "").trim() ||
-          ((data.fullName || "").trim().split(/\s+/)[0] || "") ||
-          ((data.name || "").trim().split(/\s+/)[0] || "");
-        return {
-          email: data.email,
-          firstName: titleCaseName(rawFirst),
-        };
-      })
-      .filter((r) => typeof r.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email));
-
-    if (!recipients.length) {
-      return badRequest("No active subscribers to send to.");
+    // ---- Scheduled-send path ---------------------------------------------
+    // Validate scheduledAt: must be a parseable date at least 60s in the
+    // future (guards against clock skew + accidental "send now" via past
+    // timestamp). The cron worker fires every 5 minutes, so anything sooner
+    // than ~5min may slip into the next tick — that's still acceptable.
+    if (body.scheduledAt) {
+      const scheduledAt = new Date(body.scheduledAt);
+      if (isNaN(scheduledAt.getTime())) return badRequest("scheduledAt is not a valid date");
+      if (scheduledAt.getTime() < Date.now() + 60_000) {
+        return badRequest("scheduledAt must be at least 1 minute in the future");
+      }
+      const now = new Date().toISOString();
+      const campaign = await firestoreCreate(env, "newsletter_campaigns", {
+        subject,
+        html,
+        theme,
+        // Store the inboxParams blob so the cron worker can re-render
+        // per-recipient HTML at dispatch time without the caller re-posting it.
+        inboxParams,
+        status: "scheduled",
+        scheduledAt: scheduledAt.toISOString(),
+        recipientCount: 0, // populated at dispatch time
+        createdBy: auth.uid,
+        createdByName: auth.name || auth.email,
+        createdAt: now,
+      });
+      return json({
+        ok: true,
+        scheduled: true,
+        campaignId: campaign.id,
+        scheduledAt: scheduledAt.toISOString(),
+      });
     }
 
-    // Build the per-recipient HTML builder for the inbox theme.
-    // Classic theme: pass pre-built html with unsubscribe link injection (legacy).
-    let htmlBuilder = null;
-    if (theme === "inbox") {
-      htmlBuilder = (recipient) =>
-        buildInboxNewsletter({
-          ...inboxParams,
-          subject,
-          siteUrl,
-          recipientEmail: recipient.email,
-          recipientFirstName: recipient.firstName || null,
-        });
-    }
-
+    // ---- Immediate full-send path ----------------------------------------
     // Create campaign record FIRST so we have a paper trail even if send fails mid-way.
     const now = new Date().toISOString();
     const campaign = await firestoreCreate(env, "newsletter_campaigns", {
       subject,
       html,
       theme,
-      recipientCount: recipients.length,
+      inboxParams,
       status: "sending",
       createdBy: auth.uid,
       createdByName: auth.name || auth.email,
       createdAt: now,
     });
 
-    // Send in recipient-personalized batches via Resend.
-    let sentCount = 0;
-    let failureMessage = null;
-    try {
-      const results = await sendBulkEmail(env, { recipients, subject, html, htmlBuilder });
-      sentCount = results.reduce(
-        (sum, batch) => sum + (Array.isArray(batch?.data) ? batch.data.length : 0),
-        0
-      );
-    } catch (err) {
-      failureMessage = err.message;
-    }
+    const result = await dispatchCampaign(env, campaign.id, {
+      subject, html, theme, inboxParams,
+    });
 
-    // Update campaign status.
-    const campaignId = campaign.id;
-    try {
-      const { firestoreUpdate } = await import("../../_utils/firebase.js");
-      await firestoreUpdate(env, `newsletter_campaigns/${campaignId}`, {
-        status: failureMessage ? "failed" : "sent",
-        sentAt: new Date().toISOString(),
-        sentCount,
-        error: failureMessage || null,
-      });
-    } catch (err) {
-      console.error("Failed to update campaign status:", err.message);
+    if (!result.ok) {
+      return json({ ok: false, error: result.error, campaignId: campaign.id }, { status: 500 });
     }
-
-    if (failureMessage) {
-      return json({ ok: false, error: failureMessage, campaignId }, { status: 500 });
-    }
-
     return json({
       ok: true,
-      campaignId,
-      recipientCount: recipients.length,
-      sentCount,
+      campaignId: campaign.id,
+      recipientCount: result.recipientCount,
+      sentCount: result.sentCount,
     });
   } catch (err) {
     return serverError(err);
   }
 };
-
-// Title-cases a single first name. Handles compound names ("mary-jane",
-// "o'brien") by capitalizing each segment. Returns "" for empty/garbage
-// input so the template falls through to its "Hi there," fallback.
-function titleCaseName(s) {
-  const v = String(s || "").trim();
-  if (!v || v.length > 60) return "";
-  return v
-    .toLowerCase()
-    .split(/(\s+|-|')/)
-    .map((tok) => (/^\s+$|^[-']$/.test(tok) ? tok : tok.charAt(0).toUpperCase() + tok.slice(1)))
-    .join("");
-}

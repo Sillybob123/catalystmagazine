@@ -240,13 +240,23 @@ export async function firestoreCreate(env, collection, fields, docId) {
   return fromFirestoreDoc(await res.json());
 }
 
-export async function firestoreUpdate(env, path, fields, { mergeFields = true } = {}) {
+// Optional `precondition` lets callers do an optimistic-concurrency update:
+// pass the document's updateTime (returned by firestoreGet as `__updateTime`,
+// or available via doc.updateTime in raw responses) and Firestore will reject
+// the PATCH if the doc was modified in the meantime. Used by dispatch-due to
+// ensure two simultaneous cron runs can't both claim the same campaign.
+export async function firestoreUpdate(env, path, fields, { mergeFields = true, precondition = null } = {}) {
   const token = await getServiceAccountAccessToken(env);
   const url = new URL(`${firestoreBase(env)}/${path}`);
   if (mergeFields) {
     for (const k of Object.keys(fields)) {
       url.searchParams.append("updateMask.fieldPaths", k);
     }
+  }
+  if (precondition?.updateTime) {
+    url.searchParams.append("currentDocument.updateTime", precondition.updateTime);
+  } else if (precondition?.exists != null) {
+    url.searchParams.append("currentDocument.exists", String(precondition.exists));
   }
   const res = await fetch(url.toString(), {
     method: "PATCH",
@@ -258,7 +268,9 @@ export async function firestoreUpdate(env, path, fields, { mergeFields = true } 
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Firestore update failed ${res.status}: ${text}`);
+    const err = new Error(`Firestore update failed ${res.status}: ${text}`);
+    err.status = res.status;
+    throw err;
   }
   return fromFirestoreDoc(await res.json());
 }

@@ -27,7 +27,22 @@ async function mountBuilder(ctx, container) {
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-refresh">Regenerate</button>
         <button class="btn btn-primary btn-sm" id="btn-test">Send a test</button>
+        <button class="btn btn-secondary btn-sm" id="btn-schedule">Schedule send…</button>
         <button class="btn btn-accent btn-sm" id="btn-send">Send to all subscribers</button>
+      </div>
+    </div>
+    <!-- Scheduling panel — collapsed by default; opens via "Schedule send…". -->
+    <div id="schedule-panel" style="display:none;padding:14px 20px;background:var(--surface-2);border-bottom:1px solid var(--hairline);">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+        <div class="field" style="margin:0;flex:1;min-width:240px;">
+          <label class="label" for="f-scheduled-at">Send at (Eastern Time)</label>
+          <input class="input" id="f-scheduled-at" type="datetime-local">
+          <div class="hint" id="schedule-hint" style="margin-top:6px;">The newsletter will be dispatched within ~5 minutes of this time. You can cancel any time before then from the campaign history.</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-schedule-cancel">Cancel</button>
+          <button type="button" class="btn btn-accent btn-sm" id="btn-schedule-confirm">Schedule</button>
+        </div>
       </div>
     </div>
     <div id="theme-notice" style="display:none;margin:0 0 0 0;padding:10px 20px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:13px;color:#0369a1;line-height:1.5;">
@@ -93,6 +108,12 @@ async function mountBuilder(ctx, container) {
     btnRefresh: card.querySelector("#btn-refresh"),
     btnTest: card.querySelector("#btn-test"),
     btnSend: card.querySelector("#btn-send"),
+    btnSchedule: card.querySelector("#btn-schedule"),
+    btnScheduleConfirm: card.querySelector("#btn-schedule-confirm"),
+    btnScheduleCancel: card.querySelector("#btn-schedule-cancel"),
+    schedulePanel: card.querySelector("#schedule-panel"),
+    scheduledAtInput: card.querySelector("#f-scheduled-at"),
+    scheduleHint: card.querySelector("#schedule-hint"),
     themeNotice: card.querySelector("#theme-notice"),
   };
 
@@ -286,6 +307,81 @@ async function mountBuilder(ctx, container) {
     }
   });
 
+  // ----- Schedule send wiring -----
+  // Default the input to "tomorrow at 9am Eastern" so admins don't have to
+  // hunt for a sensible starting value. The DOM input is in the browser's
+  // local TZ, so we convert ET → local for the default, then local → ET for
+  // submission via the helpers below.
+  function setDefaultScheduleValue() {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0);
+    els.scheduledAtInput.value = formatLocalForInput(tomorrow);
+  }
+
+  els.btnSchedule.addEventListener("click", () => {
+    if (!currentHtml) { ctx.toast("Regenerate the preview first.", "error"); return; }
+    if (!els.scheduledAtInput.value) setDefaultScheduleValue();
+    els.schedulePanel.style.display = "block";
+    els.scheduledAtInput.focus();
+  });
+
+  els.btnScheduleCancel.addEventListener("click", () => {
+    els.schedulePanel.style.display = "none";
+  });
+
+  els.btnScheduleConfirm.addEventListener("click", async () => {
+    const local = els.scheduledAtInput.value;
+    if (!local) { ctx.toast("Pick a date and time first.", "error"); return; }
+
+    // Reinterpret the input value (which the browser parsed as local TZ) as
+    // Eastern Time. Returns a UTC ISO string for the API.
+    const utcIso = easternLocalToUtcIso(local);
+    if (!utcIso) { ctx.toast("Invalid date.", "error"); return; }
+    const sched = new Date(utcIso);
+    if (sched.getTime() < Date.now() + 60_000) {
+      ctx.toast("Pick a time at least 1 minute in the future.", "error");
+      return;
+    }
+
+    const themeLabel = activeTheme === "inbox" ? "Inbox version (personalized)" : "Classic";
+    const prettyEt = sched.toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      dateStyle: "full",
+      timeStyle: "short",
+    });
+    const ok = await confirmDialog(
+      `Schedule this newsletter (${themeLabel}) to send at ${prettyEt} Eastern? You can cancel it from the history page any time before then.`,
+      { confirmText: "Schedule", danger: false }
+    );
+    if (!ok) return;
+
+    try {
+      els.status.textContent = "Scheduling…";
+      els.btnScheduleConfirm.disabled = true;
+      const payload = {
+        subject: els.subject.value,
+        html: currentHtml,
+        theme: activeTheme,
+        scheduledAt: utcIso,
+      };
+      if (activeTheme === "inbox") payload.inboxParams = buildInboxParams();
+      const res = await ctx.authedFetch("/api/newsletter/send", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      ctx.toast(`Scheduled for ${prettyEt} ET.`, "success");
+      els.status.textContent = `Scheduled. Campaign ID: ${data.campaignId}. Cancel from the history page if needed.`;
+      els.schedulePanel.style.display = "none";
+    } catch (err) {
+      ctx.toast("Schedule failed: " + err.message, "error");
+      els.status.textContent = "Schedule failed.";
+    } finally {
+      els.btnScheduleConfirm.disabled = false;
+    }
+  });
+
   els.btnSend.addEventListener("click", async () => {
     if (!currentHtml) { ctx.toast("Regenerate the preview first.", "error"); return; }
     const themeLabel = activeTheme === "inbox" ? "Inbox version (personalized)" : "Classic";
@@ -380,6 +476,43 @@ function debounced(fn, ms) {
   };
 }
 
+// Format a Date for an <input type="datetime-local"> value (browser-local).
+function formatLocalForInput(d) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Reinterpret a "datetime-local" string (no timezone info) as Eastern Time
+// regardless of the user's browser TZ, and return the corresponding UTC ISO.
+//
+// The trick: build a Date as if the string were UTC, then ask Intl what
+// time *that* UTC instant looks like in America/New_York. The difference
+// between what we wanted (the local string) and what we got is the ET
+// offset for that wall-clock time — DST included. Subtract it.
+function easternLocalToUtcIso(localStr) {
+  // localStr: "2026-04-28T09:00" (no seconds, no TZ)
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(localStr);
+  if (!m) return null;
+  const [, y, mo, d, h, mi] = m.map(Number);
+  // Pretend the wall-clock is UTC.
+  const fakeUtc = Date.UTC(y, mo - 1, d, h, mi, 0);
+  // Ask what that instant would be in NY wall-clock.
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date(fakeUtc));
+  const get = (t) => Number(parts.find((p) => p.type === t).value);
+  const nyAsUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour") % 24, get("minute"), get("second"));
+  // The offset between fakeUtc-as-NY and the fake instant tells us NY's
+  // offset for that wall-clock; the *actual* UTC instant is fakeUtc minus
+  // that offset (going the other way: NY ahead of UTC by `-offset`).
+  const offsetMs = nyAsUtc - fakeUtc;
+  return new Date(fakeUtc - offsetMs).toISOString();
+}
+
 // ====================== HISTORY ============================================
 async function mountHistory(ctx, container) {
   const card = el("div", { class: "card" });
@@ -397,31 +530,100 @@ async function mountHistory(ctx, container) {
     <div class="card-body" id="hist-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
   container.appendChild(card);
 
-  try {
-    const res = await ctx.authedFetch("/api/newsletter/history");
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
-    const body = card.querySelector("#hist-body");
-    if (!data.campaigns.length) { body.innerHTML = `<div class="empty-state">No campaigns yet.</div>`; return; }
-    body.innerHTML = `
-      <table class="table">
-        <thead><tr>
-          <th>Subject</th><th>Sent</th><th>Recipients</th><th>Status</th><th>By</th>
-        </tr></thead>
-        <tbody>
-          ${data.campaigns.map(c => `
-            <tr>
-              <td><strong>${esc(c.subject || "(no subject)")}</strong></td>
-              <td>${c.sentAt ? fmtDate(c.sentAt) + " · " + fmtRelative(c.sentAt) : fmtRelative(c.createdAt)}</td>
-              <td>${c.sentCount || c.recipientCount || 0} / ${c.recipientCount || 0}</td>
-              <td>${pillForStatus(c.status)}</td>
-              <td>${esc(c.createdBy || "—")}</td>
-            </tr>`).join("")}
-        </tbody>
-      </table>`;
-  } catch (err) {
-    card.querySelector("#hist-body").innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
+  async function load() {
+    try {
+      const res = await ctx.authedFetch("/api/newsletter/history");
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      const body = card.querySelector("#hist-body");
+      if (!data.campaigns.length) { body.innerHTML = `<div class="empty-state">No campaigns yet.</div>`; return; }
+
+      const scheduled = data.campaigns.filter(c => c.status === "scheduled");
+      const others = data.campaigns.filter(c => c.status !== "scheduled");
+
+      const scheduledHtml = scheduled.length ? `
+        <div class="section-title" style="margin:0 0 10px 0;">Scheduled</div>
+        <table class="table" style="margin-bottom:24px;">
+          <thead><tr>
+            <th>Subject</th><th>Sends at (ET)</th><th>Status</th><th>By</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${scheduled.map(c => `
+              <tr data-campaign-id="${esc(c.id)}">
+                <td><strong>${esc(c.subject || "(no subject)")}</strong></td>
+                <td>${c.scheduledAt ? esc(fmtEastern(c.scheduledAt)) : "—"}</td>
+                <td>${pillForStatus(c.status)}</td>
+                <td>${esc(c.createdBy || "—")}</td>
+                <td style="text-align:right;">
+                  <button class="btn btn-ghost btn-xs" data-cancel="${esc(c.id)}">Cancel</button>
+                </td>
+              </tr>`).join("")}
+          </tbody>
+        </table>` : "";
+
+      const sentHtml = others.length ? `
+        <div class="section-title" style="margin:0 0 10px 0;">Past campaigns</div>
+        <table class="table">
+          <thead><tr>
+            <th>Subject</th><th>Sent</th><th>Recipients</th><th>Status</th><th>By</th>
+          </tr></thead>
+          <tbody>
+            ${others.map(c => `
+              <tr>
+                <td><strong>${esc(c.subject || "(no subject)")}</strong></td>
+                <td>${c.sentAt ? fmtDate(c.sentAt) + " · " + fmtRelative(c.sentAt) : fmtRelative(c.createdAt)}</td>
+                <td>${c.sentCount || c.recipientCount || 0} / ${c.recipientCount || 0}</td>
+                <td>${pillForStatus(c.status)}</td>
+                <td>${esc(c.createdBy || "—")}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>` : "";
+
+      body.innerHTML = scheduledHtml + sentHtml;
+
+      // Wire up Cancel buttons on scheduled rows.
+      body.querySelectorAll("[data-cancel]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const campaignId = btn.dataset.cancel;
+          const ok = await confirmDialog(
+            "Cancel this scheduled newsletter? It will not be sent.",
+            { confirmText: "Cancel send", danger: true }
+          );
+          if (!ok) return;
+          btn.disabled = true;
+          try {
+            const res = await ctx.authedFetch("/api/newsletter/cancel", {
+              method: "POST",
+              body: JSON.stringify({ campaignId }),
+            });
+            const out = await res.json();
+            if (!res.ok || !out.ok) throw new Error(out.error || `HTTP ${res.status}`);
+            ctx.toast("Scheduled send canceled.", "success");
+            await load();
+          } catch (err) {
+            ctx.toast("Cancel failed: " + err.message, "error");
+            btn.disabled = false;
+          }
+        });
+      });
+    } catch (err) {
+      card.querySelector("#hist-body").innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
+    }
   }
+
+  await load();
+}
+
+// Format an ISO timestamp as a human-readable Eastern Time string.
+function fmtEastern(iso) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      month: "short", day: "numeric", year: "numeric",
+      hour: "numeric", minute: "2-digit",
+    });
+  } catch { return iso; }
 }
 
 function pillForStatus(s) {
