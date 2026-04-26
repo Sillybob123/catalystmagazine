@@ -191,10 +191,10 @@ async function mountCollabs(ctx, container) {
 const FIRESTORE_PROJECT = "catalystwriters-5ce43";
 
 const PLATFORM_META = {
-  instagram: { label: "Instagram", icon: "📸", pill: "pill-reviewing" },
-  linkedin:  { label: "LinkedIn",  icon: "💼", pill: "pill-approved"  },
-  twitter:   { label: "Twitter",   icon: "🐦", pill: "pill-pending"   },
-  facebook:  { label: "Facebook",  icon: "📘", pill: "pill-draft"     },
+  instagram: { label: "Instagram", icon: "IG", pill: "pill-reviewing" },
+  linkedin:  { label: "LinkedIn",  icon: "IN", pill: "pill-approved"  },
+  twitter:   { label: "Twitter",   icon: "TW", pill: "pill-pending"   },
+  facebook:  { label: "Facebook",  icon: "FB", pill: "pill-draft"     },
 };
 
 const STATUS_PILL = {
@@ -258,6 +258,10 @@ async function firestoreQuery(authedFetch, structuredQuery) {
       assigneeName: str("assigneeName"),
       deadline: str("deadline"),
       createdAt: str("createdAt") || (f.createdAt?.timestampValue ?? ""),
+      articleId: str("articleId"),
+      articleSlug: str("articleSlug"),
+      articleTitle: str("articleTitle"),
+      coverImageUrl: str("coverImageUrl"),
       activity: arr("activity"),
     };
   });
@@ -287,6 +291,7 @@ async function firestoreQueryArticles(authedFetch, structuredQuery) {
       category: str("category"),
       deck: str("deck"),
       excerpt: str("excerpt"),
+      publishedAt: str("publishedAt") || (f.publishedAt?.timestampValue ?? ""),
     };
   });
 }
@@ -1628,20 +1633,20 @@ async function mountSocialPosts(ctx, container) {
           </div>
         </div>
         <div role="tablist" style="display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;">
-          <button role="tab" id="sp-tab-board" class="sp-tab" style="padding:8px 16px;border:0;background:var(--surface);color:var(--ink);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:var(--shadow-sm);">📋 Board</button>
-          <button role="tab" id="sp-tab-create" class="sp-tab" style="padding:8px 16px;border:0;background:transparent;color:var(--muted);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">✨ Create post</button>
+          <button role="tab" id="sp-tab-board" class="sp-tab" style="padding:8px 16px;border:0;background:var(--surface);color:var(--ink);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:var(--shadow-sm);">Board</button>
+          <button role="tab" id="sp-tab-create" class="sp-tab" style="padding:8px 16px;border:0;background:transparent;color:var(--muted);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Create post</button>
         </div>
       </div>
 
       <!-- BOARD VIEW -->
-      <section id="sp-board-view" style="display:flex;flex-direction:column;gap:14px;">
+      <section id="sp-board-view" style="display:flex;flex-direction:column;gap:18px;">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <select class="input select" id="sp-platform-filter" style="width:160px;">
             <option value="">All platforms</option>
-            <option value="instagram">📸 Instagram</option>
-            <option value="linkedin">💼 LinkedIn</option>
-            <option value="twitter">🐦 Twitter</option>
-            <option value="facebook">📘 Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="twitter">Twitter</option>
+            <option value="facebook">Facebook</option>
           </select>
           <select class="input select" id="sp-status-filter" style="width:150px;">
             <option value="">All statuses</option>
@@ -1650,9 +1655,43 @@ async function mountSocialPosts(ctx, container) {
             <option value="assigned">Assigned</option>
             <option value="posted">Posted</option>
           </select>
-          <button class="btn btn-primary btn-sm" id="sp-goto-create" style="margin-left:auto;">✨ Create new post</button>
+          <button class="btn btn-primary btn-sm" id="sp-goto-create" style="margin-left:auto;">Create new post</button>
         </div>
-        <div id="sp-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
+
+        <!-- Suggestions: published articles that don't have a post yet -->
+        <div id="sp-suggestions-wrap" style="display:none;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-size:14px;font-weight:700;margin:0;letter-spacing:-.01em;">Needs a post</h3>
+              <p style="font-size:12px;color:var(--muted);margin:2px 0 0;">Recently published articles that don't have a social post yet.</p>
+            </div>
+            <span id="sp-suggestions-count" style="font-size:12px;color:var(--muted);"></span>
+          </div>
+          <div id="sp-suggestions-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;"></div>
+        </div>
+
+        <!-- Drafts: unposted posts (proposed, approved, assigned) -->
+        <div id="sp-drafts-wrap" style="display:none;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-size:14px;font-weight:700;margin:0;letter-spacing:-.01em;">Drafts</h3>
+              <p style="font-size:12px;color:var(--muted);margin:2px 0 0;">Saved posts you haven't published yet. Click one to edit, copy, or download.</p>
+            </div>
+            <span id="sp-drafts-count" style="font-size:12px;color:var(--muted);"></span>
+          </div>
+          <div id="sp-drafts-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+
+        <!-- All / posted -->
+        <div id="sp-all-wrap">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h3 style="font-size:14px;font-weight:700;margin:0;letter-spacing:-.01em;">All posts</h3>
+              <p style="font-size:12px;color:var(--muted);margin:2px 0 0;">Everything on the board, newest first.</p>
+            </div>
+          </div>
+          <div id="sp-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
+        </div>
       </section>
 
       <!-- CREATE VIEW (inline — no modal) -->
@@ -1671,7 +1710,6 @@ async function mountSocialPosts(ctx, container) {
               </div>
               <div id="sp-gen-preview-wrap" style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,var(--surface-2),var(--surface-3));border-radius:14px;border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;">
                 <div style="color:var(--muted);font-size:13px;text-align:center;padding:24px;max-width:320px;">
-                  <div style="font-size:32px;margin-bottom:8px;">✨</div>
                   Pick an article on the right to get started.
                 </div>
               </div>
@@ -1689,7 +1727,7 @@ async function mountSocialPosts(ctx, container) {
             <!-- Action bar -->
             <div style="display:flex;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow-sm);">
               <button class="btn btn-secondary btn-sm" id="sp-gen-preview-btn" style="flex:1;min-width:120px;">Preview all</button>
-              <button class="btn btn-primary btn-sm" id="sp-gen-download-btn" disabled style="flex:1;min-width:120px;">⬇ Download</button>
+              <button class="btn btn-primary btn-sm" id="sp-gen-download-btn" disabled style="flex:1;min-width:120px;">Download</button>
               <button class="btn btn-accent btn-sm" id="sp-gen-save-btn" disabled style="flex:1;min-width:160px;">Save to board</button>
             </div>
           </div>
@@ -1706,8 +1744,8 @@ async function mountSocialPosts(ctx, container) {
               </label>
               <label style="font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.06em;">Platform
                 <select class="input select" id="sp-gen-platform" style="margin-top:6px;width:100%;font-weight:500;text-transform:none;letter-spacing:0;">
-                  <option value="instagram">📸 Instagram</option>
-                  <option value="linkedin">💼 LinkedIn</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="linkedin">LinkedIn</option>
                 </select>
               </label>
               <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-2);border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;">
@@ -1726,7 +1764,6 @@ async function mountSocialPosts(ctx, container) {
             <!-- AI helper (only visible in multi-page mode) -->
             <div id="sp-gen-ai-panel" style="display:none;background:linear-gradient(135deg, rgba(124,92,255,0.10), rgba(56,189,248,0.08));border:1px solid rgba(124,92,255,0.35);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow-sm);">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:18px;">✨</span>
                 <strong style="font-size:13px;">AI helper</strong>
                 <button class="btn btn-ghost btn-xs" id="sp-gen-ai-toggle" style="margin-left:auto;">Hide</button>
               </div>
@@ -1743,7 +1780,7 @@ async function mountSocialPosts(ctx, container) {
                 </div>
 
                 <div style="display:flex;gap:6px;margin-bottom:6px;">
-                  <button class="btn btn-primary btn-xs" id="sp-gen-ai-copy" disabled style="flex:1;opacity:.55;cursor:not-allowed;">📋 Copy prompt</button>
+                  <button class="btn btn-primary btn-xs" id="sp-gen-ai-copy" disabled style="flex:1;opacity:.55;cursor:not-allowed;">Copy prompt</button>
                   <button class="btn btn-secondary btn-xs" id="sp-gen-ai-view">View prompt</button>
                 </div>
                 <p id="sp-gen-ai-hint" style="font-size:11px;color:var(--muted);margin:0 0 8px;font-style:italic;">Pick an article above to enable the prompt — it will include the cover's colors.</p>
@@ -1871,46 +1908,138 @@ async function mountSocialPosts(ctx, container) {
   const listEl = container.querySelector("#sp-list");
   const platformFilter = container.querySelector("#sp-platform-filter");
   const statusFilter = container.querySelector("#sp-status-filter");
+  const suggestionsWrap = container.querySelector("#sp-suggestions-wrap");
+  const suggestionsList = container.querySelector("#sp-suggestions-list");
+  const suggestionsCount = container.querySelector("#sp-suggestions-count");
+  const draftsWrap = container.querySelector("#sp-drafts-wrap");
+  const draftsList = container.querySelector("#sp-drafts-list");
+  const draftsCount = container.querySelector("#sp-drafts-count");
+
+  // True if `post` is plausibly about `article` — matches by stored
+  // articleId when available, else by title substring (legacy posts).
+  function postMatchesArticle(post, article) {
+    if (!post || !article) return false;
+    if (post.articleId && article.id && post.articleId === article.id) return true;
+    if (post.articleSlug && article.slug && post.articleSlug === article.slug) return true;
+    const at = (article.title || "").trim().toLowerCase();
+    if (!at) return false;
+    const haystack = `${post.title || ""} ${post.articleTitle || ""}`.toLowerCase();
+    return haystack.includes(at);
+  }
+
+  // Card markup for a saved post — used by both the Drafts strip and the
+  // full All-posts list. status badge shows on top of caption preview.
+  function postCardHTML(p) {
+    const pm = PLATFORM_META[p.platform] || { label: p.platform, pill: "pill-draft" };
+    const sp = STATUS_PILL[p.status] || "pill-draft";
+    const preview = (p.content || "").slice(0, 160) + ((p.content || "").length > 160 ? "…" : "");
+    const cover = p.coverImageUrl || "";
+    return `
+      <div class="card" style="cursor:pointer;" data-id="${esc(p.id)}">
+        <div class="card-body" style="display:flex;gap:14px;align-items:flex-start;">
+          ${cover ? `<img src="${esc(cover)}" alt="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">` : ""}
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+              <strong style="font-size:14px;">${esc(p.title)}</strong>
+              <span class="pill ${pm.pill}" style="font-size:11px;">${esc(pm.label)}</span>
+              <span class="pill ${sp}" style="font-size:11px;">${esc(p.status)}</span>
+            </div>
+            ${preview ? `<div style="font-size:13px;color:var(--ink-2);white-space:pre-line;margin-bottom:6px;">${esc(preview)}</div>` : ""}
+            <div style="font-size:12px;color:var(--muted);">
+              By ${esc(p.proposerName || "—")}
+              ${p.deadline ? ` · Due ${esc(p.deadline)}` : ""}
+              ${p.createdAt ? ` · ${fmtRelative(p.createdAt)}` : ""}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
 
   // ── Render post list ───────────────────────────────────────────────────────
   function render() {
     const pf = platformFilter.value;
     const sf = statusFilter.value;
-    const posts = allPosts.filter((p) => (!pf || p.platform === pf) && (!sf || p.status === sf));
+    const filtered = allPosts.filter((p) => (!pf || p.platform === pf) && (!sf || p.status === sf));
 
-    if (!posts.length) {
-      listEl.innerHTML = `<div class="empty-state">No posts yet. Click "Generate post image" to create your first one.</div>`;
-      return;
+    // Drafts = unposted (any status that isn't "posted"). Show in their own
+    // strip so they're easy to grab and finish.
+    const drafts = filtered.filter((p) => p.status !== "posted");
+    if (drafts.length) {
+      draftsWrap.style.display = "block";
+      draftsCount.textContent = `${drafts.length} draft${drafts.length === 1 ? "" : "s"}`;
+      draftsList.innerHTML = drafts.map(postCardHTML).join("");
+      draftsList.querySelectorAll("[data-id]").forEach((card) =>
+        card.addEventListener("click", () => openDetail(allPosts.find((p) => p.id === card.dataset.id)))
+      );
+    } else {
+      draftsWrap.style.display = "none";
     }
 
-    listEl.innerHTML = posts.map((p) => {
-      const pm = PLATFORM_META[p.platform] || { label: p.platform, icon: "📱", pill: "pill-draft" };
-      const sp = STATUS_PILL[p.status] || "pill-draft";
-      const preview = (p.content || "").slice(0, 130) + ((p.content || "").length > 130 ? "…" : "");
+    // All posts list
+    if (!filtered.length) {
+      listEl.innerHTML = `<div class="empty-state">No posts yet. Click "Create new post" to get started.</div>`;
+    } else {
+      listEl.innerHTML = filtered.map(postCardHTML).join("");
+      listEl.querySelectorAll("[data-id]").forEach((card) =>
+        card.addEventListener("click", () => openDetail(allPosts.find((p) => p.id === card.dataset.id)))
+      );
+    }
+
+    renderSuggestions();
+  }
+
+  // Suggestions: published articles from the last 30 days that don't yet have
+  // any matching post on the board. Click → switches to Create tab with the
+  // article pre-selected.
+  function renderSuggestions() {
+    if (!publishedArticles.length) {
+      suggestionsWrap.style.display = "none";
+      return;
+    }
+    const cutoff = Date.now() - 30 * 86400000;
+    const recent = publishedArticles.filter((a) => {
+      if (!a.publishedAt) return true; // include articles missing a date
+      const t = Date.parse(a.publishedAt);
+      return Number.isFinite(t) ? t >= cutoff : true;
+    });
+    const needsPost = recent.filter((a) => !allPosts.some((p) => postMatchesArticle(p, a)));
+    if (!needsPost.length) {
+      suggestionsWrap.style.display = "none";
+      return;
+    }
+    const top = needsPost.slice(0, 6);
+    suggestionsWrap.style.display = "block";
+    suggestionsCount.textContent = `${needsPost.length} article${needsPost.length === 1 ? "" : "s"} without a post`;
+    suggestionsList.innerHTML = top.map((a) => {
+      const cover = a.coverImage || a.image || "";
+      const author = a.authorName || a.author || "";
       return `
-        <div class="card" style="margin-bottom:12px;cursor:pointer;" data-id="${esc(p.id)}">
-          <div class="card-body" style="display:flex;gap:16px;align-items:flex-start;">
-            <div style="font-size:28px;line-height:1;flex-shrink:0;">${pm.icon}</div>
+        <div class="card sp-suggestion" data-article-id="${esc(a.id)}" style="cursor:pointer;">
+          <div class="card-body" style="display:flex;gap:12px;align-items:flex-start;padding:12px;">
+            ${cover ? `<img src="${esc(cover)}" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">` : `<div style="width:56px;height:56px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);flex-shrink:0;"></div>`}
             <div style="flex:1;min-width:0;">
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-                <strong style="font-size:14px;">${esc(p.title)}</strong>
-                <span class="pill ${pm.pill}" style="font-size:11px;">${esc(pm.label)}</span>
-                <span class="pill ${sp}" style="font-size:11px;">${esc(p.status)}</span>
-              </div>
-              ${preview ? `<div style="font-size:13px;color:var(--ink-2);white-space:pre-line;margin-bottom:6px;">${esc(preview)}</div>` : ""}
-              <div style="font-size:12px;color:var(--muted);">
-                By ${esc(p.proposerName || "—")}
-                ${p.deadline ? ` · Due ${esc(p.deadline)}` : ""}
-                ${p.createdAt ? ` · ${fmtRelative(p.createdAt)}` : ""}
-              </div>
+              <div style="font-size:13px;font-weight:700;line-height:1.3;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(a.title)}</div>
+              <div style="font-size:11px;color:var(--muted);">${author ? `By ${esc(author)}` : "Recently published"}</div>
             </div>
+            <button class="btn btn-primary btn-xs" data-create-for="${esc(a.id)}" style="flex-shrink:0;align-self:center;">Create</button>
           </div>
         </div>`;
     }).join("");
 
-    listEl.querySelectorAll("[data-id]").forEach((card) =>
-      card.addEventListener("click", () => openDetail(allPosts.find((p) => p.id === card.dataset.id)))
-    );
+    suggestionsList.querySelectorAll(".sp-suggestion").forEach((card) => {
+      card.addEventListener("click", () => startCreateForArticleId(card.dataset.articleId));
+    });
+  }
+
+  // Switch to the Create tab and preselect the article (initializing the
+  // Create view first if it has never been opened in this session).
+  async function startCreateForArticleId(articleId) {
+    setActiveTab("create");
+    await ensureCreateInitialized();
+    const idx = publishedArticles.findIndex((a) => a.id === articleId);
+    if (idx < 0) return;
+    articleSelect.value = String(idx);
+    onArticleChange();
   }
 
   // ── Load posts ─────────────────────────────────────────────────────────────
@@ -1951,19 +2080,31 @@ async function mountSocialPosts(ctx, container) {
 
   function openDetail(p) {
     if (!p) return;
-    const pm = PLATFORM_META[p.platform] || { label: p.platform, icon: "📱", pill: "pill-draft" };
+    const pm = PLATFORM_META[p.platform] || { label: p.platform, icon: "", pill: "pill-draft" };
     const sp = STATUS_PILL[p.status] || "pill-draft";
     detailModal.querySelector("#sp-detail-title").textContent = p.title || "Post";
 
+    const cover = p.coverImageUrl || "";
     detailModal.querySelector("#sp-detail-body").innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-        <span class="pill ${pm.pill}">${pm.icon} ${esc(pm.label)}</span>
+        <span class="pill ${pm.pill}">${esc(pm.label)}</span>
         <span class="pill ${sp}">${esc(p.status)}</span>
         ${p.deadline ? `<span class="pill pill-draft">Due ${esc(p.deadline)}</span>` : ""}
       </div>
+      ${cover ? `
+      <div style="margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;">
+        <img src="${esc(cover)}" alt="" style="width:120px;height:120px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">
+          Cover image saved with this draft. Use "Download image" below to grab it for posting, or "Open in editor" to re-render the carousel pages.
+        </div>
+      </div>` : ""}
       <div style="margin-bottom:16px;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Caption</div>
-        <pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;background:var(--surface-2);border-radius:8px;padding:14px;margin:0;border:1px solid var(--border);max-height:260px;overflow-y:auto;">${esc(p.content || "—")}</pre>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">Caption</span>
+          <span id="sp-detail-caption-status" style="font-size:11px;color:var(--muted);"></span>
+        </div>
+        <textarea id="sp-detail-caption" class="input textarea" rows="8"
+          style="width:100%;min-height:160px;font-size:14px;font-family:inherit;">${esc(p.content || "")}</textarea>
       </div>
       ${p.notes ? `
       <div style="margin-bottom:16px;">
@@ -1972,22 +2113,104 @@ async function mountSocialPosts(ctx, container) {
       </div>` : ""}
       <div style="font-size:12px;color:var(--muted);">By <strong>${esc(p.proposerName || "—")}</strong>${p.createdAt ? ` · ${fmtRelative(p.createdAt)}` : ""}</div>`;
 
+    const captionEl = detailModal.querySelector("#sp-detail-caption");
+    const captionStatus = detailModal.querySelector("#sp-detail-caption-status");
+
     const footer = detailModal.querySelector("#sp-detail-footer");
     footer.innerHTML = "";
 
     const copyBtn = el("button", { class: "btn btn-secondary btn-sm" });
     copyBtn.textContent = "Copy caption";
     copyBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(p.content || "").then(() => {
+      navigator.clipboard.writeText(captionEl.value || "").then(() => {
         copyBtn.textContent = "Copied!";
         setTimeout(() => { copyBtn.textContent = "Copy caption"; }, 2000);
       });
     });
     footer.appendChild(copyBtn);
 
+    // Save edits to the caption back to Firestore. Only enabled when the user
+    // has actually changed the text, to avoid accidental no-op writes.
+    const saveCaptionBtn = el("button", { class: "btn btn-primary btn-sm" });
+    saveCaptionBtn.textContent = "Save caption";
+    saveCaptionBtn.disabled = true;
+    captionEl.addEventListener("input", () => {
+      const dirty = captionEl.value !== (p.content || "");
+      saveCaptionBtn.disabled = !dirty;
+      captionStatus.textContent = dirty ? "Unsaved changes" : "";
+    });
+    saveCaptionBtn.addEventListener("click", async () => {
+      saveCaptionBtn.disabled = true;
+      saveCaptionBtn.textContent = "Saving…";
+      try {
+        await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { content: captionEl.value });
+        p.content = captionEl.value;
+        captionStatus.textContent = "Saved";
+        saveCaptionBtn.textContent = "Saved";
+        setTimeout(() => { saveCaptionBtn.textContent = "Save caption"; captionStatus.textContent = ""; }, 1500);
+        await loadPosts();
+      } catch (err) {
+        ctx.toast("Save failed: " + err.message, "error");
+        saveCaptionBtn.textContent = "Save caption";
+        saveCaptionBtn.disabled = false;
+      }
+    });
+    footer.appendChild(saveCaptionBtn);
+
+    // Download the saved cover image so the user can post it directly. The
+    // image's CORS mode is "no-cors" since Wix media doesn't reliably set
+    // permissive headers, so we fetch as blob and offer a download link.
+    if (cover) {
+      const dlBtn = el("button", { class: "btn btn-secondary btn-sm" });
+      dlBtn.textContent = "Download image";
+      dlBtn.addEventListener("click", async () => {
+        dlBtn.disabled = true;
+        const original = dlBtn.textContent;
+        dlBtn.textContent = "Downloading…";
+        try {
+          const res = await fetch(cover, { mode: "cors" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
+          a.download = `catalyst-${p.articleSlug || "post"}-cover.${ext}`;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+          // Fallback: open in a new tab so the user can right-click → save.
+          window.open(cover, "_blank", "noopener");
+        } finally {
+          dlBtn.disabled = false;
+          dlBtn.textContent = original;
+        }
+      });
+      footer.appendChild(dlBtn);
+    }
+
+    // Re-open the Create tab pre-loaded with this draft's article and caption,
+    // so the user can re-render the carousel pages and download fresh PNGs.
+    if (p.articleId) {
+      const editBtn = el("button", { class: "btn btn-accent btn-sm" });
+      editBtn.textContent = "Open in editor";
+      editBtn.addEventListener("click", async () => {
+        closeDetail();
+        await startCreateForArticleId(p.articleId);
+        // Replace the auto-built caption with the user's edited one so they
+        // don't lose any tweaks they made in the draft.
+        if (captionArea && captionEl.value) {
+          captionArea.value = captionEl.value;
+          charEl.textContent = `${captionArea.value.length} characters`;
+        }
+        if (p.platform && platformSelect) platformSelect.value = p.platform;
+      });
+      footer.appendChild(editBtn);
+    }
+
     if (["admin", "editor"].includes(ctx.role)) {
       const transitions = { proposed: "approved", approved: "assigned", assigned: "posted" };
-      const labels = { proposed: "Approve", approved: "Mark assigned", assigned: "Mark posted ✓" };
+      const labels = { proposed: "Approve", approved: "Mark assigned", assigned: "Mark posted" };
       if (transitions[p.status]) {
         const btn = el("button", { class: "btn btn-primary btn-sm" });
         btn.textContent = labels[p.status];
@@ -2174,7 +2397,7 @@ async function mountSocialPosts(ctx, container) {
     closing:   "Closing",
   };
   const LAYOUT_ICONS = {
-    cover: "🖼️", editorial: "📰", hook: "💬", quote: "❝", beautiful: "◆", closing: "✨",
+    cover: "Cv", editorial: "Ed", hook: "Hk", quote: "Qt", beautiful: "Bf", closing: "Cl",
   };
 
   // ── Page thumbnails (horizontal strip, multi-page only) ────────────────────
@@ -2228,11 +2451,11 @@ async function mountSocialPosts(ctx, container) {
     const layoutPicker = multiMode && page.layout !== "cover" ? `
       <label style="font-size:13px;font-weight:600;">Layout
         <select class="input select" id="sp-gen-layout" style="margin-top:6px;width:100%;">
-          <option value="editorial" ${page.layout === "editorial" ? "selected" : ""}>📰 Editorial — headline + body</option>
-          <option value="hook"      ${page.layout === "hook"      ? "selected" : ""}>💬 Hook — big stat + body + CTA</option>
-          <option value="quote"     ${page.layout === "quote"     ? "selected" : ""}>❝ Quote — pull-quote + attribution</option>
+          <option value="editorial" ${page.layout === "editorial" ? "selected" : ""}>Editorial — headline + body</option>
+          <option value="hook"      ${page.layout === "hook"      ? "selected" : ""}>Hook — big stat + body + CTA</option>
+          <option value="quote"     ${page.layout === "quote"     ? "selected" : ""}>Quote — pull-quote + attribution</option>
           <option value="beautiful" ${page.layout === "beautiful" ? "selected" : ""}>Beautiful — polished bullets</option>
-          <option value="closing"   ${page.layout === "closing"   ? "selected" : ""}>✨ Closing — blurred cover + logo</option>
+          <option value="closing"   ${page.layout === "closing"   ? "selected" : ""}>Closing — blurred cover + logo</option>
         </select>
       </label>
     ` : "";
@@ -2919,7 +3142,7 @@ bg: #0a1f3d
     if (coverQuestion) bits.push("cover question");
     if (parsedPages.length) bits.push(`${parsedPages.length} page${parsedPages.length === 1 ? "" : "s"}`);
     if (caption) bits.push("caption");
-    ctx.toast(`✨ AI generated ${bits.join(" + ")}.`, "success");
+    ctx.toast(`AI generated ${bits.join(" + ")}.`, "success");
     renderPageList();
     renderEditor();
     renderPreviewForActive();
@@ -3054,6 +3277,10 @@ bg: #0a1f3d
         proposerName: ctx.profile.name || ctx.user.email,
         assigneeId: null,
         assigneeName: null,
+        articleId: selectedArticle.id || "",
+        articleSlug: slug,
+        articleTitle: selectedArticle.title || "",
+        coverImageUrl: coverUrl || "",
         deadline: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
         createdAt: new Date().toISOString(),
         activity: [{ text: `created via image generator (${pages.length} page${pages.length === 1 ? "" : "s"})`, authorName: ctx.profile.name || ctx.user.email, timestamp: new Date().toISOString() }],
@@ -3163,7 +3390,6 @@ bg: #0a1f3d
     charEl.textContent = "0 characters";
     previewWrap.innerHTML = `
       <div style="color:var(--muted);font-size:13px;text-align:center;padding:24px;max-width:320px;">
-        <div style="font-size:32px;margin-bottom:8px;">✨</div>
         Pick an article on the right to get started.
       </div>`;
     previewLabel.textContent = "Page 1";
@@ -3200,6 +3426,12 @@ bg: #0a1f3d
   platformFilter.addEventListener("change", render);
   statusFilter.addEventListener("change", render);
 
-  await loadPosts();
+  // Load posts and the published-article list in parallel so the Board can
+  // surface "needs a post" suggestions on first paint without waiting for
+  // the user to open the Create tab.
+  await Promise.all([
+    loadPosts(),
+    loadArticles().then(() => render()),
+  ]);
   return cleanup;
 }
