@@ -1411,9 +1411,9 @@ async function renderBeautiful(page) {
         lineHeightMul: 1.12,
       });
 
-      // Title baselines — last line of the title sits ~22px above the caption.
-      const titleBlockH = titleFit.lineHeight * (titleFit.lines.length - 1) + titleFit.fontSize;
-      const titleLastBaseline = captionBaseline - 26;
+      // Title baselines — last line of the title sits well above the caption
+      // so the byline is never tucked up under the closing quotation mark.
+      const titleLastBaseline = captionBaseline - 56;
       const titleFirstBaseline = titleLastBaseline - titleFit.lineHeight * (titleFit.lines.length - 1);
 
       // Eyebrow sits ~22px above the title's first line, in accent color.
@@ -1437,18 +1437,27 @@ async function renderBeautiful(page) {
       }
       resetLetterSpacing();
 
-      // Caption row — small, subdued, with a thin accent rule on the left
-      // mirroring the page's accent bar so the block reads as one composition.
+      // Caption row — right-aligned to the safe area's right edge so it
+      // visually balances the title and never collides with the closing
+      // quotation mark. A short accent rule sits to the left of the text,
+      // forming a tidy "— By Author · Link in bio" lockup.
+      ctx.save();
       ctx.font = `500 ${capSz}px ${SANS}`;
       resetLetterSpacing();
+      const captionTextW = ctx.measureText(captionText).width;
       const ruleW = 32;
       const ruleH = 2;
+      const ruleGap = 16;
+      const rightEdge = SIZE - padR;
+      const captionTextX = rightEdge - captionTextW;
+      const ruleX = captionTextX - ruleGap - ruleW;
       ctx.fillStyle = acRgba(0.80);
       ctx.beginPath();
-      ctx.roundRect(padL, captionBaseline - capSz * 0.45, ruleW, ruleH, 1);
+      ctx.roundRect(ruleX, captionBaseline - capSz * 0.42, ruleW, ruleH, 1);
       ctx.fill();
       ctx.fillStyle = isDark ? "rgba(255,255,255,0.82)" : "rgba(10,20,36,0.74)";
-      ctx.fillText(captionText, padL + ruleW + 16, captionBaseline);
+      ctx.fillText(captionText, captionTextX, captionBaseline);
+      ctx.restore();
     } else {
       // Fallback: keep the old pill for non-standard CTAs that the user
       // wrote by hand. Same look as before so existing posts don't change.
