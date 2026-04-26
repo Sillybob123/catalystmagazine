@@ -1249,14 +1249,17 @@ async function renderBeautiful(page) {
   // Vertical anchors (match across every slide so the carousel reads as one set)
   const HEADER_Y      = 120;   // eyebrow baseline
   const HEADLINE_TOP  = 178;   // top of headline block
-  const BODY_BOTTOM   = 880;   // bottom of body/bullets safe area (above CTA/wordmark)
+  // Body safe area shrinks on the CTA slide so the three-line CTA stack
+  // (eyebrow + title + caption) can sit comfortably below it without
+  // crowding the body copy or running into the wordmark.
+  const cta = (page.cta || "").trim();
+  const BODY_BOTTOM   = cta ? 740 : 880;
   const CTA_Y         = SIZE - 132;
 
   const eyebrow = (page.eyebrow || "").trim();
   const headline = (page.headline || "").trim();
   const body = (page.body || "").trim();
   const bullets = normalizeBullets(page.bullets);
-  const cta = (page.cta || "").trim();
 
   await ensurePoppinsLoaded();
   ctx.textBaseline = "alphabetic";
@@ -1365,29 +1368,112 @@ async function renderBeautiful(page) {
     }
   }
 
-  // ── CTA pill ─────────────────────────────────────────────────────────────
+  // ── CTA block — three-line stack instead of a cramped one-line pill ──────
+  // Old design: 'Read "Long Article Title" by Author. Link in bio.' all on
+  // one line in a small pill — long titles got squished to 18px and looked
+  // crowded. New design splits the sentence into three stacked rows so each
+  // piece can breathe at a proper editorial size:
+  //
+  //   READ                                        ← tiny accent eyebrow
+  //   "Long Article Title"                        ← large serif title
+  //   By Author · Link in bio                     ← small caption row
+  //
+  // We parse the sentence with a forgiving regex; if it doesn't match the
+  // expected shape we fall back to the original single-line pill so any
+  // user-authored CTA still renders cleanly.
   if (cta) {
-    const ctaFont = (sz) => `700 ${sz}px ${SANS}`;
-    const ctaFit = fitText(ctx, cta, {
-      font: ctaFont, startSize: 24, minSize: 18,
-      maxWidth: maxW - 60, maxHeight: 36, lineHeightMul: 1,
-    });
-    const pillH = 60;
-    const pillY = CTA_Y;
-    ctx.font = ctaFont(ctaFit.fontSize);
-    resetLetterSpacing();
-    const textW = ctx.measureText(ctaFit.lines[0] || cta).width;
-    const pillW = Math.min(maxW, textW + 72);
+    const m = /^read\s+["“]([^"”]+)["”]\s+by\s+([^.]+?)\.\s*link in bio\.?$/i.exec(cta);
+    if (m) {
+      const titleText = m[1].trim();
+      const authorText = m[2].trim();
+      const captionText = `By ${authorText} · Link in bio`;
 
-    ctx.save();
-    ctx.fillStyle = acRgba(0.14);
-    ctx.strokeStyle = acRgba(0.70);
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(padL, pillY - pillH / 2, pillW, pillH, pillH / 2); ctx.fill(); ctx.stroke();
-    ctx.restore();
+      // Vertical anchors — the block sits between the body area and the
+      // wordmark row at the very bottom (wordmark baseline ≈ y=1024, top ≈
+      // y=1002). We work bottom-up: caption sits clear of the wordmark, then
+      // the title above it, then the eyebrow above that.
+      const blockBottom = SIZE - 124;  // ~956 — leaves a clean gap above the wordmark
 
-    ctx.fillStyle = isDark ? "rgba(255,255,255,0.96)" : "rgba(10,20,36,0.94)";
-    ctx.fillText(ctaFit.lines[0] || cta, padL + 28, pillY + ctaFit.fontSize * 0.36);
+      // Caption row first (we place it at the bottom and grow upward)
+      const capSz = 22;
+      const captionBaseline = blockBottom;
+
+      // Title — large editorial serif, italic, in quotes. Fits across the
+      // full safe width, wraps to up to two lines, shrinks if needed so the
+      // whole block always stays above the wordmark row.
+      const titleFont = (sz) => `italic 600 ${sz}px Georgia, "Iowan Old Style", "Times New Roman", serif`;
+      const titleFit = fitText(ctx, `“${titleText}”`, {
+        font: titleFont,
+        startSize: 56,
+        minSize: 30,
+        maxWidth: maxW,
+        maxHeight: 150,
+        lineHeightMul: 1.12,
+      });
+
+      // Title baselines — last line of the title sits ~22px above the caption.
+      const titleBlockH = titleFit.lineHeight * (titleFit.lines.length - 1) + titleFit.fontSize;
+      const titleLastBaseline = captionBaseline - 26;
+      const titleFirstBaseline = titleLastBaseline - titleFit.lineHeight * (titleFit.lines.length - 1);
+
+      // Eyebrow sits ~22px above the title's first line, in accent color.
+      const eyebrowSz = 22;
+      const eyebrowText = "READ";
+      const eyebrowY = titleFirstBaseline - titleFit.fontSize - 18;
+      ctx.fillStyle = acRgba(0.95);
+      ctx.font = `700 ${eyebrowSz}px ${SANS}`;
+      if ("letterSpacing" in ctx) ctx.letterSpacing = "0.18em";
+      ctx.fillText(eyebrowText, padL, eyebrowY);
+      resetLetterSpacing();
+
+      // Title text
+      ctx.fillStyle = ink;
+      ctx.font = titleFont(titleFit.fontSize);
+      if ("letterSpacing" in ctx) ctx.letterSpacing = "-0.005em";
+      let ty = titleFirstBaseline;
+      for (const line of titleFit.lines) {
+        ctx.fillText(line, padL, ty);
+        ty += titleFit.lineHeight;
+      }
+      resetLetterSpacing();
+
+      // Caption row — small, subdued, with a thin accent rule on the left
+      // mirroring the page's accent bar so the block reads as one composition.
+      ctx.font = `500 ${capSz}px ${SANS}`;
+      resetLetterSpacing();
+      const ruleW = 32;
+      const ruleH = 2;
+      ctx.fillStyle = acRgba(0.80);
+      ctx.beginPath();
+      ctx.roundRect(padL, captionBaseline - capSz * 0.45, ruleW, ruleH, 1);
+      ctx.fill();
+      ctx.fillStyle = isDark ? "rgba(255,255,255,0.82)" : "rgba(10,20,36,0.74)";
+      ctx.fillText(captionText, padL + ruleW + 16, captionBaseline);
+    } else {
+      // Fallback: keep the old pill for non-standard CTAs that the user
+      // wrote by hand. Same look as before so existing posts don't change.
+      const ctaFont = (sz) => `700 ${sz}px ${SANS}`;
+      const ctaFit = fitText(ctx, cta, {
+        font: ctaFont, startSize: 24, minSize: 18,
+        maxWidth: maxW - 60, maxHeight: 36, lineHeightMul: 1,
+      });
+      const pillH = 60;
+      const pillY = CTA_Y;
+      ctx.font = ctaFont(ctaFit.fontSize);
+      resetLetterSpacing();
+      const textW = ctx.measureText(ctaFit.lines[0] || cta).width;
+      const pillW = Math.min(maxW, textW + 72);
+
+      ctx.save();
+      ctx.fillStyle = acRgba(0.14);
+      ctx.strokeStyle = acRgba(0.70);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(padL, pillY - pillH / 2, pillW, pillH, pillH / 2); ctx.fill(); ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = isDark ? "rgba(255,255,255,0.96)" : "rgba(10,20,36,0.94)";
+      ctx.fillText(ctaFit.lines[0] || cta, padL + 28, pillY + ctaFit.fontSize * 0.36);
+    }
   }
 
   // ── Footer: "THE CATALYST" wordmark on bottom-LEFT ───────────────────────
