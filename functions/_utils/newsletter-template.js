@@ -227,11 +227,8 @@ export function buildInboxNewsletter({
                 <a href="${esc(href)}" style="color:#1d1d1f;text-decoration:none;">${esc(title)}</a>
               </p>
               ${byline ? `<p style="margin:0 0 9px 0;font-size:13px;color:#6e6e73;font-family:Arial,Helvetica,sans-serif;font-style:italic;">${byline}</p>` : ""}
-              ${excerpt ? `<p style="margin:0 0 22px 0;font-size:15px;line-height:1.65;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(excerpt)}</p>` : ""}
-              <!-- Read-more link with breathing room above. Plain underlined
-                   text (no colored pill button) — buttons are a strong Gmail
-                   Promotions signal, underlined links are not. -->
-              <p style="margin:0;padding:14px 0 2px 0;border-top:1px solid #e8e8ed;">
+              ${excerpt ? `<p style="margin:0 0 18px 0;font-size:15px;line-height:1.65;color:#424245;font-family:Georgia,'Times New Roman',serif;">${esc(excerpt)}</p>` : ""}
+              <p style="margin:0;">
                 <a href="${esc(href)}" style="font-size:14px;color:#1d1d1f;font-family:Arial,Helvetica,sans-serif;text-decoration:underline;font-weight:600;letter-spacing:0.01em;">Read the full story &rarr;</a>
               </p>
             </td>
