@@ -12,7 +12,7 @@ import {
 import { el, esc, toast, slugify } from "./ui.js";
 
 // A user is "recently joined" if their account was created within this many
-// days. The Welcome Bot panel surfaces these at the top so the admin can fire
+// days. The welcome email panel surfaces these at the top so the admin can fire
 // off a welcome email to new arrivals without scrolling.
 const RECENT_JOIN_DAYS = 14;
 
@@ -61,7 +61,7 @@ export async function mount(ctx, container) {
       <div style="border:1px solid var(--hairline);border-radius:10px;padding:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
           <div>
-            <div style="font-weight:700;color:var(--ink-1);">Welcome Bot</div>
+            <div style="font-weight:700;color:var(--ink-1);">Welcome email sender</div>
             <div class="hint" style="margin-top:4px;max-width:640px;">
               Send a new contributor an onboarding email with their sign-in details and a role-specific
               walkthrough of the editorial suite. Recently joined users (last ${RECENT_JOIN_DAYS} days) are
@@ -72,6 +72,22 @@ export async function mount(ctx, container) {
         </div>
         <div id="welcome-panel" style="margin-top:14px;">
           <div class="loading-state"><div class="spinner"></div>Loading users…</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #b7e4c7;border-left:4px solid #22c55e;border-radius:10px;padding:16px;background:#f0fdf4;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:800;color:#14532d;">Send email guidance</div>
+            <div class="hint" style="margin-top:4px;max-width:720px;color:#166534;">
+              Send a polished, detailed help email from Aidan and Yair to a selected user. Use this when a writer,
+              editor, newsletter builder, or marketing teammate is confused about a dashboard workflow.
+            </div>
+          </div>
+          <button id="guidance-refresh" class="btn btn-secondary btn-sm">Refresh</button>
+        </div>
+        <div id="guidance-panel" style="margin-top:14px;">
+          <div class="loading-state"><div class="spinner"></div>Loading guidance tool…</div>
         </div>
       </div>
     </div>`;
@@ -108,16 +124,23 @@ export async function mount(ctx, container) {
     }
   });
 
-  // ---------- Welcome Bot ----------
+  // ---------- Welcome email sender ----------
   const welcomePanel = card.querySelector("#welcome-panel");
   const welcomeRefresh = card.querySelector("#welcome-refresh");
-  const loadWelcome = () => loadWelcomeBot(ctx, welcomePanel);
-  // Attach the click delegate once — loadWelcomeBot only swaps innerHTML, so
+  const loadWelcome = () => loadWelcomeEmailSender(ctx, welcomePanel);
+  // Attach the click delegate once — loadWelcomeEmailSender only swaps innerHTML, so
   // the panel element itself sticks around and a single listener handles
   // every Send button across refreshes.
   welcomePanel.addEventListener("click", (e) => handleWelcomeClick(e, ctx));
   welcomeRefresh.addEventListener("click", loadWelcome);
   loadWelcome();
+
+  // ---------- Email Guidance ----------
+  const guidancePanel = card.querySelector("#guidance-panel");
+  const guidanceRefresh = card.querySelector("#guidance-refresh");
+  const loadGuidance = () => loadGuidanceEmailTool(ctx, guidancePanel);
+  guidanceRefresh.addEventListener("click", loadGuidance);
+  loadGuidance();
 
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
@@ -603,20 +626,20 @@ function dateStamp() {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 }
 
-// ---------- Welcome Bot ----------
+// ---------- Welcome email sender ----------
 // Lists every user, sorted by createdAt desc. Recently joined users get a
 // "NEW" pill so the admin notices them. Each row has a Send button that
 // fires POST /api/welcome-email; the API resolves the user (server-side),
 // sends the onboarding email via Resend, and stamps welcomeEmailSentAt on
 // the user doc so we can show "Sent on …" on subsequent loads.
-async function loadWelcomeBot(ctx, mount) {
+async function loadWelcomeEmailSender(ctx, mount) {
   mount.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading users…</div>`;
   let users;
   try {
     const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
     users = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   } catch (err) {
-    console.error("welcome bot: load users failed", err);
+    console.error("welcome email sender: load users failed", err);
     mount.innerHTML = `<div class="error-state">Could not load users: ${esc(err.message)}</div>`;
     return;
   }
@@ -635,6 +658,130 @@ async function loadWelcomeBot(ctx, mount) {
     mount.appendChild(renderSection("Recently joined", recent, ctx, /* highlight */ true));
   }
   mount.appendChild(renderSection("All users", others.length ? others : users, ctx, false));
+}
+
+// ---------- Email guidance sender ----------
+async function loadGuidanceEmailTool(ctx, mount) {
+  mount.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading guidance tool…</div>`;
+  try {
+    const [templateRes, userSnap] = await Promise.all([
+      ctx.authedFetch("/api/guidance-email"),
+      getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"))),
+    ]);
+    const templateData = await templateRes.json().catch(() => ({}));
+    if (!templateRes.ok || !templateData.ok) throw new Error(templateData.error || `HTTP ${templateRes.status}`);
+
+    const templates = templateData.templates || [];
+    const users = userSnap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((u) => u.email)
+      .sort((a, b) => (roleLabel(a.role || "").localeCompare(roleLabel(b.role || "")) || String(a.name || a.email).localeCompare(String(b.name || b.email))));
+
+    if (!templates.length) {
+      mount.innerHTML = `<div class="empty-state">No guidance templates are configured.</div>`;
+      return;
+    }
+    if (!users.length) {
+      mount.innerHTML = `<div class="empty-state">No users with email addresses found.</div>`;
+      return;
+    }
+
+    mount.innerHTML = `
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;">
+        <div class="field" style="margin:0;">
+          <label class="label">User</label>
+          <select class="select" id="guidance-user">
+            ${users.map((u) => `<option value="${esc(u.id)}">${esc(u.name || u.email)} — ${esc(roleLabel(u.role || "reader"))} (${esc(u.email)})</option>`).join("")}
+          </select>
+        </div>
+        <div class="field" style="margin:0;">
+          <label class="label">Guidance template</label>
+          <select class="select" id="guidance-template">
+            ${templates.map((t) => `<option value="${esc(t.id)}">${esc(t.title)} — ${esc(t.audience)}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div id="guidance-preview" style="margin-top:12px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px;">
+        <div class="hint" id="guidance-last-sent" style="color:#166534;"></div>
+        <button class="btn btn-accent btn-sm" id="guidance-send">Send guidance email</button>
+      </div>
+      <div id="guidance-status" class="hint" style="margin-top:8px;color:var(--danger);"></div>
+    `;
+
+    const userSelect = mount.querySelector("#guidance-user");
+    const templateSelect = mount.querySelector("#guidance-template");
+    const preview = mount.querySelector("#guidance-preview");
+    const lastSent = mount.querySelector("#guidance-last-sent");
+    const status = mount.querySelector("#guidance-status");
+    const sendBtn = mount.querySelector("#guidance-send");
+
+    const renderPreview = () => {
+      const user = users.find((u) => u.id === userSelect.value) || users[0];
+      const template = templates.find((t) => t.id === templateSelect.value) || templates[0];
+      const sentAt = user.lastGuidanceEmailSentAt ? new Date(parseDate(user.lastGuidanceEmailSentAt)) : null;
+      const sentTemplate = user.lastGuidanceEmailTemplate
+        ? templates.find((t) => t.id === user.lastGuidanceEmailTemplate)?.title || user.lastGuidanceEmailTemplate
+        : null;
+
+      preview.innerHTML = `
+        <div style="border:1px solid #b7e4c7;border-radius:10px;background:#ffffff;padding:14px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:12px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#166534;">Email preview</div>
+              <div style="font-weight:800;color:var(--ink-1);font-size:16px;margin-top:4px;">${esc(template.subject)}</div>
+            </div>
+            <span style="display:inline-flex;padding:4px 9px;border-radius:999px;background:#dcfce7;color:#166534;font-size:11px;font-weight:800;">${esc(template.audience)}</span>
+          </div>
+          <p style="margin:10px 0 0;color:var(--ink-2);font-size:13.5px;line-height:1.55;">${esc(template.intro)}</p>
+          <div style="margin-top:10px;font-size:12px;color:#166534;">
+            Recipient: <strong>${esc(user.name || user.email)}</strong> · ${esc(user.email)}
+          </div>
+        </div>
+      `;
+      lastSent.textContent = sentAt
+        ? `Last guidance sent: ${sentTemplate || "template"} on ${sentAt.toLocaleDateString()}`
+        : "No guidance email recorded for this user yet.";
+      status.textContent = "";
+    };
+
+    userSelect.addEventListener("change", renderPreview);
+    templateSelect.addEventListener("change", renderPreview);
+    renderPreview();
+
+    sendBtn.addEventListener("click", async () => {
+      const user = users.find((u) => u.id === userSelect.value);
+      const template = templates.find((t) => t.id === templateSelect.value);
+      if (!user || !template) return;
+      if (!confirm(`Send "${template.title}" guidance to ${user.name || user.email}?`)) return;
+
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Sending…";
+      status.textContent = "";
+      try {
+        const res = await ctx.authedFetch("/api/guidance-email", {
+          method: "POST",
+          body: JSON.stringify({ uid: user.id, templateId: template.id }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        user.lastGuidanceEmailSentAt = new Date().toISOString();
+        user.lastGuidanceEmailTemplate = template.id;
+        toast(`Guidance email sent to ${user.email}.`, "success");
+        renderPreview();
+      } catch (err) {
+        console.error(err);
+        status.textContent = `Send failed: ${err.message}`;
+        toast("Guidance email failed.", "error");
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send guidance email";
+      }
+    });
+  } catch (err) {
+    console.error("guidance email tool failed", err);
+    mount.innerHTML = `<div class="error-state">Could not load guidance email tool: ${esc(err.message)}</div>`;
+  }
 }
 
 async function handleWelcomeClick(e, ctx) {
@@ -730,7 +877,7 @@ function roleLabel(r) {
   const map = {
     admin: "Admin",
     // Editors at Catalyst are also expected to write — surface that here so
-    // the Welcome Bot list reads consistently with the welcome email body.
+    // the welcome email list reads consistently with the welcome email body.
     editor: "Editor / Writer",
     writer: "Writer",
     newsletter_builder: "Newsletter builder",

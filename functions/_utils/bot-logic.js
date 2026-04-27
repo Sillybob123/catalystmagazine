@@ -420,6 +420,83 @@ export function computeWriterReminders({ projects, users, reminderLog = {}, now 
       }
     }
 
+    // ── Interview-prep reminder ──
+    // Two days before a scheduled interview (or 1 day, in case the cron missed
+    // a run), email the writer prep tips. Fires once per project — the cooldown
+    // log keyed on `${id}:interview-prep` prevents repeats.
+    const tl = project.timeline || {};
+    if (
+      project.type === "Interview" &&
+      tl["Interview Scheduled"] &&
+      !tl["Interview Complete"] &&
+      project.interviewDate
+    ) {
+      const ivDate = toDate(project.interviewDate + "T09:00:00");
+      if (ivDate) {
+        const daysUntilInterview = daysBetween(ivDate, now);
+        if (daysUntilInterview === 2 || daysUntilInterview === 1) {
+          const key = `${project.id}:interview-prep`;
+          if (shouldSkipReminder(reminderLog, key, now)) {
+            record(project.id, title, "cooldown-active", {
+              kind: "interview-prep",
+              lastSentAt: reminderLog[key],
+              writerEmail: writer.email,
+              writerName: writer.name,
+            });
+          } else {
+            out.push({
+              kind: "interview-prep",
+              key,
+              projectId: project.id,
+              project,
+              writer,
+              interviewDate: ivDate,
+              daysUntilInterview,
+            });
+            queuedForProject = true;
+          }
+        }
+      }
+    }
+
+    // ── Interview-followup reminder ──
+    // The day after the scheduled interview, if the writer hasn't marked
+    // "Interview Complete", nudge them to check it off and start drafting
+    // while the conversation is still fresh. Fires once via cooldown key.
+    if (
+      project.type === "Interview" &&
+      tl["Interview Scheduled"] &&
+      !tl["Interview Complete"] &&
+      project.interviewDate
+    ) {
+      const ivDate = toDate(project.interviewDate + "T09:00:00");
+      if (ivDate) {
+        const daysSinceInterview = -daysBetween(ivDate, now);
+        if (daysSinceInterview === 1 || daysSinceInterview === 2) {
+          const key = `${project.id}:interview-followup`;
+          if (shouldSkipReminder(reminderLog, key, now)) {
+            record(project.id, title, "cooldown-active", {
+              kind: "interview-followup",
+              lastSentAt: reminderLog[key],
+              writerEmail: writer.email,
+              writerName: writer.name,
+            });
+          } else {
+            out.push({
+              kind: "interview-followup",
+              key,
+              projectId: project.id,
+              project,
+              writer,
+              interviewDate: ivDate,
+              daysSinceInterview,
+            });
+            queuedForProject = true;
+          }
+        }
+      }
+    }
+
     // ── Idle nudge ── (only if no deadline reminder already queued for this project)
     if (!queuedForProject) {
       const inactive = daysInactive(project, now);

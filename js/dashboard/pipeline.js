@@ -192,6 +192,51 @@ function ensureChecklistStyles() {
   document.head.appendChild(s);
 }
 
+/**
+ * Asks the user to pick the interview date before "Interview Scheduled" flips on.
+ * Resolves with { interviewDate: "YYYY-MM-DD" } on save, or null on cancel.
+ * Pre-fills with the existing interviewDate if one was already saved.
+ */
+function openInterviewDateModal({ existingDate } = {}) {
+  return new Promise((resolve) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const body = el("div", { style: { fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" } });
+    body.innerHTML = `
+      <p style="margin:0 0 14px;font-size:13.5px;color:#475569;line-height:1.5;">
+        When is the interview taking place? We'll save the date to the story so your editors can plan around it.
+      </p>
+      <label style="display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:6px;">Interview date</label>
+      <input id="iv-date" type="date" min="${today}" value="${esc(existingDate || "")}"
+        style="width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;color:#0b1220;background:#fff;outline:none;">
+      <div id="iv-date-err" style="display:none;color:#b91c1c;font-size:12px;margin-top:8px;"></div>
+    `;
+
+    const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
+    const saveBtn = el("button", { class: "btn btn-accent" }, "Save interview date");
+
+    const m = openModal({ title: "Schedule the interview", body, footer: [cancelBtn, saveBtn] });
+
+    cancelBtn.onclick = () => { m.close(); resolve(null); };
+    saveBtn.onclick = () => {
+      const input = body.querySelector("#iv-date");
+      const err = body.querySelector("#iv-date-err");
+      const value = (input.value || "").trim();
+      if (!value) {
+        err.textContent = "Please pick a date for the interview.";
+        err.style.display = "block";
+        return;
+      }
+      if (value < today) {
+        err.textContent = "Interview date can't be in the past.";
+        err.style.display = "block";
+        return;
+      }
+      m.close();
+      resolve({ interviewDate: value });
+    };
+  });
+}
+
 function getProjectState(project, view, uid) {
   const tl = project.timeline || {};
 
@@ -392,7 +437,7 @@ export async function mount(ctx, container) {
       <div class="kb-header-sub">${esc(viewSub)}</div>
     </div>
     <div class="kb-header-actions">
-      ${_view !== "mine" && canPropose() ? `<button class="btn btn-accent btn-sm" id="pl-new-btn">+ New proposal</button>` : ""}
+      ${_view !== "mine" && canPropose() ? `<button class="btn btn-accent btn-sm" id="pl-new-btn">Propose a new story</button>` : ""}
       ${_role === "admin" ? `<button class="btn btn-secondary btn-sm" id="pl-report-btn">Status report</button>` : ""}
     </div>`;
   container.appendChild(header);
@@ -732,6 +777,11 @@ function openDetailModal(projectId) {
 
     ${divider}
     ${sec("Progress")}
+    ${project.interviewDate && project.type === "Interview" ? `
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#1e3a8a;display:flex;align-items:center;gap:8px;">
+        <span style="font-weight:700;">📅 Interview scheduled:</span>
+        <span>${fmtDate(project.interviewDate + "T00:00:00")}</span>
+      </div>` : ""}
     <div id="tl-steps" style="display:flex;flex-direction:column;gap:6px;">${stepsHtml}</div>
 
     ${isAdmin?`
@@ -848,12 +898,37 @@ function openDetailModal(projectId) {
         cb.checked = true;
       }
 
+      // Interview Scheduled: capture the date when checking, clear it when unchecking.
+      // The bot uses this date to email prep tips two days before the interview.
+      let interviewDatePayload = null;
+      if (step === "Interview Scheduled" && checked) {
+        cb.checked = false;
+        interviewDatePayload = await openInterviewDateModal({ existingDate: project.interviewDate });
+        if (!interviewDatePayload) {
+          toast("No date set — interview not marked as scheduled.", "info");
+          return;
+        }
+        cb.checked = true;
+      }
+
       const updates = {
         [`timeline.${step}`]: checked,
         lastActivity: serverTimestamp(),
         updatedAt: new Date().toISOString(),
         activity: arrayUnion({ text: `${checked ? "completed" : "uncompleted"}: ${step}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
       };
+      if (interviewDatePayload) {
+        updates.interviewDate = interviewDatePayload.interviewDate;
+        updates.interviewReminderSent = false;
+        updates.activity = arrayUnion(
+          { text: `${checked ? "completed" : "uncompleted"}: ${step}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() },
+          { text: `scheduled the interview for ${interviewDatePayload.interviewDate}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() },
+        );
+      }
+      if (step === "Interview Scheduled" && !checked) {
+        updates.interviewDate = deleteField();
+        updates.interviewReminderSent = deleteField();
+      }
       if (checklistPayload) {
         // Stamp who/when confirmed the checklist so admins can audit it later.
         updates[`checklists.${checklistPayload.storageKey}`] = {
@@ -1264,7 +1339,7 @@ export function renderPipeline(mountEl, ctx, { compact = true } = {}) {
       }
       bodyEl.appendChild(grid);
     },
-    err => { bodyEl.innerHTML = `<div class="error-state">Pipeline error: ${esc(err.message)}</div>`; }
+    err => { bodyEl.innerHTML = `<div class="error-state">Story Tracker error: ${esc(err.message)}</div>`; }
   );
 
   return () => unsub();

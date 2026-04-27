@@ -54,7 +54,7 @@ function shell({ title, preheader = "", body, siteUrl }) {
           <tr>
             <td class="px-40" style="padding:18px 32px 8px 32px;border-top:1px solid ${COLORS.hairline};">
               <p style="margin:0;font-size:12px;line-height:1.55;color:${COLORS.muted};">
-                The Catalyst Magazine &middot; Automated editorial note. Reply to reach the editors.
+                The Catalyst Magazine &middot; A note from your editors. Reply any time.
               </p>
             </td>
           </tr>
@@ -68,12 +68,12 @@ function shell({ title, preheader = "", body, siteUrl }) {
 
 // ─── Writer reminder ─────────────────────────────────────────────────────────
 
-export function writerReminderEmail({ kind, writer, project, deadline, daysUntilDeadline, daysInactive, siteUrl }) {
+export function writerReminderEmail({ kind, writer, project, deadline, daysUntilDeadline, daysInactive, interviewDate, daysUntilInterview, daysSinceInterview, siteUrl }) {
   const firstName = (writer.name || writer.email || "there").split(/\s+/)[0];
   const projectTitle = project.title || "(untitled story)";
   const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
 
-  let headline, paragraphs, statusRows, statusTone, cta;
+  let headline, paragraphs, statusRows, statusTone, cta, extraHtml = "";
 
   if (kind === "deadline-3d" || kind === "deadline-1d") {
     const dText = daysUntilDeadline <= 0
@@ -83,7 +83,7 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
         : `in ${daysUntilDeadline} days`;
     headline = `Your story is due ${dText}.`;
     paragraphs = [
-      `This is a reminder that the publication deadline for "${projectTitle}" is ${dText}. Please make sure your draft is submitted on time.`,
+      `Just checking in — the publication deadline for "${projectTitle}" is ${dText}, and we want to make sure you're on track. Please get your draft in on time.`,
       `If you need a deadline extension, request it from the pipeline page before the due date — not after. Reply to this email if you're running into a blocker we should know about.`,
     ];
     statusRows = [
@@ -121,6 +121,37 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
     ].filter(Boolean);
     statusTone = "alert";
     cta = { text: "Post an update", url: projectUrl };
+  } else if (kind === "interview-followup") {
+    const whenText = daysSinceInterview === 1 ? "yesterday" : `${daysSinceInterview} days ago`;
+    headline = `How did the interview go?`;
+    paragraphs = [
+      `We saw your interview for "${projectTitle}" was scheduled for ${whenText} (${fmtDate(interviewDate)}), and wanted to check in. "Interview Complete" still isn't ticked on the pipeline, so we're not sure where things landed.`,
+      `If the interview happened and went well: please check off "Interview Complete" on the pipeline so we know it's done — and start drafting today while the conversation is still fresh in your head. The longer you wait, the more you'll forget the small details (a phrase, a pause, a side comment) that make a story actually feel alive.`,
+      `If something went sideways — they cancelled, the recording failed, you didn't get what you needed — that's fine, just tell us. Reply to this email or message Aidan and Yair and we'll figure out the next move together. Don't sit on it.`,
+      `Any questions about how to structure the piece, what to lead with, or which quotes to use — ask Aidan and Yair. That's literally what we're here for.`,
+    ];
+    statusRows = [
+      { label: "Story", value: projectTitle },
+      { label: "Interview was", value: `${fmtDate(interviewDate)} (${whenText})` },
+      { label: "Status", value: "Interview Complete — not yet ticked" },
+    ];
+    statusTone = "alert";
+    cta = { text: "Open your story", url: projectUrl };
+  } else if (kind === "interview-prep") {
+    const dText = daysUntilInterview <= 1 ? "tomorrow" : `in ${daysUntilInterview} days`;
+    headline = `Your interview is ${dText} — here's how to nail it.`;
+    paragraphs = [
+      `Your interview for "${projectTitle}" is scheduled for ${fmtDate(interviewDate)}. A great interview is the difference between a story that quotes someone and a story that brings them to life — so spend a little time today getting ready.`,
+      `Here's the prep we walk every Catalyst writer through before they sit down with a source. Skim it tonight, write your questions tomorrow, and you'll walk in confident.`,
+    ];
+    statusRows = [
+      { label: "Story", value: projectTitle },
+      { label: "Interview", value: fmtDate(interviewDate) },
+      { label: "Time until", value: dText },
+    ];
+    statusTone = "info";
+    cta = { text: "Open your story", url: projectUrl };
+    extraHtml = buildInterviewPrepBlock();
   } else {
     headline = `A quick check-in on your story.`;
     paragraphs = [
@@ -151,6 +182,8 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
 
     ${paragraphHtml}
 
+    ${extraHtml}
+
     <div style="margin:22px 0 0 0;">
       <a href="${escapeAttr(cta.url)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">${escapeHtml(cta.text)}</a>
     </div>
@@ -162,15 +195,15 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
     </p>
   `;
 
-  const subject = subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive });
-  const preheader = preheaderForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive });
+  const subject = subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview });
+  const preheader = preheaderForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview });
   return {
     subject,
     html: shell({ title: subject, preheader, body, siteUrl }),
   };
 }
 
-function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive }) {
+function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview }) {
   const t = truncate(projectTitle, 40);
   if (kind === "deadline-1d") return `Due tomorrow: "${t}"`;
   if (kind === "deadline-3d") return `Due in ${daysUntilDeadline} days: "${t}"`;
@@ -179,15 +212,80 @@ function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysI
     return `Past due (${d}d): "${t}" — response needed`;
   }
   if (kind === "idle") return `${daysInactive}d no activity: "${t}"`;
+  if (kind === "interview-prep") {
+    const when = daysUntilInterview <= 1 ? "tomorrow" : `in ${daysUntilInterview} days`;
+    return `Interview ${when}: prep tips for "${t}"`;
+  }
+  if (kind === "interview-followup") {
+    return `How did the interview go? — "${t}"`;
+  }
   return `Catalyst: update on "${t}"`;
 }
 
-function preheaderForWriterReminder({ kind, daysUntilDeadline, daysInactive }) {
+function preheaderForWriterReminder({ kind, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview }) {
   if (kind === "deadline-1d") return "Deadline tomorrow. Please submit on time.";
   if (kind === "deadline-3d") return `Deadline in ${daysUntilDeadline} days.`;
   if (kind === "deadline-overdue") return "Response required within 48 hours.";
   if (kind === "idle") return `${daysInactive} days without activity — please update us.`;
+  if (kind === "interview-prep") {
+    const when = daysUntilInterview <= 1 ? "tomorrow" : `in ${daysUntilInterview} days`;
+    return `Your interview is ${when}. Prep checklist inside.`;
+  }
+  if (kind === "interview-followup") {
+    return "Check off Interview Complete and start drafting while it's fresh.";
+  }
   return "Update from The Catalyst editorial team.";
+}
+
+// Prep tips block — included in interview-prep emails. Three short sections so
+// writers can skim it the night before and still walk in prepared.
+function buildInterviewPrepBlock() {
+  const sections = [
+    {
+      title: "Research before you walk in",
+      tips: [
+        "Read the source's most recent paper, talk, or public writing — and three things they've written that are *not* the paper everyone cites.",
+        "Skim their lab/department page and note the people they collaborate with. Knowing the landscape lets you ask sharper follow-ups.",
+        "Identify the one claim or finding you don't fully understand yet. That's your most important question.",
+        "Have a one-paragraph mental summary of who they are, what they study, and why a Catalyst reader should care.",
+      ],
+    },
+    {
+      title: "Write questions that earn good answers",
+      tips: [
+        "Open-ended beats yes/no. \"Walk me through how you came to that conclusion\" pulls a story; \"Did that surprise you?\" pulls one word.",
+        "Lead with an easy, generous question — let them warm up. Save the harder, more specific ones for the middle.",
+        "Prepare 8–10 questions but plan to ask 4–5. The best material always comes from following up on what they actually said, not what you scripted.",
+        "Always include: \"What's the part of this that journalists keep getting wrong?\" and \"What should I have asked you that I didn't?\"",
+      ],
+    },
+    {
+      title: "Run the interview like a pro",
+      tips: [
+        "Test your recording setup the day before — phone app, laptop mic, backup. Then test it again 10 minutes before the call.",
+        "Pick a quiet space with stable internet. If it's in person, scout the room for noise.",
+        "Confirm on-the-record vs. on-background at the start. Don't assume.",
+        "Take light notes by hand even if you're recording — note the timestamp when they say something quotable so you can find it fast later.",
+        "End by asking who else you should talk to. Sources lead to sources.",
+      ],
+    },
+  ];
+
+  const blocks = sections.map((s) => `
+    <div style="margin:18px 0 0 0;padding:16px 18px;background:#fafafa;border:1px solid ${COLORS.hairline};border-radius:10px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:10px;">${escapeHtml(s.title)}</div>
+      <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.65;color:${COLORS.inkSoft};">
+        ${s.tips.map((t) => `<li style="margin:0 0 6px 0;">${escapeHtml(t)}</li>`).join("")}
+      </ul>
+    </div>
+  `).join("");
+
+  return `
+    <div style="margin:22px 0 0 0;">
+      <div style="font-size:13px;font-weight:600;color:${COLORS.ink};letter-spacing:-0.01em;">Catalyst interview prep checklist</div>
+      ${blocks}
+    </div>
+  `;
 }
 
 function buildStatusBlock({ rows, tone }) {
@@ -252,7 +350,7 @@ export function adminDigestEmail({ rows, adminTasks = [], now, siteUrl }) {
     </div>
 
     <p style="margin:40px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};">
-      Generated automatically every Saturday by the Catalyst editorial bot. To stop these, ask an admin to disable the cron trigger.
+      Prepared for the Catalyst editorial team.
     </p>
   `;
 
@@ -444,7 +542,9 @@ export function adminProposalPendingEmail({ project, author, siteUrl }) {
     </div>
 
     <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
-      — Catalyst editorial bot
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
     </p>
   `;
 
@@ -489,7 +589,9 @@ export function adminWritingCompleteEmail({ project, author, siteUrl }) {
     </div>
 
     <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
-      — Catalyst editorial bot
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
     </p>
   `;
 
@@ -702,6 +804,14 @@ function bundledItemLabel(item) {
   if (item.kind === "deadline-1d") return `Due tomorrow`;
   if (item.kind === "deadline-3d") return `Due in ${item.daysUntilDeadline} days`;
   if (item.kind === "idle") return `${item.daysInactive} days with no activity`;
+  if (item.kind === "interview-prep") {
+    const d = item.daysUntilInterview;
+    return d <= 1 ? "Interview tomorrow — prep tips inside" : `Interview in ${d} days — prep tips inside`;
+  }
+  if (item.kind === "interview-followup") {
+    const d = item.daysSinceInterview || 1;
+    return `Interview was ${d === 1 ? "yesterday" : `${d} days ago`} — check off "Interview Complete" and start drafting`;
+  }
   if (item.kind === "editor-idle") return `Editor: ${item.daysInactive} days idle, awaiting your review`;
   if (item.kind === "editor-deadline-soon") return `Editor: deadline approaching`;
   return item.kind;
