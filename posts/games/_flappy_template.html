@@ -37,19 +37,22 @@
     -webkit-user-select: none;
     user-select: none;
     overscroll-behavior: contain;
-    padding-bottom: 16px;
+    padding-bottom: 0;
   }
   .stage {
     width: 100%;
     max-width: 720px;
     margin: 0 auto;
-    padding: 18px 18px 28px;
+    /* Tight bottom padding so the iframe's reported height hugs the
+       credit line — the parent host page provides the "below the game"
+       breathing room via .article-doodle-game margin instead. */
+    padding: 16px 16px 12px;
   }
   .frame {
     background: var(--paper);
     border: 2px solid var(--ink);
     border-radius: 22px;
-    padding: 18px 18px 16px;
+    padding: 16px 16px 12px;
     box-shadow: var(--shadow);
     position: relative;
     background-image:
@@ -391,10 +394,51 @@
 
   .credit {
     text-align: center;
-    margin-top: 12px;
+    margin-top: 8px;
     font-size: 11px;
     color: var(--ink-faint);
     letter-spacing: 0.06em;
+  }
+
+  /* ----- Countdown overlay (shown briefly before each run) ----- */
+  /* The world keeps drawing underneath, but the bird is frozen mid-air
+     and pipes don't scroll until the count finishes. The big number
+     pulses in via the same scale-up animation each tick so the rhythm
+     reads as a real countdown rather than a static label. */
+  .countdown {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 6;
+    background: rgba(31, 32, 36, 0.18);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  .countdown[hidden] { display: none !important; }
+  .countdown__num {
+    font-size: clamp(72px, 18vw, 140px);
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 6px 0 var(--ink), 0 0 24px rgba(31, 32, 36, 0.55);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    transform: scale(0.6);
+    opacity: 0;
+    animation: countdownPop 1s ease-out forwards;
+  }
+  .countdown__num.go {
+    font-size: clamp(48px, 13vw, 96px);
+    color: var(--accent);
+    text-shadow: 0 5px 0 var(--ink), 0 0 24px rgba(244, 167, 43, 0.45);
+  }
+  @keyframes countdownPop {
+    0%   { transform: scale(0.55); opacity: 0; }
+    25%  { transform: scale(1.18); opacity: 1; }
+    55%  { transform: scale(1.0); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0; }
   }
 
   .tap-hint { display: none; }
@@ -420,9 +464,13 @@
   }
 
   @media (max-width: 540px) {
-    .stage { padding: 10px; }
-    .frame { padding: 12px; border-radius: 16px; }
-    .canvas-wrap { aspect-ratio: 4 / 5.4; max-height: 60vh; box-shadow: 3px 3px 0 var(--ink); }
+    .stage { padding: 8px 8px 6px; }
+    .frame { padding: 10px 10px 8px; border-radius: 16px; }
+    /* Slightly squarer on phones than the previous 4:5.4 — the canvas
+       still has plenty of vertical room for the bird to flap, and the
+       whole game (header + canvas + credit) fits in one screen with no
+       trailing dead space. */
+    .canvas-wrap { aspect-ratio: 4 / 5; max-height: 56vh; box-shadow: 3px 3px 0 var(--ink); }
     .header { flex-direction: column; gap: 4px; }
     .hud { gap: 6px; font-size: 11px; }
     .chip { padding: 4px 8px; gap: 5px; }
@@ -463,6 +511,11 @@
     </div>
     <div class="canvas-wrap" id="canvasWrap">
       <canvas id="cv"></canvas>
+
+      <!-- Countdown overlay -->
+      <div class="countdown" id="countdown" hidden>
+        <div class="countdown__num" id="countdownNum">3</div>
+      </div>
 
       <!-- Start overlay -->
       <div class="overlay" id="overlayStart">
@@ -650,8 +703,9 @@ const PIPE_W = 56;
 const PIPE_INTERVAL = 180;          // x distance between consecutive pipes
 const FLOOR_H = 36;
 
-const STATE = { IDLE: 0, PLAYING: 1, PAUSED_Q: 2, OVER: 3 };
+const STATE = { IDLE: 0, PLAYING: 1, PAUSED_Q: 2, OVER: 3, COUNTDOWN: 4 };
 let state = STATE.IDLE;
+let countdownTicks = 0;     // frames remaining in the pre-roll countdown
 
 let bird = null;            // {x, y, vy, rot}
 let pipes = [];             // {x, gapY, gap, scored, gold, spawnedQ}
@@ -701,7 +755,9 @@ function spawnPipe(x, opts = {}) {
 
 function startGame() {
   fitCanvas();
-  state = STATE.PLAYING;
+  // Reset all gameplay state but stay in COUNTDOWN until the pre-roll
+  // finishes — the bird hovers in place, no gravity, no scrolling, so the
+  // player has a couple of beats to focus before pipes start moving.
   pipes = [];
   particles = [];
   score = 0;
@@ -729,7 +785,45 @@ function startGame() {
   overlayStart.hidden = true;
   overlayEnd.hidden = true;
   updateHud();
+  startCountdown();
   loop(performance.now());
+}
+
+// 3 → 2 → 1 → GO! → play. Each beat is 750ms, driven by setTimeout so the
+// timing is independent of the game loop. State stays in COUNTDOWN the
+// whole time so the main loop's draw() runs (you see the world + bird
+// frozen mid-air) but step() doesn't, leaving the bird suspended.
+const COUNTDOWN_BEAT_MS = 750;
+const countdownEl = document.getElementById("countdown");
+let countdownTimer = null;
+function startCountdown() {
+  state = STATE.COUNTDOWN;
+  countdownEl.hidden = false;
+  const beats = ["3", "2", "1", "GO!"];
+  let i = 0;
+  const tick = () => {
+    if (i >= beats.length) {
+      countdownEl.hidden = true;
+      state = STATE.PLAYING;
+      // Reset frame timing so the first PLAYING step doesn't try to
+      // catch up the time spent counting.
+      lastFrameTs = 0;
+      stepAccumulator = 0;
+      return;
+    }
+    // Replace the inner numeral each beat with a freshly-created element
+    // so the CSS pop animation re-fires (animations only run on element
+    // insertion, not on textContent changes).
+    countdownEl.innerHTML = "";
+    const num = document.createElement("div");
+    num.className = "countdown__num" + (beats[i] === "GO!" ? " go" : "");
+    num.textContent = beats[i];
+    countdownEl.appendChild(num);
+    i++;
+    countdownTimer = setTimeout(tick, COUNTDOWN_BEAT_MS);
+  };
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
+  tick();
 }
 
 function endGame() {
@@ -1266,7 +1360,10 @@ function reportHeight() {
     document.body.scrollHeight,
     Math.ceil(stageBottom)
   );
-  const h = docHeight + 16;
+  // Tight buffer — just enough so the credit line never gets clipped
+  // when the iframe rounds. The host page already adds vertical breathing
+  // room via .article-doodle-game margin, so we don't need extra here.
+  const h = docHeight + 4;
   try {
     window.parent?.postMessage({ type: "doodle:height", height: h }, "*");
   } catch {}

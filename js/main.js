@@ -1363,7 +1363,10 @@ function attachDoodleHostBridge(iframe) {
     function onMessage(e) {
         if (!e.data || e.source !== iframe.contentWindow) return;
         if (e.data.type === 'doodle:height') {
-            const h = Math.max(520, Math.min(1300, Number(e.data.height) || 0));
+            // Lower bound trimmed to 460 so the flappy variant (which has
+            // tighter padding than the doodle climb) doesn't sit inside an
+            // iframe taller than its content. Upper bound stays at 1300.
+            const h = Math.max(460, Math.min(1300, Number(e.data.height) || 0));
             if (h) iframe.style.height = h + 'px';
         }
     }
@@ -1445,7 +1448,7 @@ async function mountFlappyGame(container, article) {
 let flappyTemplatePromise = null;
 function loadFlappyTemplate() {
     if (!flappyTemplatePromise) {
-        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260427a');
+        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260427b');
         flappyTemplatePromise = fetch('/posts/games/_flappy_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('flappy template ' + res.status);
