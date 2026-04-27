@@ -570,8 +570,10 @@ const FRICTION = 0.9;
 
 const PLATFORM_W = 62;
 const PLATFORM_H = 12;
-const PLAYER_W = 46;
-const PLAYER_H = 50;
+// Player sprite is a 1:1 square to match the source PNG (doodlecharacter.png
+// is 1024×1024); any non-square draw size visibly squishes him.
+const PLAYER_W = 54;
+const PLAYER_H = 54;
 
 const STATE = { IDLE: 0, PLAYING: 1, PAUSED_Q: 2, OVER: 3 };
 let state = STATE.IDLE;
@@ -1251,7 +1253,61 @@ btnRetry.addEventListener("click", startGame);
 
 window.addEventListener("resize", () => {
   if (state !== STATE.IDLE) fitCanvas();
+  reportHeight();
 });
+
+// ---- Scroll lock -----------------------------------------------------------
+// While the game is active we don't want wheel/touch scrolling to bubble out
+// to the host page (or to scroll inside the iframe document). The user can
+// "click out" by pausing — currently any non-PLAYING state lets scrolls pass.
+function isPlaying() { return state === STATE.PLAYING; }
+
+// Block wheel scroll inside the iframe while playing, and tell the parent
+// page not to scroll either via postMessage relay.
+window.addEventListener("wheel", (e) => {
+  if (isPlaying()) {
+    e.preventDefault();
+    // Notify parent so it can also block the page from scrolling.
+    try {
+      window.parent?.postMessage({ type: "doodle:wheel", deltaY: e.deltaY }, "*");
+    } catch {}
+  }
+}, { passive: false });
+
+// Block touch panning inside the iframe while playing.
+window.addEventListener("touchmove", (e) => {
+  if (isPlaying()) e.preventDefault();
+}, { passive: false });
+
+// Tell the parent the active state changed so it can lock its own scroll.
+// Polled from the main loop so we don't have to wrap every state setter.
+let lastBroadcastActive = null;
+function broadcastActive() {
+  const active = state === STATE.PLAYING || state === STATE.PAUSED_Q;
+  if (active === lastBroadcastActive) return;
+  lastBroadcastActive = active;
+  try {
+    window.parent?.postMessage({ type: "doodle:active", active }, "*");
+  } catch {}
+}
+setInterval(broadcastActive, 200);
+
+// ---- Report iframe content height to parent --------------------------------
+// The wrapping page sizes the <iframe> via min-height; we measure the actual
+// rendered height of the .stage and post it to the parent so nothing is
+// clipped (the question modal, end-card, and credit line all get full room).
+function reportHeight() {
+  const stage = document.querySelector(".stage");
+  if (!stage) return;
+  const h = Math.ceil(stage.getBoundingClientRect().bottom + 8);
+  try {
+    window.parent?.postMessage({ type: "doodle:height", height: h }, "*");
+  } catch {}
+}
+new ResizeObserver(reportHeight).observe(document.body);
+window.addEventListener("load", reportHeight);
+setTimeout(reportHeight, 60);
+setTimeout(reportHeight, 250);
 
 bindKeys();
 bindTouch();
@@ -1259,6 +1315,7 @@ bindTilt();
 fitCanvas();
 // Idle pre-render so the canvas isn't blank.
 draw();
+reportHeight();
 </script>
 </body>
 </html>

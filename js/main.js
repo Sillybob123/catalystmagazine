@@ -1319,9 +1319,61 @@ async function mountDoodleGame(container, article) {
         iframe.srcdoc = html;
         section.appendChild(iframe);
         wrapEl.appendChild(section);
+
+        // Listen for size + scroll-lock messages from the game iframe so
+        // (a) the iframe always shows the entire game without clipping, and
+        // (b) wheel/touch events inside the canvas don't bubble out to the
+        //     host page while the player is actively climbing.
+        attachDoodleHostBridge(iframe);
     } catch (err) {
         console.warn('Could not mount doodle knowledge game', err);
     }
+}
+
+// Wires a single doodle-game iframe to its host page. The iframe sends:
+//   { type: "doodle:height", height }   — true rendered height; we mirror it
+//                                         to iframe.style.height so nothing
+//                                         (modal, end-card) is clipped.
+//   { type: "doodle:active", active }   — true while playing / answering a
+//                                         question; we lock the page body's
+//                                         scroll so wheel/touch inside the
+//                                         game don't pan the article.
+//   { type: "doodle:wheel", deltaY }    — the iframe ate a wheel event; we
+//                                         additionally cancel any in-flight
+//                                         scroll on the host (defensive).
+function attachDoodleHostBridge(iframe) {
+    let active = false;
+    let prevOverflow = '';
+    let prevTouchAction = '';
+    const lock = () => {
+        if (active) return;
+        active = true;
+        prevOverflow = document.body.style.overflow;
+        prevTouchAction = document.body.style.touchAction;
+        document.body.style.overflow = 'hidden';
+        document.body.style.touchAction = 'none';
+    };
+    const unlock = () => {
+        if (!active) return;
+        active = false;
+        document.body.style.overflow = prevOverflow;
+        document.body.style.touchAction = prevTouchAction;
+    };
+
+    function onMessage(e) {
+        if (!e.data || e.source !== iframe.contentWindow) return;
+        const { type } = e.data;
+        if (type === 'doodle:height') {
+            const h = Math.max(560, Math.min(1400, Number(e.data.height) || 0));
+            if (h) iframe.style.height = h + 'px';
+        } else if (type === 'doodle:active') {
+            if (e.data.active) lock(); else unlock();
+        }
+    }
+    window.addEventListener('message', onMessage);
+
+    // If the user navigates away while the lock is on, restore the page.
+    window.addEventListener('pagehide', unlock);
 }
 
 let doodleTemplatePromise = null;
