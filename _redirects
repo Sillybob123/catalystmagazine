@@ -30,3 +30,19 @@
 /admin/writer            /admin                    301
 /admin/dashboard         /admin                    301
 /admin/studio            /admin                    301
+
+# ------ Legacy Wix URLs — return 410 Gone ------------------
+# Site no longer runs on Wix (cutover 2026-04-23). 410 tells Google
+# these pages are permanently removed and accelerates deindexing
+# vs. the default 404. Cached entries in GSC still point here.
+/copy-of-home            /404                       410
+/copy-of-*               /404                       410
+/collaborateold          /404                       410
+/articles/search         /404                       410
+/articles/search/*       /404                       410
+/subscribe/              /404                       410
+/subscribe/*             /404                       410
+/_api/*                  /404                       410
+/_partials/*             /404                       410
+/_files/*                /404                       410
+/post/*                  /404                       410

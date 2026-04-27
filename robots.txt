@@ -6,5 +6,21 @@ Disallow: /admin/
 Disallow: /functions/
 Disallow: /api/
 
+# Legacy Wix paths — site no longer runs on Wix.
+# These return 410 Gone, but disallowing also tells Google to stop crawling them.
+Disallow: /_api/
+Disallow: /_partials/
+Disallow: /_files/
+Disallow: /post/
+Disallow: /copy-of-
+Disallow: /collaborateold
+Disallow: /articles/search
+Disallow: /subscribe/
+
+# Block tracking-parameter URL variants from being treated as separate pages
+Disallow: /*?utm_
+Disallow: /*?fbclid=
+Disallow: /*?gclid=
+
 Sitemap: https://www.catalyst-magazine.com/sitemap.xml
 Host: www.catalyst-magazine.com
