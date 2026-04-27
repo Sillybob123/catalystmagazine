@@ -127,7 +127,8 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
     paragraphs = [
       `We saw your interview for "${projectTitle}" was scheduled for ${whenText} (${fmtDate(interviewDate)}), and wanted to check in. "Interview Complete" still isn't ticked on the pipeline, so we're not sure where things landed.`,
       `If the interview happened and went well: please check off "Interview Complete" on the pipeline so we know it's done — and start drafting today while the conversation is still fresh in your head. The longer you wait, the more you'll forget the small details (a phrase, a pause, a side comment) that make a story actually feel alive.`,
-      `If something went sideways — they cancelled, the recording failed, you didn't get what you needed — that's fine, just tell us. Reply to this email or message Aidan and Yair and we'll figure out the next move together. Don't sit on it.`,
+      `If the interview didn't actually happen — they pushed it, you pushed it, schedules slipped — please go into the pipeline right now and update the interview date to whenever it's now happening. This is really important. The interview date on the tracker is how Aidan and Yair stay on top of every story, so if it changes and the tracker doesn't, we're flying blind. Same goes for any future reschedule: if the date moves, change it on the tracker.`,
+      `If something else went sideways — they cancelled outright, the recording failed, you didn't get what you needed — that's fine, just tell us. Reply to this email or message Aidan and Yair and we'll figure out the next move together. Don't sit on it.`,
       `Any questions about how to structure the piece, what to lead with, or which quotes to use — ask Aidan and Yair. That's literally what we're here for.`,
     ];
     statusRows = [
