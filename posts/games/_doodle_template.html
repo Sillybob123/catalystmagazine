@@ -100,10 +100,15 @@
     flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-start;
-    margin: 10px 0 12px;
+    /* Bottom margin includes the chip drop-shadow (1.5px) plus a couple
+       extra pixels so it's never clipped by the canvas-wrap below.
+       NOTE: we deliberately do NOT set overflow:hidden here — it was
+       cutting off the bottom-right of every chip's shadow. flex-wrap:
+       nowrap already prevents the row from reflowing on width changes. */
+    margin: 10px 0 14px;
+    padding-bottom: 3px;
     font-size: 12px;
     font-weight: 600;
-    overflow: hidden;
   }
   .chip {
     display: inline-flex;
@@ -479,10 +484,10 @@
       <div class="overlay" id="overlayStart">
         <div class="overlay-card">
           <h2>Ready to climb?</h2>
-          <p>Bounce ever upward. The first <strong>gold platform</strong> asks a question — get it right for a power-up. If you fall or get hit, answer one of the remaining questions correctly to <strong>save yourself</strong> and keep climbing.</p>
+          <p>Bounce ever upward. The first <strong>gold platform</strong> asks a question — get it right for a power-up. Press <strong>Space</strong> to shoot bullets at monsters. If you fall or get hit, answer one of the remaining questions correctly to <strong>save yourself</strong> and keep climbing.</p>
           <div class="keys">
             <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> Move</span>
-            <span><kbd>Space</kbd> Start</span>
+            <span><kbd>Space</kbd> Shoot / Start</span>
           </div>
           <div class="tilt-hint" style="margin: 4px 0 14px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -684,7 +689,9 @@ let p = null;            // player
 let platforms = [];      // {x,y,w,h,type,vx,used,broken,spawnedQ?}
 let monsters = [];       // {x,y,w,h,vx,kind}
 let powerups = [];       // {x,y,w,h,kind} — spring/jet/shield (drawn on platforms)
+let bullets = [];        // {x,y,vy,life} — player projectiles, fired with Space/Up
 let particles = [];
+let bulletCooldown = 0;  // frames until the player can fire again
 let cameraY = 0;
 let height = 0;          // metres climbed (peak)
 let lives = 3;
@@ -737,6 +744,7 @@ function seedWorld() {
   platforms = [];
   monsters = [];
   powerups = [];
+  bullets = [];
   particles = [];
   // Ground starter.
   spawnPlatform(H - 30, { x: W / 2 - PLATFORM_W / 2, type: "green" });
@@ -803,6 +811,7 @@ function startGame() {
   rescuesUsed = 0;
   answeredCorrectly.clear();
   currentQIndex = -1;
+  bulletCooldown = 0;
   lastFrameTs = 0;
   stepAccumulator = 0;
   p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1 };
@@ -1049,6 +1058,24 @@ function awardPowerForQuestion(idx) {
   }
 }
 
+// Bullets: fired upward from the doodler. Cheap collision check against
+// monsters; kill on hit. Capped fire rate so holding Space doesn't spawn a
+// solid laser column. Range-limited so off-screen bullets don't accumulate.
+const BULLET_VY = -8.5;          // logical-pixel speed (negative = upward)
+const BULLET_LIFE = 80;          // ~1.3s at 60fps — about a screen-and-a-half
+const BULLET_COOLDOWN = 14;      // frames between shots (4-5 per second)
+function fireBullet() {
+  if (state !== STATE.PLAYING || !p) return;
+  if (bulletCooldown > 0) return;
+  bulletCooldown = BULLET_COOLDOWN;
+  bullets.push({
+    x: p.x + PLAYER_W / 2 - 3,
+    y: p.y + 4,
+    vy: BULLET_VY,
+    life: BULLET_LIFE
+  });
+}
+
 function spawnPenaltyMonster() {
   // Place above the player so they have to dodge or take a hit.
   monsters.push({
@@ -1202,6 +1229,38 @@ function step() {
       else if (u.kind === "jet") { activePower = "jet"; powerTicks = 110; }
       powerups.splice(i, 1);
     }
+  }
+
+  // Bullets: advance, expire, and check vs monsters. Order matters — we
+  // resolve bullet→monster collisions BEFORE monster→player collisions so a
+  // shot fired into a monster overhead kills it before it can land on the
+  // doodler in the same frame.
+  if (bulletCooldown > 0) bulletCooldown--;
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.y += b.vy;
+    b.life--;
+    // Cull bullets that left the screen or expired.
+    if (b.life <= 0 || b.y < cameraY - 80) { bullets.splice(i, 1); continue; }
+    // Hit any monster?
+    let killed = false;
+    for (let j = monsters.length - 1; j >= 0; j--) {
+      const m = monsters[j];
+      if (b.x + 6 > m.x && b.x < m.x + m.w && b.y + 8 > m.y && b.y < m.y + m.h) {
+        monsters.splice(j, 1);
+        // Little burst of particles for the kill so it feels good.
+        for (let k = 0; k < 6; k++) {
+          particles.push({
+            x: m.x + m.w / 2, y: m.y + m.h / 2,
+            vx: rand(-1.6, 1.6), vy: rand(-1.6, 1.6),
+            life: 22, kind: "spark"
+          });
+        }
+        killed = true;
+        break;
+      }
+    }
+    if (killed) bullets.splice(i, 1);
   }
 
   // Monster collisions.
@@ -1499,6 +1558,23 @@ function draw() {
     }
   }
 
+  // Bullets: bright capsules with a glow trail. Drawn under monsters so
+  // the kill burst above sits on top.
+  for (const b of bullets) {
+    if (b.y < cameraY - 40 || b.y > cameraY + H + 40) continue;
+    ctx.fillStyle = "rgba(255, 220, 80, 0.45)";
+    ctx.beginPath();
+    ctx.arc(b.x + 3, b.y + 5, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff5b0";
+    ctx.beginPath();
+    ctx.arc(b.x + 3, b.y + 5, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#a87814";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
   // Monsters: round mauve/red blobs with eyes.
   for (const m of monsters) {
     rect(m.x, m.y, m.w, m.h, "#c0567a", "#7a1f3a");
@@ -1526,6 +1602,12 @@ function draw() {
       ctx.fillStyle = "rgba(120, 120, 130, " + (pa.life / 28) + ")";
       ctx.beginPath();
       ctx.arc(pa.x, pa.y, 3 + (28 - pa.life) * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (pa.kind === "spark") {
+      // Bullet-kill burst: bright dot fading out.
+      ctx.fillStyle = "rgba(255, 200, 80, " + (pa.life / 22).toFixed(2) + ")";
+      ctx.beginPath();
+      ctx.arc(pa.x, pa.y, 2.4, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -1601,7 +1683,13 @@ function bindKeys() {
     if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keys.left = true;
     if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") keys.right = true;
     if (e.key === " " && state === STATE.IDLE) startGame();
-    if (e.key === " " && state === STATE.OVER) startGame();
+    else if (e.key === " " && state === STATE.OVER) startGame();
+    else if ((e.key === " " || e.key === "ArrowUp") && state === STATE.PLAYING) {
+      // Space / Up while playing fires a bullet upward at any visible
+      // monsters. Cooldown is enforced inside fireBullet so holding the key
+      // produces a steady salvo instead of a solid laser.
+      fireBullet();
+    }
     // Block keys that would normally scroll / pan the host page from inside
     // the iframe, but only while the game is actually running. ArrowUp /
     // ArrowDown are explicitly disabled per the user request even though we
