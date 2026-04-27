@@ -1,12 +1,22 @@
 // Games tab — admin-only.
-// Lets an admin attach a Doodle Jump knowledge game to any published story.
+// Lets an admin attach a knowledge game to any published story. Two
+// variants are available:
+//   - "doodle": a Catalyst Doodle Jump climb with a single gold question
+//               platform and rescue-on-death prompts.
+//   - "flappy": a Flappy Catalyst run with a gold question pipe and
+//               rescue-on-crash prompts.
+// Both variants share the same 3-question payload format, so a writer can
+// switch between them without re-entering questions.
+//
 // Flow:
 //   1. Pick a published article from the list.
-//   2. Click "Copy AI prompt" — the prompt is preloaded with the article body
+//   2. Pick the game type (doodle or flappy).
+//   3. Click "Copy AI prompt" — the prompt is preloaded with the article body
 //      and asks for a JSON payload of 3 questions.
-//   3. Paste the AI's JSON into the textarea.
-//   4. Validate (3 questions × 4 options × 1 correct).
-//   5. Save to stories/{id}.game — the article page picks it up automatically.
+//   4. Paste the AI's JSON into the textarea.
+//   5. Validate (3 questions × 4 options × 1 correct).
+//   6. Save to stories/{id}.game (with kind) — the article page picks it up
+//      automatically.
 
 import { db } from "../firebase-config.js";
 import {
@@ -26,7 +36,7 @@ export async function mount(ctx, container) {
     <div class="card-header">
       <div>
         <div class="card-title">Article games</div>
-        <div class="card-subtitle">Attach a Doodle Jump knowledge game to any published article. Readers see it pinned to the bottom of the story.</div>
+        <div class="card-subtitle">Attach a Doodle Jump or Flappy Catalyst knowledge game to any published article. Readers see it pinned to the bottom of the story.</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input class="input" id="games-search" type="search" placeholder="Search articles…" style="min-width:220px;padding:8px 10px;border:1px solid var(--hairline);border-radius:6px;">
@@ -96,6 +106,8 @@ export async function mount(ctx, container) {
 function renderRow(article, ctx, reload) {
   const hasGame = !!(article.game && Array.isArray(article.game.questions) && article.game.questions.length);
   const qCount = hasGame ? article.game.questions.length : 0;
+  const gameKind = hasGame ? (article.game.kind || "doodle") : "";
+  const gameKindLabel = gameKind === "flappy" ? "Flappy" : "Doodle Jump";
   const cover = article.coverImage || article.image || "/NewLogoShape.png";
   const date = article.publishedAt
     ? fmtDate(article.publishedAt.toDate ? article.publishedAt.toDate() : article.publishedAt)
@@ -115,7 +127,7 @@ function renderRow(article, ctx, reload) {
       </div>
       <div style="margin-top:6px;">
         ${hasGame
-          ? `<span class="pill pill-published" style="background:#dcfce7;color:#166534;">${qCount} question${qCount === 1 ? "" : "s"} attached</span>`
+          ? `<span class="pill pill-published" style="background:#dcfce7;color:#166534;">${esc(gameKindLabel)} · ${qCount} question${qCount === 1 ? "" : "s"}</span>`
           : `<span class="pill pill-draft" style="background:var(--hairline-soft, #eef0f4);color:var(--muted);">No game yet</span>`}
       </div>
     </div>
@@ -224,6 +236,26 @@ async function openGameDialog(article, ctx, reload) {
     </div>
 
     <div style="display:grid;gap:6px;">
+      <label class="label" style="margin:0;font-weight:600;font-size:13px;">Game type</label>
+      <div id="kind-picker" role="radiogroup" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <label class="kind-opt" data-kind="doodle" style="display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--hairline);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .14s ease;">
+          <input type="radio" name="game-kind" value="doodle" style="margin-top:3px;flex-shrink:0;">
+          <span style="display:grid;gap:2px;">
+            <span style="font-weight:700;font-size:13px;color:var(--ink-2);">Doodle Jump</span>
+            <span style="font-size:11.5px;color:var(--muted);line-height:1.35;">Bounce upward, gold platforms ask questions, rescue prompt on death.</span>
+          </span>
+        </label>
+        <label class="kind-opt" data-kind="flappy" style="display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--hairline);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .14s ease;">
+          <input type="radio" name="game-kind" value="flappy" style="margin-top:3px;flex-shrink:0;">
+          <span style="display:grid;gap:2px;">
+            <span style="font-weight:700;font-size:13px;color:var(--ink-2);">Flappy Catalyst</span>
+            <span style="font-size:11.5px;color:var(--muted);line-height:1.35;">Flap through pipes, gold pipe asks a question, rescue prompt on crash.</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:6px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <label class="label" style="margin:0;font-weight:600;font-size:13px;">Step 1 &middot; Generate questions with AI</label>
         <button type="button" class="btn btn-secondary btn-sm" id="copy-prompt">
@@ -271,6 +303,38 @@ async function openGameDialog(article, ctx, reload) {
   modal.modal.style.width = "min(720px, calc(100vw - 32px))";
 
   cancelBtn.addEventListener("click", () => modal.close());
+
+  // Game-kind picker. Default to the existing game's kind (or "doodle" for
+  // games saved before the picker existed). Visual highlight on the
+  // selected option for clarity.
+  const initialKind = (existingGame && existingGame.kind) === "flappy" ? "flappy" : "doodle";
+  const kindRadios = form.querySelectorAll('input[name="game-kind"]');
+  kindRadios.forEach((r) => {
+    if (r.value === initialKind) r.checked = true;
+    r.addEventListener("change", paintKindHighlight);
+  });
+  function paintKindHighlight() {
+    form.querySelectorAll(".kind-opt").forEach((opt) => {
+      const input = opt.querySelector('input[name="game-kind"]');
+      if (input && input.checked) {
+        opt.style.borderColor = "var(--accent, #f4a72b)";
+        opt.style.background = "rgba(244, 167, 43, 0.08)";
+      } else {
+        opt.style.borderColor = "var(--hairline)";
+        opt.style.background = "";
+      }
+    });
+  }
+  // Allow clicking anywhere on the .kind-opt to select.
+  form.querySelectorAll(".kind-opt").forEach((opt) => {
+    opt.addEventListener("click", (e) => {
+      if (e.target.tagName !== "INPUT") {
+        const input = opt.querySelector('input[name="game-kind"]');
+        if (input) { input.checked = true; paintKindHighlight(); }
+      }
+    });
+  });
+  paintKindHighlight();
 
   // Pre-fill the textarea if we already have a game.
   const aiOutEl = form.querySelector("#ai-output");
@@ -386,8 +450,11 @@ async function openGameDialog(article, ctx, reload) {
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving…";
     try {
+      const selectedKindEl = form.querySelector('input[name="game-kind"]:checked');
+      const selectedKind = selectedKindEl && selectedKindEl.value === "flappy" ? "flappy" : "doodle";
       await updateDoc(doc(db, "stories", full.id), {
         game: {
+          kind: selectedKind,
           title: parsed.title,
           intro: parsed.intro,
           questions: parsed.questions.map((q) => ({

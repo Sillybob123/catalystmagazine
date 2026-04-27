@@ -1275,10 +1275,27 @@ function renderArticleDetail(article) {
     mountReadingProgress();
     registerProgressiveImages(container);
     hydrateQuizzes(container);
-    mountDoodleGame(container, article);
+    mountArticleGame(container, article);
     if (typeof window.applyGlossary === 'function') {
         const body = container.querySelector('.article-body');
         if (body) window.applyGlossary(body);
+    }
+}
+
+// Article games: an admin can attach either a Doodle Jump or a Flappy
+// knowledge game to a story (stories/{id}.game). Both variants share the
+// question/rescue mechanics and the iframe-host bridge; only the visual
+// game and template differ. The `game.kind` field selects the variant —
+// missing/unknown values default to "doodle" so older saves keep working.
+function mountArticleGame(container, article) {
+    if (!container || !article || !article.game) return;
+    const data = article.game;
+    if (!Array.isArray(data.questions) || data.questions.length === 0) return;
+    const kind = (data.kind || "doodle").toLowerCase();
+    if (kind === "flappy") {
+        mountFlappyGame(container, article);
+    } else {
+        mountDoodleGame(container, article);
     }
 }
 
@@ -1376,7 +1393,85 @@ function loadDoodleTemplate() {
 function renderDoodleGameHtml(template, data) {
     const title = data.title || 'Knowledge climb';
     const intro = data.intro || 'Climb high — answer the gold-platform questions to earn power-ups.';
-    // Sanitize the questions into the shape the template expects.
+    return renderGameTemplate(template, data, {
+        title,
+        intro,
+        characterUrl: window.location.origin + '/doodlecharacter.png'
+    });
+}
+
+// ----- Flappy variant -------------------------------------------------------
+// Same iframe + bridge plumbing as the doodle game; just a different
+// template + sprite asset.
+async function mountFlappyGame(container, article) {
+    if (!container || !article || !article.game) return;
+    const data = article.game;
+    if (!Array.isArray(data.questions) || data.questions.length === 0) return;
+    const wrapEl = container.querySelector('.article-body-wrap');
+    if (!wrapEl) return;
+    if (wrapEl.querySelector('.article-doodle-game')) return;
+    try {
+        const tmpl = await loadFlappyTemplate();
+        const html = renderFlappyGameHtml(tmpl, data);
+        const section = document.createElement('section');
+        // Reuse the doodle CSS class so the eyebrow/title/intro layout
+        // matches without forking styles.
+        section.className = 'article-doodle-game';
+        section.setAttribute('aria-label', 'Article knowledge game');
+        section.innerHTML = `
+            <div class="article-doodle-game__lead">
+                <span class="article-doodle-game__eyebrow">Test what you read</span>
+                <h2 class="article-doodle-game__title">${escapeHtmlAttr(data.title || 'Flappy Catalyst')}</h2>
+                <p class="article-doodle-game__intro">${escapeHtmlAttr(data.intro || 'Flap with space or tap. Pass pipes to score, gold pipes ask questions, crash and answer one to keep flying.')}</p>
+            </div>
+        `;
+        const iframe = document.createElement('iframe');
+        iframe.className = 'article-doodle-frame';
+        iframe.title = data.title || 'Flappy Catalyst';
+        iframe.loading = 'lazy';
+        iframe.setAttribute('allow', 'fullscreen');
+        iframe.setAttribute('scrolling', 'no');
+        iframe.srcdoc = html;
+        section.appendChild(iframe);
+        const byline = wrapEl.querySelector('.article-byline');
+        if (byline) wrapEl.insertBefore(section, byline);
+        else wrapEl.appendChild(section);
+        attachDoodleHostBridge(iframe);
+    } catch (err) {
+        console.warn('Could not mount flappy knowledge game', err);
+    }
+}
+
+let flappyTemplatePromise = null;
+function loadFlappyTemplate() {
+    if (!flappyTemplatePromise) {
+        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260427a');
+        flappyTemplatePromise = fetch('/posts/games/_flappy_template.html?' + bust)
+            .then((res) => {
+                if (!res.ok) throw new Error('flappy template ' + res.status);
+                return res.text();
+            })
+            .catch((err) => {
+                flappyTemplatePromise = null;
+                throw err;
+            });
+    }
+    return flappyTemplatePromise;
+}
+
+function renderFlappyGameHtml(template, data) {
+    const title = data.title || 'Flappy Catalyst';
+    const intro = data.intro || 'Pass pipes to score. The gold pipe asks a question.';
+    return renderGameTemplate(template, data, {
+        title,
+        intro,
+        characterUrl: window.location.origin + '/flappybird.png'
+    });
+}
+
+// Shared template renderer — both game variants share the same marker layout
+// so a single helper handles questions sanitization + JS injection.
+function renderGameTemplate(template, data, opts) {
     const questions = (data.questions || []).slice(0, 3).map((q) => {
         const optsRaw = Array.isArray(q.options) ? q.options : [];
         const options = optsRaw.map(o => typeof o === 'string' ? o : (o?.text || ''));
@@ -1391,18 +1486,14 @@ function renderDoodleGameHtml(template, data) {
     });
     const payload = {
         questions,
-        characterUrl: window.location.origin + '/doodlecharacter.png'
+        characterUrl: opts.characterUrl
     };
     // Defensively escape any literal "</script>" the AI might have written into
     // a question — it'd otherwise prematurely close the inline <script> tag.
     const safeJson = JSON.stringify(payload).replace(/<\/script>/gi, '<\\/script>');
-    // The template parks a JS literal after a /*__GAME_DATA__*/ marker, e.g.
-    //   const GAME_DATA = /*__GAME_DATA__*/{ questions: [], characterUrl: "..." };
-    // We replace the marker + the immediately-following object literal with the
-    // serialized payload so the game runs with the real questions.
     return template
-        .replace(/__GAME_TITLE__/g, escapeHtmlAttr(title))
-        .replace(/__GAME_INTRO__/g, escapeHtmlAttr(intro))
+        .replace(/__GAME_TITLE__/g, escapeHtmlAttr(opts.title))
+        .replace(/__GAME_INTRO__/g, escapeHtmlAttr(opts.intro))
         .replace(/\/\*__GAME_DATA__\*\/\{[\s\S]*?\}\s*;/, safeJson + ';');
 }
 
