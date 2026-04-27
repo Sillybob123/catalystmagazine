@@ -1975,7 +1975,13 @@ function decodeFirestoreGame(field) {
         };
     }).filter(Boolean);
     if (!questions.length) return null;
+    // `kind` selects the game variant on the article page — "flappy" or
+    // "doodle" (default). Older saves don't have this field, so the
+    // dispatcher in mountArticleGame falls back to doodle.
+    const kindRaw = (str('kind') || '').toLowerCase();
+    const kind = kindRaw === 'flappy' ? 'flappy' : 'doodle';
     return {
+        kind,
         title: str('title') || 'Test your knowledge',
         intro: str('intro') || 'Climb to the top — answer correctly to power up.',
         questions
