@@ -734,11 +734,26 @@ if (sheet.complete && sheet.naturalWidth) { spriteLoaded = true; rebuildSprites(
 const GRAVITY = 0.42;
 const FLAP_VY = -7.2;
 const MAX_VY = 9.5;
-const PIPE_SPEED_BASE = 2.0;       // logical px/step
-const PIPE_GAP_BASE = 130;          // vertical gap between top/bottom pipes
+const PIPE_SPEED_BASE = 1.7;       // logical px/step (start gentle)
+// Gaps now ramp from EASY → BASE as the player scores. The first few
+// pipes are noticeably wider so a new player can find the rhythm; by
+// score 12 the gap is back to the classic Flappy width.
+const PIPE_GAP_EASY = 180;          // starting gap — generous, very forgiving
+const PIPE_GAP_BASE = 130;          // late-game gap — classic flappy tightness
+const PIPE_GAP_RAMP_END = 12;       // pipes scored before gap is fully tight
 const PIPE_W = 56;
-const PIPE_INTERVAL = 180;          // x distance between consecutive pipes
+// Slightly wider spacing too so early pipes give more reaction time.
+const PIPE_INTERVAL = 200;
 const FLOOR_H = 36;
+
+// Current spawn gap based on score — interpolates EASY → BASE over the
+// first PIPE_GAP_RAMP_END pipes. Each pipe is spawned with this fixed
+// gap baked in, so scoring 1-2 always sees the easy width even if the
+// player later coasts to score 20.
+function currentSpawnGap() {
+  const t = clamp(score / PIPE_GAP_RAMP_END, 0, 1);
+  return Math.round(PIPE_GAP_EASY + (PIPE_GAP_BASE - PIPE_GAP_EASY) * t);
+}
 
 const STATE = { IDLE: 0, PLAYING: 1, PAUSED_Q: 2, OVER: 3, COUNTDOWN: 4 };
 let state = STATE.IDLE;
@@ -777,13 +792,16 @@ function escapeText(s) {
 
 // ---- World setup -----------------------------------------------------------
 function spawnPipe(x, opts = {}) {
+  // The actual gap baked into this pipe scales with score so the early
+  // pipes are noticeably easier (PIPE_GAP_EASY) and tighten over time.
+  const gap = currentSpawnGap();
   const minTop = 50;
-  const maxTop = H - FLOOR_H - PIPE_GAP_BASE - 50;
+  const maxTop = H - FLOOR_H - gap - 50;
   const gapY = clamp(rand(minTop, maxTop), minTop, maxTop);
   pipes.push({
     x,
     gapY,
-    gap: PIPE_GAP_BASE,
+    gap,
     scored: false,
     gold: !!opts.gold,
     spawnedQ: false
@@ -1072,8 +1090,11 @@ function loop(t) {
 }
 
 function pipeSpeed() {
-  // Gentle ramp: speed grows with score.
-  return PIPE_SPEED_BASE + Math.min(2.4, score * 0.04);
+  // Gentle ramp: starts slow, grows ~0.03 logical px per pipe, capped at
+  // a comfortable late-game speed. Combined with the gap ramp, the first
+  // ~5 pipes feel deliberately friendly so a new player can learn the
+  // flap rhythm before the game tightens.
+  return PIPE_SPEED_BASE + Math.min(2.0, score * 0.03);
 }
 
 function step() {

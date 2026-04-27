@@ -1448,7 +1448,7 @@ async function mountFlappyGame(container, article) {
 let flappyTemplatePromise = null;
 function loadFlappyTemplate() {
     if (!flappyTemplatePromise) {
-        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260427d');
+        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260427e');
         flappyTemplatePromise = fetch('/posts/games/_flappy_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('flappy template ' + res.status);
