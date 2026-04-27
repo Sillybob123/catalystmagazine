@@ -1153,6 +1153,7 @@ function initArticleDetailPage(data) {
             if (full.author && full.author !== 'The Catalyst') article.author = full.author;
             if (full.deck) article.deck = full.deck;
             if (full.lightCover !== undefined) article.lightCover = full.lightCover;
+            if (full.game) article.game = full.game;
         }
         renderArticleDetail(article);
     }).catch(() => renderArticleDetail(article));
@@ -1274,10 +1275,102 @@ function renderArticleDetail(article) {
     mountReadingProgress();
     registerProgressiveImages(container);
     hydrateQuizzes(container);
+    mountDoodleGame(container, article);
     if (typeof window.applyGlossary === 'function') {
         const body = container.querySelector('.article-body');
         if (body) window.applyGlossary(body);
     }
+}
+
+// Append the Catalyst Doodle Jump knowledge game below the article body when
+// an admin has attached a game to this story (stories/{id}.game). Renders into
+// a sandboxed iframe at the very end of .article-body-wrap so the share row
+// stays inline with the body, and the game gets its own roomy section.
+async function mountDoodleGame(container, article) {
+    if (!container || !article || !article.game) return;
+    const data = article.game;
+    if (!Array.isArray(data.questions) || data.questions.length === 0) return;
+
+    const wrapEl = container.querySelector('.article-body-wrap');
+    if (!wrapEl) return;
+
+    // Avoid double-mounting on hot re-renders.
+    if (wrapEl.querySelector('.article-doodle-game')) return;
+
+    try {
+        const tmpl = await loadDoodleTemplate();
+        const html = renderDoodleGameHtml(tmpl, data);
+        const section = document.createElement('section');
+        section.className = 'article-doodle-game';
+        section.setAttribute('aria-label', 'Article knowledge game');
+        section.innerHTML = `
+            <div class="article-doodle-game__lead">
+                <span class="article-doodle-game__eyebrow">Test what you read</span>
+                <h2 class="article-doodle-game__title">${escapeHtmlAttr(data.title || 'Knowledge climb')}</h2>
+                <p class="article-doodle-game__intro">${escapeHtmlAttr(data.intro || 'Bounce as high as you can — gold platforms ask one question at a time. Three correct answers and you’re a Catalyst.')}</p>
+            </div>
+        `;
+        const iframe = document.createElement('iframe');
+        iframe.className = 'article-doodle-frame';
+        iframe.title = data.title || 'Catalyst Doodle Jump';
+        iframe.loading = 'lazy';
+        iframe.setAttribute('allow', 'accelerometer; gyroscope; fullscreen');
+        iframe.setAttribute('scrolling', 'no');
+        iframe.srcdoc = html;
+        section.appendChild(iframe);
+        wrapEl.appendChild(section);
+    } catch (err) {
+        console.warn('Could not mount doodle knowledge game', err);
+    }
+}
+
+let doodleTemplatePromise = null;
+function loadDoodleTemplate() {
+    if (!doodleTemplatePromise) {
+        doodleTemplatePromise = fetch('/posts/games/_doodle_template.html', { cache: 'force-cache' })
+            .then((res) => {
+                if (!res.ok) throw new Error('doodle template ' + res.status);
+                return res.text();
+            })
+            .catch((err) => {
+                doodleTemplatePromise = null;
+                throw err;
+            });
+    }
+    return doodleTemplatePromise;
+}
+
+function renderDoodleGameHtml(template, data) {
+    const title = data.title || 'Knowledge climb';
+    const intro = data.intro || 'Climb high — answer the gold-platform questions to earn power-ups.';
+    // Sanitize the questions into the shape the template expects.
+    const questions = (data.questions || []).slice(0, 3).map((q) => {
+        const optsRaw = Array.isArray(q.options) ? q.options : [];
+        const options = optsRaw.map(o => typeof o === 'string' ? o : (o?.text || ''));
+        const correct = Math.max(0, Math.min(Number(q.correct ?? 0), options.length - 1));
+        return {
+            prompt: q.prompt || q.q || '',
+            options,
+            correct,
+            feedbackCorrect: q.feedbackCorrect || '',
+            feedbackIncorrect: q.feedbackIncorrect || ''
+        };
+    });
+    const payload = {
+        questions,
+        characterUrl: window.location.origin + '/doodlecharacter.png'
+    };
+    // Defensively escape any literal "</script>" the AI might have written into
+    // a question — it'd otherwise prematurely close the inline <script> tag.
+    const safeJson = JSON.stringify(payload).replace(/<\/script>/gi, '<\\/script>');
+    // The template parks a JS literal after a /*__GAME_DATA__*/ marker, e.g.
+    //   const GAME_DATA = /*__GAME_DATA__*/{ questions: [], characterUrl: "..." };
+    // We replace the marker + the immediately-following object literal with the
+    // serialized payload so the game runs with the real questions.
+    return template
+        .replace(/__GAME_TITLE__/g, escapeHtmlAttr(title))
+        .replace(/__GAME_INTRO__/g, escapeHtmlAttr(intro))
+        .replace(/\/\*__GAME_DATA__\*\/\{[\s\S]*?\}\s*;/, safeJson + ';');
 }
 
 // Replace any quiz figures the writer dropped into the article body with the
@@ -1710,6 +1803,10 @@ function firestoreDocToArticle(doc) {
             : `${window.location.origin}/${rawImage.replace(/^\/+/, '')}`;
     }
 
+    // Optional admin-attached Doodle Jump knowledge game. The dashboard
+    // "Games" tab writes a stories/{id}.game map of { questions, title, intro }.
+    const game = decodeFirestoreGame(f.game);
+
     return {
         id: storyId,
         title,
@@ -1723,7 +1820,41 @@ function firestoreDocToArticle(doc) {
         excerpt,
         deck,
         content,
-        lightCover
+        lightCover,
+        game
+    };
+}
+
+// Decode the `stories/{id}.game` Firestore map into the shape the doodle
+// template expects. Returns null if the field is missing or malformed.
+function decodeFirestoreGame(field) {
+    if (!field) return null;
+    const map = field.mapValue?.fields;
+    if (!map) return null;
+    const str = k => map[k]?.stringValue ?? '';
+    const questionsRaw = map.questions?.arrayValue?.values || [];
+    const questions = questionsRaw.map((q) => {
+        const qf = q?.mapValue?.fields;
+        if (!qf) return null;
+        const prompt = qf.prompt?.stringValue || qf.q?.stringValue || '';
+        const options = (qf.options?.arrayValue?.values || [])
+            .map(v => v.stringValue || '')
+            .filter(s => s.length);
+        const correct = Number(qf.correct?.integerValue ?? qf.correct?.doubleValue ?? -1);
+        if (!prompt || options.length < 2 || correct < 0 || correct >= options.length) return null;
+        return {
+            prompt,
+            options,
+            correct,
+            feedbackCorrect: qf.feedbackCorrect?.stringValue || '',
+            feedbackIncorrect: qf.feedbackIncorrect?.stringValue || ''
+        };
+    }).filter(Boolean);
+    if (!questions.length) return null;
+    return {
+        title: str('title') || 'Test your knowledge',
+        intro: str('intro') || 'Climb to the top — answer correctly to power up.',
+        questions
     };
 }
 

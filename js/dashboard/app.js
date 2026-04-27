@@ -206,6 +206,13 @@ const ROUTES = {
     loader: () => import("./admin.js"),
     mountKey: "articles",
   },
+  "#/admin/games": {
+    label: "Games",
+    icon: ICONS.activity,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./games.js"),
+  },
   "#/admin/users": {
     label: "Users & roles",
     icon: ICONS.users,
