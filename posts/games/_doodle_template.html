@@ -130,11 +130,12 @@
   .canvas-wrap {
     position: relative;
     width: 100%;
-    /* Compact frame so the whole game fits in a typical laptop viewport at
-       100% zoom alongside the article header. 4:5 is short and wide
-       enough to read the platforms while keeping the column tidy. */
-    aspect-ratio: 4 / 5;
-    max-height: 54vh;
+    /* Compact desktop frame: 4:4.5 with a 48vh cap keeps the whole game
+       (header + canvas + credit line) well inside a 13" laptop viewport
+       at 100% zoom. Mobile overrides below give the canvas more vertical
+       room since phone screens are taller per width. */
+    aspect-ratio: 4 / 4.5;
+    max-height: 48vh;
     margin: 0 auto;
     border-radius: 18px;
     overflow: hidden;
@@ -598,19 +599,67 @@ function fitCanvas() {
   cv.style.width = rect.width + "px";
   cv.style.height = rect.height + "px";
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  // Smoothing for the rest of the world so circles and lines stay clean,
-  // but the player drawImage call below disables it so the sprite hits
-  // exact device pixels with no per-frame resampling.
+  // Smoothing for the rest of the world so circles and lines stay clean.
+  // The player sprite is now pre-rendered at device-pixel size, so it can
+  // also use smoothing without paying a per-frame downsample cost.
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
+  // If the cached sprite was built for a different dpr (e.g. window moved
+  // between a 1x and 2x display), rebuild it now so it stays crisp.
+  if (playerLoaded && playerSpriteScale !== dpr) rebuildPlayerSprite();
 }
 
 // ---- Player sprite ---------------------------------------------------------
+// We pre-render the 1024×1024 source image to an offscreen canvas at exactly
+// the device-pixel size we draw at (PLAYER_W * dpr). This gives one
+// high-quality downsample at load time instead of resampling 1024→54 every
+// single frame, which previously read as a blurry/aliased mess. The cached
+// bitmap is then drawn 1:1 with smoothing on, so it stays crisp without any
+// per-frame quality cost.
 const player = new Image();
 let playerLoaded = false;
-player.onload = () => { playerLoaded = true; };
+let playerSpriteCanvas = null;   // pre-rendered, ready-to-draw at device px
+let playerSpriteScale = 0;       // dpr the cache was built for
+function rebuildPlayerSprite() {
+  if (!player.complete || !player.naturalWidth) return;
+  const rawDpr = window.devicePixelRatio || 1;
+  const dpr = rawDpr < 1.5 ? 1 : 2;
+  const targetW = PLAYER_W * dpr;
+  const targetH = PLAYER_H * dpr;
+  const off = document.createElement("canvas");
+  off.width = targetW;
+  off.height = targetH;
+  const oc = off.getContext("2d");
+  oc.imageSmoothingEnabled = true;
+  oc.imageSmoothingQuality = "high";
+  // Two-pass downsample: going straight from 1024 to ~108 with one
+  // drawImage call still loses detail even with high-quality smoothing.
+  // Halving repeatedly until we're within 2x of the target produces a
+  // noticeably crisper sprite (this is the standard browser trick).
+  let srcCanvas = document.createElement("canvas");
+  srcCanvas.width = player.naturalWidth;
+  srcCanvas.height = player.naturalHeight;
+  srcCanvas.getContext("2d").drawImage(player, 0, 0);
+  while (srcCanvas.width > targetW * 2) {
+    const next = document.createElement("canvas");
+    next.width = Math.max(targetW, Math.floor(srcCanvas.width / 2));
+    next.height = Math.max(targetH, Math.floor(srcCanvas.height / 2));
+    const nc = next.getContext("2d");
+    nc.imageSmoothingEnabled = true;
+    nc.imageSmoothingQuality = "high";
+    nc.drawImage(srcCanvas, 0, 0, next.width, next.height);
+    srcCanvas = next;
+  }
+  oc.drawImage(srcCanvas, 0, 0, targetW, targetH);
+  playerSpriteCanvas = off;
+  playerSpriteScale = dpr;
+}
+player.onload = () => { playerLoaded = true; rebuildPlayerSprite(); };
 player.onerror = () => { playerLoaded = false; };
 player.src = GAME_DATA.characterUrl || "/doodlecharacter.png";
+// Image was already in the browser cache → onload may have already fired
+// or won't fire again. Cover that case by checking complete-state once.
+if (player.complete && player.naturalWidth) { playerLoaded = true; rebuildPlayerSprite(); }
 
 // ---- Physics + state -------------------------------------------------------
 const GRAVITY = 0.32;
@@ -1240,13 +1289,124 @@ function step() {
   }
 }
 
+// ---- Height-based biomes ---------------------------------------------------
+// As the climber gains altitude the world shifts through "biomes": paper →
+// dawn → dusk → night/space → full rainbow. Each biome blends smoothly into
+// the next so there's no harsh cut. Returns interpolated colors + a star/
+// rainbow strength so the rest of draw() can apply them uniformly.
+const BIOMES = [
+  { at: 0,    bg1: "#fbfaf3", bg2: "#fbfaf3", grid: "rgba(216, 210, 179, 0.55)", platHueShift: 0, stars: 0, rainbow: 0 },
+  { at: 25,   bg1: "#e0f0ff", bg2: "#fde4cd", grid: "rgba(120, 150, 200, 0.40)", platHueShift: 0, stars: 0, rainbow: 0 },
+  { at: 60,   bg1: "#ffb98c", bg2: "#ff7eb3", grid: "rgba(180, 90, 140, 0.45)",  platHueShift: 15, stars: 0, rainbow: 0 },
+  { at: 110,  bg1: "#3a2c8a", bg2: "#8a3aa2", grid: "rgba(255, 255, 255, 0.18)", platHueShift: 30, stars: 1, rainbow: 0 },
+  { at: 170,  bg1: "#0a0a2a", bg2: "#1a0a3a", grid: "rgba(255, 255, 255, 0.12)", platHueShift: 45, stars: 1, rainbow: 0.6 },
+  { at: 240,  bg1: "#000020", bg2: "#1a0033", grid: "rgba(255, 255, 255, 0.10)", platHueShift: 60, stars: 1, rainbow: 1   }
+];
+function lerp(a, b, t) { return a + (b - a) * t; }
+// Approximate hue shift on a hex color, used to tint platforms by biome.
+// Convert RGB→HSL, rotate hue, convert back. Cheap; we only call it on a
+// handful of platforms per frame outside of rainbow biome (and rainbow
+// biome takes a different code path).
+function applyHueShift(hex, deg) {
+  if (!hex || hex[0] !== "#" || hex.length !== 7) return hex;
+  let r = parseInt(hex.slice(1, 3), 16) / 255;
+  let g = parseInt(hex.slice(3, 5), 16) / 255;
+  let b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h *= 60;
+  }
+  h = (h + deg + 360) % 360;
+  return "hsl(" + h.toFixed(0) + ", " + (s * 100).toFixed(0) + "%, " + (l * 100).toFixed(0) + "%)";
+}
+function lerpColor(c1, c2, t) {
+  const r1 = parseInt(c1.slice(1, 3), 16), g1 = parseInt(c1.slice(3, 5), 16), b1 = parseInt(c1.slice(5, 7), 16);
+  const r2 = parseInt(c2.slice(1, 3), 16), g2 = parseInt(c2.slice(3, 5), 16), b2 = parseInt(c2.slice(5, 7), 16);
+  return "rgb(" + Math.round(lerp(r1, r2, t)) + "," + Math.round(lerp(g1, g2, t)) + "," + Math.round(lerp(b1, b2, t)) + ")";
+}
+function lerpRgba(c1, c2, t) {
+  const m1 = c1.match(/[\d.]+/g).map(Number);
+  const m2 = c2.match(/[\d.]+/g).map(Number);
+  return "rgba(" + Math.round(lerp(m1[0], m2[0], t)) + "," + Math.round(lerp(m1[1], m2[1], t)) +
+         "," + Math.round(lerp(m1[2], m2[2], t)) + "," + lerp(m1[3] ?? 1, m2[3] ?? 1, t).toFixed(3) + ")";
+}
+function currentBiome(h) {
+  for (let i = BIOMES.length - 1; i >= 0; i--) {
+    if (h >= BIOMES[i].at) {
+      const a = BIOMES[i];
+      const b = BIOMES[i + 1];
+      if (!b) return { ...a };
+      const t = clamp((h - a.at) / (b.at - a.at), 0, 1);
+      return {
+        bg1: lerpColor(a.bg1, b.bg1, t),
+        bg2: lerpColor(a.bg2, b.bg2, t),
+        grid: lerpRgba(a.grid, b.grid, t),
+        platHueShift: lerp(a.platHueShift, b.platHueShift, t),
+        stars: lerp(a.stars, b.stars, t),
+        rainbow: lerp(a.rainbow, b.rainbow, t)
+      };
+    }
+  }
+  return { ...BIOMES[0] };
+}
+// Stable star positions, rendered when the night biome kicks in. Twinkle is
+// driven by performance.now so it doesn't depend on framerate.
+const STARS = [];
+for (let i = 0; i < 60; i++) {
+  STARS.push({ x: Math.random() * W, y: Math.random() * 1200, r: 0.6 + Math.random() * 1.6, ph: Math.random() * Math.PI * 2 });
+}
+
 function draw() {
-  // Background grid paper effect (subtle).
-  ctx.fillStyle = "#fbfaf3";
+  const biome = currentBiome(height);
+  // Background: vertical gradient between the two biome colors.
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, biome.bg1);
+  bgGrad.addColorStop(1, biome.bg2);
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = "rgba(216, 210, 179, 0.55)";
+
+  // Stars layer (only visible in dusk/night biomes — strength fades in).
+  if (biome.stars > 0.02) {
+    const t = performance.now() / 1000;
+    for (const s of STARS) {
+      // Parallax: stars drift down at 30% of camera speed.
+      const sy = ((s.y + cameraY * 0.3) % H + H) % H;
+      const tw = 0.55 + 0.45 * Math.sin(t * 1.6 + s.ph);
+      ctx.fillStyle = "rgba(255, 255, 255, " + (biome.stars * tw).toFixed(3) + ")";
+      ctx.beginPath();
+      ctx.arc(s.x, sy, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Rainbow band overlay (only at very high climbs). Animates horizontally
+  // for a gentle shimmer; opacity scales with biome.rainbow.
+  if (biome.rainbow > 0.02) {
+    const t = performance.now() / 4000;
+    const rg = ctx.createLinearGradient(0, 0, W, H);
+    const shift = (t % 1);
+    const stops = ["#ff4d6d", "#ff9f43", "#ffd23f", "#06d6a0", "#118ab2", "#7b2cbf", "#ff4d6d"];
+    for (let i = 0; i < stops.length; i++) {
+      rg.addColorStop((i / (stops.length - 1) + shift) % 1, stops[i]);
+    }
+    ctx.globalAlpha = 0.22 * biome.rainbow;
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+  }
+
+  // Grid (parallax). Color comes from the biome so it never disappears
+  // against the dark sky.
+  ctx.strokeStyle = biome.grid;
   ctx.lineWidth = 1;
-  // Horizontal lines synced with cameraY for parallax.
   const off = ((cameraY % 32) + 32) % 32;
   for (let y = -off; y < H; y += 32) {
     ctx.beginPath();
@@ -1271,12 +1431,30 @@ function draw() {
   ctx.translate(0, -camY);
 
   // Platforms
+  // In rainbow biome we cycle each platform's hue based on its world-Y so
+  // the climb visibly turns into a rainbow staircase. Outside rainbow we
+  // just apply the biome's flat hue shift so colors warm/cool with altitude.
+  const platHueAdj = biome.platHueShift || 0;
+  const rainbowStrength = biome.rainbow || 0;
   for (const pl of platforms) {
     if (pl.y < cameraY - 40 || pl.y > cameraY + H + 40) continue;
     let fill = "#8ad79c", outline = "#1f7a4a";
     if (pl.type === "blue") { fill = "#9bc6f5"; outline = "#2f5da0"; }
     else if (pl.type === "brown") { fill = "#d8b48c"; outline = "#7a4a1f"; }
     else if (pl.type === "gold") { fill = "#f4d24a"; outline = "#a87814"; }
+    if (rainbowStrength > 0.02 && pl.type !== "gold") {
+      // Hue per platform from its altitude — neighbours sit two notches
+      // apart on the colour wheel, which makes the staircase look striped.
+      const hue = ((-pl.y * 0.6) + performance.now() * 0.04) % 360;
+      const sat = 70;
+      const light = 65;
+      fill = "hsl(" + (hue + 360) % 360 + ", " + sat + "%, " + light + "%)";
+      outline = "hsl(" + ((hue + 360) % 360) + ", " + (sat + 10) + "%, 30%)";
+    } else if (platHueAdj > 0 && pl.type !== "gold") {
+      // Subtle warming tint for dusk/space biomes.
+      fill = applyHueShift(fill, platHueAdj * 0.6);
+      outline = applyHueShift(outline, platHueAdj * 0.6);
+    }
     if (pl.broken) {
       // Broken bits flying down.
       rect(pl.x, pl.y, pl.w * 0.4, pl.h, fill, outline);
@@ -1366,13 +1544,18 @@ function draw() {
       // flicker
     } else if (playerLoaded) {
       ctx.save();
-      // Disable smoothing for the sprite so the rounded pixel coordinates
-      // map 1:1 to device pixels with no bilinear filtering, eliminating
-      // the per-frame resampling that read as a vibration on the player.
-      ctx.imageSmoothingEnabled = false;
+      // Draw the pre-rendered sprite at logical PLAYER_W/H. Because the
+      // cache is built at device-pixel size and the canvas transform
+      // already includes the dpr scale via setTransform, this becomes
+      // effectively a 1:1 copy of the cached bitmap to the screen — no
+      // per-frame downsample, no blur. We keep smoothing on so the
+      // (already-snapped) integer coordinates still get clean edges.
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
       ctx.translate(px + PLAYER_W / 2, py + PLAYER_H / 2);
       if (p.facing < 0) ctx.scale(-1, 1);
-      ctx.drawImage(player, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
+      const sprite = playerSpriteCanvas || player;
+      ctx.drawImage(sprite, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
       ctx.restore();
     } else {
       // Fallback shape.
