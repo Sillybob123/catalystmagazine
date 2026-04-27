@@ -253,6 +253,7 @@ async function openGameDialog(article, ctx, reload) {
           </span>
         </label>
       </div>
+      <div id="kind-note" style="font-size:12px;color:var(--muted);min-height:16px;line-height:1.4;"></div>
     </div>
 
     <div style="display:grid;gap:6px;">
@@ -306,12 +307,17 @@ async function openGameDialog(article, ctx, reload) {
 
   // Game-kind picker. Default to the existing game's kind (or "doodle" for
   // games saved before the picker existed). Visual highlight on the
-  // selected option for clarity.
-  const initialKind = (existingGame && existingGame.kind) === "flappy" ? "flappy" : "doodle";
+  // selected option for clarity. Switching the radio reuses the existing
+  // questions, so an admin can flip a game from doodle to flappy (or vice
+  // versa) without re-pasting the JSON — the kind change is persisted on
+  // Save and applied to the article on the next reader load.
+  const originalKind = (existingGame && existingGame.kind) === "flappy" ? "flappy" : (existingGame ? "doodle" : null);
+  const initialKind = originalKind || "doodle";
+  const kindNoteEl = form.querySelector("#kind-note");
   const kindRadios = form.querySelectorAll('input[name="game-kind"]');
   kindRadios.forEach((r) => {
     if (r.value === initialKind) r.checked = true;
-    r.addEventListener("change", paintKindHighlight);
+    r.addEventListener("change", () => { paintKindHighlight(); paintKindNote(); });
   });
   function paintKindHighlight() {
     form.querySelectorAll(".kind-opt").forEach((opt) => {
@@ -325,16 +331,31 @@ async function openGameDialog(article, ctx, reload) {
       }
     });
   }
+  function paintKindNote() {
+    if (!kindNoteEl || !originalKind) { if (kindNoteEl) kindNoteEl.textContent = ""; return; }
+    const checked = form.querySelector('input[name="game-kind"]:checked');
+    const sel = checked ? checked.value : originalKind;
+    if (sel !== originalKind) {
+      const fromLabel = originalKind === "flappy" ? "Flappy Catalyst" : "Doodle Jump";
+      const toLabel = sel === "flappy" ? "Flappy Catalyst" : "Doodle Jump";
+      kindNoteEl.textContent = `Save will switch this article from ${fromLabel} to ${toLabel} — same questions, new game.`;
+      kindNoteEl.style.color = "var(--accent-deep, #d6881d)";
+    } else {
+      kindNoteEl.textContent = "";
+      kindNoteEl.style.color = "";
+    }
+  }
   // Allow clicking anywhere on the .kind-opt to select.
   form.querySelectorAll(".kind-opt").forEach((opt) => {
     opt.addEventListener("click", (e) => {
       if (e.target.tagName !== "INPUT") {
         const input = opt.querySelector('input[name="game-kind"]');
-        if (input) { input.checked = true; paintKindHighlight(); }
+        if (input) { input.checked = true; paintKindHighlight(); paintKindNote(); }
       }
     });
   });
   paintKindHighlight();
+  paintKindNote();
 
   // Pre-fill the textarea if we already have a game.
   const aiOutEl = form.querySelector("#ai-output");
