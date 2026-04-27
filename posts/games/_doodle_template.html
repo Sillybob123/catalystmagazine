@@ -549,15 +549,23 @@ const W = 360;
 let H = 600; // computed below to match wrap aspect ratio
 function fitCanvas() {
   const rect = wrap.getBoundingClientRect();
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // SNAP dpr to an integer (1 or 2). Fractional device-pixel-ratios like
+  // 1.25 or 1.5 (Windows display scaling) cause integer-aligned logical
+  // coordinates to land on FRACTIONAL device pixels, which the GPU then
+  // resamples via bilinear filtering — that's the shimmer the user sees.
+  // Snapping dpr makes every logical integer also a device integer, so
+  // the player sprite is pixel-perfect even with smoothing enabled.
+  const rawDpr = window.devicePixelRatio || 1;
+  const dpr = rawDpr < 1.5 ? 1 : 2;
   H = Math.max(360, Math.round(W * (rect.height / rect.width)));
   cv.width = W * dpr;
   cv.height = H * dpr;
   cv.style.width = rect.width + "px";
   cv.style.height = rect.height + "px";
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  // High-quality smoothing so a sub-pixel sprite position resamples to the
-  // same set of pixels each frame instead of shimmering.
+  // Smoothing for the rest of the world so circles and lines stay clean,
+  // but the player drawImage call below disables it so the sprite hits
+  // exact device pixels with no per-frame resampling.
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 }
@@ -705,6 +713,8 @@ function startGame() {
   invuln = 0;
   rescueMode = false;
   rescuesUsed = 0;
+  lastFrameTs = 0;
+  stepAccumulator = 0;
   p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1 };
   seedWorld();
   overlayStart.hidden = true;
@@ -916,9 +926,32 @@ function spawnPenaltyMonster() {
 }
 
 // ---- Step / draw loop ------------------------------------------------------
+// Fixed-timestep loop. Without this the game ran one physics step per
+// requestAnimationFrame, which means the player on a 60Hz monitor got one
+// step per ~16.7ms but the same player on a 120Hz / 144Hz / 240Hz display
+// got 2x–4x as many steps per real second — making the published version
+// feel much faster than local 60Hz. We now accumulate real elapsed time and
+// run a deterministic 60 steps per second regardless of refresh rate.
+const STEP_MS = 1000 / 60;        // physics tick = 16.67ms
+const MAX_CATCHUP_MS = 200;       // cap at ~12 steps if the tab was backgrounded
+let lastFrameTs = 0;
+let stepAccumulator = 0;
 function loop(t) {
   if (state === STATE.OVER) return;
-  if (state === STATE.PLAYING) step();
+  if (!lastFrameTs) lastFrameTs = t;
+  let dt = t - lastFrameTs;
+  lastFrameTs = t;
+  if (dt > MAX_CATCHUP_MS) dt = MAX_CATCHUP_MS;
+  if (state === STATE.PLAYING) {
+    stepAccumulator += dt;
+    let safety = 8; // never run more than 8 steps in a single frame
+    while (stepAccumulator >= STEP_MS && safety-- > 0) {
+      step();
+      stepAccumulator -= STEP_MS;
+    }
+  } else {
+    stepAccumulator = 0;
+  }
   draw();
   requestAnimationFrame(loop);
 }
@@ -961,11 +994,20 @@ function step() {
   p.y += p.vy;
 
   // Camera follow: when the player crosses the upper third, pan world down.
+  // Snap cameraY to an integer immediately so render-time rounding can never
+  // disagree with physics-time rounding — that mismatch was the visible
+  // vibration where the player stayed still and the platforms jumped a
+  // pixel under them. Apply the same snap delta to p.y so their RELATIVE
+  // position is preserved frame-to-frame (p.y - cameraY stays constant
+  // during camera-pin, so the sprite renders on the exact same integer
+  // screen-Y on every frame).
   const topThird = H * 0.4 + cameraY;
   if (p.y < topThird) {
     const dy = topThird - p.y;
-    cameraY -= dy;
-    p.y += dy;
+    const newCamY = Math.round(cameraY - dy);
+    const camDelta = newCamY - cameraY;
+    cameraY = newCamY;
+    p.y += dy + camDelta;
     // Update height (metres climbed; 1m ~= 30 px).
     const climbed = -cameraY / 18;
     if (climbed > height) {
@@ -1232,6 +1274,10 @@ function draw() {
       // flicker
     } else if (playerLoaded) {
       ctx.save();
+      // Disable smoothing for the sprite so the rounded pixel coordinates
+      // map 1:1 to device pixels with no bilinear filtering, eliminating
+      // the per-frame resampling that read as a vibration on the player.
+      ctx.imageSmoothingEnabled = false;
       ctx.translate(px + PLAYER_W / 2, py + PLAYER_H / 2);
       if (p.facing < 0) ctx.scale(-1, 1);
       ctx.drawImage(player, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
