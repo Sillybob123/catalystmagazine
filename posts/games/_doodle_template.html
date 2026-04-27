@@ -297,24 +297,35 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
     margin-bottom: 10px;
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     color: var(--ink-faint);
     font-weight: 700;
+    flex-wrap: nowrap;
   }
   .qbadge {
     display: inline-flex; align-items: center; gap: 6px;
     background: var(--accent);
     color: var(--ink);
-    padding: 4px 9px;
+    padding: 4px 11px;
     border-radius: 999px;
     border: 1.5px solid var(--ink);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.06em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    max-width: 100%;
+  }
+  .qhead > span:not(.qbadge) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+    min-width: 0;
   }
   .qprompt {
     font-size: 15px;
@@ -741,6 +752,8 @@ function startGame() {
   invuln = 0;
   rescueMode = false;
   rescuesUsed = 0;
+  answeredCorrectly.clear();
+  currentQIndex = -1;
   lastFrameTs = 0;
   stepAccumulator = 0;
   p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1 };
@@ -775,9 +788,12 @@ function updateHud() {
   hudHeight.textContent = Math.round(height) + " m";
   hudLives.textContent = lives;
   // "Saves left" = how many rescue questions the player can still attempt.
-  // We only have (TOTAL_Q - 1) rescue-eligible questions (the gold platform
-  // burns the first), and rescues are capped at MAX_RESCUES.
-  const saves = Math.max(0, Math.min(TOTAL_Q - 1, MAX_RESCUES) - rescuesUsed);
+  // Hard cap is MAX_RESCUES (2), but we also can't ask a question we've
+  // already answered correctly, so the visible count reflects whichever
+  // cap kicks in first.
+  const correctlyAnswered = answeredCorrectly.size;
+  const remainingPool = Math.max(0, TOTAL_Q - correctlyAnswered);
+  const saves = Math.max(0, Math.min(MAX_RESCUES - rescuesUsed, remainingPool));
   if (hudSaves) hudSaves.textContent = saves;
 }
 
@@ -785,24 +801,49 @@ function updateHud() {
 let currentQIndex = -1;
 let rescueMode = false;       // True while the active modal is a save-me-from-death prompt.
 let rescuesUsed = 0;          // How many lives the player has earned by answering correctly on death.
-// One rescue per remaining question after the gold platform is consumed —
-// so for 3 questions the player gets up to 2 saves, and the game can still
-// end once they're spent.
-const MAX_RESCUES = Math.max(0, TOTAL_Q - 1);
+// Tracks which questions the player has already answered correctly so we
+// never re-ask them on a rescue. Wrong/missed questions stay in the pool so
+// they can come back later (e.g. you skipped the gold platform → that
+// question is still available as a rescue prompt, and a question you got
+// wrong earlier can be re-attempted on the next life loss).
+const answeredCorrectly = new Set();
+// 2 saves max regardless of question count, per design.
+const MAX_RESCUES = 2;
 
-// Triggered whenever the player would otherwise have died with 0 lives. We
-// pop a question (preferring an unanswered one, but recycling if needed):
-// correct → restore one life and respawn; wrong → real game over.
+// Pick the next question for a rescue prompt. Prefer a question the player
+// has never been shown OR has gotten wrong (so wrong answers come back
+// later). Avoid repeating any question they've already answered correctly.
+// Falls back to a random eligible question if everything has been seen.
+function pickRescueQuestion() {
+  if (!QUESTIONS.length) return -1;
+  const eligible = [];
+  for (let i = 0; i < QUESTIONS.length; i++) {
+    if (!answeredCorrectly.has(i)) eligible.push(i);
+  }
+  if (!eligible.length) return -1; // nothing left to ask — player has aced them
+  // Prefer indices that haven't been the most recently asked one.
+  const fresh = eligible.filter(i => i !== currentQIndex);
+  const pool = fresh.length ? fresh : eligible;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// Triggered whenever the player loses a life. If a rescue is still allowed
+// (under the per-run cap and at least one un-answered-correctly question
+// remains), we present a question: correct → restore the life, wrong →
+// the life stays lost (and if that drops them to zero, real game over).
 function tryRescue(reason) {
   if (rescuesUsed >= MAX_RESCUES) {
-    endGame(false);
-    return;
+    if (lives <= 0) endGame(false);
+    return false;
   }
-  // Pick a question — prefer one we haven't presented as a gold-platform yet.
-  let idx = QUESTIONS.findIndex((_, i) => i >= questionsAnswered);
-  if (idx < 0) idx = Math.floor(Math.random() * QUESTIONS.length);
+  const idx = pickRescueQuestion();
+  if (idx < 0) {
+    if (lives <= 0) endGame(false);
+    return false;
+  }
   rescueMode = true;
   presentQuestion(idx, { rescue: true, reason });
+  return true;
 }
 
 function presentQuestion(idx, modalOpts = {}) {
@@ -810,10 +851,13 @@ function presentQuestion(idx, modalOpts = {}) {
   currentQIndex = idx;
   state = STATE.PAUSED_Q;
   const q = QUESTIONS[idx];
+  const qHint = document.getElementById("qHint");
   if (modalOpts.rescue) {
-    qBadge.textContent = (modalOpts.reason || "Lost a life") + " — answer to save yourself";
+    qBadge.textContent = "Rescue " + (rescuesUsed + 1) + " / " + MAX_RESCUES;
+    if (qHint) qHint.textContent = modalOpts.reason || "Answer to save yourself";
   } else {
     qBadge.textContent = "Question " + (idx + 1) + " / " + TOTAL_Q;
+    if (qHint) qHint.textContent = "Pick the correct answer";
   }
   qPrompt.textContent = q.prompt || q.q || "Question";
   qFeedback.textContent = "";
@@ -852,14 +896,16 @@ function answerQuestion(picked, btn) {
   const buttons = qOpts.querySelectorAll(".qopt");
   buttons.forEach(b => { b.disabled = true; });
 
-  // RESCUE: special branch when this question was triggered by death.
+  // RESCUE: special branch when this question was triggered by life loss.
   if (rescueMode) {
     if (isCorrect) {
       btn.classList.add("correct");
       qFeedback.textContent = "Saved! +1 life — back into the climb.";
       qFeedback.className = "qfeedback good";
-      lives = 1;
+      // Restore the life we just lost (capped at the original 3).
+      lives = Math.min(3, lives + 1);
       rescuesUsed++;
+      answeredCorrectly.add(currentQIndex);
       updateHud();
       qContinue.hidden = false;
       setTimeout(() => {
@@ -871,14 +917,24 @@ function answerQuestion(picked, btn) {
     } else {
       btn.classList.add("wrong");
       if (correctIdx >= 0 && buttons[correctIdx]) buttons[correctIdx].classList.add("correct");
-      qFeedback.textContent = q.feedbackIncorrect || "Not quite — and that's the run.";
+      // Wrong answer doesn't restore the life. If we still have lives left
+      // we keep playing; otherwise the run ends.
+      const willEnd = lives <= 0;
+      qFeedback.textContent = willEnd
+        ? (q.feedbackIncorrect || "Not quite — and that's the run.")
+        : (q.feedbackIncorrect || "Not quite — that life is gone.");
       qFeedback.className = "qfeedback bad";
       qContinue.hidden = false;
       setTimeout(() => {
         qmodal.classList.remove("visible");
         rescueMode = false;
-        endGame(false);
-      }, 1500);
+        if (willEnd) {
+          endGame(false);
+        } else {
+          respawnPlayer();
+          state = STATE.PLAYING;
+        }
+      }, 1400);
     }
     return;
   }
@@ -890,6 +946,7 @@ function answerQuestion(picked, btn) {
     qFeedback.className = "qfeedback good";
     correctCount++;
     questionsAnswered++;
+    answeredCorrectly.add(currentQIndex);
     awardPowerForQuestion(currentQIndex);
   } else {
     btn.classList.add("wrong");
@@ -897,6 +954,8 @@ function answerQuestion(picked, btn) {
     qFeedback.textContent = q.feedbackIncorrect || "Not quite — that drops a monster on you.";
     qFeedback.className = "qfeedback bad";
     questionsAnswered++;
+    // Don't mark as answered — wrong gold-platform questions stay in the
+    // pool so they can come back as a rescue prompt later.
     spawnPenaltyMonster();
   }
   qContinue.hidden = false;
@@ -1120,15 +1179,17 @@ function step() {
       invuln = 60;
       continue;
     }
-    // Lose life.
+    // Lose life — every monster hit triggers a rescue prompt (capped by
+    // MAX_RESCUES). If we can't or shouldn't prompt, just take the hit.
     lives--;
     invuln = 80;
     p.vy = JUMP_VY * 0.8;
     monsters.splice(i, 1);
     updateHud();
-    if (lives <= 0) {
-      tryRescue("You took a hit!");
-      return;
+    if (lives <= 0 || rescuesUsed < MAX_RESCUES) {
+      const offered = tryRescue("You took a hit!");
+      if (offered) return;
+      if (lives <= 0) { endGame(false); return; }
     }
   }
 
@@ -1154,9 +1215,13 @@ function step() {
     } else {
       lives--;
       updateHud();
-      if (lives <= 0) {
-        tryRescue("You fell off!");
-        return;
+      // Every fall offers a rescue prompt (until we hit MAX_RESCUES). If a
+      // question pops, presentation handles respawn; otherwise we either
+      // end the game or do the normal in-place respawn.
+      if (lives <= 0 || rescuesUsed < MAX_RESCUES) {
+        const offered = tryRescue("You fell off!");
+        if (offered) return;
+        if (lives <= 0) { endGame(false); return; }
       }
       // Respawn near the bottom on the lowest visible platform.
       const visible = platforms.filter(pl => pl.y > cameraY + H - 200 && pl.y < cameraY + H);
