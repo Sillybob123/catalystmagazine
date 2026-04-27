@@ -93,12 +93,17 @@
   }
   .hud {
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 8px;
+    /* Locked to a single row so the Lives chip doesn't reflow when its
+       digit width changes — that was visibly bouncing the whole layout
+       between rows on phones every time a life was gained or lost. */
+    flex-wrap: nowrap;
     align-items: center;
+    justify-content: flex-start;
     margin: 10px 0 12px;
     font-size: 12px;
     font-weight: 600;
+    overflow: hidden;
   }
   .chip {
     display: inline-flex;
@@ -111,6 +116,9 @@
     color: var(--ink);
     box-shadow: 1.5px 1.5px 0 var(--ink);
     line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 1;
+    min-width: 0;
   }
   .chip strong { font-weight: 800; }
   .chip-dot {
@@ -380,52 +388,60 @@
     letter-spacing: 0.06em;
   }
 
-  /* ----- Mobile controls ----- */
-  .mobile-controls {
-    display: none;
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    padding: 10px;
-    z-index: 4;
-    pointer-events: none;
-  }
-  .mobile-controls .pad {
-    display: flex;
-    justify-content: space-between;
-    pointer-events: none;
-  }
-  .pad-btn {
-    pointer-events: auto;
-    width: 64px; height: 64px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.85);
-    border: 2px solid var(--ink);
-    box-shadow: 2px 2px 0 var(--ink);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--ink);
-    font-weight: 800;
-    font-size: 24px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .pad-btn:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
+  /* ----- Mobile hint ----- */
+  /* Touch devices: the on-screen arrow pad was unreliable, so we removed
+     it entirely. Instead the start overlay shows a "tilt your phone"
+     hint and the player steers via the device tilt API + tap-and-drag
+     across the canvas. */
+  .tilt-hint { display: none; }
   @media (hover: none) and (pointer: coarse) {
-    .mobile-controls { display: block; }
     .keys { display: none; }
+    .tilt-hint { display: flex; }
+  }
+  .tilt-hint {
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 6px 0 12px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+  .tilt-hint svg {
+    width: 22px; height: 22px;
+    color: var(--accent-deep);
+    flex-shrink: 0;
   }
 
   @media (max-width: 540px) {
-    .stage { padding: 12px; }
-    .frame { padding: 14px; border-radius: 18px; }
-    /* On phones the article column collapses to full width, so we can give
-       the canvas more height — 4:6 stays portrait but is taller than the
-       desktop ratio. */
+    .stage { padding: 10px; }
+    .frame { padding: 12px; border-radius: 16px; }
     .canvas-wrap { aspect-ratio: 4 / 5.4; max-height: 60vh; box-shadow: 3px 3px 0 var(--ink); }
     .header { flex-direction: column; gap: 4px; }
-    .qcard { padding: 14px; }
-    .qprompt { font-size: 14px; }
-    .qopt { padding: 10px 11px; font-size: 13px; }
+    .hud { gap: 6px; font-size: 11px; }
+    .chip { padding: 4px 8px; gap: 5px; }
+    .chip-dot { width: 7px; height: 7px; }
+    /* Tighter question modal on phones — bigger overlay padding pushes the
+       card to the edges, so we shrink the card padding and font sizes so
+       all four answer options fit without scrolling. */
+    .qmodal { padding: 10px; }
+    .qcard { padding: 12px 12px 10px; max-width: 100%; box-shadow: 4px 4px 0 var(--ink); border-width: 1.5px; }
+    .qhead { font-size: 9.5px; gap: 6px; margin-bottom: 8px; }
+    .qbadge { font-size: 9.5px; padding: 3px 7px; max-width: 65%; white-space: normal; line-height: 1.3; }
+    .qhead > span:not(.qbadge) { display: none; }
+    .qprompt { font-size: 13px; line-height: 1.35; margin-bottom: 10px; }
+    .qopts { gap: 5px; }
+    .qopt { padding: 8px 9px; font-size: 12.5px; gap: 8px; line-height: 1.3; border-radius: 10px; }
+    .qletter { width: 22px; height: 22px; font-size: 11px; border-radius: 6px; }
+    .qfeedback { font-size: 12px; margin-top: 8px; }
+    .qcontinue { font-size: 11px; margin-top: 6px; }
     .stat-num { font-size: 17px; }
+    .stat-lbl { font-size: 9px; }
+    .overlay-card { padding: 18px 16px; max-width: 92%; }
+    .overlay-card h2 { font-size: 19px; }
+    .overlay-card p { font-size: 12.5px; line-height: 1.45; margin-bottom: 12px; }
   }
 </style>
 </head>
@@ -441,8 +457,8 @@
     </div>
     <div class="hud">
       <span class="chip"><span class="chip-dot"></span>Height <strong id="hud-height">0 m</strong></span>
-      <span class="chip good"><span class="chip-dot"></span>Correct <strong id="hud-correct">0</strong> / <span id="hud-total">3</span></span>
       <span class="chip bad"><span class="chip-dot"></span>Lives <strong id="hud-lives">3</strong></span>
+      <span class="chip good"><span class="chip-dot"></span>Saves left <strong id="hud-saves">2</strong></span>
     </div>
     <div class="canvas-wrap" id="canvasWrap">
       <canvas id="cv"></canvas>
@@ -451,10 +467,19 @@
       <div class="overlay" id="overlayStart">
         <div class="overlay-card">
           <h2>Ready to climb?</h2>
-          <p>Bounce the Doodler ever upward. Land on a <strong>gold platform</strong> for a question — right answer earns a power-up. If you fall or get hit, answer one more correctly to <strong>save yourself</strong> and keep climbing.</p>
+          <p>Bounce ever upward. The first <strong>gold platform</strong> asks a question — get it right for a power-up. If you fall or get hit, answer one of the remaining questions correctly to <strong>save yourself</strong> and keep climbing.</p>
           <div class="keys">
             <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> Move</span>
             <span><kbd>Space</kbd> Start</span>
+          </div>
+          <div class="tilt-hint" style="margin: 4px 0 14px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="3" width="12" height="18" rx="2"></rect>
+              <path d="M9 21h6"></path>
+              <path d="M3 12c1.5-2 3-3 5-3"></path>
+              <path d="M21 12c-1.5-2-3-3-5-3"></path>
+            </svg>
+            Tilt your phone to steer
           </div>
           <div class="btn-row">
             <button class="btn btn-accent" id="btnStart" type="button">Start game</button>
@@ -492,15 +517,17 @@
         </div>
       </div>
 
-      <!-- Mobile pad -->
-      <div class="mobile-controls" id="mobileControls">
-        <div class="pad">
-          <button class="pad-btn" id="padLeft" type="button" aria-label="Move left">&larr;</button>
-          <button class="pad-btn" id="padRight" type="button" aria-label="Move right">&rarr;</button>
-        </div>
-      </div>
     </div>
-    <p class="credit">Built for The Catalyst Magazine &bull; tilt phones, use arrow keys</p>
+    <div class="tilt-hint" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="3" width="12" height="18" rx="2"></rect>
+        <path d="M9 21h6"></path>
+        <path d="M3 12c1.5-2 3-3 5-3"></path>
+        <path d="M21 12c-1.5-2-3-3-5-3"></path>
+      </svg>
+      Tilt your phone to steer
+    </div>
+    <p class="credit">Built for The Catalyst Magazine &bull; arrow keys on desktop &bull; tilt on mobile</p>
   </div>
 </div>
 
@@ -521,7 +548,6 @@ const GAME_DATA = /*__GAME_DATA__*/{
 };
 const QUESTIONS = Array.isArray(GAME_DATA.questions) ? GAME_DATA.questions : [];
 const TOTAL_Q = QUESTIONS.length;
-document.getElementById("hud-total").textContent = TOTAL_Q;
 
 // ---- DOM refs --------------------------------------------------------------
 const cv = document.getElementById("cv");
@@ -532,16 +558,14 @@ const overlayEnd = document.getElementById("overlayEnd");
 const btnStart = document.getElementById("btnStart");
 const btnRetry = document.getElementById("btnRetry");
 const hudHeight = document.getElementById("hud-height");
-const hudCorrect = document.getElementById("hud-correct");
 const hudLives = document.getElementById("hud-lives");
+const hudSaves = document.getElementById("hud-saves");
 const qmodal = document.getElementById("qmodal");
 const qBadge = document.getElementById("qBadge");
 const qPrompt = document.getElementById("qPrompt");
 const qOpts = document.getElementById("qOpts");
 const qFeedback = document.getElementById("qFeedback");
 const qContinue = document.getElementById("qContinue");
-const padLeft = document.getElementById("padLeft");
-const padRight = document.getElementById("padRight");
 
 // ---- Logical canvas size (kept fixed for predictable physics; visual size
 //      is scaled via CSS).
@@ -606,7 +630,8 @@ let height = 0;          // metres climbed (peak)
 let lives = 3;
 let correctCount = 0;
 let questionsAnswered = 0; // attempts (correct+wrong)
-let nextQuestionAt = 0;   // y-distance climbed before next gold platform
+let nextQuestionAt = 0;   // y-distance climbed before the gold platform
+let goldSpawned = false;   // exactly one gold platform per run
 let pendingShield = false;
 let activePower = null;   // 'jet' | 'spring' | null
 let powerTicks = 0;
@@ -677,13 +702,15 @@ function spawnUpcoming() {
     else if (climbedAbs > 1200 && r < 0.08) type = "brown"; // breakable
     spawnPlatform(lastPlatformY, { type });
 
-    // Gold question platform: schedule by height. Distribute across the climb.
-    if (questionsAnswered < TOTAL_Q && height >= nextQuestionAt && !platforms.some(p => p.gold)) {
-      // Replace the last one with a gold platform so the player can't miss it.
+    // Only ONE gold platform per run — the very first question. The other
+    // questions are reserved for the rescue prompt that fires when the
+    // player runs out of lives, so they act as extra-life lifelines instead
+    // of more gates on the climb.
+    if (!goldSpawned && questionsAnswered === 0 && height >= nextQuestionAt) {
       const p2 = platforms[platforms.length - 1];
       p2.type = "gold";
       p2.gold = true;
-      nextQuestionAt += 18 + Math.random() * 6;
+      goldSpawned = true;
     }
 
     // Occasional monster, only after some climbing.
@@ -706,7 +733,8 @@ function startGame() {
   lives = 3;
   correctCount = 0;
   questionsAnswered = 0;
-  nextQuestionAt = 12; // first question after ~12m climb
+  goldSpawned = false;
+  nextQuestionAt = 12; // first (and only) gold platform after ~12m climb
   activePower = null;
   powerTicks = 0;
   pendingShield = false;
@@ -725,35 +753,42 @@ function startGame() {
 
 function endGame(win) {
   state = STATE.OVER;
-  document.getElementById("endTitle").textContent =
-    win ? "High flyer! 🚀" : (correctCount === TOTAL_Q ? "Almost — one slip!" : "Down you go!");
+  document.getElementById("endTitle").textContent = "Down you go!";
   document.getElementById("endBlurb").textContent =
-    win
-      ? "You aced every question and rode the Doodler all the way up. Share your run with your friends."
-      : (correctCount === TOTAL_Q
-          ? "You answered every question right but the platforms got the better of you. Run it back."
-          : "Land on a gold platform to lock in a question. Get all 3 right to earn the high-flyer badge.");
+    correctCount > 0
+      ? "Nice climb. Try again to beat your height — and remember, every wrong rescue answer ends the run."
+      : "Bounce ever upward. Land on the gold platform for a power-up, and answer the rescue questions to keep your run alive.";
   document.getElementById("endHeight").textContent = Math.round(height) + " m";
   document.getElementById("endCorrect").textContent = correctCount + "/" + TOTAL_Q;
+  // Rank scales with how high the reader climbed. The questions are now a
+  // gating mechanic on death rather than a checklist, so the "answered all"
+  // win state has been retired.
   let rank = "Cadet";
-  if (correctCount === TOTAL_Q && height > 80) rank = "Catalyst";
-  else if (correctCount >= 2) rank = "Reporter";
-  else if (correctCount >= 1) rank = "Intern";
+  if (height >= 120) rank = "Catalyst";
+  else if (height >= 70) rank = "Reporter";
+  else if (height >= 30) rank = "Intern";
   document.getElementById("endRank").textContent = rank;
   overlayEnd.hidden = false;
 }
 
 function updateHud() {
   hudHeight.textContent = Math.round(height) + " m";
-  hudCorrect.textContent = correctCount;
   hudLives.textContent = lives;
+  // "Saves left" = how many rescue questions the player can still attempt.
+  // We only have (TOTAL_Q - 1) rescue-eligible questions (the gold platform
+  // burns the first), and rescues are capped at MAX_RESCUES.
+  const saves = Math.max(0, Math.min(TOTAL_Q - 1, MAX_RESCUES) - rescuesUsed);
+  if (hudSaves) hudSaves.textContent = saves;
 }
 
 // ---- Question flow ---------------------------------------------------------
 let currentQIndex = -1;
 let rescueMode = false;       // True while the active modal is a save-me-from-death prompt.
 let rescuesUsed = 0;          // How many lives the player has earned by answering correctly on death.
-const MAX_RESCUES = 3;        // Cap so the game can still end.
+// One rescue per remaining question after the gold platform is consumed —
+// so for 3 questions the player gets up to 2 saves, and the game can still
+// end once they're spent.
+const MAX_RESCUES = Math.max(0, TOTAL_Q - 1);
 
 // Triggered whenever the player would otherwise have died with 0 lives. We
 // pop a question (preferring an unanswered one, but recycling if needed):
@@ -867,15 +902,7 @@ function answerQuestion(picked, btn) {
   qContinue.hidden = false;
   setTimeout(() => {
     qmodal.classList.remove("visible");
-    if (correctCount === TOTAL_Q && questionsAnswered === TOTAL_Q) {
-      // All correct → climactic jetpack burst, then win.
-      activePower = "jet";
-      powerTicks = 220;
-      state = STATE.PLAYING;
-      setTimeout(() => endGame(true), 3000);
-    } else {
-      state = STATE.PLAYING;
-    }
+    state = STATE.PLAYING;
     updateHud();
   }, 1300);
 }
@@ -1393,17 +1420,6 @@ function bindTouch() {
     touchMode = null;
     setSide(0);
   });
-
-  // Dedicated pad buttons (also work with mouse).
-  function press(btn, side, on) {
-    btn.addEventListener("touchstart", (e) => { setSide(side); e.preventDefault(); }, { passive: false });
-    btn.addEventListener("touchend", () => { setSide(0); });
-    btn.addEventListener("mousedown", () => setSide(side));
-    btn.addEventListener("mouseup", () => setSide(0));
-    btn.addEventListener("mouseleave", () => setSide(0));
-  }
-  press(padLeft, -1);
-  press(padRight, 1);
 }
 
 // Device tilt — optional, fires when user grants permission on iOS / always on Android.
