@@ -142,7 +142,14 @@
     background: var(--sky-top);
     border: 2px solid var(--ink);
     box-shadow: 4px 4px 0 var(--ink);
+    /* Default state allows the reader to vertically pan the article when
+       the game isn't actively running. While PLAYING we flip this to
+       'none' from JS so a tap inside the canvas can never start a page
+       scroll mid-flap. */
     touch-action: pan-y;
+  }
+  .canvas-wrap.is-playing {
+    touch-action: none;
   }
   canvas {
     position: absolute;
@@ -828,6 +835,10 @@ const countdownEl = document.getElementById("countdown");
 let countdownTimer = null;
 function startCountdown() {
   state = STATE.COUNTDOWN;
+  // Engage the touch-action lock immediately so a tap during 3-2-1 can't
+  // accidentally scroll the page out from under the player. Bind doFlap
+  // is gated behind state === PLAYING so the count itself is unaffected.
+  setPlayingTouchLock(true);
   countdownEl.hidden = false;
   const beats = ["3", "2", "1", "GO!"];
   let i = 0;
@@ -858,6 +869,9 @@ function startCountdown() {
 
 function endGame() {
   state = STATE.OVER;
+  // Release the touch lock so the reader can scroll the article past
+  // the end-of-game card normally.
+  setPlayingTouchLock(false);
   document.getElementById("endTitle").textContent = "Crash!";
   document.getElementById("endBlurb").textContent =
     score > 0
@@ -914,6 +928,10 @@ function presentQuestion(idx, modalOpts = {}) {
   if (idx >= QUESTIONS.length || idx < 0) return;
   currentQIndex = idx;
   state = STATE.PAUSED_Q;
+  // Release the touch lock while a modal is open so the reader can tap
+  // answer buttons and scroll the page if needed; we re-engage when the
+  // modal dismisses and state flips back to PLAYING.
+  setPlayingTouchLock(false);
   const q = QUESTIONS[idx];
   const qHint = document.getElementById("qHint");
   if (modalOpts.rescue) {
@@ -968,6 +986,7 @@ function answerQuestion(picked, btn) {
         respawnBird();
         rescueMode = false;
         state = STATE.PLAYING;
+        setPlayingTouchLock(true);
       }, 1100);
     } else {
       btn.classList.add("wrong");
@@ -1008,6 +1027,7 @@ function answerQuestion(picked, btn) {
   setTimeout(() => {
     qmodal.classList.remove("visible");
     state = STATE.PLAYING;
+    setPlayingTouchLock(true);
     updateHud();
   }, 1300);
 }
@@ -1345,24 +1365,42 @@ function bindKeys() {
 }
 
 function bindTouch() {
-  // Tap anywhere on the canvas to flap. We use pointerdown so a quick press
-  // registers immediately, and let the browser handle vertical scroll
-  // (touch-action: pan-y on the wrap) when the user actually drags.
-  let pointerStartY = 0;
-  let dragged = false;
-  wrap.addEventListener("pointerdown", (e) => {
-    pointerStartY = e.clientY;
-    dragged = false;
-  }, { passive: true });
-  wrap.addEventListener("pointermove", (e) => {
-    if (Math.abs(e.clientY - pointerStartY) > 10) dragged = true;
-  }, { passive: true });
-  wrap.addEventListener("pointerup", (e) => {
+  // Tap inside the canvas → flap immediately. We listen on touchstart with
+  // passive: false so we can preventDefault() and stop the browser from
+  // ever interpreting the gesture as a page scroll. The CSS class
+  // 'is-playing' (toggled below) sets touch-action: none on the wrap, so
+  // touchmove inside the game also stays inert — no surprise page scroll
+  // while the player is tapping during a flap.
+  //
+  // We deliberately do NOT swallow events when state !== PLAYING so the
+  // reader can still scroll the article past an idle / paused-question
+  // game by dragging through the canvas if they need to.
+  wrap.addEventListener("touchstart", (e) => {
     if (state !== STATE.PLAYING) return;
-    if (dragged) return;     // user was scrolling, not flapping
+    e.preventDefault();
+    doFlap();
+  }, { passive: false });
+  wrap.addEventListener("touchmove", (e) => {
+    // Block the gesture from turning into a page pan while the game is
+    // running. touch-action: none on the wrap covers most browsers, but
+    // explicit preventDefault closes the loop on iOS Safari which can
+    // still try to scroll if the touch started before is-playing flipped.
+    if (state !== STATE.PLAYING) return;
+    e.preventDefault();
+  }, { passive: false });
+  // Mouse / pen still flap on click for desktop testing.
+  wrap.addEventListener("mousedown", (e) => {
+    if (state !== STATE.PLAYING) return;
     e.preventDefault();
     doFlap();
   });
+}
+
+// Toggle the is-playing class on the canvas wrap so CSS can flip
+// touch-action between pan-y (idle / question-paused — let the article
+// scroll) and none (mid-flap — capture every touch).
+function setPlayingTouchLock(on) {
+  wrap.classList.toggle("is-playing", !!on);
 }
 
 // ---- Wire-up ---------------------------------------------------------------
