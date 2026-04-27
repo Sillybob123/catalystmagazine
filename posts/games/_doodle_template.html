@@ -33,12 +33,13 @@
     -webkit-user-select: none;
     user-select: none;
     overscroll-behavior: contain;
+    padding-bottom: 16px;
   }
   .stage {
     width: 100%;
-    max-width: 880px;
+    max-width: 720px;
     margin: 0 auto;
-    padding: 18px 18px 22px;
+    padding: 18px 18px 28px;
   }
   .frame {
     background: var(--paper);
@@ -844,9 +845,18 @@ function step() {
   p.vx = clamp(p.vx, -MAX_VX, MAX_VX);
   if (p.vx !== 0) p.facing = p.vx > 0 ? 1 : -1;
   p.x += p.vx;
-  // Wrap around horizontally
-  if (p.x + PLAYER_W < 0) p.x = W;
-  else if (p.x > W) p.x = -PLAYER_W;
+  // Wall bounce: hitting the left or right edge reverses horizontal velocity
+  // with a small energy loss. Feels much better than wrap-around — players
+  // can intentionally bounce off the walls to reach platforms in the middle.
+  if (p.x < 0) {
+    p.x = 0;
+    p.vx = Math.abs(p.vx) * 0.85;
+    p.facing = 1;
+  } else if (p.x + PLAYER_W > W) {
+    p.x = W - PLAYER_W;
+    p.vx = -Math.abs(p.vx) * 0.85;
+    p.facing = -1;
+  }
 
   // Active jetpack power
   if (activePower === "jet") {
@@ -1297,9 +1307,17 @@ setInterval(broadcastActive, 200);
 // rendered height of the .stage and post it to the parent so nothing is
 // clipped (the question modal, end-card, and credit line all get full room).
 function reportHeight() {
+  // Use the larger of (stage bottom + padding) and (document scrollHeight)
+  // so we always have room for the credit line, end-card, and modals. The
+  // host clamps to a sane range, so we don't worry about edge values here.
   const stage = document.querySelector(".stage");
-  if (!stage) return;
-  const h = Math.ceil(stage.getBoundingClientRect().bottom + 8);
+  const stageBottom = stage ? stage.getBoundingClientRect().bottom : 0;
+  const docHeight = Math.max(
+    document.documentElement.scrollHeight,
+    document.body.scrollHeight,
+    Math.ceil(stageBottom)
+  );
+  const h = docHeight + 16;
   try {
     window.parent?.postMessage({ type: "doodle:height", height: h }, "*");
   } catch {}

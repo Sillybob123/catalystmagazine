@@ -1318,7 +1318,15 @@ async function mountDoodleGame(container, article) {
         iframe.setAttribute('scrolling', 'no');
         iframe.srcdoc = html;
         section.appendChild(iframe);
-        wrapEl.appendChild(section);
+
+        // Insert ABOVE the byline so the reader sees the game right after
+        // the article body, before the author card and share row.
+        const byline = wrapEl.querySelector('.article-byline');
+        if (byline) {
+            wrapEl.insertBefore(section, byline);
+        } else {
+            wrapEl.appendChild(section);
+        }
 
         // Listen for size + scroll-lock messages from the game iframe so
         // (a) the iframe always shows the entire game without clipping, and
@@ -1343,28 +1351,71 @@ async function mountDoodleGame(container, article) {
 //                                         scroll on the host (defensive).
 function attachDoodleHostBridge(iframe) {
     let active = false;
-    let prevOverflow = '';
+    let prevHtmlOverflow = '';
+    let prevBodyOverflow = '';
     let prevTouchAction = '';
+    let lockedScrollY = 0;
+    let prevBodyTop = '';
+    let prevBodyPosition = '';
+    let prevBodyWidth = '';
+
+    // Wheel handler attached to the iframe itself (and to a transparent
+    // overlay on top of the iframe) so scroll events that originate inside
+    // the game can never cause the host page to scroll. We use { passive:
+    // false } and capture so we can call preventDefault on them.
+    const blockWheel = (e) => {
+        if (!active) return;
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
     const lock = () => {
         if (active) return;
         active = true;
-        prevOverflow = document.body.style.overflow;
+        // Freeze the page at its current scroll position. Setting body
+        // position:fixed with negative top is the cross-browser way to do
+        // this without losing scroll progress when we unlock.
+        lockedScrollY = window.scrollY || window.pageYOffset || 0;
+        prevHtmlOverflow = document.documentElement.style.overflow;
+        prevBodyOverflow = document.body.style.overflow;
         prevTouchAction = document.body.style.touchAction;
+        prevBodyTop = document.body.style.top;
+        prevBodyPosition = document.body.style.position;
+        prevBodyWidth = document.body.style.width;
+
+        document.documentElement.style.overflow = 'hidden';
         document.body.style.overflow = 'hidden';
         document.body.style.touchAction = 'none';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${lockedScrollY}px`;
+        document.body.style.width = '100%';
+
+        window.addEventListener('wheel', blockWheel, { capture: true, passive: false });
+        window.addEventListener('touchmove', blockWheel, { capture: true, passive: false });
     };
     const unlock = () => {
         if (!active) return;
         active = false;
-        document.body.style.overflow = prevOverflow;
+        document.documentElement.style.overflow = prevHtmlOverflow;
+        document.body.style.overflow = prevBodyOverflow;
         document.body.style.touchAction = prevTouchAction;
+        document.body.style.position = prevBodyPosition;
+        document.body.style.top = prevBodyTop;
+        document.body.style.width = prevBodyWidth;
+
+        window.removeEventListener('wheel', blockWheel, { capture: true });
+        window.removeEventListener('touchmove', blockWheel, { capture: true });
+
+        // Restore scroll position so unlocking doesn't jump the reader to
+        // the top of the page.
+        window.scrollTo(0, lockedScrollY);
     };
 
     function onMessage(e) {
         if (!e.data || e.source !== iframe.contentWindow) return;
         const { type } = e.data;
         if (type === 'doodle:height') {
-            const h = Math.max(560, Math.min(1400, Number(e.data.height) || 0));
+            const h = Math.max(620, Math.min(1600, Number(e.data.height) || 0));
             if (h) iframe.style.height = h + 'px';
         } else if (type === 'doodle:active') {
             if (e.data.active) lock(); else unlock();
@@ -1379,7 +1430,11 @@ function attachDoodleHostBridge(iframe) {
 let doodleTemplatePromise = null;
 function loadDoodleTemplate() {
     if (!doodleTemplatePromise) {
-        doodleTemplatePromise = fetch('/posts/games/_doodle_template.html', { cache: 'force-cache' })
+        // Cache-bust by date so a deploy immediately invalidates the
+        // previously-cached template; otherwise force-cache + the static URL
+        // can hold a stale copy in the reader's browser indefinitely.
+        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260427b');
+        doodleTemplatePromise = fetch('/posts/games/_doodle_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('doodle template ' + res.status);
                 return res.text();
