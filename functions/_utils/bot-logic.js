@@ -539,6 +539,43 @@ export function computeWriterReminders({ projects, users, reminderLog = {}, now 
         }
       }
     }
+
+    // ── Proposal-approved, no interview scheduled yet ──
+    // For Interview-type projects: if the proposal was approved 5+ days ago but
+    // the writer still hasn't ticked "Interview Scheduled", send a check-in
+    // asking for a progress update. Fires once per project.
+    if (
+      !queuedForProject &&
+      project.type === "Interview" &&
+      project.proposalStatus === "approved" &&
+      !tl["Interview Scheduled"] &&
+      project.proposalApprovedAt
+    ) {
+      const approvedAt = toDate(project.proposalApprovedAt);
+      if (approvedAt) {
+        const daysSinceApproval = -daysBetween(approvedAt, now);
+        if (daysSinceApproval >= 5) {
+          const key = `${project.id}:proposal-no-schedule`;
+          if (shouldSkipReminder(reminderLog, key, now)) {
+            record(project.id, title, "cooldown-active", {
+              kind: "proposal-no-schedule",
+              lastSentAt: reminderLog[key],
+              writerEmail: writer.email,
+              writerName: writer.name,
+            });
+          } else {
+            out.push({
+              kind: "proposal-no-schedule",
+              key,
+              projectId: project.id,
+              project,
+              writer,
+              daysSinceApproval,
+            });
+          }
+        }
+      }
+    }
   }
 
   return { reminders: out, skipped };

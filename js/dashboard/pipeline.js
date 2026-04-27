@@ -823,13 +823,24 @@ function openDetailModal(projectId) {
     approveBtn.onclick = async () => {
       approveBtn.disabled = true;
       try {
+        const approvedAt = new Date().toISOString();
         await updateDoc(doc(workflowDb, "projects", project.id), {
           proposalStatus: "approved",
+          proposalApprovedAt: approvedAt,
           "timeline.Topic Proposal Complete": true,
           lastActivity: serverTimestamp(),
           activity: arrayUnion({ text: "approved the proposal", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
-          updatedAt: new Date().toISOString(),
+          updatedAt: approvedAt,
         });
+        // Fire the approval email to the writer (best-effort — don't fail the approve if this errors).
+        try {
+          await _ctx.authedFetch("/api/notify/event", {
+            method: "POST",
+            body: JSON.stringify({ type: "proposal-approved", projectId: project.id }),
+          });
+        } catch (notifyErr) {
+          console.warn("proposal-approved notify failed (non-blocking):", notifyErr);
+        }
         toast("Proposal approved!", "success");
         m.close();
       } catch (e) { toast(e.message, "error"); approveBtn.disabled = false; }

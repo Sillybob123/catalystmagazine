@@ -68,7 +68,7 @@ function shell({ title, preheader = "", body, siteUrl }) {
 
 // ─── Writer reminder ─────────────────────────────────────────────────────────
 
-export function writerReminderEmail({ kind, writer, project, deadline, daysUntilDeadline, daysInactive, interviewDate, daysUntilInterview, daysSinceInterview, siteUrl }) {
+export function writerReminderEmail({ kind, writer, project, deadline, daysUntilDeadline, daysInactive, interviewDate, daysUntilInterview, daysSinceInterview, daysSinceApproval, siteUrl }) {
   const firstName = (writer.name || writer.email || "there").split(/\s+/)[0];
   const projectTitle = project.title || "(untitled story)";
   const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
@@ -121,6 +121,22 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
     ].filter(Boolean);
     statusTone = "alert";
     cta = { text: "Post an update", url: projectUrl };
+  } else if (kind === "proposal-no-schedule") {
+    const dText = `${daysSinceApproval} day${daysSinceApproval === 1 ? "" : "s"}`;
+    headline = `Quick check-in on your story — where are things?`;
+    paragraphs = [
+      `We approved your pitch for "${projectTitle}" ${dText} ago and we're checking in because you haven't scheduled your interview yet. That's the first big step, and we want to make sure you're not stuck.`,
+      `If you've already reached out to your source and are just waiting to hear back — great, let us know in the activity feed or reply here so we know where you're at.`,
+      `If you haven't reached out yet, now is the time. The longer you wait, the harder it gets to schedule. And if you're not sure who your source should be, or you're running into trouble making contact — text Aidan and Yair right now and we'll help you work it out together. Don't sit on it.`,
+      `Once you have a date locked in, open the pipeline, mark "Interview Scheduled", and enter the interview date so we can plan around it.`,
+    ];
+    statusRows = [
+      { label: "Story", value: projectTitle },
+      { label: "Proposal approved", value: `${dText} ago` },
+      { label: "Status", value: "Interview not yet scheduled" },
+    ];
+    statusTone = "alert";
+    cta = { text: "Open your story", url: projectUrl };
   } else if (kind === "interview-followup") {
     const whenText = daysSinceInterview === 1 ? "yesterday" : `${daysSinceInterview} days ago`;
     headline = `How did the interview go?`;
@@ -196,15 +212,15 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
     </p>
   `;
 
-  const subject = subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview });
-  const preheader = preheaderForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview });
+  const subject = subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval });
+  const preheader = preheaderForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval });
   return {
     subject,
     html: shell({ title: subject, preheader, body, siteUrl }),
   };
 }
 
-function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview }) {
+function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval }) {
   const t = truncate(projectTitle, 40);
   if (kind === "deadline-1d") return `Due tomorrow: "${t}"`;
   if (kind === "deadline-3d") return `Due in ${daysUntilDeadline} days: "${t}"`;
@@ -217,13 +233,12 @@ function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysI
     const when = daysUntilInterview <= 1 ? "tomorrow" : `in ${daysUntilInterview} days`;
     return `Interview ${when}: prep tips for "${t}"`;
   }
-  if (kind === "interview-followup") {
-    return `How did the interview go? — "${t}"`;
-  }
+  if (kind === "interview-followup") return `How did the interview go? — "${t}"`;
+  if (kind === "proposal-no-schedule") return `Checking in: interview not yet scheduled — "${t}"`;
   return `Catalyst: update on "${t}"`;
 }
 
-function preheaderForWriterReminder({ kind, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview }) {
+function preheaderForWriterReminder({ kind, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval }) {
   if (kind === "deadline-1d") return "Deadline tomorrow. Please submit on time.";
   if (kind === "deadline-3d") return `Deadline in ${daysUntilDeadline} days.`;
   if (kind === "deadline-overdue") return "Response required within 48 hours.";
@@ -232,9 +247,8 @@ function preheaderForWriterReminder({ kind, daysUntilDeadline, daysInactive, day
     const when = daysUntilInterview <= 1 ? "tomorrow" : `in ${daysUntilInterview} days`;
     return `Your interview is ${when}. Prep checklist inside.`;
   }
-  if (kind === "interview-followup") {
-    return "Check off Interview Complete and start drafting while it's fresh.";
-  }
+  if (kind === "interview-followup") return "Check off Interview Complete and start drafting while it's fresh.";
+  if (kind === "proposal-no-schedule") return `${daysSinceApproval} days since approval — let us know where you're at.`;
   return "Update from The Catalyst editorial team.";
 }
 
@@ -554,6 +568,100 @@ export function adminProposalPendingEmail({ project, author, siteUrl }) {
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
+// Sent to the writer the moment an admin approves their proposal.
+// Congratulates them, tells them next steps (schedule the interview or reach
+// out to Aidan and Yair), and gives tips on reaching out to their source.
+export function proposalApprovedEmail({ project, author, siteUrl }) {
+  const firstName = (author?.name || project.authorName || "there").split(/\s+/)[0];
+  const projectTitle = project.title || "(untitled story)";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
+  const isInterview = (project.type || "Interview") === "Interview";
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Type", value: project.type || "Interview" },
+      { label: "Status", value: "Proposal approved — time to get to work" },
+    ],
+    tone: "info",
+  });
+
+  const nextStepsHtml = isInterview ? `
+    <div style="margin:22px 0 0 0;">
+      <div style="font-size:13px;font-weight:600;color:${COLORS.ink};margin-bottom:14px;letter-spacing:-0.01em;">Your next steps</div>
+
+      <div style="padding:16px 18px;background:#fafafa;border:1px solid ${COLORS.hairline};border-radius:10px;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:10px;">Reaching out to your source</div>
+        <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.65;color:${COLORS.inkSoft};">
+          <li style="margin:0 0 6px 0;">Email them through their official university or department address — not social media. Keep it short, respectful, and specific about who you are and what you're writing about.</li>
+          <li style="margin:0 0 6px 0;">Mention that you write for <em>The Catalyst Magazine</em> — a STEM publication — and briefly explain your angle so they understand why you want to speak to them specifically.</li>
+          <li style="margin:0 0 6px 0;">Suggest 2–3 concrete time slots that work for you. Make it easy for them to say yes.</li>
+          <li style="margin:0 0 6px 0;">If you don't hear back within a week, follow up once. A short, polite nudge is professional — not pushy.</li>
+        </ul>
+      </div>
+
+      <div style="padding:16px 18px;background:#fafafa;border:1px solid ${COLORS.hairline};border-radius:10px;margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:10px;">Before the interview</div>
+        <ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.65;color:${COLORS.inkSoft};">
+          <li style="margin:0 0 6px 0;">Read their recent published work — at least one paper and anything public-facing like a talk or interview. Know what they've already said so you can push past it.</li>
+          <li style="margin:0 0 6px 0;">Prepare 8–10 focused, open-ended questions. The goal is a conversation, not a Q&amp;A form.</li>
+          <li style="margin:0 0 6px 0;">Test your recording setup the day before. A failed recording is not recoverable — always have a backup.</li>
+          <li style="margin:0 0 6px 0;">You're representing The Catalyst Magazine. Be on time, be professional, and treat the interview like the serious journalistic work it is.</li>
+        </ul>
+      </div>
+
+      <div style="padding:14px 18px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+        <div style="font-size:14px;line-height:1.6;color:#1e3a8a;">
+          <strong>Don't have a source lined up yet?</strong> That's okay — reach out to Aidan and Yair before you do anything else. Text us and we'll work through the sourcing together. Don't try to figure it out alone.
+        </div>
+      </div>
+    </div>
+  ` : `
+    <div style="margin:22px 0 0 0;padding:14px 18px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+      <div style="font-size:14px;line-height:1.6;color:#1e3a8a;">
+        Head to the pipeline, open your story, and start writing. If you have any questions about structure, angle, or anything else — reach out to Aidan and Yair. That's what we're here for.
+      </div>
+    </div>
+  `;
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      Your proposal was approved — congratulations!
+    </p>
+
+    ${statusBlock}
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      We loved the idea and we're excited to see where you take it. Now it's time to get moving.${isInterview ? " Your first job is to lock in an interview with your source." : ""}
+    </p>
+
+    ${nextStepsHtml}
+
+    <p style="margin:22px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      Any questions at all — about the source, the angle, the writing, anything — just ask us. We mean that. Reply to this email or text Aidan and Yair directly.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open your story</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Really excited about this one,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = `Your proposal was approved: "${truncate(projectTitle, 45)}"`;
+  const preheader = isInterview
+    ? "Congratulations! Time to reach out to your source and lock in the interview."
+    : "Congratulations! Head to the pipeline and start writing.";
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
 // Sent to admins the moment a writer marks "Article Writing Complete" — admins
 // need to assign an editor.
 export function adminWritingCompleteEmail({ project, author, siteUrl }) {
@@ -812,6 +920,9 @@ function bundledItemLabel(item) {
   if (item.kind === "interview-followup") {
     const d = item.daysSinceInterview || 1;
     return `Interview was ${d === 1 ? "yesterday" : `${d} days ago`} — check off "Interview Complete" and start drafting`;
+  }
+  if (item.kind === "proposal-no-schedule") {
+    return `Proposal approved ${item.daysSinceApproval || 5}+ days ago — interview not yet scheduled`;
   }
   if (item.kind === "editor-idle") return `Editor: ${item.daysInactive} days idle, awaiting your review`;
   if (item.kind === "editor-deadline-soon") return `Editor: deadline approaching`;

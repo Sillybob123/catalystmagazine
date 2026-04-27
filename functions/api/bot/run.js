@@ -156,6 +156,7 @@ export const onRequestPost = async ({ request, env }) => {
               interviewDate: r.interviewDate,
               daysUntilInterview: r.daysUntilInterview,
               daysSinceInterview: r.daysSinceInterview,
+              daysSinceApproval: r.daysSinceApproval,
               siteUrl,
             });
         return { ...r, subject, html };
@@ -183,6 +184,7 @@ export const onRequestPost = async ({ request, env }) => {
         daysInactive: r.daysInactive,
         daysUntilInterview: r.daysUntilInterview,
         daysSinceInterview: r.daysSinceInterview,
+        daysSinceApproval: r.daysSinceApproval,
         interviewDate: r.interviewDate ? r.interviewDate.toISOString().slice(0, 10) : null,
         subject: r.subject,
         preview: htmlToPlainPreview(r.html, 600),

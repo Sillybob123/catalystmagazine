@@ -27,6 +27,7 @@ import {
   adminProposalPendingEmail,
   adminWritingCompleteEmail,
   editorAssignedEmail,
+  proposalApprovedEmail,
 } from "../../_utils/reminder-emails.js";
 
 const DEFAULT_ADMIN_RECIPIENTS = [
@@ -35,7 +36,7 @@ const DEFAULT_ADMIN_RECIPIENTS = [
   "aidan.schurr@gwmail.gwu.edu",
 ];
 
-const VALID_TYPES = new Set(["proposal-pending", "writing-complete", "editor-assigned"]);
+const VALID_TYPES = new Set(["proposal-pending", "writing-complete", "editor-assigned", "proposal-approved"]);
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -93,6 +94,8 @@ export const onRequestPost = async ({ request, env }) => {
       result = await sendWritingComplete(env, project, siteUrl);
     } else if (type === "editor-assigned") {
       result = await sendEditorAssigned(env, project, siteUrl);
+    } else if (type === "proposal-approved") {
+      result = await sendProposalApproved(env, project, siteUrl);
     }
 
     // Log even on partial-send so we don't retry-spam. The log records what we
@@ -147,6 +150,27 @@ async function sendEditorAssigned(env, project, siteUrl) {
   const { subject, html } = editorAssignedEmail({ project, editor, author, siteUrl });
 
   const recipients = [editor.email];
+  const errors = [];
+  try {
+    await sendEmail(env, {
+      to: recipients,
+      subject,
+      html,
+      replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+    });
+  } catch (err) {
+    errors.push(err?.message || String(err));
+  }
+  return { recipients, errors };
+}
+
+async function sendProposalApproved(env, project, siteUrl) {
+  const author = await loadUserByIdOrEmail(env, project.authorId, project.authorEmail);
+  if (!author || !author.email) {
+    return { recipients: [], errors: ["Author has no email on file"] };
+  }
+  const { subject, html } = proposalApprovedEmail({ project, author, siteUrl });
+  const recipients = [author.email];
   const errors = [];
   try {
     await sendEmail(env, {
