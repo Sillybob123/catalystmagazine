@@ -1346,7 +1346,7 @@ function attachDoodleHostBridge(iframe) {
     function onMessage(e) {
         if (!e.data || e.source !== iframe.contentWindow) return;
         if (e.data.type === 'doodle:height') {
-            const h = Math.max(560, Math.min(1400, Number(e.data.height) || 0));
+            const h = Math.max(520, Math.min(1300, Number(e.data.height) || 0));
             if (h) iframe.style.height = h + 'px';
         }
     }
@@ -1359,7 +1359,7 @@ function loadDoodleTemplate() {
         // Cache-bust by date so a deploy immediately invalidates the
         // previously-cached template; otherwise force-cache + the static URL
         // can hold a stale copy in the reader's browser indefinitely.
-        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260427c');
+        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260427d');
         doodleTemplatePromise = fetch('/posts/games/_doodle_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('doodle template ' + res.status);

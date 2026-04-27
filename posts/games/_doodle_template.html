@@ -122,11 +122,11 @@
   .canvas-wrap {
     position: relative;
     width: 100%;
-    /* Shorter than classic Doodle Jump so the whole frame fits in a desktop
-       viewport at 100% zoom alongside the article. 5:6 keeps the game
-       playable while reducing total height by ~14% vs 5:7. */
-    aspect-ratio: 5 / 6;
-    max-height: 62vh;
+    /* Compact frame so the whole game fits in a typical laptop viewport at
+       100% zoom alongside the article header. 4:5 is short and wide
+       enough to read the platforms while keeping the column tidy. */
+    aspect-ratio: 4 / 5;
+    max-height: 54vh;
     margin: 0 auto;
     border-radius: 18px;
     overflow: hidden;
@@ -420,7 +420,7 @@
     /* On phones the article column collapses to full width, so we can give
        the canvas more height — 4:6 stays portrait but is taller than the
        desktop ratio. */
-    .canvas-wrap { aspect-ratio: 4 / 6; max-height: 70vh; box-shadow: 3px 3px 0 var(--ink); }
+    .canvas-wrap { aspect-ratio: 4 / 5.4; max-height: 60vh; box-shadow: 3px 3px 0 var(--ink); }
     .header { flex-direction: column; gap: 4px; }
     .qcard { padding: 14px; }
     .qprompt { font-size: 14px; }
@@ -451,7 +451,7 @@
       <div class="overlay" id="overlayStart">
         <div class="overlay-card">
           <h2>Ready to climb?</h2>
-          <p>Bounce the Doodler ever upward. Land on a <strong>gold platform</strong> to trigger a question — get it right for a power-up. Get all 3 right to win the high-flyer badge.</p>
+          <p>Bounce the Doodler ever upward. Land on a <strong>gold platform</strong> for a question — right answer earns a power-up. If you fall or get hit, answer one more correctly to <strong>save yourself</strong> and keep climbing.</p>
           <div class="keys">
             <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> Move</span>
             <span><kbd>Space</kbd> Start</span>
@@ -703,6 +703,8 @@ function startGame() {
   powerTicks = 0;
   pendingShield = false;
   invuln = 0;
+  rescueMode = false;
+  rescuesUsed = 0;
   p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1 };
   seedWorld();
   overlayStart.hidden = true;
@@ -739,20 +741,43 @@ function updateHud() {
 
 // ---- Question flow ---------------------------------------------------------
 let currentQIndex = -1;
-function presentQuestion(idx) {
-  if (idx >= QUESTIONS.length) return;
+let rescueMode = false;       // True while the active modal is a save-me-from-death prompt.
+let rescuesUsed = 0;          // How many lives the player has earned by answering correctly on death.
+const MAX_RESCUES = 3;        // Cap so the game can still end.
+
+// Triggered whenever the player would otherwise have died with 0 lives. We
+// pop a question (preferring an unanswered one, but recycling if needed):
+// correct → restore one life and respawn; wrong → real game over.
+function tryRescue(reason) {
+  if (rescuesUsed >= MAX_RESCUES) {
+    endGame(false);
+    return;
+  }
+  // Pick a question — prefer one we haven't presented as a gold-platform yet.
+  let idx = QUESTIONS.findIndex((_, i) => i >= questionsAnswered);
+  if (idx < 0) idx = Math.floor(Math.random() * QUESTIONS.length);
+  rescueMode = true;
+  presentQuestion(idx, { rescue: true, reason });
+}
+
+function presentQuestion(idx, modalOpts = {}) {
+  if (idx >= QUESTIONS.length || idx < 0) return;
   currentQIndex = idx;
   state = STATE.PAUSED_Q;
   const q = QUESTIONS[idx];
-  qBadge.textContent = "Question " + (idx + 1) + " / " + TOTAL_Q;
+  if (modalOpts.rescue) {
+    qBadge.textContent = (modalOpts.reason || "Lost a life") + " — answer to save yourself";
+  } else {
+    qBadge.textContent = "Question " + (idx + 1) + " / " + TOTAL_Q;
+  }
   qPrompt.textContent = q.prompt || q.q || "Question";
   qFeedback.textContent = "";
   qFeedback.className = "qfeedback";
   qContinue.hidden = true;
   qOpts.innerHTML = "";
   const letters = ["A", "B", "C", "D"];
-  const opts = Array.isArray(q.options) ? q.options : [];
-  opts.forEach((opt, i) => {
+  const choices = Array.isArray(q.options) ? q.options : [];
+  choices.forEach((opt, i) => {
     const text = typeof opt === "string" ? opt : opt.text;
     const btn = document.createElement("button");
     btn.className = "qopt";
@@ -781,6 +806,39 @@ function answerQuestion(picked, btn) {
   const isCorrect = picked === correctIdx;
   const buttons = qOpts.querySelectorAll(".qopt");
   buttons.forEach(b => { b.disabled = true; });
+
+  // RESCUE: special branch when this question was triggered by death.
+  if (rescueMode) {
+    if (isCorrect) {
+      btn.classList.add("correct");
+      qFeedback.textContent = "Saved! +1 life — back into the climb.";
+      qFeedback.className = "qfeedback good";
+      lives = 1;
+      rescuesUsed++;
+      updateHud();
+      qContinue.hidden = false;
+      setTimeout(() => {
+        qmodal.classList.remove("visible");
+        respawnPlayer();
+        rescueMode = false;
+        state = STATE.PLAYING;
+      }, 1100);
+    } else {
+      btn.classList.add("wrong");
+      if (correctIdx >= 0 && buttons[correctIdx]) buttons[correctIdx].classList.add("correct");
+      qFeedback.textContent = q.feedbackIncorrect || "Not quite — and that's the run.";
+      qFeedback.className = "qfeedback bad";
+      qContinue.hidden = false;
+      setTimeout(() => {
+        qmodal.classList.remove("visible");
+        rescueMode = false;
+        endGame(false);
+      }, 1500);
+    }
+    return;
+  }
+
+  // NORMAL gold-platform question.
   if (isCorrect) {
     btn.classList.add("correct");
     qFeedback.textContent = q.feedbackCorrect || "Correct! Power-up incoming.";
@@ -810,6 +868,25 @@ function answerQuestion(picked, btn) {
     }
     updateHud();
   }, 1300);
+}
+
+// Place the player on a visible platform near the bottom of the screen and
+// give them a fresh upward bounce. Used after a successful rescue answer.
+function respawnPlayer() {
+  const visible = platforms.filter(pl => pl.y > cameraY + H - 200 && pl.y < cameraY + H && !pl.broken && pl.type !== "gold");
+  const target = visible.length ? visible[Math.floor(visible.length / 2)] : null;
+  if (target) {
+    p.x = target.x + target.w / 2 - PLAYER_W / 2;
+    p.y = target.y - PLAYER_H - 4;
+  } else {
+    p.x = W / 2 - PLAYER_W / 2;
+    p.y = cameraY + H - 120;
+  }
+  p.vx = 0;
+  p.vy = SPRING_VY;     // big bounce so they actually get back into the action
+  pendingShield = true;  // free shield for the next monster contact
+  invuln = 90;
+  monsters = [];          // clear threats for a clean restart
 }
 
 function awardPowerForQuestion(idx) {
@@ -981,7 +1058,7 @@ function step() {
     monsters.splice(i, 1);
     updateHud();
     if (lives <= 0) {
-      endGame(false);
+      tryRescue("You took a hit!");
       return;
     }
   }
@@ -1009,7 +1086,7 @@ function step() {
       lives--;
       updateHud();
       if (lives <= 0) {
-        endGame(false);
+        tryRescue("You fell off!");
         return;
       }
       // Respawn near the bottom on the lowest visible platform.
@@ -1050,11 +1127,14 @@ function draw() {
     ctx.stroke();
   }
 
+  // Snap the camera to a whole pixel ONCE per frame and use that single
+  // value for every world-relative draw call. Mixing Math.round(cameraY)
+  // for the translate with Math.round(p.y) for the player meant the two
+  // could round in opposite directions on the same frame, snapping the
+  // sprite a full pixel relative to the world — that's the vibration.
+  const camY = Math.round(cameraY);
   ctx.save();
-  // Round the camera translation so sub-pixel scrolling doesn't visibly
-  // shift the sprite by half-pixel offsets every frame (which is what the
-  // eye reads as "jitter" on the player).
-  ctx.translate(0, -Math.round(cameraY));
+  ctx.translate(0, -camY);
 
   // Platforms
   for (const pl of platforms) {
@@ -1138,11 +1218,16 @@ function draw() {
     }
   }
 
-  // Player — draw at integer coordinates to eliminate the sub-pixel shimmer
-  // that otherwise makes the sprite look like it's vibrating mid-air.
+  // Player — draw at integer SCREEN coordinates. Computing the player's draw
+  // position relative to the same snapped `camY` as the world translate is
+  // critical: rounding p.y independently of cameraY meant the two could
+  // round in opposite directions across frames, which snapped the sprite
+  // by a full pixel relative to the platforms it was sitting on (the
+  // "vibration"). With this formulation the player's on-screen y is
+  // exactly Math.round(p.y - cameraY) every frame, no relative jitter.
   if (p) {
     const px = Math.round(p.x);
-    const py = Math.round(p.y);
+    const py = camY + Math.round(p.y - cameraY);
     if (invuln > 0 && Math.floor(invuln / 6) % 2 === 0) {
       // flicker
     } else if (playerLoaded) {

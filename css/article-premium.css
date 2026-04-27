@@ -867,7 +867,7 @@ body[data-page="article"] .related-articles-wrap {
    inline `height` styles win. */
 .article-doodle-frame {
   width: 100%;
-  min-height: 620px;
+  min-height: 560px;
   border: none;
   border-radius: 20px;
   background: transparent;
@@ -875,5 +875,5 @@ body[data-page="article"] .related-articles-wrap {
 }
 @media (max-width: 600px) {
   .article-doodle-game { margin-top: 44px; }
-  .article-doodle-frame { min-height: 600px; }
+  .article-doodle-frame { min-height: 560px; }
 }
