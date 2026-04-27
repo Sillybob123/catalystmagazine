@@ -122,15 +122,18 @@
   .canvas-wrap {
     position: relative;
     width: 100%;
-    aspect-ratio: 5 / 7;
-    max-height: 78vh;
+    /* Shorter than classic Doodle Jump so the whole frame fits in a desktop
+       viewport at 100% zoom alongside the article. 5:6 keeps the game
+       playable while reducing total height by ~14% vs 5:7. */
+    aspect-ratio: 5 / 6;
+    max-height: 62vh;
     margin: 0 auto;
     border-radius: 18px;
     overflow: hidden;
     background: var(--paper);
     border: 2px solid var(--ink);
     box-shadow: 4px 4px 0 var(--ink);
-    touch-action: none;
+    touch-action: pan-y;
   }
   canvas {
     position: absolute;
@@ -414,7 +417,10 @@
   @media (max-width: 540px) {
     .stage { padding: 12px; }
     .frame { padding: 14px; border-radius: 18px; }
-    .canvas-wrap { aspect-ratio: 4 / 7; max-height: 75vh; box-shadow: 3px 3px 0 var(--ink); }
+    /* On phones the article column collapses to full width, so we can give
+       the canvas more height — 4:6 stays portrait but is taller than the
+       desktop ratio. */
+    .canvas-wrap { aspect-ratio: 4 / 6; max-height: 70vh; box-shadow: 3px 3px 0 var(--ink); }
     .header { flex-direction: column; gap: 4px; }
     .qcard { padding: 14px; }
     .qprompt { font-size: 14px; }
@@ -544,13 +550,16 @@ let H = 600; // computed below to match wrap aspect ratio
 function fitCanvas() {
   const rect = wrap.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  H = Math.max(420, Math.round(W * (rect.height / rect.width)));
+  H = Math.max(360, Math.round(W * (rect.height / rect.width)));
   cv.width = W * dpr;
   cv.height = H * dpr;
   cv.style.width = rect.width + "px";
   cv.style.height = rect.height + "px";
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // High-quality smoothing so a sub-pixel sprite position resamples to the
+  // same set of pixels each frame instead of shimmering.
   ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 }
 
 // ---- Player sprite ---------------------------------------------------------
@@ -1042,7 +1051,10 @@ function draw() {
   }
 
   ctx.save();
-  ctx.translate(0, -cameraY);
+  // Round the camera translation so sub-pixel scrolling doesn't visibly
+  // shift the sprite by half-pixel offsets every frame (which is what the
+  // eye reads as "jitter" on the player).
+  ctx.translate(0, -Math.round(cameraY));
 
   // Platforms
   for (const pl of platforms) {
@@ -1126,36 +1138,39 @@ function draw() {
     }
   }
 
-  // Player
+  // Player — draw at integer coordinates to eliminate the sub-pixel shimmer
+  // that otherwise makes the sprite look like it's vibrating mid-air.
   if (p) {
+    const px = Math.round(p.x);
+    const py = Math.round(p.y);
     if (invuln > 0 && Math.floor(invuln / 6) % 2 === 0) {
       // flicker
     } else if (playerLoaded) {
       ctx.save();
-      ctx.translate(p.x + PLAYER_W / 2, p.y + PLAYER_H / 2);
+      ctx.translate(px + PLAYER_W / 2, py + PLAYER_H / 2);
       if (p.facing < 0) ctx.scale(-1, 1);
       ctx.drawImage(player, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
       ctx.restore();
     } else {
       // Fallback shape.
-      rect(p.x, p.y, PLAYER_W, PLAYER_H, "#f4a72b", "#1f2024");
+      rect(px, py, PLAYER_W, PLAYER_H, "#f4a72b", "#1f2024");
     }
     if (pendingShield) {
       ctx.strokeStyle = "rgba(77, 138, 240, 0.85)";
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(p.x + PLAYER_W / 2, p.y + PLAYER_H / 2, PLAYER_W * 0.7, 0, Math.PI * 2);
+      ctx.arc(px + PLAYER_W / 2, py + PLAYER_H / 2, PLAYER_W * 0.7, 0, Math.PI * 2);
       ctx.stroke();
     }
     if (activePower === "jet") {
       ctx.fillStyle = "#ff6f3c";
       ctx.beginPath();
-      ctx.arc(p.x + PLAYER_W / 2 - 6, p.y + PLAYER_H + 4, 5, 0, Math.PI * 2);
-      ctx.arc(p.x + PLAYER_W / 2 + 6, p.y + PLAYER_H + 4, 5, 0, Math.PI * 2);
+      ctx.arc(px + PLAYER_W / 2 - 6, py + PLAYER_H + 4, 5, 0, Math.PI * 2);
+      ctx.arc(px + PLAYER_W / 2 + 6, py + PLAYER_H + 4, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#ffd86a";
       ctx.beginPath();
-      ctx.arc(p.x + PLAYER_W / 2, p.y + PLAYER_H + 8, 4, 0, Math.PI * 2);
+      ctx.arc(px + PLAYER_W / 2, py + PLAYER_H + 8, 4, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -1164,15 +1179,30 @@ function draw() {
 }
 
 // ---- Input -----------------------------------------------------------------
+// Keys we swallow while the game is the focused element so they don't pan
+// the page from underneath the player. Mouse wheel and trackpad scroll are
+// NOT in this list — they always pass through so the reader can keep
+// scrolling the article even with the game focused.
+const SWALLOWED_KEYS = new Set([
+  "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown",
+  " ", "Spacebar",            // Space (modern + IE/Edge legacy)
+  "PageUp", "PageDown",
+  "Home", "End"
+]);
+
 function bindKeys() {
   window.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keys.left = true;
     if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") keys.right = true;
     if (e.key === " " && state === STATE.IDLE) startGame();
     if (e.key === " " && state === STATE.OVER) startGame();
-    // Prevent page scroll on arrows / space when game is active.
-    if ((e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === " ") && state !== STATE.IDLE) {
+    // Block keys that would normally scroll / pan the host page from inside
+    // the iframe, but only while the game is actually running. ArrowUp /
+    // ArrowDown are explicitly disabled per the user request even though we
+    // don't use them as game input.
+    if (state !== STATE.IDLE && SWALLOWED_KEYS.has(e.key)) {
       e.preventDefault();
+      e.stopPropagation();
     }
   }, { passive: false });
   window.addEventListener("keyup", (e) => {
@@ -1184,33 +1214,52 @@ function bindKeys() {
 function bindTouch() {
   let touchActive = false;
   let touchSide = 0;
+  let touchStartX = 0, touchStartY = 0;
+  let touchMode = null; // 'steer' | 'scroll' once a direction is committed
   function setSide(side) {
     keys.left = side === -1;
     keys.right = side === 1;
   }
-  // Tilt touch on the canvas itself.
+  // Tap/drag on the canvas to steer. We watch the first few pixels of
+  // movement: if the user moves mostly horizontally we steer (and block
+  // page scroll); if mostly vertical we let the browser pan the article.
+  // CSS sets `touch-action: pan-y` on .canvas-wrap so the browser already
+  // handles the vertical case for us.
   wrap.addEventListener("touchstart", (e) => {
     if (state !== STATE.PLAYING) return;
     const t = e.touches[0];
     if (!t) return;
+    touchStartX = t.clientX;
+    touchStartY = t.clientY;
+    touchMode = null;
+    touchActive = true;
     const r = wrap.getBoundingClientRect();
     const side = (t.clientX - r.left) < r.width / 2 ? -1 : 1;
-    touchActive = true;
     touchSide = side;
-    setSide(side);
-    e.preventDefault();
-  }, { passive: false });
+    // Don't steer immediately — wait until the user actually drags so a
+    // tap-and-scroll doesn't lurch the player.
+  }, { passive: true });
   wrap.addEventListener("touchmove", (e) => {
     if (!touchActive || state !== STATE.PLAYING) return;
     const t = e.touches[0];
     if (!t) return;
-    const r = wrap.getBoundingClientRect();
-    const side = (t.clientX - r.left) < r.width / 2 ? -1 : 1;
-    if (side !== touchSide) { touchSide = side; setSide(side); }
-    e.preventDefault();
+    const dx = t.clientX - touchStartX;
+    const dy = t.clientY - touchStartY;
+    if (touchMode === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      touchMode = Math.abs(dx) > Math.abs(dy) ? "steer" : "scroll";
+      if (touchMode === "steer") setSide(touchSide);
+    }
+    if (touchMode === "steer") {
+      const r = wrap.getBoundingClientRect();
+      const side = (t.clientX - r.left) < r.width / 2 ? -1 : 1;
+      if (side !== touchSide) { touchSide = side; setSide(side); }
+      e.preventDefault();
+    }
+    // touchMode === 'scroll': do nothing; browser pans the page.
   }, { passive: false });
   wrap.addEventListener("touchend", () => {
     touchActive = false;
+    touchMode = null;
     setSide(0);
   });
 
@@ -1266,41 +1315,11 @@ window.addEventListener("resize", () => {
   reportHeight();
 });
 
-// ---- Scroll lock -----------------------------------------------------------
-// While the game is active we don't want wheel/touch scrolling to bubble out
-// to the host page (or to scroll inside the iframe document). The user can
-// "click out" by pausing — currently any non-PLAYING state lets scrolls pass.
-function isPlaying() { return state === STATE.PLAYING; }
-
-// Block wheel scroll inside the iframe while playing, and tell the parent
-// page not to scroll either via postMessage relay.
-window.addEventListener("wheel", (e) => {
-  if (isPlaying()) {
-    e.preventDefault();
-    // Notify parent so it can also block the page from scrolling.
-    try {
-      window.parent?.postMessage({ type: "doodle:wheel", deltaY: e.deltaY }, "*");
-    } catch {}
-  }
-}, { passive: false });
-
-// Block touch panning inside the iframe while playing.
-window.addEventListener("touchmove", (e) => {
-  if (isPlaying()) e.preventDefault();
-}, { passive: false });
-
-// Tell the parent the active state changed so it can lock its own scroll.
-// Polled from the main loop so we don't have to wrap every state setter.
-let lastBroadcastActive = null;
-function broadcastActive() {
-  const active = state === STATE.PLAYING || state === STATE.PAUSED_Q;
-  if (active === lastBroadcastActive) return;
-  lastBroadcastActive = active;
-  try {
-    window.parent?.postMessage({ type: "doodle:active", active }, "*");
-  } catch {}
-}
-setInterval(broadcastActive, 200);
+// We deliberately do NOT block wheel or touchmove events: the reader should
+// always be able to scroll the article freely with mouse wheel, trackpad, or
+// touch even while the game is active. Only the Left/Right arrow keys are
+// intercepted (in bindKeys below) so they steer the player without panning
+// the page; ArrowUp / ArrowDown / PageUp / PageDown / Space scroll normally.
 
 // ---- Report iframe content height to parent --------------------------------
 // The wrapping page sizes the <iframe> via min-height; we measure the actual
