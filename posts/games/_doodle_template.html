@@ -868,18 +868,20 @@ const answeredCorrectly = new Set();
 // 2 saves max regardless of question count, per design.
 const MAX_RESCUES = 2;
 
-// Pick the next question for a rescue prompt. Prefer a question the player
-// has never been shown OR has gotten wrong (so wrong answers come back
-// later). Avoid repeating any question they've already answered correctly.
-// Falls back to a random eligible question if everything has been seen.
-function pickRescueQuestion() {
+// Pick the next question to present (for either a rescue or a gold
+// platform). A question is eligible only if the player hasn't already
+// gotten it right in this run — that's the fix for the bug where a rescue
+// and the gold platform could surface the same question back-to-back.
+// Returns -1 if every question has already been answered correctly.
+function pickAvailableQuestion() {
   if (!QUESTIONS.length) return -1;
   const eligible = [];
   for (let i = 0; i < QUESTIONS.length; i++) {
     if (!answeredCorrectly.has(i)) eligible.push(i);
   }
-  if (!eligible.length) return -1; // nothing left to ask — player has aced them
-  // Prefer indices that haven't been the most recently asked one.
+  if (!eligible.length) return -1;
+  // Prefer indices that haven't been the most recently asked one so
+  // back-to-back wrong answers cycle through the pool instead of looping.
   const fresh = eligible.filter(i => i !== currentQIndex);
   const pool = fresh.length ? fresh : eligible;
   return pool[Math.floor(Math.random() * pool.length)];
@@ -894,7 +896,7 @@ function tryRescue(reason) {
     if (lives <= 0) endGame(false);
     return false;
   }
-  const idx = pickRescueQuestion();
+  const idx = pickAvailableQuestion();
   if (idx < 0) {
     if (lives <= 0) endGame(false);
     return false;
@@ -975,24 +977,16 @@ function answerQuestion(picked, btn) {
     } else {
       btn.classList.add("wrong");
       if (correctIdx >= 0 && buttons[correctIdx]) buttons[correctIdx].classList.add("correct");
-      // Wrong answer doesn't restore the life. If we still have lives left
-      // we keep playing; otherwise the run ends.
-      const willEnd = lives <= 0;
-      qFeedback.textContent = willEnd
-        ? (q.feedbackIncorrect || "Not quite — and that's the run.")
-        : (q.feedbackIncorrect || "Not quite — that life is gone.");
+      // A wrong rescue answer ends the run immediately — the rescue is the
+      // single chance to come back from the life loss that just happened.
+      qFeedback.textContent = q.feedbackIncorrect || "Not quite — and that's the run.";
       qFeedback.className = "qfeedback bad";
       qContinue.hidden = false;
       setTimeout(() => {
         qmodal.classList.remove("visible");
         rescueMode = false;
-        if (willEnd) {
-          endGame(false);
-        } else {
-          respawnPlayer();
-          state = STATE.PLAYING;
-        }
-      }, 1400);
+        endGame(false);
+      }, 1500);
     }
     return;
   }
@@ -1207,11 +1201,16 @@ function step() {
       continue;
     }
     p.vy = JUMP_VY;
-    if (pl.type === "gold" && !pl.spawnedQ && questionsAnswered < TOTAL_Q) {
+    if (pl.type === "gold" && !pl.spawnedQ) {
+      // Pick a question that hasn't been answered correctly yet — using
+      // questionsAnswered as the index used to surface duplicates when a
+      // rescue had already cleared a question before the gold platform.
+      const idx = pickAvailableQuestion();
+      if (idx < 0) break; // every question already aced — let the player just bounce off
       pl.spawnedQ = true;
       // Slight pause-in-air while modal opens.
       p.vy = -3;
-      presentQuestion(questionsAnswered);
+      presentQuestion(idx);
       return;
     }
   }
