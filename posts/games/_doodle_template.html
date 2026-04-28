@@ -474,6 +474,7 @@
     </div>
     <div class="hud">
       <span class="chip"><span class="chip-dot"></span>Height <strong id="hud-height">0 m</strong></span>
+      <span class="chip"><span class="chip-dot"></span>Best <strong id="hud-best">0 m</strong></span>
       <span class="chip good"><span class="chip-dot"></span>Revives left <strong id="hud-saves">2</strong></span>
     </div>
     <div class="canvas-wrap" id="canvasWrap">
@@ -604,6 +605,7 @@ const overlayEnd = document.getElementById("overlayEnd");
 const btnStart = document.getElementById("btnStart");
 const btnRetry = document.getElementById("btnRetry");
 const hudHeight = document.getElementById("hud-height");
+const hudBest = document.getElementById("hud-best");
 const hudSaves = document.getElementById("hud-saves");
 const qmodal = document.getElementById("qmodal");
 const qBadge = document.getElementById("qBadge");
@@ -863,7 +865,7 @@ function startGame() {
   bulletCooldown = 0;
   lastFrameTs = 0;
   stepAccumulator = 0;
-  p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1, cartwheelTicks: 0, cartwheelDir: 0 };
+  p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1, cartwheelTicks: 0, cartwheelDir: 0, cartwheelArmed: true };
   seedWorld();
   overlayStart.hidden = true;
   overlayEnd.hidden = true;
@@ -907,8 +909,12 @@ function endGame(win) {
 }
 
 function updateHud() {
-  hudHeight.textContent = Math.round(height) + " m";
-  // Revives left = how many death-rescues the player can still use.
+  const h = Math.round(height);
+  hudHeight.textContent = h + " m";
+  // Live-update the saved best the moment the run beats it, so the HUD
+  // (and a refresh during a run) always reflect the real personal best.
+  if (h > highscore) { highscore = h; saveHighscore(highscore); }
+  if (hudBest) hudBest.textContent = highscore + " m";
   const saves = Math.max(0, MAX_RESCUES - rescuesUsed);
   if (hudSaves) hudSaves.textContent = saves;
 }
@@ -1082,6 +1088,7 @@ function respawnPlayer() {
   }
   p.vx = 0;
   p.vy = SPRING_VY;
+  p.cartwheelArmed = true;  // post-revive bounce qualifies as a platform jump
   pendingShield = true;
   invuln = 90;
   monsters = [];
@@ -1097,6 +1104,9 @@ function triggerCartwheel(dir, cx, cy) {
   p.facing = dir;
   p.cartwheelTicks = CARTWHEEL_DURATION;
   p.cartwheelDir = dir;
+  // One cartwheel per platform launch — must touch ground or pick up a
+  // boost again before the next one will fire.
+  p.cartwheelArmed = false;
   // Brief invuln so a monster sitting next to the wall can't immediately
   // eat the player before they spin away.
   invuln = Math.max(invuln, 18);
@@ -1127,10 +1137,12 @@ function awardPowerForQuestion(idx) {
     pendingShield = true;
   } else if (power === "spring") {
     p.vy = SPRING_VY;
+    p.cartwheelArmed = true;
   } else if (power === "jet") {
     activePower = "jet";
     powerTicks = 90;
     p.vy = -8;
+    p.cartwheelArmed = true;
   }
 }
 
@@ -1215,22 +1227,25 @@ function step() {
   if (p.vx !== 0) p.facing = p.vx > 0 ? 1 : -1;
   p.x += p.vx;
   // Wall bounce — gentle reflective bounce normally, but if the player
-  // slams the wall with enough horizontal speed it triggers an Icy-Tower
-  // cartwheel: huge upward boost, kickback away from the wall, visual
-  // spin, and a confetti burst at the contact point.
+  // slams a wall AT SPEED right after launching off a platform, it triggers
+  // an Icy-Tower cartwheel: huge upward boost, kickback, spin animation,
+  // and a confetti burst. The "from a platform" gate is enforced via
+  // p.cartwheelArmed (set on platform/power-up landings, cleared the moment
+  // a cartwheel actually fires) — so a wall→wall ping-pong can't chain
+  // boosts without touching ground first.
   if (p.x < 0) {
-    const slammed = Math.abs(p.vx) >= CARTWHEEL_TRIGGER_VX;
+    const canCartwheel = Math.abs(p.vx) >= CARTWHEEL_TRIGGER_VX && p.cartwheelArmed;
     p.x = 0;
-    if (slammed) {
+    if (canCartwheel) {
       triggerCartwheel(+1, 0, p.y + PLAYER_H / 2);
     } else {
       p.vx = Math.abs(p.vx) * 0.85;
       p.facing = 1;
     }
   } else if (p.x + PLAYER_W > W) {
-    const slammed = Math.abs(p.vx) >= CARTWHEEL_TRIGGER_VX;
+    const canCartwheel = Math.abs(p.vx) >= CARTWHEEL_TRIGGER_VX && p.cartwheelArmed;
     p.x = W - PLAYER_W;
-    if (slammed) {
+    if (canCartwheel) {
       triggerCartwheel(-1, W, p.y + PLAYER_H / 2);
     } else {
       p.vx = -Math.abs(p.vx) * 0.85;
@@ -1309,6 +1324,10 @@ function step() {
       continue;
     }
     p.vy = JUMP_VY;
+    // Arm the cartwheel: any platform-launched jump qualifies for the
+    // next wall slam. Cleared the moment a cartwheel actually fires, so
+    // a wall→wall chain can't keep boosting without touching ground.
+    p.cartwheelArmed = true;
     if (pl.type === "gold" && !pl.spawnedQ) {
       // Pick a question that hasn't been answered correctly yet — using
       // questionsAnswered as the index used to surface duplicates when a
@@ -1334,6 +1353,8 @@ function step() {
     if (hit) {
       if (u.kind === "spring") p.vy = SPRING_VY;
       else if (u.kind === "jet") { activePower = "jet"; powerTicks = 110; }
+      // Picking up a boost is morally equivalent to a platform jump.
+      p.cartwheelArmed = true;
       powerups.splice(i, 1);
     }
   }
@@ -1385,6 +1406,7 @@ function step() {
     if (p.vy > 0 && p.y + PLAYER_H < m.y + m.h) {
       monsters.splice(i, 1);
       p.vy = SPRING_VY * 0.8;
+      p.cartwheelArmed = true;
       continue;
     }
     if (invuln > 0) continue;
@@ -1725,8 +1747,13 @@ function draw() {
   if (p) {
     const px = Math.round(p.x);
     const py = camY + Math.round(p.y - cameraY);
-    if (invuln > 0 && Math.floor(invuln / 6) % 2 === 0) {
-      // flicker
+    // Hit-flicker visualises the post-damage invuln window. We skip it
+    // during a cartwheel because triggerCartwheel grants a brief invuln
+    // for safety, and a strobing sprite mid-spin looks broken — the spin
+    // itself is the visual feedback for that window.
+    const flickering = invuln > 0 && p.cartwheelTicks <= 0 && Math.floor(invuln / 6) % 2 === 0;
+    if (flickering) {
+      // skip draw — flicker frame
     } else if (playerLoaded) {
       ctx.save();
       // Draw the pre-rendered sprite at logical PLAYER_W/H. Because the
