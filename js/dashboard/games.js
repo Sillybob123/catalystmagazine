@@ -175,15 +175,18 @@ function renderRow(article, ctx, reload) {
 // Dialog: pick / paste / save
 // ---------------------------------------------------------------------------
 
-const AI_PROMPT_TEMPLATE = `You are writing 3 multiple-choice questions for a knowledge game pinned to the bottom of an article on The Catalyst Magazine, a student-run STEM publication.
+const AI_PROMPT_TEMPLATE = `You are writing 10 multiple-choice questions for a knowledge game pinned to the bottom of an article on The Catalyst Magazine, a student-run STEM publication.
 
 Goals:
 - Test whether the reader actually read and understood the article.
 - Each question is fair, factual, and resolvable from the article body alone.
-- Questions get progressively harder. Q1 covers a key fact a casual reader will spot. Q2 tests interpretation. Q3 tests the most nuanced takeaway or detail.
+- Questions vary in difficulty — some easy (key facts), some interpretive, some nuanced.
+- Cover different parts and ideas in the article so no two questions feel repetitive.
 - Avoid trick questions, ambiguous phrasings, or "all of the above"-style options.
 - Each question has exactly 4 short options (under ~12 words each). One is correct, three are plausible distractors drawn from the article's themes.
 - Tone: confident, lightly playful, no slang.
+
+The game randomly picks 3 of these 10 questions per play session, so each replay feels fresh. Write all 10 at different difficulty levels and covering different aspects of the article.
 
 Output ONLY a single JSON object, no prose, in EXACTLY this shape:
 
@@ -199,7 +202,7 @@ Output ONLY a single JSON object, no prose, in EXACTLY this shape:
       "feedbackIncorrect": "<short hint at the right answer — 14 words max>"
     },
     { ... },
-    { ... }
+    ... (10 questions total)
   ]
 }
 
@@ -521,8 +524,8 @@ function parseGameJson(raw) {
   }
   if (!data || typeof data !== "object") throw new Error("Expected a JSON object at the top level.");
   if (!Array.isArray(data.questions)) throw new Error("Missing a 'questions' array.");
-  if (data.questions.length !== 3) {
-    throw new Error(`Expected exactly 3 questions, got ${data.questions.length}.`);
+  if (data.questions.length < 3 || data.questions.length > 10) {
+    throw new Error(`Expected 3–10 questions, got ${data.questions.length}.`);
   }
   const out = {
     title: typeof data.title === "string" && data.title.trim() ? data.title.trim().slice(0, 80) : "Test your knowledge",

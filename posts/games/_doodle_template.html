@@ -474,8 +474,7 @@
     </div>
     <div class="hud">
       <span class="chip"><span class="chip-dot"></span>Height <strong id="hud-height">0 m</strong></span>
-      <span class="chip bad"><span class="chip-dot"></span>Lives <strong id="hud-lives">3</strong></span>
-      <span class="chip good"><span class="chip-dot"></span>Saves left <strong id="hud-saves">2</strong></span>
+      <span class="chip good"><span class="chip-dot"></span>Revives left <strong id="hud-saves">2</strong></span>
     </div>
     <div class="canvas-wrap" id="canvasWrap">
       <canvas id="cv"></canvas>
@@ -484,7 +483,7 @@
       <div class="overlay" id="overlayStart">
         <div class="overlay-card">
           <h2>Ready to climb?</h2>
-          <p>Bounce ever upward. The first <strong>gold platform</strong> asks a question — get it right for a power-up. Press <strong>Space</strong> to shoot bullets at monsters. If you fall or get hit, answer one of the remaining questions correctly to <strong>save yourself</strong> and keep climbing.</p>
+          <p>Bounce ever upward. The <strong>gold platform</strong> asks a question — get it right for a power-up. Press <strong>Space</strong> to shoot monsters. Die and answer a question correctly to <strong>revive</strong> (up to 2 times). Wrong answer or no revives left = game over.</p>
           <div class="keys">
             <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> Move</span>
             <span><kbd>Space</kbd> Shoot / Start</span>
@@ -511,8 +510,8 @@
           <p id="endBlurb">Tap retry to try again.</p>
           <div class="stat-grid">
             <div class="stat"><div class="stat-num" id="endHeight">0 m</div><div class="stat-lbl">Height</div></div>
+            <div class="stat"><div class="stat-num" id="endBest">0 m</div><div class="stat-lbl">Your best</div></div>
             <div class="stat"><div class="stat-num" id="endCorrect">0/3</div><div class="stat-lbl">Correct</div></div>
-            <div class="stat"><div class="stat-num" id="endRank">—</div><div class="stat-lbl">Rank</div></div>
           </div>
           <div class="btn-row">
             <button class="btn btn-accent" id="btnRetry" type="button">Play again</button>
@@ -563,8 +562,38 @@ const GAME_DATA = /*__GAME_DATA__*/{
   questions: [],
   characterUrl: "/doodlecharacter.png"
 };
-const QUESTIONS = Array.isArray(GAME_DATA.questions) ? GAME_DATA.questions : [];
-const TOTAL_Q = QUESTIONS.length;
+const HS_KEY = 'catalyst_hs_doodle_' + (GAME_DATA.articleId || 'default');
+const HS_TTL = 48 * 60 * 60 * 1000;
+function loadHighscore() {
+  try {
+    const raw = localStorage.getItem(HS_KEY);
+    if (!raw) return 0;
+    const { v, ts } = JSON.parse(raw);
+    if (Date.now() - ts > HS_TTL) { localStorage.removeItem(HS_KEY); return 0; }
+    return typeof v === 'number' ? v : 0;
+  } catch { return 0; }
+}
+function saveHighscore(v) {
+  try { localStorage.setItem(HS_KEY, JSON.stringify({ v, ts: Date.now() })); } catch {}
+}
+let highscore = loadHighscore();
+// Full pool (up to 10). Each run we shuffle and pick 3 so replays feel fresh.
+const QUESTION_POOL = Array.isArray(GAME_DATA.questions) ? GAME_DATA.questions : [];
+const RUN_SIZE = 3; // questions presented per single run
+// RUN_QUESTIONS is populated at startGame() — don't use QUESTION_POOL directly in game logic.
+let QUESTIONS = [];  // 3 shuffled questions for the current run
+let TOTAL_Q = RUN_SIZE;
+
+function pickRunQuestions() {
+  // Fisher-Yates shuffle on a copy of the pool, then take the first RUN_SIZE.
+  const pool = QUESTION_POOL.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  QUESTIONS = pool.slice(0, Math.min(RUN_SIZE, pool.length));
+  TOTAL_Q = QUESTIONS.length;
+}
 
 // ---- DOM refs --------------------------------------------------------------
 const cv = document.getElementById("cv");
@@ -575,7 +604,6 @@ const overlayEnd = document.getElementById("overlayEnd");
 const btnStart = document.getElementById("btnStart");
 const btnRetry = document.getElementById("btnRetry");
 const hudHeight = document.getElementById("hud-height");
-const hudLives = document.getElementById("hud-lives");
 const hudSaves = document.getElementById("hud-saves");
 const qmodal = document.getElementById("qmodal");
 const qBadge = document.getElementById("qBadge");
@@ -675,6 +703,14 @@ const MOVE_ACCEL = 0.55;
 const MAX_VX = 6.2;
 const FRICTION = 0.9;
 
+// Smooth speed multiplier — ramps up after 350 m to make everything faster
+// and more frantic. Applied to gravity, jump velocity, and monster speed.
+function heightSpeedMult() {
+  if (height < 350) return 1.0;
+  // Ramp from 1.0 at 350 m to 1.35 at 500 m, then hold.
+  return 1.0 + Math.min(0.35, (height - 350) / 150 * 0.35);
+}
+
 const PLATFORM_W = 62;
 const PLATFORM_H = 12;
 // Player sprite is a 1:1 square to match the source PNG (doodlecharacter.png
@@ -694,9 +730,8 @@ let particles = [];
 let bulletCooldown = 0;  // frames until the player can fire again
 let cameraY = 0;
 let height = 0;          // metres climbed (peak)
-let lives = 3;
 let correctCount = 0;
-let questionsAnswered = 0; // attempts (correct+wrong)
+let questionsShownThisRun = 0; // how many of the 3 run-questions have been presented
 let nextQuestionAt = 0;   // y-distance climbed before the gold platform
 let goldSpawned = false;   // exactly one gold platform per run
 let pendingShield = false;
@@ -781,11 +816,18 @@ function spawnUpcoming() {
       goldSpawned = true;
     }
 
-    // Occasional monster, only after some climbing.
-    if (climbedAbs > 600 && Math.random() < 0.12 && monsters.length < 2) {
+    // Monster spawn. After 350 m (climbedAbs ~6300 px at 18px/m) spawn
+    // more aggressively and allow up to 4 on screen at once.
+    const isHighAlt = height >= 350;
+    const monsterChance = isHighAlt
+      ? (climbedAbs > 600 ? 0.22 : 0)
+      : (climbedAbs > 600 ? 0.12 : 0);
+    const monsterCap = isHighAlt ? 4 : 2;
+    if (monsterChance > 0 && Math.random() < monsterChance && monsters.length < monsterCap) {
+      const spd = isHighAlt ? rand(1.6, 2.4) : 1.2;
       monsters.push({
         x: rand(20, W - 60), y: lastPlatformY - 40,
-        w: 38, h: 34, vx: (Math.random() < 0.5 ? -1 : 1) * 1.2,
+        w: 38, h: 34, vx: (Math.random() < 0.5 ? -1 : 1) * spd,
         kind: "monster"
       });
     }
@@ -794,13 +836,13 @@ function spawnUpcoming() {
 
 function startGame() {
   fitCanvas();
+  pickRunQuestions(); // fresh 3-question shuffle each run
   state = STATE.PLAYING;
   cameraY = 0;
   highestCameraY = 0;
   height = 0;
-  lives = 3;
   correctCount = 0;
-  questionsAnswered = 0;
+  questionsShownThisRun = 0;
   goldSpawned = false;
   nextQuestionAt = 12; // first (and only) gold platform after ~12m climb
   activePower = null;
@@ -824,34 +866,31 @@ function startGame() {
 
 function endGame(win) {
   state = STATE.OVER;
+  const h = Math.round(height);
+  if (h > highscore) { highscore = h; saveHighscore(highscore); }
   document.getElementById("endTitle").textContent = "Down you go!";
   document.getElementById("endBlurb").textContent =
     correctCount > 0
-      ? "Nice climb. Try again to beat your height — and remember, every wrong rescue answer ends the run."
-      : "Bounce ever upward. Land on the gold platform for a power-up, and answer the rescue questions to keep your run alive.";
-  document.getElementById("endHeight").textContent = Math.round(height) + " m";
-  document.getElementById("endCorrect").textContent = correctCount + "/" + TOTAL_Q;
-  // Rank scales with how high the reader climbed. The questions are now a
-  // gating mechanic on death rather than a checklist, so the "answered all"
-  // win state has been retired.
+      ? "Nice climb! Try again to beat your height — wrong revive answers end the run."
+      : "Bounce ever upward. The gold platform gives you a power-up, and revive prompts keep you alive when you die.";
+  document.getElementById("endHeight").textContent = h + " m";
+  // Show how many of the questions actually presented this run were correct.
+  const shownCount = questionsShownThisRun || TOTAL_Q;
+  document.getElementById("endCorrect").textContent = correctCount + "/" + shownCount;
   let rank = "Cadet";
   if (height >= 120) rank = "Catalyst";
   else if (height >= 70) rank = "Reporter";
   else if (height >= 30) rank = "Intern";
   document.getElementById("endRank").textContent = rank;
+  const bestEl = document.getElementById("endBest");
+  if (bestEl) bestEl.textContent = highscore + " m";
   overlayEnd.hidden = false;
 }
 
 function updateHud() {
   hudHeight.textContent = Math.round(height) + " m";
-  hudLives.textContent = lives;
-  // "Saves left" = how many rescue questions the player can still attempt.
-  // Hard cap is MAX_RESCUES (2), but we also can't ask a question we've
-  // already answered correctly, so the visible count reflects whichever
-  // cap kicks in first.
-  const correctlyAnswered = answeredCorrectly.size;
-  const remainingPool = Math.max(0, TOTAL_Q - correctlyAnswered);
-  const saves = Math.max(0, Math.min(MAX_RESCUES - rescuesUsed, remainingPool));
+  // Revives left = how many death-rescues the player can still use.
+  const saves = Math.max(0, MAX_RESCUES - rescuesUsed);
   if (hudSaves) hudSaves.textContent = saves;
 }
 
@@ -887,18 +926,16 @@ function pickAvailableQuestion() {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// Triggered whenever the player loses a life. If a rescue is still allowed
-// (under the per-run cap and at least one un-answered-correctly question
-// remains), we present a question: correct → restore the life, wrong →
-// the life stays lost (and if that drops them to zero, real game over).
+// Triggered on death. If revives remain, offer a question — correct = respawn,
+// wrong = game over. If no revives left, game over immediately.
 function tryRescue(reason) {
   if (rescuesUsed >= MAX_RESCUES) {
-    if (lives <= 0) endGame(false);
+    endGame(false);
     return false;
   }
   const idx = pickAvailableQuestion();
   if (idx < 0) {
-    if (lives <= 0) endGame(false);
+    endGame(false);
     return false;
   }
   rescueMode = true;
@@ -913,10 +950,12 @@ function presentQuestion(idx, modalOpts = {}) {
   const q = QUESTIONS[idx];
   const qHint = document.getElementById("qHint");
   if (modalOpts.rescue) {
-    qBadge.textContent = "Rescue " + (rescuesUsed + 1) + " / " + MAX_RESCUES;
-    if (qHint) qHint.textContent = modalOpts.reason || "Answer to save yourself";
+    qBadge.textContent = "Revive " + (rescuesUsed + 1) + " / " + MAX_RESCUES;
+    if (qHint) qHint.textContent = modalOpts.reason || "Answer correctly to survive";
   } else {
-    qBadge.textContent = "Question " + (idx + 1) + " / " + TOTAL_Q;
+    // Count this as a new presented question and show position in the 3-question run.
+    questionsShownThisRun++;
+    qBadge.textContent = "Question " + questionsShownThisRun + " / " + TOTAL_Q;
     if (qHint) qHint.textContent = "Pick the correct answer";
   }
   qPrompt.textContent = q.prompt || q.q || "Question";
@@ -956,14 +995,12 @@ function answerQuestion(picked, btn) {
   const buttons = qOpts.querySelectorAll(".qopt");
   buttons.forEach(b => { b.disabled = true; });
 
-  // RESCUE: special branch when this question was triggered by life loss.
+  // REVIVE: triggered when the player died and needs to answer to survive.
   if (rescueMode) {
     if (isCorrect) {
       btn.classList.add("correct");
-      qFeedback.textContent = "Saved! +1 life — back into the climb.";
+      qFeedback.textContent = "Revived! Back in the climb.";
       qFeedback.className = "qfeedback good";
-      // Restore the life we just lost (capped at the original 3).
-      lives = Math.min(3, lives + 1);
       rescuesUsed++;
       answeredCorrectly.add(currentQIndex);
       updateHud();
@@ -977,8 +1014,6 @@ function answerQuestion(picked, btn) {
     } else {
       btn.classList.add("wrong");
       if (correctIdx >= 0 && buttons[correctIdx]) buttons[correctIdx].classList.add("correct");
-      // A wrong rescue answer ends the run immediately — the rescue is the
-      // single chance to come back from the life loss that just happened.
       qFeedback.textContent = q.feedbackIncorrect || "Not quite — and that's the run.";
       qFeedback.className = "qfeedback bad";
       qContinue.hidden = false;
@@ -997,7 +1032,6 @@ function answerQuestion(picked, btn) {
     qFeedback.textContent = q.feedbackCorrect || "Correct! Power-up incoming.";
     qFeedback.className = "qfeedback good";
     correctCount++;
-    questionsAnswered++;
     answeredCorrectly.add(currentQIndex);
     awardPowerForQuestion(currentQIndex);
   } else {
@@ -1005,9 +1039,6 @@ function answerQuestion(picked, btn) {
     if (correctIdx >= 0 && buttons[correctIdx]) buttons[correctIdx].classList.add("correct");
     qFeedback.textContent = q.feedbackIncorrect || "Not quite — that drops a monster on you.";
     qFeedback.className = "qfeedback bad";
-    questionsAnswered++;
-    // Don't mark as answered — wrong gold-platform questions stay in the
-    // pool so they can come back as a rescue prompt later.
     spawnPenaltyMonster();
   }
   qContinue.hidden = false;
@@ -1018,8 +1049,8 @@ function answerQuestion(picked, btn) {
   }, 1300);
 }
 
-// Place the player on a visible platform near the bottom of the screen and
-// give them a fresh upward bounce. Used after a successful rescue answer.
+// Place the player on a visible platform with a big bounce. Used after a
+// successful revive answer. Grants a temporary shield and clears monsters.
 function respawnPlayer() {
   const visible = platforms.filter(pl => pl.y > cameraY + H - 200 && pl.y < cameraY + H && !pl.broken && pl.type !== "gold");
   const target = visible.length ? visible[Math.floor(visible.length / 2)] : null;
@@ -1031,10 +1062,10 @@ function respawnPlayer() {
     p.y = cameraY + H - 120;
   }
   p.vx = 0;
-  p.vy = SPRING_VY;     // big bounce so they actually get back into the action
-  pendingShield = true;  // free shield for the next monster contact
+  p.vy = SPRING_VY;
+  pendingShield = true;
   invuln = 90;
-  monsters = [];          // clear threats for a clean restart
+  monsters = [];
 }
 
 function awardPowerForQuestion(idx) {
@@ -1134,8 +1165,9 @@ function step() {
   }
 
   // Active jetpack power
+  const spd = heightSpeedMult();
   if (activePower === "jet") {
-    p.vy = Math.min(p.vy, -9);
+    p.vy = Math.min(p.vy, -9 * spd);
     powerTicks--;
     if (powerTicks <= 0) activePower = null;
     // smoke particles
@@ -1145,7 +1177,7 @@ function step() {
       life: 28, kind: "smoke"
     });
   } else {
-    p.vy += GRAVITY;
+    p.vy += GRAVITY * spd;
   }
   p.y += p.vy;
 
@@ -1265,7 +1297,7 @@ function step() {
   // Monster collisions.
   for (let i = monsters.length - 1; i >= 0; i--) {
     const m = monsters[i];
-    m.x += m.vx;
+    m.x += m.vx * spd;
     if (m.x < 6 || m.x + m.w > W - 6) m.vx *= -1;
     // Cull
     if (m.y > cameraY + H + 60) { monsters.splice(i, 1); continue; }
@@ -1286,18 +1318,14 @@ function step() {
       invuln = 60;
       continue;
     }
-    // Lose life — every monster hit triggers a rescue prompt (capped by
-    // MAX_RESCUES). If we can't or shouldn't prompt, just take the hit.
-    lives--;
+    // Monster hit → offer revive (up to MAX_RESCUES), else game over.
     invuln = 80;
     p.vy = JUMP_VY * 0.8;
     monsters.splice(i, 1);
-    updateHud();
-    if (lives <= 0 || rescuesUsed < MAX_RESCUES) {
-      const offered = tryRescue("You took a hit!");
-      if (offered) return;
-      if (lives <= 0) { endGame(false); return; }
-    }
+    const offered = tryRescue("You took a hit!");
+    if (offered) return;
+    // tryRescue calls endGame if no revives left — just stop step().
+    return;
   }
 
   if (invuln > 0) invuln--;
@@ -1320,29 +1348,11 @@ function step() {
       p.vy = SPRING_VY;
       p.y = cameraY + H - 80;
     } else {
-      lives--;
-      updateHud();
-      // Every fall offers a rescue prompt (until we hit MAX_RESCUES). If a
-      // question pops, presentation handles respawn; otherwise we either
-      // end the game or do the normal in-place respawn.
-      if (lives <= 0 || rescuesUsed < MAX_RESCUES) {
-        const offered = tryRescue("You fell off!");
-        if (offered) return;
-        if (lives <= 0) { endGame(false); return; }
-      }
-      // Respawn near the bottom on the lowest visible platform.
-      const visible = platforms.filter(pl => pl.y > cameraY + H - 200 && pl.y < cameraY + H);
-      const target = visible.length ? visible[Math.floor(visible.length / 2)] : null;
-      if (target) {
-        p.x = target.x + target.w / 2 - PLAYER_W / 2;
-        p.y = target.y - PLAYER_H - 4;
-        p.vy = JUMP_VY;
-      } else {
-        p.x = W / 2 - PLAYER_W / 2;
-        p.y = cameraY + H - 120;
-        p.vy = JUMP_VY;
-      }
-      invuln = 80;
+      // Fell off → offer revive, else game over.
+      const offered = tryRescue("You fell off!");
+      if (offered) return;
+      // tryRescue calls endGame when no revives remain — stop here.
+      return;
     }
   }
 }

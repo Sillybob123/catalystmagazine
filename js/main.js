@@ -1316,7 +1316,7 @@ async function mountDoodleGame(container, article) {
 
     try {
         const tmpl = await loadDoodleTemplate();
-        const html = renderDoodleGameHtml(tmpl, data);
+        const html = renderDoodleGameHtml(tmpl, data, article.id);
         const section = document.createElement('section');
         section.className = 'article-doodle-game';
         section.setAttribute('aria-label', 'Article knowledge game');
@@ -1379,7 +1379,7 @@ function loadDoodleTemplate() {
         // Cache-bust by date so a deploy immediately invalidates the
         // previously-cached template; otherwise force-cache + the static URL
         // can hold a stale copy in the reader's browser indefinitely.
-        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260427f');
+        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260428b');
         doodleTemplatePromise = fetch('/posts/games/_doodle_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('doodle template ' + res.status);
@@ -1393,13 +1393,14 @@ function loadDoodleTemplate() {
     return doodleTemplatePromise;
 }
 
-function renderDoodleGameHtml(template, data) {
+function renderDoodleGameHtml(template, data, articleId) {
     const title = data.title || 'Knowledge climb';
     const intro = data.intro || 'Climb high — answer the gold-platform questions to earn power-ups.';
     return renderGameTemplate(template, data, {
         title,
         intro,
-        characterUrl: window.location.origin + '/doodlecharacter.png'
+        characterUrl: window.location.origin + '/doodlecharacter.png',
+        articleId: articleId || ''
     });
 }
 
@@ -1415,7 +1416,7 @@ async function mountFlappyGame(container, article) {
     if (wrapEl.querySelector('.article-doodle-game')) return;
     try {
         const tmpl = await loadFlappyTemplate();
-        const html = renderFlappyGameHtml(tmpl, data);
+        const html = renderFlappyGameHtml(tmpl, data, article.id);
         const section = document.createElement('section');
         // Reuse the doodle CSS class so the eyebrow/title/intro layout
         // matches without forking styles.
@@ -1448,7 +1449,7 @@ async function mountFlappyGame(container, article) {
 let flappyTemplatePromise = null;
 function loadFlappyTemplate() {
     if (!flappyTemplatePromise) {
-        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260427e');
+        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260428b');
         flappyTemplatePromise = fetch('/posts/games/_flappy_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('flappy template ' + res.status);
@@ -1462,20 +1463,22 @@ function loadFlappyTemplate() {
     return flappyTemplatePromise;
 }
 
-function renderFlappyGameHtml(template, data) {
+function renderFlappyGameHtml(template, data, articleId) {
     const title = data.title || 'Flappy Catalyst';
     const intro = data.intro || 'Pass pipes to score. The gold pipe asks a question.';
     return renderGameTemplate(template, data, {
         title,
         intro,
-        characterUrl: window.location.origin + '/flappybird.png'
+        characterUrl: window.location.origin + '/flappybird.png',
+        articleId: articleId || ''
     });
 }
 
 // Shared template renderer — both game variants share the same marker layout
 // so a single helper handles questions sanitization + JS injection.
 function renderGameTemplate(template, data, opts) {
-    const questions = (data.questions || []).slice(0, 3).map((q) => {
+    // Pass all questions (up to 10) — the game shuffles and picks 3 per run.
+    const questions = (data.questions || []).map((q) => {
         const optsRaw = Array.isArray(q.options) ? q.options : [];
         const options = optsRaw.map(o => typeof o === 'string' ? o : (o?.text || ''));
         const correct = Math.max(0, Math.min(Number(q.correct ?? 0), options.length - 1));
@@ -1489,7 +1492,8 @@ function renderGameTemplate(template, data, opts) {
     });
     const payload = {
         questions,
-        characterUrl: opts.characterUrl
+        characterUrl: opts.characterUrl,
+        articleId: opts.articleId || ''
     };
     // Defensively escape any literal "</script>" the AI might have written into
     // a question — it'd otherwise prematurely close the inline <script> tag.

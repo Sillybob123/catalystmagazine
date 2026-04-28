@@ -543,8 +543,7 @@
     </div>
     <div class="hud">
       <span class="chip"><span class="chip-dot"></span>Score <strong id="hud-score">0</strong></span>
-      <span class="chip bad"><span class="chip-dot"></span>Lives <strong id="hud-lives">3</strong></span>
-      <span class="chip good"><span class="chip-dot"></span>Saves left <strong id="hud-saves">2</strong></span>
+      <span class="chip good"><span class="chip-dot"></span>Revives left <strong id="hud-saves">2</strong></span>
     </div>
     <div class="canvas-wrap" id="canvasWrap">
       <canvas id="cv"></canvas>
@@ -558,7 +557,7 @@
       <div class="overlay" id="overlayStart">
         <div class="overlay-card">
           <h2>Ready to fly?</h2>
-          <p>Flap with <strong>Space</strong> or <strong>tap</strong>. Steer the Catalyst between the pipes — the <strong>gold pipe</strong> asks one question for a power-up. If you crash, answer one of the remaining questions correctly to <strong>save yourself</strong> and keep flying.</p>
+          <p>Flap with <strong>Space</strong> or <strong>tap</strong>. The <strong>gold pipe</strong> asks a question for a power-up. If you crash, answer a question correctly to <strong>revive</strong> (up to 2 times). Wrong answer = game over.</p>
           <div class="keys">
             <span><kbd>Space</kbd> Flap / Start</span>
             <span><kbd>&uarr;</kbd> Flap</span>
@@ -583,7 +582,7 @@
           <p id="endBlurb">Tap retry to try again.</p>
           <div class="stat-grid">
             <div class="stat"><div class="stat-num" id="endScore">0</div><div class="stat-lbl">Pipes passed</div></div>
-            <div class="stat"><div class="stat-num" id="endCorrect">0/3</div><div class="stat-lbl">Correct</div></div>
+            <div class="stat"><div class="stat-num" id="endBest">0</div><div class="stat-lbl">Your best</div></div>
             <div class="stat"><div class="stat-num" id="endRank">—</div><div class="stat-lbl">Rank</div></div>
           </div>
           <div class="btn-row">
@@ -630,8 +629,37 @@ const GAME_DATA = /*__GAME_DATA__*/{
   questions: [],
   characterUrl: "/flappybird.png"
 };
-const QUESTIONS = Array.isArray(GAME_DATA.questions) ? GAME_DATA.questions : [];
-const TOTAL_Q = QUESTIONS.length;
+// Per-article highscore stored in localStorage with a 48-hour expiry.
+// Key is scoped to the article ID so scores don't bleed across games.
+const HS_KEY = 'catalyst_hs_flappy_' + (GAME_DATA.articleId || 'default');
+const HS_TTL = 48 * 60 * 60 * 1000;
+function loadHighscore() {
+  try {
+    const raw = localStorage.getItem(HS_KEY);
+    if (!raw) return 0;
+    const { v, ts } = JSON.parse(raw);
+    if (Date.now() - ts > HS_TTL) { localStorage.removeItem(HS_KEY); return 0; }
+    return typeof v === 'number' ? v : 0;
+  } catch { return 0; }
+}
+function saveHighscore(v) {
+  try { localStorage.setItem(HS_KEY, JSON.stringify({ v, ts: Date.now() })); } catch {}
+}
+let highscore = loadHighscore();
+const QUESTION_POOL = Array.isArray(GAME_DATA.questions) ? GAME_DATA.questions : [];
+const RUN_SIZE = 3;
+let QUESTIONS = [];
+let TOTAL_Q = RUN_SIZE;
+
+function pickRunQuestions() {
+  const pool = QUESTION_POOL.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  QUESTIONS = pool.slice(0, Math.min(RUN_SIZE, pool.length));
+  TOTAL_Q = QUESTIONS.length;
+}
 
 // ---- DOM refs --------------------------------------------------------------
 const cv = document.getElementById("cv");
@@ -642,7 +670,6 @@ const overlayEnd = document.getElementById("overlayEnd");
 const btnStart = document.getElementById("btnStart");
 const btnRetry = document.getElementById("btnRetry");
 const hudScore = document.getElementById("hud-score");
-const hudLives = document.getElementById("hud-lives");
 const hudSaves = document.getElementById("hud-saves");
 const qmodal = document.getElementById("qmodal");
 const qBadge = document.getElementById("qBadge");
@@ -735,12 +762,11 @@ const GRAVITY = 0.42;
 const FLAP_VY = -7.2;
 const MAX_VY = 9.5;
 const PIPE_SPEED_BASE = 1.7;       // logical px/step (start gentle)
-// Gaps now ramp from EASY → BASE as the player scores. The first few
-// pipes are noticeably wider so a new player can find the rhythm; by
-// score 12 the gap is back to the classic Flappy width.
-const PIPE_GAP_EASY = 180;          // starting gap — generous, very forgiving
-const PIPE_GAP_BASE = 130;          // late-game gap — classic flappy tightness
-const PIPE_GAP_RAMP_END = 12;       // pipes scored before gap is fully tight
+// Gaps ramp from EASY → BASE over the first PIPE_GAP_RAMP_END pipes.
+// After pipe #6 the tightening accelerates noticeably.
+const PIPE_GAP_EASY = 180;          // starting gap — generous
+const PIPE_GAP_BASE = 118;          // late-game gap — tighter than before
+const PIPE_GAP_RAMP_END = 8;        // fully tight by pipe 8 (was 12)
 const PIPE_W = 56;
 // Slightly wider spacing too so early pipes give more reaction time.
 const PIPE_INTERVAL = 200;
@@ -751,8 +777,12 @@ const FLOOR_H = 36;
 // gap baked in, so scoring 1-2 always sees the easy width even if the
 // player later coasts to score 20.
 function currentSpawnGap() {
+  // Linear ramp for first PIPE_GAP_RAMP_END pipes; after that stays at BASE.
   const t = clamp(score / PIPE_GAP_RAMP_END, 0, 1);
-  return Math.round(PIPE_GAP_EASY + (PIPE_GAP_BASE - PIPE_GAP_EASY) * t);
+  // Apply an ease-in so the last few pipes of the ramp feel notably tighter
+  // — matches the "gets harder after pipe 6" feel.
+  const ease = t * t;
+  return Math.round(PIPE_GAP_EASY + (PIPE_GAP_BASE - PIPE_GAP_EASY) * ease);
 }
 
 const STATE = { IDLE: 0, PLAYING: 1, PAUSED_Q: 2, OVER: 3, COUNTDOWN: 4 };
@@ -765,9 +795,8 @@ let particles = [];
 let scrollX = 0;            // total world distance scrolled (for rank)
 let nextPipeAt = 0;
 let score = 0;              // pipes passed
-let lives = 3;
 let correctCount = 0;
-let questionsAnswered = 0;
+let questionsShownThisRun = 0;
 let goldSpawned = false;
 let pendingShield = false;
 let invuln = 0;
@@ -810,15 +839,12 @@ function spawnPipe(x, opts = {}) {
 
 function startGame() {
   fitCanvas();
-  // Reset all gameplay state but stay in COUNTDOWN until the pre-roll
-  // finishes — the bird hovers in place, no gravity, no scrolling, so the
-  // player has a couple of beats to focus before pipes start moving.
+  pickRunQuestions();
   pipes = [];
   particles = [];
   score = 0;
-  lives = 3;
   correctCount = 0;
-  questionsAnswered = 0;
+  questionsShownThisRun = 0;
   goldSpawned = false;
   pendingShield = false;
   invuln = 0;
@@ -887,30 +913,27 @@ function startCountdown() {
 
 function endGame() {
   state = STATE.OVER;
-  // Release the touch lock so the reader can scroll the article past
-  // the end-of-game card normally.
   setPlayingTouchLock(false);
+  if (score > highscore) { highscore = score; saveHighscore(highscore); }
   document.getElementById("endTitle").textContent = "Crash!";
   document.getElementById("endBlurb").textContent =
     score > 0
-      ? "Nice run. Try again to beat your score — and remember, a wrong rescue answer ends the run."
-      : "Flap with Space or tap. Pass pipes to score, and answer the rescue question to keep flying after a crash.";
+      ? "Nice run! Try again to beat your best — a wrong revive answer ends the run."
+      : "Flap with Space or tap. Pass pipes to score. Crash and answer a question correctly to revive.";
   document.getElementById("endScore").textContent = score;
-  document.getElementById("endCorrect").textContent = correctCount + "/" + TOTAL_Q;
   let rank = "Cadet";
   if (score >= 30) rank = "Catalyst";
   else if (score >= 18) rank = "Reporter";
   else if (score >= 8) rank = "Intern";
   document.getElementById("endRank").textContent = rank;
+  const bestEl = document.getElementById("endBest");
+  if (bestEl) bestEl.textContent = highscore;
   overlayEnd.hidden = false;
 }
 
 function updateHud() {
   hudScore.textContent = score;
-  hudLives.textContent = lives;
-  const correctlyAnswered = answeredCorrectly.size;
-  const remainingPool = Math.max(0, TOTAL_Q - correctlyAnswered);
-  const saves = Math.max(0, Math.min(MAX_RESCUES - rescuesUsed, remainingPool));
+  const saves = Math.max(0, MAX_RESCUES - rescuesUsed);
   if (hudSaves) hudSaves.textContent = saves;
 }
 
@@ -929,12 +952,12 @@ function pickAvailableQuestion() {
 
 function tryRescue(reason) {
   if (rescuesUsed >= MAX_RESCUES) {
-    if (lives <= 0) endGame();
+    endGame();
     return false;
   }
   const idx = pickAvailableQuestion();
   if (idx < 0) {
-    if (lives <= 0) endGame();
+    endGame();
     return false;
   }
   rescueMode = true;
@@ -953,10 +976,11 @@ function presentQuestion(idx, modalOpts = {}) {
   const q = QUESTIONS[idx];
   const qHint = document.getElementById("qHint");
   if (modalOpts.rescue) {
-    qBadge.textContent = "Rescue " + (rescuesUsed + 1) + " / " + MAX_RESCUES;
-    if (qHint) qHint.textContent = modalOpts.reason || "Answer to save yourself";
+    qBadge.textContent = "Revive " + (rescuesUsed + 1) + " / " + MAX_RESCUES;
+    if (qHint) qHint.textContent = modalOpts.reason || "Answer correctly to survive";
   } else {
-    qBadge.textContent = "Gold pipe";
+    questionsShownThisRun++;
+    qBadge.textContent = "Question " + questionsShownThisRun + " / " + TOTAL_Q;
     if (qHint) qHint.textContent = "Pick the correct answer";
   }
   qPrompt.textContent = q.prompt || q.q || "Question";
@@ -989,12 +1013,12 @@ function answerQuestion(picked, btn) {
   const buttons = qOpts.querySelectorAll(".qopt");
   buttons.forEach(b => { b.disabled = true; });
 
+  // REVIVE branch.
   if (rescueMode) {
     if (isCorrect) {
       btn.classList.add("correct");
-      qFeedback.textContent = "Saved! +1 life — back into the air.";
+      qFeedback.textContent = "Revived! Back in the air.";
       qFeedback.className = "qfeedback good";
-      lives = Math.min(3, lives + 1);
       rescuesUsed++;
       answeredCorrectly.add(currentQIndex);
       updateHud();
@@ -1027,7 +1051,6 @@ function answerQuestion(picked, btn) {
     qFeedback.textContent = q.feedbackCorrect || "Correct! Shield activated.";
     qFeedback.className = "qfeedback good";
     correctCount++;
-    questionsAnswered++;
     answeredCorrectly.add(currentQIndex);
     pendingShield = true;
     invuln = 90;
@@ -1036,7 +1059,6 @@ function answerQuestion(picked, btn) {
     if (correctIdx >= 0 && buttons[correctIdx]) buttons[correctIdx].classList.add("correct");
     qFeedback.textContent = q.feedbackIncorrect || "Not quite — the next pipe is tighter!";
     qFeedback.className = "qfeedback bad";
-    questionsAnswered++;
     // Penalty: shrink the next pipe gap a little.
     const next = pipes.find(p => p.x > bird.x && !p.gold);
     if (next) next.gap = Math.max(95, PIPE_GAP_BASE - 25);
@@ -1090,11 +1112,13 @@ function loop(t) {
 }
 
 function pipeSpeed() {
-  // Gentle ramp: starts slow, grows ~0.03 logical px per pipe, capped at
-  // a comfortable late-game speed. Combined with the gap ramp, the first
-  // ~5 pipes feel deliberately friendly so a new player can learn the
-  // flap rhythm before the game tightens.
-  return PIPE_SPEED_BASE + Math.min(2.0, score * 0.03);
+  // Gentle up to pipe 6; then sharper ramp to reward good players with
+  // a real challenge. Capped at a tough-but-playable ceiling.
+  if (score <= 6) {
+    return PIPE_SPEED_BASE + score * 0.04;
+  }
+  const extra = 6 * 0.04 + (score - 6) * 0.09;
+  return PIPE_SPEED_BASE + Math.min(2.8, extra);
 }
 
 function step() {
@@ -1207,21 +1231,11 @@ function step() {
 }
 
 function loseLife(reason) {
-  lives--;
   invuln = 80;
-  updateHud();
-  // Always offer a rescue (until MAX_RESCUES is hit). If we can't / shouldn't
-  // prompt and lives are gone, end the run.
-  if (rescuesUsed < MAX_RESCUES) {
-    const offered = tryRescue(reason);
-    if (offered) return;
-  }
-  if (lives <= 0) {
-    endGame();
-  } else {
-    // No rescue available but still have lives — respawn in place.
-    respawnBird();
-  }
+  // Crash → offer a revive question. If no revives remain, game over.
+  const offered = tryRescue(reason);
+  if (offered) return;
+  // tryRescue calls endGame when no revives remain.
 }
 
 // ---- Rendering -------------------------------------------------------------
@@ -1233,13 +1247,22 @@ function draw() {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
 
-  // Distant clouds (parallax)
-  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+  // Distant clouds — each one fades in/out smoothly as it crosses the
+  // screen edges so they never hard-pop into or out of existence.
   for (let i = 0; i < 5; i++) {
+    const r = 38 + (i % 3) * 6;
     const baseX = (i * 140 - cloudOffset) % (W + 120);
     const x = baseX < -120 ? baseX + W + 120 : baseX;
     const y = 40 + (i * 23) % 110;
-    drawCloud(x, y, 38 + (i % 3) * 6);
+    // Fade zone: cloud alpha ramps 0→1 over the first 'fade' pixels on
+    // the left edge and 1→0 over the last 'fade' pixels on the right.
+    const fade = r * 2.2;
+    const leftAlpha  = clamp(x / fade, 0, 1);
+    const rightAlpha = clamp((W - x) / fade, 0, 1);
+    const alpha = Math.min(leftAlpha, rightAlpha) * 0.85;
+    if (alpha <= 0) continue;
+    ctx.fillStyle = "rgba(255, 255, 255, " + alpha.toFixed(3) + ")";
+    drawCloud(x, y, r);
   }
 
   // Pipes
@@ -1275,6 +1298,12 @@ function draw() {
   if (bird) {
     drawBird();
   }
+
+  // Retro score overlay — drawn last so it's always on top.
+  // Only show while actively playing (not on countdown/overlays).
+  if (state === STATE.PLAYING || state === STATE.COUNTDOWN || state === STATE.PAUSED_Q) {
+    drawRetroScore();
+  }
 }
 
 function drawCloud(x, y, r) {
@@ -1283,6 +1312,43 @@ function drawCloud(x, y, r) {
   ctx.arc(x + r * 0.7, y + 4, r * 0.8, 0, Math.PI * 2);
   ctx.arc(x - r * 0.7, y + 4, r * 0.8, 0, Math.PI * 2);
   ctx.fill();
+}
+
+// Pixel-retro score numbers drawn directly on the canvas in the top-right
+// corner. Uses "Press Start 2P" if the canvas font API picks it up; falls
+// back to monospace. Rendered on top of everything so it's always legible.
+function drawRetroScore() {
+  const pad = 10;
+  const lineH = 18;
+  const scoreStr = String(score);
+  const bestStr  = "BEST " + String(highscore);
+
+  ctx.save();
+  ctx.font = "bold 13px 'Press Start 2P', 'Courier New', monospace";
+  ctx.textBaseline = "top";
+  ctx.textAlign = "right";
+
+  // Chunky pixel outline for readability over any background colour.
+  const outline = (text, x, y) => {
+    ctx.fillStyle = "#1f2024";
+    for (const [dx, dy] of [[-2,0],[2,0],[0,-2],[0,2],[-2,-2],[2,-2],[-2,2],[2,2]]) {
+      ctx.fillText(text, x + dx, y + dy);
+    }
+  };
+
+  // Score number — big and yellow, arcade-style
+  ctx.font = "bold 16px 'Press Start 2P', 'Courier New', monospace";
+  outline(scoreStr, W - pad, pad);
+  ctx.fillStyle = "#ffe24a";
+  ctx.fillText(scoreStr, W - pad, pad);
+
+  // Best — smaller, white
+  ctx.font = "bold 9px 'Press Start 2P', 'Courier New', monospace";
+  outline(bestStr, W - pad, pad + lineH + 4);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(bestStr, W - pad, pad + lineH + 4);
+
+  ctx.restore();
 }
 
 function drawPipe(p) {
