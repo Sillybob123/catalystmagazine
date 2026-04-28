@@ -801,7 +801,12 @@ let goldSpawned = false;
 let pendingShield = false;
 let invuln = 0;
 let frameTick = 0;
-let cloudOffset = 0;
+// Distant clouds drift from right to left at a gentle parallax pace. Each
+// cloud has its own spawn/despawn lifecycle: it appears fully off the right
+// edge, glides across, and is removed once it passes the left edge — so
+// nothing ever pops in or out of frame.
+let clouds = [];
+let nextCloudAt = 0;
 
 // ---- Question state --------------------------------------------------------
 let currentQIndex = -1;
@@ -854,7 +859,14 @@ function startGame() {
   currentQIndex = -1;
   frameTick = 0;
   scrollX = 0;
-  cloudOffset = 0;
+  // Seed the sky with a few clouds already partway across so the screen
+  // doesn't start empty. Each is placed at random x within the visible band
+  // (no fade lifecycle on initial spawn — they're already in flight).
+  clouds = [];
+  for (let i = 0; i < 3; i++) {
+    clouds.push(makeCloud({ x: rand(20, W - 60), seeded: true }));
+  }
+  nextCloudAt = frameTick + Math.floor(rand(120, 220));
   bird = { x: W * 0.32, y: H * 0.45, vy: 0, rot: 0 };
   // Seed a few pipes ahead of the bird.
   let x = W + 80;
@@ -1133,7 +1145,7 @@ function step() {
   // Scroll pipes
   const speed = pipeSpeed();
   scrollX += speed;
-  cloudOffset = (cloudOffset + speed * 0.2) % 200;
+  updateClouds();
 
   for (let i = pipes.length - 1; i >= 0; i--) {
     const p = pipes[i];
@@ -1254,22 +1266,11 @@ function draw() {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
 
-  // Distant clouds — each one fades in/out smoothly as it crosses the
-  // screen edges so they never hard-pop into or out of existence.
-  for (let i = 0; i < 5; i++) {
-    const r = 38 + (i % 3) * 6;
-    const baseX = (i * 140 - cloudOffset) % (W + 120);
-    const x = baseX < -120 ? baseX + W + 120 : baseX;
-    const y = 40 + (i * 23) % 110;
-    // Fade zone: cloud alpha ramps 0→1 over the first 'fade' pixels on
-    // the left edge and 1→0 over the last 'fade' pixels on the right.
-    const fade = r * 2.2;
-    const leftAlpha  = clamp(x / fade, 0, 1);
-    const rightAlpha = clamp((W - x) / fade, 0, 1);
-    const alpha = Math.min(leftAlpha, rightAlpha) * 0.85;
-    if (alpha <= 0) continue;
-    ctx.fillStyle = "rgba(255, 255, 255, " + alpha.toFixed(3) + ")";
-    drawCloud(x, y, r);
+  // Distant clouds — drawn at their tracked positions. Spawn/despawn
+  // happens entirely off-screen, so they only ever appear to glide across.
+  for (const c of clouds) {
+    ctx.fillStyle = "rgba(255, 255, 255, " + (c.alpha * 0.85).toFixed(3) + ")";
+    drawCloud(c.x, c.y, c.r);
   }
 
   // Pipes
@@ -1319,6 +1320,42 @@ function drawCloud(x, y, r) {
   ctx.arc(x + r * 0.7, y + 4, r * 0.8, 0, Math.PI * 2);
   ctx.arc(x - r * 0.7, y + 4, r * 0.8, 0, Math.PI * 2);
   ctx.fill();
+}
+
+// Cloud lifecycle ----------------------------------------------------------
+// Each cloud is its own object: it spawns fully off the right edge, drifts
+// leftward at a calm parallax pace, and despawns once fully past the left
+// edge. Alpha holds steady at 1 during the visible phase, only fading at the
+// extreme edges so a brand-new cloud doesn't "pop" into view. Compared to
+// the old single-offset wrap approach, this guarantees no cloud is ever
+// teleported across the visible area mid-flight.
+const CLOUD_SPEED = 0.28;       // logical px/step — gentle parallax drift
+const CLOUD_FADE_MARGIN = 24;   // pixels of soft fade at each edge
+function makeCloud(opts = {}) {
+  const r = 38 + Math.floor(rand(0, 3)) * 6;
+  // Tight vertical band near the top — keeps clouds out of pipe territory.
+  const y = rand(28, 130);
+  const x = opts.seeded ? opts.x : (W + r + 30);
+  return { x, y, r, alpha: opts.seeded ? 1 : 0 };
+}
+function updateClouds() {
+  // Drift each cloud left, recompute alpha from its on-screen position,
+  // and despawn any that have fully cleared the left edge.
+  for (let i = clouds.length - 1; i >= 0; i--) {
+    const c = clouds[i];
+    c.x -= CLOUD_SPEED;
+    // Soft alpha at the very edges so the first/last few pixels of travel
+    // ease in/out instead of cutting on a hard line.
+    const enter = clamp((W + c.r - c.x) / CLOUD_FADE_MARGIN, 0, 1);
+    const exit  = clamp((c.x + c.r) / CLOUD_FADE_MARGIN, 0, 1);
+    c.alpha = Math.min(enter, exit, 1);
+    if (c.x + c.r < -2) clouds.splice(i, 1);
+  }
+  // Spawn a new cloud on a calm cadence — 2-4 seconds between arrivals.
+  if (frameTick >= nextCloudAt && clouds.length < 5) {
+    clouds.push(makeCloud());
+    nextCloudAt = frameTick + Math.floor(rand(140, 240));
+  }
 }
 
 // Pixel-retro score numbers drawn directly on the canvas in the top-right
