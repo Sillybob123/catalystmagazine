@@ -1946,20 +1946,23 @@ window.addEventListener("resize", () => {
 // the page; ArrowUp / ArrowDown / PageUp / PageDown / Space scroll normally.
 
 // ---- Report iframe content height to parent --------------------------------
-// The parent sizes our iframe to whatever height we postMessage. We must
-// measure the height of OUR CONTENT (the .stage element) only — not
-// document.body.scrollHeight, which expands to whatever the iframe is
-// currently sized to and creates a runaway feedback loop with the host.
+// The wrapping page sizes the <iframe> via min-height; we measure the actual
+// rendered height of the .stage and post it to the parent so nothing is
+// clipped (the question modal, end-card, and credit line all get full room).
+// Dedupe near-identical reports so a tiny sub-pixel change in the body
+// (which the host's iframe resize feeds back into our ResizeObserver) does
+// not start a runaway growth loop.
 let lastReportedHeight = 0;
 function reportHeight() {
   const stage = document.querySelector(".stage");
-  if (!stage) return;
-  // offsetHeight reflects only the rendered .stage box (frame + credit
-  // line + its own padding). Adding 4px to dodge sub-pixel rounding.
-  const h = Math.ceil(stage.getBoundingClientRect().bottom) + 4;
-  // Skip if effectively unchanged — avoids spamming the parent and
-  // shorts the ResizeObserver feedback loop entirely.
-  if (Math.abs(h - lastReportedHeight) < 2) return;
+  const stageBottom = stage ? stage.getBoundingClientRect().bottom : 0;
+  const docHeight = Math.max(
+    document.documentElement.scrollHeight,
+    document.body.scrollHeight,
+    Math.ceil(stageBottom)
+  );
+  const h = docHeight + 4;
+  if (Math.abs(h - lastReportedHeight) < 4) return;
   lastReportedHeight = h;
   try {
     window.parent?.postMessage({ type: "doodle:height", height: h }, "*");

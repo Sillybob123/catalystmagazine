@@ -1551,16 +1551,19 @@ window.addEventListener("resize", () => {
 });
 
 // ---- Report iframe content height to parent --------------------------------
-// Measure ONLY the .stage element, not document.body.scrollHeight: the
-// body's height tracks the iframe size we postMessaged, so reading it
-// here creates a runaway feedback loop with the host. See the doodle
-// template for the same fix.
+// Dedupe near-identical reports so the host's iframe resize doesn't feed
+// back through our ResizeObserver into a runaway growth loop.
 let lastReportedHeight = 0;
 function reportHeight() {
   const stage = document.querySelector(".stage");
-  if (!stage) return;
-  const h = Math.ceil(stage.getBoundingClientRect().bottom) + 4;
-  if (Math.abs(h - lastReportedHeight) < 2) return;
+  const stageBottom = stage ? stage.getBoundingClientRect().bottom : 0;
+  const docHeight = Math.max(
+    document.documentElement.scrollHeight,
+    document.body.scrollHeight,
+    Math.ceil(stageBottom)
+  );
+  const h = docHeight + 4;
+  if (Math.abs(h - lastReportedHeight) < 4) return;
   lastReportedHeight = h;
   try {
     window.parent?.postMessage({ type: "doodle:height", height: h }, "*");

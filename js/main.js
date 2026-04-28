@@ -1379,7 +1379,7 @@ function loadDoodleTemplate() {
         // Cache-bust by date so a deploy immediately invalidates the
         // previously-cached template; otherwise force-cache + the static URL
         // can hold a stale copy in the reader's browser indefinitely.
-        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260428g');
+        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260428h');
         doodleTemplatePromise = fetch('/posts/games/_doodle_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('doodle template ' + res.status);
@@ -1449,7 +1449,7 @@ async function mountFlappyGame(container, article) {
 let flappyTemplatePromise = null;
 function loadFlappyTemplate() {
     if (!flappyTemplatePromise) {
-        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260428e');
+        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260428f');
         flappyTemplatePromise = fetch('/posts/games/_flappy_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('flappy template ' + res.status);
