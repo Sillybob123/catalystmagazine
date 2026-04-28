@@ -142,8 +142,8 @@
        a px cap (not vh) so the wrap can't collapse if the iframe ever
        reports a smaller height back to itself — the wrap sizes purely
        from its own width, independent of viewport/iframe height. */
-    aspect-ratio: 4 / 4.5;
-    max-height: 540px;
+    aspect-ratio: 4 / 4.7;
+    max-height: 580px;
     margin: 0 auto;
     border-radius: 18px;
     overflow: hidden;
@@ -438,7 +438,7 @@
   @media (max-width: 540px) {
     .stage { padding: 10px; }
     .frame { padding: 12px; border-radius: 16px; }
-    .canvas-wrap { aspect-ratio: 4 / 5.4; max-height: 600px; box-shadow: 3px 3px 0 var(--ink); }
+    .canvas-wrap { aspect-ratio: 4 / 5.6; max-height: 640px; box-shadow: 3px 3px 0 var(--ink); }
     .header { flex-direction: column; gap: 4px; }
     .hud { gap: 6px; font-size: 11px; }
     .chip { padding: 4px 8px; gap: 5px; }
@@ -487,7 +487,7 @@
       <div class="overlay" id="overlayStart">
         <div class="overlay-card">
           <h2>Ready to climb?</h2>
-          <p>Bounce ever upward. The <strong>gold platform</strong> asks a question — get it right for a power-up. Press <strong>Space</strong> to shoot monsters. Die and answer a question correctly to <strong>revive</strong> (up to 2 times). Wrong answer or no revives left = game over.</p>
+          <p>Bounce ever upward — the screen <strong>rises</strong>, so don't stop climbing. The <strong>gold platform</strong> asks a question for a power-up. Press <strong>Space</strong> to shoot monsters. Die and answer correctly to <strong>revive</strong> (up to 2 times).</p>
           <div class="keys">
             <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> Move</span>
             <span><kbd>Space</kbd> Shoot / Start</span>
@@ -725,6 +725,34 @@ function heightSpeedMult() {
   return 1.0 + Math.min(0.35, (height - 350) / 150 * 0.35);
 }
 
+// Icy-Tower-style auto-scroll: after a brief grace period, the screen
+// starts rising on its own (camera moves up = world appears to slide
+// down). If the player can't keep up and falls below the bottom edge,
+// the existing fall-off check ends the run — so this naturally turns
+// idle-camping into a death sentence.
+//
+// Activation rules:
+//   - Holds at 0 for the first SCROLL_START_HEIGHT metres (gentle on-ramp)
+//   - From there, ramps up over time AND with height in stages so the
+//     game gets meaningfully harder the longer / higher you climb.
+const SCROLL_START_HEIGHT = 8;        // wait until ~8 m before any push
+const SCROLL_BASE = 0.35;             // initial logical px / step once active
+const SCROLL_STAGE_INTERVAL_S = 25;   // every 25 s of play, bump speed
+const SCROLL_STAGE_BUMP = 0.18;       // px / step added per stage
+const SCROLL_HEIGHT_BUMP_PER_50M = 0.25; // additional bump per 50 m climbed
+const SCROLL_MAX = 2.6;               // cap so it never becomes impossible
+let runStartedAt = 0;                 // performance.now() when start finished
+function autoScrollSpeed() {
+  if (height < SCROLL_START_HEIGHT) return 0;
+  const elapsedSec = (performance.now() - runStartedAt) / 1000;
+  const stages = Math.floor(elapsedSec / SCROLL_STAGE_INTERVAL_S);
+  const heightStages = Math.floor(height / 50);
+  const speed = SCROLL_BASE
+    + stages * SCROLL_STAGE_BUMP
+    + heightStages * SCROLL_HEIGHT_BUMP_PER_50M;
+  return Math.min(SCROLL_MAX, speed);
+}
+
 const PLATFORM_W = 62;
 const PLATFORM_H = 12;
 // Player sprite is a 1:1 square to match the source PNG (doodlecharacter.png
@@ -868,6 +896,7 @@ function startGame() {
   bulletCooldown = 0;
   lastFrameTs = 0;
   stepAccumulator = 0;
+  runStartedAt = performance.now();
   p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1, cartwheelTicks: 0, cartwheelDir: 0, cartwheelArmed: true };
   seedWorld();
   overlayStart.hidden = true;
@@ -1291,6 +1320,25 @@ function step() {
     cameraY = newCamY;
     p.y += dy + camDelta;
     // Update height (metres climbed; 1m ~= 30 px).
+    const climbed = -cameraY / 18;
+    if (climbed > height) {
+      height = climbed;
+      updateHud();
+    }
+  }
+
+  // Icy-Tower auto-scroll: once the run has been going for a moment,
+  // start pushing the camera up regardless of where the player is. The
+  // existing fall-off check (p.y > cameraY + H + 40) becomes the death
+  // condition if the player can't keep climbing fast enough. We only
+  // push UPWARD past highestCameraY — never below — so a successful
+  // climb isn't undone by the auto-scroll on the way up.
+  const scroll = autoScrollSpeed();
+  if (scroll > 0) {
+    cameraY -= scroll;
+    // Keep height in sync if the auto-scroll dragged us higher than the
+    // player's actual peak — the run reads as "you climbed this far"
+    // even if the screen rose to meet you.
     const climbed = -cameraY / 18;
     if (climbed > height) {
       height = climbed;
