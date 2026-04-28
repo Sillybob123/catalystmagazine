@@ -6,7 +6,7 @@
 <title>__GAME_TITLE__</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Bungee&family=Bungee+Shade&display=swap" rel="stylesheet">
 <style>
   :root {
     --paper:        #fbfaf3;
@@ -899,6 +899,7 @@ function startGame() {
   runStartedAt = performance.now();
   frameTick = 0;
   announcements.length = 0;
+  screenConfetti.length = 0;
   cartwheelChain = 0;
   lastCartwheelAt = -9999;
   lastDangerAnnounceAt = -9999;
@@ -1138,17 +1139,58 @@ function respawnPlayer() {
 // player pulls off something cool (cartwheel, clutch revive, close-call
 // save, monster stomp, long airtime). Each entry has its own colour + life
 // so a fast string of stunts stacks vertically without overwriting itself.
-const announcements = []; // [{ text, color, life, maxLife, scale }]
+// Each announcement is a "trickshot banner" with per-letter rainbow,
+// per-letter rotation jitter, a chunky janky font, and a screen-space
+// confetti burst on spawn so it really pops. `color` is kept around as
+// a hint but the banner ignores it — the rainbow palette below wins.
+const announcements = []; // [{ text, life, maxLife, jitter[], spawnTick }]
+const RAINBOW = [
+  "#ff4d6d", "#ff9f43", "#ffd23f", "#06d6a0",
+  "#118ab2", "#7b2cbf", "#ff85a1", "#06b6d4"
+];
 function announce(text, opts = {}) {
+  // Pre-compute a fixed rotation jitter per letter so the banner doesn't
+  // wiggle every frame — each letter has its own consistent tilt.
+  const jitter = [];
+  for (let i = 0; i < text.length; i++) {
+    jitter.push((Math.random() - 0.5) * 0.28); // ±~16°
+  }
   announcements.push({
     text,
-    color: opts.color || "#ffd23f",
-    life: opts.life || 60,         // ~1 s at 60fps
+    life: opts.life || 60,
     maxLife: opts.life || 60,
-    scale: 1
+    jitter,
+    hueOffset: Math.floor(Math.random() * RAINBOW.length),
+    spawnTick: frameTick
   });
-  // Cap so we don't scroll a wall of text.
   if (announcements.length > 3) announcements.shift();
+  // Confetti burst at the banner's spawn position. These are screen-space
+  // particles so they sit on top of the world like the banner itself.
+  spawnBannerConfetti();
+}
+
+// Screen-space confetti for stunt banners — rendered separately from the
+// world-space particles list so they aren't affected by the camera.
+const screenConfetti = [];
+function spawnBannerConfetti() {
+  const cx = W / 2;
+  const cy = H * 0.18;
+  for (let k = 0; k < 22; k++) {
+    const angle = rand(-Math.PI, 0);                  // upper hemisphere
+    const speed = rand(2.4, 5.2);
+    screenConfetti.push({
+      x: cx + rand(-30, 30),
+      y: cy + rand(-8, 8),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 38 + Math.floor(rand(0, 18)),
+      maxLife: 50,
+      color: RAINBOW[Math.floor(Math.random() * RAINBOW.length)],
+      spin: rand(-0.45, 0.45),
+      rot: rand(0, Math.PI * 2),
+      size: 3 + Math.floor(rand(0, 4))
+    });
+  }
 }
 
 // Track recent cartwheels so a chain of two within ~90 frames upgrades from
@@ -1320,6 +1362,17 @@ function step() {
   for (let i = announcements.length - 1; i >= 0; i--) {
     announcements[i].life--;
     if (announcements[i].life <= 0) announcements.splice(i, 1);
+  }
+  // Tick the screen-space confetti for the banner.
+  for (let i = screenConfetti.length - 1; i >= 0; i--) {
+    const c = screenConfetti[i];
+    c.x += c.vx;
+    c.y += c.vy;
+    c.vy += 0.22;          // gravity
+    c.vx *= 0.985;         // air drag
+    c.rot += c.spin;
+    c.life--;
+    if (c.life <= 0 || c.y > H + 20) screenConfetti.splice(i, 1);
   }
   // Horizontal input
   if (keys.left) p.vx -= MOVE_ACCEL;
@@ -1964,7 +2017,14 @@ function draw() {
   drawAnnouncements();
 }
 
+// Rainbow per-letter banner in a chunky janky display font. Each letter
+// is rotated by its own pre-computed jitter, sized with a snappy pop
+// curve, and drawn with a thick black outline so it reads on any biome.
+// Confetti rains down behind/around the banner using screen-space
+// particles so the whole thing feels celebratory.
 function drawAnnouncements() {
+  // Always draw confetti — it can outlive the banner that spawned it.
+  drawScreenConfetti();
   if (!announcements.length) return;
   ctx.save();
   ctx.textAlign = "center";
@@ -1972,23 +2032,81 @@ function drawAnnouncements() {
   for (let i = 0; i < announcements.length; i++) {
     const a = announcements[i];
     const t = a.life / a.maxLife;
-    // Pop-in scale: starts a bit larger, settles, then fades. We flatten
-    // this curve so the text doesn't visibly grow and shrink — it just
-    // appears confidently and fades out at the end.
-    const scale = t > 0.85 ? 0.6 + (1 - t) / 0.15 * 0.5
-                : t > 0.25 ? 1.1
-                : t / 0.25 * 1.1;
+    // Pop-in: snappy overshoot in the first 6 frames, hold, fade out.
+    let scale;
+    if (t > 0.92) {
+      // 0.6 → 1.25 over the first 8% of life
+      const k = (1 - t) / 0.08;
+      scale = 0.6 + k * 0.65;
+    } else if (t > 0.82) {
+      // 1.25 → 1.0 settle
+      const k = (0.92 - t) / 0.10;
+      scale = 1.25 - k * 0.25;
+    } else {
+      scale = 1.0;
+    }
     const alpha = t > 0.25 ? 1 : (t / 0.25);
-    const yBase = H * 0.18 + i * 36;
-    const fontSize = Math.round(28 * scale);
-    ctx.font = "800 " + fontSize + "px Poppins, system-ui, sans-serif";
-    // Chunky black outline so the banner reads on any biome background.
-    ctx.globalAlpha = alpha;
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = "rgba(31, 32, 36, 0.9)";
-    ctx.strokeText(a.text, W / 2, yBase);
-    ctx.fillStyle = a.color;
-    ctx.fillText(a.text, W / 2, yBase);
+    const yBase = H * 0.18 + i * 42;
+    const fontSize = Math.round(34 * scale);
+    // Bungee = chunky display font with the perfect 90s arcade feel.
+    // Falls back to system bold if the webfont hasn't loaded yet.
+    ctx.font = "400 " + fontSize + "px Bungee, 'Bungee Shade', Impact, sans-serif";
+    // Measure the whole string so we can lay each letter out around the
+    // center — measureText ignores rotation, so this stays stable.
+    const widths = [];
+    let total = 0;
+    for (let k = 0; k < a.text.length; k++) {
+      const w = ctx.measureText(a.text[k]).width;
+      widths.push(w);
+      total += w;
+    }
+    let cursorX = W / 2 - total / 2;
+    // Subtle bobbing wobble so the whole banner feels alive.
+    const wobble = Math.sin((frameTick - a.spawnTick) * 0.18) * 1.5;
+    for (let k = 0; k < a.text.length; k++) {
+      const ch = a.text[k];
+      const w = widths[k];
+      const cx = cursorX + w / 2;
+      const rot = a.jitter[k] || 0;
+      const color = RAINBOW[(a.hueOffset + k) % RAINBOW.length];
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(cx, yBase + wobble);
+      ctx.rotate(rot);
+      // Chunky outline (twice — wider then black inner) for arcade depth.
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = "rgba(31, 32, 36, 0.95)";
+      ctx.lineJoin = "round";
+      ctx.strokeText(ch, 0, 0);
+      // Drop shadow for a cartoon "sticker" feel.
+      ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+      ctx.fillText(ch, 2, 3);
+      // Rainbow letter fill.
+      ctx.fillStyle = color;
+      ctx.fillText(ch, 0, 0);
+      // Bright top highlight — cheap way to fake a glossy sticker.
+      ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+      ctx.fillText(ch, 0, -1);
+      ctx.restore();
+      cursorX += w;
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+function drawScreenConfetti() {
+  if (!screenConfetti.length) return;
+  ctx.save();
+  for (const c of screenConfetti) {
+    const a = Math.min(1, c.life / 18);
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rot);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = c.color;
+    ctx.fillRect(-c.size / 2, -c.size * 0.35, c.size, c.size * 0.7);
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
   ctx.restore();
