@@ -805,11 +805,9 @@ function spawnUpcoming() {
     else if (climbedAbs > 1200 && r < 0.08) type = "brown"; // breakable
     spawnPlatform(lastPlatformY, { type });
 
-    // Only ONE gold platform per run — the very first question. The other
-    // questions are reserved for the rescue prompt that fires when the
-    // player runs out of lives, so they act as extra-life lifelines instead
-    // of more gates on the climb.
-    if (!goldSpawned && questionsAnswered === 0 && height >= nextQuestionAt) {
+    // Only ONE gold platform per run — the rest of the run-questions are
+    // held in reserve for revive prompts on death.
+    if (!goldSpawned && height >= nextQuestionAt) {
       const p2 = platforms[platforms.length - 1];
       p2.type = "gold";
       p2.gold = true;
