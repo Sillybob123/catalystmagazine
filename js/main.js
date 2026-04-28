@@ -1379,7 +1379,7 @@ function loadDoodleTemplate() {
         // Cache-bust by date so a deploy immediately invalidates the
         // previously-cached template; otherwise force-cache + the static URL
         // can hold a stale copy in the reader's browser indefinitely.
-        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260428c');
+        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260428d');
         doodleTemplatePromise = fetch('/posts/games/_doodle_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('doodle template ' + res.status);

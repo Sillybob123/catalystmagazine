@@ -702,6 +702,15 @@ const JET_VY = -22;
 const MOVE_ACCEL = 0.55;
 const MAX_VX = 6.2;
 const FRICTION = 0.9;
+// Icy-Tower-style wall cartwheel — when the player slams a wall with enough
+// horizontal speed, they spin off it and rocket upward higher than a normal
+// jump. Threshold guards against accidental low-speed taps; CARTWHEEL_VY is
+// the vertical impulse (deeper than SPRING_VY so it noticeably out-jumps a
+// trampoline); and CARTWHEEL_DURATION drives the spin animation length.
+const CARTWHEEL_TRIGGER_VX = 4.0;     // |vx| needed at impact to qualify
+const CARTWHEEL_VY = -18.5;            // big upward boost
+const CARTWHEEL_DURATION = 22;         // frames the visual spin lasts
+const CARTWHEEL_KICKBACK = 5.5;        // horizontal speed away from wall after
 
 // Smooth speed multiplier — ramps up after 350 m to make everything faster
 // and more frantic. Applied to gravity, jump velocity, and monster speed.
@@ -854,7 +863,7 @@ function startGame() {
   bulletCooldown = 0;
   lastFrameTs = 0;
   stepAccumulator = 0;
-  p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1 };
+  p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1, cartwheelTicks: 0, cartwheelDir: 0 };
   seedWorld();
   overlayStart.hidden = true;
   overlayEnd.hidden = true;
@@ -863,26 +872,38 @@ function startGame() {
 }
 
 function endGame(win) {
+  // Idempotent — multiple call sites can race to invoke this (a fall + a
+  // monster collision in the same step, etc.). Bail if we've already ended.
+  if (state === STATE.OVER) return;
   state = STATE.OVER;
-  const h = Math.round(height);
-  if (h > highscore) { highscore = h; saveHighscore(highscore); }
-  document.getElementById("endTitle").textContent = "Down you go!";
-  document.getElementById("endBlurb").textContent =
-    correctCount > 0
-      ? "Nice climb! Try again to beat your height — wrong revive answers end the run."
-      : "Bounce ever upward. The gold platform gives you a power-up, and revive prompts keep you alive when you die.";
-  document.getElementById("endHeight").textContent = h + " m";
-  // Show how many of the questions actually presented this run were correct.
-  const shownCount = questionsShownThisRun || TOTAL_Q;
-  document.getElementById("endCorrect").textContent = correctCount + "/" + shownCount;
-  let rank = "Cadet";
-  if (height >= 120) rank = "Catalyst";
-  else if (height >= 70) rank = "Reporter";
-  else if (height >= 30) rank = "Intern";
-  document.getElementById("endRank").textContent = rank;
-  const bestEl = document.getElementById("endBest");
-  if (bestEl) bestEl.textContent = highscore + " m";
-  overlayEnd.hidden = false;
+  // Wrap stat population in try/catch so a thrown error here can't leave
+  // the player staring at a frozen canvas with no end-screen. Worst case,
+  // the overlay still shows even if a stat couldn't render.
+  try {
+    const h = Math.round(height);
+    if (h > highscore) { highscore = h; saveHighscore(highscore); }
+    document.getElementById("endTitle").textContent = "Down you go!";
+    document.getElementById("endBlurb").textContent =
+      correctCount > 0
+        ? "Nice climb! Try again to beat your height — wrong revive answers end the run."
+        : "Bounce ever upward. The gold platform gives you a power-up, and revive prompts keep you alive when you die.";
+    document.getElementById("endHeight").textContent = h + " m";
+    const shownCount = questionsShownThisRun || TOTAL_Q;
+    document.getElementById("endCorrect").textContent = correctCount + "/" + shownCount;
+    let rank = "Cadet";
+    if (height >= 120) rank = "Catalyst";
+    else if (height >= 70) rank = "Reporter";
+    else if (height >= 30) rank = "Intern";
+    document.getElementById("endRank").textContent = rank;
+    const bestEl = document.getElementById("endBest");
+    if (bestEl) bestEl.textContent = highscore + " m";
+  } catch (err) {
+    console.error("[doodle] endGame stat render failed:", err);
+  }
+  // Always reveal the overlay — even if a stat threw above.
+  if (overlayEnd) overlayEnd.hidden = false;
+  // Make sure the qmodal isn't sitting on top hiding the end screen.
+  if (qmodal) qmodal.classList.remove("visible");
 }
 
 function updateHud() {
@@ -1066,6 +1087,38 @@ function respawnPlayer() {
   monsters = [];
 }
 
+// Wall cartwheel — huge upward boost when slamming a wall at speed, plus a
+// confetti burst and a spin animation. `dir` is +1 for left wall (bouncing
+// rightward) and -1 for right wall (bouncing leftward). `cx` / `cy` are the
+// world-space contact point used as the confetti origin.
+function triggerCartwheel(dir, cx, cy) {
+  p.vx = dir * CARTWHEEL_KICKBACK;
+  p.vy = CARTWHEEL_VY;
+  p.facing = dir;
+  p.cartwheelTicks = CARTWHEEL_DURATION;
+  p.cartwheelDir = dir;
+  // Brief invuln so a monster sitting next to the wall can't immediately
+  // eat the player before they spin away.
+  invuln = Math.max(invuln, 18);
+  // Confetti burst — colourful spark particles fanning outward from the
+  // wall contact point. We re-use the existing 'spark' particle kind so
+  // the existing draw loop handles them with no extra code, but we tag
+  // them with a hue so the renderer can rainbow-tint them.
+  const colors = ["#ff4d6d", "#ffb84d", "#ffd23f", "#06d6a0", "#118ab2", "#7b2cbf", "#ff85a1"];
+  for (let k = 0; k < 16; k++) {
+    particles.push({
+      x: cx, y: cy,
+      vx: dir * rand(0.4, 3.4) + rand(-0.6, 0.6),
+      vy: rand(-3.5, 0.5),
+      life: 32 + Math.floor(rand(0, 14)),
+      kind: "confetti",
+      color: colors[k % colors.length],
+      spin: rand(-0.4, 0.4),
+      rot: rand(0, Math.PI * 2)
+    });
+  }
+}
+
 function awardPowerForQuestion(idx) {
   // Cycle: spring → jet → shield (last). Tweaks the climb.
   const order = ["spring", "jet", "shield"];
@@ -1127,17 +1180,29 @@ function loop(t) {
   let dt = t - lastFrameTs;
   lastFrameTs = t;
   if (dt > MAX_CATCHUP_MS) dt = MAX_CATCHUP_MS;
-  if (state === STATE.PLAYING) {
-    stepAccumulator += dt;
-    let safety = 8; // never run more than 8 steps in a single frame
-    while (stepAccumulator >= STEP_MS && safety-- > 0) {
-      step();
-      stepAccumulator -= STEP_MS;
+  // Wrap the whole tick in try/catch so a thrown error in step()/draw()
+  // can't kill the rAF chain — without this, a stray exception leaves the
+  // game frozen mid-frame instead of falling through to a graceful end.
+  try {
+    if (state === STATE.PLAYING) {
+      stepAccumulator += dt;
+      let safety = 8;
+      while (stepAccumulator >= STEP_MS && safety-- > 0) {
+        step();
+        stepAccumulator -= STEP_MS;
+        // Re-check after step in case it flipped state (e.g. tryRescue
+        // → endGame mid-frame). Without this we'd keep stepping a dead
+        // game and could re-trigger collisions against ghost objects.
+        if (state !== STATE.PLAYING) break;
+      }
+    } else {
+      stepAccumulator = 0;
     }
-  } else {
-    stepAccumulator = 0;
+    draw();
+  } catch (err) {
+    console.error("[doodle] loop crashed:", err);
+    endGame(false);
   }
-  draw();
   requestAnimationFrame(loop);
 }
 
@@ -1149,18 +1214,31 @@ function step() {
   p.vx = clamp(p.vx, -MAX_VX, MAX_VX);
   if (p.vx !== 0) p.facing = p.vx > 0 ? 1 : -1;
   p.x += p.vx;
-  // Wall bounce: hitting the left or right edge reverses horizontal velocity
-  // with a small energy loss. Feels much better than wrap-around — players
-  // can intentionally bounce off the walls to reach platforms in the middle.
+  // Wall bounce — gentle reflective bounce normally, but if the player
+  // slams the wall with enough horizontal speed it triggers an Icy-Tower
+  // cartwheel: huge upward boost, kickback away from the wall, visual
+  // spin, and a confetti burst at the contact point.
   if (p.x < 0) {
+    const slammed = Math.abs(p.vx) >= CARTWHEEL_TRIGGER_VX;
     p.x = 0;
-    p.vx = Math.abs(p.vx) * 0.85;
-    p.facing = 1;
+    if (slammed) {
+      triggerCartwheel(+1, 0, p.y + PLAYER_H / 2);
+    } else {
+      p.vx = Math.abs(p.vx) * 0.85;
+      p.facing = 1;
+    }
   } else if (p.x + PLAYER_W > W) {
+    const slammed = Math.abs(p.vx) >= CARTWHEEL_TRIGGER_VX;
     p.x = W - PLAYER_W;
-    p.vx = -Math.abs(p.vx) * 0.85;
-    p.facing = -1;
+    if (slammed) {
+      triggerCartwheel(-1, W, p.y + PLAYER_H / 2);
+    } else {
+      p.vx = -Math.abs(p.vx) * 0.85;
+      p.facing = -1;
+    }
   }
+  // Cartwheel countdown — decrements while the spin animation plays.
+  if (p.cartwheelTicks > 0) p.cartwheelTicks--;
 
   // Active jetpack power
   const spd = heightSpeedMult();
@@ -1332,6 +1410,12 @@ function step() {
   for (let i = particles.length - 1; i >= 0; i--) {
     const pa = particles[i];
     pa.x += pa.vx; pa.y += pa.vy;
+    // Confetti has gravity + air-drag + tumbles around its rotation axis.
+    if (pa.kind === "confetti") {
+      pa.vy += 0.18;
+      pa.vx *= 0.985;
+      pa.rot = (pa.rot || 0) + (pa.spin || 0);
+    }
     pa.life--;
     if (pa.life <= 0) particles.splice(i, 1);
   }
@@ -1616,6 +1700,18 @@ function draw() {
       ctx.beginPath();
       ctx.arc(pa.x, pa.y, 2.4, 0, Math.PI * 2);
       ctx.fill();
+    } else if (pa.kind === "confetti") {
+      // Tumbling rectangle of paper — colour from the spawn site, alpha
+      // fades out over the last quarter of life so they vanish gracefully.
+      const a = clamp(pa.life / 22, 0, 1);
+      ctx.save();
+      ctx.translate(pa.x, pa.y);
+      ctx.rotate(pa.rot || 0);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = pa.color || "#ffd23f";
+      ctx.fillRect(-3, -2, 6, 4);
+      ctx.restore();
+      ctx.globalAlpha = 1;
     }
   }
 
@@ -1642,6 +1738,14 @@ function draw() {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
       ctx.translate(px + PLAYER_W / 2, py + PLAYER_H / 2);
+      // Cartwheel: spin one full rotation over CARTWHEEL_DURATION frames in
+      // the direction the player is bouncing. The rotation is applied BEFORE
+      // the facing flip so the sprite remains right-way-round when at rest
+      // but visibly tumbles end-over-end during the wall bounce.
+      if (p.cartwheelTicks > 0) {
+        const t = 1 - (p.cartwheelTicks / CARTWHEEL_DURATION);
+        ctx.rotate(t * Math.PI * 2 * (p.cartwheelDir || 1));
+      }
       if (p.facing < 0) ctx.scale(-1, 1);
       const sprite = playerSpriteCanvas || player;
       ctx.drawImage(sprite, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
