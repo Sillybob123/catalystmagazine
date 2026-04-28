@@ -33,13 +33,16 @@
     -webkit-user-select: none;
     user-select: none;
     overscroll-behavior: contain;
-    padding-bottom: 16px;
+    padding-bottom: 0;
   }
   .stage {
     width: 100%;
     max-width: 720px;
     margin: 0 auto;
-    padding: 18px 18px 28px;
+    /* Tight bottom padding so the iframe's reported height hugs the
+       credit line. Host page provides the "below the game" breathing
+       room via .article-doodle-game margin instead. */
+    padding: 16px 16px 12px;
   }
   .frame {
     background: var(--paper);
@@ -1957,7 +1960,9 @@ function reportHeight() {
     document.body.scrollHeight,
     Math.ceil(stageBottom)
   );
-  const h = docHeight + 16;
+  // Tight buffer — just enough so the credit line never gets clipped
+  // when the iframe rounds. Host page adds the breathing room below.
+  const h = docHeight + 4;
   try {
     window.parent?.postMessage({ type: "doodle:height", height: h }, "*");
   } catch {}

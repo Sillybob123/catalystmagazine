@@ -825,7 +825,11 @@ body[data-page="article"] .related-articles-wrap {
    ========================================================================== */
 
 .article-doodle-game {
-  margin: 64px auto 8px;
+  /* Bottom margin is intentionally 0 — the iframe reports its own tight
+     height, and the article byline / share row that follows already brings
+     its own top spacing. Adding extra margin here was producing a visible
+     dead-zone of whitespace below the game on both desktop and mobile. */
+  margin: 64px auto 0;
   width: 100%;
   max-width: 720px;
   padding: 0;
