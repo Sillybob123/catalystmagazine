@@ -949,6 +949,9 @@ body[data-page="article"] .related-articles-wrap {
   padding: 24px;
   border-radius: 0;
 }
+.article-doodle-game.is-expanded .article-doodle-game__lead {
+  display: none;
+}
 .article-doodle-game.is-expanded .article-doodle-frame {
   width: min(900px, calc(100vw - 48px));
   height: min(96vh, 1100px) !important;

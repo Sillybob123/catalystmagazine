@@ -154,9 +154,13 @@
   }
   body.is-expanded .stage {
     max-width: 920px;
+    padding: 8px;
+  }
+  body.is-expanded .header {
+    display: none;
   }
   body.is-expanded .canvas-wrap {
-    max-height: min(760px, calc(100vh - 220px));
+    max-height: min(820px, calc(100vh - 96px));
   }
   canvas {
     position: absolute;
@@ -654,22 +658,38 @@ function fitCanvas() {
 }
 
 // ---- Player sprite ---------------------------------------------------------
-// We pre-render the 1024×1024 source image to an offscreen canvas at exactly
-// the device-pixel size we draw at (PLAYER_W * dpr). This gives one
-// high-quality downsample at load time instead of resampling 1024→54 every
-// single frame, which previously read as a blurry/aliased mess. The cached
-// bitmap is then drawn 1:1 with smoothing on, so it stays crisp without any
-// per-frame quality cost.
+const PLAYER_BOX_SIZE = 54;
+// We pre-render the source image to an offscreen canvas at exactly the
+// device-pixel size we draw at. This gives one high-quality downsample at
+// load time instead of resampling the large PNG every single frame.
 const player = new Image();
 let playerLoaded = false;
 let playerSpriteCanvas = null;   // pre-rendered, ready-to-draw at device px
 let playerSpriteScale = 0;       // dpr the cache was built for
+let playerDrawW = 54;
+let playerDrawH = 54;
+function updatePlayerDrawSize() {
+  if (!player.naturalWidth || !player.naturalHeight) {
+    playerDrawW = PLAYER_BOX_SIZE;
+    playerDrawH = PLAYER_BOX_SIZE;
+    return;
+  }
+  const sourceAspect = player.naturalWidth / player.naturalHeight;
+  if (sourceAspect >= 1) {
+    playerDrawW = PLAYER_BOX_SIZE;
+    playerDrawH = PLAYER_BOX_SIZE / sourceAspect;
+  } else {
+    playerDrawH = PLAYER_BOX_SIZE;
+    playerDrawW = PLAYER_BOX_SIZE * sourceAspect;
+  }
+}
 function rebuildPlayerSprite() {
   if (!player.complete || !player.naturalWidth) return;
+  updatePlayerDrawSize();
   const rawDpr = window.devicePixelRatio || 1;
   const dpr = rawDpr < 1.5 ? 1 : 2;
-  const targetW = PLAYER_W * dpr;
-  const targetH = PLAYER_H * dpr;
+  const targetW = Math.max(1, Math.round(playerDrawW * dpr));
+  const targetH = Math.max(1, Math.round(playerDrawH * dpr));
   const off = document.createElement("canvas");
   off.width = targetW;
   off.height = targetH;
@@ -684,7 +704,7 @@ function rebuildPlayerSprite() {
   srcCanvas.width = player.naturalWidth;
   srcCanvas.height = player.naturalHeight;
   srcCanvas.getContext("2d").drawImage(player, 0, 0);
-  while (srcCanvas.width > targetW * 2) {
+  while (srcCanvas.width > targetW * 2 || srcCanvas.height > targetH * 2) {
     const next = document.createElement("canvas");
     next.width = Math.max(targetW, Math.floor(srcCanvas.width / 2));
     next.height = Math.max(targetH, Math.floor(srcCanvas.height / 2));
@@ -761,10 +781,8 @@ function autoScrollSpeed() {
 
 const PLATFORM_W = 62;
 const PLATFORM_H = 12;
-// Player sprite is a 1:1 square to match the source PNG (doodlecharacter.png
-// is 1024×1024); any non-square draw size visibly squishes him.
-const PLAYER_W = 54;
-const PLAYER_H = 54;
+const PLAYER_W = PLAYER_BOX_SIZE;
+const PLAYER_H = PLAYER_BOX_SIZE;
 
 const STATE = { IDLE: 0, PLAYING: 1, PAUSED_Q: 2, OVER: 3 };
 let state = STATE.IDLE;
@@ -791,6 +809,11 @@ let invuln = 0;
 
 // Input
 const keys = { left: false, right: false };
+
+function resetInput() {
+  keys.left = false;
+  keys.right = false;
+}
 
 // ---- Helpers ---------------------------------------------------------------
 function rand(a, b) { return a + Math.random() * (b - a); }
@@ -879,6 +902,7 @@ function spawnUpcoming() {
 }
 
 function startGame() {
+  resetInput();
   fitCanvas();
   pickRunQuestions(); // fresh 3-question shuffle each run
   state = STATE.PLAYING;
@@ -1988,7 +2012,7 @@ function draw() {
       }
       if (p.facing < 0) ctx.scale(-1, 1);
       const sprite = playerSpriteCanvas || player;
-      ctx.drawImage(sprite, -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
+      ctx.drawImage(sprite, -playerDrawW / 2, -playerDrawH / 2, playerDrawW, playerDrawH);
       ctx.restore();
     } else {
       // Fallback shape.
@@ -2153,6 +2177,10 @@ function bindKeys() {
     if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keys.left = false;
     if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") keys.right = false;
   });
+  window.addEventListener("blur", resetInput);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) resetInput();
+  });
 }
 
 function bindTouch() {
@@ -2206,11 +2234,17 @@ function bindTouch() {
     touchMode = null;
     setSide(0);
   });
+  wrap.addEventListener("touchcancel", () => {
+    touchActive = false;
+    touchMode = null;
+    setSide(0);
+  });
 }
 
 // Device tilt — optional, fires when user grants permission on iOS / always on Android.
 function bindTilt() {
   if (typeof DeviceOrientationEvent === "undefined") return;
+  if (!window.matchMedia || !window.matchMedia("(pointer: coarse)").matches) return;
   function handler(e) {
     if (state !== STATE.PLAYING) return;
     const gamma = e.gamma; // -90..90
@@ -2252,6 +2286,7 @@ window.addEventListener("message", (event) => {
   if (!event.data || event.data.type !== "doodle:expanded") return;
   document.body.classList.toggle("is-expanded", !!event.data.expanded);
   requestAnimationFrame(() => {
+    resetInput();
     if (state !== STATE.IDLE) fitCanvas();
     reportHeight();
   });
