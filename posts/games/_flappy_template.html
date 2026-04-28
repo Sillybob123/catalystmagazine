@@ -1551,18 +1551,17 @@ window.addEventListener("resize", () => {
 });
 
 // ---- Report iframe content height to parent --------------------------------
+// Measure ONLY the .stage element, not document.body.scrollHeight: the
+// body's height tracks the iframe size we postMessaged, so reading it
+// here creates a runaway feedback loop with the host. See the doodle
+// template for the same fix.
+let lastReportedHeight = 0;
 function reportHeight() {
   const stage = document.querySelector(".stage");
-  const stageBottom = stage ? stage.getBoundingClientRect().bottom : 0;
-  const docHeight = Math.max(
-    document.documentElement.scrollHeight,
-    document.body.scrollHeight,
-    Math.ceil(stageBottom)
-  );
-  // Tight buffer — just enough so the credit line never gets clipped
-  // when the iframe rounds. The host page already adds vertical breathing
-  // room via .article-doodle-game margin, so we don't need extra here.
-  const h = docHeight + 4;
+  if (!stage) return;
+  const h = Math.ceil(stage.getBoundingClientRect().bottom) + 4;
+  if (Math.abs(h - lastReportedHeight) < 2) return;
+  lastReportedHeight = h;
   try {
     window.parent?.postMessage({ type: "doodle:height", height: h }, "*");
   } catch {}
