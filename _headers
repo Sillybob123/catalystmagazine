@@ -1,0 +1,28 @@
+/*
+  Access-Control-Allow-Origin: *
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Content-Type-Options: nosniff
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/article
+  Cache-Control: public, max-age=0, must-revalidate
+
+/articles
+  Cache-Control: public, max-age=0, must-revalidate
+
+/js/main.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/posts/games/_doodle_template*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/posts/games/_flappy_template*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/doodlecharacter.png
+  Cache-Control: public, max-age=0, must-revalidate
+
+/flappybird.png
+  Cache-Control: public, max-age=0, must-revalidate

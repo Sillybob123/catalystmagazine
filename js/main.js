@@ -1327,14 +1327,12 @@ async function mountDoodleGame(container, article) {
                 <p class="article-doodle-game__intro">${escapeHtmlAttr(data.intro || 'Bounce as high as you can — gold platforms ask one question at a time. Three correct answers and you’re a Catalyst.')}</p>
             </div>
         `;
-        const iframe = document.createElement('iframe');
-        iframe.className = 'article-doodle-frame';
-        iframe.title = data.title || 'Catalyst Doodle Jump';
-        iframe.loading = 'lazy';
-        iframe.setAttribute('allow', 'accelerometer; gyroscope; fullscreen');
-        iframe.setAttribute('scrolling', 'no');
-        iframe.srcdoc = html;
-        section.appendChild(iframe);
+        const iframe = createArticleGameIframe({
+            title: data.title || 'Catalyst Doodle Jump',
+            allow: 'accelerometer; gyroscope; fullscreen',
+            html
+        });
+        section.appendChild(createArticleGameFrameWrap(section, iframe));
 
         // Insert ABOVE the byline so the reader sees the game right after
         // the article body, before the author card and share row.
@@ -1374,14 +1372,83 @@ function attachDoodleHostBridge(iframe) {
     window.addEventListener('message', onMessage);
 }
 
+function createArticleGameIframe({ title, allow, html }) {
+    const iframe = document.createElement('iframe');
+    iframe.className = 'article-doodle-frame';
+    iframe.title = title;
+    iframe.loading = 'lazy';
+    iframe.setAttribute('allow', allow);
+    iframe.setAttribute('scrolling', 'no');
+    iframe.srcdoc = html;
+    return iframe;
+}
+
+function createArticleGameFrameWrap(section, iframe) {
+    const frameWrap = document.createElement('div');
+    frameWrap.className = 'article-doodle-game__frame-wrap';
+
+    const expandBtn = document.createElement('button');
+    expandBtn.className = 'article-doodle-game__expand-btn';
+    expandBtn.type = 'button';
+    expandBtn.setAttribute('aria-expanded', 'false');
+    expandBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 3H3v5"></path>
+            <path d="M3 3l7 7"></path>
+            <path d="M16 3h5v5"></path>
+            <path d="M21 3l-7 7"></path>
+            <path d="M8 21H3v-5"></path>
+            <path d="M3 21l7-7"></path>
+            <path d="M16 21h5v-5"></path>
+            <path d="M21 21l-7-7"></path>
+        </svg>
+        <span>Full screen</span>
+    `;
+
+    const label = expandBtn.querySelector('span');
+    function setExpanded(expanded) {
+        section.classList.toggle('is-expanded', expanded);
+        document.body.classList.toggle('has-doodle-expanded', expanded);
+        expandBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        if (label) label.textContent = expanded ? 'Close' : 'Full screen';
+        iframe.contentWindow?.postMessage({ type: 'doodle:expanded', expanded }, '*');
+    }
+
+    expandBtn.addEventListener('click', () => {
+        setExpanded(!section.classList.contains('is-expanded'));
+    });
+
+    frameWrap.addEventListener('click', (event) => {
+        if (section.classList.contains('is-expanded') && event.target === frameWrap) {
+            setExpanded(false);
+        }
+    });
+
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && section.classList.contains('is-expanded')) {
+            setExpanded(false);
+        }
+    });
+
+    frameWrap.appendChild(iframe);
+    frameWrap.appendChild(expandBtn);
+    return frameWrap;
+}
+
+const ARTICLE_GAME_ASSET_VERSION = '20260428-games-2';
+
+function gameAssetUrl(path) {
+    return window.location.origin + path + '?v=' + encodeURIComponent(ARTICLE_GAME_ASSET_VERSION);
+}
+
 let doodleTemplatePromise = null;
 function loadDoodleTemplate() {
     if (!doodleTemplatePromise) {
         // Cache-bust by date so a deploy immediately invalidates the
         // previously-cached template; otherwise force-cache + the static URL
         // can hold a stale copy in the reader's browser indefinitely.
-        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260428n');
-        doodleTemplatePromise = fetch('/posts/games/_doodle_template.html?' + bust)
+        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || ARTICLE_GAME_ASSET_VERSION);
+        doodleTemplatePromise = fetch('/posts/games/_doodle_template.html?' + bust, { cache: 'reload' })
             .then((res) => {
                 if (!res.ok) throw new Error('doodle template ' + res.status);
                 return res.text();
@@ -1400,7 +1467,7 @@ function renderDoodleGameHtml(template, data, articleId) {
     return renderGameTemplate(template, data, {
         title,
         intro,
-        characterUrl: window.location.origin + '/doodlecharacter.png',
+        characterUrl: gameAssetUrl('/doodlecharacter.png'),
         articleId: articleId || ''
     });
 }
@@ -1430,14 +1497,12 @@ async function mountFlappyGame(container, article) {
                 <p class="article-doodle-game__intro">${escapeHtmlAttr(data.intro || 'Flap with space or tap. Pass pipes to score, gold pipes ask questions, crash and answer one to keep flying.')}</p>
             </div>
         `;
-        const iframe = document.createElement('iframe');
-        iframe.className = 'article-doodle-frame';
-        iframe.title = data.title || 'Flappy Catalyst';
-        iframe.loading = 'lazy';
-        iframe.setAttribute('allow', 'fullscreen');
-        iframe.setAttribute('scrolling', 'no');
-        iframe.srcdoc = html;
-        section.appendChild(iframe);
+        const iframe = createArticleGameIframe({
+            title: data.title || 'Flappy Catalyst',
+            allow: 'fullscreen',
+            html
+        });
+        section.appendChild(createArticleGameFrameWrap(section, iframe));
         const byline = wrapEl.querySelector('.article-byline');
         if (byline) wrapEl.insertBefore(section, byline);
         else wrapEl.appendChild(section);
@@ -1450,8 +1515,8 @@ async function mountFlappyGame(container, article) {
 let flappyTemplatePromise = null;
 function loadFlappyTemplate() {
     if (!flappyTemplatePromise) {
-        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260428g');
-        flappyTemplatePromise = fetch('/posts/games/_flappy_template.html?' + bust)
+        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || ARTICLE_GAME_ASSET_VERSION);
+        flappyTemplatePromise = fetch('/posts/games/_flappy_template.html?' + bust, { cache: 'reload' })
             .then((res) => {
                 if (!res.ok) throw new Error('flappy template ' + res.status);
                 return res.text();
@@ -1470,7 +1535,7 @@ function renderFlappyGameHtml(template, data, articleId) {
     return renderGameTemplate(template, data, {
         title,
         intro,
-        characterUrl: window.location.origin + '/flappybird.png',
+        characterUrl: gameAssetUrl('/flappybird.png'),
         articleId: articleId || ''
     });
 }

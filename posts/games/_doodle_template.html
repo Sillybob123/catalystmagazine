@@ -152,6 +152,12 @@
     box-shadow: 4px 4px 0 var(--ink);
     touch-action: pan-y;
   }
+  body.is-expanded .stage {
+    max-width: 920px;
+  }
+  body.is-expanded .canvas-wrap {
+    max-height: min(760px, calc(100vh - 220px));
+  }
   canvas {
     position: absolute;
     inset: 0;
@@ -856,15 +862,13 @@ function spawnUpcoming() {
       goldSpawned = true;
     }
 
-    // Monster spawn. After 350 m (climbedAbs ~6300 px at 18px/m) spawn
-    // more aggressively and allow up to 4 on screen at once.
-    const isHighAlt = height >= 350;
-    const monsterChance = isHighAlt
-      ? (climbedAbs > 600 ? 0.22 : 0)
-      : (climbedAbs > 600 ? 0.12 : 0);
-    const monsterCap = isHighAlt ? 4 : 2;
+    // Monster spawn. Keep the early climb clear; monsters only enter after
+    // the reader has climbed far enough for the run to feel established.
+    const monstersUnlocked = height >= 700;
+    const monsterChance = monstersUnlocked && climbedAbs > 600 ? 0.22 : 0;
+    const monsterCap = monstersUnlocked ? 4 : 0;
     if (monsterChance > 0 && Math.random() < monsterChance && monsters.length < monsterCap) {
-      const spd = isHighAlt ? rand(1.6, 2.4) : 1.2;
+      const spd = rand(1.6, 2.4);
       monsters.push({
         x: rand(20, W - 60), y: lastPlatformY - 40,
         w: 38, h: 34, vx: (Math.random() < 0.5 ? -1 : 1) * spd,
@@ -2242,6 +2246,15 @@ btnRetry.addEventListener("click", startGame);
 window.addEventListener("resize", () => {
   if (state !== STATE.IDLE) fitCanvas();
   reportHeight();
+});
+
+window.addEventListener("message", (event) => {
+  if (!event.data || event.data.type !== "doodle:expanded") return;
+  document.body.classList.toggle("is-expanded", !!event.data.expanded);
+  requestAnimationFrame(() => {
+    if (state !== STATE.IDLE) fitCanvas();
+    reportHeight();
+  });
 });
 
 // We deliberately do NOT block wheel or touchmove events: the reader should

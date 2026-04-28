@@ -886,3 +886,98 @@ body[data-page="article"] .related-articles-wrap {
   .article-doodle-game { margin-top: 44px; }
   .article-doodle-frame { min-height: 460px; }
 }
+
+/* ----- Expand button ----- */
+/* Wraps the iframe so the small toolbar (Expand / Collapse) sits at the
+   top right of the game card without crowding the canvas itself. */
+.article-doodle-game__frame-wrap {
+  position: relative;
+  width: 100%;
+}
+.article-doodle-game__expand-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: #1f2024;
+  border: 1.5px solid #1f2024;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #1f2024;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.18s ease;
+}
+.article-doodle-game__expand-btn:hover {
+  background: #fbfaf3;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #1f2024;
+}
+.article-doodle-game__expand-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #1f2024;
+}
+.article-doodle-game__expand-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ----- Expanded (full-screen-style) mode ----- */
+/* When .is-expanded is on the section, the frame-wrap leaves its inline
+   slot and floats over the page in a dim modal-style panel so the player
+   gets a much bigger play area. The iframe gets postMessaged to lift its
+   internal canvas-wrap height cap. */
+.article-doodle-game.is-expanded .article-doodle-game__frame-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(20, 20, 26, 0.86);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  border-radius: 0;
+}
+.article-doodle-game.is-expanded .article-doodle-frame {
+  width: min(900px, calc(100vw - 48px));
+  height: min(96vh, 1100px) !important;
+  min-height: 0;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+}
+.article-doodle-game.is-expanded .article-doodle-game__expand-btn {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+}
+/* Locks page scroll while expanded so the dim backdrop covers the article
+   without the reader being able to peek behind it. Set on <body> by JS. */
+body.has-doodle-expanded {
+  overflow: hidden;
+}
+/* Slot the button INSIDE the iframe area when expanded so it floats over
+   the game card itself. We keep it visible in both states. */
+.article-doodle-game.is-expanded .article-doodle-game__expand-btn {
+  background: rgba(255, 255, 255, 0.94);
+}
+@media (max-width: 600px) {
+  .article-doodle-game.is-expanded .article-doodle-frame {
+    width: 100vw;
+    height: 100vh !important;
+    border-radius: 0;
+  }
+  .article-doodle-game.is-expanded .article-doodle-game__frame-wrap {
+    padding: 0;
+  }
+}
