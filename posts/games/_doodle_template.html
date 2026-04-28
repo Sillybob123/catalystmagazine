@@ -903,6 +903,7 @@ function startGame() {
   lastCartwheelAt = -9999;
   lastDangerAnnounceAt = -9999;
   dangerArmed = false;
+  safeZoneReached = false;
   p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1, cartwheelTicks: 0, cartwheelDir: 0, cartwheelArmed: true };
   seedWorld();
   overlayStart.hidden = true;
@@ -1161,6 +1162,12 @@ let lastDangerAnnounceAt = -9999;
 // Tracks how close the player has been to falling off-screen this descent.
 // We trigger a close-call praise when they were near death and recovered.
 let dangerArmed = false;
+// At game start the player spawns inside the lower band of the canvas
+// (the only platform is right above the floor). Without this gate, the
+// very first jump off the starter platform would fire SAVED IT! /
+// PHEW! immediately. We only let danger-arming begin once the player
+// has actually climbed UP into the safe zone at least once.
+let safeZoneReached = false;
 const COOL_WORDS = ["COOL!", "AWESOME!", "GREAT!", "RAD!", "NICE!"];
 const SAVE_WORDS = ["PHEW!", "CLOSE ONE!", "CLUTCH!", "SAVED IT!"];
 const STOMP_WORDS = ["STOMPED!", "BOUNCE!", "GOTCHA!"];
@@ -1568,8 +1575,16 @@ function step() {
   // bounce back without dying.
   const bottomEdge = cameraY + H;
   const dangerLine = bottomEdge - H * 0.18;
-  // Arm danger when the player descends into the lower band while falling.
-  if (p.vy > 0 && p.y + PLAYER_H > dangerLine && !dangerArmed) {
+  const safeLine   = bottomEdge - H * 0.45;
+  // Mark the "safe zone" reached the first time the player climbs above
+  // the upper-half mark. Until then, no danger-arming — that's how the
+  // very first jump off the starter platform avoids firing PHEW!.
+  if (!safeZoneReached && p.y + PLAYER_H < safeLine) {
+    safeZoneReached = true;
+  }
+  // Arm danger only AFTER the player has reached the safe zone at least
+  // once and is now falling back into the lower band.
+  if (safeZoneReached && p.vy > 0 && p.y + PLAYER_H > dangerLine && !dangerArmed) {
     dangerArmed = true;
   }
   // Disarm + praise when they recover (start climbing again from danger zone)
