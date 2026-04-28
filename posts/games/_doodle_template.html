@@ -1198,19 +1198,21 @@ function triggerCartwheel(dir, cx, cy) {
       rot: rand(0, Math.PI * 2)
     });
   }
-  // Announce: chain cartwheels within ~90 frames upgrade the praise.
+  // Announce ONLY when the player chains cartwheels — a single backflip
+  // is just regular wall-bouncing, but stringing two together within ~90
+  // frames is a real trickshot and earns the banner.
   if (frameTick - lastCartwheelAt < 90) cartwheelChain++;
   else cartwheelChain = 1;
   lastCartwheelAt = frameTick;
   if (cartwheelChain >= 3) {
-    announce("ICY!!!", { color: "#06d6a0", life: 75 });
+    announce("ICY!!!", { color: "#06d6a0", life: 80 });
   } else if (cartwheelChain === 2) {
-    announce("INSANE!", { color: "#ff4d6d", life: 70 });
-  } else {
-    announce(COOL_WORDS[Math.floor(Math.random() * COOL_WORDS.length)], {
-      color: "#ffd23f", life: 60
-    });
+    // Pick a random hype word for the trickshot.
+    const word = COOL_WORDS[Math.floor(Math.random() * COOL_WORDS.length)];
+    announce(word, { color: "#ff4d6d", life: 70 });
   }
+  // First cartwheel of a chain: no banner. The confetti + spin are the
+  // visual reward; we save the praise for the actual trickshot.
 }
 
 // Monotonic step counter — drives stunt-chain timing and stunt-banner fade.
