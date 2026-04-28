@@ -871,11 +871,12 @@ body[data-page="article"] .related-articles-wrap {
    inline `height` styles win. */
 .article-doodle-frame {
   width: 100%;
-  /* min-height is just a floor for the brief moment between iframe mount
+  /* min-height is the floor for the brief moment between iframe mount
      and the script's first reportHeight() postMessage. Inline `height`
-     styles set by the host bridge always win. Kept tight enough that the
-     flappy variant doesn't show empty space below the canvas. */
-  min-height: 480px;
+     styles set by the host bridge always win — and we lower the bound
+     in attachDoodleHostBridge so trailing whitespace isn't padded in
+     once the script reports a tighter height. */
+  min-height: 420px;
   border: none;
   border-radius: 20px;
   background: transparent;
@@ -883,5 +884,5 @@ body[data-page="article"] .related-articles-wrap {
 }
 @media (max-width: 600px) {
   .article-doodle-game { margin-top: 44px; }
-  .article-doodle-frame { min-height: 500px; }
+  .article-doodle-frame { min-height: 460px; }
 }

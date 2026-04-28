@@ -1363,10 +1363,11 @@ function attachDoodleHostBridge(iframe) {
     function onMessage(e) {
         if (!e.data || e.source !== iframe.contentWindow) return;
         if (e.data.type === 'doodle:height') {
-            // Lower bound trimmed to 460 so the flappy variant (which has
-            // tighter padding than the doodle climb) doesn't sit inside an
-            // iframe taller than its content. Upper bound stays at 1300.
-            const h = Math.max(460, Math.min(1300, Number(e.data.height) || 0));
+            // Lower bound 360 — well under any real game height — so the
+            // iframe never pads trailing whitespace below the content. The
+            // template's reportHeight measures .stage tightly, so we trust
+            // its number directly. Upper bound stays at 1300 as a safety.
+            const h = Math.max(360, Math.min(1300, Number(e.data.height) || 0));
             if (h) iframe.style.height = h + 'px';
         }
     }
@@ -1379,7 +1380,7 @@ function loadDoodleTemplate() {
         // Cache-bust by date so a deploy immediately invalidates the
         // previously-cached template; otherwise force-cache + the static URL
         // can hold a stale copy in the reader's browser indefinitely.
-        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260428h');
+        const bust = 'v=' + (window.__DOODLE_TEMPLATE_VERSION__ || '20260428i');
         doodleTemplatePromise = fetch('/posts/games/_doodle_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('doodle template ' + res.status);
@@ -1449,7 +1450,7 @@ async function mountFlappyGame(container, article) {
 let flappyTemplatePromise = null;
 function loadFlappyTemplate() {
     if (!flappyTemplatePromise) {
-        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260428f');
+        const bust = 'v=' + (window.__FLAPPY_TEMPLATE_VERSION__ || '20260428g');
         flappyTemplatePromise = fetch('/posts/games/_flappy_template.html?' + bust)
             .then((res) => {
                 if (!res.ok) throw new Error('flappy template ' + res.status);

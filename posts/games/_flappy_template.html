@@ -135,7 +135,9 @@
     position: relative;
     width: 100%;
     aspect-ratio: 4 / 4.5;
-    max-height: 48vh;
+    /* px cap (not vh) so the wrap sizes purely from width and can't
+       collapse when the host iframe size changes. */
+    max-height: 540px;
     margin: 0 auto;
     border-radius: 18px;
     overflow: hidden;
@@ -507,7 +509,7 @@
        still has plenty of vertical room for the bird to flap, and the
        whole game (header + canvas + credit) fits in one screen with no
        trailing dead space. */
-    .canvas-wrap { aspect-ratio: 4 / 5; max-height: 56vh; box-shadow: 3px 3px 0 var(--ink); }
+    .canvas-wrap { aspect-ratio: 4 / 5; max-height: 560px; box-shadow: 3px 3px 0 var(--ink); }
     .header { flex-direction: column; gap: 4px; }
     .hud { gap: 6px; font-size: 11px; }
     .chip { padding: 4px 8px; gap: 5px; }
@@ -1551,18 +1553,13 @@ window.addEventListener("resize", () => {
 });
 
 // ---- Report iframe content height to parent --------------------------------
-// Dedupe near-identical reports so the host's iframe resize doesn't feed
-// back through our ResizeObserver into a runaway growth loop.
+// Measure .stage only — see doodle template for the full rationale.
+// canvas-wrap is px-capped so it can't collapse when iframe size changes.
 let lastReportedHeight = 0;
 function reportHeight() {
   const stage = document.querySelector(".stage");
-  const stageBottom = stage ? stage.getBoundingClientRect().bottom : 0;
-  const docHeight = Math.max(
-    document.documentElement.scrollHeight,
-    document.body.scrollHeight,
-    Math.ceil(stageBottom)
-  );
-  const h = docHeight + 4;
+  if (!stage) return;
+  const h = Math.ceil(stage.getBoundingClientRect().bottom) + 4;
   if (Math.abs(h - lastReportedHeight) < 4) return;
   lastReportedHeight = h;
   try {
