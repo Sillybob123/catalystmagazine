@@ -693,10 +693,16 @@ const qContinue = document.getElementById("qContinue");
 // ---- Logical canvas ---------------------------------------------------------
 const W = 360;
 let H = 600;
+function currentCanvasDpr(rect) {
+  const rawDpr = window.devicePixelRatio || 1;
+  const baseDpr = rawDpr < 1.5 ? 1 : 2;
+  if (!document.body.classList.contains("is-expanded")) return baseDpr;
+  const visualScale = rect ? Math.max(1, rect.width / W) : 1;
+  return Math.min(4, Math.max(baseDpr, Math.ceil(baseDpr * visualScale)));
+}
 function fitCanvas() {
   const rect = wrap.getBoundingClientRect();
-  const rawDpr = window.devicePixelRatio || 1;
-  const dpr = rawDpr < 1.5 ? 1 : 2;
+  const dpr = currentCanvasDpr(rect);
   H = Math.max(360, Math.round(W * (rect.height / rect.width)));
   cv.width = W * dpr;
   cv.height = H * dpr;
@@ -723,8 +729,7 @@ let spriteFrames = [];          // pre-rendered, ready-to-draw at device px
 let spriteScale = 0;            // dpr the cache was built for
 function rebuildSprites() {
   if (!sheet.complete || !sheet.naturalWidth) return;
-  const rawDpr = window.devicePixelRatio || 1;
-  const dpr = rawDpr < 1.5 ? 1 : 2;
+  const dpr = currentCanvasDpr(wrap.getBoundingClientRect());
   const targetW = PLAYER_W * dpr;
   const targetH = PLAYER_H * dpr;
   const fw = Math.floor(sheet.naturalWidth / FRAME_COLS);

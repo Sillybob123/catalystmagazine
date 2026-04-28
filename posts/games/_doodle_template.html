@@ -631,6 +631,13 @@ const qContinue = document.getElementById("qContinue");
 //      is scaled via CSS).
 const W = 360;
 let H = 600; // computed below to match wrap aspect ratio
+function currentCanvasDpr(rect) {
+  const rawDpr = window.devicePixelRatio || 1;
+  const baseDpr = rawDpr < 1.5 ? 1 : 2;
+  if (!document.body.classList.contains("is-expanded")) return baseDpr;
+  const visualScale = rect ? Math.max(1, rect.width / W) : 1;
+  return Math.min(4, Math.max(baseDpr, Math.ceil(baseDpr * visualScale)));
+}
 function fitCanvas() {
   const rect = wrap.getBoundingClientRect();
   // SNAP dpr to an integer (1 or 2). Fractional device-pixel-ratios like
@@ -639,8 +646,7 @@ function fitCanvas() {
   // resamples via bilinear filtering — that's the shimmer the user sees.
   // Snapping dpr makes every logical integer also a device integer, so
   // the player sprite is pixel-perfect even with smoothing enabled.
-  const rawDpr = window.devicePixelRatio || 1;
-  const dpr = rawDpr < 1.5 ? 1 : 2;
+  const dpr = currentCanvasDpr(rect);
   H = Math.max(360, Math.round(W * (rect.height / rect.width)));
   cv.width = W * dpr;
   cv.height = H * dpr;
@@ -686,8 +692,7 @@ function updatePlayerDrawSize() {
 function rebuildPlayerSprite() {
   if (!player.complete || !player.naturalWidth) return;
   updatePlayerDrawSize();
-  const rawDpr = window.devicePixelRatio || 1;
-  const dpr = rawDpr < 1.5 ? 1 : 2;
+  const dpr = currentCanvasDpr(wrap.getBoundingClientRect());
   const targetW = Math.max(1, Math.round(playerDrawW * dpr));
   const targetH = Math.max(1, Math.round(playerDrawH * dpr));
   const off = document.createElement("canvas");

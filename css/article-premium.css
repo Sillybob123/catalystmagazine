@@ -953,7 +953,7 @@ body[data-page="article"] .related-articles-wrap {
   display: none;
 }
 .article-doodle-game.is-expanded .article-doodle-frame {
-  width: min(900px, calc(100vw - 48px));
+  width: min(780px, calc(100vw - 64px));
   height: min(96vh, 1100px) !important;
   min-height: 0;
   border-radius: 18px;
