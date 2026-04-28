@@ -1440,13 +1440,6 @@ function drawPipe(p) {
   ctx.fillStyle = colors.highlight;
   ctx.fillRect(p.x + 6, 0, 4, gapTop - cap);
   ctx.fillRect(p.x + 6, gapBot + cap, 4, floorY - (gapBot + cap));
-  // Animated color stripe for non-question pipes.
-  if (!p.gold) {
-    const stripeY = ((scrollX * 0.9 + p.hue) % 34) - 18;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
-    ctx.fillRect(p.x + PIPE_W - 12, stripeY, 5, gapTop - cap);
-    ctx.fillRect(p.x + PIPE_W - 12, gapBot + cap + stripeY, 5, floorY - (gapBot + cap));
-  }
   // Gold question mark
   if (p.gold && !p.spawnedQ) {
     ctx.fillStyle = "#1f2024";
@@ -1467,7 +1460,7 @@ function pipeColors(p) {
       highlight: "rgba(255, 255, 255, 0.25)"
     };
   }
-  const hue = (p.hue + scrollX * 0.045) % 360;
+  const hue = p.hue % 360;
   return {
     fill: `hsl(${hue}, 78%, 56%)`,
     fill2: `hsl(${(hue + 28) % 360}, 84%, 66%)`,
