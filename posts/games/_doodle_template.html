@@ -897,6 +897,12 @@ function startGame() {
   lastFrameTs = 0;
   stepAccumulator = 0;
   runStartedAt = performance.now();
+  frameTick = 0;
+  announcements.length = 0;
+  cartwheelChain = 0;
+  lastCartwheelAt = -9999;
+  lastDangerAnnounceAt = -9999;
+  dangerArmed = false;
   p = { x: W / 2 - PLAYER_W / 2, y: H - 100, vx: 0, vy: JUMP_VY, facing: 1, cartwheelTicks: 0, cartwheelDir: 0, cartwheelArmed: true };
   seedWorld();
   overlayStart.hidden = true;
@@ -1067,6 +1073,7 @@ function answerQuestion(picked, btn) {
         respawnPlayer();
         rescueMode = false;
         state = STATE.PLAYING;
+        announce("CLUTCH!", { color: "#7b2cbf", life: 75 });
       }, 1100);
     } else {
       btn.classList.add("wrong");
@@ -1126,6 +1133,38 @@ function respawnPlayer() {
   monsters = [];
 }
 
+// Stunt announcements — big arcade-style text that pops up briefly when the
+// player pulls off something cool (cartwheel, clutch revive, close-call
+// save, monster stomp, long airtime). Each entry has its own colour + life
+// so a fast string of stunts stacks vertically without overwriting itself.
+const announcements = []; // [{ text, color, life, maxLife, scale }]
+function announce(text, opts = {}) {
+  announcements.push({
+    text,
+    color: opts.color || "#ffd23f",
+    life: opts.life || 60,         // ~1 s at 60fps
+    maxLife: opts.life || 60,
+    scale: 1
+  });
+  // Cap so we don't scroll a wall of text.
+  if (announcements.length > 3) announcements.shift();
+}
+
+// Track recent cartwheels so a chain of two within ~90 frames upgrades from
+// "AWESOME!" to "INSANE!" — this rewards the kind of player who actively
+// uses walls to climb instead of just bouncing platforms.
+let lastCartwheelAt = -9999;
+let cartwheelChain = 0;
+// "Close call" announcements need a cooldown so a player skimming the
+// bottom edge for a while doesn't get spammed with PHEW! every few frames.
+let lastDangerAnnounceAt = -9999;
+// Tracks how close the player has been to falling off-screen this descent.
+// We trigger a close-call praise when they were near death and recovered.
+let dangerArmed = false;
+const COOL_WORDS = ["COOL!", "AWESOME!", "GREAT!", "RAD!", "NICE!"];
+const SAVE_WORDS = ["PHEW!", "CLOSE ONE!", "CLUTCH!", "SAVED IT!"];
+const STOMP_WORDS = ["STOMPED!", "BOUNCE!", "GOTCHA!"];
+
 // Wall cartwheel — huge upward boost when slamming a wall at speed, plus a
 // confetti burst and a spin animation. `dir` is +1 for left wall (bouncing
 // rightward) and -1 for right wall (bouncing leftward). `cx` / `cy` are the
@@ -1159,7 +1198,23 @@ function triggerCartwheel(dir, cx, cy) {
       rot: rand(0, Math.PI * 2)
     });
   }
+  // Announce: chain cartwheels within ~90 frames upgrade the praise.
+  if (frameTick - lastCartwheelAt < 90) cartwheelChain++;
+  else cartwheelChain = 1;
+  lastCartwheelAt = frameTick;
+  if (cartwheelChain >= 3) {
+    announce("ICY!!!", { color: "#06d6a0", life: 75 });
+  } else if (cartwheelChain === 2) {
+    announce("INSANE!", { color: "#ff4d6d", life: 70 });
+  } else {
+    announce(COOL_WORDS[Math.floor(Math.random() * COOL_WORDS.length)], {
+      color: "#ffd23f", life: 60
+    });
+  }
 }
+
+// Monotonic step counter — drives stunt-chain timing and stunt-banner fade.
+let frameTick = 0;
 
 function awardPowerForQuestion(idx) {
   // Cycle: spring → jet → shield (last). Tweaks the climb.
@@ -1251,6 +1306,12 @@ function loop(t) {
 }
 
 function step() {
+  frameTick++;
+  // Tick down stunt announcements so they fade out over time.
+  for (let i = announcements.length - 1; i >= 0; i--) {
+    announcements[i].life--;
+    if (announcements[i].life <= 0) announcements.splice(i, 1);
+  }
   // Horizontal input
   if (keys.left) p.vx -= MOVE_ACCEL;
   if (keys.right) p.vx += MOVE_ACCEL;
@@ -1458,6 +1519,9 @@ function step() {
       monsters.splice(i, 1);
       p.vy = SPRING_VY * 0.8;
       p.cartwheelArmed = true;
+      announce(STOMP_WORDS[Math.floor(Math.random() * STOMP_WORDS.length)], {
+        color: "#ff85a1", life: 55
+      });
       continue;
     }
     if (invuln > 0) continue;
@@ -1496,17 +1560,41 @@ function step() {
   // Spawn ahead.
   spawnUpcoming();
 
-  // Falling out.
-  if (p.y > cameraY + H + 40) {
+  // Bottom-of-screen death — touching the bottom edge is fatal. We arm a
+  // "danger" flag when the player drops into the lower fifth of the
+  // screen so we can praise them with a CLOSE ONE! / PHEW! if they
+  // bounce back without dying.
+  const bottomEdge = cameraY + H;
+  const dangerLine = bottomEdge - H * 0.18;
+  // Arm danger when the player descends into the lower band while falling.
+  if (p.vy > 0 && p.y + PLAYER_H > dangerLine && !dangerArmed) {
+    dangerArmed = true;
+  }
+  // Disarm + praise when they recover (start climbing again from danger zone)
+  if (dangerArmed && p.vy < -1 && p.y + PLAYER_H < dangerLine - 10) {
+    dangerArmed = false;
+    if (frameTick - lastDangerAnnounceAt > 90) {
+      lastDangerAnnounceAt = frameTick;
+      announce(SAVE_WORDS[Math.floor(Math.random() * SAVE_WORDS.length)], {
+        color: "#06d6a0", life: 65
+      });
+    }
+  }
+  // Death: any part of the sprite touching/crossing the bottom edge.
+  if (p.y + PLAYER_H >= bottomEdge) {
     if (pendingShield) {
       pendingShield = false;
       p.vy = SPRING_VY;
-      p.y = cameraY + H - 80;
+      p.y = cameraY + H - PLAYER_H - 4;
+      dangerArmed = false;
+      if (frameTick - lastDangerAnnounceAt > 90) {
+        lastDangerAnnounceAt = frameTick;
+        announce("SAVED!", { color: "#118ab2", life: 70 });
+      }
     } else {
-      // Fell off → offer revive, else game over.
-      const offered = tryRescue("You fell off!");
+      // Touched the bottom → offer revive, else game over.
+      const offered = tryRescue("You hit the bottom!");
       if (offered) return;
-      // tryRescue calls endGame when no revives remain — stop here.
       return;
     }
   }
@@ -1852,6 +1940,40 @@ function draw() {
     }
   }
 
+  ctx.restore();
+
+  // Stunt announcements — drawn in screen space so they sit on top of the
+  // world without scrolling. Stack vertically near the top, oldest at top.
+  drawAnnouncements();
+}
+
+function drawAnnouncements() {
+  if (!announcements.length) return;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i < announcements.length; i++) {
+    const a = announcements[i];
+    const t = a.life / a.maxLife;
+    // Pop-in scale: starts a bit larger, settles, then fades. We flatten
+    // this curve so the text doesn't visibly grow and shrink — it just
+    // appears confidently and fades out at the end.
+    const scale = t > 0.85 ? 0.6 + (1 - t) / 0.15 * 0.5
+                : t > 0.25 ? 1.1
+                : t / 0.25 * 1.1;
+    const alpha = t > 0.25 ? 1 : (t / 0.25);
+    const yBase = H * 0.18 + i * 36;
+    const fontSize = Math.round(28 * scale);
+    ctx.font = "800 " + fontSize + "px Poppins, system-ui, sans-serif";
+    // Chunky black outline so the banner reads on any biome background.
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "rgba(31, 32, 36, 0.9)";
+    ctx.strokeText(a.text, W / 2, yBase);
+    ctx.fillStyle = a.color;
+    ctx.fillText(a.text, W / 2, yBase);
+  }
+  ctx.globalAlpha = 1;
   ctx.restore();
 }
 
