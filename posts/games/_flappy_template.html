@@ -779,26 +779,26 @@ const GRAVITY = 0.42;
 const FLAP_VY = -7.2;
 const MAX_VY = 9.5;
 const PIPE_SPEED_BASE = 1.7;       // logical px/step (start gentle)
-// Gaps ramp from EASY → BASE over the first PIPE_GAP_RAMP_END pipes.
-// After pipe #6 the tightening accelerates noticeably.
-const PIPE_GAP_EASY = 180;          // starting gap — generous
-const PIPE_GAP_BASE = 118;          // late-game gap — tighter than before
-const PIPE_GAP_RAMP_END = 8;        // fully tight by pipe 8 (was 12)
+// Scores 0-2 stay forgiving; score 3 starts tightening so pipes 3-5 no
+// longer feel like a long tutorial stretch.
+const PIPE_GAP_EASY = 178;          // starting gap — still approachable
+const PIPE_GAP_BASE = 108;          // late-game gap — tighter than before
+const PIPE_GAP_RAMP_START = 3;      // first score where difficulty ramps
+const PIPE_GAP_RAMP_END = 9;        // fully tight by score 9
 const PIPE_W = 56;
 // Slightly wider spacing too so early pipes give more reaction time.
 const PIPE_INTERVAL = 200;
 const FLOOR_H = 36;
 
-// Current spawn gap based on score — interpolates EASY → BASE over the
-// first PIPE_GAP_RAMP_END pipes. Each pipe is spawned with this fixed
-// gap baked in, so scoring 1-2 always sees the easy width even if the
-// player later coasts to score 20.
+// Current spawn gap based on score. Each pipe is spawned with this fixed
+// gap baked in, so its difficulty doesn't shift after it appears.
 function currentSpawnGap() {
-  // Linear ramp for first PIPE_GAP_RAMP_END pipes; after that stays at BASE.
-  const t = clamp(score / PIPE_GAP_RAMP_END, 0, 1);
-  // Apply an ease-in so the last few pipes of the ramp feel notably tighter
-  // — matches the "gets harder after pipe 6" feel.
-  const ease = t * t;
+  if (score < PIPE_GAP_RAMP_START) return PIPE_GAP_EASY;
+  const rampSpan = PIPE_GAP_RAMP_END - PIPE_GAP_RAMP_START + 1;
+  const t = clamp((score - PIPE_GAP_RAMP_START + 1) / rampSpan, 0, 1);
+  // Smoothstep gives a noticeable change at score 3 without snapping into
+  // the late-game gap too abruptly.
+  const ease = t * t * (3 - 2 * t);
   return Math.round(PIPE_GAP_EASY + (PIPE_GAP_BASE - PIPE_GAP_EASY) * ease);
 }
 
@@ -807,7 +807,7 @@ let state = STATE.IDLE;
 let countdownTicks = 0;     // frames remaining in the pre-roll countdown
 
 let bird = null;            // {x, y, vy, rot}
-let pipes = [];             // {x, gapY, gap, scored, gold, spawnedQ}
+let pipes = [];             // {x, gapY, gap, scored, gold, spawnedQ, hue}
 let particles = [];
 let scrollX = 0;            // total world distance scrolled (for rank)
 let nextPipeAt = 0;
@@ -855,7 +855,8 @@ function spawnPipe(x, opts = {}) {
     gap,
     scored: false,
     gold: !!opts.gold,
-    spawnedQ: false
+    spawnedQ: false,
+    hue: (score * 42 + Math.floor(x / PIPE_INTERVAL) * 37) % 360
   });
 }
 
@@ -1141,13 +1142,11 @@ function loop(t) {
 }
 
 function pipeSpeed() {
-  // Gentle up to pipe 6; then sharper ramp to reward good players with
-  // a real challenge. Capped at a tough-but-playable ceiling.
-  if (score <= 6) {
-    return PIPE_SPEED_BASE + score * 0.04;
-  }
-  const extra = 6 * 0.04 + (score - 6) * 0.09;
-  return PIPE_SPEED_BASE + Math.min(2.8, extra);
+  // Gentle through score 2, then a real ramp begins at score 3.
+  if (score < 3) return PIPE_SPEED_BASE + score * 0.035;
+  const early = 2 * 0.035;
+  const ramp = (score - 2) * 0.075;
+  return PIPE_SPEED_BASE + Math.min(2.8, early + ramp);
 }
 
 function step() {
@@ -1416,29 +1415,38 @@ function drawPipe(p) {
   const gapTop = p.gapY;
   const gapBot = p.gapY + p.gap;
   const floorY = H - FLOOR_H;
-  const fill = p.gold ? "#f4d24a" : "#7ed957";
-  const dark = p.gold ? "#a87814" : "#3d8b32";
+  const colors = pipeColors(p);
   const cap = 16;
   // Top pipe body
-  ctx.fillStyle = fill;
+  ctx.fillStyle = pipeGradient(p.x, 0, PIPE_W, Math.max(0, gapTop - cap), colors);
   ctx.fillRect(p.x, 0, PIPE_W, gapTop - cap);
   // Top pipe cap
+  ctx.fillStyle = pipeGradient(p.x - 4, gapTop - cap, PIPE_W + 8, cap, colors);
   ctx.fillRect(p.x - 4, gapTop - cap, PIPE_W + 8, cap);
   // Bottom pipe body
+  ctx.fillStyle = pipeGradient(p.x, gapBot + cap, PIPE_W, Math.max(0, floorY - (gapBot + cap)), colors);
   ctx.fillRect(p.x, gapBot + cap, PIPE_W, floorY - (gapBot + cap));
   // Bottom pipe cap
+  ctx.fillStyle = pipeGradient(p.x - 4, gapBot, PIPE_W + 8, cap, colors);
   ctx.fillRect(p.x - 4, gapBot, PIPE_W + 8, cap);
   // Outline strokes
-  ctx.strokeStyle = dark;
+  ctx.strokeStyle = colors.dark;
   ctx.lineWidth = 2;
   ctx.strokeRect(p.x, 0, PIPE_W, gapTop - cap);
   ctx.strokeRect(p.x - 4, gapTop - cap, PIPE_W + 8, cap);
   ctx.strokeRect(p.x, gapBot + cap, PIPE_W, floorY - (gapBot + cap));
   ctx.strokeRect(p.x - 4, gapBot, PIPE_W + 8, cap);
   // Highlight
-  ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.fillStyle = colors.highlight;
   ctx.fillRect(p.x + 6, 0, 4, gapTop - cap);
   ctx.fillRect(p.x + 6, gapBot + cap, 4, floorY - (gapBot + cap));
+  // Animated color stripe for non-question pipes.
+  if (!p.gold) {
+    const stripeY = ((scrollX * 0.9 + p.hue) % 34) - 18;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+    ctx.fillRect(p.x + PIPE_W - 12, stripeY, 5, gapTop - cap);
+    ctx.fillRect(p.x + PIPE_W - 12, gapBot + cap + stripeY, 5, floorY - (gapBot + cap));
+  }
   // Gold question mark
   if (p.gold && !p.spawnedQ) {
     ctx.fillStyle = "#1f2024";
@@ -1448,6 +1456,33 @@ function drawPipe(p) {
     ctx.fillText("?", p.x + PIPE_W / 2, gapTop - cap / 2);
     ctx.fillText("?", p.x + PIPE_W / 2, gapBot + cap / 2);
   }
+}
+
+function pipeColors(p) {
+  if (p.gold) {
+    return {
+      fill: "#f4d24a",
+      fill2: "#ffec87",
+      dark: "#a87814",
+      highlight: "rgba(255, 255, 255, 0.25)"
+    };
+  }
+  const hue = (p.hue + scrollX * 0.045) % 360;
+  return {
+    fill: `hsl(${hue}, 78%, 56%)`,
+    fill2: `hsl(${(hue + 28) % 360}, 84%, 66%)`,
+    dark: `hsl(${hue}, 72%, 31%)`,
+    highlight: "rgba(255, 255, 255, 0.24)"
+  };
+}
+
+function pipeGradient(x, y, w, h, colors) {
+  const grad = ctx.createLinearGradient(x, y, x + w, y + Math.max(1, h));
+  grad.addColorStop(0, colors.dark);
+  grad.addColorStop(0.18, colors.fill);
+  grad.addColorStop(0.66, colors.fill2);
+  grad.addColorStop(1, colors.dark);
+  return grad;
 }
 
 function drawBird() {

@@ -1435,7 +1435,7 @@ function createArticleGameFrameWrap(section, iframe) {
     return frameWrap;
 }
 
-const ARTICLE_GAME_ASSET_VERSION = '20260428-games-4';
+const ARTICLE_GAME_ASSET_VERSION = '20260428-games-5';
 
 function gameAssetUrl(path) {
     return window.location.origin + path + '?v=' + encodeURIComponent(ARTICLE_GAME_ASSET_VERSION);
