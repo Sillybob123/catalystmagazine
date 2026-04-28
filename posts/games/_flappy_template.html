@@ -1142,6 +1142,13 @@ function step() {
     if (!p.scored && p.x + PIPE_W < bird.x) {
       p.scored = true;
       score++;
+      // Live-update best as soon as the current run beats the saved high
+      // — that way the on-canvas BEST counter ticks up alongside the score
+      // on a first-ever play, instead of staying at 0 until the end.
+      if (score > highscore) {
+        highscore = score;
+        saveHighscore(highscore);
+      }
       updateHud();
     }
     // Cull pipes that have left the screen.
@@ -1153,7 +1160,7 @@ function step() {
   if (lastX < W + PIPE_INTERVAL) {
     // Mark the next one as gold if we haven't yet, once score >= 4 so the
     // player has had a chance to learn the controls before a question pops.
-    const makeGold = !goldSpawned && score >= 4 && questionsAnswered === 0;
+    const makeGold = !goldSpawned && score >= 4;
     spawnPipe(lastX + PIPE_INTERVAL, { gold: makeGold });
     if (makeGold) goldSpawned = true;
   }
