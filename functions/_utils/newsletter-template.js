@@ -16,10 +16,6 @@ const COLORS = {
   footerBg: "#fafafa",
 };
 
-// Served from the canonical www host so newsletter links and assets match the
-// live site exactly. JPEG (not WebP) so Outlook on Windows renders correctly.
-const LOGO_URL = "https://www.catalyst-magazine.com/WebLogo.jpg";
-
 export function buildNewsletter({
   subject = "New from The Catalyst",
   preheader = "",
@@ -29,12 +25,15 @@ export function buildNewsletter({
   siteUrl = "https://www.catalyst-magazine.com",
   unsubscribeUrl = null,
   recipientEmail = null,
-  logoUrl = LOGO_URL,
+  recipientFirstName = null,
 }) {
   const cardHtml = articles.map((a, i) => articleCard(a, siteUrl, i === 0)).join("");
   const unsub = unsubscribeUrl
     ? `<a href="${esc(unsubscribeUrl)}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`
     : `<a href="${esc(siteUrl)}/api/unsubscribe/${encodeURIComponent(recipientEmail || "__RECIPIENT__")}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`;
+  // Personal greeting — strongest "this is a 1-to-1 message, not bulk
+  // marketing" signal Gmail's Promotions classifier looks for.
+  const greeting = recipientFirstName ? `Hi ${esc(recipientFirstName)},` : "Hi there,";
 
   return `<!doctype html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
@@ -70,32 +69,34 @@ export function buildNewsletter({
       <td align="center">
         <table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:${COLORS.surface};border-radius:20px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
 
-          <!-- Masthead with logo (white panel behind transparent PNG so it
-               never shows as a dark box in Gmail/Outlook dark mode) -->
+          <!-- Wordmark masthead — text only (no banner image) so the
+               "image-heavy promo" signal Gmail's Promotions classifier
+               keys on isn't triggered. Heavy system stack so the wordmark
+               renders instantly without an external font fetch. -->
           <tr>
-            <td class="px-40" style="padding:24px 40px 20px 40px;text-align:center;background:${COLORS.surface};">
-              <a href="${esc(siteUrl)}" style="text-decoration:none;display:inline-block;background:#ffffff;border-radius:14px;padding:18px 28px;">
-                <img src="${escAttr(logoUrl)}" alt="The Catalyst" width="440" style="width:440px;max-width:100%;height:auto;display:block;margin:0 auto;border:0;background:#ffffff;">
+            <td class="px-40" style="padding:30px 40px 22px 40px;text-align:center;background:${COLORS.surface};border-bottom:1px solid ${COLORS.hairline};">
+              <a href="${esc(siteUrl)}" style="text-decoration:none;color:${COLORS.ink};display:inline-block;">
+                <span style="display:inline-block;font-family:'Poppins','Helvetica Neue',Helvetica,Arial,'Arial Black',sans-serif;font-weight:900;font-size:26px;letter-spacing:-0.025em;color:${COLORS.ink};line-height:1;">The Catalyst</span>
               </a>
             </td>
           </tr>
 
-          <!-- Divider -->
+          <!-- Personal greeting — 1-to-1 signal -->
           <tr>
-            <td class="px-40" style="padding:10px 40px 0 40px;">
-              <div style="height:1px;background:${COLORS.hairline};line-height:1px;font-size:1px;">&nbsp;</div>
+            <td class="px-40" style="padding:28px 40px 0 40px;">
+              <p style="margin:0;font-size:16px;line-height:1.6;color:${COLORS.ink};font-weight:400;">${greeting}</p>
             </td>
           </tr>
 
           <!-- Hero -->
           <tr>
-            <td class="px-40" style="padding:36px 40px 8px 40px;text-align:center;">
-              <h1 class="hero-h1" style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;font-size:40px;line-height:1.08;color:${COLORS.ink};letter-spacing:-0.035em;">${esc(headline)}</h1>
+            <td class="px-40" style="padding:18px 40px 8px 40px;">
+              <h1 class="hero-h1" style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;font-size:34px;line-height:1.1;color:${COLORS.ink};letter-spacing:-0.03em;">${esc(headline)}</h1>
             </td>
           </tr>
           <tr>
-            <td class="px-40" style="padding:16px 40px 32px 40px;text-align:center;">
-              <p style="margin:0;font-size:16px;line-height:1.55;color:${COLORS.inkSoft};font-weight:400;">${esc(intro)}</p>
+            <td class="px-40" style="padding:14px 40px 28px 40px;">
+              <p style="margin:0;font-size:16px;line-height:1.6;color:${COLORS.inkSoft};font-weight:400;">${esc(intro)}</p>
             </td>
           </tr>
 
@@ -106,10 +107,15 @@ export function buildNewsletter({
             </td>
           </tr>
 
-          <!-- CTA -->
+          <!-- Sign-off — text link instead of a pill button so the layout
+               doesn't read as marketing. The strongest Primary-inbox signal
+               is inviting a reply. -->
           <tr>
-            <td class="px-40" style="padding:24px 40px 44px 40px;text-align:center;">
-              <a href="${esc(siteUrl)}/articles" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:15px 34px;border-radius:980px;font-weight:500;font-size:15px;letter-spacing:-0.01em;">Read more on Catalyst</a>
+            <td class="px-40" style="padding:8px 40px 36px 40px;">
+              <p style="margin:0 0 10px 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+                Browse all our reporting at <a href="${esc(siteUrl)}/articles" style="color:${COLORS.ink};text-decoration:underline;">catalyst-magazine.com</a>. Reply to this email if you want to share thoughts or pitch a story — we read every message.
+              </p>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.ink};">— The Catalyst editors</p>
             </td>
           </tr>
 
@@ -169,7 +175,7 @@ function articleCard(a, siteUrl, isFirst) {
           </a>
           ${byline ? `<div style="font-size:13px;color:${COLORS.muted};margin-bottom:10px;font-weight:400;">${esc(byline)}</div>` : ""}
           ${excerpt ? `<div style="font-size:15px;line-height:1.6;color:${COLORS.inkSoft};margin-bottom:18px;font-weight:400;">${esc(excerpt)}</div>` : ""}
-          <a class="read-link" href="${esc(href)}" style="display:inline-block;background:${COLORS.ink};color:#ffffff;text-decoration:none;padding:10px 22px;border-radius:980px;font-weight:500;font-size:14px;letter-spacing:-0.01em;">Read the story &rarr;</a>
+          <a class="read-link" href="${esc(href)}" style="font-size:14px;color:${COLORS.ink};text-decoration:underline;font-weight:600;letter-spacing:0.01em;">Read the full story &rarr;</a>
         </td>
       </tr>
     </table>`;
@@ -388,9 +394,13 @@ export function buildNewsletterText({
   articles = [],
   siteUrl = "https://www.catalyst-magazine.com",
   recipientEmail = null,
+  recipientFirstName = null,
   unsubscribeUrl = null,
 } = {}) {
   const lines = [];
+  const greeting = recipientFirstName ? `Hi ${recipientFirstName},` : "Hi there,";
+  lines.push(greeting);
+  lines.push("");
   lines.push(headline);
   lines.push("=".repeat(Math.min(headline.length, 60)));
   lines.push("");

@@ -12,6 +12,7 @@ import { sendBulkEmail, sendEmail } from "./resend.js";
 import {
   buildInboxNewsletter,
   buildInboxNewsletterText,
+  buildNewsletter,
   buildNewsletterText,
 } from "./newsletter-template.js";
 
@@ -30,11 +31,11 @@ export function titleCaseName(s) {
 
 // Send a test email to a single address. Used for the "Send a test" button.
 // Builds personalized HTML+text using "Reader" as the fallback first name.
-export async function sendNewsletterTest(env, { subject, html, theme, inboxParams, testEmail, siteUrl }) {
+export async function sendNewsletterTest(env, { subject, theme, inboxParams, testEmail, siteUrl }) {
   const isInbox = theme === "inbox";
   const testHtml = isInbox
     ? buildInboxNewsletter({ ...inboxParams, subject, siteUrl, recipientFirstName: "Reader", recipientEmail: testEmail })
-    : html;
+    : buildNewsletter({ ...inboxParams, subject, siteUrl, recipientFirstName: "Reader", recipientEmail: testEmail });
   const testText = isInbox
     ? buildInboxNewsletterText({ ...inboxParams, siteUrl, recipientFirstName: "Reader", recipientEmail: testEmail })
     : buildNewsletterText({
@@ -43,6 +44,7 @@ export async function sendNewsletterTest(env, { subject, html, theme, inboxParam
         articles: inboxParams?.articles || [],
         siteUrl,
         recipientEmail: testEmail,
+        recipientFirstName: "Reader",
       });
   await sendEmail(env, {
     to: testEmail,
@@ -53,9 +55,10 @@ export async function sendNewsletterTest(env, { subject, html, theme, inboxParam
   });
 }
 
-// Build per-recipient HTML and text builders for a campaign. Inbox theme uses
-// the personalized template; classic theme reuses the same pre-built HTML for
-// every recipient (the unsubscribe link is the only per-recipient change).
+// Build per-recipient HTML and text builders for a campaign. Both themes are
+// now rendered per-recipient so each subscriber gets a personalized greeting
+// — this is the single strongest "1-to-1, not bulk-marketing" signal Gmail
+// uses to keep the message in Primary instead of Promotions.
 function buildBuilders({ theme, html, inboxParams, subject, siteUrl }) {
   if (theme === "inbox") {
     const htmlBuilder = (r) =>
@@ -75,14 +78,27 @@ function buildBuilders({ theme, html, inboxParams, subject, siteUrl }) {
       });
     return { htmlBuilder, textBuilder, classicText: null };
   }
-  // Classic theme — pre-built HTML, generic text fallback.
-  const classicText = buildNewsletterText({
-    headline: inboxParams?.headline,
-    intro: inboxParams?.intro,
-    articles: inboxParams?.articles || [],
-    siteUrl,
-  });
-  return { htmlBuilder: null, textBuilder: null, classicText };
+  // Classic theme — also per-recipient so the greeting and unsubscribe URL
+  // are personalized. inboxParams carries headline/intro/articles which the
+  // template needs; we do NOT use the pre-built `html` string anymore.
+  const htmlBuilder = (r) =>
+    buildNewsletter({
+      ...inboxParams,
+      subject,
+      siteUrl,
+      recipientEmail: r.email,
+      recipientFirstName: r.firstName || null,
+    });
+  const textBuilder = (r) =>
+    buildNewsletterText({
+      headline: inboxParams?.headline,
+      intro: inboxParams?.intro,
+      articles: inboxParams?.articles || [],
+      siteUrl,
+      recipientEmail: r.email,
+      recipientFirstName: r.firstName || null,
+    });
+  return { htmlBuilder, textBuilder, classicText: null };
 }
 
 // Load all active subscribers and normalize them into { email, firstName }
@@ -161,6 +177,11 @@ export async function dispatchCampaign(env, campaignId, campaign) {
     status: failureMessage ? "failed" : "sent",
     sentAt: new Date().toISOString(),
     sentCount,
+    // Persist recipient count too — scheduled campaigns are created with
+    // recipientCount: 0 (since the audience is only known at dispatch time).
+    // Without this update the history table shows "191 / 0" instead of
+    // "191 / 191".
+    recipientCount: recipients.length,
     error: failureMessage || null,
   });
 
