@@ -71,12 +71,14 @@ export function buildNewsletter({
 
           <!-- Wordmark masthead — text only (no banner image) so the
                "image-heavy promo" signal Gmail's Promotions classifier
-               keys on isn't triggered. Heavy system stack so the wordmark
-               renders instantly without an external font fetch. -->
+               keys on isn't triggered. Heavy system stack (Poppins on
+               clients that have it, Helvetica Bold / Arial Black fallback
+               everywhere else) so the wordmark renders instantly without
+               an external font fetch and still matches the site logo. -->
           <tr>
-            <td class="px-40" style="padding:30px 40px 22px 40px;text-align:center;background:${COLORS.surface};border-bottom:1px solid ${COLORS.hairline};">
+            <td class="px-40" style="padding:32px 40px 24px 40px;text-align:center;background:${COLORS.surface};border-bottom:1px solid ${COLORS.hairline};">
               <a href="${esc(siteUrl)}" style="text-decoration:none;color:${COLORS.ink};display:inline-block;">
-                <span style="display:inline-block;font-family:'Poppins','Helvetica Neue',Helvetica,Arial,'Arial Black',sans-serif;font-weight:900;font-size:26px;letter-spacing:-0.025em;color:${COLORS.ink};line-height:1;">The Catalyst</span>
+                <span style="display:inline-block;font-family:'Poppins','Helvetica Neue',Helvetica,'Arial Black',Arial,sans-serif;font-weight:900;font-size:30px;letter-spacing:-0.03em;color:${COLORS.ink};line-height:1;">The Catalyst Newsletter</span>
               </a>
             </td>
           </tr>
