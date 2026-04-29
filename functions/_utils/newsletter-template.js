@@ -467,35 +467,54 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
-// Rewrite a cover-image URL to a smaller, email-optimized variant. Big hero
-// JPEGs from Wix (often 2000px+ wide, 1MB+) tank the email's load time and
-// trip Gmail's "image-heavy = Promotions" heuristic. We target ~width
-// pixels at quality 80 so the visible image still looks crisp on retina
-// (the email container is 560px wide, and email images don't use srcset).
+// Rewrite a cover-image URL to an email-optimized variant. Big hero JPEGs
+// (Wix and Firebase both routinely serve 2000–4000px / 1–3 MB originals)
+// tank email load time and trip Gmail's "image-heavy = Promotions" signal.
 //
-// Currently handles Wix only because Firebase Storage / GCS don't expose a
-// public resize endpoint. Anything else is returned unchanged.
-function resizeForEmail(src, width = 560) {
+// Strategy:
+//   • Wix: rewrite to Wix's own /v1/fill/ resize endpoint at 2× display width.
+//   • Firebase / GCS: route through our /api/image-proxy?w=… on our own
+//     domain. The proxy caches with Cache-Control: immutable for 1 year, so
+//     Gmail's image proxy and Cloudflare's edge both cache forever after the
+//     first fetch — every recipient after the first gets a cache hit.
+//
+// We target 2× the visible width so retina screens still look sharp at
+// quality 82 (no visible JPEG artifacts at typical email viewing distance).
+const PROXY_BASE = "https://www.catalyst-magazine.com/api/image-proxy";
+
+function resizeForEmail(src, displayWidth = 560) {
   if (!src || typeof src !== "string") return src;
   if (src.startsWith("data:") || src.startsWith("blob:")) return src;
   let url;
   try { url = new URL(src); } catch { return src; }
 
+  // 2× for retina; cap at 1600 to keep bytes reasonable.
+  const targetW = Math.min(displayWidth * 2, 1600);
+
   if (url.hostname.includes("static.wixstatic.com")) {
-    const h = Math.round(width * 0.66);
-    // If a v1 transform already exists, just rewrite its width + quality.
-    // Drop enc_auto so the result is plain JPEG (some email clients still
-    // mishandle WebP — JPEG is universally safe).
+    const h = Math.round(targetW * 0.66);
     if (url.pathname.includes("/v1/")) {
       return src
-        .replace(/w_\d+/g, `w_${width}`)
+        .replace(/w_\d+/g, `w_${targetW}`)
         .replace(/h_\d+/g, `h_${h}`)
-        .replace(/q_\d+/g, "q_80")
+        .replace(/q_\d+/g, "q_82")
         .replace(/,enc_auto/g, "");
     }
     const parts = url.pathname.split("/").filter(Boolean);
     const filename = parts[parts.length - 1];
-    return `${src}/v1/fill/w_${width},h_${h},al_c,q_80/${filename}`;
+    return `${src}/v1/fill/w_${targetW},h_${h},al_c,q_82/${filename}`;
+  }
+
+  // Firebase Storage / GCS — route through our caching proxy. Strip the
+  // signed-URL `token`/`alt` query params so every recipient hits the same
+  // cache key (Firebase tokens are stable per-object, but dropping them
+  // collapses any accidental variants into one cached entry).
+  const isFirebase =
+    url.hostname.endsWith("firebasestorage.googleapis.com") ||
+    url.hostname.endsWith("firebasestorage.app") ||
+    url.hostname.endsWith("storage.googleapis.com");
+  if (isFirebase) {
+    return `${PROXY_BASE}?url=${encodeURIComponent(src)}&w=${targetW}&q=82`;
   }
 
   return src;

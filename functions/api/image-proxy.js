@@ -1,7 +1,9 @@
-// GET /api/image-proxy?url=<encoded-url>
-// Proxies an image from an external CDN (Wix, etc.) and returns it with
-// permissive CORS headers so the dashboard Canvas generator can drawImage()
-// across origins without taint errors.
+// GET /api/image-proxy?url=<encoded-url>[&w=560][&q=80]
+// Proxies an image from an external CDN (Wix, Firebase, etc.) so:
+//   1. Dashboard Canvas can drawImage() across origins without taint
+//   2. Newsletter <img> tags get a stable, cacheable URL on our own domain
+//      (Gmail's image proxy + Cloudflare's edge cache both cache aggressively
+//       only when the response sets long-lived public Cache-Control)
 //
 // Only allows fetching from approved hostnames to prevent open-proxy abuse.
 
@@ -16,6 +18,8 @@ const ALLOWED_HOSTS = [
   "en.wikipedia.org",             // Wikipedia thumbnails
   "wikipedia.org",                // Any Wikipedia subdomain
 ];
+
+function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 
 export const onRequestGet = async ({ request }) => {
   const { searchParams } = new URL(request.url);
@@ -38,9 +42,35 @@ export const onRequestGet = async ({ request }) => {
     return new Response(`Host not allowed: ${parsed.hostname}`, { status: 403 });
   }
 
-  const upstream = await fetch(parsed.toString(), {
-    headers: { "User-Agent": "CatalystMagazine/1.0 ImageProxy" },
-  });
+  const wRaw = searchParams.get("w");
+  const qRaw = searchParams.get("q");
+  const width = wRaw ? clamp(parseInt(wRaw, 10) || 0, 64, 2048) : 0;
+  const quality = qRaw ? clamp(parseInt(qRaw, 10) || 0, 40, 95) : 82;
+  const wantResize = width > 0;
+
+  // Try Cloudflare Image Resizing if a width was requested. cf.image is a
+  // no-op (returns original bytes) on plans where Image Resizing isn't
+  // enabled — but on Pages it throws. We try it, and on any failure fall
+  // back to the un-transformed origin fetch.
+  let upstream;
+  if (wantResize) {
+    try {
+      upstream = await fetch(parsed.toString(), {
+        headers: { "User-Agent": "CatalystMagazine/1.0 ImageProxy" },
+        cf: {
+          image: { width, quality, fit: "scale-down", format: "auto" },
+        },
+      });
+      if (!upstream.ok) throw new Error(`status ${upstream.status}`);
+    } catch {
+      upstream = null;
+    }
+  }
+  if (!upstream) {
+    upstream = await fetch(parsed.toString(), {
+      headers: { "User-Agent": "CatalystMagazine/1.0 ImageProxy" },
+    });
+  }
 
   if (!upstream.ok) {
     const body = await upstream.text().catch(() => "");
@@ -55,7 +85,10 @@ export const onRequestGet = async ({ request }) => {
     headers: {
       "Content-Type": contentType,
       "Access-Control-Allow-Origin": "*",
-      "Cache-Control": "public, max-age=86400, immutable",
+      // 1 year, immutable — newsletters reference a stable URL that never
+      // changes content. This lets Gmail's image proxy cache the bytes
+      // forever, so reopening or forwarding the email is instant.
+      "Cache-Control": "public, max-age=31536000, immutable",
     },
   });
 };
