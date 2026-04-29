@@ -2926,6 +2926,8 @@ async function mountSocialPosts(ctx, container) {
     if (carouselTheme === "beautiful") {
       return `You are designing a premium Instagram carousel for The Catalyst Magazine. Use the BEAUTIFUL theme — a high-end editorial layout with a bold left accent bar, large headline, a single framing sentence, and clean bullet points. Each slide should look like it came from a professional magazine designer, not a template.
 
+Write in a polished magazine-news voice: professional, specific, and human, with the clarity and authority of CNN science coverage, Science Magazine, or Undark. Do not sound like AI. Avoid generic phrases, padded transitions, motivational language, "game-changing," "revolutionary," "delve," "unlock," "explore," and other synthetic-sounding filler.
+
 ABSOLUTE RULE: do NOT use ANY emojis anywhere in your output. No emoji in the caption. No emoji in any page. No emoji in hashtags. Plain text only.
 
 ── ARTICLE ──
@@ -2958,6 +2960,12 @@ accent: <vivid hex that pops against bg — electric blue, coral, amber, teal, m
 
 CRITICAL: "bullets" must be blank on all slides EXCEPT one. The majority of slides are statement slides with only headline + body. That is what makes them beautiful.
 
+CRITICAL COHESION RULES:
+• The carousel must read like one continuous argument, not disconnected facts. Slide 2 should set up slide 3; slide 3 should make slide 4 feel inevitable; slide 4 should naturally lead to the final CTA.
+• Do not make abrupt jumps in topic, context, scale, or framing between slides. If the subject changes, bridge it explicitly in the headline or body.
+• The one bullet slide must have a headline that directly frames the list. Every bullet must answer, prove, quantify, or clarify that headline. Do not mix unrelated bullets.
+• Bullet points must be parallel and cohesive: same topic, same level of detail, concrete, and logically grouped. If the headline is about a tool, bullets should explain what the tool does or what evidence supports it, not random background stats.
+
 Do NOT include a cover page — added automatically. Do NOT include a closing page — added automatically. No emojis.
 
 ── TWO SLIDE TYPES ──
@@ -2976,9 +2984,10 @@ Body sentences must be SHORT — 15-25 words max — so they fit cleanly without
 • Statement slides: write the headline as if it will be printed on a billboard. It must land on its own.
 • Breakdown slide: the headline introduces the list. Bullets are the content.
 • Never repeat the same idea across slides. Each slide must add something new.
+• Make the final phrase or implication of each slide point toward the next slide.
 • Vary accent colors — a different vivid color on each slide.
 • bg colors: coherent palette, varied shades.
-• Tone: confident, curious, precise. Science journalist, not social media manager.
+• Tone: confident, curious, precise. Science journalist, not social media manager. Professional and stylish, never AI-ish.
 ${colorGuidance}
 
 ── NARRATIVE ARC ──
@@ -3024,6 +3033,8 @@ accent: #29c97a
     }
 
     return `You are designing an Instagram carousel for The Catalyst Magazine — a polished, editorial publication about science, tech, and social impact. Given the article info below, produce a CAPTION for the post AND 3 to 5 carousel pages that walk a reader through the article in a scroll-stopping, beautiful, deeply readable way. Everything must feel like a premium magazine — confident, curious, human, never clickbait.
+
+Write in a polished magazine-news voice: professional, specific, and human, with the clarity and authority of CNN science coverage, Science Magazine, or Undark. Do not sound like AI. Avoid generic phrases, padded transitions, motivational language, "game-changing," "revolutionary," "delve," "unlock," "explore," and other synthetic-sounding filler.
 
 ABSOLUTE RULE: do NOT use ANY emojis anywhere in your output. No emoji in the caption. No emoji in any page. No emoji in hashtags. Plain text only. If you instinctively reach for an emoji, replace it with a precise word.
 
@@ -3081,6 +3092,11 @@ The carousel should walk the reader through the article like a story — introdu
    — End on a call to action. The headline should tease what's still unsaid. The body should make the reader feel they're missing the full story by not clicking. The cta line MUST be: 'Read "${title}" by ${author}. Link in bio.'
 
 The total flow should feel like: "Here's the topic → here's why it's surprising → here's a human voice → (optional deeper beat) → go read it." Each page should logically follow the one before it. Do not repeat the same point twice. Do not put the cta on more than one page.
+
+CRITICAL FLOW RULES:
+• No abrupt changes between slides. Slide 2 must clearly set up slide 3, slide 3 must clearly set up slide 4, and the final page must feel like the natural next step.
+• Keep the context continuous: if a slide introduces a person, tool, institution, statistic, or policy, the next slide should either build on it or explain why the frame is shifting.
+• Do not make each page a standalone mini-post. The pages must form a single editorial sequence.
 
 ── EXAMPLE (format only — your colors should come from the cover palette above; no emojis anywhere) ──
 caption: Light from 13 billion years ago is teaching us how galaxies were born — and where ours is going next.\\n\\nDr. Duilia De Mello uses NASA's deep space telescopes to look so far back in time that she is watching the first galaxies form. Her work on cosmic collisions is rewriting what we know about our own origins.\\n\\nRead more by ${author} at catalyst-magazine.com — link in bio.\\n\\n#TheCatalyst #CatalystMagazine #Astronomy #ScienceWriting #STEM #NASA #SpaceExploration
@@ -3469,18 +3485,7 @@ bg: #0a1f3d
     let caption = null;
     let coverQuestion = null;
     for (const section of sections) {
-      const obj = {};
-      for (const rawLine of section.split(/\r?\n/)) {
-        const line = rawLine.trim();
-        if (!line || line.startsWith("#")) continue;
-        const m = /^([a-zA-Z_][\w-]*)\s*:\s*(.*)$/.exec(line);
-        if (!m) continue;
-        const key = m[1].toLowerCase();
-        // Convert literal `\n` sequences in the value to real newlines so AI
-        // can fit a paragraph break onto a single line.
-        const value = m[2].replace(/\\n/g, "\n").trim();
-        obj[key] = value;
-      }
+      const obj = parseAiSectionFields(section);
       // Top-level caption block — has no `layout:` field.
       if (!obj.layout && (obj.caption || obj.cover_question || obj.coverquestion)) {
         if (obj.caption) caption = stripEmojis(obj.caption);
@@ -3500,6 +3505,31 @@ bg: #0a1f3d
       pages.push(page);
     }
     return { caption, coverQuestion, pages };
+  }
+
+  function parseAiSectionFields(section) {
+    const obj = {};
+    let currentKey = null;
+    for (const rawLine of section.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      const m = /^([a-zA-Z_][\w-]*)\s*:\s*(.*)$/.exec(line);
+      if (m) {
+        currentKey = m[1].toLowerCase();
+        obj[currentKey] = m[2] || "";
+        continue;
+      }
+
+      // Multi-paragraph fields like `caption:` are often pasted with real
+      // newlines instead of literal `\n\n`. Treat non-key lines as a
+      // continuation of the previous key so the full caption survives.
+      if (!currentKey) continue;
+      obj[currentKey] += `\n${rawLine.trimEnd()}`;
+    }
+
+    for (const key of Object.keys(obj)) {
+      obj[key] = obj[key].replace(/\\n/g, "\n").trim();
+    }
+    return obj;
   }
 
   // ── Create view lifecycle ──────────────────────────────────────────────────
