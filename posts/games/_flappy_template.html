@@ -901,6 +901,7 @@ function startGame() {
   rescueMode = false;
   rescuesUsed = 0;
   answeredCorrectly.clear();
+  shownThisRun.clear();
   currentQIndex = -1;
   frameTick = 0;
   flapAnim = 0;
@@ -999,16 +1000,18 @@ function updateHud() {
 }
 
 // ---- Question flow (mirrors the doodle game) -------------------------------
+// shownThisRun holds every question we've already presented in this run —
+// correct, wrong, or unanswered (e.g. shield broke before they answered).
+// Once a question appears, it can't reappear until the next startGame.
+const shownThisRun = new Set();
 function pickAvailableQuestion() {
   if (!QUESTIONS.length) return -1;
   const eligible = [];
   for (let i = 0; i < QUESTIONS.length; i++) {
-    if (!answeredCorrectly.has(i)) eligible.push(i);
+    if (!shownThisRun.has(i)) eligible.push(i);
   }
   if (!eligible.length) return -1;
-  const fresh = eligible.filter(i => i !== currentQIndex);
-  const pool = fresh.length ? fresh : eligible;
-  return pool[Math.floor(Math.random() * pool.length)];
+  return eligible[Math.floor(Math.random() * eligible.length)];
 }
 
 function tryRescue(reason) {
@@ -1029,6 +1032,7 @@ function tryRescue(reason) {
 function presentQuestion(idx, modalOpts = {}) {
   if (idx >= QUESTIONS.length || idx < 0) return;
   currentQIndex = idx;
+  shownThisRun.add(idx);
   state = STATE.PAUSED_Q;
   // Release the touch lock while a modal is open so the reader can tap
   // answer buttons and scroll the page if needed; we re-engage when the

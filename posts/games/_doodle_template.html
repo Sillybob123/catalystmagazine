@@ -980,6 +980,7 @@ function startGame() {
   rescueMode = false;
   rescuesUsed = 0;
   answeredCorrectly.clear();
+  shownThisRun.clear();
   currentQIndex = -1;
   bulletCooldown = 0;
   lastFrameTs = 0;
@@ -1057,26 +1058,25 @@ let rescuesUsed = 0;          // How many lives the player has earned by answeri
 // question is still available as a rescue prompt, and a question you got
 // wrong earlier can be re-attempted on the next life loss).
 const answeredCorrectly = new Set();
+// shownThisRun tracks every question that's been presented during the
+// current run — correct, wrong, or interrupted. Once shown, a question
+// can't reappear until the next startGame, so the player never sees the
+// same prompt twice in a single playthrough.
+const shownThisRun = new Set();
 // 2 saves max regardless of question count, per design.
 const MAX_RESCUES = 2;
 
 // Pick the next question to present (for either a rescue or a gold
-// platform). A question is eligible only if the player hasn't already
-// gotten it right in this run — that's the fix for the bug where a rescue
-// and the gold platform could surface the same question back-to-back.
-// Returns -1 if every question has already been answered correctly.
+// platform). Excludes any question that's already been shown in this
+// run; returns -1 if the run's 3-question allotment is exhausted.
 function pickAvailableQuestion() {
   if (!QUESTIONS.length) return -1;
   const eligible = [];
   for (let i = 0; i < QUESTIONS.length; i++) {
-    if (!answeredCorrectly.has(i)) eligible.push(i);
+    if (!shownThisRun.has(i)) eligible.push(i);
   }
   if (!eligible.length) return -1;
-  // Prefer indices that haven't been the most recently asked one so
-  // back-to-back wrong answers cycle through the pool instead of looping.
-  const fresh = eligible.filter(i => i !== currentQIndex);
-  const pool = fresh.length ? fresh : eligible;
-  return pool[Math.floor(Math.random() * pool.length)];
+  return eligible[Math.floor(Math.random() * eligible.length)];
 }
 
 // Triggered on death. If revives remain, offer a question — correct = respawn,
@@ -1099,6 +1099,7 @@ function tryRescue(reason) {
 function presentQuestion(idx, modalOpts = {}) {
   if (idx >= QUESTIONS.length || idx < 0) return;
   currentQIndex = idx;
+  shownThisRun.add(idx);
   state = STATE.PAUSED_Q;
   const q = QUESTIONS[idx];
   const qHint = document.getElementById("qHint");
