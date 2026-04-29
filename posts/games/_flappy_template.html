@@ -464,6 +464,11 @@
       -4px  4px 0 #1f2024,  4px  4px 0 #1f2024,
       0 8px 0 rgba(0, 0, 0, 0.45);
   }
+  .countdown__num.ready {
+    /* "Ready" has more glyphs than the digits, so step the size down
+       to keep it on a single line on narrow phone canvases. */
+    font-size: clamp(40px, 10vw, 80px);
+  }
   .countdown__num.go {
     /* GO! is shorter so we can size it bigger without overflowing the
        canvas, and switch to the iconic Flappy Bird red. */
@@ -694,11 +699,23 @@ const qContinue = document.getElementById("qContinue");
 const W = 360;
 let H = 600;
 function currentCanvasDpr(rect) {
+  // Render the backing buffer at a multiple of the displayed pixel count
+  // so the world stays crisp instead of looking like 360-pixel pixel-art
+  // stretched across a 700-pixel canvas. We always scale relative to the
+  // visible width, then add an extra margin on retina so anti-aliasing
+  // doesn't blur edges down to a fuzzy halo.
   const rawDpr = window.devicePixelRatio || 1;
-  const baseDpr = rawDpr < 1.5 ? 1 : 2;
-  if (!document.body.classList.contains("is-expanded")) return baseDpr;
+  const retinaBoost = rawDpr >= 1.5 ? 1.25 : 1;
+  // visualScale = how many display pixels per logical pixel right now.
+  // Using rect width (when available) keeps the backing buffer matched
+  // to the on-screen size whether the canvas is column-width, expanded,
+  // or fullscreen.
   const visualScale = rect ? Math.max(1, rect.width / W) : 1;
-  return Math.min(4, Math.max(baseDpr, Math.ceil(baseDpr * visualScale)));
+  const target = Math.ceil(visualScale * 2 * retinaBoost);
+  // Floor at 2 so even small renders don't fall below ~720px of detail;
+  // cap at 6 because beyond that you're paying memory + bandwidth for
+  // pixels nobody can see.
+  return Math.min(6, Math.max(2, target));
 }
 function fitCanvas() {
   const rect = wrap.getBoundingClientRect();
@@ -779,12 +796,13 @@ const GRAVITY = 0.42;
 const FLAP_VY = -7.2;
 const MAX_VY = 9.5;
 const PIPE_SPEED_BASE = 1.7;       // logical px/step (start gentle)
-// Scores 0-2 stay forgiving; score 3 starts tightening so pipes 3-5 no
-// longer feel like a long tutorial stretch.
-const PIPE_GAP_EASY = 178;          // starting gap — still approachable
-const PIPE_GAP_BASE = 108;          // late-game gap — tighter than before
-const PIPE_GAP_RAMP_START = 3;      // first score where difficulty ramps
-const PIPE_GAP_RAMP_END = 9;        // fully tight by score 9
+// Pipes 0-4 stay approachable; pipe 5 starts tightening, fully tight by
+// pipe 10 so the difficulty curve ramps in the meat of an average run
+// instead of saving all the challenge for late-game.
+const PIPE_GAP_EASY = 172;          // starting gap — still approachable
+const PIPE_GAP_BASE = 102;          // late-game gap — tighter than before
+const PIPE_GAP_RAMP_START = 5;      // first score where difficulty ramps
+const PIPE_GAP_RAMP_END = 10;       // fully tight by score 10
 const PIPE_W = 56;
 // Slightly wider spacing too so early pipes give more reaction time.
 const PIPE_INTERVAL = 200;
@@ -810,6 +828,7 @@ let bird = null;            // {x, y, vy, rot}
 let pipes = [];             // {x, gapY, gap, scored, gold, spawnedQ, hue}
 let particles = [];
 let scrollX = 0;            // total world distance scrolled (for rank)
+let prevScrollX = 0;        // prior step's scrollX, for hatch-line interp
 let nextPipeAt = 0;
 let score = 0;              // pipes passed
 let correctCount = 0;
@@ -818,6 +837,13 @@ let goldSpawned = false;
 let pendingShield = false;
 let invuln = 0;
 let frameTick = 0;
+// Wings only animate during a flap. flapAnim counts down at one unit per
+// physics step; while it's > 0 we cycle through the sprite's wing frames,
+// and when it hits 0 we settle back to the neutral pose. This matches the
+// visual the player expects — wings beat once on tap, then glide.
+let flapAnim = 0;
+const FLAP_ANIM_FRAMES = 18;        // ~0.3s of beat at 60fps
+const FLAP_REST_FRAME = 1;          // sprite index used while gliding
 // Distant clouds drift from right to left at a gentle parallax pace. Each
 // cloud has its own spawn/despawn lifecycle: it appears fully off the right
 // edge, glides across, and is removed once it passes the left edge — so
@@ -851,6 +877,7 @@ function spawnPipe(x, opts = {}) {
   const gapY = clamp(rand(minTop, maxTop), minTop, maxTop);
   pipes.push({
     x,
+    prevX: x,                 // last-step x, for render-time interpolation
     gapY,
     gap,
     scored: false,
@@ -876,7 +903,9 @@ function startGame() {
   answeredCorrectly.clear();
   currentQIndex = -1;
   frameTick = 0;
+  flapAnim = 0;
   scrollX = 0;
+  prevScrollX = 0;
   // Seed the sky with a few clouds already partway across so the screen
   // doesn't start empty. Each is placed at random x within the visible band
   // (no fade lifecycle on initial spawn — they're already in flight).
@@ -885,7 +914,7 @@ function startGame() {
     clouds.push(makeCloud({ x: rand(20, W - 60), seeded: true }));
   }
   nextCloudAt = frameTick + Math.floor(rand(120, 220));
-  bird = { x: W * 0.32, y: H * 0.45, vy: 0, rot: 0 };
+  bird = { x: W * 0.32, y: H * 0.45, prevY: H * 0.45, vy: 0, rot: 0, prevRot: 0 };
   // Seed a few pipes ahead of the bird.
   let x = W + 80;
   for (let i = 0; i < 4; i++) {
@@ -907,14 +936,14 @@ function startGame() {
 const COUNTDOWN_BEAT_MS = 750;
 const countdownEl = document.getElementById("countdown");
 let countdownTimer = null;
-function startCountdown() {
+function startCountdown(beats = ["3", "2", "1", "GO!"]) {
   state = STATE.COUNTDOWN;
-  // Engage the touch-action lock immediately so a tap during 3-2-1 can't
-  // accidentally scroll the page out from under the player. Bind doFlap
-  // is gated behind state === PLAYING so the count itself is unaffected.
+  // Engage the touch-action lock immediately so a tap during the count
+  // can't accidentally scroll the page out from under the player. Bind
+  // doFlap is gated behind state === PLAYING so the count itself is
+  // unaffected.
   setPlayingTouchLock(true);
   countdownEl.hidden = false;
-  const beats = ["3", "2", "1", "GO!"];
   let i = 0;
   const tick = () => {
     if (i >= beats.length) {
@@ -931,7 +960,9 @@ function startCountdown() {
     // insertion, not on textContent changes).
     countdownEl.innerHTML = "";
     const num = document.createElement("div");
-    num.className = "countdown__num" + (beats[i] === "GO!" ? " go" : "");
+    const isGo = /^go!?$/i.test(beats[i]);
+    const isReady = /^ready$/i.test(beats[i]);
+    num.className = "countdown__num" + (isGo ? " go" : isReady ? " ready" : "");
     num.textContent = beats[i];
     countdownEl.appendChild(num);
     i++;
@@ -1057,8 +1088,10 @@ function answerQuestion(picked, btn) {
         qmodal.classList.remove("visible");
         respawnBird();
         rescueMode = false;
-        state = STATE.PLAYING;
-        setPlayingTouchLock(true);
+        // Give the player a beat to find the bird again before pipes
+        // start moving — same countdown UI as the pre-roll, but the
+        // shorter "Ready → GO!" cadence so it doesn't drag.
+        startCountdown(["Ready", "GO!"]);
       }, 1100);
     } else {
       btn.classList.add("wrong");
@@ -1108,8 +1141,10 @@ function answerQuestion(picked, btn) {
 function respawnBird() {
   bird.x = W * 0.32;
   bird.y = H * 0.45;
+  bird.prevY = bird.y;          // sync interp anchor — no rubber-band
   bird.vy = 0;
   bird.rot = 0;
+  bird.prevRot = 0;
   pendingShield = true;
   invuln = 90;
   // Clear pipes the bird is currently overlapping or about to crash into.
@@ -1121,6 +1156,10 @@ const STEP_MS = 1000 / 60;
 const MAX_CATCHUP_MS = 200;
 let lastFrameTs = 0;
 let stepAccumulator = 0;
+// 0..1 — how far between the last completed step and the next one we are
+// at draw time. Used to interpolate render positions so motion looks
+// smooth regardless of monitor refresh rate.
+let renderAlpha = 0;
 function loop(t) {
   if (state === STATE.OVER) return;
   if (!lastFrameTs) lastFrameTs = t;
@@ -1134,8 +1173,10 @@ function loop(t) {
       step();
       stepAccumulator -= STEP_MS;
     }
+    renderAlpha = stepAccumulator / STEP_MS;
   } else {
     stepAccumulator = 0;
+    renderAlpha = 0;
   }
   draw();
   requestAnimationFrame(loop);
@@ -1151,6 +1192,19 @@ function pipeSpeed() {
 
 function step() {
   frameTick++;
+  if (flapAnim > 0) flapAnim--;
+  // Snapshot pre-step positions for render-time interpolation. Without
+  // this, when the rAF cadence (often 60Hz on browsers, sometimes 120Hz)
+  // doesn't line up perfectly with our 60Hz physics tick, frames end up
+  // showing 0 or 1 step's worth of motion alternately — which reads as
+  // jitter / lag in the pipes and a queasy camera feel. We interpolate
+  // between prev and current state in draw() using the leftover
+  // stepAccumulator fraction.
+  bird.prevY = bird.y;
+  bird.prevRot = bird.rot;
+  prevScrollX = scrollX;
+  for (let i = 0; i < pipes.length; i++) pipes[i].prevX = pipes[i].x;
+  for (let i = 0; i < clouds.length; i++) clouds[i].prevX = clouds[i].x;
   // Bird physics
   bird.vy = clamp(bird.vy + GRAVITY, -12, MAX_VY);
   bird.y += bird.vy;
@@ -1194,16 +1248,28 @@ function step() {
   }
 
   // Collisions: pipes
+  // The 56×56 sprite has noticeable transparent padding around the bird
+  // body, so a circle the width of the frame produces "ghost" hits when
+  // the bird is just *near* a pipe. We use a tight AABB sized to the
+  // actual visible bird (~60% of frame width, ~52% of frame height — the
+  // bird is wider than tall in the sprite) and intersect against the two
+  // pipe rectangles directly. This gives pixel-accurate corners: a hit
+  // only registers when opaque bird pixels overlap pipe pixels.
   if (invuln > 0) invuln--;
+  const hbHalfW = PLAYER_W * 0.30;
+  const hbHalfH = PLAYER_H * 0.26;
+  const bx0 = bird.x - hbHalfW;
+  const bx1 = bird.x + hbHalfW;
+  const by0 = bird.y - hbHalfH;
+  const by1 = bird.y + hbHalfH;
   const rx = bird.x;
   const ry = bird.y;
-  const r = PLAYER_W * 0.36; // tight collision circle, smaller than sprite
   for (const p of pipes) {
     // Two rectangles per pipe pair: top (0..gapY) and bottom (gapY+gap..H-FLOOR_H)
-    const inXRange = rx + r > p.x && rx - r < p.x + PIPE_W;
+    const inXRange = bx1 > p.x && bx0 < p.x + PIPE_W;
     if (!inXRange) continue;
-    const topHit = ry - r < p.gapY;
-    const botHit = ry + r > p.gapY + p.gap;
+    const topHit = by0 < p.gapY;
+    const botHit = by1 > p.gapY + p.gap;
     if (topHit || botHit) {
       // Gold pipe + first pass: open the question, no damage.
       if (p.gold && !p.spawnedQ && !rescueMode) {
@@ -1237,20 +1303,20 @@ function step() {
       return;
     }
   }
-  // Floor / ceiling
-  if (ry + r > H - FLOOR_H) {
+  // Floor / ceiling — same tight hitbox bounds as the pipe check above.
+  if (by1 > H - FLOOR_H) {
     if (pendingShield) {
       pendingShield = false;
       invuln = 70;
-      bird.y = H - FLOOR_H - r - 2;
+      bird.y = H - FLOOR_H - hbHalfH - 2;
       bird.vy = FLAP_VY;
     } else {
       loseLife("You hit the ground!");
       return;
     }
   }
-  if (ry - r < 0) {
-    bird.y = r;
+  if (by0 < 0) {
+    bird.y = hbHalfH;
     bird.vy = 0;
   }
 
@@ -1284,14 +1350,20 @@ function draw() {
 
   // Distant clouds — drawn at their tracked positions. Spawn/despawn
   // happens entirely off-screen, so they only ever appear to glide across.
+  // x is interpolated between the last two physics steps so motion stays
+  // smooth at any monitor refresh rate.
+  const a = renderAlpha;
   for (const c of clouds) {
     ctx.fillStyle = "rgba(255, 255, 255, " + (c.alpha * 0.85).toFixed(3) + ")";
-    drawCloud(c.x, c.y, c.r);
+    const cx = c.prevX + (c.x - c.prevX) * a;
+    drawCloud(cx, c.y, c.r);
   }
 
-  // Pipes
+  // Pipes — interpolate x so a slow 60Hz step doesn't look like steppy
+  // 60-frame jumps on a 120Hz / 144Hz display.
   for (const p of pipes) {
-    drawPipe(p);
+    const px = p.prevX + (p.x - p.prevX) * a;
+    drawPipe(p, px);
   }
 
   // Floor strip
@@ -1300,9 +1372,12 @@ function draw() {
   ctx.fillRect(0, floorY, W, FLOOR_H);
   ctx.fillStyle = "#a07a3a";
   ctx.fillRect(0, floorY, W, 4);
-  // Hatching on floor for motion
+  // Hatching on floor for motion — interpolated alongside the pipes so
+  // the ground doesn't tick visibly out of sync with the rest of the
+  // scrolling world.
   ctx.fillStyle = "rgba(160, 122, 58, 0.45)";
-  const hatchOff = (scrollX % 18);
+  const interpScroll = prevScrollX + (scrollX - prevScrollX) * a;
+  const hatchOff = (interpScroll % 18 + 18) % 18;
   for (let x = -hatchOff; x < W; x += 18) {
     ctx.fillRect(x, floorY + 8, 9, 3);
     ctx.fillRect(x + 4, floorY + 18, 9, 3);
@@ -1352,7 +1427,7 @@ function makeCloud(opts = {}) {
   // Tight vertical band near the top — keeps clouds out of pipe territory.
   const y = rand(28, 130);
   const x = opts.seeded ? opts.x : (W + r + 30);
-  return { x, y, r, alpha: opts.seeded ? 1 : 0 };
+  return { x, prevX: x, y, r, alpha: opts.seeded ? 1 : 0 };
 }
 function updateClouds() {
   // Drift each cloud left, recompute alpha from its on-screen position,
@@ -1411,86 +1486,162 @@ function drawRetroScore() {
   ctx.restore();
 }
 
-function drawPipe(p) {
+function drawPipe(p, drawX) {
+  // drawX is the render-time interpolated x. Falls back to p.x (the
+  // simulation x) so hot-reload / debug calls without a fraction still
+  // render at the canonical position.
+  const px = drawX != null ? drawX : p.x;
   const gapTop = p.gapY;
   const gapBot = p.gapY + p.gap;
   const floorY = H - FLOOR_H;
   const colors = pipeColors(p);
-  const cap = 16;
-  // Top pipe body
-  ctx.fillStyle = pipeGradient(p.x, 0, PIPE_W, Math.max(0, gapTop - cap), colors);
-  ctx.fillRect(p.x, 0, PIPE_W, gapTop - cap);
-  // Top pipe cap
-  ctx.fillStyle = pipeGradient(p.x - 4, gapTop - cap, PIPE_W + 8, cap, colors);
-  ctx.fillRect(p.x - 4, gapTop - cap, PIPE_W + 8, cap);
-  // Bottom pipe body
-  ctx.fillStyle = pipeGradient(p.x, gapBot + cap, PIPE_W, Math.max(0, floorY - (gapBot + cap)), colors);
-  ctx.fillRect(p.x, gapBot + cap, PIPE_W, floorY - (gapBot + cap));
-  // Bottom pipe cap
-  ctx.fillStyle = pipeGradient(p.x - 4, gapBot, PIPE_W + 8, cap, colors);
-  ctx.fillRect(p.x - 4, gapBot, PIPE_W + 8, cap);
-  // Outline strokes
-  ctx.strokeStyle = colors.dark;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(p.x, 0, PIPE_W, gapTop - cap);
-  ctx.strokeRect(p.x - 4, gapTop - cap, PIPE_W + 8, cap);
-  ctx.strokeRect(p.x, gapBot + cap, PIPE_W, floorY - (gapBot + cap));
-  ctx.strokeRect(p.x - 4, gapBot, PIPE_W + 8, cap);
-  // Highlight
-  ctx.fillStyle = colors.highlight;
-  ctx.fillRect(p.x + 6, 0, 4, gapTop - cap);
-  ctx.fillRect(p.x + 6, gapBot + cap, 4, floorY - (gapBot + cap));
-  // Gold question mark
+  const cap = 22;
+  const capOverhang = 6;
+  const topBodyH = Math.max(0, gapTop - cap);
+  const botBodyY = gapBot + cap;
+  const botBodyH = Math.max(0, floorY - botBodyY);
+
+  // Soft drop shadow cast by the whole pipe onto the world. Cheaper than
+  // a real shadow blur — a single dim rect offset to the right reads as
+  // ambient occlusion from the sky-light behind the player.
+  ctx.fillStyle = "rgba(15, 18, 26, 0.18)";
+  if (topBodyH > 0) ctx.fillRect(px + 4, 0, PIPE_W, topBodyH + 4);
+  ctx.fillRect(px - capOverhang + 4, Math.max(0, gapTop - cap), PIPE_W + capOverhang * 2, cap + 4);
+  if (botBodyH > 0) ctx.fillRect(px + 4, botBodyY, PIPE_W, botBodyH + 4);
+  ctx.fillRect(px - capOverhang + 4, gapBot, PIPE_W + capOverhang * 2, cap);
+
+  // ---- Bodies ----------------------------------------------------------
+  drawPipeBody(px, 0, PIPE_W, topBodyH, colors);
+  drawPipeBody(px, botBodyY, PIPE_W, botBodyH, colors);
+
+  // ---- Caps (lip at the gap edge) -------------------------------------
+  // Top pipe cap sits on the bottom of the top pipe; bottom cap sits on
+  // the top of the bottom pipe. We draw a small inner lip line so the
+  // cap reads as a separate cylinder ring.
+  drawPipeCap(px - capOverhang, gapTop - cap, PIPE_W + capOverhang * 2, cap, colors, /*pointsDown*/ true);
+  drawPipeCap(px - capOverhang, gapBot,        PIPE_W + capOverhang * 2, cap, colors, /*pointsDown*/ false);
+
+  // Gold question mark on the inside face of each cap.
   if (p.gold && !p.spawnedQ) {
-    ctx.fillStyle = "#1f2024";
+    ctx.fillStyle = "rgba(31, 32, 36, 0.92)";
     ctx.font = "800 16px Poppins, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("?", p.x + PIPE_W / 2, gapTop - cap / 2);
-    ctx.fillText("?", p.x + PIPE_W / 2, gapBot + cap / 2);
+    ctx.fillText("?", px + PIPE_W / 2, gapTop - cap / 2);
+    ctx.fillText("?", px + PIPE_W / 2, gapBot + cap / 2);
   }
+}
+
+// A single cylindrical body segment with lateral 3D shading. We layer a
+// horizontal gradient (dark→light→dark) to fake the curve, then paint
+// crisp highlight + shadow streaks on top so the pipe reads as metal /
+// glossy plastic instead of a flat rectangle.
+function drawPipeBody(x, y, w, h, colors) {
+  if (h <= 0) return;
+  // Base curved fill — mid-light at the centre, darker on the edges.
+  const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+  grad.addColorStop(0,    colors.shadow);
+  grad.addColorStop(0.18, colors.fill);
+  grad.addColorStop(0.45, colors.fill2);
+  grad.addColorStop(0.62, colors.fill2);
+  grad.addColorStop(0.85, colors.fill);
+  grad.addColorStop(1,    colors.shadow);
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y, w, h);
+
+  // Specular highlight band — narrow bright stripe just left of centre.
+  ctx.fillStyle = colors.highlight;
+  ctx.fillRect(x + Math.round(w * 0.22), y, Math.max(2, Math.round(w * 0.06)), h);
+  // Softer secondary highlight to widen the gloss.
+  ctx.fillStyle = colors.highlightSoft;
+  ctx.fillRect(x + Math.round(w * 0.30), y, Math.max(2, Math.round(w * 0.10)), h);
+
+  // Right-side shadow streak so the curve falls off into darkness.
+  ctx.fillStyle = colors.shadowSoft;
+  ctx.fillRect(x + Math.round(w * 0.74), y, Math.max(2, Math.round(w * 0.10)), h);
+
+  // Hard outline edges (left + right) for a crisp silhouette.
+  ctx.fillStyle = colors.dark;
+  ctx.fillRect(x, y, 2, h);
+  ctx.fillRect(x + w - 2, y, 2, h);
+}
+
+// Cap is a wider stub that sits at the gap edge. Same lateral curve
+// gradient as the body, plus a top + bottom rim line to imply a
+// cylinder seen end-on.
+function drawPipeCap(x, y, w, h, colors, pointsDown) {
+  if (h <= 0) return;
+  // Body of the cap — same lateral curve as the main pipe body.
+  drawPipeBody(x, y, w, h, colors);
+
+  // Inset rim line at the open (gap-facing) end. pointsDown = top pipe,
+  // so the open end is the bottom of the cap; otherwise it's the top.
+  const rimY = pointsDown ? y + h - 4 : y;
+  ctx.fillStyle = colors.dark;
+  ctx.fillRect(x, rimY, w, 4);
+  // Highlight strip along the rim's inner edge for depth.
+  ctx.fillStyle = colors.highlightSoft;
+  ctx.fillRect(x + 2, pointsDown ? y + h - 6 : y + 2, w - 4, 2);
+
+  // Joining seam where the cap meets the body — a thin shadow line.
+  const seamY = pointsDown ? y + 2 : y + h - 4;
+  ctx.fillStyle = colors.shadowSoft;
+  ctx.fillRect(x, seamY, w, 2);
 }
 
 function pipeColors(p) {
   if (p.gold) {
     return {
-      fill: "#f4d24a",
-      fill2: "#ffec87",
-      dark: "#a87814",
-      highlight: "rgba(255, 255, 255, 0.25)"
+      fill:           "#e8b820",
+      fill2:          "#ffe27a",
+      dark:           "#7a560a",
+      shadow:         "#b08418",
+      shadowSoft:     "rgba(70, 48, 6, 0.45)",
+      highlight:      "rgba(255, 255, 255, 0.85)",
+      highlightSoft:  "rgba(255, 255, 255, 0.35)"
     };
   }
   const hue = p.hue % 360;
   return {
-    fill: `hsl(${hue}, 78%, 56%)`,
-    fill2: `hsl(${(hue + 28) % 360}, 84%, 66%)`,
-    dark: `hsl(${hue}, 72%, 31%)`,
-    highlight: "rgba(255, 255, 255, 0.24)"
+    fill:           `hsl(${hue}, 72%, 46%)`,
+    fill2:          `hsl(${(hue + 8) % 360}, 80%, 62%)`,
+    dark:           `hsl(${hue}, 70%, 22%)`,
+    shadow:         `hsl(${hue}, 65%, 32%)`,
+    shadowSoft:     `hsla(${hue}, 60%, 18%, 0.55)`,
+    highlight:      "rgba(255, 255, 255, 0.85)",
+    highlightSoft:  "rgba(255, 255, 255, 0.32)"
   };
 }
 
-function pipeGradient(x, y, w, h, colors) {
-  const grad = ctx.createLinearGradient(x, y, x + w, y + Math.max(1, h));
-  grad.addColorStop(0, colors.dark);
-  grad.addColorStop(0.18, colors.fill);
-  grad.addColorStop(0.66, colors.fill2);
-  grad.addColorStop(1, colors.dark);
-  return grad;
-}
-
 function drawBird() {
-  // Pick a frame based on flap cadence — slower than every step so wings
-  // don't blur.
-  const frameIdx = (Math.floor(frameTick / 6) + (bird.vy < 0 ? 0 : 0)) % FRAME_COUNT;
+  // Wings are static unless the player is mid-flap. While flapAnim is
+  // counting down we step through the sprite's wing frames so the beat
+  // plays once per tap; otherwise we hold the rest pose so the bird
+  // glides without flapping.
+  let frameIdx;
+  if (flapAnim > 0) {
+    const elapsed = FLAP_ANIM_FRAMES - flapAnim;
+    // Spread the FRAME_COUNT wing frames evenly across the beat window.
+    frameIdx = Math.min(
+      FRAME_COUNT - 1,
+      Math.floor(elapsed * FRAME_COUNT / FLAP_ANIM_FRAMES)
+    );
+  } else {
+    frameIdx = FLAP_REST_FRAME % FRAME_COUNT;
+  }
+  // Interpolated y/rot so the bird itself glides smoothly between
+  // physics steps instead of snapping by ~7px chunks on each flap tick.
+  const drawY = bird.prevY + (bird.y - bird.prevY) * renderAlpha;
+  const drawRot = bird.prevRot + (bird.rot - bird.prevRot) * renderAlpha;
   const px = Math.round(bird.x - PLAYER_W / 2);
-  const py = Math.round(bird.y - PLAYER_H / 2);
+  const py = Math.round(drawY - PLAYER_H / 2);
   // Invuln flicker
   if (invuln > 0 && Math.floor(invuln / 6) % 2 === 0) {
     // skipped frame — flicker
   } else if (spriteLoaded && spriteFrames.length === FRAME_COUNT) {
     ctx.save();
     ctx.translate(px + PLAYER_W / 2, py + PLAYER_H / 2);
-    ctx.rotate(bird.rot);
+    ctx.rotate(drawRot);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(spriteFrames[frameIdx], -PLAYER_W / 2, -PLAYER_H / 2, PLAYER_W, PLAYER_H);
@@ -1499,7 +1650,7 @@ function drawBird() {
     // Fallback shape
     ctx.fillStyle = "#f4a72b";
     ctx.beginPath();
-    ctx.arc(bird.x, bird.y, PLAYER_W * 0.4, 0, Math.PI * 2);
+    ctx.arc(bird.x, drawY, PLAYER_W * 0.4, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = "#1f2024";
     ctx.lineWidth = 2;
@@ -1510,7 +1661,7 @@ function drawBird() {
     ctx.strokeStyle = "rgba(77, 138, 240, 0.85)";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(bird.x, bird.y, PLAYER_W * 0.55, 0, Math.PI * 2);
+    ctx.arc(bird.x, drawY, PLAYER_W * 0.55, 0, Math.PI * 2);
     ctx.stroke();
   }
 }
@@ -1526,6 +1677,7 @@ const SWALLOWED_KEYS = new Set([
 function doFlap() {
   if (state !== STATE.PLAYING || !bird) return;
   bird.vy = FLAP_VY;
+  flapAnim = FLAP_ANIM_FRAMES;
 }
 
 function bindKeys() {

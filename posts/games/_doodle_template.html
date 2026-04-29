@@ -410,6 +410,56 @@
     font-style: italic;
   }
 
+  /* ----- Countdown overlay (shown briefly after a successful revive) ----
+     Lets the player find their character on the playfield before the
+     screen starts scrolling again. */
+  .countdown {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 6;
+    background: rgba(31, 32, 36, 0.22);
+  }
+  .countdown[hidden] { display: none !important; }
+  .countdown__num {
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    font-weight: 400;
+    font-size: clamp(40px, 10vw, 80px);
+    color: #ffe24a;
+    line-height: 1;
+    letter-spacing: 0;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    image-rendering: pixelated;
+    transform: scale(0.6);
+    opacity: 0;
+    animation: countdownPop 0.75s steps(8, end) forwards;
+    text-shadow:
+      -4px 0 0 #1f2024,  4px 0 0 #1f2024,
+      0 -4px 0 #1f2024,  0 4px 0 #1f2024,
+      -4px -4px 0 #1f2024,  4px -4px 0 #1f2024,
+      -4px  4px 0 #1f2024,  4px  4px 0 #1f2024,
+      0 8px 0 rgba(0, 0, 0, 0.45);
+  }
+  .countdown__num.go {
+    font-size: clamp(48px, 12vw, 96px);
+    color: #ff6f3c;
+  }
+  @keyframes countdownPop {
+    0%   { transform: scale(0.6); opacity: 0; }
+    20%  { transform: scale(1.25); opacity: 1; }
+    45%  { transform: scale(0.95); opacity: 1; }
+    65%  { transform: scale(1.05); opacity: 1; }
+    100% { transform: scale(0.92); opacity: 0; }
+  }
+  @media (max-width: 540px) {
+    .countdown__num { font-size: clamp(34px, 11vw, 64px); }
+    .countdown__num.go { font-size: clamp(40px, 13vw, 72px); }
+  }
+
   .credit {
     text-align: center;
     margin-top: 12px;
@@ -492,6 +542,11 @@
     </div>
     <div class="canvas-wrap" id="canvasWrap">
       <canvas id="cv"></canvas>
+
+      <!-- Countdown overlay (Ready / GO! after a revive) -->
+      <div class="countdown" id="countdown" hidden>
+        <div class="countdown__num">Ready</div>
+      </div>
 
       <!-- Start overlay -->
       <div class="overlay" id="overlayStart">
@@ -789,7 +844,7 @@ const PLATFORM_H = 12;
 const PLAYER_W = PLAYER_BOX_SIZE;
 const PLAYER_H = PLAYER_BOX_SIZE;
 
-const STATE = { IDLE: 0, PLAYING: 1, PAUSED_Q: 2, OVER: 3 };
+const STATE = { IDLE: 0, PLAYING: 1, PAUSED_Q: 2, OVER: 3, COUNTDOWN: 4 };
 let state = STATE.IDLE;
 
 let p = null;            // player
@@ -1107,7 +1162,9 @@ function answerQuestion(picked, btn) {
         qmodal.classList.remove("visible");
         respawnPlayer();
         rescueMode = false;
-        state = STATE.PLAYING;
+        // Hold the world still on a "Ready → GO!" countdown so the
+        // player can find the doodler again before the screen scrolls.
+        startReviveCountdown();
         announce("CLUTCH!", { color: "#7b2cbf", life: 75 });
       }, 1100);
     } else {
@@ -1166,6 +1223,39 @@ function respawnPlayer() {
   pendingShield = true;
   invuln = 90;
   monsters = [];
+}
+
+// Ready → GO! beat shown after a successful revive. State stays in
+// COUNTDOWN so the loop draws the world without stepping physics —
+// the player has a beat to spot the doodler before it scrolls again.
+const REVIVE_BEAT_MS = 750;
+const countdownEl = document.getElementById("countdown");
+let countdownTimer = null;
+function startReviveCountdown() {
+  state = STATE.COUNTDOWN;
+  countdownEl.hidden = false;
+  const beats = ["Ready", "GO!"];
+  let i = 0;
+  const tick = () => {
+    if (i >= beats.length) {
+      countdownEl.hidden = true;
+      state = STATE.PLAYING;
+      // Reset frame timing so the held tick doesn't replay as catch-up.
+      lastFrameTs = 0;
+      stepAccumulator = 0;
+      return;
+    }
+    countdownEl.innerHTML = "";
+    const num = document.createElement("div");
+    const isGo = /^go!?$/i.test(beats[i]);
+    num.className = "countdown__num" + (isGo ? " go" : "");
+    num.textContent = beats[i];
+    countdownEl.appendChild(num);
+    i++;
+    countdownTimer = setTimeout(tick, REVIVE_BEAT_MS);
+  };
+  if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
+  tick();
 }
 
 // Stunt announcements — big arcade-style text that pops up briefly when the
