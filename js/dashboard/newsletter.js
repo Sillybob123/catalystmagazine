@@ -20,15 +20,18 @@ async function mountBuilder(ctx, container) {
         <div class="card-title">Newsletter builder</div>
         <div class="card-subtitle">Generate a Gmail-safe issue from your most recent published articles.</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <div role="tablist" aria-label="Newsletter theme" style="display:inline-flex;border:1px solid var(--hairline);border-radius:8px;overflow:hidden;">
-          <button type="button" class="btn btn-ghost btn-xs" data-theme="classic" aria-pressed="true" style="border-radius:0;border:0;padding:6px 14px;font-weight:600;background:var(--surface-2);">Classic</button>
-          <button type="button" class="btn btn-ghost btn-xs" data-theme="inbox" aria-pressed="false" style="border-radius:0;border:0;border-left:1px solid var(--hairline);padding:6px 14px;font-weight:600;">Inbox version</button>
+      <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+        <div role="tablist" aria-label="Newsletter theme" style="display:inline-flex;border:1px solid var(--hairline);border-radius:8px;overflow:hidden;height:34px;">
+          <button type="button" class="btn btn-ghost btn-xs" data-theme="classic" aria-pressed="true" style="border-radius:0;border:0;padding:0 14px;height:34px;font-weight:600;background:var(--surface-2);">Classic</button>
+          <button type="button" class="btn btn-ghost btn-xs" data-theme="inbox" aria-pressed="false" style="border-radius:0;border:0;border-left:1px solid var(--hairline);padding:0 14px;height:34px;font-weight:600;">Inbox version</button>
         </div>
-        <button class="btn btn-secondary btn-sm" id="btn-refresh">Regenerate</button>
-        <button class="btn btn-primary btn-sm" id="btn-test">Send a test</button>
-        <button class="btn btn-secondary btn-sm" id="btn-schedule">Schedule send…</button>
-        <button class="btn btn-accent btn-sm" id="btn-send">Send to all subscribers</button>
+        <div style="width:1px;height:24px;background:var(--hairline);"></div>
+        <div style="display:inline-flex;gap:8px;align-items:center;">
+          <button class="btn btn-secondary btn-sm" id="btn-refresh" style="height:34px;">Regenerate</button>
+          <button class="btn btn-primary btn-sm" id="btn-test" style="height:34px;">Send a test</button>
+          <button class="btn btn-secondary btn-sm" id="btn-schedule" style="height:34px;">Schedule send…</button>
+        </div>
+        <button class="btn btn-accent btn-sm" id="btn-send" style="height:34px;">Send to all subscribers</button>
       </div>
     </div>
     <!-- Scheduling panel — collapsed by default; opens via "Schedule send…". -->
@@ -166,6 +169,15 @@ async function mountBuilder(ctx, container) {
 
   let currentHtml = "";
   let currentArticles = [];
+  // Track the last auto-filled headline so we can refresh it when the
+  // article count changes — but only if the user hasn't typed a custom one.
+  let lastAutoHeadline = "";
+
+  function defaultHeadlineFor(count) {
+    return count === 1
+      ? "New Story from The Catalyst"
+      : `${count} New Stories from The Catalyst`;
+  }
 
   async function regenerate() {
     const ids = Array.from(selectedIds);
@@ -179,7 +191,12 @@ async function mountBuilder(ctx, container) {
     els.status.textContent = "Generating preview…";
     try {
       const count = ids.length;
-      const headline = els.headline.value.trim() || (count === 1 ? "A fresh story from The Catalyst" : `${count} new stories from The Catalyst`);
+      const auto = defaultHeadlineFor(count);
+      const current = els.headline.value.trim();
+      // Refresh the headline if it's empty OR still equals our last auto-fill
+      // (i.e. the user hasn't customized it).
+      const headline = (!current || current === lastAutoHeadline) ? auto : current;
+      lastAutoHeadline = auto;
       els.headline.value = headline;
 
       const res = await ctx.authedFetch("/api/newsletter/preview", {
