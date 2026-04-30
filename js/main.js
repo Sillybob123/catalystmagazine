@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 const ARTICLE_FALLBACK_IMAGE = '/NewsletterHeader1.png';
-const CARD_IMAGE_WIDTH = 1000;
-const HERO_IMAGE_WIDTH = 1100;
-const CARD_IMAGE_QUALITY = 88;
-const HERO_IMAGE_QUALITY = 65;
+const CARD_IMAGE_WIDTH = 800;
+const HERO_IMAGE_WIDTH = 1000;
+const CARD_IMAGE_QUALITY = 78;
+const HERO_IMAGE_QUALITY = 62;
 let articleData = [];
 let fadeObserver = null;
 
@@ -136,8 +136,8 @@ function createProgressiveImage(src, alt, className = '', eager = false, imageSe
 function bgImageUrl(el, raw) {
     const px = (el.offsetWidth || 640) * Math.min(window.devicePixelRatio || 1, 2);
     // Round up to the nearest bucket so wsrv.nl cache stays warm.
-    const w = px <= 500 ? 640 : px <= 900 ? 1200 : 1800;
-    return getResizedImageUrl(raw, w, 80);
+    const w = px <= 500 ? 640 : px <= 900 ? 1000 : 1600;
+    return getResizedImageUrl(raw, w, 72);
 }
 
 function applyBgImage(el) {
