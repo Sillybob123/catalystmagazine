@@ -6939,6 +6939,17 @@ async function handleSetDeadlines() {
         }
 
         showNotification('Deadlines updated successfully!', 'success');
+
+        // If publication or interview date changed, prompt to save the new
+        // dates to the user's calendar (.ics + Google Calendar).
+        const dateChanged = changedLabels.some((l) => /Publication|Interview/i.test(l));
+        if (dateChanged && window.CatalystCalendarExport && typeof window.CatalystCalendarExport.showPostSubmitPrompt === 'function') {
+            try {
+                window.CatalystCalendarExport.showPostSubmitPrompt(allProjects[projectIndex]);
+            } catch (calErr) {
+                console.warn('[SET DEADLINES] Calendar export prompt failed:', calErr);
+            }
+        }
     } catch (error) {
         console.error('[SET DEADLINES ERROR]', error);
         showNotification('Failed to save deadlines. Please try again.', 'error');
