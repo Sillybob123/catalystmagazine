@@ -348,23 +348,28 @@
 
     <!-- ─── About page refinements (Impeccable + UI/UX Pro Max + Taste) ───
          Scoped via body[data-page="about"] so the global stylesheet stays
-         intact for every other page. Tinted neutrals, Catalyst gold accent,
-         editorial typography, divide-y over generic cards. -->
+         intact for every other page. Aligned with the site-wide slate
+         monochrome palette (--accent-primary #0f172a) — no warm/gold. -->
     <style>
         body[data-page="about"] {
-            --ink: #0a0a0c;
-            --ink-soft: #18181c;
-            --paper: #fbfbf9;
-            --paper-off: #f5f5f1;
-            --line: #ececea;
-            --line-strong: #d8d8d4;
-            --text: #1d1d1f;
-            --text-muted: #55555a;
-            --text-subtle: #86868b;
-            --accent: #c9a14a;
-            --accent-soft: #e8d28a;
-            --accent-deep: #8a6a25;
-            background: var(--paper);
+            /* Match the site-wide tokens from /css/styles.css */
+            --ink: #0f172a;          /* accent-primary, slate-900 */
+            --ink-soft: #1f2937;
+            --slate-700: #334155;
+            --paper: #ffffff;
+            --paper-off: #f4f6f8;
+            --paper-cool: #eef1f5;
+            --line: #e5e7eb;
+            --line-strong: #cbd5e1;
+            --text: #1f2937;
+            --text-muted: #4b5563;
+            --text-subtle: #9ca3af;
+            /* The "accent" is the slate ink itself (monochrome brand) */
+            --accent: #0f172a;
+            --accent-soft: #334155;
+            --accent-deep: #0b1220;
+            --accent-tint: rgba(15,23,42,0.06);
+            background: var(--bg-gradient, linear-gradient(135deg, #f8fafc 0%, #eef1f5 45%, #e5e7eb 100%));
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -379,7 +384,7 @@
         /* ── PAGE HERO ── editorial, no boxy section behind it */
         body[data-page="about"] .page-hero {
             position: relative;
-            background: var(--paper);
+            background: transparent;
             padding: 120px 0 64px;
             overflow: hidden;
         }
@@ -388,7 +393,7 @@
             position: absolute;
             inset: -60px -10% auto auto;
             width: 520px; height: 520px;
-            background: radial-gradient(circle, rgba(201,161,74,0.20) 0%, transparent 65%);
+            background: radial-gradient(circle, rgba(15,23,42,0.07) 0%, transparent 65%);
             filter: blur(70px);
             pointer-events: none;
             z-index: 0;
@@ -428,7 +433,7 @@
             font-weight: 700;
             letter-spacing: 4px;
             text-transform: uppercase;
-            color: var(--accent-deep);
+            color: var(--text-muted);
             margin-bottom: 18px;
         }
         body[data-page="about"] .eyebrow::before,
@@ -436,7 +441,7 @@
             content: '';
             display: block;
             width: 24px; height: 1px;
-            background: var(--accent);
+            background: var(--line-strong);
         }
         body[data-page="about"] .section-title {
             font-size: clamp(2.2rem, 4vw, 3.2rem);
@@ -468,21 +473,23 @@
         body[data-page="about"] .about-card:nth-child(4),
         body[data-page="about"] .about-card:nth-child(5),
         body[data-page="about"] .about-card:nth-child(6) {
-            background: var(--paper);
-            border: 1px solid var(--line);
-            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
+            border: 1px solid rgba(15,23,42,0.08);
+            border-radius: 16px;
             padding: 36px 32px;
-            box-shadow: none;
-            transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
-            backdrop-filter: none;
+            box-shadow: 0 10px 32px rgba(15,23,42,0.06);
+            transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s, background 0.25s;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
         body[data-page="about"] .about-card::before {
             content: '';
             display: block;
             width: 28px;
             height: 2px;
-            background: var(--accent);
+            background: var(--ink);
             margin-bottom: 22px;
+            opacity: 0.85;
         }
         body[data-page="about"] .about-card:hover,
         body[data-page="about"] .about-card:nth-child(1):hover,
@@ -491,10 +498,10 @@
         body[data-page="about"] .about-card:nth-child(4):hover,
         body[data-page="about"] .about-card:nth-child(5):hover,
         body[data-page="about"] .about-card:nth-child(6):hover {
-            background: var(--paper);
-            border-color: var(--accent);
-            transform: translateY(-3px);
-            box-shadow: 0 12px 32px rgba(201,161,74,0.10);
+            background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.88));
+            border-color: rgba(15,23,42,0.18);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 44px rgba(15,23,42,0.10);
         }
         body[data-page="about"] .about-card h3 {
             font-size: 1.15rem;
@@ -519,21 +526,21 @@
             font-weight: 600;
             color: var(--text-muted);
             padding: 5px 11px;
-            border: 1px solid var(--line);
+            border: 1px solid rgba(15,23,42,0.10);
             border-radius: 6px;
-            background: transparent;
+            background: rgba(255,255,255,0.5);
             letter-spacing: 0.2px;
             transition: border-color 0.2s, color 0.2s, background-color 0.2s;
         }
         body[data-page="about"] .tag:hover {
-            border-color: var(--accent);
-            color: var(--accent-deep);
-            background: rgba(201,161,74,0.06);
+            border-color: rgba(15,23,42,0.30);
+            color: var(--ink);
+            background: rgba(255,255,255,0.85);
         }
 
         /* ── STORY SECTION ── replace the AI-purple inline gradient */
         body[data-page="about"] #story {
-            background: var(--paper-off) !important; /* override inline */
+            background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 100%);
             position: relative;
         }
         body[data-page="about"] #story .panel {
@@ -552,14 +559,15 @@
         body[data-page="about"] #story .panel-description:last-child {
             margin-bottom: 0;
         }
-        body[data-page="about"] #story .panel-description::first-letter {
+        body[data-page="about"] #story .panel-description:first-of-type::first-letter {
             font-weight: 700;
-            color: var(--accent-deep);
+            color: var(--ink);
+            font-size: 1.05em;
         }
 
-        /* ── TEAM SECTION ── replace the AI-purple inline gradient */
+        /* ── TEAM SECTION ── slate ink band, matches site gradient buttons */
         body[data-page="about"] #team {
-            background: var(--ink) !important; /* high-contrast band */
+            background: linear-gradient(135deg, #0f172a 0%, #1f2937 50%, #334155 100%) !important;
             color: var(--paper);
             position: relative;
             overflow: hidden;
@@ -567,27 +575,28 @@
         body[data-page="about"] #team::before {
             content: '';
             position: absolute;
-            top: -120px; left: 50%;
+            top: -160px; left: 50%;
             transform: translateX(-50%);
-            width: 900px; height: 480px;
-            background: radial-gradient(ellipse, rgba(201,161,74,0.16) 0%, transparent 65%);
+            width: 1000px; height: 520px;
+            background: radial-gradient(ellipse, rgba(255,255,255,0.10) 0%, transparent 65%);
             filter: blur(80px);
             pointer-events: none;
             z-index: 0;
         }
         body[data-page="about"] #team .container { position: relative; z-index: 1; }
         body[data-page="about"] #team .section-title { color: var(--paper); }
-        body[data-page="about"] #team .section-subtitle { color: rgba(251,251,249,0.6); }
-        body[data-page="about"] #team .eyebrow { color: var(--accent-soft); }
+        body[data-page="about"] #team .section-title::after { display: none; }
+        body[data-page="about"] #team .section-subtitle { color: rgba(255,255,255,0.65); }
+        body[data-page="about"] #team .eyebrow { color: rgba(255,255,255,0.55); }
         body[data-page="about"] #team .eyebrow::before,
-        body[data-page="about"] #team .eyebrow::after { background: var(--accent); }
+        body[data-page="about"] #team .eyebrow::after { background: rgba(255,255,255,0.25); }
 
         body[data-page="about"] #team .team-stats {
             display: flex;
             justify-content: center;
             gap: 0;
-            border-top: 1px solid rgba(251,251,249,0.08);
-            border-bottom: 1px solid rgba(251,251,249,0.08);
+            border-top: 1px solid rgba(255,255,255,0.10);
+            border-bottom: 1px solid rgba(255,255,255,0.10);
             margin: 0 0 56px;
             padding: 0;
             background: transparent;
@@ -597,7 +606,7 @@
         body[data-page="about"] #team .team-stat:nth-child(2) {
             background: transparent;
             border: none;
-            border-right: 1px solid rgba(251,251,249,0.08);
+            border-right: 1px solid rgba(255,255,255,0.10);
             padding: 28px 64px;
             box-shadow: none;
         }
@@ -611,7 +620,7 @@
             font-variant-numeric: tabular-nums;
         }
         body[data-page="about"] #team .team-stat-label {
-            color: rgba(251,251,249,0.45);
+            color: rgba(255,255,255,0.55);
             font-size: 0.66rem;
             letter-spacing: 2.5px;
             font-weight: 700;
@@ -620,32 +629,32 @@
 
         /* ── COMMITMENT cards inherit the about-card refinements above ── */
 
-        /* ── CTA button on team section ── */
+        /* ── CTA button on team section ── (white pill on dark band) */
         body[data-page="about"] #team .btn-primary {
-            background: var(--accent);
+            background: #ffffff;
             color: var(--ink);
             border: none;
-            box-shadow: 0 8px 24px rgba(201,161,74,0.20);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
             transition: transform 0.25s, background-color 0.2s, box-shadow 0.25s;
         }
         body[data-page="about"] #team .btn-primary:hover {
-            background: var(--accent-soft);
+            background: #f1f5f9;
             transform: translateY(-2px);
-            box-shadow: 0 14px 36px rgba(201,161,74,0.30);
+            box-shadow: 0 14px 36px rgba(0,0,0,0.24);
         }
         body[data-page="about"] #team .btn-primary:focus-visible {
-            outline: 2px solid var(--accent-soft);
+            outline: 2px solid #ffffff;
             outline-offset: 3px;
         }
 
-        /* ── ALUMNI SECTION ── */
+        /* ── ALUMNI SECTION ── (sit on the page gradient, transparent) */
         body[data-page="about"] #alumni {
-            background: var(--paper);
+            background: transparent;
         }
 
         /* ── NEWSLETTER ── */
         body[data-page="about"] #newsletter-section {
-            background: var(--paper-off);
+            background: transparent;
         }
 
         /* ── RESPONSIVE ── */
