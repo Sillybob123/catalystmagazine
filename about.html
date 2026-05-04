@@ -586,28 +586,93 @@
             background: rgba(255,255,255,0.85);
         }
 
-        /* ── STORY SECTION ── replace the AI-purple inline gradient */
+        /* ── STORY SECTION ── editorial three-act layout (anti-center, magazine spread) */
         body[data-page="about"] #story {
             background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 100%);
             position: relative;
+            padding: 96px 0 120px;
         }
-        body[data-page="about"] #story .panel {
-            background: transparent;
-            border: none;
-            box-shadow: none;
+        body[data-page="about"] #story .section-header {
+            text-align: left;
+            max-width: 1100px;
+            margin: 0 auto 72px;
+            padding: 0 24px 32px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 40px;
+            align-items: end;
+            border-bottom: 1px solid rgba(15,23,42,0.10);
+        }
+        body[data-page="about"] #story .section-header .section-title {
+            margin: 0;
+            font-size: clamp(2.4rem, 5vw, 3.6rem);
+        }
+        body[data-page="about"] #story .section-header .section-subtitle {
+            margin: 0 0 8px;
+            text-align: right;
+            font-style: italic;
+            color: var(--text-muted);
+            max-width: none;
+            font-size: 0.95rem;
+        }
+
+        /* Three-act prose container */
+        body[data-page="about"] #story .story-acts {
+            max-width: 1100px;
+            margin: 0 auto;
             padding: 0 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 64px;
         }
-        body[data-page="about"] #story .panel-description {
+
+        /* Each act: chapter rail (left) + prose (right) */
+        body[data-page="about"] #story .story-act {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 56px;
+            align-items: start;
+        }
+        body[data-page="about"] #story .story-chapter {
+            padding-top: 12px;
+            border-top: 2px solid var(--ink);
+        }
+        body[data-page="about"] #story .story-chapter-num {
+            display: block;
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--ink);
+            letter-spacing: -0.5px;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+        body[data-page="about"] #story .story-chapter-label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-subtle);
+            line-height: 1.4;
+        }
+        body[data-page="about"] #story .story-prose {
             color: var(--text);
-            font-size: 1.1rem !important;
-            line-height: 1.85 !important;
-            max-width: 720px;
-            margin: 0 auto 28px;
+            font-size: 1.08rem;
+            line-height: 1.85;
+            margin: 0;
+            max-width: 60ch;
         }
-        body[data-page="about"] #story .panel-description:last-child {
-            margin-bottom: 0;
+        /* Drop-cap on the first act only */
+        body[data-page="about"] #story .story-act:first-of-type .story-prose::first-letter {
+            float: left;
+            font-size: 4.4rem;
+            font-weight: 900;
+            line-height: 0.85;
+            margin: 6px 14px 0 0;
+            color: var(--ink);
+            letter-spacing: -2px;
         }
-        /* (Story first-letter ornament removed — looked off mid-paragraph.) */
 
         /* ── TEAM SECTION ── slate ink band, matches site gradient buttons */
         body[data-page="about"] #team {
@@ -770,6 +835,28 @@
             body[data-page="about"] #team .team-stat:nth-child(2) {
                 padding: 24px 36px;
             }
+            body[data-page="about"] #story .section-header {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                align-items: start;
+            }
+            body[data-page="about"] #story .section-header .section-subtitle {
+                text-align: left;
+            }
+            body[data-page="about"] #story .story-act {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+            body[data-page="about"] #story .story-chapter {
+                padding-top: 10px;
+                display: flex;
+                gap: 16px;
+                align-items: baseline;
+            }
+            body[data-page="about"] #story .story-chapter-num {
+                margin-bottom: 0;
+                font-size: 1.2rem;
+            }
         }
         @media (max-width: 520px) {
             body[data-page="about"] .about-card { padding: 28px 24px; }
@@ -857,26 +944,46 @@
                     <p class="section-subtitle">From a simple idea to a thriving platform</p>
                 </div>
 
-                <div class="panel">
-                    <p class="panel-description">
-                        The Catalyst began as a conversation between a small group of students who felt that
-                        STEM research — happening all around them in one of the most scientifically active
-                        cities in the country — wasn't reaching the people who should care most about it.
-                        Washington, D.C. is home to world-class universities, federal research agencies, and
-                        a policy landscape where science matters. We wanted a publication that reflected that.
-                    </p>
-                    <p class="panel-description">
-                        We started small — a handful of writers, no budget, and a lot of shared Google Docs.
-                        Over time, contributors from across the D.C. area joined us: students from GW, Georgetown,
-                        Howard, Johns Hopkins, and beyond, each bringing a different lens to the same goal.
-                        The publication grew organically, shaped more by the people in it than by any master plan.
-                    </p>
-                    <p class="panel-description">
-                        Today, The Catalyst is a cross-institutional student magazine with a growing readership
-                        and a clear editorial identity. We're still student-run, still independent, and still
-                        driven by the same conviction that good science writing can change how people think.
-                        We're glad you're here.
-                    </p>
+                <div class="story-acts">
+                    <div class="story-act">
+                        <div class="story-chapter">
+                            <span class="story-chapter-num">01</span>
+                            <span class="story-chapter-label">The Spark</span>
+                        </div>
+                        <p class="story-prose">
+                            The Catalyst began as a conversation between a small group of students who felt that
+                            STEM research — happening all around them in one of the most scientifically active
+                            cities in the country — wasn't reaching the people who should care most about it.
+                            Washington, D.C. is home to world-class universities, federal research agencies, and
+                            a policy landscape where science matters. We wanted a publication that reflected that.
+                        </p>
+                    </div>
+
+                    <div class="story-act">
+                        <div class="story-chapter">
+                            <span class="story-chapter-num">02</span>
+                            <span class="story-chapter-label">The Build</span>
+                        </div>
+                        <p class="story-prose">
+                            We started small — a handful of writers, no budget, and a lot of shared Google Docs.
+                            Over time, contributors from across the D.C. area joined us: students from GW, Georgetown,
+                            Howard, Johns Hopkins, and beyond, each bringing a different lens to the same goal.
+                            The publication grew organically, shaped more by the people in it than by any master plan.
+                        </p>
+                    </div>
+
+                    <div class="story-act">
+                        <div class="story-chapter">
+                            <span class="story-chapter-num">03</span>
+                            <span class="story-chapter-label">Today</span>
+                        </div>
+                        <p class="story-prose">
+                            The Catalyst is now a cross-institutional student magazine with a growing readership
+                            and a clear editorial identity. We're still student-run, still independent, and still
+                            driven by the same conviction that good science writing can change how people think.
+                            We're glad you're here.
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
