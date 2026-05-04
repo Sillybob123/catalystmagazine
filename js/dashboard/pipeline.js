@@ -967,6 +967,24 @@ function openDetailModal(projectId) {
       try {
         await updateDoc(doc(workflowDb, "projects", project.id), updates);
         toast(checked ? "Step marked complete." : "Step unchecked.", "success");
+        // After scheduling an interview, offer to save the date (with prep
+        // tips embedded in the description) to the user's calendar.
+        if (interviewDatePayload && step === "Interview Scheduled" && checked) {
+          try {
+            await showCalendarExportPrompt({
+              id: project.id,
+              title: project.title,
+              interviewDate: interviewDatePayload.interviewDate,
+              deadlines: { ...(project.deadlines || {}), interview: interviewDatePayload.interviewDate },
+            }, {
+              only: "interview",
+              title: "Save the interview to your calendar",
+              subtitle: `We'll attach a 5-day reminder and a prep checklist to the event so you can review it the morning of.`,
+            });
+          } catch (calErr) {
+            console.warn("Calendar export prompt failed:", calErr);
+          }
+        }
       } catch (e) { toast(e.message, "error"); cb.checked = !checked; }
     });
   }

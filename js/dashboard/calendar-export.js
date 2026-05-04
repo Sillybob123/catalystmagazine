@@ -93,15 +93,58 @@ export function downloadIcs(event) {
   return true;
 }
 
-export function eventsForProject(project) {
+// Three-section prep guide mirroring the bot's interview-prep email so the
+// calendar entry is genuinely useful when the writer opens it later.
+const INTERVIEW_PREP_NOTES = [
+  "RESEARCH BEFORE YOU WALK IN",
+  "• Read their most recent paper, talk, or public writing — and three pieces that are NOT the work everyone cites.",
+  "• Skim their lab/department page; note the people they collaborate with.",
+  "• Identify the one claim or finding you don't fully understand. That's your most important question.",
+  "• Have a one-paragraph mental summary of who they are, what they study, and why a Catalyst reader should care.",
+  "",
+  "WRITE QUESTIONS THAT EARN GOOD ANSWERS",
+  "• Open-ended beats yes/no. \"Walk me through how you came to that conclusion\" pulls a story.",
+  "• Lead with a generous warm-up question; save sharper, more specific ones for the middle.",
+  "• Prepare 8–10 questions, plan to ask 4–5. The best material always comes from following up on what they actually said.",
+  "• Always ask: \"What's the part of this that journalists keep getting wrong?\" and \"What should I have asked you that I didn't?\"",
+  "",
+  "RUN THE INTERVIEW LIKE A PRO",
+  "• Test your recording setup the day before — phone app, laptop mic, backup. Test it again 10 minutes before the call.",
+  "• Pick a quiet space with stable internet. If it's in person, scout the room for noise.",
+  "• Confirm on-the-record vs. on-background at the start. Don't assume.",
+  "• Take light notes by hand even if you're recording — note the timestamp when they say something quotable.",
+  "• End by asking who else you should talk to. Sources lead to sources.",
+];
+
+function buildInterviewDescription(title) {
+  const link = "https://www.catalyst-magazine.com/admin/";
+  return [
+    `Scheduled interview for "${title}".`,
+    `Reminder set ${REMINDER_DAYS_BEFORE} days before.`,
+    "",
+    "── PREP CHECKLIST ──",
+    "",
+    ...INTERVIEW_PREP_NOTES,
+    "",
+    `View project: ${link}`,
+  ].join("\n");
+}
+
+// `opts.only` filters which events to emit ("publication" | "interview").
+export function eventsForProject(project, opts = {}) {
   if (!project) return [];
+  const only = opts.only;
   const id = project.id || "project";
   const title = project.title || "Catalyst project";
   const pubDate = (project.deadlines && project.deadlines.publication) || project.deadline || "";
-  const interviewDate = project.deadlines && project.deadlines.interview;
+  // Interview can live on `project.interviewDate` (set by "Interview Scheduled"
+  // toggle) or `project.deadlines.interview` (admin-set deadline). Either is fine.
+  const interviewDate = (project.deadlines && project.deadlines.interview) || project.interviewDate || "";
 
   const events = [];
-  if (pubDate) {
+  const want = (kind) => !only || only === kind;
+
+  if (pubDate && want("publication")) {
     events.push({
       kind: "publication",
       uid: `proposal-${id}@catalyst-magazine.com`,
@@ -113,12 +156,12 @@ export function eventsForProject(project) {
       label: "Publication deadline",
     });
   }
-  if (interviewDate) {
+  if (interviewDate && want("interview")) {
     events.push({
       kind: "interview",
       uid: `interview-${id}@catalyst-magazine.com`,
       title: `Catalyst interview: ${title}`,
-      description: `Scheduled interview for "${title}".\nReminder set ${REMINDER_DAYS_BEFORE} days before.\nView project: https://www.catalyst-magazine.com/admin/`,
+      description: buildInterviewDescription(title),
       dateString: interviewDate,
       filename: `catalyst-interview-${id}`,
       reminderDaysBefore: REMINDER_DAYS_BEFORE,
@@ -169,19 +212,10 @@ function injectStylesOnce() {
       animation: calExportPopIn 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
     .cal-export-header {
-      padding: 22px 24px 16px;
+      padding: 22px 24px 18px;
       background: linear-gradient(135deg, #f8fafc 0%, #fff 100%);
       border-bottom: 1px solid #f1f5f9;
       position: relative;
-    }
-    .cal-export-icon {
-      width: 44px; height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-      display: flex; align-items: center; justify-content: center;
-      color: #fff;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
     }
     .cal-export-title {
       margin: 0; font-size: 19px; font-weight: 700;
@@ -265,15 +299,17 @@ function injectStylesOnce() {
   document.head.appendChild(style);
 }
 
-const ICON_CALENDAR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
 const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
 const ICON_GOOGLE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>`;
 const ICON_INFO = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
 
 // Centered modal (not a corner toast) so it can't be missed. Resolves when the
 // user dismisses — caller can `await` it before doing anything else.
+//
+// opts.only — "publication" | "interview" | undefined. Limits which events to
+//             show. Useful when a UI action only changes one date.
 export function showCalendarExportPrompt(project, opts = {}) {
-  const events = eventsForProject(project);
+  const events = eventsForProject(project, { only: opts.only });
   if (!events.length) return Promise.resolve();
 
   injectStylesOnce();
@@ -299,7 +335,6 @@ export function showCalendarExportPrompt(project, opts = {}) {
     const header = document.createElement("div");
     header.className = "cal-export-header";
     header.innerHTML = `
-      <div class="cal-export-icon">${ICON_CALENDAR}</div>
       <h3 class="cal-export-title" id="cal-export-title">${escapeHtml(opts.title || "Save to your calendar")}</h3>
       <p class="cal-export-subtitle">${escapeHtml(opts.subtitle ||
         `Stay on top of this proposal. We'll set a reminder ${REMINDER_DAYS_BEFORE} days before each due date.`)}</p>
