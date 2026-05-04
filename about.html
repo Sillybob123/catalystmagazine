@@ -444,20 +444,25 @@
             line-height: 1;
             color: #ffffff;
             margin: 0 0 22px;
-            /* Stronger extruded 3D — deeper bevel, harder cast shadow, brighter top edge */
+            /* Crisp extrusion: every shadow is 0 blur (solid).
+               12 stacked 1px steps create a tall, sharp bevel that
+               keeps letterforms perfectly clean. */
             text-shadow:
-                0 1px 0 rgba(255,255,255,0.85),
-                0 2px 0 rgba(226,232,240,0.55),
-                0 3px 0 rgba(203,213,225,0.45),
-                0 4px 0 rgba(148,163,184,0.38),
-                0 5px 0 rgba(100,116,139,0.32),
-                0 6px 0 rgba(71,85,105,0.28),
-                0 7px 0 rgba(51,65,85,0.24),
-                0 8px 0 rgba(30,41,59,0.20),
-                0 9px 1px rgba(2,4,10,0.55),
-                0 10px 4px rgba(2,4,10,0.45),
-                0 14px 18px rgba(0,0,0,0.55),
-                0 22px 40px rgba(0,0,0,0.55);
+                0 1px 0 #e6ebf2,
+                0 2px 0 #c8d0db,
+                0 3px 0 #aab4c2,
+                0 4px 0 #8d97a7,
+                0 5px 0 #717b8c,
+                0 6px 0 #586172,
+                0 7px 0 #424b5a,
+                0 8px 0 #303846,
+                0 9px 0 #232a36,
+                0 10px 0 #1a202b,
+                0 11px 0 #131822,
+                0 12px 0 #0d1119,
+                0 13px 0 #07090e,
+                /* Single hard contact line beneath the extrusion */
+                0 14px 0 rgba(0,0,0,0.95);
         }
         body[data-page="about"] .page-hero-subtitle {
             font-size: 1.05rem;
