@@ -568,11 +568,11 @@
         .xsched-cell:last-child { padding-right: 0; }
         .xsched-head-cell {
             padding: 0 16px 14px;
-            font-size: 0.62rem;
+            font-size: 0.66rem;
             font-weight: 700;
             letter-spacing: 2.5px;
             text-transform: uppercase;
-            color: var(--text-subtle);
+            color: var(--text-muted); /* a11y: 4.5:1+ on --paper-off */
         }
         .xsched-head-cell:first-child { padding-left: 0; }
         .xsched-head-cell:last-child { padding-right: 0; }
@@ -608,6 +608,114 @@
         .xsched-contact a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
         .xsched-row-tbd .xsched-cell { color: var(--text-subtle); font-style: italic; }
         .xsched-row-tbd:hover { background: transparent; }
+
+        /* ── PARTICIPATING LABS DIRECTORY ── */
+        .xlabs-header {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: end;
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+        .xlabs-headline {
+            font-size: clamp(2.2rem, 4vw, 3.2rem);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -1.2px;
+            color: var(--ink);
+        }
+        .xlabs-sub {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-top: 14px;
+            line-height: 1.65;
+            max-width: 560px;
+        }
+        .xlabs-count {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent-deep);
+            background: rgba(201,161,74,0.10);
+            padding: 10px 16px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+        .xlabs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0;
+            border-top: 1px solid var(--line);
+        }
+        .xlab {
+            position: relative;
+            padding: 32px 0 32px 0;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: border-color 0.2s;
+        }
+        .xlab:nth-child(odd) {
+            padding-right: 32px;
+            border-right: 1px solid var(--line);
+        }
+        .xlab:nth-child(even) {
+            padding-left: 32px;
+        }
+        .xlab:hover { border-bottom-color: var(--accent); }
+        .xlab-num {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
+        .xlab-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.3;
+            letter-spacing: -0.2px;
+        }
+        .xlab-pi {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent-deep); /* a11y: ~6:1 on --paper */
+            letter-spacing: 0.2px;
+            margin-top: -6px;
+        }
+        .xlab-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.65;
+        }
+        .xlab-link {
+            margin-top: auto;
+            padding-top: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--accent-deep);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            align-self: flex-start;
+            transition: color 0.2s, border-color 0.2s, gap 0.2s;
+        }
+        .xlab-link:hover {
+            color: var(--ink);
+            border-bottom-color: var(--accent);
+            gap: 10px;
+        }
+        .xlab-link:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+            border-radius: 2px;
+        }
+        .xlab-link svg { width: 12px; height: 12px; }
 
         /* ── SPONSORSHIP ── */
         .xspon-layout {
@@ -814,6 +922,10 @@
             .xabout-layout { grid-template-columns: 1fr; gap: 60px; }
             .xspon-layout  { grid-template-columns: 1fr; gap: 56px; }
             .xsched-header { grid-template-columns: 1fr; gap: 24px; }
+            .xlabs-header  { grid-template-columns: 1fr; gap: 24px; }
+            .xlabs-grid    { grid-template-columns: 1fr; }
+            .xlab:nth-child(odd) { padding-right: 0; border-right: none; }
+            .xlab:nth-child(even) { padding-left: 0; }
             .xday-tabs { width: fit-content; }
             .xhero-stats { grid-template-columns: repeat(2, 1fr); }
             .xhero-stat:nth-child(2) { border-right: none; }
@@ -828,9 +940,10 @@
             .xhero-title { letter-spacing: -2px; }
             .xcontainer { padding: 0 24px; }
             .xhero-inner { padding: 95px 24px 240px; }
-            .xsched-row { grid-template-columns: 110px 1fr 1fr; }
-            .xsched-row .xsched-cell:last-child { display: none; }
-            .xsched-row .xsched-head-cell:last-child { display: none; }
+            /* On tablet/mobile: keep Time + Org + Contact (3rd-most-critical), drop Activity */
+            .xsched-row { grid-template-columns: 110px 1fr 1.1fr; }
+            .xsched-row .xsched-cell:nth-child(3) { display: none; }
+            .xsched-row .xsched-head-cell:nth-child(3) { display: none; }
             .xhero-meta-row { gap: 16px; }
             .xhero-divider { display: none; }
         }
@@ -838,11 +951,14 @@
             .xhero-title { font-size: 3rem; letter-spacing: -1.5px; }
             .xhero-stats { grid-template-columns: repeat(2, 1fr); }
             .xhero-stat-num { font-size: 1.7rem; }
-            .xsched-row { grid-template-columns: 100px 1fr; }
-            .xsched-row .xsched-cell:nth-child(3),
-            .xsched-row .xsched-cell:nth-child(4) { display: none; }
-            .xsched-row .xsched-head-cell:nth-child(3),
-            .xsched-row .xsched-head-cell:nth-child(4) { display: none; }
+            .xhero-stat-label { font-size: 0.6rem; letter-spacing: 1.8px; }
+            /* Phone: stack rows so Time, Org (with Activity badge) and Contact wrap — keep contact reachable */
+            .xsched-row { grid-template-columns: 1fr; gap: 4px; padding: 16px 0; }
+            .xsched-row.xsched-row-head { display: none; }
+            .xsched-row .xsched-cell { padding: 2px 0; }
+            .xsched-row .xsched-cell:nth-child(3) { display: none; }
+            .xsched-row .xsched-cell:nth-child(4) { padding-top: 6px; }
+            .xsched-time { font-size: 0.78rem; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-deep); }
             .xhero-cta-row { width: 100%; }
             .xhero-btn { flex: 1 1 auto; justify-content: center; }
         }
@@ -917,8 +1033,8 @@
                     <div class="xhero-stat-label">Days</div>
                 </div>
                 <div class="xhero-stat">
-                    <div class="xhero-stat-num">9+</div>
-                    <div class="xhero-stat-label">GW Demos</div>
+                    <div class="xhero-stat-num">13</div>
+                    <div class="xhero-stat-label">GW Groups</div>
                 </div>
                 <div class="xhero-stat">
                     <div class="xhero-stat-num">Free</div>
@@ -1024,40 +1140,46 @@
                         <div class="xsched-head-cell">Contact</div>
                     </div>
                     <div class="xsched-row">
-                        <div class="xsched-cell"><div class="xsched-time">9:00–11:00 AM</div></div>
+                        <div class="xsched-cell"><div class="xsched-time">9:00–10:00 AM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">CSPRI</div><div class="xsched-type">Forum</div></div>
+                        <div class="xsched-cell xsched-desc">TBD</div>
+                        <div class="xsched-cell xsched-contact">Costis Toregas<br><a href="mailto:toregas1@gwu.edu">toregas1@gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">10:00–11:00 AM</div></div>
                         <div class="xsched-cell"><div class="xsched-org">CSPRI</div><div class="xsched-type">Forum</div></div>
                         <div class="xsched-cell xsched-desc">AI Forum Poll</div>
                         <div class="xsched-cell xsched-contact">Costis Toregas<br><a href="mailto:toregas1@gwu.edu">toregas1@gwu.edu</a></div>
                     </div>
                     <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">11:00 AM–1:00 PM</div></div>
-                        <div class="xsched-cell"><div class="xsched-org">Dr. Taeyoung Lee's Lab</div><div class="xsched-type">Demo</div></div>
-                        <div class="xsched-cell xsched-desc">Research Demo</div>
-                        <div class="xsched-cell xsched-contact">Ben &amp; Maneesha<br><a href="mailto:yubeomyeol@email.gwu.edu">yubeomyeol@email.gwu.edu</a></div>
+                        <div class="xsched-cell"><div class="xsched-org">Flight Dynamics &amp; Control Lab</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell xsched-desc">Research Demo — Dr. Taeyoung Lee</div>
+                        <div class="xsched-cell xsched-contact">Ben &amp; Maneesha<br><a href="mailto:yubeomyeol@email.gwu.edu">yubeomyeol@email.gwu.edu</a><br><a href="mailto:maneesh@email.gwu.edu">maneesh@email.gwu.edu</a></div>
                     </div>
                     <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">1:00–2:00 PM</div></div>
-                        <div class="xsched-cell"><div class="xsched-org">GW TAI</div><div class="xsched-type">Q&amp;A</div></div>
-                        <div class="xsched-cell xsched-desc">Director (Zoe) Q&amp;A</div>
+                        <div class="xsched-cell"><div class="xsched-org">GW Trustworthy AI Institute</div><div class="xsched-type">Q&amp;A</div></div>
+                        <div class="xsched-cell xsched-desc">Director Zoe Q&amp;A</div>
                         <div class="xsched-cell xsched-contact">Aidan Furlong<br><a href="mailto:aidan.furlong@email.gwu.edu">aidan.furlong@email.gwu.edu</a></div>
                     </div>
                     <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">2:00–3:00 PM</div></div>
-                        <div class="xsched-cell"><div class="xsched-org">GW TAI</div><div class="xsched-type">Q&amp;A</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">GW Trustworthy AI Institute</div><div class="xsched-type">Q&amp;A</div></div>
                         <div class="xsched-cell xsched-desc">PhD Student Research Q&amp;A</div>
                         <div class="xsched-cell xsched-contact">Aidan Furlong<br><a href="mailto:aidan.furlong@email.gwu.edu">aidan.furlong@email.gwu.edu</a></div>
                     </div>
                     <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">3:00–4:00 PM</div></div>
-                        <div class="xsched-cell"><div class="xsched-org">Leblanc Lab</div><div class="xsched-type">Showcase</div></div>
-                        <div class="xsched-cell xsched-desc">Research Showcase</div>
-                        <div class="xsched-cell xsched-contact">Sumner Gubisch</div>
+                        <div class="xsched-cell"><div class="xsched-org">LeBlanc Lab</div><div class="xsched-type">Showcase</div></div>
+                        <div class="xsched-cell xsched-desc">Printer Showcase</div>
+                        <div class="xsched-cell xsched-contact">Sumner Gubisch<br><a href="mailto:sumner.gubisch@gwmail.gwu.edu">sumner.gubisch@gwmail.gwu.edu</a></div>
                     </div>
                     <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">4:00–5:00 PM</div></div>
-                        <div class="xsched-cell"><div class="xsched-org">Nagel Lab</div><div class="xsched-type">Showcase</div></div>
-                        <div class="xsched-cell xsched-desc">Research Showcase</div>
-                        <div class="xsched-cell xsched-contact">Contact at Booth</div>
+                        <div class="xsched-cell"><div class="xsched-org">Nagel Lab</div><div class="xsched-type">Talk</div></div>
+                        <div class="xsched-cell xsched-desc">Nuclear Power Talk</div>
+                        <div class="xsched-cell xsched-contact">David Nagel<br><a href="mailto:nagel@gwu.edu">nagel@gwu.edu</a></div>
                     </div>
                 </div>
 
@@ -1071,19 +1193,51 @@
                         <div class="xsched-head-cell">Contact</div>
                     </div>
                     <div class="xsched-row">
-                        <div class="xsched-cell"><div class="xsched-time">9:00–11:00 AM</div></div>
-                        <div class="xsched-cell"><div class="xsched-org">Park Lab</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell"><div class="xsched-time">9:00–10:00 AM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">ART-Med Lab</div><div class="xsched-type">Demo</div></div>
                         <div class="xsched-cell xsched-desc">Robotics Demo</div>
                         <div class="xsched-cell xsched-contact">Chung Hyuk Park<br><a href="mailto:chpark@email.gwu.edu">chpark@email.gwu.edu</a></div>
                     </div>
-                    <div class="xsched-row xsched-row-tbd">
-                        <div class="xsched-cell"><div class="xsched-time">11:00 AM–3:00 PM</div></div>
-                        <div class="xsched-cell" style="grid-column: span 3">Open / TBD</div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">10:00–11:00 AM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">ART-Med Lab</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell xsched-desc">EEG Demo</div>
+                        <div class="xsched-cell xsched-contact">Chung Hyuk Park<br><a href="mailto:chpark@email.gwu.edu">chpark@email.gwu.edu</a></div>
                     </div>
                     <div class="xsched-row">
-                        <div class="xsched-cell"><div class="xsched-time">3:00–5:00 PM</div></div>
-                        <div class="xsched-cell"><div class="xsched-org">Dr. Daniel Donoho's Lab</div><div class="xsched-type">Demo</div></div>
-                        <div class="xsched-cell xsched-desc">Suturing &amp; Medical Demo</div>
+                        <div class="xsched-cell"><div class="xsched-time">11:00 AM–12:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">LeBlanc Lab</div><div class="xsched-type">Showcase</div></div>
+                        <div class="xsched-cell xsched-desc">Printer Showcase</div>
+                        <div class="xsched-cell xsched-contact">Sumner Gubisch<br><a href="mailto:sumner.gubisch@gwmail.gwu.edu">sumner.gubisch@gwmail.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">12:00–1:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Systems Modeling Lab</div><div class="xsched-type">Poster</div></div>
+                        <div class="xsched-cell xsched-desc">Poster Presentation — Dr. Ekundayo Shittu</div>
+                        <div class="xsched-cell xsched-contact">Ekundayo Shittu<br><a href="mailto:eshittu@email.gwu.edu">eshittu@email.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">1:00–2:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">The Catalyst Magazine</div><div class="xsched-type">Showcase</div></div>
+                        <div class="xsched-cell xsched-desc">Student Magazine Showcase</div>
+                        <div class="xsched-cell xsched-contact">Aidan Schurr<br><a href="mailto:aidan.schurr@gwu.edu">aidan.schurr@gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">2:00–3:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">GW AI Law Forum</div><div class="xsched-type">Ethics</div></div>
+                        <div class="xsched-cell xsched-desc">Interactive Ethics</div>
+                        <div class="xsched-cell xsched-contact">Eren Karaburun<br><a href="mailto:Eren.Karaburun@gwmail.gwu.edu">Eren.Karaburun@gwmail.gwu.edu</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">3:00–4:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Surgical AI &amp; Analytics</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell xsched-desc">Suturing — Dr. Daniel Donoho</div>
+                        <div class="xsched-cell xsched-contact"><a href="mailto:danieldonohomd@gmail.com">danieldonohomd@gmail.com</a></div>
+                    </div>
+                    <div class="xsched-row">
+                        <div class="xsched-cell"><div class="xsched-time">4:00–5:00 PM</div></div>
+                        <div class="xsched-cell"><div class="xsched-org">Surgical AI &amp; Analytics</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell xsched-desc">Demo — Dr. Daniel Donoho</div>
                         <div class="xsched-cell xsched-contact"><a href="mailto:danieldonohomd@gmail.com">danieldonohomd@gmail.com</a></div>
                     </div>
                 </div>
@@ -1100,27 +1254,190 @@
                     <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">9:30–11:00 AM</div></div>
                         <div class="xsched-cell"><div class="xsched-org">GW LAiSER</div><div class="xsched-type">Policy</div></div>
-                        <div class="xsched-cell xsched-desc">Workforce Policy Project</div>
+                        <div class="xsched-cell xsched-desc">LAiSER Workforce Policy Showcase</div>
                         <div class="xsched-cell xsched-contact">Mike Sanders<br><a href="mailto:micah.sanders@email.gwu.edu">micah.sanders@email.gwu.edu</a></div>
                     </div>
                     <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">11:00 AM–12:00 PM</div></div>
-                        <div class="xsched-cell"><div class="xsched-org">Cao Lab</div><div class="xsched-type">Showcase</div></div>
-                        <div class="xsched-cell xsched-desc">Research Showcase</div>
+                        <div class="xsched-cell"><div class="xsched-org">Cao Lab</div><div class="xsched-type">Poster</div></div>
+                        <div class="xsched-cell xsched-desc">Poster Presentation</div>
                         <div class="xsched-cell xsched-contact">Weidong Cao<br><a href="mailto:weidong.cao@email.gwu.edu">weidong.cao@email.gwu.edu</a></div>
                     </div>
-                    <div class="xsched-row xsched-row-tbd">
+                    <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">12:00–2:00 PM</div></div>
-                        <div class="xsched-cell" style="grid-column: span 3">Open / TBD</div>
+                        <div class="xsched-cell"><div class="xsched-org">Rau Lab</div><div class="xsched-type">Demo</div></div>
+                        <div class="xsched-cell xsched-desc">Rotating Tank Harvester for Algae Aggregation</div>
+                        <div class="xsched-cell xsched-contact"><a href="mailto:lizl@gwmail.gwu.edu">lizl@gwmail.gwu.edu</a><br><a href="mailto:anisa.anjum@gwmail.gwu.edu">anisa.anjum@gwmail.gwu.edu</a></div>
                     </div>
                     <div class="xsched-row">
                         <div class="xsched-cell"><div class="xsched-time">2:00–4:00 PM</div></div>
                         <div class="xsched-cell"><div class="xsched-org">GW AI Law Forum</div><div class="xsched-type">Debate</div></div>
-                        <div class="xsched-cell xsched-desc">AI Debate</div>
+                        <div class="xsched-cell xsched-desc">Debate / AI Ethics Discussion</div>
                         <div class="xsched-cell xsched-contact">Eren Karaburun<br><a href="mailto:Eren.Karaburun@gwmail.gwu.edu">Eren.Karaburun@gwmail.gwu.edu</a></div>
                     </div>
                 </div>
 
+            </div>
+        </section>
+
+        <!-- ─────────────── PARTICIPATING LABS ─────────────── -->
+        <section class="xs xs-light" id="labs">
+            <div class="xcontainer">
+                <div class="xlabs-header reveal">
+                    <div>
+                        <div class="xlabel">Participating Labs &amp; Organizations</div>
+                        <h2 class="xlabs-headline">Who You'll Meet</h2>
+                        <p class="xlabs-sub">Thirteen GW labs, institutes, and student organizations are exhibiting across the three days — spanning AI, robotics, energy, surgery, policy, and law.</p>
+                    </div>
+                    <div class="xlabs-count">13 Groups</div>
+                </div>
+
+                <div class="xlabs-grid reveal reveal-delay-1">
+
+                    <div class="xlab">
+                        <div class="xlab-num">01</div>
+                        <div class="xlab-name">CSPRI</div>
+                        <div class="xlab-pi">Cyber Security and Privacy Research Institute</div>
+                        <div class="xlab-desc">Promotes interdisciplinary research, dialogue, and education around cybersecurity, privacy, cyber risk, and technology policy. At AI+EXPO, CSPRI will help frame AI as both a cybersecurity opportunity and a governance challenge.</div>
+                        <a href="https://cspri.engineering.gwu.edu/" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">02</div>
+                        <div class="xlab-name">Flight Dynamics &amp; Control Laboratory</div>
+                        <div class="xlab-pi">Dr. Taeyoung Lee</div>
+                        <div class="xlab-desc">Studies dynamics, control, learning, robotics, and aerospace systems. Their booth will highlight how engineering, computation, and control theory support advanced autonomous and aerial systems.</div>
+                        <a href="https://www2.seas.gwu.edu/~tylee/" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">03</div>
+                        <div class="xlab-name">GW Trustworthy AI Institute</div>
+                        <div class="xlab-pi">Trustworthy AI in Systems &amp; Society</div>
+                        <div class="xlab-desc">Brings together researchers, students, industry partners, and practitioners to advance trustworthy AI. Their Q&amp;A sessions showcase GW's interdisciplinary approach to building AI that is reliable, responsible, and grounded in real-world deployment.</div>
+                        <a href="https://trustworthyai.gwu.edu/" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">04</div>
+                        <div class="xlab-name">LeBlanc Lab</div>
+                        <div class="xlab-pi">Advanced Materials, Energy Conversion &amp; Nanomanufacturing</div>
+                        <div class="xlab-desc">Creates energy conversion technologies using advanced materials and manufacturing techniques, including scalable nanomanufacturing and energy systems research. Their printer showcase connects hands-on manufacturing with sustainable energy.</div>
+                        <a href="https://www.leblanclab.com/" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">05</div>
+                        <div class="xlab-name">Nagel Lab</div>
+                        <div class="xlab-pi">Dr. David Nagel — Nuclear Power &amp; Emerging Energy</div>
+                        <div class="xlab-desc">Research includes low energy nuclear reactions, solar cell noise, and clean energy technologies. The nuclear power talk introduces attendees to emerging energy systems and the scientific challenges behind next-generation power production.</div>
+                        <a href="https://ece.engineering.gwu.edu/david-j-nagel" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">06</div>
+                        <div class="xlab-name">Assistive Robotics &amp; Tele-Medicine Lab</div>
+                        <div class="xlab-pi">Dr. Chung Hyuk Park (ART-Med)</div>
+                        <div class="xlab-desc">Develops human-centered robotic intelligence by integrating machine learning, computer vision, haptics, telepresence, and human-robot interaction. Robotics and EEG demos show how AI supports healthcare, rehabilitation, and medical assistance.</div>
+                        <a href="https://bme.engineering.gwu.edu/assistive-robotics-and-tele-medicine-art-med-lab" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">07</div>
+                        <div class="xlab-name">Systems Modeling Laboratory for Economic Decisions</div>
+                        <div class="xlab-pi">Dr. Ekundayo Shittu</div>
+                        <div class="xlab-desc">Uses systems engineering, optimization, decision science, and economic modeling to study energy, climate, technology adoption, and policy under uncertainty. Their poster shows how quantitative models help leaders make better technology decisions.</div>
+                        <a href="https://emse.engineering.gwu.edu/labs-and-institutes" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">08</div>
+                        <div class="xlab-name">The Catalyst Magazine</div>
+                        <div class="xlab-pi">Student-Run STEM Magazine, Washington D.C.</div>
+                        <div class="xlab-desc">Tells stories about science, technology, engineering, medicine, and innovation. Our showcase highlights how student journalists make research more accessible and connect scientists with the broader public.</div>
+                        <a href="https://www.catalyst-magazine.com/" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">09</div>
+                        <div class="xlab-name">GW AI Law Forum</div>
+                        <div class="xlab-pi">Law, Policy &amp; the Future of Legal Practice</div>
+                        <div class="xlab-desc">Brings students and professionals together to explore AI tools, legal regulations, policy frameworks, and the future of legal practice. Interactive ethics and debate sessions help attendees think through legal and moral questions raised by AI.</div>
+                        <a href="https://www.linkedin.com/company/gw-ai-law-forum/" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">10</div>
+                        <div class="xlab-name">Surgical AI &amp; Analytics</div>
+                        <div class="xlab-pi">Dr. Daniel Donoho</div>
+                        <div class="xlab-desc">Focuses on pediatric neurosurgery, surgical data science, computer vision, machine learning, and surgical training innovation. Suturing and demo sessions connect hands-on surgical skills with AI-enabled medical education and surgical analytics.</div>
+                        <a href="https://smhs.gwu.edu/faculty-research/daniel-donoho-md" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">11</div>
+                        <div class="xlab-name">GW LAiSER</div>
+                        <div class="xlab-pi">Program on Skills, Credentials &amp; Workforce Policy</div>
+                        <div class="xlab-desc">Studies how skills, credentials, and workforce data can connect education and employment systems. Their showcase highlights how AI and data tools can map skills, improve workforce pathways, and support the future of work.</div>
+                        <a href="https://gwipp.gwu.edu/program-skills-credentials-workforce-policy-pscwp" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">12</div>
+                        <div class="xlab-name">Cao Lab</div>
+                        <div class="xlab-pi">Dr. Weidong Cao — ML, Quantum &amp; Computer Architecture</div>
+                        <div class="xlab-desc">Research spans machine learning, quantum computing, VLSI design, emerging computer architecture, electronic design automation, and security for ML and quantum systems. Their poster shows how next-gen hardware will power future AI.</div>
+                        <a href="https://ece.engineering.gwu.edu/weidong-cao" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                    <div class="xlab">
+                        <div class="xlab-num">13</div>
+                        <div class="xlab-name">Rau Lab</div>
+                        <div class="xlab-pi">Multiphase Flow Transport — Mechanical &amp; Aerospace Engineering</div>
+                        <div class="xlab-desc">Studies how fluids move small particles through complex systems, with applications in sustainability, biology, oceanography, and environmental transport. The AI+EXPO demo features algae aggregation and harvesting — connecting fluid mechanics to biotechnology and sustainable manufacturing.</div>
+                        <a href="https://blogs.gwu.edu/matthew-rau/" target="_blank" rel="noopener noreferrer" class="xlab-link">
+                            Visit site
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    </div>
+
+                </div>
             </div>
         </section>
 
@@ -1207,13 +1524,35 @@
             document.querySelectorAll('.xday-tab').forEach(b => {
                 b.classList.remove('active');
                 b.setAttribute('aria-selected', 'false');
+                b.setAttribute('tabindex', '-1');
             });
             const panel = document.getElementById(id);
             panel.classList.add('on');
             panel.removeAttribute('hidden');
             btn.classList.add('active');
             btn.setAttribute('aria-selected', 'true');
+            btn.setAttribute('tabindex', '0');
         }
+
+        /* Arrow-key navigation for day tablist (WAI-ARIA tab pattern) */
+        (function () {
+            const tabs = Array.from(document.querySelectorAll('.xday-tab'));
+            tabs.forEach((tab, i) => {
+                tab.setAttribute('tabindex', tab.classList.contains('active') ? '0' : '-1');
+                tab.addEventListener('keydown', (e) => {
+                    let next = null;
+                    if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+                    else if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+                    else if (e.key === 'Home') next = tabs[0];
+                    else if (e.key === 'End') next = tabs[tabs.length - 1];
+                    if (next) {
+                        e.preventDefault();
+                        next.focus();
+                        next.click();
+                    }
+                });
+            });
+        })();
 
         /* Scroll-driven reveal */
         const io = new IntersectionObserver(entries => {
