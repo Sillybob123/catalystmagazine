@@ -345,6 +345,329 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"></noscript>
     <link rel="preload" href="/css/styles.css" as="style">
     <link rel="stylesheet" href="/css/styles.css">
+
+    <!-- ─── About page refinements (Impeccable + UI/UX Pro Max + Taste) ───
+         Scoped via body[data-page="about"] so the global stylesheet stays
+         intact for every other page. Tinted neutrals, Catalyst gold accent,
+         editorial typography, divide-y over generic cards. -->
+    <style>
+        body[data-page="about"] {
+            --ink: #0a0a0c;
+            --ink-soft: #18181c;
+            --paper: #fbfbf9;
+            --paper-off: #f5f5f1;
+            --line: #ececea;
+            --line-strong: #d8d8d4;
+            --text: #1d1d1f;
+            --text-muted: #55555a;
+            --text-subtle: #86868b;
+            --accent: #c9a14a;
+            --accent-soft: #e8d28a;
+            --accent-deep: #8a6a25;
+            background: var(--paper);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            body[data-page="about"] .fade-in,
+            body[data-page="about"] .about-card,
+            body[data-page="about"] .team-stat-number {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        /* ── PAGE HERO ── editorial, no boxy section behind it */
+        body[data-page="about"] .page-hero {
+            position: relative;
+            background: var(--paper);
+            padding: 120px 0 64px;
+            overflow: hidden;
+        }
+        body[data-page="about"] .page-hero::before {
+            content: '';
+            position: absolute;
+            inset: -60px -10% auto auto;
+            width: 520px; height: 520px;
+            background: radial-gradient(circle, rgba(201,161,74,0.20) 0%, transparent 65%);
+            filter: blur(70px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        body[data-page="about"] .page-hero .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+        body[data-page="about"] .page-hero-title {
+            font-size: clamp(2.8rem, 6vw, 4.8rem);
+            font-weight: 900;
+            letter-spacing: -2px;
+            line-height: 1;
+            color: var(--ink);
+            margin: 0 0 16px;
+        }
+        body[data-page="about"] .page-hero-subtitle {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            font-style: italic;
+            max-width: 560px;
+            margin: 0 auto;
+            line-height: 1.65;
+        }
+
+        /* ── SECTION HEADERS ── */
+        body[data-page="about"] .section-header {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+        body[data-page="about"] .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--accent-deep);
+            margin-bottom: 18px;
+        }
+        body[data-page="about"] .eyebrow::before,
+        body[data-page="about"] .eyebrow::after {
+            content: '';
+            display: block;
+            width: 24px; height: 1px;
+            background: var(--accent);
+        }
+        body[data-page="about"] .section-title {
+            font-size: clamp(2.2rem, 4vw, 3.2rem);
+            font-weight: 800;
+            letter-spacing: -1.2px;
+            line-height: 1.05;
+            color: var(--ink);
+            margin: 0 0 14px;
+        }
+        body[data-page="about"] .section-title::after { display: none; }
+        body[data-page="about"] .section-subtitle {
+            color: var(--text-muted);
+            font-size: 1rem;
+            max-width: 640px;
+            margin: 0 auto;
+            line-height: 1.65;
+        }
+
+        /* ── ABOUT CARDS ── tinted paper, single-color hairline, no rainbow */
+        body[data-page="about"] .about-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        body[data-page="about"] .about-card,
+        body[data-page="about"] .about-card:nth-child(1),
+        body[data-page="about"] .about-card:nth-child(2),
+        body[data-page="about"] .about-card:nth-child(3),
+        body[data-page="about"] .about-card:nth-child(4),
+        body[data-page="about"] .about-card:nth-child(5),
+        body[data-page="about"] .about-card:nth-child(6) {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 36px 32px;
+            box-shadow: none;
+            transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+            backdrop-filter: none;
+        }
+        body[data-page="about"] .about-card::before {
+            content: '';
+            display: block;
+            width: 28px;
+            height: 2px;
+            background: var(--accent);
+            margin-bottom: 22px;
+        }
+        body[data-page="about"] .about-card:hover,
+        body[data-page="about"] .about-card:nth-child(1):hover,
+        body[data-page="about"] .about-card:nth-child(2):hover,
+        body[data-page="about"] .about-card:nth-child(3):hover,
+        body[data-page="about"] .about-card:nth-child(4):hover,
+        body[data-page="about"] .about-card:nth-child(5):hover,
+        body[data-page="about"] .about-card:nth-child(6):hover {
+            background: var(--paper);
+            border-color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(201,161,74,0.10);
+        }
+        body[data-page="about"] .about-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin: 0 0 14px;
+            letter-spacing: -0.3px;
+        }
+        body[data-page="about"] .about-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin: 0 0 22px;
+        }
+
+        /* Tags */
+        body[data-page="about"] .tags {
+            display: flex; flex-wrap: wrap; gap: 6px;
+        }
+        body[data-page="about"] .tag {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            padding: 5px 11px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: transparent;
+            letter-spacing: 0.2px;
+            transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+        }
+        body[data-page="about"] .tag:hover {
+            border-color: var(--accent);
+            color: var(--accent-deep);
+            background: rgba(201,161,74,0.06);
+        }
+
+        /* ── STORY SECTION ── replace the AI-purple inline gradient */
+        body[data-page="about"] #story {
+            background: var(--paper-off) !important; /* override inline */
+            position: relative;
+        }
+        body[data-page="about"] #story .panel {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0 24px;
+        }
+        body[data-page="about"] #story .panel-description {
+            color: var(--text);
+            font-size: 1.1rem !important;
+            line-height: 1.85 !important;
+            max-width: 720px;
+            margin: 0 auto 28px;
+        }
+        body[data-page="about"] #story .panel-description:last-child {
+            margin-bottom: 0;
+        }
+        body[data-page="about"] #story .panel-description::first-letter {
+            font-weight: 700;
+            color: var(--accent-deep);
+        }
+
+        /* ── TEAM SECTION ── replace the AI-purple inline gradient */
+        body[data-page="about"] #team {
+            background: var(--ink) !important; /* high-contrast band */
+            color: var(--paper);
+            position: relative;
+            overflow: hidden;
+        }
+        body[data-page="about"] #team::before {
+            content: '';
+            position: absolute;
+            top: -120px; left: 50%;
+            transform: translateX(-50%);
+            width: 900px; height: 480px;
+            background: radial-gradient(ellipse, rgba(201,161,74,0.16) 0%, transparent 65%);
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        body[data-page="about"] #team .container { position: relative; z-index: 1; }
+        body[data-page="about"] #team .section-title { color: var(--paper); }
+        body[data-page="about"] #team .section-subtitle { color: rgba(251,251,249,0.6); }
+        body[data-page="about"] #team .eyebrow { color: var(--accent-soft); }
+        body[data-page="about"] #team .eyebrow::before,
+        body[data-page="about"] #team .eyebrow::after { background: var(--accent); }
+
+        body[data-page="about"] #team .team-stats {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            border-top: 1px solid rgba(251,251,249,0.08);
+            border-bottom: 1px solid rgba(251,251,249,0.08);
+            margin: 0 0 56px;
+            padding: 0;
+            background: transparent;
+        }
+        body[data-page="about"] #team .team-stat,
+        body[data-page="about"] #team .team-stat:nth-child(1),
+        body[data-page="about"] #team .team-stat:nth-child(2) {
+            background: transparent;
+            border: none;
+            border-right: 1px solid rgba(251,251,249,0.08);
+            padding: 28px 64px;
+            box-shadow: none;
+        }
+        body[data-page="about"] #team .team-stat:last-child { border-right: none; }
+        body[data-page="about"] #team .team-stat-number {
+            color: var(--paper);
+            -webkit-text-fill-color: var(--paper);
+            background: none;
+            font-size: 2.4rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+        body[data-page="about"] #team .team-stat-label {
+            color: rgba(251,251,249,0.45);
+            font-size: 0.66rem;
+            letter-spacing: 2.5px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        /* ── COMMITMENT cards inherit the about-card refinements above ── */
+
+        /* ── CTA button on team section ── */
+        body[data-page="about"] #team .btn-primary {
+            background: var(--accent);
+            color: var(--ink);
+            border: none;
+            box-shadow: 0 8px 24px rgba(201,161,74,0.20);
+            transition: transform 0.25s, background-color 0.2s, box-shadow 0.25s;
+        }
+        body[data-page="about"] #team .btn-primary:hover {
+            background: var(--accent-soft);
+            transform: translateY(-2px);
+            box-shadow: 0 14px 36px rgba(201,161,74,0.30);
+        }
+        body[data-page="about"] #team .btn-primary:focus-visible {
+            outline: 2px solid var(--accent-soft);
+            outline-offset: 3px;
+        }
+
+        /* ── ALUMNI SECTION ── */
+        body[data-page="about"] #alumni {
+            background: var(--paper);
+        }
+
+        /* ── NEWSLETTER ── */
+        body[data-page="about"] #newsletter-section {
+            background: var(--paper-off);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            body[data-page="about"] .about-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            body[data-page="about"] .page-hero { padding: 96px 0 48px; }
+            body[data-page="about"] #team .team-stat,
+            body[data-page="about"] #team .team-stat:nth-child(1),
+            body[data-page="about"] #team .team-stat:nth-child(2) {
+                padding: 24px 36px;
+            }
+        }
+        @media (max-width: 520px) {
+            body[data-page="about"] .about-card { padding: 28px 24px; }
+            body[data-page="about"] .page-hero::before {
+                width: 320px; height: 320px;
+            }
+        }
+    </style>
 </head>
 <body data-page="about">
     <!-- Google Tag Manager (noscript) -->
@@ -416,28 +739,28 @@
         </section>
 
         <!-- Story Section -->
-        <section class="section" id="story" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);">
+        <section class="section" id="story">
             <div class="container">
                 <div class="section-header">
                     <h2 class="section-title">Our Story</h2>
                     <p class="section-subtitle">From a simple idea to a thriving platform</p>
                 </div>
 
-                <div class="panel" style="max-width: 1100px; margin: 0 auto;">
-                    <p class="panel-description" style="font-size: 1.1rem; line-height: 1.9;">
+                <div class="panel">
+                    <p class="panel-description">
                         The Catalyst began as a conversation between a small group of students who felt that
                         STEM research — happening all around them in one of the most scientifically active
                         cities in the country — wasn't reaching the people who should care most about it.
                         Washington, D.C. is home to world-class universities, federal research agencies, and
                         a policy landscape where science matters. We wanted a publication that reflected that.
                     </p>
-                    <p class="panel-description" style="font-size: 1.1rem; line-height: 1.9;">
+                    <p class="panel-description">
                         We started small — a handful of writers, no budget, and a lot of shared Google Docs.
                         Over time, contributors from across the D.C. area joined us: students from GW, Georgetown,
                         Howard, Johns Hopkins, and beyond, each bringing a different lens to the same goal.
                         The publication grew organically, shaped more by the people in it than by any master plan.
                     </p>
-                    <p class="panel-description" style="font-size: 1.1rem; line-height: 1.9;">
+                    <p class="panel-description">
                         Today, The Catalyst is a cross-institutional student magazine with a growing readership
                         and a clear editorial identity. We're still student-run, still independent, and still
                         driven by the same conviction that good science writing can change how people think.
@@ -485,7 +808,7 @@
         </section>
 
         <!-- Team Section -->
-        <section class="section" id="team" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);">
+        <section class="section" id="team">
             <div class="container">
                 <div class="section-header">
                     <span class="eyebrow">Our Team</span>
