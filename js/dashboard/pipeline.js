@@ -23,6 +23,7 @@ import {
   deleteField,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, fmtDate, confirmDialog } from "./ui.js";
+import { showCalendarExportPrompt } from "./calendar-export.js";
 
 // ─── Workflow state machine (mirrors CatalystSchedule stateManager.js) ────────
 
@@ -803,6 +804,11 @@ function openDetailModal(projectId) {
     ${pubDeadlineHtml}
     ${deadlineRows}
     ${deadlineRequestHtml}
+    ${(deadlines.publication || project.deadline || deadlines.interview) ? `
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-secondary btn-xs" id="cal-export-btn" type="button">📅 Save to calendar</button>
+        <span style="font-size:11px;color:var(--muted,#64748b);">.ics or Google Calendar · 5-day reminder</span>
+      </div>` : ""}
 
     ${divider}
     ${sec("Leave a comment")}
@@ -993,7 +999,13 @@ function openDetailModal(projectId) {
   body.querySelector("#save-deadlines-btn")?.addEventListener("click", async () => {
     const inputs = body.querySelectorAll(".dl-input");
     const patch = {};
-    inputs.forEach(inp => { if (inp.dataset.dlkey) patch[`deadlines.${inp.dataset.dlkey}`] = inp.value || null; });
+    const newDeadlines = { ...(project.deadlines || {}) };
+    inputs.forEach(inp => {
+      if (!inp.dataset.dlkey) return;
+      const v = inp.value || null;
+      patch[`deadlines.${inp.dataset.dlkey}`] = v;
+      newDeadlines[inp.dataset.dlkey] = v || "";
+    });
     patch.updatedAt = new Date().toISOString();
     patch.lastActivity = serverTimestamp();
     patch.activity = arrayUnion({ text: "updated deadlines", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() });
@@ -1001,8 +1013,35 @@ function openDetailModal(projectId) {
     btn.disabled = true;
     try {
       await updateDoc(doc(workflowDb, "projects", project.id), patch);
-      toast("Deadlines saved.", "success"); m.close();
+      toast("Deadlines saved.", "success");
+      m.close();
+      // Prompt to add the new publication / interview date(s) to the user's
+      // calendar. Skipped silently if no relevant date was actually changed.
+      const changedKey = (k) => (project.deadlines || {})[k] !== newDeadlines[k];
+      const datesChanged = changedKey("publication") || changedKey("interview");
+      if (datesChanged) {
+        try {
+          await showCalendarExportPrompt({
+            id: project.id,
+            title: project.title,
+            deadlines: newDeadlines,
+            deadline: newDeadlines.publication || project.deadline,
+          });
+        } catch (calErr) {
+          console.warn("Calendar export prompt failed:", calErr);
+        }
+      }
     } catch (e) { toast(e.message, "error"); btn.disabled = false; }
+  });
+
+  // Save to calendar (.ics + Google Calendar) for the current deadlines.
+  body.querySelector("#cal-export-btn")?.addEventListener("click", () => {
+    showCalendarExportPrompt({
+      id: project.id,
+      title: project.title,
+      deadlines: project.deadlines || {},
+      deadline: project.deadline,
+    }).catch((calErr) => console.warn("Calendar export prompt failed:", calErr));
   });
 
   // Request deadline change
@@ -1136,7 +1175,7 @@ function openProposalModal(existing) {
         });
         toast("Proposal updated.", "success");
       } else {
-        await addDoc(collection(workflowDb, "projects"), {
+        const newDoc = await addDoc(collection(workflowDb, "projects"), {
           ...patch,
           authorId: _uid,
           authorName: _profile.name || _ctx.user.email,
@@ -1148,6 +1187,19 @@ function openProposalModal(existing) {
           lastActivity: serverTimestamp(),
         });
         toast("Proposal submitted! An admin will review it.", "success", 4000);
+        m.close();
+        // Offer .ics + Google Calendar export with a 5-day reminder so the
+        // writer doesn't forget the deadline.
+        try {
+          await showCalendarExportPrompt({
+            id: newDoc.id,
+            title,
+            deadlines: { publication: deadline },
+          });
+        } catch (calErr) {
+          console.warn("Calendar export prompt failed:", calErr);
+        }
+        return;
       }
       m.close();
     } catch (e) {
