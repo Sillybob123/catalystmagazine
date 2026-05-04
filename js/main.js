@@ -25,8 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const ARTICLE_FALLBACK_IMAGE = '/NewsletterHeader1.png';
 const CARD_IMAGE_WIDTH = 800;
+const CARD_IMAGE_WIDTH_2X = 1400;
 const HERO_IMAGE_WIDTH = 1000;
-const CARD_IMAGE_QUALITY = 78;
+const CARD_IMAGE_QUALITY = 82;
+const CARD_IMAGE_QUALITY_2X = 72;
 const HERO_IMAGE_QUALITY = 62;
 let articleData = [];
 let fadeObserver = null;
@@ -85,6 +87,7 @@ function getResizedImageUrl(src, width, quality) {
 }
 
 function getCardImageUrl(src)  { return getResizedImageUrl(src, CARD_IMAGE_WIDTH, CARD_IMAGE_QUALITY); }
+function getCardImageUrl2x(src) { return getResizedImageUrl(src, CARD_IMAGE_WIDTH_2X, CARD_IMAGE_QUALITY_2X); }
 function getHeroImageUrl(src)  { return getResizedImageUrl(src, HERO_IMAGE_WIDTH, HERO_IMAGE_QUALITY); }
 
 // Renders an <img> with a shimmer background while loading, then fades in.
@@ -92,6 +95,13 @@ function getHeroImageUrl(src)  { return getResizedImageUrl(src, HERO_IMAGE_WIDTH
 function createProgressiveImage(src, alt, className = '', eager = false, imageSettings = null, overlayHtml = '') {
     const imageSrc = src || ARTICLE_FALLBACK_IMAGE;
     const displaySrc = eager ? getHeroImageUrl(imageSrc) : getCardImageUrl(imageSrc);
+    // For non-eager card images, offer a 2x source so retina screens get a
+    // sharper render. Browsers download only ONE source based on DPR, so 1x
+    // devices keep loading the small file — no perf regression.
+    const displaySrc2x = eager ? null : getCardImageUrl2x(imageSrc);
+    const srcsetAttr = displaySrc2x && displaySrc2x !== displaySrc
+        ? `srcset="${displaySrc} 1x, ${displaySrc2x} 2x"`
+        : '';
     const customStyles = getImageStyles(imageSettings);
     const fetchPriority = eager ? 'fetchpriority="high"' : '';
     const loadingAttr = eager ? 'eager' : 'lazy';
@@ -117,6 +127,7 @@ function createProgressiveImage(src, alt, className = '', eager = false, imageSe
     return `<div class="card-img-wrap ${className}" style="${bgStyle}">
         <img
             src="${displaySrc}"
+            ${srcsetAttr}
             alt="${alt}"
             class="card-img"
             style="${customStyles}"
