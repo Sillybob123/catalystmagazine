@@ -4335,6 +4335,14 @@ function refreshDetailsModal(project) {
     renderDeadlineRequestSection(project, isAuthor, isAdmin);
     renderActivityFeed(project.activity || []);
 
+    if (window.CatalystCalendarExport && typeof window.CatalystCalendarExport.renderDetailsModalButtons === 'function') {
+        try {
+            window.CatalystCalendarExport.renderDetailsModalButtons(project);
+        } catch (calErr) {
+            console.warn('[MODAL] Calendar export buttons failed:', calErr);
+        }
+    }
+
     const deleteButton = document.getElementById('delete-project-button');
     if (deleteButton) {
         const canDelete = isAuthor || isAdmin;
@@ -4772,6 +4780,16 @@ async function handleProjectFormSubmit(e) {
         renderCurrentViewEnhanced();
 
         showNotification('Project proposal submitted successfully!', 'success');
+
+        // Offer .ics + Google Calendar export so the writer can save the
+        // publication deadline (with a 5-day reminder) to their calendar.
+        if (window.CatalystCalendarExport && typeof window.CatalystCalendarExport.showPostSubmitPrompt === 'function') {
+            try {
+                window.CatalystCalendarExport.showPostSubmitPrompt(localProject);
+            } catch (calErr) {
+                console.warn('[PROJECT SUBMIT] Calendar export prompt failed:', calErr);
+            }
+        }
 
         // Reset form
         document.getElementById('project-form').reset();

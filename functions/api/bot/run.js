@@ -35,6 +35,7 @@ import {
   computeAdminDigest,
   computeAdminTasks,
   groupRemindersByRecipient,
+  lastActivityDate,
 } from "../../_utils/bot-logic.js";
 import {
   writerReminderEmail,
@@ -233,6 +234,19 @@ export const onRequestPost = async ({ request, env }) => {
               recipientEmail: recipient.email,
               sentAt: now.toISOString(),
             });
+            await recordEmailLogEntry(env, {
+              sentAt: now.toISOString(),
+              recipientEmail: recipient.email,
+              recipientName: recipient.name || null,
+              role: r.editor ? "editor" : "writer",
+              kind: r.kind,
+              projectId: r.projectId,
+              projectTitle: r.project?.title || null,
+              subject: r.subject || null,
+              daysInactive: r.daysInactive ?? null,
+              daysUntilDeadline: r.daysUntilDeadline ?? null,
+              projectActivityAtSend: lastActivityIso(r.project),
+            });
             if (r.editor) result.editorReminders.sent++;
             else result.writerReminders.sent++;
           } catch (err) {
@@ -259,6 +273,24 @@ export const onRequestPost = async ({ request, env }) => {
               await recordReminderSent(env, key, {
                 bundledFor: b.recipient.email,
                 sentAt: now.toISOString(),
+              });
+            }
+            // One email-log row per (project, kind) inside the bundle so the
+            // admin sees exactly what the bundled email said.
+            for (const item of b.items || []) {
+              await recordEmailLogEntry(env, {
+                sentAt: now.toISOString(),
+                recipientEmail: b.recipient.email,
+                recipientName: b.recipient.name || null,
+                role: b.role || "writer",
+                kind: item.kind,
+                projectId: item.projectId,
+                projectTitle: item.project?.title || null,
+                subject: b.subject || null,
+                bundled: true,
+                daysInactive: item.daysInactive ?? null,
+                daysUntilDeadline: item.daysUntilDeadline ?? null,
+                projectActivityAtSend: lastActivityIso(item.project),
               });
             }
             result.bundled.sent++;
@@ -414,6 +446,103 @@ async function loadReminderLog(env) {
     console.warn("Failed to load reminder log:", err.message);
     return {};
   }
+}
+
+// Email activity log. Separate doc from the reminder-cooldown log so:
+//   - the cooldown log stays a flat key→ISO map for fast lookup,
+//   - the email log keeps richer per-send rows the admin UI needs (recipient,
+//     subject, project state at send time) without bloating the cooldown reads.
+//
+// Lives at `bot_email_log/recent` as { entries: [row, row, ...] }, kept to the
+// last EMAIL_LOG_MAX_DAYS or EMAIL_LOG_MAX_ENTRIES, whichever cuts more.
+const EMAIL_LOG_PATH = "bot_email_log/recent";
+const EMAIL_LOG_MAX_ENTRIES = 200;
+const EMAIL_LOG_MAX_DAYS = 50;
+
+let _emailLogCache = null;
+async function loadEmailLog(env) {
+  if (_emailLogCache !== null) return _emailLogCache;
+  try {
+    const doc = await firestoreGet(env, EMAIL_LOG_PATH);
+    if (!doc?.fields?.entries?.arrayValue?.values) {
+      _emailLogCache = [];
+      return _emailLogCache;
+    }
+    _emailLogCache = doc.fields.entries.arrayValue.values
+      .map((v) => firestoreValueToJs(v))
+      .filter((v) => v && typeof v === "object");
+    return _emailLogCache;
+  } catch (err) {
+    console.warn("Failed to load email log:", err.message);
+    _emailLogCache = [];
+    return _emailLogCache;
+  }
+}
+
+async function recordEmailLogEntry(env, entry) {
+  const all = await loadEmailLog(env);
+  all.unshift(entry);
+  // Trim by age first, then by count.
+  const cutoff = Date.now() - EMAIL_LOG_MAX_DAYS * 86400000;
+  const trimmed = all
+    .filter((e) => {
+      const t = Date.parse(e.sentAt || "");
+      return Number.isFinite(t) ? t >= cutoff : true;
+    })
+    .slice(0, EMAIL_LOG_MAX_ENTRIES);
+  _emailLogCache = trimmed;
+
+  try {
+    await firestoreUpdate(
+      env,
+      EMAIL_LOG_PATH,
+      { entries: trimmed, updatedAt: entry.sentAt },
+      { mergeFields: true }
+    );
+  } catch (err) {
+    if ((err.message || "").includes("404") || (err.message || "").includes("NOT_FOUND")) {
+      await firestoreCreate(
+        env,
+        "bot_email_log",
+        { entries: trimmed, updatedAt: entry.sentAt },
+        "recent"
+      );
+    } else {
+      throw err;
+    }
+  }
+}
+
+function lastActivityIso(project) {
+  try {
+    const d = lastActivityDate(project || {});
+    return d ? d.toISOString() : null;
+  } catch {
+    return null;
+  }
+}
+
+// Tiny REST-Firestore decoder so we can read back nested email-log rows. Mirrors
+// the encoder's recursive shape — handles the value types we actually emit.
+function firestoreValueToJs(v) {
+  if (!v || typeof v !== "object") return null;
+  if ("stringValue" in v) return v.stringValue;
+  if ("integerValue" in v) return Number(v.integerValue);
+  if ("doubleValue" in v) return v.doubleValue;
+  if ("booleanValue" in v) return v.booleanValue;
+  if ("timestampValue" in v) return v.timestampValue;
+  if ("nullValue" in v) return null;
+  if ("arrayValue" in v) {
+    return (v.arrayValue.values || []).map(firestoreValueToJs);
+  }
+  if ("mapValue" in v) {
+    const out = {};
+    for (const [k, vv] of Object.entries(v.mapValue.fields || {})) {
+      out[k] = firestoreValueToJs(vv);
+    }
+    return out;
+  }
+  return null;
 }
 
 // Cache one read + merge across the run to avoid reading the doc N times.

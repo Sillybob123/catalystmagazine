@@ -88,6 +88,13 @@ export async function mount(ctx, container) {
     botCard.innerHTML = `<div class="card-body" id="bot-panel"></div>`;
     container.appendChild(botCard);
     mountBotPanel(botCard.querySelector("#bot-panel"), ctx);
+
+    // Bot email activity — what the bot sent recently, with rows highlighted
+    // red when the recipient hasn't moved their project since the email.
+    const emailLogCard = el("div", { class: "card", style: { marginTop: "20px" } });
+    emailLogCard.innerHTML = `<div class="card-body" id="bot-email-log"></div>`;
+    container.appendChild(emailLogCard);
+    mountBotEmailLog(emailLogCard.querySelector("#bot-email-log"), ctx);
   }
 
   // Staff directory
@@ -213,14 +220,10 @@ async function loadStaff(mount, ctx) {
       }
     }
 
-    // Filter out readers unless the viewer is an admin (community is admin-only).
-    const showReaders = ctx.role === "admin";
-    const people = Array.from(byKey.values()).filter((p) => {
-      if (p.role === "reader" && !showReaders) return false;
-      // Drop community entries with no usable identity at all.
-      if (p.role === "reader" && !p.name && !p.email) return false;
-      return true;
-    });
+    // Readers/community are intentionally hidden from the overview directory —
+    // the staff card is for the editorial team, not the newsletter audience.
+    // (Admins manage readers via #/admin/users.)
+    const people = Array.from(byKey.values()).filter((p) => p.role !== "reader");
 
     if (!people.length) {
       mount.innerHTML = `<div class="empty-state">No teammates found yet.</div>`;
@@ -658,10 +661,15 @@ function renderDigestPreview(d) {
 }
 
 function kindLabel(kind) {
-  if (kind === "deadline-overdue") return { text: "Overdue", bg: "#fde8e8", ink: "#9b1c1c" };
-  if (kind === "deadline-1d")      return { text: "Due tomorrow", bg: "#fff4e5", ink: "#92400e" };
-  if (kind === "deadline-3d")      return { text: "Due in 3d", bg: "#fff4e5", ink: "#92400e" };
-  if (kind === "idle")             return { text: "Idle nudge",  bg: "#eef2ff", ink: "#3730a3" };
+  if (kind === "deadline-overdue")     return { text: "Overdue",        bg: "#fde8e8", ink: "#9b1c1c" };
+  if (kind === "deadline-1d")          return { text: "Due tomorrow",   bg: "#fff4e5", ink: "#92400e" };
+  if (kind === "deadline-3d")          return { text: "Due in 3d",      bg: "#fff4e5", ink: "#92400e" };
+  if (kind === "idle")                 return { text: "Idle nudge",     bg: "#eef2ff", ink: "#3730a3" };
+  if (kind === "editor-idle")          return { text: "Editor idle",    bg: "#eef2ff", ink: "#3730a3" };
+  if (kind === "editor-just-assigned") return { text: "Editor assigned",bg: "#ecfeff", ink: "#155e75" };
+  if (kind === "interview-prep")       return { text: "Interview soon", bg: "#f5f3ff", ink: "#5b21b6" };
+  if (kind === "interview-followup")   return { text: "Post-interview", bg: "#f5f3ff", ink: "#5b21b6" };
+  if (kind === "post-approval-idle")   return { text: "Post-approval",  bg: "#eef2ff", ink: "#3730a3" };
   return { text: kind || "reminder", bg: "#f3f4f6", ink: "#374151" };
 }
 
@@ -723,4 +731,106 @@ function loadIntoFrame(frame, html) {
   }
   setTimeout(resize, 50);
   setTimeout(resize, 300);
+}
+
+// ─── Bot email activity log ──────────────────────────────────────────────────
+//
+// Shows the last 50 days of bot-sent writer/editor emails. Rows turn red when
+// the recipient hasn't moved their project since the email — i.e. they were
+// nudged and ignored it. Admin digests are intentionally excluded (not
+// actionable per-recipient).
+
+function mountBotEmailLog(mount, ctx) {
+  const render = (state, data, err) => {
+    const headerHtml = `
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--ink);">Bot email activity</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;">
+            Recent writer/editor emails the bot has sent. Rows in red mean the recipient was emailed but the project hasn't moved since — they may be ignoring the nudge.
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-email-log-action="refresh">Refresh</button>
+      </div>
+      <div id="bot-email-log-body" style="margin-top:14px;"></div>
+    `;
+    mount.innerHTML = headerHtml;
+    const body = mount.querySelector("#bot-email-log-body");
+
+    if (state === "loading") {
+      body.innerHTML = `<div class="hint" style="display:flex;align-items:center;gap:8px;"><div class="spinner"></div>Loading…</div>`;
+    } else if (state === "error") {
+      body.innerHTML = `<div class="error-state">${esc(err?.message || err || "Could not load email log.")}</div>`;
+    } else if (state === "ready") {
+      body.innerHTML = renderBotEmailLog(data);
+    }
+
+    mount.querySelector("[data-email-log-action='refresh']")?.addEventListener("click", load);
+  };
+
+  const load = async () => {
+    render("loading");
+    try {
+      const res = await ctx.authedFetch("/api/bot/email-log");
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      render("ready", data);
+    } catch (e) {
+      render("error", null, e);
+    }
+  };
+
+  load();
+}
+
+function renderBotEmailLog(data) {
+  const entries = Array.isArray(data.entries) ? data.entries : [];
+  if (!entries.length) {
+    return `<div class="empty-state">No bot emails on file yet.</div>`;
+  }
+
+  const ignoredCount = entries.filter((e) => e.ignored).length;
+
+  const rows = entries.map((e) => {
+    const kindBadge = kindLabel(e.kind);
+    const ignored = !!e.ignored;
+    const rowBg = ignored ? "#fef2f2" : "transparent";
+    const rowBorder = ignored ? "#fecaca" : "var(--hairline,#e5e7eb)";
+    const ignoredFlag = ignored
+      ? `<span style="display:inline-block;background:#fee2e2;color:#9b1c1c;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-left:8px;vertical-align:middle;">Ignored — no change in ${Math.floor(e.daysSinceSent)}d</span>`
+      : "";
+    const meta = [
+      e.daysUntilDeadline != null ? `${e.daysUntilDeadline}d to deadline` : null,
+      e.daysInactive != null ? `${e.daysInactive}d idle at send` : null,
+      e.bundled ? "bundled" : null,
+      e.role && e.role !== "writer" ? e.role : null,
+    ].filter(Boolean).join(" · ");
+
+    return `
+      <div style="border:1px solid ${rowBorder};background:${rowBg};border-radius:10px;padding:10px 12px;margin-top:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+          <div style="min-width:0;flex:1;">
+            <div style="font-weight:600;font-size:13.5px;color:var(--ink,#111);line-height:1.4;">
+              <span style="display:inline-block;background:${kindBadge.bg};color:${kindBadge.ink};font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">${esc(kindBadge.text)}</span>
+              Bot emailed <strong>${esc(e.recipientName || e.recipientEmail || "(unknown)")}</strong>${e.projectTitle ? ` about <em>${esc(e.projectTitle)}</em>` : ""}
+              ${ignoredFlag}
+            </div>
+            <div style="margin-top:3px;font-size:12px;color:var(--muted,#6b7280);">
+              <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${esc(e.recipientEmail || "")}</span>
+              · sent ${esc(fmtShort(e.sentAt))}${meta ? ` · ${esc(meta)}` : ""}
+              ${e.projectMissing ? ` · <span style="color:#9b1c1c;">project deleted</span>` : ""}
+              ${e.projectComplete ? ` · <span style="color:#0f766e;">story finished</span>` : ""}
+            </div>
+            ${e.subject ? `<div style="margin-top:4px;font-size:12.5px;color:var(--ink-2,#374151);"><strong>Subject:</strong> ${esc(e.subject)}</div>` : ""}
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+
+  const summary = `
+    <div style="font-size:12px;color:var(--muted,#6b7280);margin-bottom:6px;">
+      ${entries.length} email${entries.length === 1 ? "" : "s"} on file (last 50 days)${ignoredCount ? ` · <strong style="color:#9b1c1c;">${ignoredCount} ignored</strong>` : ""}
+    </div>`;
+
+  return `${summary}${rows}`;
 }
