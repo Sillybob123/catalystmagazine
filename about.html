@@ -381,39 +381,61 @@
             }
         }
 
-        /* ── PAGE HERO ── deep slate band, white 3D extruded type */
+        /* ── PAGE HERO ── near-black band, white 3D extruded type, parallax */
         body[data-page="about"] .page-hero {
             position: relative;
             background:
-                radial-gradient(ellipse 70% 80% at 50% 40%, #1f2937 0%, #0f172a 60%, #050913 100%);
-            padding: 140px 0 96px;
+                radial-gradient(ellipse 65% 75% at 50% 38%, #0a0f1c 0%, #050811 55%, #02040a 100%);
+            padding: 140px 0 110px;
             margin-bottom: 0;
             overflow: hidden;
+            isolation: isolate;
+            /* Drives the parallax — JS updates --hero-y on scroll */
+            --hero-y: 0px;
         }
-        /* Subtle starfield-style sheen so the black isn't dead-flat */
+        /* Far layer: ambient sheen that drifts slowest */
         body[data-page="about"] .page-hero::before {
             content: '';
             position: absolute;
-            inset: 0;
+            inset: -10% 0;
             background:
-                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.04) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.03) 0%, transparent 45%);
+                radial-gradient(circle at 20% 25%, rgba(120,180,255,0.07) 0%, transparent 42%),
+                radial-gradient(circle at 82% 72%, rgba(160,180,220,0.05) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.02) 0%, transparent 55%);
             pointer-events: none;
             z-index: 0;
+            transform: translate3d(0, calc(var(--hero-y) * 0.25), 0);
+            will-change: transform;
         }
+        /* Mid layer: faint vertical light beams + horizon line */
+        body[data-page="about"] .page-hero-parallax-mid {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(180deg, transparent 0%, transparent 70%, rgba(120,160,220,0.06) 90%, transparent 100%),
+                radial-gradient(ellipse 80% 30% at 50% 95%, rgba(120,160,220,0.10) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+            transform: translate3d(0, calc(var(--hero-y) * 0.55), 0);
+            will-change: transform;
+        }
+        /* Hard, clean transition: tight 18px fade */
         body[data-page="about"] .page-hero::after {
             content: '';
             position: absolute;
             left: 0; right: 0; bottom: 0;
-            height: 64px;
+            height: 18px;
             background: linear-gradient(to bottom, transparent 0%, rgba(248,250,252,1) 100%);
             pointer-events: none;
-            z-index: 1;
+            z-index: 3;
         }
         body[data-page="about"] .page-hero .container {
             position: relative;
             z-index: 2;
             text-align: center;
+            /* Foreground content moves opposite (faster) for genuine depth */
+            transform: translate3d(0, calc(var(--hero-y) * -0.35), 0);
+            will-change: transform;
         }
         body[data-page="about"] .page-hero-title {
             font-size: clamp(3rem, 7vw, 5.4rem);
@@ -421,23 +443,25 @@
             letter-spacing: -2.5px;
             line-height: 1;
             color: #ffffff;
-            margin: 0 0 18px;
-            /* Layered shadows = extruded 3D depth + a soft halo */
+            margin: 0 0 22px;
+            /* Stronger extruded 3D — deeper bevel, harder cast shadow, brighter top edge */
             text-shadow:
-                0 1px 0 rgba(255,255,255,0.4),
-                0 2px 0 rgba(203,213,225,0.30),
-                0 3px 0 rgba(148,163,184,0.22),
-                0 4px 0 rgba(100,116,139,0.18),
-                0 6px 1px rgba(0,0,0,0.10),
-                0 0 5px rgba(0,0,0,0.10),
-                0 1px 3px rgba(0,0,0,0.30),
-                0 3px 5px rgba(0,0,0,0.20),
-                0 5px 10px rgba(0,0,0,0.25),
-                0 10px 30px rgba(15,23,42,0.55);
+                0 1px 0 rgba(255,255,255,0.85),
+                0 2px 0 rgba(226,232,240,0.55),
+                0 3px 0 rgba(203,213,225,0.45),
+                0 4px 0 rgba(148,163,184,0.38),
+                0 5px 0 rgba(100,116,139,0.32),
+                0 6px 0 rgba(71,85,105,0.28),
+                0 7px 0 rgba(51,65,85,0.24),
+                0 8px 0 rgba(30,41,59,0.20),
+                0 9px 1px rgba(2,4,10,0.55),
+                0 10px 4px rgba(2,4,10,0.45),
+                0 14px 18px rgba(0,0,0,0.55),
+                0 22px 40px rgba(0,0,0,0.55);
         }
         body[data-page="about"] .page-hero-subtitle {
             font-size: 1.05rem;
-            color: rgba(255,255,255,0.65);
+            color: rgba(255,255,255,0.62);
             font-style: italic;
             max-width: 560px;
             margin: 0 auto;
@@ -649,8 +673,8 @@
 
         /* ── COMMITMENT cards inherit the about-card refinements above ── */
 
-        /* ── TEAM MEMBER CARDS ── kill the pale rainbow nth-child gradients,
-              use a unified slate-tinted glass that reads richly on the dark band */
+        /* ── TEAM MEMBER CARDS ── crisp white containers, dark text inside,
+              all 19 nth-child rainbow gradients overridden */
         body[data-page="about"] .team-member-card,
         body[data-page="about"] .team-member-card:nth-child(1),
         body[data-page="about"] .team-member-card:nth-child(2),
@@ -671,41 +695,39 @@
         body[data-page="about"] .team-member-card:nth-child(17),
         body[data-page="about"] .team-member-card:nth-child(18),
         body[data-page="about"] .team-member-card:nth-child(19) {
-            background: linear-gradient(160deg,
-                rgba(255,255,255,0.10) 0%,
-                rgba(255,255,255,0.04) 60%,
-                rgba(15,23,42,0.20) 100%);
-            border: 1px solid rgba(255,255,255,0.12);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            background: linear-gradient(180deg, #f1f4f8 0%, #e6ebf2 100%);
+            border: 1px solid rgba(15,23,42,0.10);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
             box-shadow:
-                0 1px 0 rgba(255,255,255,0.06) inset,
-                0 18px 44px rgba(5,9,19,0.45);
+                0 1px 0 rgba(255,255,255,0.7) inset,
+                0 14px 36px rgba(2,4,10,0.40),
+                0 4px 12px rgba(2,4,10,0.22);
             transition: transform 0.3s ease, border-color 0.3s, box-shadow 0.3s, background 0.3s;
         }
         body[data-page="about"] .team-member-card:hover {
-            background: linear-gradient(160deg,
-                rgba(255,255,255,0.16) 0%,
-                rgba(255,255,255,0.06) 60%,
-                rgba(15,23,42,0.22) 100%);
-            border-color: rgba(255,255,255,0.22);
+            background: linear-gradient(180deg, #f5f7fa 0%, #e9eef4 100%);
+            border-color: rgba(15,23,42,0.16);
             transform: translateY(-4px);
             box-shadow:
-                0 1px 0 rgba(255,255,255,0.10) inset,
-                0 28px 60px rgba(5,9,19,0.55);
+                0 1px 0 rgba(255,255,255,0.7) inset,
+                0 24px 56px rgba(2,4,10,0.50),
+                0 8px 20px rgba(2,4,10,0.28);
         }
 
-        /* Text + role inside team cards on the dark band */
+        /* Text + role inside team cards (dark on white) */
         body[data-page="about"] #team .team-member-card h3,
-        body[data-page="about"] #team .team-member-card .team-name { color: #ffffff; }
+        body[data-page="about"] #team .team-member-card .team-name {
+            color: var(--ink);
+        }
         body[data-page="about"] #team .team-member-card .team-role,
         body[data-page="about"] #team .team-member-card .team-title {
-            color: rgba(255,255,255,0.55);
+            color: var(--text-muted);
             letter-spacing: 1.5px;
         }
         body[data-page="about"] #team .team-member-card p,
         body[data-page="about"] #team .team-member-card .team-bio {
-            color: rgba(255,255,255,0.72);
+            color: var(--text);
         }
 
         /* ── CTA button on team section ── (white pill on dark band) */
@@ -768,6 +790,7 @@
     <main>
         <!-- Page Hero -->
         <section class="page-hero">
+            <div class="page-hero-parallax-mid" aria-hidden="true"></div>
             <div class="container">
                 <h1 class="page-hero-title">About The Catalyst</h1>
                 <p class="page-hero-subtitle">Catalyst (noun): An agent that sparks significant change</p>
@@ -980,5 +1003,45 @@
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/data.js"></script>
     <script defer src="/js/main.js"></script>
+
+    <script>
+        /* About page hero parallax — depth on scroll, respects reduced-motion */
+        (function () {
+            const hero = document.querySelector('body[data-page="about"] .page-hero');
+            if (!hero) return;
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            let ticking = false;
+            let inView = true;
+
+            const update = () => {
+                const rect = hero.getBoundingClientRect();
+                if (rect.bottom < -50 || rect.top > window.innerHeight + 50) {
+                    ticking = false;
+                    return;
+                }
+                /* y is the scroll distance into the hero, capped */
+                const y = Math.max(-200, Math.min(400, -rect.top));
+                hero.style.setProperty('--hero-y', y + 'px');
+                ticking = false;
+            };
+
+            const onScroll = () => {
+                if (!ticking) {
+                    ticking = true;
+                    requestAnimationFrame(update);
+                }
+            };
+
+            const io = new IntersectionObserver((entries) => {
+                inView = entries[0].isIntersecting;
+                if (inView) onScroll();
+            }, { rootMargin: '100px' });
+            io.observe(hero);
+
+            window.addEventListener('scroll', onScroll, { passive: true });
+            update();
+        })();
+    </script>
 </body>
 </html>
