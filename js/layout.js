@@ -177,20 +177,17 @@ function setupWelcomePopup() {
     const openDelay = forceShow ? 350 : 6000;
     console.log(`[welcome-popup] will appear in ${openDelay}ms`);
 
-    const checkSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
-
     const markup = `
         <div class="welcome-popup-overlay" id="welcome-popup-overlay"></div>
         <div class="welcome-popup-card" tabindex="-1">
             <button class="welcome-popup-close" id="welcome-popup-close" aria-label="Close">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <div class="welcome-popup-masthead" aria-hidden="true">
-                <img src="/WebLogo.png" alt="" class="welcome-popup-logo" width="600" height="107" loading="lazy" decoding="async">
+            <div class="welcome-popup-masthead">
+                <img src="/WebLogo.png" alt="The Catalyst" class="welcome-popup-logo" width="600" height="107" loading="lazy" decoding="async">
             </div>
-            <p class="welcome-popup-eyebrow">Welcome to The Catalyst</p>
-            <h2 class="welcome-popup-title" id="welcome-popup-title">Stories that spark scientific curiosity.</h2>
-            <p class="welcome-popup-subtitle">Join thousands of curious minds for thoughtful stories, D.C. STEM spotlights, and behind-the-scenes interviews, delivered with care and never spam.</p>
+            <h2 class="welcome-popup-title" id="welcome-popup-title">Stories that spark <em>scientific curiosity.</em></h2>
+            <p class="welcome-popup-subtitle">Thoughtful reporting, D.C. STEM spotlights, and behind-the-scenes interviews — delivered with care, never spam.</p>
             <form data-newsletter-form id="welcome-popup-form" class="welcome-popup-form" novalidate>
                 <div class="welcome-popup-name-row">
                     <label class="welcome-popup-field">
@@ -207,16 +204,16 @@ function setupWelcomePopup() {
                     <input type="email" name="EMAIL" class="welcome-popup-input" placeholder="you@example.com" required autocomplete="email" inputmode="email">
                 </label>
                 <button type="submit" class="welcome-popup-submit">
-                    Subscribe
-                    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    <span>Subscribe</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>
                 <div class="newsletter-response welcome-popup-response" aria-live="polite"></div>
             </form>
-            <div class="welcome-popup-perks">
-                <div class="welcome-popup-perk">${checkSvg}<span>Exclusive stories</span></div>
-                <div class="welcome-popup-perk">${checkSvg}<span>No spam, ever</span></div>
-                <div class="welcome-popup-perk">${checkSvg}<span>Unsubscribe anytime</span></div>
-            </div>
+            <ul class="welcome-popup-perks" aria-label="What you'll get">
+                <li class="welcome-popup-perk">Exclusive stories</li>
+                <li class="welcome-popup-perk">No spam, ever</li>
+                <li class="welcome-popup-perk">Unsubscribe anytime</li>
+            </ul>
             <button type="button" class="welcome-popup-dismiss" id="welcome-popup-dismiss">Maybe later</button>
         </div>
     `;
