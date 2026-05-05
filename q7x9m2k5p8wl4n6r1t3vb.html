@@ -567,7 +567,7 @@
             authenticateUser();
         } catch (e) {
             console.error("Firebase initialization failed:", e);
-            document.getElementById('messages-container').innerHTML = '<div class="loading-message">Error connecting to chat</div>';
+            showAuthError("Couldn't connect to the chat. Please refresh the page.");
         }
 
         async function authenticateUser() {
@@ -575,7 +575,31 @@
                 await signInAnonymously(auth);
             } catch (error) {
                 console.error("Auth failed:", error);
+                if (error.code === 'auth/admin-restricted-operation' || error.code === 'auth/operation-not-allowed') {
+                    showAuthError("The chat isn't available right now. An administrator has been notified.");
+                } else if (error.code === 'auth/network-request-failed') {
+                    showAuthError("Network error — check your connection and refresh.");
+                } else {
+                    showAuthError("Couldn't sign you in. Please refresh the page to try again.");
+                }
             }
+        }
+
+        function showAuthError(msg) {
+            document.getElementById('messages-container').innerHTML =
+                `<div class="loading-message" style="color: rgba(255,255,255,0.7);">${msg}</div>`;
+            document.getElementById('user-id-display').textContent = 'unavailable';
+            // Disable composer so users don't type into a dead form. Look up
+            // by id directly — the const refs further down in this script may
+            // not have been declared yet if init throws synchronously.
+            const u = document.getElementById('username-input');
+            const t = document.getElementById('title-input');
+            const m = document.getElementById('message-input');
+            const s = document.getElementById('submit-btn');
+            if (u) u.disabled = true;
+            if (t) t.disabled = true;
+            if (m) m.disabled = true;
+            if (s) { s.disabled = true; s.textContent = 'Chat unavailable'; }
         }
 
         onAuthStateChanged(auth, (user) => {

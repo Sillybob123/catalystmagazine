@@ -14,14 +14,24 @@ service cloud.firestore {
 
     // ---------- role helpers ----------
     function isSignedIn() { return request.auth != null; }
+
+    // Anonymous auth is enabled solely so the public Winners' Lounge chat
+    // can sign visitors in invisibly. EVERY editorial/staff path must reject
+    // anonymous tokens — only real (email/password) accounts may hold roles.
+    function isAnonymous() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function isRealUser() { return isSignedIn() && !isAnonymous(); }
+
     function myUserDoc() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
     function myRole() {
-      return isSignedIn() ? myUserDoc().data.role : null;
+      return isRealUser() ? myUserDoc().data.role : null;
     }
-    function hasRole(r) { return isSignedIn() && myRole() == r; }
-    function hasAnyRole(list) { return isSignedIn() && myRole() in list; }
+    function hasRole(r) { return isRealUser() && myRole() == r; }
+    function hasAnyRole(list) { return isRealUser() && myRole() in list; }
 
     function isAdmin()             { return hasRole('admin'); }
     function isEditor()            { return hasAnyRole(['admin', 'editor']); }
@@ -31,15 +41,17 @@ service cloud.firestore {
     function isStaff()             { return hasAnyRole(['admin', 'editor', 'writer', 'newsletter_builder', 'marketing']); }
 
     // ---------- users ----------
+    // Anonymous tokens are explicitly excluded — only real (email/password)
+    // accounts can have a /users doc, which is what gates every staff role.
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin() || isEditor());
+      allow read: if isRealUser() && (request.auth.uid == uid || isAdmin() || isEditor());
       // Users can create their own doc on first login.
       // Only safe bootstrap roles allowed — no self-assigning admin/editor.
-      allow create: if isSignedIn()
+      allow create: if isRealUser()
         && request.auth.uid == uid
         && request.resource.data.role in ['reader', 'writer'];
       // Users can update safe fields on their own doc (but not role).
-      allow update: if isSignedIn()
+      allow update: if isRealUser()
         && request.auth.uid == uid
         && !('role' in request.resource.data.diff(resource.data).affectedKeys());
       // Admins can do anything to any user.
@@ -160,9 +172,9 @@ service cloud.firestore {
 
     // ---------- user presence / last-seen ----------
     match /user_presence/{uid} {
-      // Users update their own presence on login.
+      // Real (non-anonymous) users update their own presence on login.
       allow read: if isEditor() || isAdmin();
-      allow write: if isSignedIn() && request.auth.uid == uid;
+      allow write: if isRealUser() && request.auth.uid == uid;
     }
 
     // ---------- workflow projects ----------
