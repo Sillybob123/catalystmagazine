@@ -220,6 +220,53 @@ service cloud.firestore {
         || (isStaff() && resource.data.proposerId == request.auth.uid);
     }
 
+    // ---------- winners' lounge chat ----------
+    // Public chatroom for solvers of the brain teaser. Anonymous auth required.
+    // Anyone signed in (anonymously or otherwise) can read + post.
+    // Editing is forbidden; only the message author or an admin can delete.
+    // The `likes` counter can be incremented by exactly +1 by anyone signed in,
+    // gated server-side by a paired write to /chat-likes/{messageId}_{uid}.
+    match /winners-chat/{messageId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.username is string
+        && request.resource.data.username.size() > 0
+        && request.resource.data.username.size() <= 50
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 500
+        && (!('title' in request.resource.data) || request.resource.data.title == null
+            || (request.resource.data.title is string && request.resource.data.title.size() <= 30))
+        && request.resource.data.likes == 0;
+
+      // Like-only updates: signed-in user may bump `likes` by exactly +1, and
+      // must simultaneously write a per-user like record at /chat-likes/{id}_{uid}.
+      // No other fields may change.
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        && request.resource.data.likes == resource.data.likes + 1
+        && existsAfter(/databases/$(database)/documents/chat-likes/$(messageId + "_" + request.auth.uid));
+
+      // Admins or the original author can delete.
+      allow delete: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // ---------- chat likes (per-user idempotency records) ----------
+    // Doc id format: {messageId}_{uid}. Existence prevents double-liking.
+    match /chat-likes/{likeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.messageId is string
+        && likeId == request.resource.data.messageId + "_" + request.auth.uid;
+      // Like records are immutable — no updates, no user deletes.
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
     // ---------- default deny ----------
     match /{document=**} {
       allow read, write: if false;
