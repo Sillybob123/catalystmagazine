@@ -1,990 +1,827 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Google Tag Manager -->
-  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
-  <!-- End Google Tag Manager -->
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Winners' Lounge — an exclusive chatroom for those who've solved The Catalyst Riddle.">
-  <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#0c0f1a">
-  <title>Winners' Lounge | The Catalyst Magazine</title>
-  <link rel="icon" type="image/png" href="/NewGlassLogo.png">
-
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap" rel="stylesheet"></noscript>
-  <link rel="stylesheet" href="/css/styles.css">
-
-  <style>
-    /* ── Design tokens ──────────────────────────────────────────── */
-    :root {
-      --ink:        #0c0f1a;
-      --ink-2:      #1e2540;
-      --ink-3:      #2d3555;
-      --surface:    #131929;
-      --surface-2:  #1a2235;
-      --edge:       rgba(255,255,255,0.08);
-      --edge-bright:rgba(255,255,255,0.18);
-      --text-1:     #f0f2f8;
-      --text-2:     #8892ab;
-      --text-3:     #5a637c;
-      --success:    #4ade80;
-      --error:      #f87171;
-      --heart:      #f87171;
-      --duration-ui: 220ms;
-      --ease-out:   cubic-bezier(0.22,1,0.36,1);
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      background-color: var(--ink);
-      color: var(--text-1);
-      min-height: 100dvh;
-      padding: 100px 20px 60px;
-      overflow-x: hidden;
-      position: relative;
-    }
-
-    /* Grid background (matches brain-teaser) */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(var(--edge) 1px, transparent 1px),
-        linear-gradient(90deg, var(--edge) 1px, transparent 1px);
-      background-size: 48px 48px;
-      mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 100%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    body::after {
-      content: '';
-      position: fixed;
-      top: -20%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 1100px;
-      height: 600px;
-      background: radial-gradient(ellipse, rgba(100,116,180,0.14) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    main {
-      position: relative;
-      z-index: 1;
-      max-width: 880px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 32px;
-    }
-
-    /* ── Hero band ──────────────────────────────────────────────── */
-    .hero {
-      text-align: center;
-      padding: 24px 16px 8px;
-      animation: rise 0.6s var(--ease-out) both;
-    }
-
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .hero-icon {
-      width: 56px;
-      height: 56px;
-      margin: 0 auto 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid var(--edge-bright);
-      border-radius: 14px;
-      background: var(--surface-2);
-      color: var(--text-1);
-    }
-
-    .hero-icon svg {
-      width: 26px;
-      height: 26px;
-    }
-
-    .hero-eyebrow {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.32em;
-      text-transform: uppercase;
-      color: var(--text-3);
-      margin-bottom: 10px;
-    }
-
-    .hero-title {
-      font-family: 'Playfair Display', Georgia, serif;
-      font-style: italic;
-      font-weight: 500;
-      font-size: clamp(2.2rem, 5vw, 3.4rem);
-      letter-spacing: -0.01em;
-      line-height: 1.1;
-      color: var(--text-1);
-      margin-bottom: 14px;
-    }
-
-    .hero-subtitle {
-      font-size: 0.95rem;
-      color: var(--text-2);
-      line-height: 1.6;
-      max-width: 52ch;
-      margin: 0 auto;
-    }
-
-    /* ── Card shell (chat container) ────────────────────────────── */
-    .chat-card {
-      background: var(--surface);
-      border: 1px solid var(--edge-bright);
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow:
-        0 0 0 1px rgba(255,255,255,0.03),
-        0 32px 80px rgba(0,0,0,0.6),
-        0 8px 24px rgba(0,0,0,0.4);
-      animation: rise 0.7s var(--ease-out) 0.1s both;
-    }
-
-    .chat-header {
-      padding: 28px 36px 24px;
-      border-bottom: 1px solid var(--edge);
-      background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .chat-header-left h2 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      color: var(--text-1);
-    }
-
-    .chat-header-left p {
-      font-size: 0.8rem;
-      color: var(--text-3);
-      margin-top: 4px;
-    }
-
-    .live-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--text-2);
-      padding: 8px 14px;
-      border: 1px solid var(--edge);
-      border-radius: 100px;
-      background: var(--ink-2);
-    }
-
-    .live-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 8px rgba(74,222,128,0.6);
-      animation: livePulse 1.6s ease-in-out infinite;
-    }
-
-    @keyframes livePulse {
-      0%,100% { opacity: 1; }
-      50%     { opacity: 0.4; }
-    }
-
-    /* ── Messages list ──────────────────────────────────────────── */
-    .messages-area {
-      max-height: 480px;
-      overflow-y: auto;
-      padding: 24px 36px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      scrollbar-width: thin;
-      scrollbar-color: var(--edge-bright) transparent;
-    }
-
-    .messages-area::-webkit-scrollbar { width: 6px; }
-    .messages-area::-webkit-scrollbar-track { background: transparent; }
-    .messages-area::-webkit-scrollbar-thumb {
-      background: var(--edge-bright);
-      border-radius: 3px;
-    }
-
-    .empty-state, .loading-state {
-      padding: 56px 24px;
-      text-align: center;
-      color: var(--text-3);
-      font-size: 0.9rem;
-    }
-
-    .empty-state strong {
-      display: block;
-      color: var(--text-1);
-      font-size: 1rem;
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-
-    /* ── Message card ───────────────────────────────────────────── */
-    .message {
-      border: 1px solid var(--edge);
-      border-radius: 14px;
-      padding: 18px 20px;
-      background: var(--surface-2);
-      animation: msgIn 0.35s var(--ease-out);
-      transition:
-        border-color var(--duration-ui) ease,
-        background var(--duration-ui) ease;
-    }
-
-    .message:hover {
-      border-color: var(--edge-bright);
-      background: var(--ink-2);
-    }
-
-    @keyframes msgIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 10px;
-      gap: 12px;
-    }
-
-    .message-author {
-      font-size: 0.92rem;
-      font-weight: 700;
-      color: var(--text-1);
-      letter-spacing: -0.005em;
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .message-author .author-title {
-      font-weight: 500;
-      color: var(--text-3);
-      font-size: 0.78rem;
-      letter-spacing: 0;
-    }
-
-    .message-author .author-title::before {
-      content: '·';
-      margin-right: 6px;
-      color: var(--text-3);
-    }
-
-    .message-time {
-      font-size: 0.72rem;
-      color: var(--text-3);
-      font-variant-numeric: tabular-nums;
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-
-    .message-text {
-      color: var(--text-1);
-      font-size: 0.92rem;
-      line-height: 1.6;
-      word-wrap: break-word;
-      overflow-wrap: anywhere;
-      white-space: pre-wrap;
-    }
-
-    .message-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 14px;
-      padding-top: 12px;
-      border-top: 1px solid var(--edge);
-    }
-
-    .like-btn {
-      background: transparent;
-      border: 1px solid var(--edge);
-      color: var(--text-2);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      font-family: inherit;
-      transition:
-        color var(--duration-ui) ease,
-        background var(--duration-ui) ease,
-        border-color var(--duration-ui) ease,
-        transform 120ms ease;
-      padding: 7px 12px;
-      border-radius: 100px;
-    }
-
-    .like-btn svg {
-      width: 13px;
-      height: 13px;
-      transition: transform 200ms var(--ease-out);
-    }
-
-    .like-btn:hover:not(:disabled) {
-      color: var(--heart);
-      border-color: rgba(248,113,113,0.4);
-      background: rgba(248,113,113,0.08);
-    }
-
-    .like-btn.liked {
-      color: var(--heart);
-      border-color: rgba(248,113,113,0.4);
-      background: rgba(248,113,113,0.1);
-    }
-
-    .like-btn.liked svg {
-      fill: var(--heart);
-      animation: heartPop 0.4s var(--ease-out);
-    }
-
-    @keyframes heartPop {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.4); }
-      100% { transform: scale(1); }
-    }
-
-    .like-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .like-btn:focus-visible {
-      outline: 2px solid var(--text-1);
-      outline-offset: 2px;
-    }
-
-    .like-count {
-      font-variant-numeric: tabular-nums;
-    }
-
-    .delete-btn {
-      background: transparent;
-      border: 1px solid var(--edge);
-      color: var(--text-3);
-      cursor: pointer;
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      font-family: inherit;
-      padding: 7px 12px;
-      border-radius: 100px;
-      transition: all var(--duration-ui) ease;
-      margin-left: auto;
-    }
-
-    .delete-btn:hover {
-      color: var(--error);
-      border-color: rgba(248,113,113,0.4);
-      background: rgba(248,113,113,0.08);
-    }
-
-    .delete-btn:focus-visible {
-      outline: 2px solid var(--error);
-      outline-offset: 2px;
-    }
-
-    /* ── Composer ───────────────────────────────────────────────── */
-    .composer {
-      padding: 24px 36px 28px;
-      border-top: 1px solid var(--edge);
-      background: linear-gradient(0deg, var(--surface-2) 0%, var(--surface) 100%);
-    }
-
-    .composer-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--text-3);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .composer-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--edge);
-    }
-
-    .message-form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .form-input,
-    .form-textarea {
-      background: var(--ink-2);
-      border: 1.5px solid var(--edge-bright);
-      border-radius: 12px;
-      padding: 13px 16px;
-      color: var(--text-1);
-      font-size: 0.9rem;
-      font-family: 'Poppins', sans-serif;
-      outline: none;
-      transition:
-        border-color var(--duration-ui) ease,
-        background var(--duration-ui) ease,
-        box-shadow var(--duration-ui) ease;
-    }
-
-    .form-input::placeholder,
-    .form-textarea::placeholder {
-      color: var(--text-3);
-    }
-
-    .form-input:focus,
-    .form-textarea:focus {
-      border-color: rgba(255,255,255,0.35);
-      background: var(--ink-3);
-      box-shadow: 0 0 0 4px rgba(255,255,255,0.04);
-    }
-
-    .form-textarea {
-      resize: vertical;
-      min-height: 90px;
-      line-height: 1.55;
-      font-family: 'Poppins', sans-serif;
-    }
-
-    .composer-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 4px;
-    }
-
-    .char-counter {
-      font-size: 0.72rem;
-      color: var(--text-3);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .char-counter.warn  { color: #fbbf24; }
-    .char-counter.error { color: var(--error); }
-
-    .submit-btn {
-      padding: 13px 28px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--ink);
-      background: var(--text-1);
-      border: none;
-      border-radius: 100px;
-      cursor: pointer;
-      font-family: 'Poppins', sans-serif;
-      transition:
-        background var(--duration-ui) ease,
-        transform 150ms ease,
-        box-shadow var(--duration-ui) ease,
-        opacity var(--duration-ui) ease;
-      box-shadow: 0 4px 18px rgba(240,242,248,0.12);
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .submit-btn:hover:not(:disabled) {
-      background: #fff;
-      box-shadow: 0 8px 28px rgba(255,255,255,0.18);
-      transform: translateY(-2px);
-    }
-
-    .submit-btn:active:not(:disabled) {
-      transform: translateY(0) scale(0.98);
-    }
-
-    .submit-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .submit-btn:focus-visible {
-      outline: 2px solid var(--text-1);
-      outline-offset: 3px;
-    }
-
-    /* ── Footer meta ────────────────────────────────────────────── */
-    .meta-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.72rem;
-      color: var(--text-3);
-      flex-wrap: wrap;
-      gap: 8px;
-      padding: 0 4px;
-    }
-
-    .winner-id {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .winner-id-value {
-      font-family: 'SF Mono', ui-monospace, monospace;
-      color: var(--text-2);
-      background: var(--ink-2);
-      padding: 3px 8px;
-      border-radius: 6px;
-      border: 1px solid var(--edge);
-      font-size: 0.7rem;
-    }
-
-    .toast-error {
-      display: none;
-      padding: 12px 18px;
-      border-radius: 12px;
-      background: rgba(248,113,113,0.08);
-      border: 1px solid rgba(248,113,113,0.25);
-      color: var(--error);
-      font-size: 0.85rem;
-      margin-top: 10px;
-    }
-
-    .toast-error.visible { display: block; }
-
-    /* ── Reduced motion ─────────────────────────────────────────── */
-    @media (prefers-reduced-motion: reduce) {
-      .hero, .chat-card, .message { animation: none !important; }
-      .like-btn.liked svg          { animation: none !important; }
-      .live-dot                    { animation: none !important; }
-      .like-btn, .submit-btn, .form-input, .form-textarea, .message {
-        transition: none !important;
-      }
-    }
-
-    /* ── Responsive ─────────────────────────────────────────────── */
-    @media (max-width: 768px) {
-      body { padding: 90px 16px 48px; }
-
-      .chat-header { padding: 22px 22px 18px; }
-      .messages-area { padding: 20px 22px; max-height: 60dvh; }
-      .composer { padding: 20px 22px 24px; }
-
-      .form-row { grid-template-columns: 1fr; }
-      .hero-title { font-size: 2.2rem; }
-
-      .composer-footer { flex-direction: column-reverse; align-items: stretch; gap: 10px; }
-      .submit-btn { width: 100%; justify-content: center; }
-    }
-
-    @media (max-width: 420px) {
-      .chat-header { padding: 18px 16px 16px; }
-      .messages-area { padding: 16px; }
-      .composer { padding: 16px 16px 20px; }
-      .message { padding: 14px 16px; }
-    }
-  </style>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+    <!-- End Google Tag Manager -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winners' Lounge | The Catalyst</title>
+    <link rel="icon" type="image/png" href="NewGlassLogo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            position: relative;
+        }
+
+        /* Animated gradient background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .animated-bg::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(from 0deg, #8b5cf6, #ec4899, #f59e0b, #10b981, #3b82f6, #8b5cf6);
+            animation: rotate-gradient 20s linear infinite;
+            transform-origin: center center;
+            opacity: 0.15;
+            filter: blur(100px);
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+
+        @keyframes rotate-gradient {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1.5); }
+            100% { transform: translate(-50%, -50%) rotate(360deg) scale(1.5); }
+        }
+
+        /* Fireworks canvas */
+        #fireworks-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Main content */
+        .main-content {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 120px 20px 40px;
+        }
+
+        /* Trophy animation */
+        .trophy-header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: floatIn 1.5s ease-out;
+        }
+
+        @keyframes floatIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .trophy-icon {
+            font-size: 6rem;
+            animation: bounce 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.6));
+            color: #fbbf24;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .trophy-title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 20px 0 10px;
+            text-shadow: 0 4px 20px rgba(251, 191, 36, 0.5);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        .trophy-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .elite-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3));
+            border: 2px solid rgba(236, 72, 153, 0.5);
+            padding: 10px 25px;
+            border-radius: 50px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(236, 72, 153, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Chat container */
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            background: linear-gradient(135deg,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.05) 100%
+            );
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 32px;
+            padding: 40px;
+            box-shadow:
+                0 30px 90px rgba(0, 0, 0, 0.5),
+                0 15px 45px rgba(0, 0, 0, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            animation: slideUp 1s ease-out 0.3s both;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .chat-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-description {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+        }
+
+        /* Messages area */
+        .messages-area {
+            height: 400px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .messages-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .loading-message {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 40px;
+            font-size: 1.1rem;
+        }
+
+        /* Message item */
+        .message {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 15px;
+            animation: messageSlide 0.4s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        .message:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .message-author {
+            font-weight: 700;
+            color: #60a5fa;
+            font-size: 1rem;
+            text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+        }
+
+        .message-time {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .message-text {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            font-size: 0.95rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .message-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .like-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .like-btn:hover:not(:disabled) {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .like-btn.liked {
+            color: #ef4444;
+        }
+
+        .like-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .like-count {
+            font-weight: 600;
+        }
+
+        /* Message form */
+        .message-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-input,
+        .form-textarea {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            padding: 14px 20px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            padding: 16px 32px;
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 12px 36px rgba(16, 185, 129, 0.4);
+            font-family: 'Poppins', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 48px rgba(16, 185, 129, 0.5);
+        }
+
+        .submit-btn:hover:not(:disabled)::before {
+            left: 100%;
+        }
+
+        .submit-btn:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .user-id {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+        }
+
+        .user-id-value {
+            color: rgba(255, 255, 255, 0.6);
+            font-family: monospace;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 30px 15px;
+            }
+
+            .chat-container {
+                padding: 25px 20px;
+                border-radius: 24px;
+            }
+
+            .trophy-icon {
+                font-size: 4rem;
+            }
+
+            .trophy-title {
+                font-size: 2rem;
+            }
+
+            .trophy-subtitle {
+                font-size: 1rem;
+            }
+
+            .chat-title {
+                font-size: 1.5rem;
+            }
+
+            .messages-area {
+                height: 350px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chat-container {
+                padding: 20px 15px;
+            }
+
+            .messages-area {
+                height: 300px;
+                padding: 15px;
+            }
+
+            .message {
+                padding: 12px 15px;
+            }
+        }
+    </style>
 </head>
 <body data-page="winners">
-  <!-- Google Tag Manager (noscript) -->
-  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
-  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-  <!-- End Google Tag Manager (noscript) -->
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
 
-  <div id="site-header"></div>
+    <div id="site-header"></div>
 
-  <main>
+    <div class="animated-bg"></div>
+    <canvas id="fireworks-canvas"></canvas>
 
-    <!-- ── Hero ── -->
-    <section class="hero">
-      <div class="hero-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/>
-          <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
-          <path d="M6 3h12v10a6 6 0 0 1-12 0V3z"/>
-          <path d="M9 21h6"/>
-          <path d="M12 17v4"/>
-        </svg>
-      </div>
-      <p class="hero-eyebrow">Restricted Access</p>
-      <h1 class="hero-title">The Winners' Lounge</h1>
-      <p class="hero-subtitle">A small, private room for those who solved the riddle. Leave a note, read the others, and connect with fellow solvers.</p>
-    </section>
-
-    <!-- ── Chat card ── -->
-    <section class="chat-card">
-
-      <header class="chat-header">
-        <div class="chat-header-left">
-          <h2>Solvers' Conversation</h2>
-          <p id="chat-meta">Loading messages…</p>
+    <div class="main-content">
+        <div class="trophy-header">
+            <div class="trophy-icon">★</div>
+            <h1 class="trophy-title">The Winners' Lounge</h1>
+            <p class="trophy-subtitle">Congratulations, Genius! You've earned your place among the elite.</p>
+            <div class="elite-badge">Elite Puzzle Solver</div>
         </div>
-        <div class="live-pill">
-          <span class="live-dot" aria-hidden="true"></span>
-          <span>Live</span>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2 class="chat-title">Winners' Chat Room</h2>
+                <p class="chat-description">Leave your mark and connect with fellow brilliant minds!</p>
+            </div>
+
+            <div class="messages-area" id="messages-container">
+                <div class="loading-message">Connecting to the Winners' Network...</div>
+            </div>
+
+            <form class="message-form" id="message-form">
+                <div class="form-row">
+                    <input type="text" class="form-input" id="username-input" placeholder="Your Name" required maxlength="50" autocomplete="off">
+                    <input type="text" class="form-input" id="title-input" placeholder="Your Title (optional)" maxlength="30" autocomplete="off">
+                </div>
+                <textarea class="form-textarea" id="message-input" placeholder="Share your thoughts with the winners..." required maxlength="500"></textarea>
+                <button type="submit" class="submit-btn" id="submit-btn">Send Message</button>
+            </form>
+
+            <div class="user-id">
+                Your Winner ID: <span class="user-id-value" id="user-id-display">Connecting...</span>
+            </div>
         </div>
-      </header>
-
-      <div class="messages-area" id="messages-container" role="log" aria-live="polite" aria-label="Winners' chat messages">
-        <div class="loading-state">Connecting to the Winners' Network…</div>
-      </div>
-
-      <div class="composer">
-        <p class="composer-label">Leave Your Mark</p>
-        <form class="message-form" id="message-form">
-          <div class="form-row">
-            <input type="text" class="form-input" id="username-input" placeholder="Your name" required maxlength="50" autocomplete="off">
-            <input type="text" class="form-input" id="title-input" placeholder="Your title (optional)" maxlength="30" autocomplete="off">
-          </div>
-          <textarea class="form-textarea" id="message-input" placeholder="Share your thoughts with the winners…" required maxlength="500"></textarea>
-          <div class="composer-footer">
-            <span class="char-counter" id="char-counter">0 / 500</span>
-            <button type="submit" class="submit-btn" id="submit-btn">Send Message</button>
-          </div>
-          <div class="toast-error" id="error-toast" role="alert"></div>
-        </form>
-      </div>
-    </section>
-
-    <!-- ── Footer meta ── -->
-    <div class="meta-row">
-      <span class="winner-id">
-        Your Winner ID:
-        <span class="winner-id-value" id="user-id-display">connecting…</span>
-      </span>
-      <span>Powered by Catalyst</span>
     </div>
 
-  </main>
+    <div id="site-footer"></div>
 
-  <div id="site-footer"></div>
+    <script defer src="js/layout.js"></script>
+    <script defer src="js/newsletter-handler.js"></script>
+    <script defer src="js/data.js?v=2"></script>
+    <script defer src="js/main.js"></script>
 
-  <script defer src="/js/layout.js"></script>
-  <script defer src="/js/newsletter-handler.js"></script>
-  <script defer src="/js/data.js?v=2"></script>
-  <script defer src="/js/main.js"></script>
+    <script type="module">
+        import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import {
+            getFirestore, collection, addDoc, query, onSnapshot, orderBy,
+            serverTimestamp, doc, increment, setDoc, limit, writeBatch
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-  <script type="module">
-    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import {
-      getFirestore, collection, addDoc, query, onSnapshot, orderBy,
-      serverTimestamp, deleteDoc, doc, increment, setDoc, limit, writeBatch
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        // Unified Firebase: same project as the rest of the site
+        const firebaseConfig = {
+            apiKey: "AIzaSyDY2KhiDrOqRTdHKB1XfEndM_q0hS6tx-0",
+            authDomain: "catalystwriters-5ce43.firebaseapp.com",
+            projectId: "catalystwriters-5ce43",
+            storageBucket: "catalystwriters-5ce43.firebasestorage.app",
+            messagingSenderId: "450537311266",
+            appId: "1:450537311266:web:d0c286d8a5553eb92a0e7b",
+            measurementId: "G-0P4DMW8ZZ1"
+        };
 
-    /* ── Unified Firebase: same project as the rest of the site ── */
-    const firebaseConfig = {
-      apiKey: "AIzaSyDY2KhiDrOqRTdHKB1XfEndM_q0hS6tx-0",
-      authDomain: "catalystwriters-5ce43.firebaseapp.com",
-      projectId: "catalystwriters-5ce43",
-      storageBucket: "catalystwriters-5ce43.firebasestorage.app",
-      messagingSenderId: "450537311266",
-      appId: "1:450537311266:web:d0c286d8a5553eb92a0e7b",
-      measurementId: "G-0P4DMW8ZZ1"
-    };
+        const COLLECTION = "winners-chat";
 
-    /* Owners can delete any message — UID list */
-    const OWNER_UIDS = new Set([
-      // Add your owner UIDs here once you sign in once and grab them from the bottom of the page
-    ]);
-
-    const COLLECTION = "winners-chat";
-
-    /* ── Element refs ── */
-    const messagesContainer = document.getElementById('messages-container');
-    const messageForm       = document.getElementById('message-form');
-    const usernameInput     = document.getElementById('username-input');
-    const titleInput        = document.getElementById('title-input');
-    const messageInput      = document.getElementById('message-input');
-    const submitBtn         = document.getElementById('submit-btn');
-    const charCounter       = document.getElementById('char-counter');
-    const errorToast        = document.getElementById('error-toast');
-    const userIdDisplay     = document.getElementById('user-id-display');
-    const chatMeta          = document.getElementById('chat-meta');
-
-    let db, auth;
-    let userId = null;
-    let messageCount = 0;
-    let unsubscribeMessages = null;
-
-    /* Track which messages this user has liked, in this session and persisted */
-    const localLikes = new Set(JSON.parse(localStorage.getItem('catalystChatLikes') || '[]'));
-    function persistLocalLikes() {
-      localStorage.setItem('catalystChatLikes', JSON.stringify([...localLikes]));
-    }
-
-    /* Restore last-used name/title for convenience */
-    usernameInput.value = localStorage.getItem('catalystChatName')  || '';
-    titleInput.value    = localStorage.getItem('catalystChatTitle') || '';
-
-    /* ── Initialise Firebase ── */
-    try {
-      const existing = getApps().find(a => a.name === 'winners-lounge');
-      const app = existing || initializeApp(firebaseConfig, 'winners-lounge');
-      db   = getFirestore(app);
-      auth = getAuth(app);
-      signInAnonymously(auth).catch(err => {
-        console.error('Anonymous sign-in failed:', err);
-        showLoadError('Could not sign you in anonymously. Refresh and try again.');
-      });
-    } catch (err) {
-      console.error('Firebase init failed:', err);
-      showLoadError('Could not connect to the Winners\' Network.');
-    }
-
-    onAuthStateChanged(auth, (user) => {
-      if (!user) return;
-      userId = user.uid;
-      userIdDisplay.textContent = userId.substring(0, 12) + '…';
-      loadMessages();
-    });
-
-    /* ── Helpers ── */
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function formatTimeAgo(ts) {
-      if (!ts || !ts.toDate) return 'just now';
-      const seconds = Math.floor((Date.now() - ts.toDate().getTime()) / 1000);
-      if (seconds < 60)        return 'just now';
-      const minutes = Math.floor(seconds / 60);
-      if (minutes < 60)        return `${minutes}m ago`;
-      const hours = Math.floor(minutes / 60);
-      if (hours   < 24)        return `${hours}h ago`;
-      const days = Math.floor(hours / 24);
-      if (days < 30)           return `${days}d ago`;
-      const months = Math.floor(days / 30);
-      if (months < 12)         return `${months}mo ago`;
-      return `${Math.floor(months / 12)}y ago`;
-    }
-
-    function showLoadError(msg) {
-      messagesContainer.innerHTML = `<div class="loading-state">⚠ ${escapeHtml(msg)}</div>`;
-      chatMeta.textContent = 'Disconnected';
-    }
-
-    function showError(msg) {
-      errorToast.textContent = msg;
-      errorToast.classList.add('visible');
-      setTimeout(() => errorToast.classList.remove('visible'), 4500);
-    }
-
-    /* ── Render ── */
-    function renderMessage(snap) {
-      const data = snap.data();
-      const isOwner = OWNER_UIDS.has(userId);
-      const hasLiked = localLikes.has(snap.id);
-      const safeName  = escapeHtml(data.username || 'Anonymous');
-      const safeTitle = data.title ? `<span class="author-title">${escapeHtml(data.title)}</span>` : '';
-      const safeText  = escapeHtml(data.message || '');
-
-      const el = document.createElement('article');
-      el.className = 'message';
-      el.dataset.id = snap.id;
-      el.innerHTML = `
-        <div class="message-header">
-          <div class="message-author">
-            <span>${safeName}</span>${safeTitle}
-          </div>
-          <div class="message-time">${formatTimeAgo(data.timestamp)}</div>
-        </div>
-        <div class="message-text">${safeText}</div>
-        <div class="message-actions">
-          <button class="like-btn ${hasLiked ? 'liked' : ''}" data-action="like" aria-pressed="${hasLiked}" aria-label="Like this message">
-            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="${hasLiked ? 'currentColor' : 'none'}" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-            <span class="like-count">${data.likes || 0}</span>
-          </button>
-          ${isOwner ? '<button class="delete-btn" data-action="delete" aria-label="Delete message">Delete</button>' : ''}
-        </div>
-      `;
-      return el;
-    }
-
-    function loadMessages() {
-      if (unsubscribeMessages) unsubscribeMessages();
-
-      const q = query(
-        collection(db, COLLECTION),
-        orderBy('timestamp', 'desc'),
-        limit(100)
-      );
-
-      unsubscribeMessages = onSnapshot(q, (snapshot) => {
-        if (snapshot.empty) {
-          messagesContainer.innerHTML = `
-            <div class="empty-state">
-              <strong>No messages yet</strong>
-              Be the first solver to leave a note in the Lounge.
-            </div>`;
-          chatMeta.textContent = '0 messages · Be the first';
-          return;
+        let db, auth, userId = null;
+        const localLikes = new Set(JSON.parse(localStorage.getItem('catalystChatLikes') || '[]'));
+        function persistLocalLikes() {
+            localStorage.setItem('catalystChatLikes', JSON.stringify([...localLikes]));
         }
 
-        messagesContainer.innerHTML = '';
-        snapshot.forEach(doc => messagesContainer.appendChild(renderMessage(doc)));
-
-        messageCount = snapshot.size;
-        const noun = messageCount === 1 ? 'message' : 'messages';
-        chatMeta.textContent = `${messageCount} ${noun} · Updated live`;
-      }, (err) => {
-        console.error('Snapshot error:', err);
-        showLoadError('Lost connection to the chat. Refresh to reconnect.');
-      });
-    }
-
-    /* ── Like / delete via event delegation ── */
-    messagesContainer.addEventListener('click', async (e) => {
-      const btn = e.target.closest('button[data-action]');
-      if (!btn) return;
-      const messageEl = btn.closest('.message');
-      if (!messageEl) return;
-      const id = messageEl.dataset.id;
-      const ref = doc(db, COLLECTION, id);
-
-      if (btn.dataset.action === 'like') {
-        if (!userId) return;
-        if (localLikes.has(id)) return;          // local guard against double-click
-        localLikes.add(id);
-        persistLocalLikes();
-        btn.classList.add('liked');
-        btn.setAttribute('aria-pressed', 'true');
-        const svg = btn.querySelector('svg');
-        if (svg) svg.setAttribute('fill', 'currentColor');
-        const countEl = btn.querySelector('.like-count');
-        if (countEl) countEl.textContent = String(parseInt(countEl.textContent || '0', 10) + 1);
+        // Restore last-used name/title for convenience
+        document.getElementById('username-input').value = localStorage.getItem('catalystChatName') || '';
+        document.getElementById('title-input').value = localStorage.getItem('catalystChatTitle') || '';
 
         try {
-          /* Atomic batch: create per-user like record + bump counter together.
-             Security rules require both writes to land in the same request. */
-          const likeRef = doc(db, 'chat-likes', `${id}_${userId}`);
-          const batch = writeBatch(db);
-          batch.set(likeRef, { messageId: id, userId, at: serverTimestamp() });
-          batch.update(ref,  { likes: increment(1) });
-          await batch.commit();
-        } catch (err) {
-          console.error('Like failed:', err);
-          /* Likely already liked at the server — keep the visual state */
+            const existing = getApps().find(a => a.name === 'winners-lounge');
+            const app = existing || initializeApp(firebaseConfig, 'winners-lounge');
+            db = getFirestore(app);
+            auth = getAuth(app);
+            authenticateUser();
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+            document.getElementById('messages-container').innerHTML = '<div class="loading-message">Error connecting to chat</div>';
         }
-      }
 
-      if (btn.dataset.action === 'delete' && OWNER_UIDS.has(userId)) {
-        if (!confirm('Delete this message?')) return;
-        try {
-          await deleteDoc(ref);
-        } catch (err) {
-          console.error('Delete failed:', err);
-          showError('Could not delete that message.');
+        async function authenticateUser() {
+            try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Auth failed:", error);
+            }
         }
-      }
-    });
 
-    /* ── Composer ── */
-    messageInput.addEventListener('input', () => {
-      const len = messageInput.value.length;
-      charCounter.textContent = `${len} / 500`;
-      charCounter.classList.toggle('warn',  len > 400 && len <= 500);
-      charCounter.classList.toggle('error', len > 500);
-    });
-
-    messageForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!userId) {
-        showError('Still connecting — give it a second and try again.');
-        return;
-      }
-
-      const username = usernameInput.value.trim();
-      const title    = titleInput.value.trim();
-      const message  = messageInput.value.trim();
-
-      if (!username || !message) {
-        showError('Name and message are required.');
-        return;
-      }
-      if (username.length > 50) { showError('Name must be 50 characters or less.'); return; }
-      if (title.length    > 30) { showError('Title must be 30 characters or less.'); return; }
-      if (message.length > 500) { showError('Message must be 500 characters or less.'); return; }
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Sending…';
-
-      try {
-        await addDoc(collection(db, COLLECTION), {
-          username,
-          title: title || null,
-          message,
-          timestamp: serverTimestamp(),
-          userId,
-          likes: 0
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                userId = user.uid;
+                document.getElementById('user-id-display').textContent = userId.substring(0, 12) + '...';
+                loadMessages();
+            }
         });
 
-        localStorage.setItem('catalystChatName',  username);
-        localStorage.setItem('catalystChatTitle', title);
-        messageInput.value = '';
-        charCounter.textContent = '0 / 500';
-        charCounter.classList.remove('warn','error');
-        messageInput.focus();
-      } catch (err) {
-        console.error('Send failed:', err);
-        if (err.code === 'permission-denied') {
-          showError('Please wait a few minutes between messages.');
-        } else {
-          showError('Could not send your message. Try again.');
+        // Fireworks animation
+        const canvas = document.getElementById('fireworks-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 8,
+                    y: (Math.random() - 0.5) * 8
+                };
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.015;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.velocity.y += 0.1;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= this.decay;
+            }
         }
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Send Message';
-      }
-    });
-  </script>
+
+        let particles = [];
+        const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+        function createFirework() {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height * 0.6;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            for (let i = 0; i < 50; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function animateFireworks() {
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            particles = particles.filter(particle => particle.alpha > 0);
+
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            requestAnimationFrame(animateFireworks);
+        }
+
+        // Launch fireworks on load
+        for (let i = 0; i < 5; i++) {
+            setTimeout(() => createFirework(), i * 400);
+        }
+        setInterval(() => createFirework(), 3000);
+        animateFireworks();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // Chat functionality
+        const messagesContainer = document.getElementById('messages-container');
+        const messageForm = document.getElementById('message-form');
+        const usernameInput = document.getElementById('username-input');
+        const titleInput = document.getElementById('title-input');
+        const messageInput = document.getElementById('message-input');
+        const submitBtn = document.getElementById('submit-btn');
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatTimeAgo(timestamp) {
+            if (!timestamp || !timestamp.toDate) return 'just now';
+            const date = timestamp.toDate();
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            if (seconds < 60) return 'just now';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ago`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours}h ago`;
+            const days = Math.floor(hours / 24);
+            return `${days}d ago`;
+        }
+
+        function renderMessage(snap) {
+            const data = snap.data();
+            const hasLiked = localLikes.has(snap.id);
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.dataset.id = snap.id;
+
+            const safeName = escapeHtml(data.username || 'Anonymous');
+            const safeTitle = data.title ? ` • ${escapeHtml(data.title)}` : '';
+            const safeText = escapeHtml(data.message || '');
+            const displayName = `${safeName}${safeTitle}`;
+
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <div class="message-author">${displayName}</div>
+                    <div class="message-time">${formatTimeAgo(data.timestamp)}</div>
+                </div>
+                <div class="message-text">${safeText}</div>
+                <div class="message-actions">
+                    <button class="like-btn ${hasLiked ? 'liked' : ''}" ${(!userId || hasLiked) ? 'disabled' : ''} aria-pressed="${hasLiked}" aria-label="Like this message">
+                        ♥ <span class="like-count">${data.likes || 0}</span>
+                    </button>
+                </div>
+            `;
+
+            return messageDiv;
+        }
+
+        let unsubscribe = null;
+        function loadMessages() {
+            if (unsubscribe) unsubscribe();
+            const messagesCol = collection(db, COLLECTION);
+            const q = query(messagesCol, orderBy("timestamp", "desc"), limit(100));
+
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                messagesContainer.innerHTML = '';
+
+                if (snapshot.empty) {
+                    messagesContainer.innerHTML = '<div class="loading-message">Be the first winner to leave a message!</div>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    messagesContainer.appendChild(renderMessage(doc));
+                });
+            }, (err) => {
+                console.error('Snapshot error:', err);
+                messagesContainer.innerHTML = '<div class="loading-message">Lost connection. Refresh to reconnect.</div>';
+            });
+        }
+
+        messagesContainer.addEventListener('click', async (e) => {
+            const likeBtn = e.target.closest('.like-btn');
+            if (!likeBtn) return;
+            const messageEl = likeBtn.closest('.message');
+            if (!messageEl) return;
+
+            const docId = messageEl.dataset.id;
+            if (!userId || localLikes.has(docId) || likeBtn.disabled) return;
+
+            // Optimistic UI: lock the button immediately
+            localLikes.add(docId);
+            persistLocalLikes();
+            likeBtn.classList.add('liked');
+            likeBtn.disabled = true;
+            likeBtn.setAttribute('aria-pressed', 'true');
+            const countEl = likeBtn.querySelector('.like-count');
+            if (countEl) countEl.textContent = String(parseInt(countEl.textContent || '0', 10) + 1);
+
+            try {
+                // Atomic batch: write the per-user like record + increment counter together
+                const likeRef = doc(db, 'chat-likes', `${docId}_${userId}`);
+                const docRef = doc(db, COLLECTION, docId);
+                const batch = writeBatch(db);
+                batch.set(likeRef, { messageId: docId, userId, at: serverTimestamp() });
+                batch.update(docRef, { likes: increment(1) });
+                await batch.commit();
+            } catch (error) {
+                console.error("Error liking:", error);
+                // Likely already liked at the server — keep the visual state
+            }
+        });
+
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!userId) return;
+
+            const username = usernameInput.value.trim();
+            const title = titleInput.value.trim();
+            const message = messageInput.value.trim();
+
+            if (!username || !message) return;
+
+            if (username.length > 50) { alert('Name must be 50 characters or less'); return; }
+            if (message.length > 500) { alert('Message must be 500 characters or less'); return; }
+            if (title && title.length > 30) { alert('Title must be 30 characters or less'); return; }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            try {
+                await addDoc(collection(db, COLLECTION), {
+                    username,
+                    title: title || null,
+                    message,
+                    timestamp: serverTimestamp(),
+                    userId,
+                    likes: 0
+                });
+
+                localStorage.setItem('catalystChatName', username);
+                localStorage.setItem('catalystChatTitle', title);
+                messageInput.value = '';
+                messageInput.focus();
+
+                createFirework();
+            } catch (error) {
+                console.error("Error sending message:", error);
+                if (error.code === 'permission-denied') {
+                    alert('Please wait a few minutes between messages.');
+                } else {
+                    alert('Error sending message. Please try again.');
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        });
+    </script>
 </body>
 </html>

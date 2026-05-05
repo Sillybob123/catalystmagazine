@@ -7,9 +7,10 @@
 
 import { db } from "../firebase-config.js";
 import {
-  collection, addDoc, query, where, getDocs, orderBy,
+  collection, addDoc, query, where, getDocs, orderBy, limit,
+  doc, updateDoc, deleteDoc, Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { el, esc, toast, slugify } from "./ui.js";
+import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 
 // A user is "recently joined" if their account was created within this many
 // days. The welcome email panel surfaces these at the top so the admin can fire
@@ -90,6 +91,23 @@ export async function mount(ctx, container) {
           <div class="loading-state"><div class="spinner"></div>Loading guidance tool…</div>
         </div>
       </div>
+
+      <div style="border:1px solid var(--hairline);border-left:4px solid #6366f1;border-radius:10px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:700;color:var(--ink-1);">Winners' Chat manager</div>
+            <div class="hint" style="margin-top:4px;max-width:720px;">
+              Edit any message that solvers have left in the Winners' Lounge. You can change the
+              <strong>display name</strong>, <strong>title</strong>, <strong>message text</strong>, <strong>like count</strong>,
+              and <strong>posted date</strong>, or delete a message entirely.
+            </div>
+          </div>
+          <button id="winners-chat-refresh" class="btn btn-secondary btn-sm">Refresh</button>
+        </div>
+        <div id="winners-chat-panel" style="margin-top:14px;">
+          <div class="loading-state"><div class="spinner"></div>Loading messages…</div>
+        </div>
+      </div>
     </div>`;
   container.appendChild(card);
 
@@ -141,6 +159,14 @@ export async function mount(ctx, container) {
   const loadGuidance = () => loadGuidanceEmailTool(ctx, guidancePanel);
   guidanceRefresh.addEventListener("click", loadGuidance);
   loadGuidance();
+
+  // ---------- Winners' Chat manager ----------
+  const winnersPanel = card.querySelector("#winners-chat-panel");
+  const winnersRefresh = card.querySelector("#winners-chat-refresh");
+  const loadWinners = () => loadWinnersChat(winnersPanel);
+  winnersPanel.addEventListener("click", (e) => handleWinnersChatClick(e, winnersPanel));
+  winnersRefresh.addEventListener("click", loadWinners);
+  loadWinners();
 
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
@@ -897,4 +923,160 @@ function parseDate(v) {
   if (typeof v.toMillis === "function") { try { return v.toMillis(); } catch { return 0; } }
   if (typeof v.seconds === "number") return v.seconds * 1000;
   return 0;
+}
+
+// ============================================================================
+// Winners' Chat manager
+// ============================================================================
+//
+// Lists all messages in /winners-chat (newest first) with inline editing for
+// display name, title, message body, like count, and posted date. Saves write
+// straight to Firestore — admin role bypasses the like-only rule.
+
+const WINNERS_COLLECTION = "winners-chat";
+
+async function loadWinnersChat(panel) {
+  panel.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading messages…</div>`;
+  try {
+    const q = query(collection(db, WINNERS_COLLECTION), orderBy("timestamp", "desc"), limit(200));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      panel.innerHTML = `<div class="empty-state" style="padding:24px;text-align:center;color:var(--ink-3);">No messages yet.</div>`;
+      return;
+    }
+
+    const rows = snap.docs.map(d => renderWinnersRow(d.id, d.data())).join("");
+    panel.innerHTML = `
+      <div style="display:grid;gap:10px;">
+        <div class="hint" style="font-size:12px;">${snap.size} message${snap.size === 1 ? "" : "s"} · newest first</div>
+        ${rows}
+      </div>`;
+  } catch (err) {
+    console.error("[winners-chat] load failed", err);
+    panel.innerHTML = `<div class="error-state" style="padding:16px;color:var(--danger);">Could not load messages: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderWinnersRow(id, data) {
+  const username = data.username || "";
+  const title    = data.title || "";
+  const message  = data.message || "";
+  const likes    = Number(data.likes || 0);
+  const tsMs     = parseDate(data.timestamp);
+  const dtLocal  = tsMs ? toLocalDateTimeInput(new Date(tsMs)) : "";
+  const userId   = data.userId || "—";
+
+  return `
+    <div class="winners-row" data-id="${esc(id)}" style="border:1px solid var(--hairline);border-radius:10px;padding:14px;background:var(--bg-2,#fafafa);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <label style="font-size:12px;color:var(--ink-3);display:block;">
+          Display name
+          <input class="form-control wc-name" type="text" value="${esc(username)}" maxlength="50" style="width:100%;margin-top:4px;padding:6px 10px;border:1px solid var(--hairline);border-radius:6px;font:inherit;">
+        </label>
+        <label style="font-size:12px;color:var(--ink-3);display:block;">
+          Title (optional)
+          <input class="form-control wc-title" type="text" value="${esc(title)}" maxlength="30" style="width:100%;margin-top:4px;padding:6px 10px;border:1px solid var(--hairline);border-radius:6px;font:inherit;">
+        </label>
+      </div>
+
+      <label style="font-size:12px;color:var(--ink-3);display:block;margin-bottom:10px;">
+        Message
+        <textarea class="form-control wc-message" maxlength="500" rows="2" style="width:100%;margin-top:4px;padding:6px 10px;border:1px solid var(--hairline);border-radius:6px;font:inherit;resize:vertical;">${esc(message)}</textarea>
+      </label>
+
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:10px;margin-bottom:10px;">
+        <label style="font-size:12px;color:var(--ink-3);display:block;">
+          Likes
+          <input class="form-control wc-likes" type="number" min="0" step="1" value="${likes}" style="width:100%;margin-top:4px;padding:6px 10px;border:1px solid var(--hairline);border-radius:6px;font:inherit;">
+        </label>
+        <label style="font-size:12px;color:var(--ink-3);display:block;">
+          Posted at
+          <input class="form-control wc-date" type="datetime-local" value="${esc(dtLocal)}" style="width:100%;margin-top:4px;padding:6px 10px;border:1px solid var(--hairline);border-radius:6px;font:inherit;">
+        </label>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div class="hint" style="font-size:11px;font-family:'SF Mono',ui-monospace,monospace;">
+          id: ${esc(id)} · uid: ${esc(String(userId).substring(0, 18))}…
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm wc-delete" data-action="delete">Delete</button>
+          <button class="btn btn-accent btn-sm wc-save" data-action="save">Save changes</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toLocalDateTimeInput(d) {
+  // Convert a Date to the value format expected by <input type="datetime-local">
+  // (YYYY-MM-DDTHH:mm in *local* time).
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+async function handleWinnersChatClick(e, panel) {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const row = btn.closest(".winners-row");
+  if (!row) return;
+  const id = row.dataset.id;
+
+  if (btn.dataset.action === "save") {
+    const username = row.querySelector(".wc-name").value.trim();
+    const titleVal = row.querySelector(".wc-title").value.trim();
+    const message  = row.querySelector(".wc-message").value.trim();
+    const likes    = Math.max(0, parseInt(row.querySelector(".wc-likes").value || "0", 10));
+    const dateStr  = row.querySelector(".wc-date").value;
+
+    if (!username) { toast("Display name can't be empty.", "error"); return; }
+    if (!message)  { toast("Message can't be empty.", "error"); return; }
+    if (username.length > 50) { toast("Name must be 50 characters or less.", "error"); return; }
+    if (titleVal.length > 30) { toast("Title must be 30 characters or less.", "error"); return; }
+    if (message.length  > 500){ toast("Message must be 500 characters or less.", "error"); return; }
+
+    let timestamp;
+    if (dateStr) {
+      const d = new Date(dateStr);
+      if (Number.isNaN(d.getTime())) { toast("Invalid date.", "error"); return; }
+      timestamp = Timestamp.fromDate(d);
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    try {
+      const ref = doc(db, WINNERS_COLLECTION, id);
+      const patch = {
+        username,
+        title: titleVal || null,
+        message,
+        likes,
+      };
+      if (timestamp) patch.timestamp = timestamp;
+      await updateDoc(ref, patch);
+      toast("Message updated.", "success");
+    } catch (err) {
+      console.error("[winners-chat] save failed", err);
+      toast(`Save failed: ${err.message}`, "error");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Save changes";
+    }
+    return;
+  }
+
+  if (btn.dataset.action === "delete") {
+    const ok = await confirmDialog("Delete this message permanently?", { confirmText: "Delete", danger: true });
+    if (!ok) return;
+    btn.disabled = true;
+    try {
+      await deleteDoc(doc(db, WINNERS_COLLECTION, id));
+      row.remove();
+      toast("Message deleted.", "success");
+    } catch (err) {
+      console.error("[winners-chat] delete failed", err);
+      toast(`Delete failed: ${err.message}`, "error");
+      btn.disabled = false;
+    }
+  }
 }
