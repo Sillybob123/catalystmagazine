@@ -43,7 +43,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap" rel="stylesheet"></noscript>
   <link rel="preload" href="/css/styles.css" as="style">
   <link rel="stylesheet" href="/css/styles.css">
 
@@ -211,85 +211,100 @@
     /* ── Riddle verse display ───────────────────────────────────── */
     .riddle-verse {
       position: relative;
-      padding: 44px 32px 28px 36px;
-      border: 1px solid var(--edge-bright);
-      border-radius: 14px;
+      padding: 56px 36px 44px;
+      border: 1px solid var(--edge);
+      border-radius: 16px;
       background:
-        radial-gradient(ellipse 100% 70% at 50% 0%, rgba(255,255,255,0.04), transparent 60%),
-        var(--surface-2);
+        radial-gradient(ellipse 110% 80% at 50% 0%, rgba(255,255,255,0.05), transparent 65%),
+        linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+      text-align: center;
       overflow: hidden;
     }
 
+    /* Hairline accent at top */
     .riddle-verse::before {
       content: '';
       position: absolute;
-      top: 0; left: 0; right: 0;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
     }
 
-    /* Decorative quote glyph */
+    /* Decorative quote glyph — large, centered above verse */
     .verse-mark {
-      position: absolute;
-      top: 12px;
-      left: 18px;
-      font-family: 'Times New Roman', Georgia, serif;
-      font-size: 4rem;
+      display: block;
+      font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+      font-size: 5rem;
       font-weight: 700;
-      line-height: 1;
-      color: rgba(255,255,255,0.08);
-      pointer-events: none;
+      line-height: 0.5;
+      color: rgba(255,255,255,0.18);
+      margin: 0 auto 18px;
+      letter-spacing: 0;
       user-select: none;
+      height: 28px;
+    }
+
+    .verse-body {
+      font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(1.1rem, 1.9vw, 1.35rem);
+      line-height: 1.85;
+      color: var(--text-1);
+      letter-spacing: 0.005em;
     }
 
     .verse-line {
       display: block;
-      font-family: 'Times New Roman', Georgia, serif;
-      font-style: italic;
-      font-weight: 400;
-      font-size: clamp(1.05rem, 1.8vw, 1.3rem);
-      line-height: 1.7;
-      color: var(--text-1);
-      letter-spacing: 0.005em;
-      text-align: left;
     }
-
-    .verse-line + .verse-line { margin-top: 6px; }
 
     .verse-line em {
       font-style: italic;
       color: #fff;
       font-weight: 500;
+      background: linear-gradient(180deg, transparent 65%, rgba(255,255,255,0.08) 65%, rgba(255,255,255,0.08) 90%, transparent 90%);
+      padding: 0 2px;
     }
 
-    .verse-attribution {
-      margin-top: 18px;
-      padding-top: 14px;
-      border-top: 1px solid var(--edge);
-      font-size: 0.7rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--text-3);
-      font-weight: 600;
+    /* Ornamental divider */
+    .verse-divider {
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: center;
+      gap: 14px;
+      margin: 24px auto 18px;
+      color: var(--text-3);
+      font-size: 0.6rem;
+      letter-spacing: 0.4em;
     }
 
-    .verse-attribution::after {
+    .verse-divider::before,
+    .verse-divider::after {
       content: '';
-      flex: 1;
+      width: 48px;
       height: 1px;
-      background: var(--edge);
+      background: var(--edge-bright);
     }
 
-    .riddle-question {
-      font-size: 1.05rem;
-      font-weight: 600;
+    .verse-divider span {
+      font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1rem;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0;
+    }
+
+    .verse-question {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
       color: var(--text-1);
-      margin-top: 4px;
-      letter-spacing: -0.01em;
-      line-height: 1.4;
+      margin: 0;
     }
 
     /* ── Pattern rule box ───────────────────────────────────────── */
@@ -646,8 +661,7 @@
 
       <!-- ── Header ── -->
       <div class="puzzle-header">
-        <p class="eyebrow">Intelligence Challenge · Issue No. 02</p>
-        <h1 class="title">The Catalyst<br>Riddle</h1>
+        <h1 class="title">The Catalyst Riddle</h1>
         <p class="subtitle">A riddle of language and meaning. The answer is a single thing — small, ordinary, and hiding in plain sight.</p>
       </div>
 
@@ -660,21 +674,21 @@
 
           <div class="riddle-verse" aria-label="The riddle">
             <span class="verse-mark" aria-hidden="true">“</span>
-            <span class="verse-line">I am the beginning of <em>eternity</em>,</span>
-            <span class="verse-line">the end of <em>time</em> and <em>space</em>,</span>
-            <span class="verse-line">the beginning of every <em>end</em>,</span>
-            <span class="verse-line">and the end of every <em>place</em>.</span>
-            <p class="verse-attribution">What am I?</p>
+            <div class="verse-body">
+              <span class="verse-line">I am the beginning of <em>eternity</em>,</span>
+              <span class="verse-line">the end of <em>time</em> and <em>space</em>,</span>
+              <span class="verse-line">the beginning of every <em>end</em>,</span>
+              <span class="verse-line">and the end of every <em>place</em>.</span>
+            </div>
+            <div class="verse-divider" aria-hidden="true">
+              <span>·</span>
+            </div>
+            <p class="verse-question">What am I?</p>
           </div>
 
           <div class="rule-block">
             <p class="rule-block-title">Your Task</p>
             <p>Read each line carefully. The answer is <strong>one thing</strong> that satisfies all four clues simultaneously.</p>
-          </div>
-
-          <div class="rule-block">
-            <p class="rule-block-title">Hint</p>
-            <p>Don't think in <strong>concepts</strong> — think in <strong>letters</strong>. Examine the words themselves, not what they mean.</p>
           </div>
         </div>
 
