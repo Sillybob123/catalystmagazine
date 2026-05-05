@@ -33,6 +33,15 @@
     let rendered = 0;
     let currentCategory = 'all';
     let currentQuery = '';
+    let spotlightId = null;
+
+    // The cover spotlight should reflect the magazine's editorial focus, so
+    // skip op-eds/editorials when choosing it. Falls back to the first
+    // article only if every story is an op-ed.
+    function pickSpotlight(list) {
+        if (!list || !list.length) return null;
+        return list.find(a => a.category !== 'editorial') || list[0];
+    }
 
     // ---------- Image URL helper (mirrors main.js) ----------
     function getResizedImageUrl(src, width, quality) {
@@ -385,10 +394,9 @@
     // ---------- Feed rendering ----------
     function filterArticles() {
         const q = currentQuery.trim().toLowerCase();
-        // The first article appears in the cover spotlight above — exclude it
+        // The cover spotlight article appears above the feed — exclude it
         // from the feed when we're in the default "all, no search" view so it
         // isn't shown twice. For any filtered view, include everything.
-        const spotlightId = allArticles[0]?.id;
         const skipSpotlight = currentCategory === 'all' && !q;
         return allArticles.filter(a => {
             if (skipSpotlight && a.id === spotlightId) return false;
@@ -534,6 +542,24 @@
         loadMoreBtn.addEventListener('click', () => renderFeed(false));
     }
 
+    // Read ?category= from the URL so deep links from the home page (e.g.
+    // /articles?category=editorial) land on the right pill.
+    function applyInitialCategory() {
+        const params = new URLSearchParams(window.location.search);
+        let cat = (params.get('category') || '').toLowerCase();
+        if (cat === 'op-ed') cat = 'editorial';
+        if (!cat) return;
+        const pill = pills.find(p => p.dataset.category === cat);
+        if (!pill) return;
+        currentCategory = cat;
+        pills.forEach(p => {
+            const is = p.dataset.category === cat;
+            p.classList.toggle('active', is);
+            p.setAttribute('aria-selected', is ? 'true' : 'false');
+        });
+        requestAnimationFrame(movePillIndicator);
+    }
+
     // ---------- Init ----------
     function start() {
         // Show the neutral hero placeholder right away so the page never
@@ -541,6 +567,7 @@
         paintHeroPlaceholder();
         paintSkeletons();
         bindEvents();
+        applyInitialCategory();
 
         // Paint with whatever's available right now (usually window.articles
         // from data.js), then upgrade when Firestore resolves.
@@ -572,7 +599,9 @@
                     // back to the hardcoded data.js list only for titles that
                     // don't exist in Firestore.
                     allArticles = mergeArticles(fsList, allArticles);
-                    renderSpotlight(allArticles[0]);
+                    const spot = pickSpotlight(allArticles);
+                    spotlightId = spot ? spot.id : null;
+                    renderSpotlight(spot);
                     renderFeed(true);
                 }
                 // Always paint the hero from the (now-fresh) newest article.
@@ -591,7 +620,9 @@
         // until Firestore resolves. data.js can carry stale cover images for
         // articles that were later updated in the studio, and we don't want
         // to flash those.
-        renderSpotlight(allArticles[0]);
+        const spot = pickSpotlight(allArticles);
+        spotlightId = spot ? spot.id : null;
+        renderSpotlight(spot);
         renderFeed(true);
         // Position indicator after layout settles
         requestAnimationFrame(movePillIndicator);
