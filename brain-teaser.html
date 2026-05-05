@@ -45,431 +45,558 @@
   <link rel="manifest" href="/site.webmanifest">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
   <link rel="preload" href="/css/styles.css" as="style">
-    <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/styles.css">
+
   <style>
+    /* ── Design tokens ──────────────────────────────────────────── */
+    :root {
+      --ink:        #0c0f1a;
+      --ink-2:      #1e2540;
+      --ink-3:      #2d3555;
+      --surface:    #131929;
+      --surface-2:  #1a2235;
+      --edge:       rgba(255,255,255,0.08);
+      --edge-bright:rgba(255,255,255,0.18);
+      --text-1:     #f0f2f8;
+      --text-2:     #8892ab;
+      --text-3:     #5a637c;
+      --accent:     #f0f2f8;
+      --success:    #4ade80;
+      --error:      #f87171;
+      --sequence-col: #ffffff;
+      --duration-ui: 220ms;
+      --ease-out:   cubic-bezier(0.22,1,0.36,1);
+      --ease-in:    cubic-bezier(0.64,0,0.78,0);
+    }
+
+    /* ── Reset & base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: 'Poppins', sans-serif;
-      min-height: 100vh;
-      padding: 100px 20px 20px;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-      position: relative;
+      background-color: var(--ink);
+      color: var(--text-1);
+      min-height: 100dvh;
+      padding: 100px 20px 60px;
       overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ── Grid background ────────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--edge) 1px, transparent 1px),
+        linear-gradient(90deg, var(--edge) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Subtle radial glow from top center */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 900px;
+      height: 500px;
+      background: radial-gradient(ellipse, rgba(100,116,180,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     main {
+      position: relative;
+      z-index: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: calc(100vh - 200px);
+      min-height: calc(100dvh - 220px);
     }
 
-    /* Animated particles background */
-    .particles {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .particle {
-      position: absolute;
-      width: 3px;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: 50%;
-      animation: float linear infinite;
-    }
-
-    @keyframes float {
-      0% { transform: translateY(100vh) translateX(0); opacity: 0; }
-      10% { opacity: 1; }
-      90% { opacity: 1; }
-      100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
-    }
-
-    /* Main container */
+    /* ── Puzzle container ───────────────────────────────────────── */
     .puzzle-container {
-      position: relative;
-      z-index: 1;
       width: 100%;
-      max-width: 900px;
-      background: linear-gradient(135deg,
-        rgba(255, 255, 255, 0.1) 0%,
-        rgba(255, 255, 255, 0.05) 100%
-      );
-      backdrop-filter: blur(40px) saturate(180%);
-      -webkit-backdrop-filter: blur(40px) saturate(180%);
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      border-radius: 32px;
-      padding: 50px 40px;
+      max-width: 960px;
+      background: var(--surface);
+      border: 1px solid var(--edge-bright);
+      border-radius: 24px;
+      overflow: hidden;
       box-shadow:
-        0 30px 90px rgba(0, 0, 0, 0.5),
-        0 15px 45px rgba(0, 0, 0, 0.3),
-        inset 0 2px 4px rgba(255, 255, 255, 0.1);
-      animation: containerFloat 1.2s ease-out;
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 32px 80px rgba(0,0,0,0.6),
+        0 8px 24px rgba(0,0,0,0.4);
+      animation: rise 0.7s var(--ease-out) both;
     }
 
-    @keyframes containerFloat {
-      from { opacity: 0; transform: translateY(40px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(32px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* Title */
+    /* ── Header band ────────────────────────────────────────────── */
+    .puzzle-header {
+      padding: 40px 48px 36px;
+      border-bottom: 1px solid var(--edge);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface) 100%);
+    }
+
+    .eyebrow {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
     .title {
-      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-size: clamp(1.8rem, 4vw, 2.75rem);
       font-weight: 900;
-      text-align: center;
-      margin-bottom: 15px;
-      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.02em;
-      text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
-      animation: titleGlow 3s ease-in-out infinite;
-    }
-
-    @keyframes titleGlow {
-      0%, 100% { filter: drop-shadow(0 0 20px rgba(148, 163, 184, 0.4)); }
-      50% { filter: drop-shadow(0 0 30px rgba(148, 163, 184, 0.6)); }
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      color: var(--text-1);
     }
 
     .subtitle {
-      text-align: center;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 1.1rem;
-      margin-bottom: 40px;
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--text-2);
+      margin-top: 4px;
+      line-height: 1.6;
+      max-width: 52ch;
+    }
+
+    /* ── Body: two-column on desktop ────────────────────────────── */
+    .puzzle-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 420px;
+    }
+
+    /* ── Left panel: the puzzle ─────────────────────────────────── */
+    .puzzle-left {
+      padding: 44px 48px;
+      border-right: 1px solid var(--edge);
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--edge);
+    }
+
+    /* ── Sequence display ───────────────────────────────────────── */
+    .sequence-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      flex-wrap: nowrap;
+      overflow: hidden;
+    }
+
+    .seq-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .seq-number {
+      font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      color: var(--sequence-col);
+      line-height: 1;
+      transition: color var(--duration-ui) ease;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .seq-number.dim { color: var(--text-3); }
+    .seq-number.unknown {
+      color: transparent;
+      -webkit-text-stroke: 2px var(--text-3);
+      letter-spacing: 0;
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+    }
+
+    .seq-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      margin-top: 6px;
       font-weight: 500;
     }
 
-    /* Question content */
-    .question-content {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
-      padding: 35px;
-      margin-bottom: 35px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    .seq-arrow {
+      font-size: 0.9rem;
+      color: var(--text-3);
+      flex-shrink: 0;
+      padding: 0 2px;
+      margin-top: -10px;
     }
 
-    .question-title {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 25px;
-      text-align: center;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
-    .question-text {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 1.05rem;
-      line-height: 1.8;
-      margin-bottom: 20px;
-    }
-
-    .highlight {
-      color: #60a5fa;
-      font-weight: 700;
-      text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
-    }
-
-    .info-box {
-      background: rgba(96, 165, 250, 0.1);
-      border-left: 4px solid #60a5fa;
+    /* ── Pattern rule box ───────────────────────────────────────── */
+    .rule-block {
+      border: 1px solid var(--edge);
       border-radius: 12px;
-      padding: 20px;
-      margin: 25px 0;
-      box-shadow: 0 4px 12px rgba(96, 165, 250, 0.1);
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--surface-2);
     }
 
-    .info-box strong {
-      color: #60a5fa;
-      display: block;
-      margin-bottom: 10px;
-      font-size: 1.1rem;
+    .rule-block-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-3);
     }
 
-    .scenario {
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 12px;
-      padding: 20px;
-      margin: 15px 0;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+    .rule-block p {
+      font-size: 0.875rem;
+      color: var(--text-2);
+      line-height: 1.65;
     }
 
-    /* Answer input section */
-    .answer-section {
-      margin-top: 40px;
-      text-align: center;
-    }
-
-    .answer-label {
-      display: block;
-      color: #fff;
-      font-size: 1.2rem;
+    .rule-block strong {
+      color: var(--text-1);
       font-weight: 600;
-      margin-bottom: 20px;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ── Right panel: answer ────────────────────────────────────── */
+    .puzzle-right {
+      padding: 44px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── Answer form ────────────────────────────────────────────── */
+    .answer-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-2);
+    }
+
+    .input-wrapper {
+      position: relative;
     }
 
     .answer-input {
       width: 100%;
-      max-width: 400px;
-      padding: 18px 28px;
-      font-size: 1.1rem;
-      font-weight: 600;
+      padding: 18px 22px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
       text-align: center;
-      background: rgba(255, 255, 255, 0.1);
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      border-radius: 16px;
-      color: #fff;
+      background: var(--ink-2);
+      border: 1.5px solid var(--edge-bright);
+      border-radius: 14px;
+      color: var(--text-1);
       outline: none;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(10px);
       font-family: 'Poppins', sans-serif;
-      margin-bottom: 20px;
+      transition:
+        border-color var(--duration-ui) ease,
+        box-shadow var(--duration-ui) ease,
+        background var(--duration-ui) ease;
+      caret-color: var(--text-1);
     }
 
     .answer-input::placeholder {
-      color: rgba(255, 255, 255, 0.4);
+      color: var(--text-3);
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: 0;
     }
 
     .answer-input:focus {
-      border-color: #60a5fa;
-      background: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.1), 0 8px 24px rgba(96, 165, 250, 0.2);
+      border-color: rgba(255,255,255,0.35);
+      background: var(--ink-3);
+      box-shadow:
+        0 0 0 4px rgba(255,255,255,0.04),
+        0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .answer-input.shake {
+      animation: shake 0.4s var(--ease-out);
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(7px); }
+      60%      { transform: translateX(-5px); }
+      80%      { transform: translateX(4px); }
+    }
+
+    .answer-input.correct-flash {
+      border-color: var(--success) !important;
+      box-shadow: 0 0 0 4px rgba(74,222,128,0.15) !important;
+    }
+
+    /* ── Submit button ──────────────────────────────────────────── */
+    .submit-btn {
+      width: 100%;
+      padding: 18px 24px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink);
+      background: var(--text-1);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+      transition:
+        background var(--duration-ui) ease,
+        transform 150ms ease,
+        box-shadow var(--duration-ui) ease,
+        opacity var(--duration-ui) ease;
+      box-shadow: 0 4px 20px rgba(240,242,248,0.12);
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background: #fff;
+      box-shadow: 0 8px 32px rgba(255,255,255,0.2);
       transform: translateY(-2px);
     }
 
-    .submit-btn {
-      padding: 18px 48px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #fff;
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      border-radius: 16px;
-      cursor: pointer;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 12px 36px rgba(59, 130, 246, 0.4);
-      font-family: 'Poppins', sans-serif;
-      letter-spacing: 0.02em;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .submit-btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-      transition: left 0.6s;
-    }
-
-    .submit-btn:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 20px 50px rgba(59, 130, 246, 0.5);
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    }
-
-    .submit-btn:hover::before {
-      left: 100%;
-    }
-
-    .submit-btn:active {
-      transform: translateY(-2px) scale(1);
+    .submit-btn:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
     }
 
     .submit-btn:disabled {
-      opacity: 0.5;
+      opacity: 0.4;
       cursor: not-allowed;
-      transform: none;
     }
 
-    /* Feedback messages */
+    .submit-btn:focus-visible {
+      outline: 2px solid var(--text-1);
+      outline-offset: 3px;
+    }
+
+    /* ── Feedback ───────────────────────────────────────────────── */
     .feedback {
-      margin-top: 25px;
-      padding: 20px 30px;
-      border-radius: 16px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      text-align: center;
-      backdrop-filter: blur(20px);
-      animation: feedbackSlide 0.5s ease-out;
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      font-weight: 500;
       display: none;
+      animation: feedIn 0.35s var(--ease-out);
     }
 
-    @keyframes feedbackSlide {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes feedIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     .feedback.success {
       display: block;
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
-      border: 2px solid rgba(34, 197, 94, 0.5);
-      color: #86efac;
-      box-shadow: 0 8px 32px rgba(34, 197, 94, 0.2);
+      background: rgba(74,222,128,0.08);
+      border: 1px solid rgba(74,222,128,0.3);
+      color: var(--success);
     }
 
     .feedback.error {
       display: block;
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
-      border: 2px solid rgba(239, 68, 68, 0.5);
-      color: #fca5a5;
-      box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2);
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.25);
+      color: var(--error);
     }
 
-    /* Winner button */
+    /* ── Winner button ──────────────────────────────────────────── */
     .winner-btn {
       display: none;
-      margin-top: 30px;
-      padding: 20px 50px;
-      font-size: 1.2rem;
-      font-weight: 800;
-      color: #fff;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 18px;
+      width: 100%;
+      padding: 18px 24px;
+      font-size: 0.875rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink);
+      background: var(--success);
+      border: none;
+      border-radius: 12px;
       text-decoration: none;
       cursor: pointer;
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 16px 48px rgba(16, 185, 129, 0.5);
-      animation: winnerPulse 2s ease-in-out infinite;
-      position: relative;
-      overflow: hidden;
+      font-family: 'Poppins', sans-serif;
+      transition:
+        background var(--duration-ui) ease,
+        transform 150ms ease,
+        box-shadow var(--duration-ui) ease;
+      box-shadow: 0 8px 28px rgba(74,222,128,0.3);
+      min-height: 56px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      animation: winnerAppear 0.6s var(--ease-out);
     }
 
-    @keyframes winnerPulse {
-      0%, 100% { box-shadow: 0 16px 48px rgba(16, 185, 129, 0.5); }
-      50% { box-shadow: 0 20px 60px rgba(16, 185, 129, 0.7); }
+    .winner-btn.visible {
+      display: flex;
     }
 
-    .winner-btn::before {
-      content: '★';
-      position: absolute;
-      left: 20px;
-      font-size: 1.5rem;
-      animation: bounce 1s ease-in-out infinite;
-      color: #fbbf24;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
+    @keyframes winnerAppear {
+      from { opacity: 0; transform: scale(0.94); }
+      to   { opacity: 1; transform: scale(1); }
     }
 
     .winner-btn:hover {
-      transform: translateY(-5px) scale(1.05);
-      box-shadow: 0 24px 70px rgba(16, 185, 129, 0.7);
+      background: #22c55e;
+      box-shadow: 0 12px 36px rgba(74,222,128,0.45);
+      transform: translateY(-2px);
     }
 
-    /* Fireworks overlay */
+    .winner-btn:focus-visible {
+      outline: 2px solid var(--success);
+      outline-offset: 3px;
+    }
+
+    /* Trophy SVG icon */
+    .icon-trophy {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* ── Stats row at bottom of right panel ─────────────────────── */
+    .puzzle-stats {
+      display: flex;
+      gap: 20px;
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid var(--edge);
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--text-1);
+      letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
+    /* ── Fireworks ──────────────────────────────────────────────── */
     .fireworks-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       pointer-events: none;
       z-index: 1000;
       display: none;
     }
 
-    .fireworks-overlay.active {
-      display: block;
-    }
+    .fireworks-overlay.active { display: block; }
 
     .firework {
       position: absolute;
-      width: 5px;
-      height: 5px;
+      width: 4px;
+      height: 4px;
       border-radius: 50%;
-      animation: explode 1.5s ease-out forwards;
+      animation: explode 1.4s var(--ease-out) forwards;
     }
 
     @keyframes explode {
-      0% {
-        transform: translate(0, 0) scale(1);
-        opacity: 1;
-      }
-      100% {
-        transform: translate(var(--tx), var(--ty)) scale(0);
-        opacity: 0;
-      }
+      0%   { transform: translate(0,0) scale(1); opacity: 1; }
+      100% { transform: translate(var(--tx),var(--ty)) scale(0); opacity: 0; }
     }
 
-    /* Mobile responsive */
+    /* ── Reduced motion ─────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .puzzle-container, .feedback, .winner-btn {
+        animation: none !important;
+      }
+      .answer-input.shake { animation: none !important; }
+      .answer-input, .submit-btn, .winner-btn { transition: none !important; }
+      .fireworks-overlay { display: none !important; }
+    }
+
+    /* ── Responsive ─────────────────────────────────────────────── */
     @media (max-width: 768px) {
-      .puzzle-container {
-        padding: 30px 25px;
-        border-radius: 24px;
+      body { padding: 90px 16px 48px; }
+
+      .puzzle-header { padding: 28px 24px 24px; }
+
+      .puzzle-body { grid-template-columns: 1fr; }
+
+      .puzzle-left {
+        padding: 28px 24px;
+        border-right: none;
+        border-bottom: 1px solid var(--edge);
+        gap: 22px;
       }
 
-      .title {
-        font-size: 2rem;
-        margin-bottom: 10px;
+      .puzzle-right {
+        padding: 28px 24px;
+        gap: 16px;
       }
 
-      .subtitle {
-        font-size: 0.95rem;
-        margin-bottom: 30px;
-      }
+      .seq-number { font-size: clamp(1.3rem, 7vw, 2rem); }
 
-      .question-content {
-        padding: 25px 20px;
-      }
-
-      .question-title {
-        font-size: 1.3rem;
-        margin-bottom: 20px;
-      }
-
-      .question-text {
-        font-size: 0.95rem;
-      }
-
-      .answer-input {
-        font-size: 1rem;
-        padding: 16px 24px;
-      }
-
-      .submit-btn {
-        padding: 16px 40px;
-        font-size: 1rem;
-      }
-
-      .winner-btn {
-        padding: 18px 40px;
-        font-size: 1.1rem;
-      }
+      .puzzle-stats { display: none; }
     }
 
-    @media (max-width: 480px) {
-      body {
-        padding: 15px;
-      }
-
-      .puzzle-container {
-        padding: 25px 20px;
-      }
-
-      .question-content {
-        padding: 20px 15px;
-      }
-
-      .info-box, .scenario {
-        padding: 15px;
-      }
+    @media (max-width: 420px) {
+      .puzzle-header { padding: 22px 18px 20px; }
+      .puzzle-left, .puzzle-right { padding: 22px 18px; }
+      .answer-input { font-size: 1.25rem; padding: 16px 18px; }
+      .seq-arrow { padding: 0; }
     }
-
   </style>
 </head>
 <body data-page="brain-teaser">
@@ -478,196 +605,252 @@
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
 
-    <div id="site-header"></div>
-
-  <!-- Particle background -->
-  <div class="particles" id="particles"></div>
+  <div id="site-header"></div>
 
   <!-- Fireworks overlay -->
-  <div class="fireworks-overlay" id="fireworks"></div>
+  <div class="fireworks-overlay" id="fireworks" aria-hidden="true"></div>
 
-  <!-- Main container -->
   <main>
-    <div class="puzzle-container">
-    <h1 class="title">The Exponential Sequence Challenge</h1>
-    <p class="subtitle">Only the sharpest minds will unlock the secret...</p>
+    <div class="puzzle-container" role="main">
 
-    <div class="question-content">
-      <h2 class="question-title">The Exponential Pattern</h2>
-
-      <p class="question-text">
-        Analyze this sequence carefully:
-      </p>
-
-      <div class="info-box">
-        <p class="question-text" style="margin: 0; text-align: center; font-size: 1.5rem; letter-spacing: 0.3em; font-weight: 700; color: #60a5fa;">
-          3, 7, 15, 31, 63, ?
-        </p>
+      <!-- ── Header ── -->
+      <div class="puzzle-header">
+        <p class="eyebrow">Intelligence Challenge · Issue No. 01</p>
+        <h1 class="title">The Exponential<br>Sequence</h1>
+        <p class="subtitle">A pattern hides in plain sight. Crack it and earn your place in the Winners' Lounge.</p>
       </div>
 
-      <div class="scenario">
-        <p class="question-text" style="margin: 0;">
-          <strong style="color: #60a5fa;">Your Task:</strong><br>
-          Each number in this pattern follows a mathematical rule involving the previous term. Can you determine what the next number should be?
-        </p>
-      </div>
+      <!-- ── Body ── -->
+      <div class="puzzle-body">
 
-      <div class="scenario">
-        <p class="question-text" style="margin: 0;">
-          <strong style="color: #60a5fa;">Hint:</strong><br>
-          Consider how each number transforms into the next. Try testing different operations: multiplication, addition, or perhaps a combination of both?
-        </p>
-      </div>
+        <!-- Left: puzzle -->
+        <div class="puzzle-left">
+          <p class="section-label">The Sequence</p>
 
-      <p class="question-text" style="margin-top: 25px; font-size: 1.15rem; text-align: center; color: #60a5fa; font-weight: 600;">
-        What number comes next in the sequence?
-      </p>
-    </div>
+          <div class="sequence-row" aria-label="Sequence: 3, 7, 15, 31, 63, unknown">
+            <div class="seq-item">
+              <span class="seq-number">3</span>
+              <span class="seq-label">n₁</span>
+            </div>
+            <span class="seq-arrow" aria-hidden="true">›</span>
+            <div class="seq-item">
+              <span class="seq-number">7</span>
+              <span class="seq-label">n₂</span>
+            </div>
+            <span class="seq-arrow" aria-hidden="true">›</span>
+            <div class="seq-item">
+              <span class="seq-number">15</span>
+              <span class="seq-label">n₃</span>
+            </div>
+            <span class="seq-arrow" aria-hidden="true">›</span>
+            <div class="seq-item">
+              <span class="seq-number dim">31</span>
+              <span class="seq-label">n₄</span>
+            </div>
+            <span class="seq-arrow" aria-hidden="true">›</span>
+            <div class="seq-item">
+              <span class="seq-number dim">63</span>
+              <span class="seq-label">n₅</span>
+            </div>
+            <span class="seq-arrow" aria-hidden="true">›</span>
+            <div class="seq-item">
+              <span class="seq-number unknown" aria-label="unknown">?</span>
+              <span class="seq-label">n₆</span>
+            </div>
+          </div>
 
-    <div class="answer-section">
-      <label class="answer-label">Enter the next number:</label>
-      <input
-        type="text"
-        id="answer-input"
-        class="answer-input"
-        placeholder="Type your answer..."
-        maxlength="10"
-      >
-      <br>
-      <button class="submit-btn" id="submit-btn">
-        Submit Answer
-      </button>
+          <div class="rule-block">
+            <p class="rule-block-title">Your Task</p>
+            <p>Each number transforms into the next through a <strong>consistent mathematical rule</strong>. Identify the pattern and find the value of n₆.</p>
+          </div>
 
-      <div class="feedback" id="feedback"></div>
+          <div class="rule-block">
+            <p class="rule-block-title">Hint</p>
+            <p>Examine the relationship between <strong>consecutive terms</strong>. Try multiplication, addition — or perhaps both at once.</p>
+          </div>
+        </div>
 
-      <a href="/q7x9m2k5p8wl4n6r1t3vb.html" class="winner-btn" id="winner-btn" style="display: none;">
-        Enter the Winners' Lounge
-      </a>
-    </div>
-    </div>
+        <!-- Right: answer -->
+        <div class="puzzle-right">
+          <p class="section-label">Your Answer</p>
+
+          <div class="answer-form">
+            <label class="form-label" for="answer-input">Enter the next number in the sequence</label>
+            <div class="input-wrapper">
+              <input
+                type="text"
+                id="answer-input"
+                class="answer-input"
+                placeholder="_ _ _"
+                maxlength="10"
+                autocomplete="off"
+                inputmode="numeric"
+                aria-describedby="feedback"
+              >
+            </div>
+
+            <button class="submit-btn" id="submit-btn" type="button">
+              Submit Answer
+            </button>
+
+            <div class="feedback" id="feedback" role="alert" aria-live="polite"></div>
+
+            <a href="/q7x9m2k5p8wl4n6r1t3vb.html" class="winner-btn" id="winner-btn" aria-label="Enter the Winners' Lounge">
+              <svg class="icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/>
+                <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
+                <path d="M6 3h12v10a6 6 0 0 1-12 0V3z"/>
+                <path d="M9 21h6"/>
+                <path d="M12 17v4"/>
+              </svg>
+              Enter the Winners' Lounge
+            </a>
+          </div>
+
+          <div class="puzzle-stats">
+            <div class="stat">
+              <span class="stat-value">1</span>
+              <span class="stat-label">Attempt Per User</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">1</span>
+              <span class="stat-label">Right Answer</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value">Top 3%</span>
+              <span class="stat-label">Solve Rate</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.puzzle-body -->
+    </div><!-- /.puzzle-container -->
   </main>
 
-    <div id="site-footer"></div>
+  <div id="site-footer"></div>
 
   <script defer src="/js/layout.js"></script>
   <script defer src="/js/newsletter-handler.js"></script>
   <script defer src="/js/data.js"></script>
   <script defer src="/js/main.js"></script>
-  <script>
-    // Create floating particles
-    const particlesContainer = document.getElementById('particles');
-    for (let i = 0; i < 50; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'particle';
-      particle.style.left = Math.random() * 100 + '%';
-      particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
-      particle.style.animationDelay = Math.random() * 5 + 's';
-      particlesContainer.appendChild(particle);
-    }
 
-    // Answer checking logic
-    const answerInput = document.getElementById('answer-input');
-    const submitBtn = document.getElementById('submit-btn');
-    const feedback = document.getElementById('feedback');
-    const winnerBtn = document.getElementById('winner-btn');
-    const fireworksContainer = document.getElementById('fireworks');
+  <script>
+    const answerInput  = document.getElementById('answer-input');
+    const submitBtn    = document.getElementById('submit-btn');
+    const feedback     = document.getElementById('feedback');
+    const winnerBtn    = document.getElementById('winner-btn');
+    const fireworksEl  = document.getElementById('fireworks');
 
     const correctAnswers = ['127', 'one hundred twenty seven', 'one hundred twenty-seven', 'onehundredtwentyseven'];
 
-    let hasAnswered = localStorage.getItem('quantumPuzzleSolved') === 'true';
+    const solved    = localStorage.getItem('quantumPuzzleSolved')    === 'true';
+    const attempted = localStorage.getItem('quantumPuzzleAttempted') === 'true';
 
-    if (hasAnswered) {
-      answerInput.value = '✓ Already solved';
-      answerInput.disabled = true;
-      submitBtn.textContent = 'Already Completed';
-      submitBtn.disabled = true;
+    /* Restore state on page load */
+    if (solved) {
+      lockForm();
+      answerInput.value = '127';
+      answerInput.classList.add('correct-flash');
+      submitBtn.textContent = 'Already Solved';
       feedback.className = 'feedback success';
-      feedback.style.display = 'block';
-      feedback.textContent = 'You\'ve already solved this puzzle! The answer was 127.';
-      winnerBtn.style.display = 'inline-block';
+      feedback.textContent = "You've already cracked this one. The answer is 127.";
+      winnerBtn.classList.add('visible');
+    } else if (attempted) {
+      lockForm();
+      submitBtn.textContent = 'Attempt Used';
+      feedback.className = 'feedback error';
+      feedback.textContent = 'You already used your one attempt. The answer was 127.';
+    }
+
+    function lockForm() {
+      answerInput.disabled = true;
+      submitBtn.disabled   = true;
     }
 
     function launchFireworks() {
-      fireworksContainer.classList.add('active');
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-      for (let i = 0; i < 8; i++) {
+      fireworksEl.classList.add('active');
+      const palette = ['#f0f2f8','#4ade80','#fbbf24','#a78bfa','#f472b6'];
+
+      for (let wave = 0; wave < 6; wave++) {
         setTimeout(() => {
-          createFirework();
-        }, i * 300);
+          const x = 15 + Math.random() * 70;
+          const y = 10 + Math.random() * 55;
+          const color = palette[Math.floor(Math.random() * palette.length)];
+
+          for (let i = 0; i < 28; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'firework';
+            dot.style.left = x + 'vw';
+            dot.style.top  = y + 'vh';
+            dot.style.background = color;
+
+            const angle    = (Math.PI * 2 * i) / 28;
+            const velocity = 80 + Math.random() * 90;
+            dot.style.setProperty('--tx', (Math.cos(angle) * velocity) + 'px');
+            dot.style.setProperty('--ty', (Math.sin(angle) * velocity) + 'px');
+
+            fireworksEl.appendChild(dot);
+            setTimeout(() => dot.remove(), 1400);
+          }
+        }, wave * 350);
       }
 
       setTimeout(() => {
-        fireworksContainer.classList.remove('active');
-        fireworksContainer.innerHTML = '';
-      }, 5000);
+        fireworksEl.classList.remove('active');
+        fireworksEl.innerHTML = '';
+      }, 4500);
     }
 
-    function createFirework() {
-      const x = Math.random() * window.innerWidth;
-      const y = Math.random() * window.innerHeight * 0.7;
-      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-      const color = colors[Math.floor(Math.random() * colors.length)];
+    submitBtn.addEventListener('click', handleSubmit);
+    answerInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !solved && !attempted) handleSubmit();
+    });
 
-      for (let i = 0; i < 30; i++) {
-        const firework = document.createElement('div');
-        firework.className = 'firework';
-        firework.style.left = x + 'px';
-        firework.style.top = y + 'px';
-        firework.style.background = color;
+    function handleSubmit() {
+      if (solved || attempted) return;
 
-        const angle = (Math.PI * 2 * i) / 30;
-        const velocity = 100 + Math.random() * 100;
-        const tx = Math.cos(angle) * velocity;
-        const ty = Math.sin(angle) * velocity;
-
-        firework.style.setProperty('--tx', tx + 'px');
-        firework.style.setProperty('--ty', ty + 'px');
-
-        fireworksContainer.appendChild(firework);
-
-        setTimeout(() => firework.remove(), 1500);
-      }
-    }
-
-    submitBtn.addEventListener('click', () => {
-      if (hasAnswered) return;
-
-      const answer = answerInput.value.trim().toLowerCase();
-
-      if (answer.length === 0) {
-        feedback.className = 'feedback error';
-        feedback.textContent = 'Please enter an answer first!';
+      const raw = answerInput.value.trim().toLowerCase();
+      if (!raw) {
+        showError('Please enter your answer first.');
         return;
       }
 
-      const isCorrect = correctAnswers.some(correct => answer === correct.toLowerCase());
+      /* Consume the one attempt immediately — no second chances */
+      localStorage.setItem('quantumPuzzleAttempted', 'true');
+      lockForm();
+
+      const isCorrect = correctAnswers.some(c => raw === c.toLowerCase());
 
       if (isCorrect) {
-        hasAnswered = true;
         localStorage.setItem('quantumPuzzleSolved', 'true');
 
+        answerInput.classList.add('correct-flash');
+        submitBtn.textContent = 'Solved!';
+
         feedback.className = 'feedback success';
-        feedback.innerHTML = '<strong>BRILLIANT!</strong> You cracked the exponential pattern! The answer is 127. The rule: multiply the previous number by 2 and add 1 (e.g., 63 × 2 + 1 = 127). Welcome to the elite Winners\' Lounge!';
+        feedback.innerHTML = '<strong>Brilliant.</strong> The rule: × 2 then + 1 each step. 63 × 2 + 1 = <strong>127</strong>. Welcome to the Winners\' Lounge.';
 
-        answerInput.disabled = true;
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Puzzle Solved!';
-
-        winnerBtn.style.display = 'inline-block';
-
+        winnerBtn.classList.add('visible');
         launchFireworks();
 
       } else {
+        submitBtn.textContent = 'Attempt Used';
         feedback.className = 'feedback error';
-        feedback.innerHTML = 'Not quite right. Consider the relationship between consecutive numbers. Try multiplying and adding... What operation transforms 3 into 7, or 31 into 63?';
+        feedback.textContent = 'Incorrect — and that was your one attempt. The answer was 127. The rule: × 2 then + 1 each step.';
       }
-    });
+    }
 
-    answerInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && !hasAnswered) {
-        submitBtn.click();
-      }
-    });
+    function showError(msg) {
+      feedback.className = 'feedback error';
+      feedback.textContent = msg;
+
+      answerInput.classList.remove('shake');
+      void answerInput.offsetWidth;
+      answerInput.classList.add('shake');
+      answerInput.addEventListener('animationend', () => answerInput.classList.remove('shake'), { once: true });
+    }
   </script>
 </body>
 </html>
