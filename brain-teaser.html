@@ -11,12 +11,12 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Quantum Paradox Challenge - Solve the exponential sequence and unlock access to The Catalyst Magazine's exclusive Winners' Lounge.">
-  <meta name="keywords" content="brain teaser, math puzzle, science challenge, logic puzzle, STEM games, Catalyst Magazine">
+  <meta name="description" content="The Catalyst Riddle - A classical riddle of language and meaning. Solve it to unlock The Catalyst Magazine's exclusive Winners' Lounge.">
+  <meta name="keywords" content="brain teaser, riddle, word puzzle, logic puzzle, lateral thinking, Catalyst Magazine">
   <meta name="author" content="The Catalyst Magazine">
   <meta name="robots" content="index, follow">
   <meta name="theme-color" content="#0f172a">
-  <title>The Quantum Paradox Challenge | The Catalyst Magazine</title>
+  <title>The Catalyst Riddle | The Catalyst Magazine</title>
   <link rel="canonical" href="https://www.catalyst-magazine.com/brain-teaser">
 
   <!-- Open Graph / Social Media -->
@@ -24,8 +24,8 @@
   <meta property="og:site_name" content="The Catalyst Magazine">
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://www.catalyst-magazine.com/brain-teaser">
-  <meta property="og:title" content="The Quantum Paradox Challenge | The Catalyst Magazine">
-  <meta property="og:description" content="Crack the Exponential Sequence and unlock access to our exclusive Winners' Lounge. Only the sharpest minds will solve it.">
+  <meta property="og:title" content="The Catalyst Riddle | The Catalyst Magazine">
+  <meta property="og:description" content="A classical riddle of language and meaning. Solve it and earn your place in the Winners' Lounge.">
   <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -34,8 +34,8 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://www.catalyst-magazine.com/brain-teaser">
-  <meta name="twitter:title" content="The Quantum Paradox Challenge | The Catalyst Magazine">
-  <meta name="twitter:description" content="Crack the Exponential Sequence and unlock access to our exclusive Winners' Lounge.">
+  <meta name="twitter:title" content="The Catalyst Riddle | The Catalyst Magazine">
+  <meta name="twitter:description" content="A classical riddle of language and meaning. Solve it and earn your place in the Winners' Lounge.">
   <meta name="twitter:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
 
   <!-- Favicons -->
@@ -208,56 +208,88 @@
       background: var(--edge);
     }
 
-    /* ── Sequence display ───────────────────────────────────────── */
-    .sequence-row {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      flex-wrap: nowrap;
+    /* ── Riddle verse display ───────────────────────────────────── */
+    .riddle-verse {
+      position: relative;
+      padding: 44px 32px 28px 36px;
+      border: 1px solid var(--edge-bright);
+      border-radius: 14px;
+      background:
+        radial-gradient(ellipse 100% 70% at 50% 0%, rgba(255,255,255,0.04), transparent 60%),
+        var(--surface-2);
       overflow: hidden;
     }
 
-    .seq-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex: 1;
-      min-width: 0;
+    .riddle-verse::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
     }
 
-    .seq-number {
-      font-size: clamp(1.6rem, 3.5vw, 2.6rem);
-      font-weight: 900;
-      letter-spacing: -0.04em;
-      color: var(--sequence-col);
+    /* Decorative quote glyph */
+    .verse-mark {
+      position: absolute;
+      top: 12px;
+      left: 18px;
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 4rem;
+      font-weight: 700;
       line-height: 1;
-      transition: color var(--duration-ui) ease;
-      font-variant-numeric: tabular-nums;
+      color: rgba(255,255,255,0.08);
+      pointer-events: none;
+      user-select: none;
     }
 
-    .seq-number.dim { color: var(--text-3); }
-    .seq-number.unknown {
-      color: transparent;
-      -webkit-text-stroke: 2px var(--text-3);
-      letter-spacing: 0;
-      font-size: clamp(1.4rem, 3vw, 2.2rem);
+    .verse-line {
+      display: block;
+      font-family: 'Times New Roman', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+      line-height: 1.7;
+      color: var(--text-1);
+      letter-spacing: 0.005em;
+      text-align: left;
     }
 
-    .seq-label {
-      font-size: 0.6rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-3);
-      margin-top: 6px;
+    .verse-line + .verse-line { margin-top: 6px; }
+
+    .verse-line em {
+      font-style: italic;
+      color: #fff;
       font-weight: 500;
     }
 
-    .seq-arrow {
-      font-size: 0.9rem;
+    .verse-attribution {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid var(--edge);
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
       color: var(--text-3);
-      flex-shrink: 0;
-      padding: 0 2px;
-      margin-top: -10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .verse-attribution::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--edge);
+    }
+
+    .riddle-question {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-1);
+      margin-top: 4px;
+      letter-spacing: -0.01em;
+      line-height: 1.4;
     }
 
     /* ── Pattern rule box ───────────────────────────────────────── */
@@ -320,10 +352,9 @@
     .answer-input {
       width: 100%;
       padding: 18px 22px;
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      font-variant-numeric: tabular-nums;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.005em;
       text-align: center;
       background: var(--ink-2);
       border: 1.5px solid var(--edge-bright);
@@ -615,9 +646,9 @@
 
       <!-- ── Header ── -->
       <div class="puzzle-header">
-        <p class="eyebrow">Intelligence Challenge · Issue No. 01</p>
-        <h1 class="title">The Exponential<br>Sequence</h1>
-        <p class="subtitle">A pattern hides in plain sight. Crack it and earn your place in the Winners' Lounge.</p>
+        <p class="eyebrow">Intelligence Challenge · Issue No. 02</p>
+        <h1 class="title">The Catalyst<br>Riddle</h1>
+        <p class="subtitle">A riddle of language and meaning. The answer is a single thing — small, ordinary, and hiding in plain sight.</p>
       </div>
 
       <!-- ── Body ── -->
@@ -625,48 +656,25 @@
 
         <!-- Left: puzzle -->
         <div class="puzzle-left">
-          <p class="section-label">The Sequence</p>
+          <p class="section-label">The Riddle</p>
 
-          <div class="sequence-row" aria-label="Sequence: 3, 7, 15, 31, 63, unknown">
-            <div class="seq-item">
-              <span class="seq-number">3</span>
-              <span class="seq-label">n₁</span>
-            </div>
-            <span class="seq-arrow" aria-hidden="true">›</span>
-            <div class="seq-item">
-              <span class="seq-number">7</span>
-              <span class="seq-label">n₂</span>
-            </div>
-            <span class="seq-arrow" aria-hidden="true">›</span>
-            <div class="seq-item">
-              <span class="seq-number">15</span>
-              <span class="seq-label">n₃</span>
-            </div>
-            <span class="seq-arrow" aria-hidden="true">›</span>
-            <div class="seq-item">
-              <span class="seq-number dim">31</span>
-              <span class="seq-label">n₄</span>
-            </div>
-            <span class="seq-arrow" aria-hidden="true">›</span>
-            <div class="seq-item">
-              <span class="seq-number dim">63</span>
-              <span class="seq-label">n₅</span>
-            </div>
-            <span class="seq-arrow" aria-hidden="true">›</span>
-            <div class="seq-item">
-              <span class="seq-number unknown" aria-label="unknown">?</span>
-              <span class="seq-label">n₆</span>
-            </div>
+          <div class="riddle-verse" aria-label="The riddle">
+            <span class="verse-mark" aria-hidden="true">“</span>
+            <span class="verse-line">I am the beginning of <em>eternity</em>,</span>
+            <span class="verse-line">the end of <em>time</em> and <em>space</em>,</span>
+            <span class="verse-line">the beginning of every <em>end</em>,</span>
+            <span class="verse-line">and the end of every <em>place</em>.</span>
+            <p class="verse-attribution">What am I?</p>
           </div>
 
           <div class="rule-block">
             <p class="rule-block-title">Your Task</p>
-            <p>Each number transforms into the next through a <strong>consistent mathematical rule</strong>. Identify the pattern and find the value of n₆.</p>
+            <p>Read each line carefully. The answer is <strong>one thing</strong> that satisfies all four clues simultaneously.</p>
           </div>
 
           <div class="rule-block">
             <p class="rule-block-title">Hint</p>
-            <p>Examine the relationship between <strong>consecutive terms</strong>. Try multiplication, addition — or perhaps both at once.</p>
+            <p>Don't think in <strong>concepts</strong> — think in <strong>letters</strong>. Examine the words themselves, not what they mean.</p>
           </div>
         </div>
 
@@ -675,16 +683,16 @@
           <p class="section-label">Your Answer</p>
 
           <div class="answer-form">
-            <label class="form-label" for="answer-input">Enter the next number in the sequence</label>
+            <label class="form-label" for="answer-input">What is the answer to the riddle?</label>
             <div class="input-wrapper">
               <input
                 type="text"
                 id="answer-input"
                 class="answer-input"
-                placeholder="_ _ _"
-                maxlength="10"
+                placeholder="One word…"
+                maxlength="40"
                 autocomplete="off"
-                inputmode="numeric"
+                spellcheck="false"
                 aria-describedby="feedback"
               >
             </div>
@@ -741,25 +749,35 @@
     const winnerBtn    = document.getElementById('winner-btn');
     const fireworksEl  = document.getElementById('fireworks');
 
-    const correctAnswers = ['127', 'one hundred twenty seven', 'one hundred twenty-seven', 'onehundredtwentyseven'];
+    /* Accept multiple natural phrasings */
+    const correctAnswers = [
+      'e',
+      'the letter e',
+      'letter e',
+      '"e"'
+    ];
 
-    const solved    = localStorage.getItem('quantumPuzzleSolved')    === 'true';
-    const attempted = localStorage.getItem('quantumPuzzleAttempted') === 'true';
+    /* New storage keys for v2 of the puzzle so prior solvers must re-solve */
+    const KEY_SOLVED    = 'catalystRiddleSolved_v2';
+    const KEY_ATTEMPTED = 'catalystRiddleAttempted_v2';
+
+    const solved    = localStorage.getItem(KEY_SOLVED)    === 'true';
+    const attempted = localStorage.getItem(KEY_ATTEMPTED) === 'true';
 
     /* Restore state on page load */
     if (solved) {
       lockForm();
-      answerInput.value = '127';
+      answerInput.value = 'The letter E';
       answerInput.classList.add('correct-flash');
       submitBtn.textContent = 'Already Solved';
       feedback.className = 'feedback success';
-      feedback.textContent = "You've already cracked this one. The answer is 127.";
+      feedback.textContent = "You've already cracked this one. The answer is the letter E.";
       winnerBtn.classList.add('visible');
     } else if (attempted) {
       lockForm();
       submitBtn.textContent = 'Attempt Used';
       feedback.className = 'feedback error';
-      feedback.textContent = 'You already used your one attempt. The answer was 127.';
+      feedback.textContent = 'You already used your one attempt. The answer was the letter E.';
     }
 
     function lockForm() {
@@ -811,26 +829,32 @@
     function handleSubmit() {
       if (solved || attempted) return;
 
-      const raw = answerInput.value.trim().toLowerCase();
+      /* Normalise: lowercase, strip punctuation, collapse whitespace */
+      const raw = answerInput.value
+        .trim()
+        .toLowerCase()
+        .replace(/[.,!?'"`]/g, '')
+        .replace(/\s+/g, ' ');
+
       if (!raw) {
         showError('Please enter your answer first.');
         return;
       }
 
       /* Consume the one attempt immediately — no second chances */
-      localStorage.setItem('quantumPuzzleAttempted', 'true');
+      localStorage.setItem(KEY_ATTEMPTED, 'true');
       lockForm();
 
       const isCorrect = correctAnswers.some(c => raw === c.toLowerCase());
 
       if (isCorrect) {
-        localStorage.setItem('quantumPuzzleSolved', 'true');
+        localStorage.setItem(KEY_SOLVED, 'true');
 
         answerInput.classList.add('correct-flash');
         submitBtn.textContent = 'Solved!';
 
         feedback.className = 'feedback success';
-        feedback.innerHTML = '<strong>Brilliant.</strong> The rule: × 2 then + 1 each step. 63 × 2 + 1 = <strong>127</strong>. Welcome to the Winners\' Lounge.';
+        feedback.innerHTML = '<strong>Brilliant.</strong> The answer is <strong>the letter E</strong> — it begins <em>eternity</em>, ends <em>time</em> and <em>space</em>, begins every <em>end</em>, and ends every <em>place</em>. Welcome to the Winners\' Lounge.';
 
         winnerBtn.classList.add('visible');
         launchFireworks();
@@ -838,7 +862,7 @@
       } else {
         submitBtn.textContent = 'Attempt Used';
         feedback.className = 'feedback error';
-        feedback.textContent = 'Incorrect — and that was your one attempt. The answer was 127. The rule: × 2 then + 1 each step.';
+        feedback.innerHTML = 'Incorrect — and that was your one attempt. The answer was <strong>the letter E</strong>. Look at the first and last letters of each word the riddle emphasises.';
       }
     }
 
