@@ -46,3 +46,11 @@
 /_partials/*             /404                       410
 /_files/*                /404                       410
 /post/*                  /404                       410
+
+# Wix-era CCPA "Do Not Sell" stub. Search Console flagged it as
+# "Excluded by 'noindex' tag" from an old crawl; we have no such page
+# now — return 410 so Google fully drops it instead of leaving the
+# noindex'd ghost in the index.
+/donotsell               /404                       410
+/donotsell/              /404                       410
+/donotsell/*             /404                       410
