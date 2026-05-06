@@ -763,6 +763,18 @@ function mountBotEmailLog(mount, ctx) {
       body.innerHTML = `<div class="error-state">${esc(err?.message || err || "Could not load email log.")}</div>`;
     } else if (state === "ready") {
       body.innerHTML = renderBotEmailLog(data);
+      // Each row has a "Show details" button that flips its detail panel.
+      // Done via delegation on the body so we don't double-bind on refresh.
+      body.querySelectorAll("[data-email-log-toggle]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = btn.getAttribute("data-email-log-toggle");
+          const panel = body.querySelector(`[data-email-log-detail="${CSS.escape(idx)}"]`);
+          if (!panel) return;
+          const open = panel.style.display !== "none" && panel.style.display !== "";
+          panel.style.display = open ? "none" : "block";
+          btn.textContent = open ? "Show details" : "Hide details";
+        });
+      });
     }
 
     mount.querySelector("[data-email-log-action='refresh']")?.addEventListener("click", load);
@@ -791,7 +803,7 @@ function renderBotEmailLog(data) {
 
   const ignoredCount = entries.filter((e) => e.ignored).length;
 
-  const rows = entries.map((e) => {
+  const rows = entries.map((e, idx) => {
     const kindBadge = kindLabel(e.kind);
     const ignored = !!e.ignored;
     const rowBg = ignored ? "#fef2f2" : "transparent";
@@ -806,9 +818,33 @@ function renderBotEmailLog(data) {
       e.role && e.role !== "writer" ? e.role : null,
     ].filter(Boolean).join(" · ");
 
+    // Older entries logged before the bodyText/reason fields existed will
+    // miss those — fall back gracefully so the row still expands cleanly.
+    const reason = e.reason || reasonFromLogEntry(e);
+    const bodyText = e.bodyText || "";
+    const hasDetail = !!(reason || bodyText);
+
+    const detailPanelStyle = `display:none;margin-top:10px;padding:12px 14px;border-top:1px dashed #e5e7eb;background:#fafafa;border-radius:0 0 8px 8px;`;
+    const reasonHtml = reason
+      ? `<div style="font-size:12px;color:#3730a3;background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;padding:8px 10px;margin-bottom:10px;">
+           <strong style="display:block;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:#4338ca;margin-bottom:2px;">Why the bot sent this</strong>
+           ${esc(reason)}
+         </div>`
+      : "";
+    const bodyHtml = bodyText
+      ? `<div style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:#6b7280;font-weight:700;margin-bottom:4px;">Full message</div>
+         <pre style="white-space:pre-wrap;word-wrap:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.5;color:#0b1220;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;margin:0;max-height:420px;overflow:auto;">${esc(bodyText)}</pre>`
+      : `<div style="font-size:12px;color:#9ca3af;font-style:italic;">No body on file (this email pre-dates message capture).</div>`;
+    const detailPanel = hasDetail
+      ? `<div data-email-log-detail="${idx}" style="${detailPanelStyle}">
+           ${reasonHtml}${bodyHtml}
+         </div>`
+      : "";
+    const toggleBtn = `<button type="button" data-email-log-toggle="${idx}" class="btn btn-ghost btn-xs" style="font-size:11px;padding:4px 10px;flex-shrink:0;">Show details</button>`;
+
     return `
-      <div style="border:1px solid ${rowBorder};background:${rowBg};border-radius:10px;padding:10px 12px;margin-top:8px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div style="border:1px solid ${rowBorder};background:${rowBg};border-radius:10px;margin-top:8px;overflow:hidden;">
+        <div style="padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
           <div style="min-width:0;flex:1;">
             <div style="font-weight:600;font-size:13.5px;color:var(--ink,#111);line-height:1.4;">
               <span style="display:inline-block;background:${kindBadge.bg};color:${kindBadge.ink};font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">${esc(kindBadge.text)}</span>
@@ -823,7 +859,9 @@ function renderBotEmailLog(data) {
             </div>
             ${e.subject ? `<div style="margin-top:4px;font-size:12.5px;color:var(--ink-2,#374151);"><strong>Subject:</strong> ${esc(e.subject)}</div>` : ""}
           </div>
+          ${toggleBtn}
         </div>
+        ${detailPanel}
       </div>`;
   }).join("");
 
@@ -833,4 +871,30 @@ function renderBotEmailLog(data) {
     </div>`;
 
   return `${summary}${rows}`;
+}
+
+// Backfill a "why" string for old log rows that pre-date the `reason` field.
+// Mirrors the server-side reasonForReminder() but works from the stored
+// daysInactive / daysUntilDeadline signals.
+function reasonFromLogEntry(e) {
+  if (!e) return "";
+  const k = e.kind;
+  const dD = e.daysUntilDeadline;
+  const dI = e.daysInactive;
+  if (k === "deadline-overdue") {
+    const past = dD != null ? Math.abs(dD) : null;
+    return past != null
+      ? `Deadline passed ${past} day${past === 1 ? "" : "s"} ago and the project hasn't been marked complete.`
+      : `Deadline has passed and the project isn't marked complete.`;
+  }
+  if (k === "deadline-1d") return `Deadline is tomorrow — final reminder before it's due.`;
+  if (k === "deadline-3d") return dD != null ? `Deadline is in ${dD} day${dD === 1 ? "" : "s"} — early heads-up.` : `Deadline is approaching.`;
+  if (k === "idle") return dI != null ? `No project activity for ${dI} day${dI === 1 ? "" : "s"} — checking in.` : `Project has been idle — checking in.`;
+  if (k === "editor-idle") return dI != null ? `Editor hasn't moved this draft in ${dI} day${dI === 1 ? "" : "s"}.` : `Editor hasn't moved this draft recently.`;
+  if (k === "editor-just-assigned") return `Editor was recently assigned — gentle nudge to start reviewing.`;
+  if (k === "interview-prep") return `Interview is coming up — sending prep tips.`;
+  if (k === "interview-followup") return `Interview already happened but "Interview Complete" hasn't been checked off.`;
+  if (k === "post-approval-idle") return `Proposal was approved a while ago and the writer hasn't moved it.`;
+  if (k === "proposal-no-schedule") return `Proposal was approved but no interview date is on file yet.`;
+  return "";
 }

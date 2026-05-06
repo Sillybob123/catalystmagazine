@@ -703,10 +703,18 @@ function openDetailModal(projectId) {
 
   const deadlineRows = DEADLINE_FIELDS
     .filter(f => !(project.type === "Op-Ed" && (f.key === "contact" || f.key === "interview")))
-    .map(f => `<div style="${dlStyle}">
-      <label style="${dlLabelStyle}">${esc(f.label)}</label>
-      <input type="date" class="dl-input" data-dlkey="${esc(f.key)}" value="${esc(deadlines[f.key]||"")}" ${isAdmin?"":"disabled"} style="${dlInputStyle}${!isAdmin?"background:#f8fafc;color:#94a3b8;":""}">
-    </div>`).join("");
+    .map(f => {
+      // Conduct Interview falls back to project.interviewDate so projects
+      // that were scheduled before the deadlines mirror existed still show
+      // the date in the grid. Once the writer reschedules, deadlines.interview
+      // is written and takes precedence on its own.
+      const fallback = f.key === "interview" ? (project.interviewDate || "") : "";
+      const value = deadlines[f.key] || fallback;
+      return `<div style="${dlStyle}">
+        <label style="${dlLabelStyle}">${esc(f.label)}</label>
+        <input type="date" class="dl-input" data-dlkey="${esc(f.key)}" value="${esc(value)}" ${isAdmin?"":"disabled"} style="${dlInputStyle}${!isAdmin?"background:#f8fafc;color:#94a3b8;":""}">
+      </div>`;
+    }).join("");
 
   const pubDeadlineHtml = `<div style="${dlStyle}">
     <label style="${dlLabelStyle}font-weight:700;color:#374151;">Publication</label>
@@ -937,6 +945,10 @@ function openDetailModal(projectId) {
       if (interviewDatePayload) {
         updates.interviewDate = interviewDatePayload.interviewDate;
         updates.interviewReminderSent = false;
+        // Mirror the date onto the deadline grid so the "Conduct Interview"
+        // row reflects the scheduled date without the writer having to
+        // re-enter it. Stays editable by admin like any other deadline.
+        updates["deadlines.interview"] = interviewDatePayload.interviewDate;
         updates.activity = arrayUnion(
           { text: `${checked ? "completed" : "uncompleted"}: ${step}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() },
           { text: `scheduled the interview for ${interviewDatePayload.interviewDate}`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() },
@@ -945,6 +957,8 @@ function openDetailModal(projectId) {
       if (step === "Interview Scheduled" && !checked) {
         updates.interviewDate = deleteField();
         updates.interviewReminderSent = deleteField();
+        // Clear the mirrored deadline too so the row resets cleanly.
+        updates["deadlines.interview"] = deleteField();
       }
       if (checklistPayload) {
         // Stamp who/when confirmed the checklist so admins can audit it later.

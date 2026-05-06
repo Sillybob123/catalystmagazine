@@ -243,6 +243,12 @@ export const onRequestPost = async ({ request, env }) => {
               projectId: r.projectId,
               projectTitle: r.project?.title || null,
               subject: r.subject || null,
+              // Plain-text body so admins can read what was actually sent.
+              // Cap well below firestore's 1MiB doc limit (200 entries × 2.5KB ≈ 500KB).
+              bodyText: htmlToPlainPreview(r.html, 2500),
+              // Why the bot sent it — a short, user-facing explanation
+              // computed from the same signals the email logic used.
+              reason: reasonForReminder(r),
               daysInactive: r.daysInactive ?? null,
               daysUntilDeadline: r.daysUntilDeadline ?? null,
               projectActivityAtSend: lastActivityIso(r.project),
@@ -287,6 +293,10 @@ export const onRequestPost = async ({ request, env }) => {
                 projectId: item.projectId,
                 projectTitle: item.project?.title || null,
                 subject: b.subject || null,
+                // For bundled emails every row gets the same body/reason —
+                // it was one email covering multiple projects.
+                bodyText: htmlToPlainPreview(b.html, 2500),
+                reason: reasonForReminder(item),
                 bundled: true,
                 daysInactive: item.daysInactive ?? null,
                 daysUntilDeadline: item.daysUntilDeadline ?? null,
@@ -520,6 +530,69 @@ function lastActivityIso(project) {
   } catch {
     return null;
   }
+}
+
+// Plain-English explanation of why the bot picked this reminder, computed
+// from the same signals the reminder logic used. Shown to admins next to
+// the email body so they can audit the bot's decisions without reading code.
+function reasonForReminder(r) {
+  if (!r) return null;
+  const k = r.kind;
+  const dDeadline = r.daysUntilDeadline;
+  const dInactive = r.daysInactive;
+  const dInterview = r.daysUntilInterview;
+  const dSinceInterview = r.daysSinceInterview;
+  const dSinceApproval = r.daysSinceApproval;
+  const dSinceAssigned = r.daysSinceAssigned;
+
+  if (k === "deadline-overdue") {
+    const past = dDeadline != null ? Math.abs(dDeadline) : null;
+    return past != null
+      ? `Deadline passed ${past} day${past === 1 ? "" : "s"} ago and the project hasn't been marked complete.`
+      : `Deadline has passed and the project isn't marked complete.`;
+  }
+  if (k === "deadline-1d") return `Deadline is tomorrow — final reminder before it's due.`;
+  if (k === "deadline-3d") {
+    return dDeadline != null
+      ? `Deadline is in ${dDeadline} day${dDeadline === 1 ? "" : "s"} — early heads-up.`
+      : `Deadline is approaching.`;
+  }
+  if (k === "idle") {
+    return dInactive != null
+      ? `No project activity for ${dInactive} day${dInactive === 1 ? "" : "s"} — checking in.`
+      : `Project has been idle — checking in.`;
+  }
+  if (k === "editor-idle") {
+    return dInactive != null
+      ? `Editor hasn't moved this draft in ${dInactive} day${dInactive === 1 ? "" : "s"}.`
+      : `Editor hasn't moved this draft recently.`;
+  }
+  if (k === "editor-just-assigned") {
+    return dSinceAssigned != null
+      ? `Editor was assigned ${dSinceAssigned} day${dSinceAssigned === 1 ? "" : "s"} ago — gentle nudge to start reviewing.`
+      : `Editor was just assigned — nudge to start reviewing.`;
+  }
+  if (k === "interview-prep") {
+    return dInterview != null
+      ? `Interview is in ${dInterview} day${dInterview === 1 ? "" : "s"} — sending prep tips.`
+      : `Interview coming up — sending prep tips.`;
+  }
+  if (k === "interview-followup") {
+    return dSinceInterview != null
+      ? `Interview happened ${dSinceInterview} day${dSinceInterview === 1 ? "" : "s"} ago and "Interview Complete" hasn't been checked off.`
+      : `Interview already happened but "Interview Complete" hasn't been checked off.`;
+  }
+  if (k === "post-approval-idle") {
+    return dSinceApproval != null
+      ? `Proposal approved ${dSinceApproval} day${dSinceApproval === 1 ? "" : "s"} ago and the writer hasn't moved it.`
+      : `Proposal approved a while ago and the writer hasn't moved it.`;
+  }
+  if (k === "proposal-no-schedule") {
+    return dSinceApproval != null
+      ? `Proposal was approved ${dSinceApproval} day${dSinceApproval === 1 ? "" : "s"} ago but no interview date is on file yet.`
+      : `Proposal was approved but no interview date is on file yet.`;
+  }
+  return `Reminder of type "${k}".`;
 }
 
 // Tiny REST-Firestore decoder so we can read back nested email-log rows. Mirrors

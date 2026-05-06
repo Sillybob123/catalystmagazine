@@ -985,8 +985,15 @@ export function groupRemindersByRecipient(reminders) {
           projectId: r.projectId,
           projectTitle: r.project?.title || "(untitled)",
           deadline: r.deadline || null,
-          daysUntilDeadline: r.daysUntilDeadline || null,
-          daysInactive: r.daysInactive || null,
+          daysUntilDeadline: r.daysUntilDeadline ?? null,
+          daysInactive: r.daysInactive ?? null,
+          // Carry the rest of the reminder signals + project ref so the
+          // email-log entry can compute a precise per-item "why" / lastActivity.
+          daysUntilInterview: r.daysUntilInterview ?? null,
+          daysSinceInterview: r.daysSinceInterview ?? null,
+          daysSinceApproval: r.daysSinceApproval ?? null,
+          daysSinceAssigned: r.daysSinceAssigned ?? null,
+          project: r.project || null,
         })),
         // Carry every key so the run.js loop can stamp all of them as sent.
         keys: bucket.items.map((r) => r.key),
