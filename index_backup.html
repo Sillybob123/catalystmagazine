@@ -62,10 +62,25 @@
     <link rel="preload" href="css/styles.css" as="style">
     <link rel="stylesheet" href="css/styles.css">
 
-    <!-- Preload the FIRST frame (frame_0001.webp) — that's the initial hero
-         state (buildings parted to far edges). The full sequence is preloaded
-         by JS; this just gets the first paint earlier. -->
-    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0001.webp" fetchpriority="high">
+    <!-- ── Hero-frame priority preloads ─────────────────────────────────
+         The browser starts these in parallel with the page download, so by
+         the time JS boots and the preloader runs, these are already cached
+         (or mid-flight). Big LCP win on first visit.
+
+           • frame_0001 — desktop initial paint (bounce-in start pose)
+           • frame_0008, _0014, _0024 — early intro keyframes (covers the
+             first ~10% of scroll smoothly)
+           • frame_0068 — MOBILE initial paint (mobile starts at RESUME_FRAME=67,
+             so frame_0068.webp is what mobile users see first)
+         The remaining 200+ frames stream in via the JS preloader after first
+         paint — they're not LCP-critical. ─────────────────────────────────── -->
+    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0001.webp" fetchpriority="high" media="(min-width: 769px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0068.webp" fetchpriority="high" media="(max-width: 768px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0008.webp" fetchpriority="high" media="(min-width: 769px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0014.webp" media="(min-width: 769px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0024.webp" media="(min-width: 769px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0080.webp" media="(max-width: 768px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0100.webp" media="(max-width: 768px)">
 
     <!--
       Catalyst Homepage — v5 (page-wide scroll-scrubbed canvas backdrop)
@@ -1047,7 +1062,12 @@
                 var isPhone = window.innerWidth < 768;
                 var mobileStartFrame = RESUME_FRAME;
                 var initialFrame = isPhone ? mobileStartFrame : 0;
-                var dpr = Math.min(window.devicePixelRatio || 1, isPhone ? 1.5 : 2);
+                // DPR cap. We fill the canvas backing store at this multiplier.
+                // - Desktop: 2 (anything higher is wasted; visual acuity ceiling).
+                // - Mobile: 2 (was 1.5 — bumped back up for sharper retina mobile.
+                //   Modern phones handle the fill cost easily and the source is
+                //   high enough resolution to actually show the difference.)
+                var dpr = Math.min(window.devicePixelRatio || 1, 2);
 
                 // ── Sizing ────────────────────────────────────────────────
                 // The canvas is position:fixed, full viewport. Object-fit:cover
@@ -1129,41 +1149,109 @@
                     setTimeout(function () { loader.hidden = true; }, 460);
                 }
 
-                function preload() {
-                    return new Promise(function (resolve) {
-                        for (var i = 1; i <= FRAME_COUNT; i++) {
-                            (function (idx) {
-                                var img = new Image();
-                                img.decoding = 'async';
-                                img.onload = function () {
-                                    frames[idx - 1] = img;
-                                    loaded++;
-                                    setLoaderProgress(loaded / FRAME_COUNT);
+                // ── Tiered preloader ──────────────────────────────────────
+                // Two-phase strategy for fastest possible time-to-interactive:
+                //
+                //   PRIORITY BATCH: a window of ~28 frames around the initial
+                //     visible frame (initialFrame ± 14). These cover the
+                //     first ~6-12% of scroll plus the buffer immediately
+                //     before/after, so the user can start scrolling
+                //     smoothly before the full sequence is loaded.
+                //
+                //   BACKGROUND BATCH: everything else, fired in chunks of
+                //     16 at a time so the network isn't fully saturated
+                //     and the priority frames win bandwidth.
+                //
+                // preload() returns { priorityReady, allReady }:
+                //   • priorityReady resolves the moment the priority batch
+                //     is done — that's when we mount the scrub and let the
+                //     user interact.
+                //   • allReady resolves when every frame is loaded AND
+                //     decoded. We use it to log completion (no UX blocker).
+                //
+                // drawFrame() already guards against missing frames (returns
+                // early if the requested frame hasn't loaded yet), so
+                // scrolling past a not-yet-loaded frame is a no-op rather
+                // than a glitch — the canvas stays on the most-recent
+                // frame until the new one streams in.
+                var PRIORITY_RADIUS = 14;     // ±14 frames around initialFrame
+                var BG_CHUNK_SIZE   = 16;     // background fetches per wave
 
-                                    // Initial hero state. Desktop starts at
-                                    // frame 0; mobile starts at RESUME_FRAME
-                                    // so the intro pose is skipped on phones.
-                                    if (idx === initialFrame + 1 && !firstReady) {
-                                        firstReady = true;
-                                        srcW = img.naturalWidth;
-                                        srcH = img.naturalHeight;
-                                        recomputeCover();
-                                        currentFrame = initialFrame;
-                                        drawFrame(currentFrame);
-                                        canvas.classList.add('is-ready');
-                                    }
-                                    if (loaded >= FRAME_COUNT) decodeAll().then(resolve);
-                                };
-                                img.onerror = function () {
-                                    // Don't block the rest of the sequence on a single failed frame
-                                    loaded++;
-                                    setLoaderProgress(loaded / FRAME_COUNT);
-                                    if (loaded >= FRAME_COUNT) decodeAll().then(resolve);
-                                };
-                                img.src = frameURL(idx);
-                            })(i);
-                        }
+                function loadFrame(idx) {
+                    return new Promise(function (resolve) {
+                        var img = new Image();
+                        img.decoding = 'async';
+                        img.onload = function () {
+                            frames[idx - 1] = img;
+                            loaded++;
+                            setLoaderProgress(loaded / FRAME_COUNT);
+
+                            // Initial paint — first frame in the priority
+                            // batch that hits the initialFrame index.
+                            if (idx === initialFrame + 1 && !firstReady) {
+                                firstReady = true;
+                                srcW = img.naturalWidth;
+                                srcH = img.naturalHeight;
+                                recomputeCover();
+                                currentFrame = initialFrame;
+                                drawFrame(currentFrame);
+                                canvas.classList.add('is-ready');
+                            }
+                            resolve();
+                        };
+                        img.onerror = function () {
+                            // Don't block the rest of the sequence on a
+                            // single failed frame.
+                            loaded++;
+                            setLoaderProgress(loaded / FRAME_COUNT);
+                            resolve();
+                        };
+                        img.src = frameURL(idx);
                     });
+                }
+
+                function preload() {
+                    // Build the priority frame list: a window centered on
+                    // initialFrame, clamped to [1, FRAME_COUNT].
+                    var priorityIdx = [];
+                    var lo = Math.max(1, (initialFrame + 1) - PRIORITY_RADIUS);
+                    var hi = Math.min(FRAME_COUNT, (initialFrame + 1) + PRIORITY_RADIUS);
+                    for (var i = lo; i <= hi; i++) priorityIdx.push(i);
+
+                    // Background = everything not in the priority window.
+                    var prioritySet = Object.create(null);
+                    priorityIdx.forEach(function (i) { prioritySet[i] = true; });
+                    var backgroundIdx = [];
+                    for (var j = 1; j <= FRAME_COUNT; j++) {
+                        if (!prioritySet[j]) backgroundIdx.push(j);
+                    }
+
+                    // Phase 1: fire all priority loads in parallel, wait
+                    // for them to finish.
+                    var priorityReady = Promise.all(priorityIdx.map(loadFrame));
+
+                    // Phase 2: once priority is done, fire background in
+                    // chunks. Each chunk waits for the previous so we
+                    // don't blow up the connection pool with 200+ inflight
+                    // requests competing with everything else on the page.
+                    var allReady = priorityReady.then(function () {
+                        var chunks = [];
+                        for (var k = 0; k < backgroundIdx.length; k += BG_CHUNK_SIZE) {
+                            chunks.push(backgroundIdx.slice(k, k + BG_CHUNK_SIZE));
+                        }
+                        return chunks.reduce(function (chain, chunk) {
+                            return chain.then(function () {
+                                return Promise.all(chunk.map(loadFrame));
+                            });
+                        }, Promise.resolve());
+                    }).then(function () {
+                        // Once everything is network-loaded, decode/warm
+                        // the GPU texture cache for all frames so the
+                        // scrub never hits a first-paint decode stall.
+                        return decodeAll();
+                    });
+
+                    return { priorityReady: priorityReady, allReady: allReady };
                 }
 
                 // After every frame has been network-loaded, force a full
@@ -1403,9 +1491,20 @@
                 }, { passive: true });
 
                 // ── Boot ──────────────────────────────────────────────────
-                preload().then(function () {
+                // Mount the scrub as soon as the PRIORITY batch is ready —
+                // the user can start scrolling immediately, with the full
+                // sequence streaming in in the background. drawFrame()
+                // safely no-ops on frames that haven't loaded yet.
+                var loaders = preload();
+                loaders.priorityReady.then(function () {
                     hideLoader();
                     mountScrollTrigger();
+                });
+                // We also let allReady run to completion (it triggers
+                // decodeAll for the full sequence), but we don't gate any
+                // UX on it — once priority is in, the page is interactive.
+                loaders.allReady.then(function () {
+                    /* full sequence ready + decoded — no further UX action */
                 });
             }
 

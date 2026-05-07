@@ -49,7 +49,7 @@ FRAME_EXT     = '.webp'
 FRAME_PAD     = 4
 
 # Match scripts/extract-hero-frames.js (libwebp at q=86, method=6)
-WEBP_QUALITY  = 86
+WEBP_QUALITY  = 92
 WEBP_METHOD   = 6
 
 
