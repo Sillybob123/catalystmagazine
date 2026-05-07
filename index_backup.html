@@ -416,12 +416,16 @@
             transform: translate3d(0, 24px, 0);
             will-change: opacity, transform;
         }
-        /* When the JS isn't available (no GSAP / reduced-motion / no-JS),
-           force articles visible — never hide them as a fallback. */
+        /* Force articles visible whenever .is-visible is set (or for the
+           no-JS / reduced-motion fallback). !important is needed because
+           GSAP writes inline opacity/transform on the strip during the
+           scrubbed reveal — without !important, the IntersectionObserver
+           safety path can lose the specificity battle when the user has
+           scrolled past the GSAP trigger window before it mounted. */
         body[data-page="home"] main > section.featured-articles-strip.is-visible,
         .no-hero-scrub body[data-page="home"] main > section.featured-articles-strip {
-            opacity: 1;
-            transform: none;
+            opacity: 1 !important;
+            transform: none !important;
         }
         /* The very last section opens up to a fully-opaque footing so the
            page resolves cleanly at the bottom. */
@@ -1539,11 +1543,74 @@
                     });
                 }
 
-                // ── ScrollTrigger ─────────────────────────────────────────
+                // ── Featured-articles reveal — bulletproof safety net ─────
+                //
+                // Originally the strip's reveal tween lived inside
+                // mountScrollTrigger(), which is gated on the hero canvas
+                // priorityReady promise. That meant: if the user starts
+                // scrolling before priority frames have downloaded, the
+                // strip stays at opacity:0 and the user blows past the
+                // articles without seeing them. Bug.
+                //
+                // Fix: an IntersectionObserver, mounted IMMEDIATELY on init
+                // (independent of canvas, GSAP, fonts, anything). The moment
+                // the strip enters the viewport — for any reason, at any
+                // scroll position — IO fires onIntersect which adds the
+                // .is-visible class. The CSS fallback rule then forces
+                // opacity:1 + transform:none.
+                //
+                // The polished GSAP scrubbed tween still mounts later as
+                // the "premium" reveal motion when canvas is ready. Both
+                // paths add .is-visible; calls are idempotent.
+                //
+                // Belt-and-suspenders. Articles will ALWAYS show.
+                var articlesRevealMounted = false;
+                function mountArticlesReveal() {
+                    if (articlesRevealMounted) return;
+                    var strip = document.getElementById('featured-articles-strip');
+                    if (!strip) return;
+                    articlesRevealMounted = true;
+
+                    // 1. IntersectionObserver — the bulletproof safety net.
+                    //    Fires the moment the strip is even 1% visible in
+                    //    the viewport, regardless of scroll direction or
+                    //    speed. Works in every modern browser; no library.
+                    if ('IntersectionObserver' in window) {
+                        var io = new IntersectionObserver(function (entries) {
+                            entries.forEach(function (entry) {
+                                if (entry.isIntersecting) {
+                                    strip.classList.add('is-visible');
+                                }
+                            });
+                        }, {
+                            // Fire a bit BEFORE the strip enters the viewport
+                            // so the fade is well underway by the time the
+                            // user actually sees it.
+                            rootMargin: '0px 0px -10% 0px',
+                            threshold: [0, 0.01, 0.1]
+                        });
+                        io.observe(strip);
+                    } else {
+                        // Pre-IE-killing fallback: just force visible. No
+                        // animation, but content is reachable.
+                        strip.classList.add('is-visible');
+                    }
+
+                    // 2. Final guard: if for any reason the IO doesn't fire
+                    //    within 1.5s of init AND the strip's bounding box
+                    //    is in the viewport, force visible. Defensive only.
+                    setTimeout(function () {
+                        if (strip.classList.contains('is-visible')) return;
+                        var rect = strip.getBoundingClientRect();
+                        var inView = rect.top < window.innerHeight && rect.bottom > 0;
+                        if (inView) strip.classList.add('is-visible');
+                    }, 1500);
+                }
+
+                // Legacy alias kept for in-flight code paths in
+                // mountScrollTrigger() that call the older name.
                 function revealArticlesFallback() {
-                    // Used by all non-scrub paths (no GSAP / reduced-motion)
-                    // so the article strip never stays invisible if the
-                    // scrub doesn't mount.
+                    mountArticlesReveal();
                     var strip = document.getElementById('featured-articles-strip');
                     if (strip) strip.classList.add('is-visible');
                 }
@@ -1665,7 +1732,7 @@
                     // visible after a scroll-up past the hero start.
                     var articlesStrip = document.getElementById('featured-articles-strip');
                     if (articlesStrip) {
-                        gsap.to(articlesStrip, {
+                        var articlesTween = gsap.to(articlesStrip, {
                             opacity: 1,
                             y: 0,
                             ease: 'power2.out',
@@ -1680,6 +1747,24 @@
                                 onLeaveBack: function () { articlesStrip.classList.remove('is-visible'); }
                             }
                         });
+
+                        // If the user has ALREADY scrolled past the trigger's
+                        // start by the time we mount (e.g. they scrolled
+                        // during the preload), ScrollTrigger's lifecycle
+                        // callbacks won't fire on its own — we need to ask
+                        // it for the current progress and act on it. If
+                        // we're inside or past the reveal window, force
+                        // visible immediately. The IntersectionObserver
+                        // already handles this, but doing it here too makes
+                        // the GSAP path behave correctly without waiting
+                        // for the next IO tick.
+                        var st = articlesTween.scrollTrigger;
+                        if (st && st.progress >= 0.001) {
+                            articlesStrip.classList.add('is-visible');
+                            // Set the tween to its end state too so the
+                            // GSAP-managed inline opacity matches.
+                            gsap.set(articlesStrip, { opacity: 1, y: 0 });
+                        }
                     }
 
                     // Scroll cue fades on first scroll, but the scrubbed tween
@@ -1714,9 +1799,19 @@
                 }, { passive: true });
 
                 // ── Boot ──────────────────────────────────────────────────
-                // Mount the scrub as soon as the PRIORITY batch is ready —
-                // the user can start scrolling immediately, with the full
-                // sequence streaming in in the background. drawFrame()
+                // CRITICAL: mount the article-strip reveal IMMEDIATELY,
+                // before any preload work. The strip's visibility must
+                // never be gated on hero-frame readiness — if it were,
+                // a user who scrolls before priority frames load would
+                // blow past the articles without seeing them. The
+                // IntersectionObserver inside mountArticlesReveal()
+                // guarantees the strip flips to is-visible the instant
+                // it enters the viewport, regardless of canvas state.
+                mountArticlesReveal();
+
+                // Mount the canvas scrub as soon as the PRIORITY batch is
+                // ready — the user can start scrolling earlier, with the
+                // full sequence streaming in in the background. drawFrame()
                 // safely no-ops on frames that haven't loaded yet.
                 var loaders = preload();
                 loaders.priorityReady.then(function () {
