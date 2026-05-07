@@ -1178,14 +1178,16 @@
                 // every scrub frame. Cap at 2 on desktop, 1.5 on phones (where
                 // the canvas already shrinks via contain-fit math).
                 var isPhone = window.innerWidth < 768;
+                var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+                            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                var useMemorySafeFrames = isPhone || isIOS;
                 var mobileStartFrame = RESUME_FRAME;
                 var initialFrame = isPhone ? mobileStartFrame : 0;
                 // DPR cap. We fill the canvas backing store at this multiplier.
                 // - Desktop: 2 (anything higher is wasted; visual acuity ceiling).
-                // - Mobile: 2 (was 1.5 — bumped back up for sharper retina mobile.
-                //   Modern phones handle the fill cost easily and the source is
-                //   high enough resolution to actually show the difference.)
-                var dpr = Math.min(window.devicePixelRatio || 1, 2);
+                // - Mobile/iOS: 1.5 to keep the canvas backing store small
+                //   enough for Safari's tighter page memory limits.
+                var dpr = Math.min(window.devicePixelRatio || 1, useMemorySafeFrames ? 1.5 : 2);
 
                 // ── Sizing ────────────────────────────────────────────────
                 // The canvas is position:fixed, full viewport. Object-fit:cover
@@ -1276,6 +1278,30 @@
                     setLoaderProgress(loaded / FRAME_COUNT);
                 }
 
+                function releaseFrame(idx) {
+                    var frame = frames[idx];
+                    if (!frame) return;
+                    if (typeof frame.close === 'function') {
+                        try { frame.close(); } catch (e) {}
+                    }
+                    frames[idx] = null;
+                }
+
+                function trimMobileFrameCache(centerIdx) {
+                    if (!useMemorySafeFrames) return;
+
+                    var keepRadius = 18;
+                    var keepInitial = initialFrame;
+                    var keepFinal = FRAME_COUNT - 1;
+                    for (var i = 0; i < frames.length; i++) {
+                        if (!frames[i]) continue;
+                        if (Math.abs(i - centerIdx) <= keepRadius) continue;
+                        if (Math.abs(i - keepInitial) <= 2) continue;
+                        if (Math.abs(i - keepFinal) <= 2) continue;
+                        releaseFrame(i);
+                    }
+                }
+
                 // ── Staged preloader ──────────────────────────────────────
                 //
                 //   T0  FIRST FRAME     : exactly the initial visible frame.
@@ -1284,26 +1310,28 @@
                 //   T1  NEIGHBORS       : ±3 frames around the initial frame,
                 //                         started after T0 or on interaction.
                 //
-                //   T2  SKELETON FRAMES : every 16th frame across the
+                //   T2  SKELETON FRAMES : sparse keyframes across the
                 //                         sequence, deferred until after T0.
                 //
                 //   T3  BACKGROUND FILL : everything else, delayed and
                 //                         throttled to two starts per idle
                 //                         tick so it cannot stampede the
                 //                         network during page startup.
+                //                         Disabled on mobile/iOS.
                 //
                 // preload() returns { priorityReady, allReady }:
                 //   • priorityReady : T0 done (we mount the scrub).
-                //   • allReady      : every frame loaded AND decoded.
+                //   • allReady      : every frame loaded AND decoded, except
+                //                     mobile/iOS where there is no full fill.
                 //
                 // drawFrame() guards against missing frames (no-op if the
                 // image hasn't loaded yet), so scrolling past an unloaded
                 // frame is a no-op rather than a glitch — the canvas stays
                 // on the most-recent frame until the new one streams in.
                 // ─────────────────────────────────────────────────────────
-                var PRIORITY_RADIUS  = 3;     // ±3 frames around initialFrame after the first paint
-                var SKELETON_STRIDE  = 16;    // sparse safety net, deferred until after first paint
-                var JIT_LOOKAHEAD    = 10;    // load this many frames ahead of currentFrame as user scrolls
+                var PRIORITY_RADIUS  = useMemorySafeFrames ? 2 : 3;      // neighbors around initialFrame
+                var SKELETON_STRIDE  = useMemorySafeFrames ? 24 : 16;    // sparse safety net after first paint
+                var JIT_LOOKAHEAD    = useMemorySafeFrames ? 6 : 10;     // next frames in scroll direction
 
                 function loadFrame(idx, fetchPri) {
                     if (frames[idx - 1]) return Promise.resolve();
@@ -1339,7 +1367,9 @@
                             // scrub gets GPU-friendly bitmaps as soon as
                             // possible. Background frames are promoted
                             // later by decodeAll().
-                            if (fetchPri === 'high' && typeof createImageBitmap === 'function') {
+                            if (!useMemorySafeFrames &&
+                                fetchPri === 'high' &&
+                                typeof createImageBitmap === 'function') {
                                 createImageBitmap(img, {
                                     imageOrientation: 'from-image',
                                     premultiplyAlpha: 'premultiply'
@@ -1348,6 +1378,9 @@
                                     // so replacing in-place is safe.
                                     frames[idx - 1] = bm;
                                 }).catch(function () { /* keep <img> on failure */ });
+                            }
+                            if (idx === currentFrame + 1) {
+                                requestRender();
                             }
                             resolve();
                         };
@@ -1450,6 +1483,7 @@
                         }
                     }
                     function startBackgroundFill() {
+                        if (useMemorySafeFrames) return;
                         if (backgroundStarted || bgRunning) return;
                         backgroundStarted = true;
                         rIC(pumpBackground, { timeout: 2500 });
@@ -1475,17 +1509,20 @@
                     });
 
                     // ── allReady — resolves when the full sequence is in.
-                    // Used only for decodeAll(); no UX gate.
-                    var allReady = new Promise(function (resolve) {
-                        var poll = function () {
-                            if (loaded >= FRAME_COUNT) {
-                                decodeAll().then(resolve);
-                                return;
-                            }
-                            setTimeout(poll, 200);
-                        };
-                        poll();
-                    });
+                    // Mobile/iOS intentionally never loads or decodes the
+                    // full sequence; it keeps a small sliding cache instead.
+                    var allReady = useMemorySafeFrames
+                        ? firstFrameReady
+                        : new Promise(function (resolve) {
+                            var poll = function () {
+                                if (loaded >= FRAME_COUNT) {
+                                    decodeAll().then(resolve);
+                                    return;
+                                }
+                                setTimeout(poll, 200);
+                            };
+                            poll();
+                        });
 
                     return { priorityReady: firstFrameReady, allReady: allReady };
                 }
@@ -1504,6 +1541,10 @@
                     lastJitDir   = dir;
                     lastJitFrame = currentIdx;
 
+                    if (!frames[currentIdx]) {
+                        loadFrame(currentIdx + 1, 'high');
+                    }
+
                     // Fire loads for the next JIT_LOOKAHEAD frames in the
                     // scroll direction. Skip already-loaded ones; loadFrame
                     // dedupes via the cached check inside.
@@ -1516,6 +1557,8 @@
                             }
                         }
                     }
+
+                    trimMobileFrameCache(currentIdx);
                 }
 
                 // Hides the hardcoded LCP still <img> once the canvas is
@@ -1541,6 +1584,8 @@
                 // renderer. Browsers without createImageBitmap (very rare
                 // now) fall back to img.decode() + a tiny warm-up draw.
                 function decodeAll() {
+                    if (useMemorySafeFrames) return Promise.resolve();
+
                     var supportsBitmap = (typeof createImageBitmap === 'function');
                     var warm = document.createElement('canvas');
                     warm.width = 8; warm.height = 8;
@@ -1601,6 +1646,7 @@
                     // This is the "Apple trick": never freeze the canvas
                     // on a missing frame; always show *something* close.
                     var img = frames[i];
+                    var drawnIdx = i;
                     if (!img) {
                         var radius = 0;
                         var maxRadius = FRAME_COUNT;
@@ -1608,10 +1654,12 @@
                             radius++;
                             if (i + radius < FRAME_COUNT && frames[i + radius]) {
                                 img = frames[i + radius];
+                                drawnIdx = i + radius;
                                 break;
                             }
                             if (i - radius >= 0 && frames[i - radius]) {
                                 img = frames[i - radius];
+                                drawnIdx = i - radius;
                                 break;
                             }
                         }
@@ -1622,7 +1670,7 @@
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, drawX, drawY, drawW, drawH);
-                    drawnFrame = i;
+                    drawnFrame = drawnIdx;
                 }
 
                 function requestRender() {
