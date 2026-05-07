@@ -70,6 +70,12 @@ def parse_args() -> argparse.Namespace:
                    help='Cap the maximum monument-shift (in source pixels) below the natural '
                         'headroom. Use a small value (e.g. 120) for a subtle bounce-in intro. '
                         'Default: full headroom (monument lands at the right edge).')
+    p.add_argument('--dir', type=str, default=None,
+                   help='Override the frames directory (default: public/assets/hero-frames). '
+                        'Use this to extend a low-res sibling sequence at e.g. '
+                        'public/assets/hero-frames/low.')
+    p.add_argument('--quality', type=int, default=WEBP_QUALITY,
+                   help=f'WebP quality for the synthesized frames (default: {WEBP_QUALITY}).')
     return p.parse_args()
 
 
@@ -135,6 +141,11 @@ def renumber_existing(existing: list[Path], shift: int) -> None:
 
 def main() -> int:
     args = parse_args()
+
+    # Allow callers to point at a sibling directory (e.g. low-res variant).
+    global FRAMES_DIR
+    if args.dir:
+        FRAMES_DIR = Path(args.dir)
 
     if not FRAMES_DIR.exists():
         print(f'[extend] frames dir not found: {FRAMES_DIR}', file=sys.stderr)
@@ -218,7 +229,7 @@ def main() -> int:
         Image.fromarray(frame, 'RGB').save(
             out_path,
             'WEBP',
-            quality=WEBP_QUALITY,
+            quality=args.quality,
             method=WEBP_METHOD,
         )
         if out_idx == 1 or out_idx == n or out_idx % 8 == 0:

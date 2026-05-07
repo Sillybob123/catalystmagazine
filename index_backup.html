@@ -67,20 +67,24 @@
          the time JS boots and the preloader runs, these are already cached
          (or mid-flight). Big LCP win on first visit.
 
+         Desktop: full 4K sequence (public/assets/hero-frames/)
+         Mobile : low-res 1280×720 sequence (public/assets/hero-frames/low/)
+                  ~5× smaller, since the canvas renders at ≤460px wide on
+                  phones anyway. Picked by media query so each form factor
+                  preloads from the path the JS will actually fetch.
+
            • frame_0001 — desktop initial paint (bounce-in start pose)
-           • frame_0008, _0014, _0024 — early intro keyframes (covers the
-             first ~10% of scroll smoothly)
-           • frame_0068 — MOBILE initial paint (mobile starts at RESUME_FRAME=67,
-             so frame_0068.webp is what mobile users see first)
-         The remaining 200+ frames stream in via the JS preloader after first
-         paint — they're not LCP-critical. ─────────────────────────────────── -->
+           • frame_0008, _0014, _0024 — early intro keyframes
+           • frame_0068 — MOBILE initial paint (RESUME_FRAME=67 + 1)
+           • frame_0080, _0100 — early mobile keyframes
+         ──────────────────────────────────────────────────────────────── -->
     <link rel="preload" as="image" href="public/assets/hero-frames/frame_0001.webp" fetchpriority="high" media="(min-width: 769px)">
-    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0068.webp" fetchpriority="high" media="(max-width: 768px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/low/frame_0068.webp" fetchpriority="high" media="(max-width: 768px)">
     <link rel="preload" as="image" href="public/assets/hero-frames/frame_0008.webp" fetchpriority="high" media="(min-width: 769px)">
     <link rel="preload" as="image" href="public/assets/hero-frames/frame_0014.webp" media="(min-width: 769px)">
     <link rel="preload" as="image" href="public/assets/hero-frames/frame_0024.webp" media="(min-width: 769px)">
-    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0080.webp" media="(max-width: 768px)">
-    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0100.webp" media="(max-width: 768px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/low/frame_0080.webp" media="(max-width: 768px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/low/frame_0100.webp" media="(max-width: 768px)">
 
     <!--
       Catalyst Homepage — v5 (page-wide scroll-scrubbed canvas backdrop)
@@ -141,6 +145,68 @@
             transition: opacity 520ms cubic-bezier(.2,.7,.2,1);
         }
         .hero-canvas.is-ready { opacity: 1; }
+
+        /* ─────────────────────────────────────────────────────────────────
+         *  Hardcoded LCP "still" — paints during HTML parse, before any JS.
+         *
+         *  Layout MUST match how the canvas will draw the same frame, so
+         *  there's no visual jump when JS swaps from <img> to <canvas>.
+         *  We replicate the JS draw math:
+         *
+         *    Desktop: object-fit:cover + bottom anchor + 96px header offset
+         *      → object-fit: cover; object-position: 50% 100%; with the
+         *        canvas-offset baked into top.
+         *    Mobile : contain-by-width, anchored at 44dvh
+         *      → use object-fit: contain on a sized container.
+         *
+         *  Once the canvas is_ready, JS adds .canvas-took-over to fade out
+         *  the still. Pure CSS handles the position/sizing.
+         * ───────────────────────────────────────────────────────────────── */
+        .hero-canvas-still {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            transition: opacity 320ms cubic-bezier(.2,.7,.2,1);
+            opacity: 1;
+            display: block;
+        }
+        .hero-canvas-still img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+            object-position: 50% 100%;     /* bottom-anchor (matches canvas) */
+            /* Push the buildings down by the same amount as the canvas's
+               --hero-canvas-offset so the dome doesn't sit under the header. */
+            transform: translateY(var(--hero-canvas-offset, 96px));
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        /* Once the canvas takes over, fade the still out (the canvas will
+           have already faded IN to the same image). */
+        .hero-canvas.is-ready ~ .hero-canvas-still,
+        .hero-canvas-still.canvas-took-over {
+            opacity: 0;
+        }
+        /* Mobile: contain-by-width math, anchored at 44dvh from the top.
+           Replicates JS drawY = (dstH * 0.44) - drawH for mobile. */
+        @media (max-width: 768px) {
+            .hero-canvas-still img {
+                object-fit: contain;
+                object-position: 50% 44%;
+                transform: none;            /* no header offset on mobile */
+                width: 92%;
+                height: auto;
+                max-height: 46dvh;
+                margin: 0 auto;
+                position: absolute;
+                top: 0;
+                left: 4%;
+                right: 4%;
+            }
+        }
 
         /* Light ground shadow only. Keep the artwork itself unobscured. */
         .page-canvas-backdrop::after {
@@ -736,8 +802,26 @@
         <div class="dc-silhouette"></div>
     </div>
 
-    <!-- Page-wide canvas backdrop. Stays fixed behind every section. -->
+    <!-- Page-wide canvas backdrop. Stays fixed behind every section.
+         The <img class="hero-canvas-still"> below paints DURING HTML parse,
+         before any JS runs — that's our LCP. Once the canvas is ready, JS
+         flips a class on it and the still fades out behind the canvas.
+         Two stills (desktop / mobile) chosen by media query so each form
+         factor paints the same frame the canvas will start on. -->
     <div class="page-canvas-backdrop" aria-hidden="true">
+        <picture class="hero-canvas-still" id="hero-canvas-still">
+            <!-- Mobile gets the low-res 1280×720 still (matches what the
+                 connection-aware JS preloader will fetch — no double load). -->
+            <source media="(max-width: 768px)"
+                    srcset="public/assets/hero-frames/low/frame_0068.webp"
+                    width="1280" height="720">
+            <img src="public/assets/hero-frames/frame_0001.webp"
+                 alt=""
+                 width="3840" height="2160"
+                 fetchpriority="high"
+                 decoding="async"
+                 draggable="false">
+        </picture>
         <canvas class="hero-canvas" id="hero-canvas"></canvas>
         <div class="hero-loader" id="hero-loader" aria-hidden="true">
             <div class="hero-loader-bar"></div>
@@ -1038,9 +1122,48 @@
             // physical length (no layout shift); only the proxy mapping
             // changes. Set in 0-indexed array space (frame 67 = frame_0068.webp).
             var RESUME_FRAME = 67;
-            var FRAME_PATH   = 'public/assets/hero-frames/';
             var FRAME_PREFIX = 'frame_';
             var FRAME_EXT    = '.webp';
+
+            // ── Phase 4: Connection-aware path selection ──────────────────
+            // Choose between the full 4K sequence and a low-res variant
+            // based on viewport + connection quality. The /low/ folder
+            // contains the same 206 frames at 1280×720 q=82 (~6 MB total
+            // vs ~66 MB for the 4K version).
+            //
+            // Trigger low-res when ANY of:
+            //   • Save-Data header is set (user has explicitly requested it)
+            //   • Effective network type is 2g / slow-2g / 3g
+            //   • Downlink is below ~1.5 Mbps
+            //   • Phone-class viewport (the canvas renders at ≤460px wide
+            //     anyway, so 1280px source is more than enough).
+            // The user can override by adding ?hi=1 or ?lo=1 to the URL,
+            // useful for testing.
+            function pickFramePath() {
+                var loc = (typeof location !== 'undefined') ? location : null;
+                var qs = loc && loc.search || '';
+                if (/\bhi=1\b/.test(qs)) return 'public/assets/hero-frames/';
+                if (/\blo=1\b/.test(qs)) return 'public/assets/hero-frames/low/';
+
+                var conn = (navigator.connection ||
+                            navigator.mozConnection ||
+                            navigator.webkitConnection);
+                if (conn) {
+                    if (conn.saveData) return 'public/assets/hero-frames/low/';
+                    var t = conn.effectiveType || '';
+                    if (t === '2g' || t === 'slow-2g' || t === '3g') {
+                        return 'public/assets/hero-frames/low/';
+                    }
+                    if (typeof conn.downlink === 'number' && conn.downlink < 1.5) {
+                        return 'public/assets/hero-frames/low/';
+                    }
+                }
+                if (window.innerWidth < 768) {
+                    return 'public/assets/hero-frames/low/';
+                }
+                return 'public/assets/hero-frames/';
+            }
+            var FRAME_PATH = pickFramePath();
 
             function pad4(n) { return ('0000' + n).slice(-4); }
             function frameURL(i) { return FRAME_PATH + FRAME_PREFIX + pad4(i) + FRAME_EXT; }
@@ -1149,45 +1272,59 @@
                     setTimeout(function () { loader.hidden = true; }, 460);
                 }
 
-                // ── Tiered preloader ──────────────────────────────────────
-                // Two-phase strategy for fastest possible time-to-interactive:
+                // ── Three-tier preloader ──────────────────────────────────
                 //
-                //   PRIORITY BATCH: a window of ~28 frames around the initial
-                //     visible frame (initialFrame ± 14). These cover the
-                //     first ~6-12% of scroll plus the buffer immediately
-                //     before/after, so the user can start scrolling
-                //     smoothly before the full sequence is loaded.
+                //   T1  PRIORITY WINDOW : the ±14 frames around the initial
+                //                         visible frame (28 frames). Fired
+                //                         in parallel, with the highest
+                //                         fetchPriority. priorityReady
+                //                         resolves when these are done —
+                //                         that's when we mount the scrub
+                //                         and let the user interact.
                 //
-                //   BACKGROUND BATCH: everything else, fired in chunks of
-                //     16 at a time so the network isn't fully saturated
-                //     and the priority frames win bandwidth.
+                //   T2  SKELETON FRAMES : every 10th frame across the entire
+                //                         sequence (~21 frames). Fires in
+                //                         parallel with T1. Even if the
+                //                         user scrolls wildly before the
+                //                         full sequence loads, the canvas
+                //                         can render the nearest skeleton
+                //                         frame — choppy, but never blank.
+                //
+                //   T3  BACKGROUND FILL : everything else. Fired one frame
+                //                         per requestIdleCallback tick so
+                //                         it never blocks the main thread
+                //                         while the user is scrolling or
+                //                         interacting. On browsers without
+                //                         rIC we fall back to setTimeout 0.
                 //
                 // preload() returns { priorityReady, allReady }:
-                //   • priorityReady resolves the moment the priority batch
-                //     is done — that's when we mount the scrub and let the
-                //     user interact.
-                //   • allReady resolves when every frame is loaded AND
-                //     decoded. We use it to log completion (no UX blocker).
+                //   • priorityReady : T1 done (we mount the scrub).
+                //   • allReady      : every frame loaded AND decoded.
                 //
-                // drawFrame() already guards against missing frames (returns
-                // early if the requested frame hasn't loaded yet), so
-                // scrolling past a not-yet-loaded frame is a no-op rather
-                // than a glitch — the canvas stays on the most-recent
-                // frame until the new one streams in.
-                var PRIORITY_RADIUS = 14;     // ±14 frames around initialFrame
-                var BG_CHUNK_SIZE   = 16;     // background fetches per wave
+                // drawFrame() guards against missing frames (no-op if the
+                // image hasn't loaded yet), so scrolling past an unloaded
+                // frame is a no-op rather than a glitch — the canvas stays
+                // on the most-recent frame until the new one streams in.
+                // ─────────────────────────────────────────────────────────
+                var PRIORITY_RADIUS  = 14;    // ±14 frames around initialFrame
+                var SKELETON_STRIDE  = 10;    // every 10th frame in the sparse pass
 
-                function loadFrame(idx) {
+                function loadFrame(idx, fetchPri) {
                     return new Promise(function (resolve) {
+                        if (frames[idx - 1]) { resolve(); return; }   // already loaded
                         var img = new Image();
                         img.decoding = 'async';
+                        // fetchPriority hint where supported (Chrome 102+,
+                        // Safari 17.2+). Falls through silently elsewhere.
+                        if (fetchPri) {
+                            try { img.fetchPriority = fetchPri; } catch (e) { /* not supported */ }
+                        }
                         img.onload = function () {
+                            if (frames[idx - 1]) { resolve(); return; }
                             frames[idx - 1] = img;
                             loaded++;
                             setLoaderProgress(loaded / FRAME_COUNT);
 
-                            // Initial paint — first frame in the priority
-                            // batch that hits the initialFrame index.
                             if (idx === initialFrame + 1 && !firstReady) {
                                 firstReady = true;
                                 srcW = img.naturalWidth;
@@ -1196,12 +1333,28 @@
                                 currentFrame = initialFrame;
                                 drawFrame(currentFrame);
                                 canvas.classList.add('is-ready');
+                                hideStill();
+                            }
+
+                            // Opportunistic bitmap promotion — fires
+                            // immediately for high-priority frames so the
+                            // scrub gets GPU-friendly bitmaps as soon as
+                            // possible. Background frames are promoted
+                            // later by decodeAll().
+                            if (fetchPri === 'high' && typeof createImageBitmap === 'function') {
+                                createImageBitmap(img, {
+                                    imageOrientation: 'from-image',
+                                    premultiplyAlpha: 'premultiply'
+                                }).then(function (bm) {
+                                    // drawImage accepts both <img> and ImageBitmap,
+                                    // so replacing in-place is safe.
+                                    frames[idx - 1] = bm;
+                                }).catch(function () { /* keep <img> on failure */ });
                             }
                             resolve();
                         };
                         img.onerror = function () {
-                            // Don't block the rest of the sequence on a
-                            // single failed frame.
+                            // Single failed frame must not block the rest.
                             loaded++;
                             setLoaderProgress(loaded / FRAME_COUNT);
                             resolve();
@@ -1210,81 +1363,151 @@
                     });
                 }
 
+                // requestIdleCallback shim — fall back to setTimeout 0 on
+                // Safari < 18 (which still doesn't ship rIC).
+                var rIC = window.requestIdleCallback || function (cb) {
+                    return setTimeout(function () {
+                        cb({
+                            didTimeout: false,
+                            timeRemaining: function () { return 16; }
+                        });
+                    }, 0);
+                };
+
                 function preload() {
-                    // Build the priority frame list: a window centered on
-                    // initialFrame, clamped to [1, FRAME_COUNT].
+                    // ── Build the three index lists ──────────────────────
+                    var initialIdx = initialFrame + 1;     // 1-based
                     var priorityIdx = [];
-                    var lo = Math.max(1, (initialFrame + 1) - PRIORITY_RADIUS);
-                    var hi = Math.min(FRAME_COUNT, (initialFrame + 1) + PRIORITY_RADIUS);
+                    var lo = Math.max(1, initialIdx - PRIORITY_RADIUS);
+                    var hi = Math.min(FRAME_COUNT, initialIdx + PRIORITY_RADIUS);
                     for (var i = lo; i <= hi; i++) priorityIdx.push(i);
 
-                    // Background = everything not in the priority window.
-                    var prioritySet = Object.create(null);
-                    priorityIdx.forEach(function (i) { prioritySet[i] = true; });
-                    var backgroundIdx = [];
-                    for (var j = 1; j <= FRAME_COUNT; j++) {
-                        if (!prioritySet[j]) backgroundIdx.push(j);
+                    var skeletonIdx = [];
+                    for (var s = 1; s <= FRAME_COUNT; s += SKELETON_STRIDE) {
+                        skeletonIdx.push(s);
+                    }
+                    if (skeletonIdx[skeletonIdx.length - 1] !== FRAME_COUNT) {
+                        skeletonIdx.push(FRAME_COUNT);    // ensure last frame in skeleton
                     }
 
-                    // Phase 1: fire all priority loads in parallel, wait
-                    // for them to finish.
-                    var priorityReady = Promise.all(priorityIdx.map(loadFrame));
+                    var done = Object.create(null);
+                    priorityIdx.concat(skeletonIdx).forEach(function (i) { done[i] = true; });
+                    var backgroundIdx = [];
+                    for (var j = 1; j <= FRAME_COUNT; j++) {
+                        if (!done[j]) backgroundIdx.push(j);
+                    }
 
-                    // Phase 2: once priority is done, fire background in
-                    // chunks. Each chunk waits for the previous so we
-                    // don't blow up the connection pool with 200+ inflight
-                    // requests competing with everything else on the page.
-                    var allReady = priorityReady.then(function () {
-                        var chunks = [];
-                        for (var k = 0; k < backgroundIdx.length; k += BG_CHUNK_SIZE) {
-                            chunks.push(backgroundIdx.slice(k, k + BG_CHUNK_SIZE));
+                    // ── T1 + T2 in parallel ──────────────────────────────
+                    // Both fire immediately; the page resolves as soon as
+                    // the priority window is done. Skeleton frames run in
+                    // the background but get fetchPriority="low" so
+                    // priority frames win bandwidth on slow connections.
+                    var priorityReady = Promise.all(priorityIdx.map(function (i) {
+                        return loadFrame(i, 'high');
+                    }));
+                    var skeletonReady = Promise.all(skeletonIdx.map(function (i) {
+                        return loadFrame(i, 'low');
+                    }));
+
+                    // ── T3: background fill via requestIdleCallback ──────
+                    // We schedule one rIC tick that pulls a small batch of
+                    // frame fetches per idle slot. Keeps the main thread
+                    // available for the scrub.
+                    var backgroundReady = new Promise(function (resolve) {
+                        var queue = backgroundIdx.slice();
+                        function pump(deadline) {
+                            // Use up to ~8ms of idle time per tick (don't
+                            // saturate the deadline — leave room for scroll
+                            // handlers to fire).
+                            while (queue.length &&
+                                   (deadline.didTimeout || deadline.timeRemaining() > 4)) {
+                                var idx = queue.shift();
+                                loadFrame(idx, 'low');     // fire-and-forget
+                            }
+                            if (queue.length) {
+                                rIC(pump, { timeout: 1500 });
+                            } else {
+                                // Wait for any still-inflight loads to settle
+                                // before resolving (loaded counter checks).
+                                var waitForLoaded = function () {
+                                    if (loaded >= FRAME_COUNT) { resolve(); return; }
+                                    setTimeout(waitForLoaded, 120);
+                                };
+                                waitForLoaded();
+                            }
                         }
-                        return chunks.reduce(function (chain, chunk) {
-                            return chain.then(function () {
-                                return Promise.all(chunk.map(loadFrame));
-                            });
-                        }, Promise.resolve());
-                    }).then(function () {
-                        // Once everything is network-loaded, decode/warm
-                        // the GPU texture cache for all frames so the
-                        // scrub never hits a first-paint decode stall.
-                        return decodeAll();
+                        rIC(pump, { timeout: 2000 });
                     });
+
+                    var allReady = Promise.all([priorityReady, skeletonReady, backgroundReady])
+                        .then(function () { return decodeAll(); });
 
                     return { priorityReady: priorityReady, allReady: allReady };
                 }
 
-                // After every frame has been network-loaded, force a full
-                // GPU-side decode + upload by:
-                //   1. Calling img.decode() on each — browsers cache the
-                //      decoded bitmap so subsequent drawImage() calls are
-                //      essentially memcpy.
-                //   2. Drawing each frame to a tiny off-screen canvas to
-                //      "warm up" the GPU texture cache, so the first time
-                //      a frame is scrubbed-to during real scrolling, no
-                //      stall happens.
-                // This eliminates the most common cause of "abrupt jumps"
-                // during scroll: the browser stalling for 30-100ms while
-                // it decodes a WebP for the first time on the main thread.
+                // Hides the hardcoded LCP still <img> once the canvas is
+                // ready. Phase 1 puts the still in the DOM so the user sees
+                // the hero before any JS runs; we fade it out smoothly when
+                // the canvas takes over to avoid a flash.
+                function hideStill() {
+                    var still = document.getElementById('hero-canvas-still');
+                    if (still) still.classList.add('canvas-took-over');
+                }
+
+                // ── Phase 3: off-thread decode ────────────────────────────
+                // Once every frame is network-loaded we promote each <img>
+                // to an ImageBitmap via createImageBitmap. ImageBitmaps:
+                //   • decode OFF the main thread (browser uses a worker)
+                //   • are GPU-friendly: drawImage(bitmap, ...) skips decode
+                //     entirely — it's essentially a texture upload
+                //   • avoid the 30-100ms first-paint decode stall that
+                //     plain <img> tags hit when first drawn into a canvas
+                //
+                // We REPLACE frames[i] with the bitmap once it's ready —
+                // drawImage accepts both, so this is transparent to the
+                // renderer. Browsers without createImageBitmap (very rare
+                // now) fall back to img.decode() + a tiny warm-up draw.
                 function decodeAll() {
+                    var supportsBitmap = (typeof createImageBitmap === 'function');
                     var warm = document.createElement('canvas');
                     warm.width = 8; warm.height = 8;
                     var warmCtx = warm.getContext('2d');
                     var promises = [];
+
                     for (var i = 0; i < frames.length; i++) {
                         var img = frames[i];
                         if (!img) continue;
-                        // img.decode() returns a Promise. Catch is intentional —
-                        // a failure here just means the first scroll-to-this-frame
-                        // will pay the decode cost, not a hard error.
-                        var p = (img.decode ? img.decode() : Promise.resolve())
-                            .then(function (warmImg) {
-                                try { warmCtx.drawImage(warmImg, 0, 0, 8, 8); } catch (e) { /* ignore */ }
-                            }.bind(null, img))
-                            .catch(function () { /* ignore decode failures */ });
-                        promises.push(p);
+                        promises.push(promoteToBitmap(i, img, supportsBitmap, warmCtx));
                     }
                     return Promise.all(promises);
+                }
+                function promoteToBitmap(idx, img, supportsBitmap, warmCtx) {
+                    if (supportsBitmap) {
+                        // imageOrientation: 'from-image' is the spec default;
+                        // premultiplyAlpha: 'premultiply' matches canvas-2d
+                        // expectations so the bitmap composites identically.
+                        return createImageBitmap(img, {
+                            imageOrientation: 'from-image',
+                            premultiplyAlpha: 'premultiply'
+                        }).then(function (bitmap) {
+                            // Replace the <img> with the bitmap — drawImage
+                            // accepts both, but the bitmap path is faster.
+                            // Keep the bitmap; let the <img> get GC'd.
+                            frames[idx] = bitmap;
+                        }).catch(function () {
+                            // Fall back to img.decode() if bitmap creation fails
+                            return (img.decode ? img.decode() : Promise.resolve())
+                                .then(function () {
+                                    try { warmCtx.drawImage(img, 0, 0, 8, 8); } catch (e) {}
+                                })
+                                .catch(function () {});
+                        });
+                    }
+                    return (img.decode ? img.decode() : Promise.resolve())
+                        .then(function () {
+                            try { warmCtx.drawImage(img, 0, 0, 8, 8); } catch (e) {}
+                        })
+                        .catch(function () {});
                 }
 
                 // ── Draw ──────────────────────────────────────────────────
