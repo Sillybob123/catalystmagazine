@@ -1310,8 +1310,9 @@
                 // frame is a no-op rather than a glitch — the canvas stays
                 // on the most-recent frame until the new one streams in.
                 // ─────────────────────────────────────────────────────────
-                var PRIORITY_RADIUS  = 14;    // ±14 frames around initialFrame
-                var SKELETON_STRIDE  = 10;    // every 10th frame in the sparse pass
+                var PRIORITY_RADIUS  = 8;     // ±8 frames around initialFrame (was 14)
+                var SKELETON_STRIDE  = 6;     // every 6th frame in the sparse pass (was 10)
+                var JIT_LOOKAHEAD    = 12;    // load this many frames ahead of currentFrame as user scrolls
 
                 function loadFrame(idx, fetchPri) {
                     return new Promise(function (resolve) {
@@ -1379,19 +1380,27 @@
                 };
 
                 function preload() {
-                    // ── Build the three index lists ──────────────────────
+                    // ── Index lists ──────────────────────────────────────
                     var initialIdx = initialFrame + 1;     // 1-based
+
+                    // PRIORITY window — ±8 frames around the initial frame.
+                    // Small enough to load fast; covers the very first
+                    // scroll motion before the JIT loader kicks in.
                     var priorityIdx = [];
                     var lo = Math.max(1, initialIdx - PRIORITY_RADIUS);
                     var hi = Math.min(FRAME_COUNT, initialIdx + PRIORITY_RADIUS);
                     for (var i = lo; i <= hi; i++) priorityIdx.push(i);
 
+                    // SKELETON — every 6th frame across the entire sequence.
+                    // Even on extreme fast scrolling before fill completes,
+                    // the canvas is never more than 5 frames away from a
+                    // loaded one — visually choppy but never blank.
                     var skeletonIdx = [];
                     for (var s = 1; s <= FRAME_COUNT; s += SKELETON_STRIDE) {
                         skeletonIdx.push(s);
                     }
                     if (skeletonIdx[skeletonIdx.length - 1] !== FRAME_COUNT) {
-                        skeletonIdx.push(FRAME_COUNT);    // ensure last frame in skeleton
+                        skeletonIdx.push(FRAME_COUNT);
                     }
 
                     var done = Object.create(null);
@@ -1401,52 +1410,94 @@
                         if (!done[j]) backgroundIdx.push(j);
                     }
 
-                    // ── T1 + T2 in parallel ──────────────────────────────
-                    // Both fire immediately; the page resolves as soon as
-                    // the priority window is done. Skeleton frames run in
-                    // the background but get fetchPriority="low" so
-                    // priority frames win bandwidth on slow connections.
-                    var priorityReady = Promise.all(priorityIdx.map(function (i) {
-                        return loadFrame(i, 'high');
-                    }));
-                    var skeletonReady = Promise.all(skeletonIdx.map(function (i) {
-                        return loadFrame(i, 'low');
-                    }));
+                    // ── INSTANT-ON: resolve as soon as frame 1 lands ─────
+                    // The user only needs ONE frame for the scrub to be
+                    // interactive. drawFrame() no-ops on missing frames,
+                    // so scrolling past unloaded slots just freezes on the
+                    // last loaded frame — the skeleton+JIT pipeline fills
+                    // in the rest within a few hundred ms.
+                    //
+                    // We fire the priority window AND skeleton in parallel,
+                    // but resolve "ready" as soon as the initial frame
+                    // loads. That's typically a single 70-180 KB request,
+                    // <200 ms even on 4G.
+                    var firstFrameReady = loadFrame(initialIdx, 'high');
 
-                    // ── T3: background fill via requestIdleCallback ──────
-                    // We schedule one rIC tick that pulls a small batch of
-                    // frame fetches per idle slot. Keeps the main thread
-                    // available for the scrub.
-                    var backgroundReady = new Promise(function (resolve) {
-                        var queue = backgroundIdx.slice();
-                        function pump(deadline) {
-                            // Use up to ~8ms of idle time per tick (don't
-                            // saturate the deadline — leave room for scroll
-                            // handlers to fire).
-                            while (queue.length &&
-                                   (deadline.didTimeout || deadline.timeRemaining() > 4)) {
-                                var idx = queue.shift();
-                                loadFrame(idx, 'low');     // fire-and-forget
-                            }
-                            if (queue.length) {
-                                rIC(pump, { timeout: 1500 });
-                            } else {
-                                // Wait for any still-inflight loads to settle
-                                // before resolving (loaded counter checks).
-                                var waitForLoaded = function () {
-                                    if (loaded >= FRAME_COUNT) { resolve(); return; }
-                                    setTimeout(waitForLoaded, 120);
-                                };
-                                waitForLoaded();
-                            }
-                        }
-                        rIC(pump, { timeout: 2000 });
+                    // Rest of priority window — fires in parallel but does
+                    // NOT gate readiness. These frames will arrive while
+                    // the user is reading the hero text; by the time they
+                    // start scrolling they're typically already cached.
+                    priorityIdx.forEach(function (i) {
+                        if (i !== initialIdx) loadFrame(i, 'high');
                     });
 
-                    var allReady = Promise.all([priorityReady, skeletonReady, backgroundReady])
-                        .then(function () { return decodeAll(); });
+                    // Skeleton frames — also parallel, low priority.
+                    skeletonIdx.forEach(function (i) {
+                        if (i !== initialIdx) loadFrame(i, 'low');
+                    });
 
-                    return { priorityReady: priorityReady, allReady: allReady };
+                    // ── Background fill via requestIdleCallback ──────────
+                    // Pumps one frame per idle tick. JIT loader (below)
+                    // can preempt this queue when the user scrolls.
+                    var bgQueue = backgroundIdx.slice();
+                    var bgRunning = false;
+                    function pumpBackground(deadline) {
+                        bgRunning = true;
+                        while (bgQueue.length &&
+                               (deadline.didTimeout || deadline.timeRemaining() > 4)) {
+                            var idx = bgQueue.shift();
+                            if (!frames[idx - 1]) loadFrame(idx, 'low');
+                        }
+                        if (bgQueue.length) {
+                            rIC(pumpBackground, { timeout: 1500 });
+                        } else {
+                            bgRunning = false;
+                        }
+                    }
+                    rIC(pumpBackground, { timeout: 2000 });
+
+                    // ── allReady — resolves when the full sequence is in.
+                    // Used only for decodeAll(); no UX gate.
+                    var allReady = new Promise(function (resolve) {
+                        var poll = function () {
+                            if (loaded >= FRAME_COUNT) {
+                                decodeAll().then(resolve);
+                                return;
+                            }
+                            setTimeout(poll, 200);
+                        };
+                        poll();
+                    });
+
+                    return { priorityReady: firstFrameReady, allReady: allReady };
+                }
+
+                // ── JIT (just-in-time) loader ─────────────────────────────
+                // As the user scrubs, watch currentFrame and aggressively
+                // load the next ~12 frames in their scroll direction.
+                // This guarantees that wherever they're heading next is
+                // already (or about to be) loaded — the canvas never has
+                // to "catch up" to where they are.
+                var lastJitFrame = -1;
+                var lastJitDir   = 1;
+                function jitLoad(currentIdx) {
+                    if (currentIdx === lastJitFrame) return;
+                    var dir = currentIdx >= lastJitFrame ? 1 : -1;
+                    lastJitDir   = dir;
+                    lastJitFrame = currentIdx;
+
+                    // Fire loads for the next JIT_LOOKAHEAD frames in the
+                    // scroll direction. Skip already-loaded ones; loadFrame
+                    // dedupes via the cached check inside.
+                    for (var k = 1; k <= JIT_LOOKAHEAD; k++) {
+                        var target = currentIdx + (k * dir);
+                        if (target >= 0 && target < FRAME_COUNT) {
+                            var idx1based = target + 1;
+                            if (!frames[target]) {
+                                loadFrame(idx1based, 'high');
+                            }
+                        }
+                    }
                 }
 
                 // Hides the hardcoded LCP still <img> once the canvas is
@@ -1524,8 +1575,30 @@
                 var rafQueued = false;
 
                 function drawFrame(i) {
+                    // If the requested frame isn't loaded yet, find the
+                    // NEAREST loaded frame and draw that instead. With
+                    // skeleton frames every 6 indices, the worst case is
+                    // a 5-frame visual lag — barely perceptible during
+                    // the few hundred ms before the JIT loader catches up.
+                    // This is the "Apple trick": never freeze the canvas
+                    // on a missing frame; always show *something* close.
                     var img = frames[i];
-                    if (!img) return;
+                    if (!img) {
+                        var radius = 0;
+                        var maxRadius = FRAME_COUNT;
+                        while (radius < maxRadius) {
+                            radius++;
+                            if (i + radius < FRAME_COUNT && frames[i + radius]) {
+                                img = frames[i + radius];
+                                break;
+                            }
+                            if (i - radius >= 0 && frames[i - radius]) {
+                                img = frames[i - radius];
+                                break;
+                            }
+                        }
+                        if (!img) return;     // no frames loaded at all
+                    }
                     // Paint a solid base so any transparent pixels in the WebP
                     // fall back to paper rather than showing the prior frame.
                     ctx.fillStyle = '#ffffff';
@@ -1677,6 +1750,11 @@
                                 onUpdate: function () {
                                     currentFrame = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(proxy.frame)));
                                     requestRender();
+                                    // JIT-load: prioritize the next ~12
+                                    // frames in the scroll direction so
+                                    // the canvas never has to wait on a
+                                    // frame that's about to be needed.
+                                    jitLoad(currentFrame);
                                 },
                                 // When the runway is fully scrolled, freeze
                                 // on the LAST frame and — on the FIRST pass
