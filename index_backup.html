@@ -446,16 +446,33 @@
             z-index: 5;
         }
 
-        /* Footer wrapper gets an opaque white background so the watercolor
-           canvas backdrop never shows in the gap between the last section
-           and whatever the footer's <footer> element renders to. The actual
-           footer styles still come from css/styles.css. */
-        body[data-page="home"] #site-footer {
-            background: #ffffff;
+        /* ─────────────────────────────────────────────────────────────────
+         *  Newsletter ↔ Footer gap fix (definitive).
+         *
+         *  css/styles.css#4019 .footer carries:
+         *    margin-top: 80px;        ← this is the visible gap
+         *    background: linear-gradient(rgba(255,255,255,0.78)... 0.58));
+         *    backdrop-filter: blur(28px);   ← lets the watercolor show through
+         *
+         *  On every other page that's a glass-card footer over white. On the
+         *  home page, the canvas backdrop sits BEHIND every layer, so the
+         *  margin-top exposes the painting and the glass background lets the
+         *  canvas bleed through the footer too. We override BOTH on the home
+         *  page only, leaving every other page untouched.
+         * ───────────────────────────────────────────────────────────────── */
+        body[data-page="home"] #site-footer,
+        body[data-page="home"] .footer {
+            background: #ffffff !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
         }
-        /* Kill the trailing margin/padding under the LAST section on the
-           home page so the newsletter card sits flush against the footer
-           edge — no gap, no watercolor peek-through. */
+        /* Kill the 80px margin above the footer that was exposing the canvas. */
+        body[data-page="home"] .footer {
+            margin-top: 0 !important;
+        }
+        /* And remove the trailing padding under the LAST section so the
+           newsletter card sits flush against the footer edge with no
+           white-on-white "ledge" effect. */
         body[data-page="home"] main > section:last-child {
             padding-bottom: 60px;
             margin-bottom: 0;
@@ -468,13 +485,147 @@
             .hero-scroll-cue { display: none; }
         }
 
-        /* ───── Mobile: shorter runway, smaller overlay padding ───── */
+        /* ─────────────────────────────────────────────────────────────────
+         *  Mobile (≤768px) — purpose-built hero composition.
+         *
+         *  Design intent (UI/UX Pro Max):
+         *    §5 Layout: top-anchored content stack; the bottom 40dvh is
+         *               reserved for the parallax buildings to play in.
+         *               No center-stack on mobile — it crushes the parallax.
+         *    §6 Typography: editorial masthead — thin top accent rule,
+         *               assertive eyebrow, larger title (1.04 leading),
+         *               concise body, full-width primary CTA, secondary
+         *               CTA as a text link with arrow.
+         *    §2 Touch: primary CTA 52px tall (well > 44pt min); 8pt+
+         *               spacing between targets.
+         *    §7 Animation: subtle stagger fade-in on first paint, gated
+         *               behind prefers-reduced-motion.
+         * ───────────────────────────────────────────────────────────────── */
         @media (max-width: 768px) {
+            /* Runway: keep the same scroll length so the scrub timing
+               doesn't change — only the visual composition shifts. */
             .hero-shell { --hero-scrub-vh: 180; }
-            .hero-overlay { padding: 0 18px; }
-            .hero-eyebrow { font-size: 0.62rem; padding: 6px 14px; margin-bottom: 18px; }
-            /* Smaller header on mobile → smaller canvas offset */
-            body[data-page="home"] { --hero-canvas-offset: 76px; }
+
+            /* Smaller header pill on mobile → smaller canvas offset */
+            body[data-page="home"] { --hero-canvas-offset: 72px; }
+
+            /* The sticky overlay now anchors content to the TOP of the
+               viewport (not center). Bottom 40dvh stays clear for buildings. */
+            .hero-overlay {
+                padding: clamp(96px, 14dvh, 140px) 22px clamp(40dvh, 42dvh, 44dvh);
+                align-items: flex-start;
+                text-align: left;
+            }
+            .hero-overlay-inner {
+                max-width: 100%;
+                /* Stagger-in entrance for the stack (CSS-only, no JS) */
+                animation: heroStackIn 720ms cubic-bezier(.2,.7,.2,1) both;
+            }
+
+            /* Editorial accent rule above the eyebrow — magazine masthead feel. */
+            .hero-overlay-inner::before {
+                content: "";
+                display: block;
+                width: 36px;
+                height: 2px;
+                background: #0f172a;
+                margin-bottom: 18px;
+                border-radius: 2px;
+            }
+
+            /* Bigger, less candy-pill eyebrow on mobile.
+               Letter-spacing widened, no backdrop-blur (perf, iOS quirks). */
+            .hero-eyebrow {
+                display: block;
+                padding: 0;
+                background: transparent;
+                border: none;
+                -webkit-backdrop-filter: none;
+                backdrop-filter: none;
+                font-size: 0.68rem;
+                letter-spacing: 0.28em;
+                color: #475569;
+                margin-bottom: 16px;
+                /* Wrap intelligently if the eyebrow gets long */
+                white-space: normal;
+                line-height: 1.4;
+            }
+
+            /* Title: bigger, left-aligned, never balanced (let it wrap
+               naturally across 2-3 lines like a magazine cover). */
+            .hero-title {
+                font-size: clamp(2.6rem, 9.5vw, 3.5rem);
+                line-height: 1.02;
+                letter-spacing: -0.028em;
+                margin: 0 0 18px;
+                text-wrap: pretty;       /* not balance — keeps line breaks visually rhythmic */
+                color: #0a0a0c;
+            }
+            .hero-title .highlight::after {
+                /* Slightly thicker highlight under "Capital" for stronger
+                   editorial feel at smaller display sizes. */
+                height: 0.36em;
+                background: rgba(99, 102, 241, 0.26);
+            }
+
+            /* Description: shorter measure on mobile (skill §5 line-length:
+               35-60 chars). Two short lines reads better than three crammed ones. */
+            .hero-desc {
+                font-size: 1.02rem;        /* >= 16px (skill §5 readable-font-size) */
+                line-height: 1.6;
+                color: #334155;
+                max-width: 32ch;            /* visually tighter measure */
+                margin: 0 0 28px;
+            }
+
+            /* Action stack: primary full-width, secondary as text-arrow link.
+               Both ≥ 44pt tap area; 12px spacing between them. */
+            .hero-actions {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 14px;
+            }
+            .hero-actions .btn-primary {
+                width: 100%;
+                min-height: 52px;
+                padding: 14px 22px;
+                font-size: 1rem;
+                justify-content: center;
+            }
+            /* Secondary "Our Mission" turns into an editorial text link
+               with an arrow — much lighter visual weight, doesn't compete
+               with the primary CTA. Maintains 44pt tap area via padding. */
+            .hero-actions .btn-secondary {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                padding: 12px 4px !important;
+                min-height: 44px;
+                font-size: 0.92rem;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                color: #0f172a !important;
+                width: fit-content;
+                margin: 0 auto 0 0;        /* left-aligned within the centered stack */
+                position: relative;
+            }
+            .hero-actions .btn-secondary::after {
+                content: "→";
+                margin-left: 8px;
+                display: inline-block;
+                transition: transform 220ms cubic-bezier(.2,.7,.2,1);
+            }
+            .hero-actions .btn-secondary:hover::after,
+            .hero-actions .btn-secondary:focus-visible::after {
+                transform: translateX(3px);
+            }
+
+            /* Entrance stagger animation. Gated behind reduced-motion below. */
+            @keyframes heroStackIn {
+                from { opacity: 0; transform: translate3d(0, 14px, 0); }
+                to   { opacity: 1; transform: translate3d(0, 0, 0); }
+            }
+
             /* Dial down the backdrop-blur on mobile (perf + iOS quirks) */
             body[data-page="home"] main > section:not(.hero-shell) {
                 background: rgba(255, 255, 255, 0.96);
@@ -487,6 +638,11 @@
                 background: transparent;
                 margin-top: -45dvh;
             }
+        }
+        /* Reduced motion: skip the entrance stagger on mobile so the stack
+           appears instantly for users who've opted out of animation. */
+        @media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+            .hero-overlay-inner { animation: none; }
         }
     </style>
 
@@ -941,17 +1097,18 @@
                         // the sides. Instead we scale the image so it fits
                         // the full viewport WIDTH — both buildings stay
                         // visible. The image becomes a short horizontal
-                        // strip; we anchor it ~55% down the viewport so
-                        // the rest of the hero text has room above.
+                        // strip; we anchor it in the BOTTOM portion of
+                        // the viewport because the overlay now top-anchors
+                        // its content stack (see @media 768px in the
+                        // stylesheet — overlay padding-bottom: 40dvh).
                         drawW = dstW;
                         drawH = dstW / srcRatio;
 
-                        // Vertical placement: roughly center-bottom. Use
-                        // 0.62 of viewport height as the building baseline,
-                        // so there's hero-text room above and a little
-                        // breathing room below before the article cards.
+                        // Building baseline at ~88% of viewport height —
+                        // sits clearly in the lower third while leaving
+                        // a small margin to the article-strip below.
                         drawX = 0;
-                        drawY = (dstH * 0.62) - drawH;
+                        drawY = (dstH * 0.88) - drawH;
                     } else {
                         // ── Desktop / tablet: object-fit:cover ──────────
                         var dstRatio = dstW / dstH;
