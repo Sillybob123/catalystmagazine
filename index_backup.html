@@ -63,28 +63,13 @@
     <link rel="stylesheet" href="css/styles.css">
 
     <!-- ── Hero-frame priority preloads ─────────────────────────────────
-         The browser starts these in parallel with the page download, so by
-         the time JS boots and the preloader runs, these are already cached
-         (or mid-flight). Big LCP win on first visit.
-
-         Desktop: full 4K sequence (public/assets/hero-frames/)
-         Mobile : low-res 1280×720 sequence (public/assets/hero-frames/low/)
-                  ~5× smaller, since the canvas renders at ≤460px wide on
-                  phones anyway. Picked by media query so each form factor
-                  preloads from the path the JS will actually fetch.
-
-           • frame_0001 — desktop initial paint (bounce-in start pose)
-           • frame_0008, _0014, _0024 — early intro keyframes
-           • frame_0068 — MOBILE initial paint (RESUME_FRAME=67 + 1)
-           • frame_0080, _0100 — early mobile keyframes
+         Keep the parser's critical image work to exactly the first visible
+         still for each form factor. The scrubber streams neighboring and
+         background frames after first paint, so extra early preloads just
+         compete with CSS, logo, and the LCP still.
          ──────────────────────────────────────────────────────────────── -->
-    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0001.webp" fetchpriority="high" media="(min-width: 769px)">
+    <link rel="preload" as="image" href="public/assets/hero-frames/low/frame_0001.webp" fetchpriority="high" media="(min-width: 769px)">
     <link rel="preload" as="image" href="public/assets/hero-frames/low/frame_0068.webp" fetchpriority="high" media="(max-width: 768px)">
-    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0008.webp" fetchpriority="high" media="(min-width: 769px)">
-    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0014.webp" media="(min-width: 769px)">
-    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0024.webp" media="(min-width: 769px)">
-    <link rel="preload" as="image" href="public/assets/hero-frames/low/frame_0080.webp" media="(max-width: 768px)">
-    <link rel="preload" as="image" href="public/assets/hero-frames/low/frame_0100.webp" media="(max-width: 768px)">
 
     <!--
       Catalyst Homepage — v5 (page-wide scroll-scrubbed canvas backdrop)
@@ -814,14 +799,16 @@
          factor paints the same frame the canvas will start on. -->
     <div class="page-canvas-backdrop" aria-hidden="true">
         <picture class="hero-canvas-still" id="hero-canvas-still">
-            <!-- Mobile gets the low-res 1280×720 still (matches what the
-                 connection-aware JS preloader will fetch — no double load). -->
+            <!-- The LCP still uses the low-res sequence by default so the
+                 first visible hero image stays tiny and matches the JS
+                 scrubber's default frame path. The ?hi=1 override still
+                 lets reviewers force the 4K scrub sequence when needed. -->
             <source media="(max-width: 768px)"
                     srcset="public/assets/hero-frames/low/frame_0068.webp"
                     width="1280" height="720">
-            <img src="public/assets/hero-frames/frame_0001.webp"
+            <img src="public/assets/hero-frames/low/frame_0001.webp"
                  alt=""
-                 width="3840" height="2160"
+                 width="1280" height="720"
                  fetchpriority="high"
                  decoding="async"
                  draggable="false">
@@ -1130,19 +1117,10 @@
             var FRAME_EXT    = '.webp';
 
             // ── Phase 4: Connection-aware path selection ──────────────────
-            // Choose between the full 4K sequence and a low-res variant
-            // based on viewport + connection quality. The /low/ folder
-            // contains the same 206 frames at 1280×720 q=82 (~6 MB total
-            // vs ~66 MB for the 4K version).
-            //
-            // Trigger low-res when ANY of:
-            //   • Save-Data header is set (user has explicitly requested it)
-            //   • Effective network type is 2g / slow-2g / 3g
-            //   • Downlink is below ~1.5 Mbps
-            //   • Phone-class viewport (the canvas renders at ≤460px wide
-            //     anyway, so 1280px source is more than enough).
-            // The user can override by adding ?hi=1 or ?lo=1 to the URL,
-            // useful for testing.
+            // The full 4K sequence is ~79 MB; the /low/ sequence is the same
+            // 206 frames at 1280×720 and ~13 MB. Default to the low sequence
+            // unless the browser reports a clearly fast connection on a large
+            // viewport. Reviewers can force either path with ?hi=1 or ?lo=1.
             function pickFramePath() {
                 var loc = (typeof location !== 'undefined') ? location : null;
                 var qs = loc && loc.search || '';
@@ -1158,13 +1136,26 @@
                     if (t === '2g' || t === 'slow-2g' || t === '3g') {
                         return 'public/assets/hero-frames/low/';
                     }
-                    if (typeof conn.downlink === 'number' && conn.downlink < 1.5) {
+                    if (typeof conn.downlink === 'number' && conn.downlink < 10) {
+                        return 'public/assets/hero-frames/low/';
+                    }
+                    if (typeof conn.rtt === 'number' && conn.rtt > 150) {
                         return 'public/assets/hero-frames/low/';
                     }
                 }
-                if (window.innerWidth < 768) {
+
+                var cssWidth = window.innerWidth || 0;
+                var pixelWidth = cssWidth * Math.min(window.devicePixelRatio || 1, 2);
+                if (cssWidth < 1600 || pixelWidth < 2400) {
                     return 'public/assets/hero-frames/low/';
                 }
+
+                // If Network Information is unavailable, avoid silently
+                // committing first-time desktop visitors to a 79 MB animation.
+                if (!conn || typeof conn.downlink !== 'number') {
+                    return 'public/assets/hero-frames/low/';
+                }
+
                 return 'public/assets/hero-frames/';
             }
             var FRAME_PATH = pickFramePath();
@@ -1262,6 +1253,8 @@
 
                 // ── Frame buffer ──────────────────────────────────────────
                 var frames = new Array(FRAME_COUNT);
+                var inflightFrames = Object.create(null);
+                var accountedFrames = Object.create(null);
                 var loaded = 0;
                 var firstReady = false;
 
@@ -1276,33 +1269,31 @@
                     setTimeout(function () { loader.hidden = true; }, 460);
                 }
 
-                // ── Three-tier preloader ──────────────────────────────────
+                function accountFrame(idx) {
+                    if (accountedFrames[idx]) return;
+                    accountedFrames[idx] = true;
+                    loaded++;
+                    setLoaderProgress(loaded / FRAME_COUNT);
+                }
+
+                // ── Staged preloader ──────────────────────────────────────
                 //
-                //   T1  PRIORITY WINDOW : the ±14 frames around the initial
-                //                         visible frame (28 frames). Fired
-                //                         in parallel, with the highest
-                //                         fetchPriority. priorityReady
-                //                         resolves when these are done —
-                //                         that's when we mount the scrub
-                //                         and let the user interact.
+                //   T0  FIRST FRAME     : exactly the initial visible frame.
+                //                         priorityReady resolves here.
                 //
-                //   T2  SKELETON FRAMES : every 10th frame across the entire
-                //                         sequence (~21 frames). Fires in
-                //                         parallel with T1. Even if the
-                //                         user scrolls wildly before the
-                //                         full sequence loads, the canvas
-                //                         can render the nearest skeleton
-                //                         frame — choppy, but never blank.
+                //   T1  NEIGHBORS       : ±3 frames around the initial frame,
+                //                         started after T0 or on interaction.
                 //
-                //   T3  BACKGROUND FILL : everything else. Fired one frame
-                //                         per requestIdleCallback tick so
-                //                         it never blocks the main thread
-                //                         while the user is scrolling or
-                //                         interacting. On browsers without
-                //                         rIC we fall back to setTimeout 0.
+                //   T2  SKELETON FRAMES : every 16th frame across the
+                //                         sequence, deferred until after T0.
+                //
+                //   T3  BACKGROUND FILL : everything else, delayed and
+                //                         throttled to two starts per idle
+                //                         tick so it cannot stampede the
+                //                         network during page startup.
                 //
                 // preload() returns { priorityReady, allReady }:
-                //   • priorityReady : T1 done (we mount the scrub).
+                //   • priorityReady : T0 done (we mount the scrub).
                 //   • allReady      : every frame loaded AND decoded.
                 //
                 // drawFrame() guards against missing frames (no-op if the
@@ -1310,13 +1301,15 @@
                 // frame is a no-op rather than a glitch — the canvas stays
                 // on the most-recent frame until the new one streams in.
                 // ─────────────────────────────────────────────────────────
-                var PRIORITY_RADIUS  = 8;     // ±8 frames around initialFrame (was 14)
-                var SKELETON_STRIDE  = 6;     // every 6th frame in the sparse pass (was 10)
-                var JIT_LOOKAHEAD    = 12;    // load this many frames ahead of currentFrame as user scrolls
+                var PRIORITY_RADIUS  = 3;     // ±3 frames around initialFrame after the first paint
+                var SKELETON_STRIDE  = 16;    // sparse safety net, deferred until after first paint
+                var JIT_LOOKAHEAD    = 10;    // load this many frames ahead of currentFrame as user scrolls
 
                 function loadFrame(idx, fetchPri) {
-                    return new Promise(function (resolve) {
-                        if (frames[idx - 1]) { resolve(); return; }   // already loaded
+                    if (frames[idx - 1]) return Promise.resolve();
+                    if (inflightFrames[idx]) return inflightFrames[idx];
+
+                    inflightFrames[idx] = new Promise(function (resolve) {
                         var img = new Image();
                         img.decoding = 'async';
                         // fetchPriority hint where supported (Chrome 102+,
@@ -1325,10 +1318,10 @@
                             try { img.fetchPriority = fetchPri; } catch (e) { /* not supported */ }
                         }
                         img.onload = function () {
+                            delete inflightFrames[idx];
                             if (frames[idx - 1]) { resolve(); return; }
                             frames[idx - 1] = img;
-                            loaded++;
-                            setLoaderProgress(loaded / FRAME_COUNT);
+                            accountFrame(idx);
 
                             if (idx === initialFrame + 1 && !firstReady) {
                                 firstReady = true;
@@ -1359,13 +1352,14 @@
                             resolve();
                         };
                         img.onerror = function () {
+                            delete inflightFrames[idx];
                             // Single failed frame must not block the rest.
-                            loaded++;
-                            setLoaderProgress(loaded / FRAME_COUNT);
+                            accountFrame(idx);
                             resolve();
                         };
                         img.src = frameURL(idx);
                     });
+                    return inflightFrames[idx];
                 }
 
                 // requestIdleCallback shim — fall back to setTimeout 0 on
@@ -1410,43 +1404,44 @@
                         if (!done[j]) backgroundIdx.push(j);
                     }
 
-                    // ── INSTANT-ON: resolve as soon as frame 1 lands ─────
-                    // The user only needs ONE frame for the scrub to be
-                    // interactive. drawFrame() no-ops on missing frames,
-                    // so scrolling past unloaded slots just freezes on the
-                    // last loaded frame — the skeleton+JIT pipeline fills
-                    // in the rest within a few hundred ms.
-                    //
-                    // We fire the priority window AND skeleton in parallel,
-                    // but resolve "ready" as soon as the initial frame
-                    // loads. That's typically a single 70-180 KB request,
-                    // <200 ms even on 4G.
+                    // ── INSTANT-ON: resolve as soon as the first frame lands
+                    // The initial frame is the only request allowed to compete
+                    // with first paint. Neighboring, skeleton, and background
+                    // frames start after that, so the page does not flood the
+                    // network before the visitor sees a usable hero.
                     var firstFrameReady = loadFrame(initialIdx, 'high');
 
-                    // Rest of priority window — fires in parallel but does
-                    // NOT gate readiness. These frames will arrive while
-                    // the user is reading the hero text; by the time they
-                    // start scrolling they're typically already cached.
-                    priorityIdx.forEach(function (i) {
-                        if (i !== initialIdx) loadFrame(i, 'high');
-                    });
+                    var priorityStarted = false;
+                    function startPriorityWindow() {
+                        if (priorityStarted) return;
+                        priorityStarted = true;
+                        priorityIdx.forEach(function (i) {
+                            if (i !== initialIdx) loadFrame(i, 'low');
+                        });
+                    }
 
-                    // Skeleton frames — also parallel, low priority.
-                    skeletonIdx.forEach(function (i) {
-                        if (i !== initialIdx) loadFrame(i, 'low');
-                    });
+                    var skeletonStarted = false;
+                    function startSkeletonPass() {
+                        if (skeletonStarted) return;
+                        skeletonStarted = true;
+                        skeletonIdx.forEach(function (i) {
+                            if (i !== initialIdx) loadFrame(i, 'low');
+                        });
+                    }
 
-                    // ── Background fill via requestIdleCallback ──────────
-                    // Pumps one frame per idle tick. JIT loader (below)
-                    // can preempt this queue when the user scrolls.
                     var bgQueue = backgroundIdx.slice();
                     var bgRunning = false;
+                    var backgroundStarted = false;
                     function pumpBackground(deadline) {
                         bgRunning = true;
+                        var loadedThisTick = 0;
+                        var maxPerTick = 2;
                         while (bgQueue.length &&
+                               loadedThisTick < maxPerTick &&
                                (deadline.didTimeout || deadline.timeRemaining() > 4)) {
                             var idx = bgQueue.shift();
                             if (!frames[idx - 1]) loadFrame(idx, 'low');
+                            loadedThisTick++;
                         }
                         if (bgQueue.length) {
                             rIC(pumpBackground, { timeout: 1500 });
@@ -1454,7 +1449,30 @@
                             bgRunning = false;
                         }
                     }
-                    rIC(pumpBackground, { timeout: 2000 });
+                    function startBackgroundFill() {
+                        if (backgroundStarted || bgRunning) return;
+                        backgroundStarted = true;
+                        rIC(pumpBackground, { timeout: 2500 });
+                    }
+
+                    function startDeferredPasses() {
+                        startPriorityWindow();
+                        // Load the settled backdrop early; it is the most
+                        // likely large jump target if someone flick-scrolls.
+                        loadFrame(FRAME_COUNT, 'low');
+                        setTimeout(startSkeletonPass, 350);
+                        setTimeout(startBackgroundFill, 3500);
+                    }
+
+                    firstFrameReady.then(startDeferredPasses);
+
+                    ['scroll', 'wheel', 'touchstart', 'keydown'].forEach(function (eventName) {
+                        window.addEventListener(eventName, function () {
+                            startPriorityWindow();
+                            startSkeletonPass();
+                            startBackgroundFill();
+                        }, { once: true, passive: true });
+                    });
 
                     // ── allReady — resolves when the full sequence is in.
                     // Used only for decodeAll(); no UX gate.
@@ -1865,6 +1883,20 @@
                     }
                 }
 
+                function mountScrollTriggerWhenReady(deadline) {
+                    if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+                        mountScrollTrigger();
+                        return;
+                    }
+                    if (Date.now() < deadline) {
+                        setTimeout(function () {
+                            mountScrollTriggerWhenReady(deadline);
+                        }, 50);
+                        return;
+                    }
+                    mountScrollTrigger();
+                }
+
                 // ── Resize ────────────────────────────────────────────────
                 var resizeRaf = 0;
                 window.addEventListener('resize', function () {
@@ -1894,7 +1926,7 @@
                 var loaders = preload();
                 loaders.priorityReady.then(function () {
                     hideLoader();
-                    mountScrollTrigger();
+                    mountScrollTriggerWhenReady(Date.now() + 5000);
                 });
                 // We also let allReady run to completion (it triggers
                 // decodeAll for the full sequence), but we don't gate any
@@ -1904,10 +1936,19 @@
                 });
             }
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init, { once: true });
-            } else {
+            var didInit = false;
+            function boot() {
+                if (didInit) return;
+                didInit = true;
                 init();
+            }
+
+            if (document.getElementById('hero-shell')) {
+                boot();
+            } else if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', boot, { once: true });
+            } else {
+                boot();
             }
         })();
     </script>
