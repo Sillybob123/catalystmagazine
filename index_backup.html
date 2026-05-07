@@ -873,6 +873,13 @@
             // scripts/extend-monument-frames.py with --max-shift 120 to add
             // a subtle bounce-in intro before the source video begins.
             var FRAME_COUNT  = 206;
+
+            // RESUME_FRAME: after the user has scrolled past the hero ONCE,
+            // any subsequent re-entry skips the first N frames so the intro
+            // animation doesn't replay every time. The runway stays the same
+            // physical length (no layout shift); only the proxy mapping
+            // changes. Set in 0-indexed array space (frame 67 = frame_0068.webp).
+            var RESUME_FRAME = 67;
             var FRAME_PATH   = 'public/assets/hero-frames/';
             var FRAME_PREFIX = 'frame_';
             var FRAME_EXT    = '.webp';
@@ -889,9 +896,13 @@
                 if (!shell || !canvas) return;
 
                 var ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-                // DPR cap of 3 lets the canvas render at full retina sharpness
-                // on 5K displays while still avoiding silly fill costs.
-                var dpr = Math.min(window.devicePixelRatio || 1, 3);
+                // DPR cap. We had 3 before, but at 4K source × 3 DPR the canvas
+                // backing store is ~12k×7k = 75 megapixels — way past visual
+                // acuity at any screen size, and a meaningful fill cost on
+                // every scrub frame. Cap at 2 on desktop, 1.5 on phones (where
+                // the canvas already shrinks via contain-fit math).
+                var isPhone = window.innerWidth < 768;
+                var dpr = Math.min(window.devicePixelRatio || 1, isPhone ? 1.5 : 2);
 
                 // ── Sizing ────────────────────────────────────────────────
                 // The canvas is position:fixed, full viewport. Object-fit:cover
@@ -1004,18 +1015,51 @@
                                         drawFrame(currentFrame);
                                         canvas.classList.add('is-ready');
                                     }
-                                    if (loaded >= FRAME_COUNT) resolve();
+                                    if (loaded >= FRAME_COUNT) decodeAll().then(resolve);
                                 };
                                 img.onerror = function () {
                                     // Don't block the rest of the sequence on a single failed frame
                                     loaded++;
                                     setLoaderProgress(loaded / FRAME_COUNT);
-                                    if (loaded >= FRAME_COUNT) resolve();
+                                    if (loaded >= FRAME_COUNT) decodeAll().then(resolve);
                                 };
                                 img.src = frameURL(idx);
                             })(i);
                         }
                     });
+                }
+
+                // After every frame has been network-loaded, force a full
+                // GPU-side decode + upload by:
+                //   1. Calling img.decode() on each — browsers cache the
+                //      decoded bitmap so subsequent drawImage() calls are
+                //      essentially memcpy.
+                //   2. Drawing each frame to a tiny off-screen canvas to
+                //      "warm up" the GPU texture cache, so the first time
+                //      a frame is scrubbed-to during real scrolling, no
+                //      stall happens.
+                // This eliminates the most common cause of "abrupt jumps"
+                // during scroll: the browser stalling for 30-100ms while
+                // it decodes a WebP for the first time on the main thread.
+                function decodeAll() {
+                    var warm = document.createElement('canvas');
+                    warm.width = 8; warm.height = 8;
+                    var warmCtx = warm.getContext('2d');
+                    var promises = [];
+                    for (var i = 0; i < frames.length; i++) {
+                        var img = frames[i];
+                        if (!img) continue;
+                        // img.decode() returns a Promise. Catch is intentional —
+                        // a failure here just means the first scroll-to-this-frame
+                        // will pay the decode cost, not a hard error.
+                        var p = (img.decode ? img.decode() : Promise.resolve())
+                            .then(function (warmImg) {
+                                try { warmCtx.drawImage(warmImg, 0, 0, 8, 8); } catch (e) { /* ignore */ }
+                            }.bind(null, img))
+                            .catch(function () { /* ignore decode failures */ });
+                        promises.push(p);
+                    }
+                    return Promise.all(promises);
                 }
 
                 // ── Draw ──────────────────────────────────────────────────
@@ -1077,41 +1121,73 @@
                     }
 
                     // Frame-index proxy. ScrollTrigger writes proxy.frame via
-                    // gsap.to with scrub:1.5 → inertial easing (the "weighted"
-                    // glide-to-stop feel you wanted).
+                    // gsap.to with a small scrub for inertial easing.
                     //
                     // FORWARD direction:
-                    //   scroll = 0 → proxy.frame = 0              (parted to far edges, monument-right)
-                    //   scroll = 1 → proxy.frame = FRAME_COUNT-1  (unified Mall, settles as backdrop)
+                    //   scroll = 0 → proxy.frame = startFrame      (initial parted pose)
+                    //   scroll = 1 → proxy.frame = FRAME_COUNT-1   (unified Mall, settles as backdrop)
+                    //
+                    // First pass: startFrame = 0  (full intro plays).
+                    // Subsequent passes: startFrame = RESUME_FRAME (skip the
+                    //   intro so the user doesn't have to watch it again).
+                    //
+                    // We hold a reference to the active tween so we can kill
+                    // and re-mount it after the first onLeave fires.
                     var proxy = { frame: 0 };
+                    var heroTween = null;
+                    var hasViewedHero = false;
 
-                    gsap.to(proxy, {
-                        frame: FRAME_COUNT - 1,         // → unified state at scroll end
-                        ease: 'none',
-                        scrollTrigger: {
-                            trigger: shell,
-                            start: 'top top',
-                            end: 'bottom bottom',
-                            scrub: 1.5,                 // inertia
-                            invalidateOnRefresh: true,
-                            onUpdate: function () {
-                                currentFrame = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(proxy.frame)));
-                                requestRender();
-                            },
-                            // When the runway is fully scrolled, freeze on
-                            // the LAST frame (unified Mall) so the backdrop
-                            // persists for every section below the hero.
-                            onLeave: function () {
-                                currentFrame = FRAME_COUNT - 1;
-                                drawFrame(currentFrame);
-                            },
-                            // Coming back into the hero from below — make sure
-                            // we resume from the right frame.
-                            onEnterBack: function () {
-                                requestRender();
-                            }
+                    function buildHeroTween(startFrame) {
+                        // Tear down any previous tween + ScrollTrigger
+                        if (heroTween) {
+                            if (heroTween.scrollTrigger) heroTween.scrollTrigger.kill();
+                            heroTween.kill();
+                            heroTween = null;
                         }
-                    });
+
+                        proxy.frame = startFrame;
+
+                        heroTween = gsap.to(proxy, {
+                            frame: FRAME_COUNT - 1,    // → unified state at scroll end
+                            ease: 'none',
+                            scrollTrigger: {
+                                trigger: shell,
+                                start: 'top top',
+                                end: 'bottom bottom',
+                                // Lower scrub (was 1.5) — snappier response,
+                                // less "stale frame" feel, fewer apparent
+                                // jumps when the user scrolls fast.
+                                scrub: 0.8,
+                                invalidateOnRefresh: true,
+                                onUpdate: function () {
+                                    currentFrame = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(proxy.frame)));
+                                    requestRender();
+                                },
+                                // When the runway is fully scrolled, freeze
+                                // on the LAST frame and — on the FIRST pass
+                                // only — re-mount the tween so subsequent
+                                // re-entries skip the intro.
+                                onLeave: function () {
+                                    currentFrame = FRAME_COUNT - 1;
+                                    drawFrame(currentFrame);
+                                    if (!hasViewedHero) {
+                                        hasViewedHero = true;
+                                        // Defer the re-mount one tick so we
+                                        // don't kill the trigger that's
+                                        // currently calling us.
+                                        requestAnimationFrame(function () {
+                                            buildHeroTween(RESUME_FRAME);
+                                        });
+                                    }
+                                },
+                                onEnterBack: function () {
+                                    requestRender();
+                                }
+                            }
+                        });
+                    }
+
+                    buildHeroTween(0);
 
                     // Hero overlay fades out EARLY so the article cards have
                     // a clear stage by the time they slide in. We also keep
