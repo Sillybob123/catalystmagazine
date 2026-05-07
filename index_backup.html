@@ -93,7 +93,7 @@
     -->
     <style>
         body[data-page="home"] {
-            background-color: #fbfbf9;
+            background-color: #ffffff;
             /* How far to shift the canvas backdrop DOWN so the floating
                header pill doesn't cover the dome / obelisk tips. Read by JS
                via getComputedStyle. Mobile gets its own override below. */
@@ -112,7 +112,7 @@
             height: 100dvh;
             z-index: 0;
             pointer-events: none;
-            background: radial-gradient(ellipse at 50% 80%, #faf6ec 0%, #fbfbf9 60%, #f3efe4 100%);
+            background: #ffffff;
             overflow: hidden;
         }
         .hero-canvas {
@@ -127,34 +127,13 @@
         }
         .hero-canvas.is-ready { opacity: 1; }
 
-        /* ─────────────────────────────────────────────────────────────────
-         *  Soft horizon wash on top of the canvas. Two overlapping gradient
-         *  layers, both painted into ::after which sits on z-2 above the
-         *  canvas (z-0). Together they:
-         *    1. Paint a heavy paper-color wash over the TOP of the viewport
-         *       so the rectangular top edge of the canvas never reads as a
-         *       hard cut. The building art emerges through a soft horizon.
-         *    2. Add a faint shadow vignette at the very bottom to anchor
-         *       the buildings to the ground line.
-         *  Mobile gets a much heavier top wash (covers ~55% of viewport)
-         *  so the upper half stays pure paper for the text stack.
-         * ───────────────────────────────────────────────────────────────── */
+        /* Light ground shadow only. Keep the artwork itself unobscured. */
         .page-canvas-backdrop::after {
             content: "";
             position: absolute;
             inset: 0;
             pointer-events: none;
-            background:
-                /* faint ground-shadow */
-                radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.06) 0%, transparent 60%),
-                /* paper wash over the top */
-                linear-gradient(180deg,
-                    #fbfbf9 0%,
-                    rgba(251,251,249,0.95) 18%,
-                    rgba(251,251,249,0.45) 36%,
-                    rgba(251,251,249,0) 50%,
-                    rgba(251,251,249,0) 92%,
-                    rgba(251,251,249,0.35) 100%);
+            background: radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.035) 0%, transparent 58%);
         }
 
         /* Loading shim — over the canvas until preload completes */
@@ -164,7 +143,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #fbfbf9;
+            background: #ffffff;
             transition: opacity 460ms ease;
         }
         .hero-loader[hidden] { display: none; }
@@ -240,28 +219,32 @@
 
         .hero-title {
             font-family: 'Poppins', sans-serif;
+            display: block;
             font-weight: 700;
             font-size: clamp(2.2rem, 5.4vw, 4.6rem);
             line-height: 1.04;
             letter-spacing: -0.025em;
             color: #0a0a0c;
+            width: auto;
+            max-width: none;
+            min-width: 0;
+            padding: 0;
             margin: 0 0 18px;
+            gap: 0;
+            overflow: visible;
             text-wrap: balance;
         }
         .hero-title .highlight {
             position: relative;
+            display: inline;
             white-space: nowrap;
+            background: none;
+            -webkit-background-clip: initial;
+            -webkit-text-fill-color: currentColor;
+            background-clip: initial;
         }
         .hero-title .highlight::after {
-            content: "";
-            position: absolute;
-            left: -0.04em;
-            right: -0.04em;
-            bottom: 0.08em;
-            height: 0.32em;
-            background: rgba(99, 102, 241, 0.22);
-            z-index: -1;
-            border-radius: 2px;
+            content: none;
         }
 
         .hero-desc {
@@ -504,75 +487,39 @@
             .hero-scroll-cue { display: none; }
         }
 
-        /* ═════════════════════════════════════════════════════════════════
-         *  MOBILE HERO — image at TOP, content BELOW (clean rebuild)
-         *
-         *  Composition (top→bottom):
-         *    0–46dvh  : watercolor zone. Canvas paints the buildings into
-         *               this band only. Soft paper fades at the very top
-         *               (under the floating header) and at the bottom edge
-         *               so the strip has no hard rectangular boundaries.
-         *    46–100dvh: text zone on pure paper. Eyebrow → title → body →
-         *               one primary CTA. Left-aligned, generous spacing.
-         *
-         *  Per UI/UX Pro Max:
-         *    §5 content-priority: image is the first thing seen, then the
-         *       headline. No competing layers, no overlap.
-         *    §5 readable-font-size: body 17px, line-length ~32ch.
-         *    §6 visual-hierarchy: size + weight + spacing, not color.
-         *    §2 touch-target-size: CTA 56px tall × full width.
-         *    §4 primary-action: ONE primary CTA only on mobile (the
-         *       "Our Mission" link is in the global header menu already).
-         *    §7 motion-meaning: no decorative entrance animations — the
-         *       parallax scrub IS the motion.
-         * ═════════════════════════════════════════════════════════════════ */
+        /* Mobile hero: calmer artwork, tighter editorial type, shorter scrub. */
         @media (max-width: 768px) {
-            /* Runway height (scroll length) unchanged so the scrub timing
-               doesn't change — only the on-screen composition shifts. */
-            .hero-shell { --hero-scrub-vh: 180; }
+            .hero-shell { --hero-scrub-vh: 150; }
 
-            /* Floating header is small on mobile; the JS reads this var to
-               shift the canvas down so the dome/obelisk don't sit under
-               the header pill. We use a SMALL offset on mobile because
-               the buildings are now anchored at 44dvh (well below the
-               header pill anyway) — too much offset would push them
-               into the text zone. */
-            body[data-page="home"] { --hero-canvas-offset: 24px; }
+            body[data-page="home"] { --hero-canvas-offset: 0px; }
 
-            /* ── Mobile canvas wash ──────────────────────────────────────
-               Two-band paper wash painted into .page-canvas-backdrop::after:
-                 - very top 14dvh: light paper wash so the dome tips fade
-                   gently under the header pill.
-                 - bottom 56dvh : SOLID paper covering the entire text
-                   zone. The canvas itself still paints across the whole
-                   viewport, but the bottom half is fully masked by paper,
-                   so visually the buildings only exist in the top band.
-            ────────────────────────────────────────────────────────────── */
-            .page-canvas-backdrop::after {
+            .page-canvas-backdrop {
+                background: #ffffff;
+            }
+            .page-canvas-backdrop::before {
+                content: none;
+                position: absolute;
+                top: clamp(86px, 11dvh, 118px);
+                left: 0;
+                right: 0;
+                height: clamp(230px, 34dvh, 320px);
+                pointer-events: none;
                 background:
-                    /* light shadow under the buildings to anchor them */
-                    radial-gradient(ellipse at 50% 46%, rgba(15,23,42,0.05) 0%, transparent 60%),
-                    /* opaque paper covering the bottom 56dvh = text zone */
-                    linear-gradient(180deg,
-                        rgba(251,251,249,0.55) 0%,    /* very top: slight wash */
-                        rgba(251,251,249,0)    14%,
-                        rgba(251,251,249,0)    36%,   /* watercolor visible band */
-                        rgba(251,251,249,0.6)  44%,
-                        #fbfbf9                50%,   /* solid paper from here down */
-                        #fbfbf9                100%);
+                    radial-gradient(ellipse at 18% 54%, rgba(148, 163, 184, 0.16) 0%, transparent 46%),
+                    radial-gradient(ellipse at 78% 42%, rgba(201, 161, 74, 0.13) 0%, transparent 44%),
+                    linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(246,240,228,0.72) 100%);
+                opacity: 0.95;
+            }
+            .page-canvas-backdrop::after {
+                background: radial-gradient(ellipse at 50% 43%, rgba(15,23,42,0.035) 0%, transparent 52%);
             }
 
-            /* ── Hero overlay = TEXT ZONE only ───────────────────────────
-               Sticky-pinned to the viewport. Content lives in the bottom
-               half of the screen; the top half is pure watercolor.
-               No overlap, no competition.
-
-               Top padding is 46dvh — leaves a small visual buffer below
-               the building horizon (which sits at ~44dvh) and ensures
-               the CTA stays above the fold even on the smallest phones
-               (320×568) where 50dvh would push it off-screen. */
             .hero-overlay {
-                padding: 46dvh 22px 0;
+                /* Slight downward bump on mobile so the eyebrow + title
+                   never get clipped by the watercolor horizon. Was 52dvh
+                   (340–456px); now 56dvh (364–488px) — gives ~24px more
+                   clearance below the building zone. */
+                padding: clamp(364px, 56dvh, 488px) clamp(22px, 6vw, 40px) 0;
                 align-items: flex-start;
                 text-align: left;
             }
@@ -581,12 +528,8 @@
                 width: 100%;
             }
 
-            /* No accent rule, no staggered animation, no fancy chrome.
-               Reset anything previous mobile rules added. */
             .hero-overlay-inner::before { content: none; }
 
-            /* Eyebrow: simple wide-tracked label, no pill, no blur.
-               Sits as a clean caps line above the title. */
             .hero-eyebrow {
                 display: block;
                 padding: 0;
@@ -594,43 +537,41 @@
                 border: none;
                 -webkit-backdrop-filter: none;
                 backdrop-filter: none;
-                font-size: 0.7rem;
+                font-size: clamp(0.58rem, 2.45vw, 0.68rem);
                 font-weight: 700;
-                letter-spacing: 0.22em;
+                letter-spacing: 0.16em;
                 color: #475569;
-                margin: 0 0 14px;
+                margin: 0 0 10px;
                 line-height: 1.4;
+                max-width: 34ch;
             }
 
-            /* Title: editorial display size. Left-aligned, wraps naturally,
-               never balanced (skill §6: balance can produce awkward wraps
-               at small widths). */
             .hero-title {
-                font-size: clamp(2.4rem, 9vw, 3.2rem);
-                font-weight: 700;
-                line-height: 1.04;
-                letter-spacing: -0.025em;
+                font-size: clamp(2.02rem, 7.4vw, 2.45rem);
+                font-weight: 800;
+                line-height: 1.03;
+                letter-spacing: -0.018em;
                 color: #0a0a0c;
-                margin: 0 0 16px;
-                text-wrap: pretty;
+                margin: 0 0 14px;
+                max-width: 100%;
+                text-wrap: balance;
+            }
+            .hero-title .highlight {
+                display: block;
+                width: fit-content;
             }
             .hero-title .highlight::after {
-                height: 0.34em;
-                background: rgba(99, 102, 241, 0.24);
+                content: none;
             }
 
-            /* Description: 17px (above iOS auto-zoom threshold), comfortable
-               line-height, tight measure for mobile reading. */
             .hero-desc {
-                font-size: 1.0625rem;
-                line-height: 1.55;
-                color: #334155;
-                max-width: 32ch;
-                margin: 0 0 22px;
+                font-size: clamp(1rem, 4vw, 1.0625rem);
+                line-height: 1.48;
+                color: #2f3b4f;
+                max-width: 35ch;
+                margin: 0 0 20px;
             }
 
-            /* Single primary CTA, full-width. No secondary action on mobile
-               — "Our Mission" is reachable from the menu icon in the header. */
             .hero-actions {
                 flex-direction: column;
                 align-items: stretch;
@@ -644,14 +585,14 @@
                 font-size: 1rem;
                 font-weight: 600;
                 justify-content: center;
-                border-radius: 14px;
+                border-radius: 16px;
+                box-shadow:
+                    0 14px 34px rgba(15, 23, 42, 0.18),
+                    0 2px 8px rgba(15, 23, 42, 0.12),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.16);
             }
-            /* Hide the secondary CTA on mobile entirely — single-primary
-               rule (§4 primary-action). */
             .hero-actions .btn-secondary { display: none !important; }
 
-            /* Hide the bottom-of-viewport scroll cue on mobile. With the
-               new composition the cue would sit under the CTA awkwardly. */
             .hero-scroll-cue { display: none; }
 
             /* Section under the hero: opaque white, no blur (perf + iOS) */
@@ -665,7 +606,7 @@
                the hero runway (mobile runway = 180dvh). */
             body[data-page="home"] main > section.featured-articles-strip {
                 background: transparent;
-                margin-top: -32dvh;
+                margin-top: -24dvh;
             }
         }
 
@@ -674,15 +615,19 @@
            zone gets cramped. We tighten the type scale and pull the text
            up slightly so the CTA never falls below the fold. */
         @media (max-width: 768px) and (max-height: 700px) {
-            .hero-overlay { padding-top: 42dvh; }
+            .page-canvas-backdrop::after {
+                background: radial-gradient(ellipse at 50% 39%, rgba(15,23,42,0.03) 0%, transparent 50%);
+            }
+            .hero-overlay { padding-top: clamp(338px, 56dvh, 392px); }
             .hero-title {
-                font-size: clamp(2rem, 8vw, 2.6rem);
+                font-size: clamp(1.92rem, 8vw, 2.35rem);
                 line-height: 1.06;
-                margin-bottom: 12px;
+                margin-bottom: 10px;
             }
             .hero-desc {
-                font-size: 1rem;
-                margin-bottom: 18px;
+                font-size: 0.98rem;
+                line-height: 1.42;
+                margin-bottom: 16px;
             }
             .hero-actions .btn-primary { min-height: 52px; padding: 14px 20px; }
         }
@@ -1100,6 +1045,8 @@
                 // every scrub frame. Cap at 2 on desktop, 1.5 on phones (where
                 // the canvas already shrinks via contain-fit math).
                 var isPhone = window.innerWidth < 768;
+                var mobileStartFrame = RESUME_FRAME;
+                var initialFrame = isPhone ? mobileStartFrame : 0;
                 var dpr = Math.min(window.devicePixelRatio || 1, isPhone ? 1.5 : 2);
 
                 // ── Sizing ────────────────────────────────────────────────
@@ -1133,25 +1080,17 @@
                     var isNarrow = dstW < 768;     // phone-class viewport
 
                     if (isNarrow) {
-                        // ── Mobile: CONTAIN by width, anchor to TOP band ─
-                        // New mobile composition: buildings live in the TOP
-                        // 0–46dvh of the viewport, text in the BOTTOM half.
-                        // We scale to ~92% of viewport width (4% horizontal
-                        // margin each side, so buildings don't kiss edges)
-                        // and anchor the building BASELINE to ~44dvh — just
-                        // above the paper-wash that covers the text zone.
-                        // The CSS .page-canvas-backdrop::after rule paints
-                        // a solid paper gradient from 50dvh down, so the
-                        // buildings smoothly fade into paper at the horizon.
-                        var hMargin = 0.04;
-                        drawW = dstW * (1 - 2 * hMargin);
+                        // Mobile: draw the Mall as a restrained top scene.
+                        // It is intentionally a little wider than the screen,
+                        // which keeps the scroll motion from looking cramped
+                        // while the CSS wash keeps the text zone clean.
+                        drawW = dstW * 1.12;
                         drawH = drawW / srcRatio;
 
-                        // Building baseline at 44dvh from the top of the
-                        // viewport (just above where the paper wash starts
-                        // becoming opaque). drawY is the TOP of the bitmap.
-                        drawX = dstW * hMargin;
-                        drawY = (dstH * 0.44) - drawH;
+                        // Keep the scene below the floating header and above
+                        // the headline. drawY is the top of the bitmap.
+                        drawX = (dstW - drawW) / 2;
+                        drawY = Math.max((dstH * 0.44) - drawH, 108);
                     } else {
                         // ── Desktop / tablet: object-fit:cover ──────────
                         var dstRatio = dstW / dstH;
@@ -1201,17 +1140,15 @@
                                     loaded++;
                                     setLoaderProgress(loaded / FRAME_COUNT);
 
-                                    // First frame loaded → grab dims and paint
-                                    // the INITIAL hero state. We scrub forward
-                                    // (frame 0 → FRAME_COUNT-1), so the initial
-                                    // state IS frame 0 — convenient, since
-                                    // it's also the first to arrive.
-                                    if (idx === 1 && !firstReady) {
+                                    // Initial hero state. Desktop starts at
+                                    // frame 0; mobile starts at RESUME_FRAME
+                                    // so the intro pose is skipped on phones.
+                                    if (idx === initialFrame + 1 && !firstReady) {
                                         firstReady = true;
                                         srcW = img.naturalWidth;
                                         srcH = img.naturalHeight;
                                         recomputeCover();
-                                        currentFrame = 0;          // initial = first frame (parted)
+                                        currentFrame = initialFrame;
                                         drawFrame(currentFrame);
                                         canvas.classList.add('is-ready');
                                     }
@@ -1276,7 +1213,7 @@
                     if (!img) return;
                     // Paint a solid base so any transparent pixels in the WebP
                     // fall back to paper rather than showing the prior frame.
-                    ctx.fillStyle = '#fbfbf9';
+                    ctx.fillStyle = '#ffffff';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(img, drawX, drawY, drawW, drawH);
                     drawnFrame = i;
@@ -1336,6 +1273,7 @@
                     var proxy = { frame: 0 };
                     var heroTween = null;
                     var hasViewedHero = false;
+                    var isMobileScrub = window.innerWidth < 768;
 
                     function buildHeroTween(startFrame) {
                         // Tear down any previous tween + ScrollTrigger
@@ -1354,10 +1292,9 @@
                                 trigger: shell,
                                 start: 'top top',
                                 end: 'bottom bottom',
-                                // Lower scrub (was 1.5) — snappier response,
-                                // less "stale frame" feel, fewer apparent
-                                // jumps when the user scrolls fast.
-                                scrub: 0.8,
+                                // Mobile uses a tighter scrub so the hero
+                                // responds immediately to short touch scrolls.
+                                scrub: isMobileScrub ? 0.35 : 0.8,
                                 invalidateOnRefresh: true,
                                 onUpdate: function () {
                                     currentFrame = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(proxy.frame)));
@@ -1387,7 +1324,7 @@
                         });
                     }
 
-                    buildHeroTween(0);
+                    buildHeroTween(isMobileScrub ? mobileStartFrame : 0);
 
                     // Hero overlay fades out EARLY so the article cards have
                     // a clear stage by the time they slide in. We also keep
@@ -1400,9 +1337,9 @@
                             ease: 'power2.out',
                             scrollTrigger: {
                                 trigger: shell,
-                                start: 'top+=8% top',      // start fading almost immediately
-                                end:   'top+=28% top',     // fully gone by 28% — articles begin at 25%
-                                scrub: 1.0
+                                start: isMobileScrub ? 'top+=10% top' : 'top+=8% top',
+                                end:   isMobileScrub ? 'top+=34% top' : 'top+=28% top',
+                                scrub: isMobileScrub ? 0.55 : 1.0
                             }
                         });
                     }
@@ -1423,9 +1360,9 @@
                             ease: 'power2.out',
                             scrollTrigger: {
                                 trigger: shell,
-                                start: 'top+=25% top',     // begin appearing at 25% of runway
-                                end:   'top+=55% top',     // fully visible by 55%
-                                scrub: 1.0,
+                                start: isMobileScrub ? 'top+=34% top' : 'top+=25% top',
+                                end:   isMobileScrub ? 'top+=64% top' : 'top+=55% top',
+                                scrub: isMobileScrub ? 0.55 : 1.0,
                                 onEnter:     function () { articlesStrip.classList.add('is-visible'); },
                                 onEnterBack: function () { articlesStrip.classList.add('is-visible'); },
                                 onLeave:     function () { articlesStrip.classList.add('is-visible'); },
