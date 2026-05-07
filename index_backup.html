@@ -446,6 +446,21 @@
             z-index: 5;
         }
 
+        /* Footer wrapper gets an opaque white background so the watercolor
+           canvas backdrop never shows in the gap between the last section
+           and whatever the footer's <footer> element renders to. The actual
+           footer styles still come from css/styles.css. */
+        body[data-page="home"] #site-footer {
+            background: #ffffff;
+        }
+        /* Kill the trailing margin/padding under the LAST section on the
+           home page so the newsletter card sits flush against the footer
+           edge — no gap, no watercolor peek-through. */
+        body[data-page="home"] main > section:last-child {
+            padding-bottom: 60px;
+            margin-bottom: 0;
+        }
+
         /* ───── Reduced motion: skip scrub, show last frame statically ───── */
         @media (prefers-reduced-motion: reduce) {
             .hero-shell { height: 100dvh; }
@@ -905,23 +920,45 @@
                                       .getPropertyValue('--hero-canvas-offset');
                     var headerClearance = parseFloat(rawOffset) || 0;
 
-                    // object-fit: cover math
                     var srcRatio = srcW / srcH;
-                    var dstRatio = dstW / dstH;
-                    if (dstRatio > srcRatio) {
-                        // viewport wider than source → match width, crop top/bottom
+                    var isNarrow = dstW < 768;     // phone-class viewport
+
+                    if (isNarrow) {
+                        // ── Mobile: CONTAIN by width ─────────────────────
+                        // The viewport is narrow & tall (390×844 etc.).
+                        // object-fit:cover would crop both buildings off
+                        // the sides. Instead we scale the image so it fits
+                        // the full viewport WIDTH — both buildings stay
+                        // visible. The image becomes a short horizontal
+                        // strip; we anchor it ~55% down the viewport so
+                        // the rest of the hero text has room above.
                         drawW = dstW;
                         drawH = dstW / srcRatio;
+
+                        // Vertical placement: roughly center-bottom. Use
+                        // 0.62 of viewport height as the building baseline,
+                        // so there's hero-text room above and a little
+                        // breathing room below before the article cards.
+                        drawX = 0;
+                        drawY = (dstH * 0.62) - drawH;
                     } else {
-                        // viewport taller than source → match height, crop sides
-                        drawH = dstH;
-                        drawW = dstH * srcRatio;
+                        // ── Desktop / tablet: object-fit:cover ──────────
+                        var dstRatio = dstW / dstH;
+                        if (dstRatio > srcRatio) {
+                            drawW = dstW;
+                            drawH = dstW / srcRatio;
+                        } else {
+                            drawH = dstH;
+                            drawW = dstH * srcRatio;
+                        }
+                        // Center horizontally; ANCHOR TO BOTTOM vertically
+                        // and then shift the whole image DOWN by
+                        // headerClearance so the building tops sit below
+                        // the floating header.
+                        drawX = (dstW - drawW) / 2;
+                        drawY = (dstH - drawH) + headerClearance;
                     }
-                    // Center horizontally; ANCHOR TO BOTTOM vertically and
-                    // then shift the whole image DOWN by headerClearance so
-                    // the building tops sit below the floating header.
-                    drawX = (dstW - drawW) / 2;
-                    drawY = (dstH - drawH) + headerClearance;
+
                     // DPR-scale to backing-store pixels
                     drawX *= dpr; drawY *= dpr; drawW *= dpr; drawH *= dpr;
                 }
@@ -1095,9 +1132,13 @@
                     }
 
                     // Featured-articles strip: fade in + slide up to overlap
-                    // the hero runway. Window: 25%→55% of the runway — by the
-                    // time the user has scrolled a third of the way, the cards
-                    // are fully on screen and the buildings are still parting.
+                    // the hero runway. Window: 25%→55% of the runway. The
+                    // scrubbed tween handles opacity/transform reversibly.
+                    // We ALSO toggle `.is-visible` so the no-JS / reduced-
+                    // motion CSS fallback rule stays in sync — it must be
+                    // both ADDED on enter AND REMOVED when scrolling back
+                    // above the trigger, otherwise the strip stays "stuck"
+                    // visible after a scroll-up past the hero start.
                     var articlesStrip = document.getElementById('featured-articles-strip');
                     if (articlesStrip) {
                         gsap.to(articlesStrip, {
@@ -1109,17 +1150,19 @@
                                 start: 'top+=25% top',     // begin appearing at 25% of runway
                                 end:   'top+=55% top',     // fully visible by 55%
                                 scrub: 1.0,
-                                // Belt-and-suspenders: also flag the section as visible once
-                                // we're past the start, so anything else relying on .is-visible
-                                // (or future no-JS fallbacks) sees it.
                                 onEnter:     function () { articlesStrip.classList.add('is-visible'); },
-                                onEnterBack: function () { articlesStrip.classList.add('is-visible'); }
+                                onEnterBack: function () { articlesStrip.classList.add('is-visible'); },
+                                onLeave:     function () { articlesStrip.classList.add('is-visible'); },
+                                onLeaveBack: function () { articlesStrip.classList.remove('is-visible'); }
                             }
                         });
                     }
 
-                    // Scroll cue fades fast on first scroll — its job ends
-                    // once the user begins parting the buildings.
+                    // Scroll cue fades on first scroll, but the scrubbed tween
+                    // is fully REVERSIBLE — if the user scrolls all the way
+                    // back to the top, the cue fades back in. We don't kill
+                    // it with display:none anymore (that would break the
+                    // scroll-up symmetry).
                     if (cue) {
                         gsap.to(cue, {
                             opacity: 0,
@@ -1129,8 +1172,7 @@
                                 trigger: shell,
                                 start: 'top top',
                                 end: 'top+=15% top',
-                                scrub: 0.6,
-                                onLeave: function () { cue.style.display = 'none'; }
+                                scrub: 0.6
                             }
                         });
                     }
