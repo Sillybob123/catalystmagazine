@@ -58,3 +58,9 @@ build/
 
 # Local-only backups (never deployed; git history is the real record)
 *.backup
+
+# Source media for the hero frame-extractor — large, used only as input to
+# scripts/extract-hero-frames.js. The extracted WebP frames in
+# public/assets/hero-frames/ ARE committed and shipped.
+*.mov
+*.mp4

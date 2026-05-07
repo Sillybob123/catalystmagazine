@@ -47,7 +47,11 @@ const excludedExtensions = new Set([
   ".backup",
   ".md",
   ".py",
-  ".sh"
+  ".sh",
+  // Source media for hero-frame extraction — large, used as input only.
+  // The extracted WebP frames under public/assets/hero-frames/ ship instead.
+  ".mov",
+  ".mp4"
 ]);
 
 async function resetOutputDirectory() {

@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+    <!-- End Google Tag Manager -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="The Catalyst Magazine — Washington D.C.'s student-run STEM publication. Profiles, interviews, and features on science, research, and innovation from GW, Georgetown, Howard, and beyond.">
+    <meta name="keywords" content="The Catalyst Magazine, Catalyst Magazine, Catalyst DC, The Catalyst, Catalyst Magazine DC, STEM magazine Washington DC, student-run science magazine, science journalism DC, STEM stories, research profiles, science interviews">
+    <meta name="author" content="The Catalyst Magazine">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0d5eaf">
+    <title>The Catalyst Magazine | STEM in Washington D.C.</title>
+    <link rel="canonical" href="https://www.catalyst-magazine.com/">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="The Catalyst Magazine">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:url" content="https://www.catalyst-magazine.com/">
+    <meta property="og:title" content="The Catalyst Magazine | STEM in Washington D.C.">
+    <meta property="og:description" content="Explore Catalyst Magazine, a student-run hub for STEM enthusiasts, blending science, engineering, and art to inspire creativity and innovation.">
+    <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="The Catalyst Magazine logo">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://www.catalyst-magazine.com/">
+    <meta name="twitter:title" content="The Catalyst Magazine | STEM in Washington D.C.">
+    <meta name="twitter:description" content="Explore Catalyst Magazine, a student-run hub for STEM enthusiasts, blending science, engineering, and art to inspire creativity and innovation.">
+    <meta name="twitter:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+    <meta name="twitter:image:alt" content="The Catalyst Magazine logo">
+    <!-- Preconnect to external resources for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://wsrv.nl" crossorigin>
+    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+
+
+    <!-- Preload critical images for instant display (viewport-aware to avoid double download) -->
+    <link rel="preload" as="image" href="WebLogo.png" media="(min-width: 769px)" fetchpriority="high">
+    <link rel="preload" as="image" href="NewLogoShape.png" media="(max-width: 768px)" fetchpriority="high">
+
+    <!-- DNS prefetch for external image sources -->
+
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+    <link rel="preload" href="css/styles.css" as="style">
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Preload the FIRST frame (frame_0001.webp) — that's the initial hero
+         state (buildings parted to far edges). The full sequence is preloaded
+         by JS; this just gets the first paint earlier. -->
+    <link rel="preload" as="image" href="public/assets/hero-frames/frame_0001.webp" fetchpriority="high">
+
+    <!--
+      Catalyst Homepage — v5 (page-wide scroll-scrubbed canvas backdrop)
+      ─────────────────────────────────────────────────────────────────────────
+      Architecture:
+        • <canvas#hero-canvas> is position:fixed, inset:0, z-index:0 — it lives
+          BEHIND the entire page as a permanent backdrop.
+        • The hero section is just a scroll runway (#hero-shell). As the user
+          scrolls through it, the canvas scrubs from frame 1 (buildings together,
+          centered) → frame 99 (buildings at far left & far right edges with
+          the National Mall opening between them).
+        • Once the runway is consumed, the canvas locks on frame 99 and stays
+          fixed in the background. The buildings now sit anchored at the page
+          edges through every section below — Featured Stories, Search, Latest,
+          Brain Teaser, Newsletter — visible at the screen edges while content
+          sections cover the middle on opaque white.
+
+      Applied rules:
+        Impeccable: tinted neutrals (#0a0a0c / #fbfbf9), restrained color,
+                    motion-as-meaning (split = "the page is opening").
+        Pro Max:    will-change for HW accel, prefers-reduced-motion fallback,
+                    ≥44px touch targets via .btn.
+        Taste:      no h-screen (uses 100dvh to avoid iOS Safari jump),
+                    no centered-only hero composition.
+    -->
+    <style>
+        body[data-page="home"] {
+            background-color: #fbfbf9;
+            /* How far to shift the canvas backdrop DOWN so the floating
+               header pill doesn't cover the dome / obelisk tips. Read by JS
+               via getComputedStyle. Mobile gets its own override below. */
+            --hero-canvas-offset: 96px;
+        }
+        body[data-page="home"] .bg-blobs { display: none; }
+
+        /* ─────────────────────────────────────────────────────────────────
+         *  Page-wide canvas backdrop
+         *  Lives behind everything. Renders the watercolor frame-sequence.
+         * ───────────────────────────────────────────────────────────────── */
+        .page-canvas-backdrop {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100dvh;
+            z-index: 0;
+            pointer-events: none;
+            background: radial-gradient(ellipse at 50% 80%, #faf6ec 0%, #fbfbf9 60%, #f3efe4 100%);
+            overflow: hidden;
+        }
+        .hero-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            will-change: contents;
+            opacity: 0;
+            transition: opacity 520ms cubic-bezier(.2,.7,.2,1);
+        }
+        .hero-canvas.is-ready { opacity: 1; }
+
+        /* Soft horizon wash anchoring the buildings to the bottom of the page */
+        .page-canvas-backdrop::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.06) 0%, transparent 60%),
+                linear-gradient(180deg, rgba(251,251,249,0) 70%, rgba(251,251,249,0.4) 100%);
+        }
+
+        /* Loading shim — over the canvas until preload completes */
+        .hero-loader {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fbfbf9;
+            transition: opacity 460ms ease;
+        }
+        .hero-loader[hidden] { display: none; }
+        .hero-loader-bar {
+            width: clamp(120px, 22vw, 220px);
+            height: 2px;
+            background: rgba(15, 23, 42, 0.08);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        .hero-loader-bar::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            width: var(--hero-loader-progress, 0%);
+            background: linear-gradient(90deg, #6366f1, #c9a14a);
+            transition: width 160ms linear;
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
+         *  Hero shell — pure scroll runway. No visual chrome of its own;
+         *  all visuals come from the fixed canvas behind. The overlay
+         *  (text + CTAs) is sticky-pinned within the runway and fades out
+         *  as the buildings reach the edges, handing off to the article
+         *  sections below.
+         * ───────────────────────────────────────────────────────────────── */
+        .hero-shell {
+            position: relative;
+            width: 100%;
+            z-index: 1;     /* above the canvas backdrop */
+            --hero-scrub-vh: 220;   /* total scroll runway in vh */
+            height: calc(var(--hero-scrub-vh) * 1dvh);
+            background: transparent;
+        }
+
+        .hero-overlay {
+            position: sticky;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 24px;
+            text-align: center;
+            pointer-events: none;       /* CTAs re-enable below */
+            will-change: opacity, transform;
+        }
+        .hero-overlay-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            pointer-events: auto;
+        }
+
+        .hero-eyebrow {
+            display: inline-block;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #475569;
+            padding: 7px 18px;
+            border: 1px solid rgba(15, 23, 42, 0.16);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.78);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            margin-bottom: 24px;
+        }
+
+        .hero-title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: clamp(2.2rem, 5.4vw, 4.6rem);
+            line-height: 1.04;
+            letter-spacing: -0.025em;
+            color: #0a0a0c;
+            margin: 0 0 18px;
+            text-wrap: balance;
+        }
+        .hero-title .highlight {
+            position: relative;
+            white-space: nowrap;
+        }
+        .hero-title .highlight::after {
+            content: "";
+            position: absolute;
+            left: -0.04em;
+            right: -0.04em;
+            bottom: 0.08em;
+            height: 0.32em;
+            background: rgba(99, 102, 241, 0.22);
+            z-index: -1;
+            border-radius: 2px;
+        }
+
+        .hero-desc {
+            font-family: 'Poppins', sans-serif;
+            font-size: clamp(1rem, 1.25vw, 1.14rem);
+            line-height: 1.65;
+            color: #334155;
+            max-width: 600px;
+            margin: 0 auto 26px;
+            text-wrap: pretty;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Scroll cue */
+        .hero-scroll-cue {
+            position: fixed;        /* anchored to viewport, not the runway */
+            left: 50%;
+            bottom: clamp(18px, 3.4dvh, 36px);
+            transform: translate3d(-50%, 0, 0);
+            z-index: 2;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.66rem;
+            font-weight: 600;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: #475569;
+            opacity: 0.9;
+            pointer-events: none;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            will-change: opacity, transform;
+        }
+        .hero-scroll-cue::after {
+            content: "";
+            width: 1px;
+            height: 28px;
+            background: linear-gradient(180deg, rgba(15,23,42,0.5), rgba(15,23,42,0));
+            animation: heroCue 1.6s cubic-bezier(.4,0,.2,1) infinite;
+        }
+        @keyframes heroCue {
+            0%   { transform: translateY(-6px) scaleY(0.6); opacity: 0; }
+            40%  { opacity: 1; }
+            100% { transform: translateY(8px)  scaleY(1);   opacity: 0; }
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
+         *  Content sections sit ABOVE the canvas with their own backgrounds.
+         *  They cover the middle of the screen — the buildings (now at the
+         *  page edges in frame 99) remain visible beyond the section's
+         *  horizontal extent. Sections use a max-width container so they
+         *  don't reach the screen edges, leaving the buildings exposed.
+         * ───────────────────────────────────────────────────────────────── */
+        body[data-page="home"] main > section:not(.hero-shell) {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.92);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+        }
+        /* The Featured-articles strip directly under the hero is transparent
+           so the watercolor (Capitol on the left, Monument on the right)
+           continues uninterrupted behind the three feature cards. The cards
+           themselves carry their own opaque image backgrounds.
+           ─
+           OVERLAP: We pull this strip UP into the bottom of the hero runway
+           with a negative margin-top. The hero shell is 220dvh (180dvh on
+           mobile); we lift the strip ~65dvh so the cards enter the viewport
+           around the time the monument-slide animation kicks off, and are
+           fully on-screen by the time the slide finishes. The strip sits
+           above the hero overlay (which is fading out by then) thanks to
+           z-index:2 below. */
+        body[data-page="home"] main > section.featured-articles-strip {
+            background: transparent;
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+            margin-top: -65dvh;
+            position: relative;
+            z-index: 2;                 /* above the hero overlay (z=1) */
+            opacity: 0;                 /* faded in by ScrollTrigger below */
+            transform: translate3d(0, 24px, 0);
+            will-change: opacity, transform;
+        }
+        /* When the JS isn't available (no GSAP / reduced-motion / no-JS),
+           force articles visible — never hide them as a fallback. */
+        body[data-page="home"] main > section.featured-articles-strip.is-visible,
+        .no-hero-scrub body[data-page="home"] main > section.featured-articles-strip {
+            opacity: 1;
+            transform: none;
+        }
+        /* The very last section opens up to a fully-opaque footing so the
+           page resolves cleanly at the bottom. */
+        body[data-page="home"] main > section:last-child {
+            background: #ffffff;
+            -webkit-backdrop-filter: none;
+            backdrop-filter: none;
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
+         *  Disable the global .scroll-reveal effect on the home page.
+         *
+         *  js/main.js attaches .scroll-reveal / .scroll-reveal-scale to every
+         *  .section (alternating per index) and toggles .revealed via an
+         *  IntersectionObserver. On most pages that produces a polite fade-up,
+         *  but on the home page it makes each section pop in independently
+         *  on top of the canvas-scrub backdrop — feels chaotic.
+         *
+         *  We override here for body[data-page="home"] only, so every other
+         *  page keeps the global behaviour unchanged. The .featured-articles-
+         *  strip is excluded via :not() because it owns a custom GSAP-driven
+         *  fade-in synchronised to the hero scrub.
+         * ───────────────────────────────────────────────────────────────── */
+        body[data-page="home"] main .scroll-reveal:not(.featured-articles-strip),
+        body[data-page="home"] main .scroll-reveal-left:not(.featured-articles-strip),
+        body[data-page="home"] main .scroll-reveal-right:not(.featured-articles-strip),
+        body[data-page="home"] main .scroll-reveal-scale:not(.featured-articles-strip),
+        body[data-page="home"] main .stagger-children > * {
+            opacity: 1 !important;
+            transform: none !important;
+            transition: none !important;
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
+         *  Hide the global 1px section divider on the home page only.
+         *  css/styles.css#1284 paints `.section::before` as a faint hairline
+         *  at the top of every section. On standard white pages it's barely
+         *  visible — on the home page, with the watercolor canvas showing
+         *  through transparent sections, it draws a stray "line" across the
+         *  composition. Suppressed here, every other page keeps it.
+         * ───────────────────────────────────────────────────────────────── */
+        body[data-page="home"] main > section::before {
+            display: none !important;
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
+         *  Featured-article cards: make them solid + readable.
+         *  css/styles.css#1162 sets a glass background
+         *  (rgba(255,255,255,0.85→0.65) + 24px backdrop-blur) which on the
+         *  home page makes the cards look see-through against the watercolor
+         *  backdrop. Override locally for opaque white. The card image
+         *  occupies the top of the card; this rule only affects the
+         *  text-area background below it.
+         * ───────────────────────────────────────────────────────────────── */
+        body[data-page="home"] .featured-card {
+            background: #ffffff !important;
+            -webkit-backdrop-filter: none !important;
+            backdrop-filter: none !important;
+            border-color: rgba(15, 23, 42, 0.08) !important;
+        }
+        body[data-page="home"] .featured-card-overlay {
+            background: #ffffff;
+        }
+
+        /* Section header for the featured-articles strip — slightly tighter
+           than the full .section-header default since this strip sits right
+           below the hero and doesn't need a giant top breathing room. */
+        body[data-page="home"] .featured-strip-header {
+            text-align: center;
+            margin-bottom: clamp(20px, 3vh, 32px);
+        }
+        body[data-page="home"] .featured-strip-header .eyebrow {
+            display: inline-block;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: #475569;
+            padding: 6px 14px;
+            border: 1px solid rgba(15, 23, 42, 0.14);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.78);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            margin-bottom: 12px;
+        }
+        body[data-page="home"] .featured-strip-header .section-title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: #0a0a0c;
+            margin: 0;
+        }
+        @media (max-width: 768px) {
+            body[data-page="home"] .featured-strip-header { margin-bottom: 16px; }
+            body[data-page="home"] .featured-strip-header .eyebrow { font-size: 0.62rem; padding: 5px 12px; }
+        }
+
+        /* The site header + footer should also sit above the canvas */
+        #site-header, #site-footer {
+            position: relative;
+            z-index: 5;
+        }
+
+        /* ───── Reduced motion: skip scrub, show last frame statically ───── */
+        @media (prefers-reduced-motion: reduce) {
+            .hero-shell { height: 100dvh; }
+            .hero-canvas { will-change: auto; }
+            .hero-scroll-cue { display: none; }
+        }
+
+        /* ───── Mobile: shorter runway, smaller overlay padding ───── */
+        @media (max-width: 768px) {
+            .hero-shell { --hero-scrub-vh: 180; }
+            .hero-overlay { padding: 0 18px; }
+            .hero-eyebrow { font-size: 0.62rem; padding: 6px 14px; margin-bottom: 18px; }
+            /* Smaller header on mobile → smaller canvas offset */
+            body[data-page="home"] { --hero-canvas-offset: 76px; }
+            /* Dial down the backdrop-blur on mobile (perf + iOS quirks) */
+            body[data-page="home"] main > section:not(.hero-shell) {
+                background: rgba(255, 255, 255, 0.96);
+                -webkit-backdrop-filter: none;
+                backdrop-filter: none;
+            }
+            /* Keep the featured-articles strip transparent on mobile, and
+               use a smaller overlap (mobile runway is 180dvh vs 220dvh). */
+            body[data-page="home"] main > section.featured-articles-strip {
+                background: transparent;
+                margin-top: -45dvh;
+            }
+        }
+    </style>
+
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": ["Organization", "NewsMediaOrganization"],
+                "@id": "https://www.catalyst-magazine.com/#organization",
+                "name": "The Catalyst Magazine",
+                "alternateName": [
+                    "The Catalyst",
+                    "Catalyst Magazine",
+                    "Catalyst DC",
+                    "Catalyst Magazine DC",
+                    "The Catalyst DC"
+                ],
+                "description": "The Catalyst is a Washington, D.C.-based student-run STEM magazine publishing profiles, interviews, and features on science, research, and innovation.",
+                "url": "https://www.catalyst-magazine.com",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://www.catalyst-magazine.com/NewLogoShape.png",
+                    "width": 1200,
+                    "height": 630
+                },
+                "foundingLocation": "Washington, D.C.",
+                "areaServed": "US",
+                "sameAs": [],
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Washington",
+                    "addressRegion": "DC",
+                    "addressCountry": "US"
+                }
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://www.catalyst-magazine.com/#website",
+                "url": "https://www.catalyst-magazine.com",
+                "name": "The Catalyst Magazine",
+                "publisher": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "inLanguage": "en-US",
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "https://www.catalyst-magazine.com/articles?q={search_term_string}"
+                    },
+                    "query-input": "required name=search_term_string"
+                }
+            }
+        ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "The Catalyst Magazine",
+        "url": "https://www.catalyst-magazine.com",
+        "description": "STEM Stories That Spark Change - A student-run magazine exploring science, technology, engineering, and mathematics in Washington D.C.",
+        "publisher": {
+            "@type": "Organization",
+            "name": "The Catalyst Magazine"
+        },
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://www.catalyst-magazine.com/articles?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+</head>
+<body data-page="home">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <!-- Animated Background Blobs -->
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+        <div class="dc-capitol"></div>
+        <div class="dc-silhouette"></div>
+    </div>
+
+    <!-- Page-wide canvas backdrop. Stays fixed behind every section. -->
+    <div class="page-canvas-backdrop" aria-hidden="true">
+        <canvas class="hero-canvas" id="hero-canvas"></canvas>
+        <div class="hero-loader" id="hero-loader" aria-hidden="true">
+            <div class="hero-loader-bar"></div>
+        </div>
+    </div>
+    <span class="hero-scroll-cue" id="hero-scroll-cue" aria-hidden="true">Scroll</span>
+
+    <div id="site-header"></div>
+
+    <main>
+        <!--
+          Hero shell — pure scroll runway (no canvas inside; canvas is the
+          page-wide fixed backdrop above). The overlay is sticky-pinned within
+          the runway and fades out via JS as the buildings reach the edges.
+        -->
+        <section class="hero-shell" id="hero-shell" aria-label="Catalyst Magazine — STEM in the Nation's Capital">
+            <div class="hero-overlay" id="hero-overlay">
+                <div class="hero-overlay-inner">
+                    <span class="hero-eyebrow">The Catalyst Magazine · Washington, D.C.</span>
+                    <h1 class="hero-title">
+                        STEM in the Nation's <span class="highlight">Capital</span>
+                    </h1>
+                    <p class="hero-desc">
+                        Discover groundbreaking research, meet brilliant minds, and explore the innovations shaping our future — all through the lens of student journalists at the forefront of STEM.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="/articles" class="btn btn-primary">
+                            Read Latest Stories
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a href="/about" class="btn btn-secondary">Our Mission</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured articles strip below the hero — transparent so the
+             watercolor backdrop shows through behind the cards. -->
+        <section class="section featured-articles-strip" id="featured-articles-strip" aria-label="Featured articles" style="padding-top: clamp(40px, 6vh, 80px);">
+            <div class="container">
+                <div class="section-header featured-strip-header">
+                    <span class="eyebrow">On the Cover</span>
+                    <h2 class="section-title">Featured Articles</h2>
+                </div>
+                <div class="hero-featured" id="hero-featured">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Stories Grid -->
+        <section class="section" style="padding-top: 60px;">
+            <div class="container">
+                <div class="section-header">
+                    <span class="eyebrow">Featured Stories</span>
+                    <h2 class="section-title">Latest from The Catalyst</h2>
+                    <p class="section-subtitle">Exploring groundbreaking research and the brilliant minds driving innovation in D.C. and beyond</p>
+                </div>
+
+                <div class="featured-stories-grid" id="featured-stories-grid">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Section -->
+        <section class="section" style="padding-top: 40px; padding-bottom: 60px;">
+            <div class="container">
+                <div class="search-container">
+                    <div class="search-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="search-input" class="search-input" placeholder="Search articles by title, author, or topic...">
+                        <button id="search-clear" class="search-clear" style="display: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="search-results-count" class="search-results-count" style="display: none;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Posts Section -->
+        <section class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Latest Stories</h2>
+                    <p class="section-subtitle">Explore profiles, features, and interviews from our contributors</p>
+                </div>
+
+                <!-- Category Pills -->
+                <div class="category-filters" style="margin-bottom: 40px;">
+                    <a href="/articles" class="filter-btn active">All Articles</a>
+                    <a href="/articles?category=editorial" class="filter-btn">Editorials</a>
+                    <a href="brain-teaser" class="filter-btn">Brain Teaser</a>
+                </div>
+
+                <!-- Articles Grid -->
+                <div class="articles-grid" id="home-articles-grid">
+                    <!-- Rendered by JS -->
+                </div>
+
+                <div class="load-more-container">
+                    <a href="/articles" class="btn btn-secondary">
+                        View All Articles
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Categories -->
+        <section class="section category-explore-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Explore By Category</h2>
+                    <p class="section-subtitle">Discover stories that spark your curiosity</p>
+                </div>
+
+                <div class="category-grid">
+                    <a href="/articles?category=feature" class="category-card category-features fade-in">
+                        <h3>Features</h3>
+                        <p>In-depth explorations of groundbreaking research and innovations shaping our world.</p>
+                        <div class="category-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="/articles?category=profile" class="category-card category-profiles fade-in">
+                        <h3>Profiles</h3>
+                        <p>Meet the scientists and innovators driving discoveries in the D.C. area and beyond.</p>
+                        <div class="category-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="/articles?category=interview" class="category-card category-interviews fade-in">
+                        <h3>Interviews</h3>
+                        <p>Candid conversations with leading experts sharing their journeys and insights.</p>
+                        <div class="category-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="/articles?category=editorial" class="category-card category-editorials fade-in">
+                        <h3>Editorials</h3>
+                        <p>Thoughtful perspectives and op-eds on pressing issues in science and society.</p>
+                        <div class="category-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Brain Teaser Section -->
+        <section class="section brain-teaser-section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="eyebrow">Challenge Yourself</span>
+                    <h2 class="section-title">The Catalyst Riddle</h2>
+                    <p class="section-subtitle">A new riddle of language and meaning &mdash; only the sharpest minds will unlock the Winners' Lounge</p>
+                </div>
+
+                <div class="brain-teaser-card" id="brain-teaser-card">
+                    <p style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #6366f1; margin-bottom: 20px;">New Puzzle &middot; Issue No. 02</p>
+                    <h3 class="brain-teaser-question">Can you solve The Catalyst Riddle?</h3>
+                    <p style="color: var(--text-muted); margin: 16px 0 32px; font-size: 0.97rem; line-height: 1.65;">
+                        A four-line verse hides a single, ordinary answer in plain sight. Read carefully &mdash; the words themselves are the clue.
+                    </p>
+
+                    <!-- Riddle verse preview -->
+                    <div style="position: relative; max-width: 540px; margin: 0 auto 36px; padding: 28px 28px 24px; border: 1px solid #e5e7eb; border-radius: 14px; background: #fafaf9;">
+                        <div aria-hidden="true" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 56%; height: 1px; background: linear-gradient(90deg, transparent, #c7c7cc, transparent);"></div>
+                        <p style="font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 1.02rem; line-height: 1.85; color: #1d1d1f; margin: 0; letter-spacing: -0.005em;">
+                            I am the beginning of <em style="font-style: normal; font-weight: 700; color: #0f172a;">eternity</em>,<br>
+                            the end of <em style="font-style: normal; font-weight: 700; color: #0f172a;">time</em> and <em style="font-style: normal; font-weight: 700; color: #0f172a;">space</em>,<br>
+                            the beginning of every <em style="font-style: normal; font-weight: 700; color: #0f172a;">end</em>,<br>
+                            and the end of every <em style="font-style: normal; font-weight: 700; color: #0f172a;">place</em>.
+                        </p>
+                        <hr aria-hidden="true" style="width: 32px; height: 1px; background: #e5e7eb; border: 0; margin: 18px auto 14px;">
+                        <p style="font-family: 'Poppins', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: #6366f1; margin: 0;">What am I?</p>
+                    </div>
+
+                    <a href="brain-teaser" class="btn btn-primary brain-teaser-reveal" style="margin-bottom: 0;">
+                        Accept the Challenge
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Newsletter Section -->
+        <section class="section" id="newsletter-section">
+            <div class="container">
+                <div class="newsletter">
+                    <div class="newsletter-content">
+                        <h3 class="newsletter-title">Join the Changemakers</h3>
+                        <p class="newsletter-subtitle">Sign up for our newsletter to stay connected with exclusive stories and D.C. STEM spotlights.</p>
+                        <form action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="newsletter-form-glass" novalidate>
+                            <div class="newsletter-form-grid">
+                                <input type="text" name="FNAME" class="form-input-glass" placeholder="First Name" required>
+                                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last Name" required>
+                            </div>
+                            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL" placeholder="Email Address" required>
+
+                            <!-- Bot prevention -->
+                            <div aria-hidden="true" style="position: absolute; left: -5000px;">
+                                <input type="text" name="b_d76819924b4f0773791d6827b_1ce6c96e6d" tabindex="-1" value="">
+                            </div>
+
+                            <button type="submit" name="subscribe" class="btn btn-primary btn-glass">
+                                Subscribe
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                            <div id="mce-response" class="newsletter-response"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script defer src="js/layout.js"></script>
+    <script defer src="js/newsletter-handler.js"></script>
+    <script defer src="js/lqip-manifest.js"></script>
+    <script defer src="js/data.js?v=2"></script>
+    <script defer src="js/main.js?v=2026042824"></script>
+
+    <!-- GSAP + ScrollTrigger for the canvas frame-scrub -->
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+    <script defer>
+        /*
+         * Hero canvas frame-scrub
+         * ─────────────────────────────────────────────────────────────────────
+         *  • Preloads the entire WebP frame sequence into Image objects.
+         *  • While preloading, animates a progress bar in .hero-loader.
+         *  • Once ready, fades in the canvas, mounts a ScrollTrigger that
+         *    scrubs the active frame index against scroll progress with
+         *    inertial scrub (1.5) — buildings glide to a stop instead of
+         *    snapping. The overlay text fades in on the back half of the
+         *    parting and the scroll cue fades out on the front quarter.
+         *  • render() is rAF-deduped: the scrub setter only stamps a new
+         *    target index, the actual draw happens on the next animation
+         *    frame, so rapid scroll events don't queue redundant paints.
+         *  • Honors prefers-reduced-motion: shows the LAST frame statically
+         *    (buildings already parted) with overlay visible immediately.
+         * ─────────────────────────────────────────────────────────────────── */
+        (function () {
+            // Update FRAME_COUNT if you re-run scripts/extract-hero-frames.js
+            // with a longer/shorter video. The script prints the new count.
+            //
+            // SCRUB DIRECTION: forward (frame 1 → FRAME_COUNT).
+            //   • frame 1     = monument shifted slightly RIGHT of its natural
+            //                   start position — gives a subtle "settle in"
+            //                   bounce as the user starts scrolling.
+            //   • frame 14    = monument back at capital.mp4's natural frame_0001
+            //                   position (parted state, Capitol left + Monument
+            //                   right at ~70% across).
+            //   • frames 15-206 = the natural forward playback of capital.mp4
+            //                   (192 frames at 3840×2160 q=88).
+            //   • frame 206   = unified Mall (buildings come together, trees
+            //                   fill in) — the final freeze state shown as
+            //                   the page-wide backdrop below the hero.
+            //
+            // The first 14 frames were synthesized by
+            // scripts/extend-monument-frames.py with --max-shift 120 to add
+            // a subtle bounce-in intro before the source video begins.
+            var FRAME_COUNT  = 206;
+            var FRAME_PATH   = 'public/assets/hero-frames/';
+            var FRAME_PREFIX = 'frame_';
+            var FRAME_EXT    = '.webp';
+
+            function pad4(n) { return ('0000' + n).slice(-4); }
+            function frameURL(i) { return FRAME_PATH + FRAME_PREFIX + pad4(i) + FRAME_EXT; }
+
+            function init() {
+                var shell    = document.getElementById('hero-shell');
+                var canvas   = document.getElementById('hero-canvas');
+                var overlay  = document.getElementById('hero-overlay');
+                var cue      = document.getElementById('hero-scroll-cue');
+                var loader   = document.getElementById('hero-loader');
+                if (!shell || !canvas) return;
+
+                var ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+                // DPR cap of 3 lets the canvas render at full retina sharpness
+                // on 5K displays while still avoiding silly fill costs.
+                var dpr = Math.min(window.devicePixelRatio || 1, 3);
+
+                // ── Sizing ────────────────────────────────────────────────
+                // The canvas is position:fixed, full viewport. Object-fit:cover
+                // math against the live window dims, anchored to the bottom of
+                // the viewport so the buildings sit on the ground line.
+                // Source frames are 3840×2160 (16:9, 4K) — capital.mp4 upscaled 3×.
+                var srcW = 3840, srcH = 2160;   // overwritten when first frame loads
+                var dstW = 0, dstH = 0;
+                var drawX = 0, drawY = 0, drawW = 0, drawH = 0;
+
+                function recomputeCover() {
+                    dstW = window.innerWidth;
+                    dstH = window.innerHeight;
+                    canvas.width  = Math.round(dstW * dpr);
+                    canvas.height = Math.round(dstH * dpr);
+                    canvas.style.width  = dstW + 'px';
+                    canvas.style.height = dstH + 'px';
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+
+                    // Header-clearance: shift the buildings DOWN by this many
+                    // CSS pixels so the floating header pill doesn't cover
+                    // the dome / obelisk tips. Read from --hero-canvas-offset
+                    // (set in CSS, with a mobile override).
+                    var rawOffset = getComputedStyle(document.body)
+                                      .getPropertyValue('--hero-canvas-offset');
+                    var headerClearance = parseFloat(rawOffset) || 0;
+
+                    // object-fit: cover math
+                    var srcRatio = srcW / srcH;
+                    var dstRatio = dstW / dstH;
+                    if (dstRatio > srcRatio) {
+                        // viewport wider than source → match width, crop top/bottom
+                        drawW = dstW;
+                        drawH = dstW / srcRatio;
+                    } else {
+                        // viewport taller than source → match height, crop sides
+                        drawH = dstH;
+                        drawW = dstH * srcRatio;
+                    }
+                    // Center horizontally; ANCHOR TO BOTTOM vertically and
+                    // then shift the whole image DOWN by headerClearance so
+                    // the building tops sit below the floating header.
+                    drawX = (dstW - drawW) / 2;
+                    drawY = (dstH - drawH) + headerClearance;
+                    // DPR-scale to backing-store pixels
+                    drawX *= dpr; drawY *= dpr; drawW *= dpr; drawH *= dpr;
+                }
+
+                // ── Frame buffer ──────────────────────────────────────────
+                var frames = new Array(FRAME_COUNT);
+                var loaded = 0;
+                var firstReady = false;
+
+                function setLoaderProgress(p) {
+                    if (!loader) return;
+                    loader.style.setProperty('--hero-loader-progress', (p * 100).toFixed(1) + '%');
+                }
+
+                function hideLoader() {
+                    if (!loader) return;
+                    loader.style.opacity = '0';
+                    setTimeout(function () { loader.hidden = true; }, 460);
+                }
+
+                function preload() {
+                    return new Promise(function (resolve) {
+                        for (var i = 1; i <= FRAME_COUNT; i++) {
+                            (function (idx) {
+                                var img = new Image();
+                                img.decoding = 'async';
+                                img.onload = function () {
+                                    frames[idx - 1] = img;
+                                    loaded++;
+                                    setLoaderProgress(loaded / FRAME_COUNT);
+
+                                    // First frame loaded → grab dims and paint
+                                    // the INITIAL hero state. We scrub forward
+                                    // (frame 0 → FRAME_COUNT-1), so the initial
+                                    // state IS frame 0 — convenient, since
+                                    // it's also the first to arrive.
+                                    if (idx === 1 && !firstReady) {
+                                        firstReady = true;
+                                        srcW = img.naturalWidth;
+                                        srcH = img.naturalHeight;
+                                        recomputeCover();
+                                        currentFrame = 0;          // initial = first frame (parted)
+                                        drawFrame(currentFrame);
+                                        canvas.classList.add('is-ready');
+                                    }
+                                    if (loaded >= FRAME_COUNT) resolve();
+                                };
+                                img.onerror = function () {
+                                    // Don't block the rest of the sequence on a single failed frame
+                                    loaded++;
+                                    setLoaderProgress(loaded / FRAME_COUNT);
+                                    if (loaded >= FRAME_COUNT) resolve();
+                                };
+                                img.src = frameURL(idx);
+                            })(i);
+                        }
+                    });
+                }
+
+                // ── Draw ──────────────────────────────────────────────────
+                // currentFrame = the frame index ScrollTrigger wants us at.
+                // drawnFrame   = the frame we last actually painted.
+                // rAF-dedupe so we never paint twice per frame even if scroll
+                // fires bursts of events.
+                var currentFrame = 0;
+                var drawnFrame = -1;
+                var rafQueued = false;
+
+                function drawFrame(i) {
+                    var img = frames[i];
+                    if (!img) return;
+                    // Paint a solid base so any transparent pixels in the WebP
+                    // fall back to paper rather than showing the prior frame.
+                    ctx.fillStyle = '#fbfbf9';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                    drawnFrame = i;
+                }
+
+                function requestRender() {
+                    if (rafQueued) return;
+                    rafQueued = true;
+                    requestAnimationFrame(function () {
+                        rafQueued = false;
+                        if (currentFrame !== drawnFrame) drawFrame(currentFrame);
+                    });
+                }
+
+                // ── ScrollTrigger ─────────────────────────────────────────
+                function revealArticlesFallback() {
+                    // Used by all non-scrub paths (no GSAP / reduced-motion)
+                    // so the article strip never stays invisible if the
+                    // scrub doesn't mount.
+                    var strip = document.getElementById('featured-articles-strip');
+                    if (strip) strip.classList.add('is-visible');
+                }
+                function mountScrollTrigger() {
+                    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+                        // GSAP didn't load — fall back to the unified-Mall
+                        // state (frame FRAME_COUNT-1) since that's the final
+                        // backdrop the rest of the page is designed against.
+                        drawFrame(FRAME_COUNT - 1);
+                        revealArticlesFallback();
+                        return;
+                    }
+                    gsap.registerPlugin(ScrollTrigger);
+
+                    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                    if (reduceMotion) {
+                        // Show the unified-Mall state (frame FRAME_COUNT-1),
+                        // no scrub.
+                        drawFrame(FRAME_COUNT - 1);
+                        if (cue) cue.style.display = 'none';
+                        revealArticlesFallback();
+                        return;
+                    }
+
+                    // Frame-index proxy. ScrollTrigger writes proxy.frame via
+                    // gsap.to with scrub:1.5 → inertial easing (the "weighted"
+                    // glide-to-stop feel you wanted).
+                    //
+                    // FORWARD direction:
+                    //   scroll = 0 → proxy.frame = 0              (parted to far edges, monument-right)
+                    //   scroll = 1 → proxy.frame = FRAME_COUNT-1  (unified Mall, settles as backdrop)
+                    var proxy = { frame: 0 };
+
+                    gsap.to(proxy, {
+                        frame: FRAME_COUNT - 1,         // → unified state at scroll end
+                        ease: 'none',
+                        scrollTrigger: {
+                            trigger: shell,
+                            start: 'top top',
+                            end: 'bottom bottom',
+                            scrub: 1.5,                 // inertia
+                            invalidateOnRefresh: true,
+                            onUpdate: function () {
+                                currentFrame = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(proxy.frame)));
+                                requestRender();
+                            },
+                            // When the runway is fully scrolled, freeze on
+                            // the LAST frame (unified Mall) so the backdrop
+                            // persists for every section below the hero.
+                            onLeave: function () {
+                                currentFrame = FRAME_COUNT - 1;
+                                drawFrame(currentFrame);
+                            },
+                            // Coming back into the hero from below — make sure
+                            // we resume from the right frame.
+                            onEnterBack: function () {
+                                requestRender();
+                            }
+                        }
+                    });
+
+                    // Hero overlay fades out EARLY so the article cards have
+                    // a clear stage by the time they slide in. We also keep
+                    // it gone before the buildings start their final closing
+                    // motion, so the title/CTAs never compete with the scene.
+                    if (overlay) {
+                        gsap.to(overlay, {
+                            opacity: 0,
+                            y: -10,
+                            ease: 'power2.out',
+                            scrollTrigger: {
+                                trigger: shell,
+                                start: 'top+=8% top',      // start fading almost immediately
+                                end:   'top+=28% top',     // fully gone by 28% — articles begin at 25%
+                                scrub: 1.0
+                            }
+                        });
+                    }
+
+                    // Featured-articles strip: fade in + slide up to overlap
+                    // the hero runway. Window: 25%→55% of the runway — by the
+                    // time the user has scrolled a third of the way, the cards
+                    // are fully on screen and the buildings are still parting.
+                    var articlesStrip = document.getElementById('featured-articles-strip');
+                    if (articlesStrip) {
+                        gsap.to(articlesStrip, {
+                            opacity: 1,
+                            y: 0,
+                            ease: 'power2.out',
+                            scrollTrigger: {
+                                trigger: shell,
+                                start: 'top+=25% top',     // begin appearing at 25% of runway
+                                end:   'top+=55% top',     // fully visible by 55%
+                                scrub: 1.0,
+                                // Belt-and-suspenders: also flag the section as visible once
+                                // we're past the start, so anything else relying on .is-visible
+                                // (or future no-JS fallbacks) sees it.
+                                onEnter:     function () { articlesStrip.classList.add('is-visible'); },
+                                onEnterBack: function () { articlesStrip.classList.add('is-visible'); }
+                            }
+                        });
+                    }
+
+                    // Scroll cue fades fast on first scroll — its job ends
+                    // once the user begins parting the buildings.
+                    if (cue) {
+                        gsap.to(cue, {
+                            opacity: 0,
+                            y: 10,
+                            ease: 'power2.out',
+                            scrollTrigger: {
+                                trigger: shell,
+                                start: 'top top',
+                                end: 'top+=15% top',
+                                scrub: 0.6,
+                                onLeave: function () { cue.style.display = 'none'; }
+                            }
+                        });
+                    }
+                }
+
+                // ── Resize ────────────────────────────────────────────────
+                var resizeRaf = 0;
+                window.addEventListener('resize', function () {
+                    if (resizeRaf) cancelAnimationFrame(resizeRaf);
+                    resizeRaf = requestAnimationFrame(function () {
+                        recomputeCover();
+                        drawFrame(currentFrame);
+                        if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh();
+                    });
+                }, { passive: true });
+
+                // ── Boot ──────────────────────────────────────────────────
+                preload().then(function () {
+                    hideLoader();
+                    mountScrollTrigger();
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init, { once: true });
+            } else {
+                init();
+            }
+        })();
+    </script>
+</body>
+</html>
