@@ -127,15 +127,34 @@
         }
         .hero-canvas.is-ready { opacity: 1; }
 
-        /* Soft horizon wash anchoring the buildings to the bottom of the page */
+        /* ─────────────────────────────────────────────────────────────────
+         *  Soft horizon wash on top of the canvas. Two overlapping gradient
+         *  layers, both painted into ::after which sits on z-2 above the
+         *  canvas (z-0). Together they:
+         *    1. Paint a heavy paper-color wash over the TOP of the viewport
+         *       so the rectangular top edge of the canvas never reads as a
+         *       hard cut. The building art emerges through a soft horizon.
+         *    2. Add a faint shadow vignette at the very bottom to anchor
+         *       the buildings to the ground line.
+         *  Mobile gets a much heavier top wash (covers ~55% of viewport)
+         *  so the upper half stays pure paper for the text stack.
+         * ───────────────────────────────────────────────────────────────── */
         .page-canvas-backdrop::after {
             content: "";
             position: absolute;
             inset: 0;
             pointer-events: none;
             background:
+                /* faint ground-shadow */
                 radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.06) 0%, transparent 60%),
-                linear-gradient(180deg, rgba(251,251,249,0) 70%, rgba(251,251,249,0.4) 100%);
+                /* paper wash over the top */
+                linear-gradient(180deg,
+                    #fbfbf9 0%,
+                    rgba(251,251,249,0.95) 18%,
+                    rgba(251,251,249,0.45) 36%,
+                    rgba(251,251,249,0) 50%,
+                    rgba(251,251,249,0) 92%,
+                    rgba(251,251,249,0.35) 100%);
         }
 
         /* Loading shim — over the canvas until preload completes */
@@ -486,6 +505,28 @@
         }
 
         /* ─────────────────────────────────────────────────────────────────
+         *  Mobile-only canvas wash override.
+         *  We extend the paper wash to cover ~58% of the viewport so the
+         *  text stack sits on a pure paper background and the watercolor
+         *  emerges only in the lower portion. This eliminates the hard
+         *  rectangular top edge of the canvas viewport.
+         * ───────────────────────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .page-canvas-backdrop::after {
+                background:
+                    radial-gradient(ellipse at 50% 100%, rgba(15,23,42,0.05) 0%, transparent 55%),
+                    linear-gradient(180deg,
+                        #fbfbf9 0%,
+                        #fbfbf9 35%,
+                        rgba(251,251,249,0.85) 50%,
+                        rgba(251,251,249,0.4) 60%,
+                        rgba(251,251,249,0) 70%,
+                        rgba(251,251,249,0) 92%,
+                        rgba(251,251,249,0.4) 100%);
+            }
+        }
+
+        /* ─────────────────────────────────────────────────────────────────
          *  Mobile (≤768px) — purpose-built hero composition.
          *
          *  Design intent (UI/UX Pro Max):
@@ -509,10 +550,12 @@
             /* Smaller header pill on mobile → smaller canvas offset */
             body[data-page="home"] { --hero-canvas-offset: 72px; }
 
-            /* The sticky overlay now anchors content to the TOP of the
-               viewport (not center). Bottom 40dvh stays clear for buildings. */
+            /* The sticky overlay anchors content to the TOP of the viewport.
+               Bottom ~32dvh stays clear for the parallax buildings (which
+               are drawn into the bottom 24dvh of the canvas via the JS
+               math, with paper-wash gradients above them). */
             .hero-overlay {
-                padding: clamp(96px, 14dvh, 140px) 22px clamp(40dvh, 42dvh, 44dvh);
+                padding: clamp(88px, 12dvh, 128px) 22px 36dvh;
                 align-items: flex-start;
                 text-align: left;
             }
@@ -1095,20 +1138,28 @@
                         // The viewport is narrow & tall (390×844 etc.).
                         // object-fit:cover would crop both buildings off
                         // the sides. Instead we scale the image so it fits
-                        // the full viewport WIDTH — both buildings stay
-                        // visible. The image becomes a short horizontal
-                        // strip; we anchor it in the BOTTOM portion of
-                        // the viewport because the overlay now top-anchors
-                        // its content stack (see @media 768px in the
-                        // stylesheet — overlay padding-bottom: 40dvh).
-                        drawW = dstW;
-                        drawH = dstW / srcRatio;
+                        // 92% of the viewport WIDTH (small horizontal margin
+                        // so the buildings don't kiss the screen edges) —
+                        // both buildings stay visible. The image becomes a
+                        // short horizontal strip; we anchor it BOTTOM-CENTER
+                        // so it sits in the lower portion of the viewport,
+                        // leaving the top half for the text stack. The
+                        // text overlay reserves padding-bottom: 40dvh for
+                        // exactly this zone.
+                        var hMargin = 0.04;        // 4% of viewport width on each side
+                        drawW = dstW * (1 - 2 * hMargin);
+                        drawH = drawW / srcRatio;
 
-                        // Building baseline at ~88% of viewport height —
-                        // sits clearly in the lower third while leaving
-                        // a small margin to the article-strip below.
-                        drawX = 0;
-                        drawY = (dstH * 0.88) - drawH;
+                        // Building baseline at the bottom of the visible
+                        // canvas region. With the page-canvas-backdrop's
+                        // top wash covering ~58dvh of the viewport, the
+                        // visible canvas zone starts ~58dvh from the top.
+                        // We anchor the buildings to sit just above the
+                        // very bottom (4% margin from the bottom edge) so
+                        // they don't bump into the article-strip section
+                        // that overlaps the bottom of the hero runway.
+                        drawX = dstW * hMargin;
+                        drawY = (dstH * 0.96) - drawH;
                     } else {
                         // ── Desktop / tablet: object-fit:cover ──────────
                         var dstRatio = dstW / dstH;
