@@ -89,14 +89,18 @@
         pointer-events: none;
       }
 
-      /* ---------- "Recent Stories" eyebrow above the cards ---------- */
+      /* ---------- "Recent Stories" eyebrow above the cards ----------
+         Switched from flex to grid (1fr auto 1fr) so both side lines are
+         guaranteed to paint symmetrically on the very first frame. The
+         old flex-based layout intermittently dropped the left line on
+         desktop until a scroll-induced repaint kicked in. */
       body[data-page="home"] .hero-featured-wrap {
         display: block;
       }
       body[data-page="home"] .hero-featured-eyebrow {
-        display: flex;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
         align-items: center;
-        justify-content: center;
         gap: 14px;
         margin: 0 auto 22px;
         max-width: 360px;
@@ -109,9 +113,8 @@
         }
       }
       body[data-page="home"] .hero-featured-eyebrow-line {
-        flex: 1 1 0;
-        min-width: 0;     /* allow flex item to shrink/grow from 0 */
         display: block;
+        width: 100%;
         height: 1px;
         background: linear-gradient(90deg, transparent, #cbd5e1 50%, transparent);
       }
@@ -125,57 +128,74 @@
 
       /* ---------- Cinematic hero exit (all breakpoints) ---------- */
       /* Two different exits, both driven by --p (scroll progress 0→1):
-           Desktop: hero recedes BACKWARD into the page while the articles
-                    rise FORWARD in Z to take over the foreground.
+           Desktop: 3D carousel takeover — the article cards LIFT UP from
+                    below the fold, translate FORWARD in Z toward the
+                    viewer, and pass IN FRONT of the hero copy. The hero
+                    copy simultaneously recedes BACKWARD into the page
+                    (Z-translate, scale down, blur, fade) so the cards
+                    feel like they're physically stepping over the title
+                    in 3D space. The user reads it as: cards "come out"
+                    of the page and take over.
            Mobile:  hero zooms forward through the camera (more aggressive,
                     reads better on small screens).
          Both are GPU-only (transform / opacity / filter), rAF-throttled. */
       body[data-page="home"] .hero {
-        perspective: 1400px;
-        perspective-origin: 50% 40%;
+        perspective: 1600px;
+        perspective-origin: 50% 35%;
         position: relative;
       }
 
-      /* ---- Desktop: hero recedes ---- */
+      /* ---- Desktop: 3D carousel takeover ---- */
       @media (min-width: 769px) {
         body[data-page="home"] .hero-content {
           will-change: transform, opacity, filter;
           transform-origin: 50% 40%;
-          /* push hero AWAY from the viewer + scale down + blur + fade */
+          /* push hero deep AWAY from the viewer + scale down + blur + fade.
+             The Z-translate is large (-340px) so the cards rising forward
+             clearly clear it and pass overhead. */
           transform:
-            translate3d(0, calc(var(--p, 0) * -20px), calc(var(--p, 0) * -260px))
-            scale(calc(1 - var(--p, 0) * 0.18));
-          opacity: calc(1 - var(--p, 0) * 1.4);
-          filter: blur(calc(var(--p, 0) * 8px));
+            translate3d(0, calc(var(--p, 0) * -28px), calc(var(--p, 0) * -340px))
+            scale(calc(1 - var(--p, 0) * 0.22));
+          opacity: calc(1 - var(--p, 0) * 1.5);
+          filter: blur(calc(var(--p, 0) * 10px));
         }
         body[data-page="home"] .hero-title {
           will-change: transform;
-          transform: translate3d(0, calc(var(--p, 0) * -8px), 0);
+          transform: translate3d(0, calc(var(--p, 0) * -10px), 0);
         }
         body[data-page="home"] .hero-description {
           will-change: transform, opacity;
-          transform: translate3d(0, calc(var(--p, 0) * 14px), 0);
-          opacity: calc(1 - var(--p, 0) * 1.6);
+          transform: translate3d(0, calc(var(--p, 0) * 16px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.7);
         }
         body[data-page="home"] .hero-actions {
           will-change: transform, opacity;
-          transform: translate3d(0, calc(var(--p, 0) * 24px), 0);
-          opacity: calc(1 - var(--p, 0) * 1.9);
+          transform: translate3d(0, calc(var(--p, 0) * 28px), 0);
+          opacity: calc(1 - var(--p, 0) * 2.0);
         }
 
-        /* Articles rise FORWARD in Z to take over the foreground.
-           They translate toward the viewer and scale up subtly,
-           giving them the feeling of emerging from behind the hero
-           copy and stepping into the spotlight. */
+        /* Articles rise UP and FORWARD in Z, taking over the foreground.
+             • Y: -160px lifts them up into the hero text band so they
+               literally cover/eclipse the title as it fades back.
+             • Z: +220px brings them well in front of the receding hero,
+               creating an unmistakable "carousel out of the page" feel.
+             • scale 1 → 1.07 amplifies the forward motion.
+             • z-index keeps them painted above the hero copy. */
         body[data-page="home"] .hero-featured-wrap {
           will-change: transform;
           transform-origin: 50% 50%;
           transform:
-            translate3d(0, calc(var(--p, 0) * -40px), calc(var(--p, 0) * 80px))
-            scale(calc(1 + var(--p, 0) * 0.04));
-          /* layer the articles above the receding hero */
+            translate3d(0, calc(var(--p, 0) * -160px), calc(var(--p, 0) * 220px))
+            scale(calc(1 + var(--p, 0) * 0.07));
           position: relative;
-          z-index: 3;
+          z-index: 5;
+        }
+
+        /* The cards themselves get a subtle counter-rotate so the lift
+           reads as a curved carousel arc rather than a flat slab. */
+        body[data-page="home"] .hero-featured {
+          transform: rotateX(calc(var(--p, 0) * -2deg));
+          transform-origin: 50% 100%;
         }
 
         /* Skyline drifts up + softens for depth */
