@@ -11,15 +11,15 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Invest in The Catalyst Magazine — D.C.'s student-run STEM publication. Read about our mission, traction, ad-partnership opportunity, and how to get in touch.">
-    <meta name="keywords" content="invest in Catalyst Magazine, Catalyst sponsorship, GW STEM ads, student journalism investment, D.C. media partnership">
-    <title>For Investors &amp; Partners | The Catalyst Magazine</title>
+    <meta name="description" content="Sponsor, partner with, or invest in The Catalyst Magazine — D.C.'s student-run STEM publication. Read about our mission, traction, ad-partnership opportunity, and how to get in touch.">
+    <meta name="keywords" content="sponsor Catalyst Magazine, invest in Catalyst Magazine, Catalyst sponsorship, GW STEM ads, student journalism investment, D.C. media partnership">
+    <title>For Sponsors, Investors &amp; Partners | The Catalyst Magazine</title>
     <link rel="canonical" href="https://www.catalyst-magazine.com/investors">
 
     <meta name="robots" content="noindex,follow">
 
     <meta property="og:type" content="website">
-    <meta property="og:title" content="The Catalyst — For Investors &amp; Partners">
+    <meta property="og:title" content="The Catalyst — For Sponsors, Investors &amp; Partners">
     <meta property="og:description" content="A focused, ad-free editorial product with an engaged D.C. STEM audience. Here's our mission, our traction, and what we're building.">
     <meta property="og:url" content="https://www.catalyst-magazine.com/investors">
     <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
@@ -713,36 +713,42 @@
         body[data-page="investors"] .inv-form-section .container {
             position: relative;
             z-index: 1;
-            max-width: 1100px;
+            max-width: 1180px;
         }
         body[data-page="investors"] .inv-form-grid {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(40px, 5vw, 64px);
+        }
+        body[data-page="investors"] .inv-form-intro {
             display: grid;
-            grid-template-columns: 1fr 1.4fr;
-            gap: clamp(36px, 5vw, 80px);
-            align-items: start;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+            gap: clamp(24px, 4vw, 64px);
+            align-items: end;
         }
         body[data-page="investors"] .inv-form-intro h2 {
             font-family: 'Fraunces', serif;
             font-weight: 500;
-            font-size: clamp(34px, 4.6vw, 60px);
-            line-height: 1.05;
-            letter-spacing: -0.02em;
+            font-size: clamp(38px, 5vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -0.022em;
             color: var(--i-paper);
-            margin: 0 0 20px;
-            max-width: 14ch;
+            margin: 0;
+            max-width: 12ch;
         }
         body[data-page="investors"] .inv-form-intro h2 em {
             font-style: italic;
             color: #e8d28a;
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-form-intro p {
-            font-size: 17px;
+        body[data-page="investors"] .inv-form-intro-copy p {
+            font-size: 16px;
             line-height: 1.65;
             color: rgba(247,246,241,0.8);
-            margin: 0 0 14px;
-            max-width: 38ch;
+            margin: 0 0 12px;
+            max-width: 48ch;
         }
+        body[data-page="investors"] .inv-form-intro-copy p:last-child { margin-bottom: 0; }
         body[data-page="investors"] .inv-form-intro a {
             color: #e8d28a;
             text-decoration: underline;
@@ -803,8 +809,14 @@
 
         body[data-page="investors"] .inv-form-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 16px;
+        }
+        body[data-page="investors"] .inv-form-row.is-three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        body[data-page="investors"] .inv-form-row.is-four {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
         }
 
         /* ─── Field ─── */
@@ -1003,8 +1015,10 @@
             body[data-page="investors"] .inv-points { grid-template-columns: 1fr 1fr; }
             body[data-page="investors"] .inv-funds { grid-template-columns: repeat(2, 1fr); }
             body[data-page="investors"] .inv-section-head { grid-template-columns: 140px 1fr; gap: 32px; }
-            body[data-page="investors"] .inv-form-grid { grid-template-columns: 1fr; gap: 32px; }
+            body[data-page="investors"] .inv-form-intro { grid-template-columns: 1fr; align-items: start; gap: 18px; }
             body[data-page="investors"] .inv-form-intro h2 { max-width: 100%; }
+            body[data-page="investors"] .inv-form-row.is-three,
+            body[data-page="investors"] .inv-form-row.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
         @media (max-width: 720px) {
@@ -1024,7 +1038,9 @@
             body[data-page="investors"] .inv-point:nth-last-child(-n+2) { border-bottom: 0; }
             body[data-page="investors"] .inv-point:last-child { border-bottom: 1px solid var(--i-line-strong); }
             body[data-page="investors"] .inv-funds { grid-template-columns: 1fr; }
-            body[data-page="investors"] .inv-form-row { grid-template-columns: 1fr; }
+            body[data-page="investors"] .inv-form-row,
+            body[data-page="investors"] .inv-form-row.is-three,
+            body[data-page="investors"] .inv-form-row.is-four { grid-template-columns: 1fr; }
             body[data-page="investors"] .inv-stats .container { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
         }
 
@@ -1052,7 +1068,7 @@
         <section class="inv-hero">
             <div class="container">
                 <span class="inv-eyebrow">
-                    For investors &amp; partners
+                    For sponsors, investors &amp; partners
                 </span>
 
                 <div class="inv-hero-grid">
@@ -1066,9 +1082,10 @@
                             The Catalyst is the editorial home for student STEM journalism in
                             Washington, D.C. &mdash; written by undergraduates at GW, Georgetown,
                             Howard, and beyond. <strong>We&rsquo;ve published the work, earned the
-                            readers, and proven we ship.</strong> We&rsquo;re looking for partners who
-                            want to help us turn an audience into a sustainable, ad-light,
-                            editorially serious media business.
+                            readers, and proven we ship.</strong> Now we&rsquo;re looking for
+                            <strong>sponsors, investors, and partners</strong> who want to help us
+                            turn an audience into a sustainable, ad-light, editorially serious media
+                            business.
                         </p>
 
                         <div class="inv-hero-actions">
@@ -1351,15 +1368,17 @@
                 <div class="inv-form-grid">
                     <div class="inv-form-intro">
                         <h2 id="form-heading">Let&rsquo;s <em>talk.</em></h2>
-                        <p>
-                            Whether you&rsquo;re writing a check, exploring an ad partnership, or just
-                            curious about what we&rsquo;re building &mdash; tell us a little about you and
-                            we&rsquo;ll be in touch within 48 hours.
-                        </p>
-                        <p>
-                            Prefer email? Reach Yair Ben-Dor and Aidan Schurr directly at
-                            <a href="mailto:stemcatalystmagazine@gmail.com">stemcatalystmagazine@gmail.com</a>.
-                        </p>
+                        <div class="inv-form-intro-copy">
+                            <p>
+                                Whether you&rsquo;re writing a check, sponsoring stories, exploring an
+                                ad partnership, or just curious about what we&rsquo;re building &mdash;
+                                tell us a little about you and we&rsquo;ll be in touch within 48 hours.
+                            </p>
+                            <p>
+                                Prefer email? Reach Yair Ben-Dor and Aidan Schurr directly at
+                                <a href="mailto:stemcatalystmagazine@gmail.com">stemcatalystmagazine@gmail.com</a>.
+                            </p>
+                        </div>
                     </div>
 
                     <div class="inv-form-card">
@@ -1371,7 +1390,7 @@
                                     <span class="inv-group-label">Who you are</span>
                                 </legend>
 
-                                <div class="inv-form-row">
+                                <div class="inv-form-row is-four">
                                     <div class="inv-field">
                                         <label for="inv-fname">First name <span class="req" aria-hidden="true">*</span></label>
                                         <input id="inv-fname" type="text" name="firstName" autocomplete="given-name" required>
@@ -1380,9 +1399,6 @@
                                         <label for="inv-lname">Last name <span class="req" aria-hidden="true">*</span></label>
                                         <input id="inv-lname" type="text" name="lastName" autocomplete="family-name" required>
                                     </div>
-                                </div>
-
-                                <div class="inv-form-row">
                                     <div class="inv-field">
                                         <label for="inv-email">Email <span class="req" aria-hidden="true">*</span></label>
                                         <input id="inv-email" type="email" name="email" autocomplete="email" placeholder="you@company.com" required>
@@ -1401,25 +1417,22 @@
                                     <span class="inv-group-label">What you do</span>
                                 </legend>
 
-                                <div class="inv-form-row">
+                                <div class="inv-form-row is-four">
                                     <div class="inv-field">
                                         <label for="inv-company">Company or fund</label>
                                         <input id="inv-company" type="text" name="company" autocomplete="organization">
                                     </div>
                                     <div class="inv-field">
                                         <label for="inv-role">Your role</label>
-                                        <input id="inv-role" type="text" name="role" autocomplete="organization-title" placeholder="e.g. Partner, Director of Marketing">
+                                        <input id="inv-role" type="text" name="role" autocomplete="organization-title" placeholder="e.g. Partner">
                                     </div>
-                                </div>
-
-                                <div class="inv-form-row">
                                     <div class="inv-field">
                                         <label for="inv-website">Website</label>
                                         <input id="inv-website" type="url" name="website" placeholder="https://" autocomplete="url">
                                     </div>
                                     <div class="inv-field">
                                         <label for="inv-linkedin">LinkedIn</label>
-                                        <input id="inv-linkedin" type="url" name="linkedin" placeholder="https://linkedin.com/in/…">
+                                        <input id="inv-linkedin" type="url" name="linkedin" placeholder="linkedin.com/in/…">
                                     </div>
                                 </div>
                             </fieldset>
@@ -1431,12 +1444,12 @@
                                     <span class="inv-group-label">What you&rsquo;re imagining</span>
                                 </legend>
 
-                                <div class="inv-form-row">
+                                <div class="inv-form-row is-three">
                                     <div class="inv-field">
                                         <label for="inv-interest">Type of interest</label>
                                         <select id="inv-interest" name="interestType">
                                             <option value="exploratory">Exploratory chat</option>
-                                            <option value="ad-partnership">Ad / sponsorship partnership</option>
+                                            <option value="ad-partnership">Sponsorship / ad partnership</option>
                                             <option value="angel-check">Angel or seed check</option>
                                             <option value="strategic-partner">Strategic partner</option>
                                             <option value="other">Other</option>
@@ -1454,21 +1467,20 @@
                                             <option value="advisory">Non-cash / advisory</option>
                                         </select>
                                     </div>
-                                </div>
-
-                                <div class="inv-field">
-                                    <label for="inv-timeline">Timeline</label>
-                                    <select id="inv-timeline" name="timeline">
-                                        <option value="exploring">Just exploring</option>
-                                        <option value="90-days">Within 90 days</option>
-                                        <option value="30-days">Within 30 days</option>
-                                        <option value="now">Ready to talk now</option>
-                                    </select>
+                                    <div class="inv-field">
+                                        <label for="inv-timeline">Timeline</label>
+                                        <select id="inv-timeline" name="timeline">
+                                            <option value="exploring">Just exploring</option>
+                                            <option value="90-days">Within 90 days</option>
+                                            <option value="30-days">Within 30 days</option>
+                                            <option value="now">Ready to talk now</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div class="inv-field">
                                     <label for="inv-message">Tell us a bit about your interest <span class="req" aria-hidden="true">*</span></label>
-                                    <textarea id="inv-message" name="message" rows="5" required placeholder="What drew you to The Catalyst? What kind of partnership are you imagining?"></textarea>
+                                    <textarea id="inv-message" name="message" rows="5" required placeholder="What drew you to The Catalyst? What kind of partnership or sponsorship are you imagining?"></textarea>
                                     <p class="inv-helper">The more specific, the better the reply.</p>
                                 </div>
                             </fieldset>

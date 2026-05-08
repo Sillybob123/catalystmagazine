@@ -96,7 +96,21 @@ export const onRequestPost = async ({ request, env }) => {
       console.error("Investor team notification failed:", err.message);
     }
 
-    return json({ ok: true, emailSent });
+    // Send the applicant a confirmation receipt — best-effort.
+    let receiptSent = false;
+    try {
+      await sendEmail(env, {
+        to:      email,
+        replyTo: TEAM_INBOX,
+        subject: "Thanks for reaching out to The Catalyst",
+        html:    buildApplicantEmail({ firstName, interestType }),
+      });
+      receiptSent = true;
+    } catch (err) {
+      console.error("Investor applicant confirmation failed:", err.message);
+    }
+
+    return json({ ok: true, emailSent, receiptSent });
   } catch (err) {
     return serverError(err);
   }
@@ -182,4 +196,66 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
+}
+
+// Confirmation email sent back to the person who submitted the form.
+function buildApplicantEmail({ firstName, interestType }) {
+  const greet = firstName ? `Hi ${esc(firstName)},` : "Hi there,";
+  const flavor = interestSpecificLine(interestType);
+
+  return `
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#0b1120;line-height:1.6;">
+      <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;font-weight:700;color:#475569;">The Catalyst Magazine</p>
+      <h1 style="margin:0 0 24px;font-size:26px;line-height:1.15;letter-spacing:-0.02em;color:#0b1120;font-weight:600;">Thanks for reaching out.</h1>
+
+      <p style="margin:0 0 16px;font-size:16px;color:#1e293b;">${greet}</p>
+
+      <p style="margin:0 0 16px;font-size:16px;color:#1e293b;">
+        We just received your inquiry about partnering with The Catalyst Magazine. ${flavor}
+      </p>
+
+      <p style="margin:0 0 16px;font-size:16px;color:#1e293b;">
+        One of us &mdash; <strong>Yair Ben-Dor</strong> or <strong>Aidan Schurr</strong>, the magazine&rsquo;s co-founders &mdash;
+        will read your message personally and reply within <strong>48 hours</strong>.
+      </p>
+
+      <p style="margin:0 0 28px;font-size:16px;color:#1e293b;">
+        If anything else comes to mind in the meantime, feel free to reply to this email directly.
+      </p>
+
+      <div style="margin:32px 0;border-top:1px solid rgba(11,17,32,0.10);padding-top:24px;">
+        <p style="margin:0 0 6px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;color:#475569;">In the meantime</p>
+        <p style="margin:0;font-size:15px;color:#475569;">
+          Read our latest at <a href="https://www.catalyst-magazine.com/articles" style="color:#1e40af;text-decoration:underline;">catalyst-magazine.com/articles</a>
+          or learn about the team at <a href="https://www.catalyst-magazine.com/about" style="color:#1e40af;text-decoration:underline;">catalyst-magazine.com/about</a>.
+        </p>
+      </div>
+
+      <p style="margin:32px 0 0;font-size:15px;color:#1e293b;">
+        Talk soon,<br>
+        <strong style="font-weight:600;">Yair &amp; Aidan</strong><br>
+        <span style="color:#64748b;">Co-founders, The Catalyst Magazine</span>
+      </p>
+
+      <p style="margin:28px 0 0;font-size:12px;color:#94a3b8;line-height:1.5;">
+        This is an automated confirmation that we received your inquiry. We&rsquo;ll follow up personally from
+        <a href="mailto:stemcatalystmagazine@gmail.com" style="color:#94a3b8;text-decoration:underline;">stemcatalystmagazine@gmail.com</a>.
+      </p>
+    </div>
+  `;
+}
+
+function interestSpecificLine(interestType) {
+  switch (interestType) {
+    case "ad-partnership":
+      return "Sponsorship and ad partnerships are a big part of how we&rsquo;re thinking about The Catalyst&rsquo;s next chapter, and we&rsquo;re glad you&rsquo;re thinking about it with us.";
+    case "angel-check":
+      return "We take every angel and seed conversation seriously &mdash; thank you for considering an investment.";
+    case "strategic-partner":
+      return "Strategic partnerships are how we plan to grow without compromising the editorial mission. Excited to talk.";
+    case "exploratory":
+      return "Glad you reached out &mdash; we love exploratory conversations, and a lot of our best partnerships started exactly that way.";
+    default:
+      return "We appreciate you taking the time to write.";
+  }
 }
