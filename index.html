@@ -89,7 +89,10 @@
         pointer-events: none;
       }
 
-      /* ---------- "Featured Articles" eyebrow above the cards ---------- */
+      /* ---------- "Recent Stories" eyebrow above the cards ---------- */
+      body[data-page="home"] .hero-featured-wrap {
+        display: block;
+      }
       body[data-page="home"] .hero-featured-eyebrow {
         display: flex;
         align-items: center;
@@ -97,18 +100,18 @@
         gap: 14px;
         margin: 0 auto 22px;
         max-width: 360px;
-        /* visible on load — no scroll required */
+        width: 100%;
         opacity: 1;
       }
-      /* On desktop the eyebrow sits well below the hero copy so it visually
-         separates the buttons from the article cards. */
       @media (min-width: 769px) {
         body[data-page="home"] .hero-featured-eyebrow {
           margin: 64px auto 26px;
         }
       }
       body[data-page="home"] .hero-featured-eyebrow-line {
-        flex: 1;
+        flex: 1 1 0;
+        min-width: 0;     /* allow flex item to shrink/grow from 0 */
+        display: block;
         height: 1px;
         background: linear-gradient(90deg, transparent, #cbd5e1 50%, transparent);
       }
@@ -121,59 +124,72 @@
       }
 
       /* ---------- Cinematic hero exit (all breakpoints) ---------- */
-      /* As the user scrolls, --p ramps 0→1 and the hero copy zooms,
-         blurs, tilts, and fades — like the camera is punching through
-         it as the articles arrive below. GPU-only transforms + opacity
-         + filter, driven by a tiny rAF scroll listener. */
+      /* Two different exits, both driven by --p (scroll progress 0→1):
+           Desktop: hero recedes BACKWARD into the page while the articles
+                    rise FORWARD in Z to take over the foreground.
+           Mobile:  hero zooms forward through the camera (more aggressive,
+                    reads better on small screens).
+         Both are GPU-only (transform / opacity / filter), rAF-throttled. */
       body[data-page="home"] .hero {
-        /* 3D space for the tilt below — works on any screen size */
         perspective: 1400px;
-        perspective-origin: 50% 35%;
+        perspective-origin: 50% 40%;
         position: relative;
       }
-      body[data-page="home"] .hero-content {
-        will-change: transform, opacity, filter;
-        transform-origin: 50% 35%;
-        transform:
-          translate3d(0, calc(var(--p, 0) * -28px), calc(var(--p, 0) * 180px))
-          scale(calc(1 + var(--p, 0) * 0.32))
-          rotateX(calc(var(--p, 0) * -6deg));
-        opacity: calc(1 - var(--p, 0) * 1.4);
-        filter: blur(calc(var(--p, 0) * 10px));
-      }
-      /* Stagger the individual hero pieces so the exit reads as
-         layered depth instead of one rigid block. */
-      body[data-page="home"] .hero-title {
-        will-change: transform;
-        transform: translate3d(0, calc(var(--p, 0) * -10px), 0)
-                   scale(calc(1 + var(--p, 0) * 0.05));
-      }
-      body[data-page="home"] .hero-description {
-        will-change: transform, opacity;
-        transform: translate3d(0, calc(var(--p, 0) * 16px), 0);
-        opacity: calc(1 - var(--p, 0) * 1.7);
-      }
-      body[data-page="home"] .hero-actions {
-        will-change: transform, opacity;
-        transform: translate3d(0, calc(var(--p, 0) * 28px), 0);
-        opacity: calc(1 - var(--p, 0) * 2.0);
-      }
-      /* Skyline parallax — drifts up + softens for depth */
-      body[data-page="home"] .dc-capitol {
-        transform: translate3d(0, calc(var(--p, 0) * -36px), 0)
-                   scale(calc(1 + var(--p, 0) * 0.04));
-        opacity: calc(0.55 - var(--p, 0) * 0.35);
-      }
-      /* Once the card is in view, lock the hero copy out of pointer
-         events so it doesn't interfere with clicks on the article. */
-      body[data-page="home"].cards-revealed .hero-content {
-        pointer-events: none;
+
+      /* ---- Desktop: hero recedes ---- */
+      @media (min-width: 769px) {
+        body[data-page="home"] .hero-content {
+          will-change: transform, opacity, filter;
+          transform-origin: 50% 40%;
+          /* push hero AWAY from the viewer + scale down + blur + fade */
+          transform:
+            translate3d(0, calc(var(--p, 0) * -20px), calc(var(--p, 0) * -260px))
+            scale(calc(1 - var(--p, 0) * 0.18));
+          opacity: calc(1 - var(--p, 0) * 1.4);
+          filter: blur(calc(var(--p, 0) * 8px));
+        }
+        body[data-page="home"] .hero-title {
+          will-change: transform;
+          transform: translate3d(0, calc(var(--p, 0) * -8px), 0);
+        }
+        body[data-page="home"] .hero-description {
+          will-change: transform, opacity;
+          transform: translate3d(0, calc(var(--p, 0) * 14px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.6);
+        }
+        body[data-page="home"] .hero-actions {
+          will-change: transform, opacity;
+          transform: translate3d(0, calc(var(--p, 0) * 24px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.9);
+        }
+
+        /* Articles rise FORWARD in Z to take over the foreground.
+           They translate toward the viewer and scale up subtly,
+           giving them the feeling of emerging from behind the hero
+           copy and stepping into the spotlight. */
+        body[data-page="home"] .hero-featured-wrap {
+          will-change: transform;
+          transform-origin: 50% 50%;
+          transform:
+            translate3d(0, calc(var(--p, 0) * -40px), calc(var(--p, 0) * 80px))
+            scale(calc(1 + var(--p, 0) * 0.04));
+          /* layer the articles above the receding hero */
+          position: relative;
+          z-index: 3;
+        }
+
+        /* Skyline drifts up + softens for depth */
+        body[data-page="home"] .dc-capitol {
+          transform: translate3d(0, calc(var(--p, 0) * -32px), 0);
+          opacity: calc(0.55 - var(--p, 0) * 0.3);
+        }
       }
 
-      /* Mobile pushes the effect harder because the viewport is smaller
-         and the user sees less at once — punchier exit reads better. */
+      /* ---- Mobile: hero zooms forward (unchanged punchy exit) ---- */
       @media (max-width: 768px) {
         body[data-page="home"] .hero-content {
+          will-change: transform, opacity, filter;
+          transform-origin: 50% 35%;
           transform:
             translate3d(0, calc(var(--p, 0) * -36px), calc(var(--p, 0) * 220px))
             scale(calc(1 + var(--p, 0) * 0.42))
@@ -181,9 +197,32 @@
           opacity: calc(1 - var(--p, 0) * 1.55);
           filter: blur(calc(var(--p, 0) * 14px));
         }
+        body[data-page="home"] .hero-title {
+          will-change: transform;
+          transform: translate3d(0, calc(var(--p, 0) * -12px), 0)
+                     scale(calc(1 + var(--p, 0) * 0.06));
+        }
+        body[data-page="home"] .hero-description {
+          will-change: transform, opacity;
+          transform: translate3d(0, calc(var(--p, 0) * 18px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.8);
+        }
+        body[data-page="home"] .hero-actions {
+          will-change: transform, opacity;
+          transform: translate3d(0, calc(var(--p, 0) * 32px), 0);
+          opacity: calc(1 - var(--p, 0) * 2.2);
+        }
         body[data-page="home"] .dc-capitol {
+          transform: translate3d(0, calc(var(--p, 0) * -42px), 0)
+                     scale(calc(1 + var(--p, 0) * 0.05));
           opacity: calc(0.7 - var(--p, 0) * 0.45);
         }
+      }
+
+      /* Once the card is in view, lock the hero copy out of pointer
+         events so it doesn't interfere with clicks on the article. */
+      body[data-page="home"].cards-revealed .hero-content {
+        pointer-events: none;
       }
 
       /* ---------- Mobile hero layout ---------- */
@@ -291,6 +330,7 @@
       /* Reduced motion: skip animations + filters entirely */
       @media (prefers-reduced-motion: reduce) {
         body[data-page="home"] .hero-featured,
+        body[data-page="home"] .hero-featured-wrap,
         body[data-page="home"] .hero-content,
         body[data-page="home"] .hero-title,
         body[data-page="home"] .hero-description,
@@ -431,7 +471,7 @@
                 <div class="hero-featured-wrap">
                     <div class="hero-featured-eyebrow" aria-hidden="true">
                         <span class="hero-featured-eyebrow-line"></span>
-                        <span class="hero-featured-eyebrow-text">Featured Articles</span>
+                        <span class="hero-featured-eyebrow-text">Recent Stories</span>
                         <span class="hero-featured-eyebrow-line"></span>
                     </div>
                     <div class="hero-featured" id="hero-featured">
@@ -449,7 +489,7 @@
         <section class="section" style="padding-top: 60px;">
             <div class="container">
                 <div class="section-header">
-                    <span class="eyebrow">Recent Stories</span>
+                    <span class="eyebrow">Featured Stories</span>
                     <h2 class="section-title">Latest from The Catalyst</h2>
                     <p class="section-subtitle">Exploring groundbreaking research and the brilliant minds driving innovation in D.C. and beyond</p>
                 </div>
