@@ -1172,22 +1172,22 @@
                 if (!shell || !canvas) return;
 
                 var ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
-                // DPR cap. We had 3 before, but at 4K source × 3 DPR the canvas
-                // backing store is ~12k×7k = 75 megapixels — way past visual
-                // acuity at any screen size, and a meaningful fill cost on
-                // every scrub frame. Cap at 2 on desktop, 1.5 on phones (where
-                // the canvas already shrinks via contain-fit math).
                 var isPhone = window.innerWidth < 768;
                 var isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
                             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 var useMemorySafeFrames = isPhone || isIOS;
                 var mobileStartFrame = RESUME_FRAME;
                 var initialFrame = isPhone ? mobileStartFrame : 0;
-                // DPR cap. We fill the canvas backing store at this multiplier.
+                // DPR cap. We fill the canvas backing store at this multiplier
+                // on every scroll tick — it's the BIGGEST single cost in the
+                // scrub loop on mobile. Going from 1.5 → 1.0 cuts the fill
+                // cost by ~56% (1.5² = 2.25× pixels) for a barely-perceptible
+                // visual difference at the small contain-fit size mobile uses.
                 // - Desktop: 2 (anything higher is wasted; visual acuity ceiling).
-                // - Mobile/iOS: 1.5 to keep the canvas backing store small
-                //   enough for Safari's tighter page memory limits.
-                var dpr = Math.min(window.devicePixelRatio || 1, useMemorySafeFrames ? 1.5 : 2);
+                // - Mobile/iOS: 1.0 (was 1.5) — DRAMATICALLY smoother scroll.
+                var dpr = useMemorySafeFrames
+                    ? 1
+                    : Math.min(window.devicePixelRatio || 1, 2);
 
                 // ── Sizing ────────────────────────────────────────────────
                 // The canvas is position:fixed, full viewport. Object-fit:cover
@@ -1220,17 +1220,17 @@
                     var isNarrow = dstW < 768;     // phone-class viewport
 
                     if (isNarrow) {
-                        // Mobile: draw the Mall as a restrained top scene.
-                        // It is intentionally a little wider than the screen,
-                        // which keeps the scroll motion from looking cramped
-                        // while the CSS wash keeps the text zone clean.
-                        drawW = dstW * 1.12;
+                        // Mobile: draw the Mall scene exactly to viewport width.
+                        // The previous 1.12× oversample meant ~24% of pixels
+                        // were drawn off-screen — pure waste on every scroll
+                        // tick. Drawing flush to dstW removes that cost.
+                        drawW = dstW;
                         drawH = drawW / srcRatio;
 
                         // Keep the scene below the floating header and above
                         // the headline. drawY is the top of the bitmap.
-                        drawX = (dstW - drawW) / 2;
-                        drawY = Math.max((dstH * 0.44) - drawH, 108);
+                        drawX = 0;
+                        drawY = Math.max((dstH * 0.44) - drawH, 96);
                     } else {
                         // ── Desktop / tablet: object-fit:cover ──────────
                         var dstRatio = dstW / dstH;
@@ -1811,16 +1811,29 @@
                                 end: 'bottom bottom',
                                 // Mobile uses a tighter scrub so the hero
                                 // responds immediately to short touch scrolls.
-                                scrub: isMobileScrub ? 0.35 : 0.8,
+                                // Mobile scrub was 0.35 — extremely tight,
+                                // demanding a new frame redraw on every tiny
+                                // finger movement. Bumped to 1.2 so the
+                                // canvas glides smoothly between scroll
+                                // events instead of stuttering on each one.
+                                scrub: isMobileScrub ? 1.2 : 0.8,
                                 invalidateOnRefresh: true,
                                 onUpdate: function () {
                                     currentFrame = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(proxy.frame)));
                                     requestRender();
-                                    // JIT-load: prioritize the next ~12
-                                    // frames in the scroll direction so
-                                    // the canvas never has to wait on a
-                                    // frame that's about to be needed.
-                                    jitLoad(currentFrame);
+                                    // JIT-load on desktop only: prioritize
+                                    // the next ~12 frames in the scroll
+                                    // direction so the canvas never waits
+                                    // on a frame that's about to be needed.
+                                    //
+                                    // DISABLED ON MOBILE: each onUpdate firing
+                                    // 12 network requests creates a feedback
+                                    // loop where scrolling triggers loads,
+                                    // which slow the main thread, which makes
+                                    // scrolling stutter. The skeleton+
+                                    // background pipeline already covers
+                                    // mobile bandwidth needs.
+                                    if (!isMobileScrub) jitLoad(currentFrame);
                                 },
                                 // When the runway is fully scrolled, freeze
                                 // on the LAST frame and — on the FIRST pass
