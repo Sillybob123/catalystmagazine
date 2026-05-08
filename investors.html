@@ -73,7 +73,7 @@
         /* ─────────── HERO ─────────── */
         body[data-page="investors"] .inv-hero {
             position: relative;
-            padding: clamp(110px, 14vw, 200px) 0 clamp(72px, 9vw, 130px);
+            padding: clamp(64px, 8vw, 110px) 0 clamp(72px, 9vw, 130px);
             isolation: isolate;
             overflow: hidden;
             background:
@@ -98,12 +98,12 @@
         body[data-page="investors"] .inv-hero::after {
             content: "Investors";
             position: absolute;
-            top: 78px;
+            top: 40px;
             right: -2vw;
             font-family: 'Fraunces', serif;
             font-style: italic;
             font-weight: 500;
-            font-size: clamp(140px, 22vw, 320px);
+            font-size: clamp(110px, 16vw, 220px);
             line-height: 1;
             color: rgba(11,17,32,0.04);
             z-index: -1;
@@ -126,8 +126,7 @@
         body[data-page="investors"] .inv-eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 12px;
-            padding: 9px 16px 9px 12px;
+            padding: 8px 16px;
             border: 1px solid var(--i-line-strong);
             border-radius: 999px;
             background: rgba(255,255,255,0.7);
@@ -138,7 +137,7 @@
             letter-spacing: 0.14em;
             text-transform: uppercase;
             color: var(--i-ink-soft);
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
         body[data-page="investors"] .inv-eyebrow .dot {
             width: 7px; height: 7px; border-radius: 50%;
@@ -157,9 +156,9 @@
         body[data-page="investors"] .inv-title {
             font-family: 'Fraunces', 'Poppins', serif;
             font-weight: 500;
-            font-size: clamp(48px, 8vw, 124px);
-            line-height: 0.94;
-            letter-spacing: -0.028em;
+            font-size: clamp(38px, 5.6vw, 80px);
+            line-height: 0.98;
+            letter-spacing: -0.025em;
             margin: 0;
             max-width: 14ch;
             color: var(--i-ink);
@@ -978,10 +977,7 @@
         <section class="inv-hero">
             <div class="container">
                 <span class="inv-eyebrow">
-                    <span class="dot" aria-hidden="true"></span>
                     For investors &amp; partners
-                    <span class="sep" aria-hidden="true"></span>
-                    <span class="meta">By appointment</span>
                 </span>
 
                 <div class="inv-hero-grid">
@@ -1016,25 +1012,25 @@
                     </div>
 
                     <aside class="inv-hero-aside" aria-label="At a glance">
-                        <span class="inv-hero-aside-label">At a glance</span>
+                        <span class="inv-hero-aside-label">As featured in GW Today</span>
 
                         <p class="inv-hero-pull">
-                            &ldquo;The Catalyst is one of the most genuinely <em>edited</em>
-                            student publications I&rsquo;ve read &mdash; the kind of work serious
-                            advertisers should want to be next to.&rdquo;
+                            &ldquo;The Catalyst has grown <em>fourfold</em> since its launch a year ago.&rdquo;
                         </p>
-                        <span class="inv-hero-attrib">&mdash; A reader, last semester</span>
+                        <span class="inv-hero-attrib">
+                            &mdash; Greg Varner, <em>GW Today</em>, January&nbsp;2026
+                        </span>
 
                         <hr aria-hidden="true">
 
                         <ul class="inv-hero-proofs">
                             <li>
-                                <span class="num"><em>20+</em></span>
-                                <span class="label">student journalists, editors, and contributors on staff</span>
+                                <span class="num"><em>4&times;</em></span>
+                                <span class="label">growth in contributors in our first year, per GW Today</span>
                             </li>
                             <li>
-                                <span class="num">4</span>
-                                <span class="label">D.C. universities feeding the newsroom</span>
+                                <span class="num">~1<span style="font-size:0.6em">/wk</span></span>
+                                <span class="label">new long-form story published, every week</span>
                             </li>
                             <li>
                                 <span class="num"><em>0</em></span>
