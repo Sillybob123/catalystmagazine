@@ -17,7 +17,11 @@
 /privacy.html            /privacy                  301
 /brain-teaser.html       /brain-teaser             301
 /raffle.html             /raffle                   301
-/investors.html          /investors                301
+/sponsors.html           /sponsors                 301
+
+# ------ /investors → /sponsors (renamed 2026-05-08) ---------
+/investors               /sponsors                 301
+/investors.html          /sponsors                 301
 /innovation              /                         301
 /innovation.html         /                         301
 

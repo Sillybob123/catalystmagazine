@@ -11,19 +11,50 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sponsor, partner with, or invest in The Catalyst Magazine — D.C.'s student-run STEM publication. Read about our mission, traction, ad-partnership opportunity, and how to get in touch.">
-    <meta name="keywords" content="sponsor Catalyst Magazine, invest in Catalyst Magazine, Catalyst sponsorship, GW STEM ads, student journalism investment, D.C. media partnership">
-    <title>For Sponsors, Investors &amp; Partners | The Catalyst Magazine</title>
-    <link rel="canonical" href="https://www.catalyst-magazine.com/investors">
+    <meta name="description" content="Sponsor The Catalyst Magazine — Washington, D.C.'s student-run STEM publication. Place your brand at the close of every story, in our newsletter, and across an engaged university audience. Read our case and start a conversation.">
+    <meta name="keywords" content="sponsor Catalyst Magazine, Catalyst sponsorship, sponsor a story, advertise to GW students, GW STEM ads, student journalism sponsorship, D.C. media partnership, newsletter sponsorship">
+    <title>Sponsor The Catalyst Magazine | D.C. Student STEM Journalism</title>
+    <link rel="canonical" href="https://www.catalyst-magazine.com/sponsors">
 
-    <meta name="robots" content="noindex,follow">
+    <meta name="robots" content="index,follow,max-image-preview:large">
 
     <meta property="og:type" content="website">
-    <meta property="og:title" content="The Catalyst — For Sponsors, Investors &amp; Partners">
-    <meta property="og:description" content="A focused, ad-free editorial product with an engaged D.C. STEM audience. Here's our mission, our traction, and what we're building.">
-    <meta property="og:url" content="https://www.catalyst-magazine.com/investors">
+    <meta property="og:site_name" content="The Catalyst Magazine">
+    <meta property="og:title" content="Sponsor The Catalyst Magazine">
+    <meta property="og:description" content="A focused, ad-light editorial product with an engaged D.C. STEM audience. Here's our mission, our traction, and the sponsorship opportunity at the close of every story.">
+    <meta property="og:url" content="https://www.catalyst-magazine.com/sponsors">
     <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+    <meta property="og:image:alt" content="The Catalyst Magazine — student-run STEM journalism in Washington, D.C.">
+    <meta property="og:locale" content="en_US">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Sponsor The Catalyst Magazine">
+    <meta name="twitter:description" content="A focused, ad-light editorial product with an engaged D.C. STEM audience. Read our case and start a conversation.">
+    <meta name="twitter:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+
+    <!-- JSON-LD: positions /sponsors as a partner-onboarding page tied to the publication -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "Sponsor The Catalyst Magazine",
+        "url": "https://www.catalyst-magazine.com/sponsors",
+        "description": "Sponsor The Catalyst Magazine — Washington, D.C.'s student-run STEM publication.",
+        "inLanguage": "en-US",
+        "isPartOf": {
+            "@type": "WebSite",
+            "url": "https://www.catalyst-magazine.com",
+            "name": "The Catalyst Magazine"
+        },
+        "about": {
+            "@type": ["Organization", "NewsMediaOrganization"],
+            "name": "The Catalyst Magazine",
+            "url": "https://www.catalyst-magazine.com",
+            "logo": "https://www.catalyst-magazine.com/NewLogoShape.png",
+            "foundingLocation": "Washington, D.C.",
+            "email": "stemcatalystmagazine@gmail.com"
+        }
+    }
+    </script>
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -38,12 +69,12 @@
 
     <style>
         /* ============================================================
-           Investors page — scoped to body[data-page="investors"]
+           Sponsors page — scoped to body[data-page="sponsors"]
            Slate monochrome, editorial; no gold (gold reserved for ai-expo).
            Tinted neutrals (no pure #000 / #fff).
            ============================================================ */
 
-        body[data-page="investors"] {
+        body[data-page="sponsors"] {
             --i-ink:        #0b1120;
             --i-ink-soft:   #1e293b;
             --i-ink-mute:   #475569;
@@ -66,12 +97,12 @@
             -moz-osx-font-smoothing: grayscale;
         }
 
-        body[data-page="investors"] main { overflow-x: hidden; }
-        body[data-page="investors"] #site-header,
-        body[data-page="investors"] #site-footer { background: var(--i-paper); }
+        body[data-page="sponsors"] main { overflow-x: hidden; }
+        body[data-page="sponsors"] #site-header,
+        body[data-page="sponsors"] #site-footer { background: var(--i-paper); }
 
         /* ─────────── HERO ─────────── */
-        body[data-page="investors"] .inv-hero {
+        body[data-page="sponsors"] .inv-hero {
             position: relative;
             padding: clamp(64px, 8vw, 110px) 0 clamp(72px, 9vw, 130px);
             isolation: isolate;
@@ -81,7 +112,7 @@
                 radial-gradient(ellipse 50% 40% at 0% 100%, rgba(180, 83, 9, 0.06), transparent 60%),
                 var(--i-paper);
         }
-        body[data-page="investors"] .inv-hero::before {
+        body[data-page="sponsors"] .inv-hero::before {
             content: "";
             position: absolute; inset: 0;
             background-image:
@@ -95,8 +126,8 @@
             pointer-events: none;
         }
         /* Decorative oversized italic "Investors" mark — type as art */
-        body[data-page="investors"] .inv-hero::after {
-            content: "Investors";
+        body[data-page="sponsors"] .inv-hero::after {
+            content: "Sponsors";
             position: absolute;
             top: 40px;
             right: -2vw;
@@ -111,19 +142,19 @@
             user-select: none;
             letter-spacing: -0.03em;
         }
-        body[data-page="investors"] .inv-hero .container {
+        body[data-page="sponsors"] .inv-hero .container {
             position: relative;
             max-width: 1280px;
         }
 
-        body[data-page="investors"] .inv-hero-grid {
+        body[data-page="sponsors"] .inv-hero-grid {
             display: grid;
             grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
             gap: clamp(36px, 5vw, 80px);
             align-items: center;
         }
 
-        body[data-page="investors"] .inv-eyebrow {
+        body[data-page="sponsors"] .inv-eyebrow {
             display: inline-flex;
             align-items: center;
             padding: 8px 16px;
@@ -139,21 +170,21 @@
             color: var(--i-ink-soft);
             margin-bottom: 28px;
         }
-        body[data-page="investors"] .inv-eyebrow .dot {
+        body[data-page="sponsors"] .inv-eyebrow .dot {
             width: 7px; height: 7px; border-radius: 50%;
             background: var(--i-accent);
             box-shadow: 0 0 0 3px rgba(30,64,175,0.18);
         }
-        body[data-page="investors"] .inv-eyebrow .sep {
+        body[data-page="sponsors"] .inv-eyebrow .sep {
             width: 3px; height: 3px; border-radius: 50%;
             background: var(--i-line-strong);
         }
-        body[data-page="investors"] .inv-eyebrow .meta {
+        body[data-page="sponsors"] .inv-eyebrow .meta {
             color: var(--i-ink-mute);
             font-weight: 600;
         }
 
-        body[data-page="investors"] .inv-title {
+        body[data-page="sponsors"] .inv-title {
             font-family: 'Fraunces', 'Poppins', serif;
             font-weight: 500;
             font-size: clamp(38px, 5.6vw, 80px);
@@ -163,7 +194,7 @@
             max-width: 14ch;
             color: var(--i-ink);
         }
-        body[data-page="investors"] .inv-title em {
+        body[data-page="sponsors"] .inv-title em {
             font-style: italic;
             font-weight: 500;
             color: var(--i-accent);
@@ -172,7 +203,7 @@
             white-space: nowrap;
         }
         /* Sub-line under the second clause for editorial cadence */
-        body[data-page="investors"] .inv-title-sub {
+        body[data-page="sponsors"] .inv-title-sub {
             display: block;
             font-style: italic;
             color: var(--i-ink-soft);
@@ -182,26 +213,26 @@
             letter-spacing: -0.02em;
         }
 
-        body[data-page="investors"] .inv-lede {
+        body[data-page="sponsors"] .inv-lede {
             margin: 36px 0 0;
             max-width: 56ch;
             font-size: clamp(17px, 1.55vw, 21px);
             line-height: 1.6;
             color: var(--i-ink-soft);
         }
-        body[data-page="investors"] .inv-lede strong {
+        body[data-page="sponsors"] .inv-lede strong {
             color: var(--i-ink);
             font-weight: 600;
         }
 
-        body[data-page="investors"] .inv-hero-actions {
+        body[data-page="sponsors"] .inv-hero-actions {
             display: flex;
             flex-wrap: wrap;
             gap: 14px;
             align-items: center;
             margin-top: 44px;
         }
-        body[data-page="investors"] .inv-btn {
+        body[data-page="sponsors"] .inv-btn {
             display: inline-flex;
             align-items: center;
             gap: 10px;
@@ -215,34 +246,34 @@
             border: 1px solid transparent;
             transition: transform 220ms cubic-bezier(0.2,0.8,0.2,1), background 220ms, color 220ms, box-shadow 220ms;
         }
-        body[data-page="investors"] .inv-btn-primary {
+        body[data-page="sponsors"] .inv-btn-primary {
             background: var(--i-ink);
             color: var(--i-paper);
             box-shadow: var(--i-shadow-soft);
         }
-        body[data-page="investors"] .inv-btn-primary:hover {
+        body[data-page="sponsors"] .inv-btn-primary:hover {
             background: var(--i-accent);
             transform: translateY(-2px);
             box-shadow: var(--i-shadow-deep);
         }
-        body[data-page="investors"] .inv-btn-ghost {
+        body[data-page="sponsors"] .inv-btn-ghost {
             background: transparent;
             color: var(--i-ink);
             border-color: var(--i-line-strong);
         }
-        body[data-page="investors"] .inv-btn-ghost:hover {
+        body[data-page="sponsors"] .inv-btn-ghost:hover {
             background: rgba(255,255,255,0.6);
             border-color: var(--i-ink-soft);
             transform: translateY(-2px);
         }
-        body[data-page="investors"] .inv-btn:focus-visible {
+        body[data-page="sponsors"] .inv-btn:focus-visible {
             outline: 3px solid var(--i-accent);
             outline-offset: 3px;
         }
-        body[data-page="investors"] .inv-btn svg { width: 18px; height: 18px; }
+        body[data-page="sponsors"] .inv-btn svg { width: 18px; height: 18px; }
 
         /* Tertiary "skip to form" text link */
-        body[data-page="investors"] .inv-jump-link {
+        body[data-page="sponsors"] .inv-jump-link {
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -258,19 +289,19 @@
             text-decoration-color: var(--i-line-strong);
             transition: color 200ms, text-decoration-color 200ms;
         }
-        body[data-page="investors"] .inv-jump-link:hover {
+        body[data-page="sponsors"] .inv-jump-link:hover {
             color: var(--i-accent);
             text-decoration-color: var(--i-accent);
         }
-        body[data-page="investors"] .inv-jump-link:focus-visible {
+        body[data-page="sponsors"] .inv-jump-link:focus-visible {
             outline: 2px solid var(--i-accent);
             outline-offset: 4px;
             border-radius: 4px;
         }
-        body[data-page="investors"] .inv-jump-link svg { width: 14px; height: 14px; }
+        body[data-page="sponsors"] .inv-jump-link svg { width: 14px; height: 14px; }
 
         /* ─── Right column: editorial credibility card ─── */
-        body[data-page="investors"] .inv-hero-aside {
+        body[data-page="sponsors"] .inv-hero-aside {
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -283,14 +314,14 @@
             box-shadow: var(--i-shadow-soft);
             position: relative;
         }
-        body[data-page="investors"] .inv-hero-aside-label {
+        body[data-page="sponsors"] .inv-hero-aside-label {
             font-size: 11px;
             letter-spacing: 0.2em;
             text-transform: uppercase;
             font-weight: 700;
             color: var(--i-ink-mute);
         }
-        body[data-page="investors"] .inv-hero-pull {
+        body[data-page="sponsors"] .inv-hero-pull {
             font-family: 'Fraunces', serif;
             font-style: italic;
             font-weight: 400;
@@ -300,23 +331,23 @@
             color: var(--i-ink);
             margin: 0;
         }
-        body[data-page="investors"] .inv-hero-pull em {
+        body[data-page="sponsors"] .inv-hero-pull em {
             font-style: italic;
             color: var(--i-accent);
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-hero-attrib {
+        body[data-page="sponsors"] .inv-hero-attrib {
             font-size: 13px;
             color: var(--i-ink-mute);
             margin-top: 6px;
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-hero-aside hr {
+        body[data-page="sponsors"] .inv-hero-aside hr {
             border: 0;
             border-top: 1px solid var(--i-line);
             margin: 0;
         }
-        body[data-page="investors"] .inv-hero-proofs {
+        body[data-page="sponsors"] .inv-hero-proofs {
             list-style: none;
             padding: 0;
             margin: 0;
@@ -324,13 +355,13 @@
             flex-direction: column;
             gap: 14px;
         }
-        body[data-page="investors"] .inv-hero-proofs li {
+        body[data-page="sponsors"] .inv-hero-proofs li {
             display: grid;
             grid-template-columns: 56px 1fr;
             gap: 14px;
             align-items: baseline;
         }
-        body[data-page="investors"] .inv-hero-proofs .num {
+        body[data-page="sponsors"] .inv-hero-proofs .num {
             font-family: 'Fraunces', serif;
             font-weight: 500;
             font-size: 28px;
@@ -339,12 +370,12 @@
             font-variant-numeric: tabular-nums;
             letter-spacing: -0.015em;
         }
-        body[data-page="investors"] .inv-hero-proofs .num em {
+        body[data-page="sponsors"] .inv-hero-proofs .num em {
             font-style: italic;
             color: var(--i-accent);
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-hero-proofs .label {
+        body[data-page="sponsors"] .inv-hero-proofs .label {
             font-size: 13px;
             line-height: 1.4;
             color: var(--i-ink-soft);
@@ -352,23 +383,23 @@
         }
 
         /* ─────────── STATS STRIP ─────────── */
-        body[data-page="investors"] .inv-stats {
+        body[data-page="sponsors"] .inv-stats {
             padding: clamp(48px, 6vw, 80px) 0;
             border-top: 1px solid var(--i-line);
             border-bottom: 1px solid var(--i-line);
             background: var(--i-paper);
         }
-        body[data-page="investors"] .inv-stats .container {
+        body[data-page="sponsors"] .inv-stats .container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 24px;
         }
-        body[data-page="investors"] .inv-stat {
+        body[data-page="sponsors"] .inv-stat {
             display: flex;
             flex-direction: column;
             gap: 6px;
         }
-        body[data-page="investors"] .inv-stat-num {
+        body[data-page="sponsors"] .inv-stat-num {
             font-family: 'Fraunces', serif;
             font-weight: 500;
             font-size: clamp(36px, 4.8vw, 64px);
@@ -377,12 +408,12 @@
             color: var(--i-ink);
             font-variant-numeric: tabular-nums;
         }
-        body[data-page="investors"] .inv-stat-num em {
+        body[data-page="sponsors"] .inv-stat-num em {
             font-style: italic;
             color: var(--i-accent);
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-stat-label {
+        body[data-page="sponsors"] .inv-stat-label {
             font-size: 13px;
             color: var(--i-ink-mute);
             line-height: 1.5;
@@ -390,26 +421,26 @@
         }
 
         /* ─────────── SECTION CHROME ─────────── */
-        body[data-page="investors"] .inv-section {
+        body[data-page="sponsors"] .inv-section {
             padding: clamp(72px, 10vw, 140px) 0;
         }
-        body[data-page="investors"] .inv-section.is-deep {
+        body[data-page="sponsors"] .inv-section.is-deep {
             background: var(--i-paper-deep);
             border-top: 1px solid var(--i-line);
             border-bottom: 1px solid var(--i-line);
         }
-        body[data-page="investors"] .inv-section .container {
+        body[data-page="sponsors"] .inv-section .container {
             max-width: 1180px;
         }
 
-        body[data-page="investors"] .inv-section-head {
+        body[data-page="sponsors"] .inv-section-head {
             display: grid;
             grid-template-columns: 200px 1fr;
             gap: 48px;
             margin-bottom: clamp(48px, 6vw, 80px);
             align-items: baseline;
         }
-        body[data-page="investors"] .inv-section-num {
+        body[data-page="sponsors"] .inv-section-num {
             font-family: 'Fraunces', serif;
             font-style: italic;
             font-weight: 500;
@@ -417,7 +448,7 @@
             color: var(--i-accent);
             letter-spacing: 0.04em;
         }
-        body[data-page="investors"] .inv-section-num::before {
+        body[data-page="sponsors"] .inv-section-num::before {
             content: "";
             display: inline-block;
             width: 32px; height: 1px;
@@ -425,7 +456,7 @@
             vertical-align: middle;
             margin-right: 14px;
         }
-        body[data-page="investors"] .inv-section-title {
+        body[data-page="sponsors"] .inv-section-title {
             font-family: 'Fraunces', 'Poppins', serif;
             font-weight: 500;
             font-size: clamp(34px, 4.4vw, 56px);
@@ -435,20 +466,20 @@
             margin: 0;
             max-width: 22ch;
         }
-        body[data-page="investors"] .inv-section-title em {
+        body[data-page="sponsors"] .inv-section-title em {
             font-style: italic;
             font-weight: 500;
             color: var(--i-accent);
         }
 
         /* ─────────── MISSION (pull-quote layout) ─────────── */
-        body[data-page="investors"] .inv-mission-grid {
+        body[data-page="sponsors"] .inv-mission-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: clamp(40px, 6vw, 96px);
             align-items: start;
         }
-        body[data-page="investors"] .inv-mission-quote {
+        body[data-page="sponsors"] .inv-mission-quote {
             font-family: 'Fraunces', serif;
             font-weight: 500;
             font-size: clamp(26px, 3vw, 38px);
@@ -460,31 +491,31 @@
             padding-top: 24px;
             border-top: 1px solid var(--i-ink-soft);
         }
-        body[data-page="investors"] .inv-mission-quote em {
+        body[data-page="sponsors"] .inv-mission-quote em {
             font-style: italic;
             color: var(--i-accent);
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-mission-body p {
+        body[data-page="sponsors"] .inv-mission-body p {
             font-size: 17px;
             line-height: 1.7;
             color: var(--i-ink-soft);
             margin: 0 0 18px;
         }
-        body[data-page="investors"] .inv-mission-body p:last-child { margin-bottom: 0; }
-        body[data-page="investors"] .inv-mission-body strong {
+        body[data-page="sponsors"] .inv-mission-body p:last-child { margin-bottom: 0; }
+        body[data-page="sponsors"] .inv-mission-body strong {
             color: var(--i-ink);
             font-weight: 600;
         }
 
         /* ─────────── WHY IT WORKS (editorial points) ─────────── */
-        body[data-page="investors"] .inv-points {
+        body[data-page="sponsors"] .inv-points {
             display: grid;
             grid-template-columns: 1fr 1fr;
             column-gap: clamp(40px, 6vw, 96px);
             row-gap: 0;
         }
-        body[data-page="investors"] .inv-point {
+        body[data-page="sponsors"] .inv-point {
             display: grid;
             grid-template-columns: 56px 1fr;
             gap: 24px;
@@ -493,10 +524,10 @@
             align-items: baseline;
         }
         /* Last row's bottom border */
-        body[data-page="investors"] .inv-point:nth-last-child(-n+2) {
+        body[data-page="sponsors"] .inv-point:nth-last-child(-n+2) {
             border-bottom: 1px solid var(--i-line-strong);
         }
-        body[data-page="investors"] .inv-point-num {
+        body[data-page="sponsors"] .inv-point-num {
             font-family: 'Fraunces', serif;
             font-style: italic;
             font-weight: 500;
@@ -506,7 +537,7 @@
             font-variant-numeric: tabular-nums;
             padding-top: 4px;
         }
-        body[data-page="investors"] .inv-point h3 {
+        body[data-page="sponsors"] .inv-point h3 {
             font-family: 'Fraunces', 'Poppins', serif;
             font-weight: 500;
             font-size: clamp(22px, 2.4vw, 30px);
@@ -515,31 +546,31 @@
             color: var(--i-ink);
             margin: 0 0 12px;
         }
-        body[data-page="investors"] .inv-point h3 em {
+        body[data-page="sponsors"] .inv-point h3 em {
             font-style: italic;
             color: var(--i-accent);
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-point p {
+        body[data-page="sponsors"] .inv-point p {
             font-size: 16px;
             line-height: 1.65;
             color: var(--i-ink-soft);
             margin: 0;
             max-width: 38ch;
         }
-        body[data-page="investors"] .inv-point p strong {
+        body[data-page="sponsors"] .inv-point p strong {
             color: var(--i-ink);
             font-weight: 600;
         }
 
         /* ─────────── AD OPPORTUNITY (split) ─────────── */
-        body[data-page="investors"] .inv-ad {
+        body[data-page="sponsors"] .inv-ad {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: clamp(40px, 6vw, 80px);
             align-items: start;
         }
-        body[data-page="investors"] .inv-ad-illustration {
+        body[data-page="sponsors"] .inv-ad-illustration {
             position: relative;
             border-radius: var(--i-radius-lg);
             overflow: hidden;
@@ -552,7 +583,7 @@
             flex-direction: column;
             gap: 18px;
         }
-        body[data-page="investors"] .inv-ad-illustration::before {
+        body[data-page="sponsors"] .inv-ad-illustration::before {
             content: "Article preview";
             position: absolute;
             top: 14px; right: 18px;
@@ -562,14 +593,14 @@
             font-weight: 700;
             color: var(--i-ink-mute);
         }
-        body[data-page="investors"] .inv-ad-line {
+        body[data-page="sponsors"] .inv-ad-line {
             height: 8px;
             background: var(--i-line);
             border-radius: 4px;
         }
-        body[data-page="investors"] .inv-ad-line.short { width: 60%; }
-        body[data-page="investors"] .inv-ad-line.tall  { height: 14px; width: 75%; background: var(--i-ink-soft); }
-        body[data-page="investors"] .inv-ad-slot {
+        body[data-page="sponsors"] .inv-ad-line.short { width: 60%; }
+        body[data-page="sponsors"] .inv-ad-line.tall  { height: 14px; width: 75%; background: var(--i-ink-soft); }
+        body[data-page="sponsors"] .inv-ad-slot {
             margin-top: auto;
             padding: 22px;
             border: 1.5px dashed var(--i-accent);
@@ -580,14 +611,14 @@
             justify-content: space-between;
             gap: 16px;
         }
-        body[data-page="investors"] .inv-ad-slot-label {
+        body[data-page="sponsors"] .inv-ad-slot-label {
             font-size: 11px;
             letter-spacing: 0.18em;
             text-transform: uppercase;
             font-weight: 700;
             color: var(--i-accent);
         }
-        body[data-page="investors"] .inv-ad-slot-text {
+        body[data-page="sponsors"] .inv-ad-slot-text {
             font-family: 'Fraunces', serif;
             font-weight: 500;
             font-size: 18px;
@@ -595,7 +626,7 @@
             margin: 6px 0 0;
             line-height: 1.3;
         }
-        body[data-page="investors"] .inv-ad-slot-pill {
+        body[data-page="sponsors"] .inv-ad-slot-pill {
             display: inline-flex;
             align-items: center;
             gap: 6px;
@@ -609,7 +640,7 @@
             text-transform: uppercase;
         }
 
-        body[data-page="investors"] .inv-ad-list {
+        body[data-page="sponsors"] .inv-ad-list {
             list-style: none;
             padding: 0;
             margin: 18px 0 0;
@@ -617,7 +648,7 @@
             flex-direction: column;
             gap: 14px;
         }
-        body[data-page="investors"] .inv-ad-list li {
+        body[data-page="sponsors"] .inv-ad-list li {
             display: grid;
             grid-template-columns: 24px 1fr;
             gap: 14px;
@@ -626,16 +657,16 @@
             line-height: 1.55;
             color: var(--i-ink-soft);
         }
-        body[data-page="investors"] .inv-ad-list li svg {
+        body[data-page="sponsors"] .inv-ad-list li svg {
             width: 20px; height: 20px;
             color: var(--i-accent);
             margin-top: 4px;
         }
-        body[data-page="investors"] .inv-ad-list li strong {
+        body[data-page="sponsors"] .inv-ad-list li strong {
             color: var(--i-ink);
             font-weight: 600;
         }
-        body[data-page="investors"] .inv-ad-body p {
+        body[data-page="sponsors"] .inv-ad-body p {
             font-size: 17px;
             line-height: 1.7;
             color: var(--i-ink-soft);
@@ -643,15 +674,15 @@
         }
 
         /* ─────────── USE OF FUNDS ─────────── */
-        body[data-page="investors"] .inv-funds {
+        body[data-page="sponsors"] .inv-funds {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 16px;
         }
-        body[data-page="investors"] .inv-fund-row {
+        body[data-page="sponsors"] .inv-fund-row {
             display: contents;
         }
-        body[data-page="investors"] .inv-fund-card {
+        body[data-page="sponsors"] .inv-fund-card {
             background: #fff;
             border: 1px solid var(--i-line);
             border-radius: var(--i-radius-md);
@@ -664,7 +695,7 @@
             overflow: hidden;
             isolation: isolate;
         }
-        body[data-page="investors"] .inv-fund-card .inv-fund-pct {
+        body[data-page="sponsors"] .inv-fund-card .inv-fund-pct {
             font-family: 'Fraunces', serif;
             font-weight: 500;
             font-size: 38px;
@@ -673,19 +704,19 @@
             color: var(--i-ink);
             font-variant-numeric: tabular-nums;
         }
-        body[data-page="investors"] .inv-fund-card .inv-fund-pct em {
+        body[data-page="sponsors"] .inv-fund-card .inv-fund-pct em {
             font-style: italic;
             color: var(--i-accent);
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-fund-card h4 {
+        body[data-page="sponsors"] .inv-fund-card h4 {
             font-size: 16px;
             font-weight: 600;
             color: var(--i-ink);
             margin: 0;
             font-family: 'Poppins', sans-serif;
         }
-        body[data-page="investors"] .inv-fund-card p {
+        body[data-page="sponsors"] .inv-fund-card p {
             font-size: 14px;
             line-height: 1.55;
             color: var(--i-ink-mute);
@@ -693,14 +724,14 @@
         }
 
         /* ─────────── FORM ─────────── */
-        body[data-page="investors"] .inv-form-section {
+        body[data-page="sponsors"] .inv-form-section {
             padding: clamp(72px, 10vw, 140px) 0;
             background: var(--i-ink);
             color: var(--i-paper);
             position: relative;
             overflow: hidden;
         }
-        body[data-page="investors"] .inv-form-section::before {
+        body[data-page="sponsors"] .inv-form-section::before {
             content: "";
             position: absolute;
             top: -200px; left: -200px;
@@ -710,52 +741,124 @@
             z-index: 0;
             pointer-events: none;
         }
-        body[data-page="investors"] .inv-form-section .container {
+        body[data-page="sponsors"] .inv-form-section .container {
             position: relative;
             z-index: 1;
             max-width: 1180px;
         }
-        body[data-page="investors"] .inv-form-grid {
+        body[data-page="sponsors"] .inv-form-grid {
             display: flex;
             flex-direction: column;
             gap: clamp(40px, 5vw, 64px);
         }
-        body[data-page="investors"] .inv-form-intro {
+        body[data-page="sponsors"] .inv-form-intro {
             display: grid;
-            grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-            gap: clamp(24px, 4vw, 64px);
-            align-items: end;
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+            gap: clamp(28px, 4vw, 72px);
+            align-items: start;
+            padding-bottom: clamp(8px, 1vw, 16px);
+            border-bottom: 1px solid rgba(247,246,241,0.12);
         }
-        body[data-page="investors"] .inv-form-intro h2 {
+        body[data-page="sponsors"] .inv-form-intro-headline {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        body[data-page="sponsors"] .inv-form-intro-step {
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: 14px;
+            color: #e8d28a;
+            letter-spacing: 0.04em;
+        }
+        body[data-page="sponsors"] .inv-form-intro h2 {
             font-family: 'Fraunces', serif;
             font-weight: 500;
-            font-size: clamp(38px, 5vw, 68px);
-            line-height: 1.02;
-            letter-spacing: -0.022em;
+            font-size: clamp(48px, 6.4vw, 88px);
+            line-height: 0.96;
+            letter-spacing: -0.025em;
             color: var(--i-paper);
             margin: 0;
-            max-width: 12ch;
+            max-width: 10ch;
         }
-        body[data-page="investors"] .inv-form-intro h2 em {
+        body[data-page="sponsors"] .inv-form-intro h2 em {
             font-style: italic;
             color: #e8d28a;
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-form-intro-copy p {
-            font-size: 16px;
-            line-height: 1.65;
-            color: rgba(247,246,241,0.8);
-            margin: 0 0 12px;
-            max-width: 48ch;
+
+        body[data-page="sponsors"] .inv-form-intro-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            padding-top: 8px;
         }
-        body[data-page="investors"] .inv-form-intro-copy p:last-child { margin-bottom: 0; }
-        body[data-page="investors"] .inv-form-intro a {
+        body[data-page="sponsors"] .inv-form-intro-lede {
+            font-size: clamp(16px, 1.4vw, 19px);
+            line-height: 1.55;
+            color: var(--i-paper);
+            margin: 0;
+            max-width: 42ch;
+            font-weight: 400;
+        }
+        body[data-page="sponsors"] .inv-form-intro-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        body[data-page="sponsors"] .inv-form-intro-list li {
+            display: grid;
+            grid-template-columns: 18px 1fr;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            line-height: 1.5;
+            color: rgba(247,246,241,0.78);
+        }
+        body[data-page="sponsors"] .inv-form-intro-list .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #e8d28a;
+            margin-top: 2px;
+            justify-self: start;
+        }
+        body[data-page="sponsors"] .inv-form-intro-aside {
+            margin: 8px 0 0;
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: rgba(247,246,241,0.05);
+            border: 1px solid rgba(247,246,241,0.10);
+            font-size: 14px;
+            color: rgba(247,246,241,0.78);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: baseline;
+        }
+        body[data-page="sponsors"] .inv-form-intro-aside-label {
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: rgba(247,246,241,0.55);
+        }
+        body[data-page="sponsors"] .inv-form-intro a {
             color: #e8d28a;
             text-decoration: underline;
             text-underline-offset: 3px;
+            text-decoration-thickness: 1px;
+            font-weight: 500;
+        }
+        body[data-page="sponsors"] .inv-form-intro a:hover {
+            text-decoration-thickness: 2px;
         }
 
-        body[data-page="investors"] .inv-form-card {
+        body[data-page="sponsors"] .inv-form-card {
             background: var(--i-paper);
             color: var(--i-ink);
             border-radius: var(--i-radius-lg);
@@ -763,14 +866,14 @@
             box-shadow: var(--i-shadow-deep);
             border: 1px solid rgba(11,17,32,0.06);
         }
-        body[data-page="investors"] .inv-form {
+        body[data-page="sponsors"] .inv-form {
             display: flex;
             flex-direction: column;
             gap: 36px;
         }
 
         /* ─── Form group ─── */
-        body[data-page="investors"] .inv-form-group {
+        body[data-page="sponsors"] .inv-form-group {
             border: 0;
             margin: 0;
             padding: 0;
@@ -779,18 +882,18 @@
             flex-direction: column;
             gap: 18px;
         }
-        body[data-page="investors"] .inv-form-group + .inv-form-group {
+        body[data-page="sponsors"] .inv-form-group + .inv-form-group {
             padding-top: 28px;
             border-top: 1px solid var(--i-line);
         }
-        body[data-page="investors"] .inv-form-group legend {
+        body[data-page="sponsors"] .inv-form-group legend {
             display: flex;
             align-items: baseline;
             gap: 12px;
             margin-bottom: 6px;
             padding: 0;
         }
-        body[data-page="investors"] .inv-group-num {
+        body[data-page="sponsors"] .inv-group-num {
             font-family: 'Fraunces', serif;
             font-style: italic;
             font-weight: 500;
@@ -799,7 +902,7 @@
             letter-spacing: 0.04em;
             font-variant-numeric: tabular-nums;
         }
-        body[data-page="investors"] .inv-group-label {
+        body[data-page="sponsors"] .inv-group-label {
             font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.18em;
@@ -807,40 +910,40 @@
             color: var(--i-ink-soft);
         }
 
-        body[data-page="investors"] .inv-form-row {
+        body[data-page="sponsors"] .inv-form-row {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 16px;
         }
-        body[data-page="investors"] .inv-form-row.is-three {
+        body[data-page="sponsors"] .inv-form-row.is-three {
             grid-template-columns: repeat(3, minmax(0, 1fr));
         }
-        body[data-page="investors"] .inv-form-row.is-four {
+        body[data-page="sponsors"] .inv-form-row.is-four {
             grid-template-columns: repeat(4, minmax(0, 1fr));
         }
 
         /* ─── Field ─── */
-        body[data-page="investors"] .inv-field {
+        body[data-page="sponsors"] .inv-field {
             display: flex;
             flex-direction: column;
             gap: 8px;
             position: relative;
         }
-        body[data-page="investors"] .inv-field label {
+        body[data-page="sponsors"] .inv-field label {
             font-size: 13px;
             font-weight: 600;
             color: var(--i-ink-soft);
             letter-spacing: 0.01em;
         }
-        body[data-page="investors"] .inv-field label .req {
+        body[data-page="sponsors"] .inv-field label .req {
             color: var(--i-accent);
             margin-left: 3px;
             font-weight: 700;
         }
 
-        body[data-page="investors"] .inv-field input,
-        body[data-page="investors"] .inv-field select,
-        body[data-page="investors"] .inv-field textarea {
+        body[data-page="sponsors"] .inv-field input,
+        body[data-page="sponsors"] .inv-field select,
+        body[data-page="sponsors"] .inv-field textarea {
             width: 100%;
             min-height: 48px;
             padding: 13px 14px;
@@ -853,34 +956,34 @@
             box-shadow: inset 0 0 0 1px var(--i-line-strong);
             transition: box-shadow 180ms, background 180ms, transform 180ms;
         }
-        body[data-page="investors"] .inv-field textarea {
+        body[data-page="sponsors"] .inv-field textarea {
             min-height: 150px;
             padding: 14px;
             resize: vertical;
             line-height: 1.6;
         }
-        body[data-page="investors"] .inv-field input::placeholder,
-        body[data-page="investors"] .inv-field textarea::placeholder {
+        body[data-page="sponsors"] .inv-field input::placeholder,
+        body[data-page="sponsors"] .inv-field textarea::placeholder {
             color: rgba(11,17,32,0.4);
         }
-        body[data-page="investors"] .inv-field input:hover,
-        body[data-page="investors"] .inv-field select:hover,
-        body[data-page="investors"] .inv-field textarea:hover {
+        body[data-page="sponsors"] .inv-field input:hover,
+        body[data-page="sponsors"] .inv-field select:hover,
+        body[data-page="sponsors"] .inv-field textarea:hover {
             box-shadow: inset 0 0 0 1px var(--i-ink-soft);
         }
-        body[data-page="investors"] .inv-field input:focus,
-        body[data-page="investors"] .inv-field input:focus-visible,
-        body[data-page="investors"] .inv-field select:focus,
-        body[data-page="investors"] .inv-field select:focus-visible,
-        body[data-page="investors"] .inv-field textarea:focus,
-        body[data-page="investors"] .inv-field textarea:focus-visible {
+        body[data-page="sponsors"] .inv-field input:focus,
+        body[data-page="sponsors"] .inv-field input:focus-visible,
+        body[data-page="sponsors"] .inv-field select:focus,
+        body[data-page="sponsors"] .inv-field select:focus-visible,
+        body[data-page="sponsors"] .inv-field textarea:focus,
+        body[data-page="sponsors"] .inv-field textarea:focus-visible {
             outline: none;
             background: #fff;
             box-shadow:
                 inset 0 0 0 2px var(--i-accent),
                 0 0 0 4px var(--i-accent-soft);
         }
-        body[data-page="investors"] .inv-field select {
+        body[data-page="sponsors"] .inv-field select {
             appearance: none;
             -webkit-appearance: none;
             background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e293b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
@@ -891,7 +994,7 @@
             cursor: pointer;
         }
 
-        body[data-page="investors"] .inv-helper {
+        body[data-page="sponsors"] .inv-helper {
             font-size: 12.5px;
             color: var(--i-ink-mute);
             line-height: 1.55;
@@ -900,7 +1003,7 @@
         }
 
         /* ─── Submit ─── */
-        body[data-page="investors"] .inv-form-footer {
+        body[data-page="sponsors"] .inv-form-footer {
             display: flex;
             flex-direction: column;
             gap: 14px;
@@ -908,7 +1011,7 @@
             border-top: 1px solid var(--i-line);
             margin-top: 4px;
         }
-        body[data-page="investors"] .inv-submit {
+        body[data-page="sponsors"] .inv-submit {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -928,23 +1031,23 @@
             transition: transform 200ms cubic-bezier(0.2,0.8,0.2,1), background 200ms, box-shadow 200ms;
             box-shadow: 0 1px 2px rgba(11,17,32,0.06), 0 14px 30px -14px rgba(11,17,32,0.4);
         }
-        body[data-page="investors"] .inv-submit:hover {
+        body[data-page="sponsors"] .inv-submit:hover {
             background: var(--i-accent);
             transform: translateY(-2px);
             box-shadow: 0 1px 2px rgba(11,17,32,0.06), 0 22px 44px -16px rgba(30,64,175,0.5);
         }
-        body[data-page="investors"] .inv-submit:focus-visible {
+        body[data-page="sponsors"] .inv-submit:focus-visible {
             outline: 3px solid var(--i-accent);
             outline-offset: 3px;
         }
-        body[data-page="investors"] .inv-submit:disabled {
+        body[data-page="sponsors"] .inv-submit:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-        body[data-page="investors"] .inv-submit svg { width: 18px; height: 18px; }
+        body[data-page="sponsors"] .inv-submit svg { width: 18px; height: 18px; }
 
-        body[data-page="investors"] .inv-form-reassure {
+        body[data-page="sponsors"] .inv-form-reassure {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -954,36 +1057,36 @@
             text-align: center;
             line-height: 1.5;
         }
-        body[data-page="investors"] .inv-form-reassure svg {
+        body[data-page="sponsors"] .inv-form-reassure svg {
             width: 14px; height: 14px;
             color: var(--i-accent);
             flex-shrink: 0;
         }
 
-        body[data-page="investors"] .inv-response {
+        body[data-page="sponsors"] .inv-response {
             min-height: 24px;
             font-size: 14px;
             line-height: 1.5;
             color: var(--i-ink-mute);
             font-weight: 500;
         }
-        body[data-page="investors"] .inv-response.is-success {
+        body[data-page="sponsors"] .inv-response.is-success {
             color: #15803d;
             font-weight: 600;
         }
-        body[data-page="investors"] .inv-response.is-error {
+        body[data-page="sponsors"] .inv-response.is-error {
             color: #b91c1c;
             font-weight: 600;
         }
 
         /* Success state — replaces the form on submit */
-        body[data-page="investors"] .inv-success {
+        body[data-page="sponsors"] .inv-success {
             display: none;
             text-align: center;
             padding: 40px 20px;
         }
-        body[data-page="investors"] .inv-success.is-shown { display: block; }
-        body[data-page="investors"] .inv-success-icon {
+        body[data-page="sponsors"] .inv-success.is-shown { display: block; }
+        body[data-page="sponsors"] .inv-success-icon {
             width: 64px; height: 64px;
             border-radius: 50%;
             background: rgba(21,128,61,0.10);
@@ -992,15 +1095,15 @@
             place-items: center;
             margin: 0 auto 20px;
         }
-        body[data-page="investors"] .inv-success-icon svg { width: 30px; height: 30px; }
-        body[data-page="investors"] .inv-success h3 {
+        body[data-page="sponsors"] .inv-success-icon svg { width: 30px; height: 30px; }
+        body[data-page="sponsors"] .inv-success h3 {
             font-family: 'Fraunces', serif;
             font-weight: 500;
             font-size: 28px;
             color: var(--i-ink);
             margin: 0 0 10px;
         }
-        body[data-page="investors"] .inv-success p {
+        body[data-page="sponsors"] .inv-success p {
             color: var(--i-ink-soft);
             font-size: 16px;
             line-height: 1.6;
@@ -1009,45 +1112,45 @@
 
         /* ─────────── RESPONSIVE ─────────── */
         @media (max-width: 1024px) {
-            body[data-page="investors"] .inv-hero-grid { grid-template-columns: 1fr; gap: 40px; align-items: start; }
-            body[data-page="investors"] .inv-hero-aside { padding: 24px; }
-            body[data-page="investors"] .inv-stats .container { grid-template-columns: repeat(2, 1fr); gap: 32px 24px; }
-            body[data-page="investors"] .inv-points { grid-template-columns: 1fr 1fr; }
-            body[data-page="investors"] .inv-funds { grid-template-columns: repeat(2, 1fr); }
-            body[data-page="investors"] .inv-section-head { grid-template-columns: 140px 1fr; gap: 32px; }
-            body[data-page="investors"] .inv-form-intro { grid-template-columns: 1fr; align-items: start; gap: 18px; }
-            body[data-page="investors"] .inv-form-intro h2 { max-width: 100%; }
-            body[data-page="investors"] .inv-form-row.is-three,
-            body[data-page="investors"] .inv-form-row.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            body[data-page="sponsors"] .inv-hero-grid { grid-template-columns: 1fr; gap: 40px; align-items: start; }
+            body[data-page="sponsors"] .inv-hero-aside { padding: 24px; }
+            body[data-page="sponsors"] .inv-stats .container { grid-template-columns: repeat(2, 1fr); gap: 32px 24px; }
+            body[data-page="sponsors"] .inv-points { grid-template-columns: 1fr 1fr; }
+            body[data-page="sponsors"] .inv-funds { grid-template-columns: repeat(2, 1fr); }
+            body[data-page="sponsors"] .inv-section-head { grid-template-columns: 140px 1fr; gap: 32px; }
+            body[data-page="sponsors"] .inv-form-intro { grid-template-columns: 1fr; align-items: start; gap: 18px; }
+            body[data-page="sponsors"] .inv-form-intro h2 { max-width: 100%; }
+            body[data-page="sponsors"] .inv-form-row.is-three,
+            body[data-page="sponsors"] .inv-form-row.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
         @media (max-width: 720px) {
-            body[data-page="investors"] .inv-hero { padding-top: clamp(96px, 18vw, 130px); }
-            body[data-page="investors"] .inv-hero::after { font-size: clamp(120px, 38vw, 200px); top: 56px; right: -10vw; }
-            body[data-page="investors"] .inv-hero-actions { gap: 12px; }
-            body[data-page="investors"] .inv-jump-link { margin-left: 0; width: 100%; justify-content: flex-start; }
-            body[data-page="investors"] .inv-hero-aside { padding: 22px; gap: 16px; }
-            body[data-page="investors"] .inv-section-head {
+            body[data-page="sponsors"] .inv-hero { padding-top: clamp(96px, 18vw, 130px); }
+            body[data-page="sponsors"] .inv-hero::after { font-size: clamp(120px, 38vw, 200px); top: 56px; right: -10vw; }
+            body[data-page="sponsors"] .inv-hero-actions { gap: 12px; }
+            body[data-page="sponsors"] .inv-jump-link { margin-left: 0; width: 100%; justify-content: flex-start; }
+            body[data-page="sponsors"] .inv-hero-aside { padding: 22px; gap: 16px; }
+            body[data-page="sponsors"] .inv-section-head {
                 grid-template-columns: 1fr;
                 gap: 14px;
             }
-            body[data-page="investors"] .inv-mission-grid { grid-template-columns: 1fr; }
-            body[data-page="investors"] .inv-ad { grid-template-columns: 1fr; }
-            body[data-page="investors"] .inv-points { grid-template-columns: 1fr; }
-            body[data-page="investors"] .inv-point { padding: 26px 0; gap: 18px; grid-template-columns: 36px 1fr; }
-            body[data-page="investors"] .inv-point:nth-last-child(-n+2) { border-bottom: 0; }
-            body[data-page="investors"] .inv-point:last-child { border-bottom: 1px solid var(--i-line-strong); }
-            body[data-page="investors"] .inv-funds { grid-template-columns: 1fr; }
-            body[data-page="investors"] .inv-form-row,
-            body[data-page="investors"] .inv-form-row.is-three,
-            body[data-page="investors"] .inv-form-row.is-four { grid-template-columns: 1fr; }
-            body[data-page="investors"] .inv-stats .container { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
+            body[data-page="sponsors"] .inv-mission-grid { grid-template-columns: 1fr; }
+            body[data-page="sponsors"] .inv-ad { grid-template-columns: 1fr; }
+            body[data-page="sponsors"] .inv-points { grid-template-columns: 1fr; }
+            body[data-page="sponsors"] .inv-point { padding: 26px 0; gap: 18px; grid-template-columns: 36px 1fr; }
+            body[data-page="sponsors"] .inv-point:nth-last-child(-n+2) { border-bottom: 0; }
+            body[data-page="sponsors"] .inv-point:last-child { border-bottom: 1px solid var(--i-line-strong); }
+            body[data-page="sponsors"] .inv-funds { grid-template-columns: 1fr; }
+            body[data-page="sponsors"] .inv-form-row,
+            body[data-page="sponsors"] .inv-form-row.is-three,
+            body[data-page="sponsors"] .inv-form-row.is-four { grid-template-columns: 1fr; }
+            body[data-page="sponsors"] .inv-stats .container { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            body[data-page="investors"] *,
-            body[data-page="investors"] *::before,
-            body[data-page="investors"] *::after {
+            body[data-page="sponsors"] *,
+            body[data-page="sponsors"] *::before,
+            body[data-page="sponsors"] *::after {
                 animation-duration: 0.001ms !important;
                 animation-iteration-count: 1 !important;
                 transition-duration: 0.001ms !important;
@@ -1056,7 +1159,7 @@
     </style>
 </head>
 
-<body data-page="investors">
+<body data-page="sponsors">
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -1068,7 +1171,7 @@
         <section class="inv-hero">
             <div class="container">
                 <span class="inv-eyebrow">
-                    For sponsors, investors &amp; partners
+                    Sponsorship &amp; partnerships
                 </span>
 
                 <div class="inv-hero-grid">
@@ -1367,16 +1470,37 @@
             <div class="container">
                 <div class="inv-form-grid">
                     <div class="inv-form-intro">
-                        <h2 id="form-heading">Let&rsquo;s <em>talk.</em></h2>
+                        <div class="inv-form-intro-headline">
+                            <span class="inv-form-intro-step">05 &mdash; Start a conversation</span>
+                            <h2 id="form-heading">
+                                Let&rsquo;s <em>talk.</em>
+                            </h2>
+                        </div>
+
                         <div class="inv-form-intro-copy">
-                            <p>
-                                Whether you&rsquo;re writing a check, sponsoring stories, exploring an
-                                ad partnership, or just curious about what we&rsquo;re building &mdash;
-                                tell us a little about you and we&rsquo;ll be in touch within 48 hours.
+                            <p class="inv-form-intro-lede">
+                                Tell us a little about you and we&rsquo;ll be in touch within 48 hours &mdash;
+                                personally, from one of the founders.
                             </p>
-                            <p>
-                                Prefer email? Reach Yair Ben-Dor and Aidan Schurr directly at
-                                <a href="mailto:stemcatalystmagazine@gmail.com">stemcatalystmagazine@gmail.com</a>.
+
+                            <ul class="inv-form-intro-list">
+                                <li>
+                                    <span class="dot" aria-hidden="true"></span>
+                                    Sponsoring a story or our newsletter
+                                </li>
+                                <li>
+                                    <span class="dot" aria-hidden="true"></span>
+                                    Writing a check &mdash; angel, advisory, or strategic
+                                </li>
+                                <li>
+                                    <span class="dot" aria-hidden="true"></span>
+                                    Just curious about what we&rsquo;re building
+                                </li>
+                            </ul>
+
+                            <p class="inv-form-intro-aside">
+                                <span class="inv-form-intro-aside-label">Prefer email&nbsp;&middot;</span>
+                                <a href="mailto:stemcatalystmagazine@gmail.com">stemcatalystmagazine@gmail.com</a>
                             </p>
                         </div>
                     </div>
