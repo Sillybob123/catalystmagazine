@@ -707,7 +707,12 @@
     <div id="details-modal" class="modal-overlay" role="dialog" aria-modal="true" style="display: none;">
         <div class="modal-content large">
             <div class="modal-header">
-                <h2 id="details-title">Project Details</h2>
+                <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
+                    <h2 id="details-title" style="margin:0; flex:1; min-width:0; word-break:break-word;">Project Details</h2>
+                    <button id="edit-title-button" class="btn-secondary" style="display: none; flex-shrink:0;">Edit title</button>
+                    <button id="save-title-button" class="btn-success" style="display: none; flex-shrink:0;">Save</button>
+                    <button id="cancel-title-button" class="btn-secondary" style="display: none; flex-shrink:0;">Cancel</button>
+                </div>
                 <button class="close-button" aria-label="Close">×</button>
             </div>
             <div class="details-container">
@@ -770,7 +775,20 @@
                               <p>No deadlines set.</p>
                             </div>
                             <button id="set-deadlines-button" class="btn-secondary" style="width: 100%; margin-top: 12px; display: none;">Set Remaining Deadlines</button>
-                            <button id="request-deadline-change-button" class="btn-secondary" style="width: 100%; margin-top: 8px; display: none;">Request Deadline Changes</button>
+                            <button id="request-deadline-change-button" class="btn-secondary" style="width: 100%; margin-top: 8px; display: none;">Request Date Changes</button>
+                            <div id="deadline-request-form" style="display: none; margin-top: 10px;">
+                                <div class="deadline-item" style="margin-bottom:8px;">
+                                    <label for="deadline-publication-request">Publication Date</label>
+                                    <input type="date" id="deadline-publication-request">
+                                </div>
+                                <label for="deadline-request-reason" style="display:block; font-size:12px; font-weight:600; color:#475569; margin-bottom:6px;">Reason for change</label>
+                                <textarea id="deadline-request-reason" rows="3" placeholder="Why do these dates need to change?" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; font-family:inherit; font-size:13px; resize:vertical; box-sizing:border-box;"></textarea>
+                                <div style="display:flex; gap:6px; margin-top:8px;">
+                                    <button id="submit-deadline-request-button" class="btn-primary" style="flex:1;">Submit Request</button>
+                                    <button id="cancel-deadline-request-button" class="btn-secondary" style="flex:1;">Cancel</button>
+                                </div>
+                                <p style="margin:8px 0 0 0; font-size:11px; color:#64748b; line-height:1.4;">Edit any dates above, then submit. An admin will be emailed and can approve or reject the request.</p>
+                            </div>
                         </div>
         
                         <div id="admin-approval-section" class="sidebar-section admin-only" style="display: none;">
@@ -856,6 +874,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
     <!-- Core application scripts -->
+    <script defer src="autoDeadlines.js?v=1"></script>
     <script defer src="timestampHelper.js?v=3"></script>
     <script defer src="stateManager.js?v=3"></script>
     <script defer src="calendarExport.js?v=3"></script>
@@ -863,6 +882,7 @@
     <script defer src="dashboardHelpers.js?v=3"></script>
     <script defer src="proposalEditFix.js?v=3"></script>
     <script defer src="proposalEditButtons.js?v=2"></script>
+    <script defer src="titleEditFix.js?v=1"></script>
     <script defer src="modalFixes_APPLY.js?v=5"></script>
     <script defer src="deadlineFixes_APPLY.js?v=2"></script>
     <script defer src="fixedSubscriptions.js?v=3"></script>

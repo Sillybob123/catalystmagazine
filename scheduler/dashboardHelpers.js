@@ -11,7 +11,7 @@
  * Idempotency lives on the server (bot_event_notify_log/{projectId}_{type})
  * so re-firing the same event is a no-op.
  */
-async function notifyEditorialEvent(type, projectId) {
+async function notifyEditorialEvent(type, projectId, extras = {}) {
     try {
         if (!firebase || !firebase.auth) return;
         const user = firebase.auth().currentUser;
@@ -26,7 +26,7 @@ async function notifyEditorialEvent(type, projectId) {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({ type, projectId }),
+            body: JSON.stringify({ type, projectId, ...extras }),
         });
         const text = await res.text();
         console.log(`[NOTIFY] ${type} ${projectId} → ${res.status}: ${text.slice(0, 200)}`);
@@ -157,122 +157,11 @@ async function handleSetDeadlines() {
     }
 }
 
-/**
- * Handle requesting deadline changes
- */
-async function handleRequestDeadlineChange() {
-    if (!currentlyViewedProjectId) return;
-    
-    const reason = prompt('Please provide a reason for the deadline change request:');
-    if (!reason || !reason.trim()) {
-        showNotification('Please provide a reason for the deadline change.', 'error');
-        return;
-    }
-    
-    const requestedDeadlines = {};
-    const fields = ['contact', 'interview', 'draft', 'review', 'edits'];
-    
-    fields.forEach(field => {
-        const input = document.getElementById(`deadline-${field}`);
-        if (input && input.value) {
-            requestedDeadlines[field] = input.value;
-        }
-    });
-    
-    try {
-        await db.collection('projects').doc(currentlyViewedProjectId).update({
-            deadlineChangeRequest: {
-                requestedBy: currentUserName,
-                requestedDeadlines: requestedDeadlines,
-                reason: reason.trim(),
-                status: 'pending',
-                requestedAt: firebase.firestore.FieldValue.serverTimestamp()
-            },
-            activity: firebase.firestore.FieldValue.arrayUnion({
-                text: `requested deadline changes. Reason: ${reason.trim()}`,
-                authorName: currentUserName,
-                timestamp: new Date()
-            })
-        });
-        
-        showNotification('Deadline change request submitted successfully!', 'success');
-        
-    } catch (error) {
-        console.error('[ERROR] Failed to request deadline change:', error);
-        showNotification('Failed to submit deadline change request. Please try again.', 'error');
-    }
-}
-
-/**
- * Handle approving deadline request
- */
-async function handleApproveDeadlineRequest() {
-    if (!currentlyViewedProjectId) return;
-    
-    const project = allProjects.find(p => p.id === currentlyViewedProjectId);
-    if (!project) return;
-    
-    try {
-        const updates = {
-            activity: firebase.firestore.FieldValue.arrayUnion({
-                text: 'approved deadline change request',
-                authorName: currentUserName,
-                timestamp: new Date()
-            })
-        };
-        
-        if (project.deadlineRequest) {
-            updates.deadline = project.deadlineRequest.requestedDate;
-            updates['deadlines.publication'] = project.deadlineRequest.requestedDate;
-            updates.deadlineRequest = firebase.firestore.FieldValue.delete();
-        } else if (project.deadlineChangeRequest) {
-            updates.deadlines = project.deadlineChangeRequest.requestedDeadlines;
-            updates.deadlineChangeRequest = firebase.firestore.FieldValue.delete();
-        }
-        
-        await db.collection('projects').doc(currentlyViewedProjectId).update(updates);
-        
-        showNotification('Deadline request approved!', 'success');
-        
-    } catch (error) {
-        console.error('[ERROR] Failed to approve deadline request:', error);
-        showNotification('Failed to approve deadline request. Please try again.', 'error');
-    }
-}
-
-/**
- * Handle rejecting deadline request
- */
-async function handleRejectDeadlineRequest() {
-    if (!currentlyViewedProjectId) return;
-    
-    const project = allProjects.find(p => p.id === currentlyViewedProjectId);
-    if (!project) return;
-    
-    try {
-        const updates = {
-            activity: firebase.firestore.FieldValue.arrayUnion({
-                text: 'rejected deadline change request',
-                authorName: currentUserName,
-                timestamp: new Date()
-            })
-        };
-        
-        if (project.deadlineRequest) {
-            updates.deadlineRequest = firebase.firestore.FieldValue.delete();
-        } else if (project.deadlineChangeRequest) {
-            updates.deadlineChangeRequest = firebase.firestore.FieldValue.delete();
-        }
-        
-        await db.collection('projects').doc(currentlyViewedProjectId).update(updates);
-        
-        showNotification('Deadline request rejected.', 'info');
-        
-    } catch (error) {
-        console.error('[ERROR] Failed to reject deadline request:', error);
-        showNotification('Failed to reject deadline request. Please try again.', 'error');
-    }
-}
+// NOTE: handleRequestDeadlineChange / handleApproveDeadlineRequest /
+// handleRejectDeadlineRequest live in dashboard.js (canonical implementations).
+// They were duplicated here in an older revision; the dashboard.js versions
+// implement the two-step request UX + admin email notifications and must not
+// be shadowed. Don't reintroduce them here without removing them there first.
 
 /**
  * Generate comprehensive status report with detailed person information

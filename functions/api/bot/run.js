@@ -158,6 +158,7 @@ export const onRequestPost = async ({ request, env }) => {
               daysUntilInterview: r.daysUntilInterview,
               daysSinceInterview: r.daysSinceInterview,
               daysSinceApproval: r.daysSinceApproval,
+              daysSinceContactDeadline: r.daysSinceContactDeadline,
               siteUrl,
             });
         return { ...r, subject, html };
@@ -186,6 +187,7 @@ export const onRequestPost = async ({ request, env }) => {
         daysUntilInterview: r.daysUntilInterview,
         daysSinceInterview: r.daysSinceInterview,
         daysSinceApproval: r.daysSinceApproval,
+        daysSinceContactDeadline: r.daysSinceContactDeadline,
         interviewDate: r.interviewDate ? r.interviewDate.toISOString().slice(0, 10) : null,
         subject: r.subject,
         preview: htmlToPlainPreview(r.html, 600),
@@ -591,6 +593,17 @@ function reasonForReminder(r) {
     return dSinceApproval != null
       ? `Proposal was approved ${dSinceApproval} day${dSinceApproval === 1 ? "" : "s"} ago but no interview date is on file yet.`
       : `Proposal was approved but no interview date is on file yet.`;
+  }
+  if (k === "interview-not-scheduled") {
+    const d = r.daysSinceContactDeadline;
+    return d != null
+      ? `Contact-professor deadline passed ${d} day${d === 1 ? "" : "s"} ago and the interview still isn't scheduled — likely no reply from the source.`
+      : `Contact-professor deadline well past and the interview still isn't scheduled.`;
+  }
+  if (k === "editor-review-overdue") {
+    return dSinceAssigned != null
+      ? `Editor was assigned ${dSinceAssigned} day${dSinceAssigned === 1 ? "" : "s"} ago and "Review Complete" still isn't checked.`
+      : `Editor review is past the 7-day mark and "Review Complete" still isn't checked.`;
   }
   return `Reminder of type "${k}".`;
 }

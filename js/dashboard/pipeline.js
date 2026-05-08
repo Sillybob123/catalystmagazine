@@ -24,6 +24,12 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, fmtDate, confirmDialog } from "./ui.js";
 import { showCalendarExportPrompt } from "./calendar-export.js";
+import {
+  deadlinePatchOnApproval,
+  deadlinePatchOnInterviewScheduled,
+  deadlinePatchOnEditorAssigned,
+  deadlinePatchOnReviewComplete,
+} from "./auto-deadlines.js";
 
 // ─── Workflow state machine (mirrors CatalystSchedule stateManager.js) ────────
 
@@ -837,7 +843,11 @@ function openDetailModal(projectId) {
     approveBtn.onclick = async () => {
       approveBtn.disabled = true;
       try {
-        const approvedAt = new Date().toISOString();
+        const approvedAtDate = new Date();
+        const approvedAt = approvedAtDate.toISOString();
+        // Auto-set the contact-professor deadline two days from now for
+        // Interview-type stories, unless an admin already filled it in.
+        const autoDeadlines = deadlinePatchOnApproval(project, approvedAtDate);
         await updateDoc(doc(workflowDb, "projects", project.id), {
           proposalStatus: "approved",
           proposalApprovedAt: approvedAt,
@@ -845,6 +855,7 @@ function openDetailModal(projectId) {
           lastActivity: serverTimestamp(),
           activity: arrayUnion({ text: "approved the proposal", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
           updatedAt: approvedAt,
+          ...autoDeadlines,
         });
         // Fire the approval email to the writer (best-effort — don't fail the approve if this errors).
         try {
@@ -975,12 +986,45 @@ function openDetailModal(projectId) {
       }
       // Heal drifted authorId on the first successful write by the true author.
       if (isAuthor && project.authorId !== _uid) updates.authorId = _uid;
-      // Auto-approve proposal when author checks "Topic Proposal Complete"
-      if (step === "Topic Proposal Complete" && checked && isAdmin) updates.proposalStatus = "approved";
+      // Auto-approve proposal when admin checks "Topic Proposal Complete".
+      // Same auto-deadline patches the dedicated Approve button applies, so
+      // both code paths leave the project in identical shape.
+      if (step === "Topic Proposal Complete" && checked && isAdmin) {
+        updates.proposalStatus = "approved";
+        const approvedAtDate = new Date();
+        if (!project.proposalApprovedAt) {
+          updates.proposalApprovedAt = approvedAtDate.toISOString();
+        }
+        Object.assign(updates, deadlinePatchOnApproval(project, approvedAtDate));
+      }
       if (step === "Topic Proposal Complete" && !checked && isAdmin) updates.proposalStatus = "pending";
+
+      // Interview Scheduled: set the writer's draft deadline a week after the
+      // interview, unless an admin already filled it in.
+      if (step === "Interview Scheduled" && checked && interviewDatePayload) {
+        Object.assign(updates, deadlinePatchOnInterviewScheduled(project, interviewDatePayload.interviewDate));
+      }
+
+      // Review Complete: give the writer a week to address edits.
+      if (step === "Review Complete" && checked) {
+        Object.assign(updates, deadlinePatchOnReviewComplete(project, new Date()));
+      }
       try {
         await updateDoc(doc(workflowDb, "projects", project.id), updates);
         toast(checked ? "Step marked complete." : "Step unchecked.", "success");
+        // Editor just finished reviewing → email the writer that their
+        // edits are ready and they have a week to work through them.
+        // Best-effort: never block the user flow on a flaky email send.
+        if (step === "Review Complete" && checked) {
+          try {
+            await _ctx.authedFetch("/api/notify/event", {
+              method: "POST",
+              body: JSON.stringify({ type: "review-complete", projectId: project.id }),
+            });
+          } catch (notifyErr) {
+            console.warn("review-complete notify failed (non-blocking):", notifyErr);
+          }
+        }
         // After scheduling an interview, offer to save the date (with prep
         // tips embedded in the description) to the user's calendar.
         if (interviewDatePayload && step === "Interview Scheduled" && checked) {
@@ -1013,16 +1057,34 @@ function openDetailModal(projectId) {
     const btn = body.querySelector("#assign-editor-btn");
     btn.disabled = true;
     try {
+      const assignedAt = new Date();
+      // Stamp editorAssignedAt + auto-set the editor-review deadline (7 days
+      // out) unless an admin already set one. Reassigning to a different
+      // editor refreshes the timestamp so the review-overdue reminder
+      // restarts its 7-day clock.
+      const autoDeadlines = deadlinePatchOnEditorAssigned(project, assignedAt);
       await updateDoc(doc(workflowDb, "projects", project.id), {
         editorId,
         editorName: editor?.name || editor?.email || "Editor",
-        updatedAt: new Date().toISOString(),
+        updatedAt: assignedAt.toISOString(),
         lastActivity: serverTimestamp(),
         activity: arrayUnion({
           text: prevName ? `reassigned editor from ${prevName} to ${editor?.name}` : `assigned ${editor?.name} as editor`,
           authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString(),
         }),
+        ...autoDeadlines,
       });
+      // Fire the editor-assigned email (best-effort, non-blocking). The server
+      // reads the project doc after our write, so it'll see the freshly stamped
+      // deadlines.review and surface it in the email.
+      try {
+        await _ctx.authedFetch("/api/notify/event", {
+          method: "POST",
+          body: JSON.stringify({ type: "editor-assigned", projectId: project.id }),
+        });
+      } catch (notifyErr) {
+        console.warn("editor-assigned notify failed (non-blocking):", notifyErr);
+      }
       toast("Editor assigned!", "success"); m.close();
     } catch (e) { toast(e.message, "error"); btn.disabled = false; }
   });

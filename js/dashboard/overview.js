@@ -15,10 +15,10 @@ import { renderPipeline } from "./pipeline.js";
 
 const ROLE_GREETINGS = {
   admin: "You're running the show today. Here's what's active.",
-  editor: "Your editing queue + the broader pipeline.",
+  editor: "Your editing queue + the broader tracker.",
   writer: "Your drafts and what the rest of the newsroom is working on.",
   newsletter_builder: "Compose a new issue or review past campaigns.",
-  marketing: "Growth pulse and collaboration pipeline.",
+  marketing: "Growth pulse and collaboration tracker.",
 };
 
 export async function mount(ctx, container) {

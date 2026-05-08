@@ -540,12 +540,34 @@ export function computeWriterReminders({ projects, users, reminderLog = {}, now 
       }
     }
 
+    // Pre-compute "is the contact deadline 10+ days past?" once — used by
+    // both the proposal-no-schedule guard below AND the interview-not-scheduled
+    // rule that follows, so we don't double-nudge the writer in one run.
+    let contactDeadlinePassedBy = null;
+    if (
+      project.type === "Interview" &&
+      project.proposalStatus === "approved" &&
+      !tl["Interview Scheduled"] &&
+      project.deadlines &&
+      project.deadlines.contact
+    ) {
+      const contactDeadline = toDate(project.deadlines.contact + "T23:59:59");
+      if (contactDeadline) {
+        contactDeadlinePassedBy = -daysBetween(contactDeadline, now);
+      }
+    }
+    const interviewNotScheduledRuleApplies = contactDeadlinePassedBy != null && contactDeadlinePassedBy >= 10;
+
     // ── Proposal-approved, no interview scheduled yet ──
     // For Interview-type projects: if the proposal was approved 5+ days ago but
     // the writer still hasn't ticked "Interview Scheduled", send a check-in
     // asking for a progress update. Fires once per project.
+    //
+    // Skipped once the contact-deadline-no-reply rule (below) is eligible —
+    // that's the better message at that point, and we don't want both firing.
     if (
       !queuedForProject &&
+      !interviewNotScheduledRuleApplies &&
       project.type === "Interview" &&
       project.proposalStatus === "approved" &&
       !tl["Interview Scheduled"] &&
@@ -572,8 +594,37 @@ export function computeWriterReminders({ projects, users, reminderLog = {}, now 
               writer,
               daysSinceApproval,
             });
+            queuedForProject = true;
           }
         }
+      }
+    }
+
+    // ── Contact-professor deadline passed by 10+ days, no interview yet ──
+    // Their professor probably didn't reply. The email asks the writer to
+    // either update the tracker (if they did hear back and just forgot to
+    // tick "Interview Scheduled") or pivot to a new source / story.
+    if (
+      !queuedForProject &&
+      interviewNotScheduledRuleApplies
+    ) {
+      const key = `${project.id}:interview-not-scheduled`;
+      if (shouldSkipReminder(reminderLog, key, now)) {
+        record(project.id, title, "cooldown-active", {
+          kind: "interview-not-scheduled",
+          lastSentAt: reminderLog[key],
+          writerEmail: writer.email,
+          writerName: writer.name,
+        });
+      } else {
+        out.push({
+          kind: "interview-not-scheduled",
+          key,
+          projectId: project.id,
+          project,
+          writer,
+          daysSinceContactDeadline: contactDeadlinePassedBy,
+        });
       }
     }
   }
@@ -853,6 +904,44 @@ export function computeEditorReminders({ projects, users, reminderLog = {}, now 
       }
     }
 
+    // ── Editor review overdue ──
+    // The editor was given 7 days at assignment time (deadlines.review =
+    // editorAssignedAt + 7d). If today is at or past that 7-day mark and
+    // "Review Complete" still isn't checked, nudge them. Only fires when
+    // editorAssignedAt is on file — projects assigned before this rule
+    // shipped will fall through to the normal idle / deadline checks.
+    const tlEd = project.timeline || {};
+    if (
+      !queuedForProject &&
+      project.editorAssignedAt &&
+      !tlEd["Review Complete"]
+    ) {
+      const assignedAt = toDate(project.editorAssignedAt);
+      if (assignedAt) {
+        const daysSinceAssigned = -daysBetween(assignedAt, now);
+        if (daysSinceAssigned >= 7) {
+          const key = `${project.id}:editor-review-overdue`;
+          if (shouldSkipReminder(reminderLog, key, now)) {
+            record(project.id, title, "cooldown-active", {
+              kind: "editor-review-overdue",
+              lastSentAt: reminderLog[key],
+              editorEmail: editor.email,
+            });
+          } else {
+            out.push({
+              kind: "editor-review-overdue",
+              key,
+              projectId: project.id,
+              project,
+              editor,
+              daysSinceAssigned,
+            });
+            queuedForProject = true;
+          }
+        }
+      }
+    }
+
     // ── Editor idle nudge ──
     if (!queuedForProject) {
       const inactive = daysInactive(project, now);
@@ -993,6 +1082,7 @@ export function groupRemindersByRecipient(reminders) {
           daysSinceInterview: r.daysSinceInterview ?? null,
           daysSinceApproval: r.daysSinceApproval ?? null,
           daysSinceAssigned: r.daysSinceAssigned ?? null,
+          daysSinceContactDeadline: r.daysSinceContactDeadline ?? null,
           project: r.project || null,
         })),
         // Carry every key so the run.js loop can stamp all of them as sent.

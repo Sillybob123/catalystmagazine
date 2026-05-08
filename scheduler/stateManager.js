@@ -189,40 +189,65 @@ function getProjectState(project, view, currentUser) {
  */
 async function handleTaskCompletion(projectId, taskName, isCompleted, db, currentUserName) {
     console.log(`[TASK UPDATE] ${taskName} = ${isCompleted} for project ${projectId}`);
-    
+
     const updates = {
         [`timeline.${taskName}`]: isCompleted
     };
-    
+
+    // We need the full project to decide what auto-deadline patches apply
+    // (rules only fire on Interview-type stories, only when the target field
+    // is empty, etc.). Pull from the in-memory cache the dashboard maintains.
+    const project = (typeof allProjects !== 'undefined' ? allProjects : []).find(p => p.id === projectId) || null;
+    const Auto = (typeof window !== 'undefined' && window.AutoDeadlines) || null;
+
     // Add automatic state transitions
     if (isCompleted) {
         switch (taskName) {
             case "Topic Proposal Complete":
                 // This happens when admin approves proposal
                 updates.proposalStatus = 'approved';
+                // Stamp proposalApprovedAt for the bot's 'proposal-no-schedule'
+                // reminder, and auto-set the contact-professor deadline.
+                if (project && !project.proposalApprovedAt) {
+                    updates.proposalApprovedAt = new Date().toISOString();
+                }
+                if (Auto && project) {
+                    Object.assign(updates, Auto.deadlinePatchOnApproval(project, new Date()));
+                }
                 console.log("[AUTO] Setting proposal status to approved");
                 break;
-                
+
             case "Interview Scheduled":
-                // No additional updates needed, but card should turn yellow
+                // No additional updates needed, but card should turn yellow.
+                // If the interview date is already on file (writer entered it
+                // via the deadline grid or pipeline), set the draft deadline
+                // a week after.
+                if (Auto && project) {
+                    const ivDate = project.interviewDate || (project.deadlines && project.deadlines.interview);
+                    Object.assign(updates, Auto.deadlinePatchOnInterviewScheduled(project, ivDate));
+                }
                 console.log("[AUTO] Interview scheduled, card should be yellow");
                 break;
-                
+
             case "Interview Complete":
                 // Card should move to Writing Stage
                 console.log("[AUTO] Interview complete, moving to writing stage");
                 break;
-                
+
             case "Article Writing Complete":
                 // This triggers the need for editor assignment
                 console.log("[AUTO] Article complete, needs editor assignment");
                 break;
-                
+
             case "Review Complete":
-                // Card moves to "Reviewing Suggestions" and becomes blue
+                // Card moves to "Reviewing Suggestions" and becomes blue.
+                // Writer gets a week to address edits.
+                if (Auto && project) {
+                    Object.assign(updates, Auto.deadlinePatchOnReviewComplete(project, new Date()));
+                }
                 console.log("[AUTO] Review complete, moving to suggestions phase");
                 break;
-                
+
             case "Suggestions Reviewed":
                 // Final completion - card becomes green and moves to Completed
                 console.log("[AUTO] All done, project completed!");
@@ -250,7 +275,13 @@ async function handleTaskCompletion(projectId, taskName, isCompleted, db, curren
     try {
         await db.collection('projects').doc(projectId).update(updates);
         console.log(`[TASK UPDATE] Successfully updated ${taskName} for project ${projectId}`);
-        
+
+        // Editor just finished reviewing → email the writer (best-effort).
+        // The notify endpoint reads the project doc after our write so it'll
+        // see the freshly-set deadlines.edits and surface it in the email.
+        if (taskName === 'Review Complete' && isCompleted && typeof notifyEditorialEvent === 'function') {
+            notifyEditorialEvent('review-complete', projectId);
+        }
     } catch (error) {
         console.error(`[TASK UPDATE ERROR] Failed to update ${taskName}:`, error);
         throw error;

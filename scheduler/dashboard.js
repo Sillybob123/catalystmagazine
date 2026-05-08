@@ -90,14 +90,22 @@ async function approveProposal(projectId) {
 
     try {
         console.log('[APPROVE] Approving proposal:', projectId);
+        const project = allProjects.find(p => p.id === projectId);
+        const approvedAtDate = new Date();
+        // Auto-set the contact-professor deadline (Interview-type only).
+        const autoDeadlines = (window.AutoDeadlines && project)
+            ? window.AutoDeadlines.deadlinePatchOnApproval(project, approvedAtDate)
+            : {};
         await db.collection('projects').doc(projectId).update({
             proposalStatus: 'approved',
+            proposalApprovedAt: (project && project.proposalApprovedAt) ? project.proposalApprovedAt : approvedAtDate.toISOString(),
             'timeline.Topic Proposal Complete': true,
             activity: firebase.firestore.FieldValue.arrayUnion({
                 text: 'approved the proposal',
                 authorName: currentUserName,
                 timestamp: new Date()
-            })
+            }),
+            ...autoDeadlines,
         });
 
         showNotification('Proposal approved successfully!', 'success');
@@ -131,13 +139,26 @@ async function updateProposalStatus(status) {
 
     try {
         console.log('[UPDATE STATUS] Updating proposal status to:', status, 'for project:', currentlyViewedProjectId);
+        const project = allProjects.find(p => p.id === currentlyViewedProjectId);
+        // On approval (only), stamp proposalApprovedAt + the auto-contact deadline.
+        const extras = {};
+        if (status === 'approved') {
+            const approvedAtDate = new Date();
+            if (project && !project.proposalApprovedAt) {
+                extras.proposalApprovedAt = approvedAtDate.toISOString();
+            }
+            if (window.AutoDeadlines && project) {
+                Object.assign(extras, window.AutoDeadlines.deadlinePatchOnApproval(project, approvedAtDate));
+            }
+        }
         await db.collection('projects').doc(currentlyViewedProjectId).update({
             proposalStatus: status,
             activity: firebase.firestore.FieldValue.arrayUnion({
                 text: `${status} the proposal`,
                 authorName: currentUserName,
                 timestamp: new Date()
-            })
+            }),
+            ...extras,
         });
 
         showNotification(`Proposal ${status} successfully!`, 'success');
@@ -202,16 +223,24 @@ async function handleAssignEditor() {
     const previousEditorName = project ? project.editorName : null;
 
     try {
+        const assignedAt = new Date();
+        // Stamp editorAssignedAt + auto-set the editor-review deadline. On
+        // reassignment we refresh the timestamp so the bot's review-overdue
+        // 7-day clock restarts for the new editor.
+        const autoDeadlines = (window.AutoDeadlines && project)
+            ? window.AutoDeadlines.deadlinePatchOnEditorAssigned(project, assignedAt)
+            : { editorAssignedAt: assignedAt.toISOString() };
         await db.collection('projects').doc(currentlyViewedProjectId).update({
             editorId: editorId,
             editorName: editor.name,
             activity: firebase.firestore.FieldValue.arrayUnion({
-                text: isReassignment 
+                text: isReassignment
                     ? `reassigned editor from ${previousEditorName} to ${editor.name}`
                     : `assigned ${editor.name} as editor`,
                 authorName: currentUserName,
                 timestamp: new Date()
-            })
+            }),
+            ...autoDeadlines,
         });
 
         showNotification(
@@ -4231,6 +4260,28 @@ function attachProjectModalListeners() {
         console.log('[LISTENERS] Request deadline change listener attached');
     }
 
+    const submitDeadlineReqBtn = document.getElementById('submit-deadline-request-button');
+    if (submitDeadlineReqBtn) {
+        const fresh = submitDeadlineReqBtn.cloneNode(true);
+        submitDeadlineReqBtn.parentNode.replaceChild(fresh, submitDeadlineReqBtn);
+        fresh.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            submitDeadlineChangeRequest();
+        });
+    }
+
+    const cancelDeadlineReqBtn = document.getElementById('cancel-deadline-request-button');
+    if (cancelDeadlineReqBtn) {
+        const fresh = cancelDeadlineReqBtn.cloneNode(true);
+        cancelDeadlineReqBtn.parentNode.replaceChild(fresh, cancelDeadlineReqBtn);
+        fresh.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            cancelDeadlineRequest();
+        });
+    }
+
     // Attach edit button listeners for proposal editing
     if (typeof window.attachEditListeners === 'function') {
         window.attachEditListeners();
@@ -4254,7 +4305,24 @@ function refreshDetailsModal(project) {
     const isEditor = currentUser.uid === project.editorId;
     const isAdmin = currentUserRole === 'admin';
 
-    titleEl.textContent = project.title;
+    // If a title-edit input is currently open, swap it back to <h2> before
+    // we update text — otherwise we'd leave the modal in edit mode mid-refresh.
+    const titleInputEl = document.getElementById('title-edit-input');
+    if (titleInputEl) {
+        const h2 = document.createElement('h2');
+        h2.id = 'details-title';
+        h2.style.cssText = 'margin:0; flex:1; min-width:0; word-break:break-word;';
+        h2.textContent = project.title || '';
+        titleInputEl.replaceWith(h2);
+        const saveBtnT = document.getElementById('save-title-button');
+        const cancelBtnT = document.getElementById('cancel-title-button');
+        const editBtnT = document.getElementById('edit-title-button');
+        if (saveBtnT) saveBtnT.style.display = 'none';
+        if (cancelBtnT) cancelBtnT.style.display = 'none';
+        if (editBtnT) editBtnT.style.display = 'inline-block';
+    } else {
+        document.getElementById('details-title').textContent = project.title;
+    }
     authorEl.textContent = project.authorName;
     editorEl.textContent = project.editorName || 'Not Assigned';
 
@@ -4295,6 +4363,13 @@ function refreshDetailsModal(project) {
     const canEditProposal = isAuthor || isAdmin;
     const editBtn = document.getElementById('edit-proposal-button');
     if (editBtn) editBtn.style.display = canEditProposal ? 'inline-block' : 'none';
+
+    // Title editing: same permission as proposal — author or admin.
+    const editTitleBtn = document.getElementById('edit-title-button');
+    if (editTitleBtn) editTitleBtn.style.display = canEditProposal ? 'inline-block' : 'none';
+    if (typeof window.attachTitleEditListeners === 'function') {
+        window.attachTitleEditListeners();
+    }
 
     const approvalSection = document.getElementById('admin-approval-section');
     if (approvalSection) {
@@ -4527,6 +4602,13 @@ function renderDeadlines(project, isAuthor, isEditor, isAdmin) {
 function renderDeadlineRequestSection(project, isAuthor, isAdmin) {
     const deadlineSection = document.getElementById('deadline-request-section');
     if (!deadlineSection) return;
+
+    // The inline request-entry form is only valid while the user is actively
+    // composing a request. Any modal refresh (snapshot update, save, etc.) means
+    // we should collapse it back to the closed state — the renderDeadlines call
+    // upstream already disables the date inputs for non-admins.
+    const inlineForm = document.getElementById('deadline-request-form');
+    if (inlineForm) inlineForm.style.display = 'none';
 
     const hasRequest = project.deadlineRequest || project.deadlineChangeRequest;
 
@@ -6960,16 +7042,96 @@ if (typeof window !== 'undefined') {
     window.__deadlineHandlerV2Applied = true;
 }
 
-async function handleRequestDeadlineChange() {
+// ── Date-change request: two-step UX ────────────────────────────────────────
+//
+// Step 1 (handleRequestDeadlineChange):
+//   The author/editor clicks "Request Date Changes". We unlock the date inputs
+//   that renderDeadlines() drew (they're disabled-by-default for non-admins),
+//   pre-fill the publication-request input with the current pub date, and
+//   reveal the Reason textarea + Submit/Cancel buttons.
+//
+// Step 2 (submitDeadlineChangeRequest):
+//   On Submit, we collect all the dates + reason, write a deadlineChangeRequest
+//   doc, fire the deadline-change-requested notify event so admins get an
+//   email, and close the form. The existing handleApprove/RejectDeadlineRequest
+//   pair (further down) handles admin resolution.
+//
+// We keep the existing field shape (deadlineChangeRequest with requestedDeadlines
+// and reason) so the approve/reject path keeps working unchanged.
+function handleRequestDeadlineChange() {
     if (!currentlyViewedProjectId) return;
+    const project = allProjects.find(p => p.id === currentlyViewedProjectId);
+    if (!project) return;
 
-    const reason = prompt('Please provide a reason for requesting deadline changes:');
-    if (!reason || !reason.trim()) {
-        showNotification('Please provide a reason for the deadline change request.', 'error');
+    const requestForm = document.getElementById('deadline-request-form');
+    const requestBtn = document.getElementById('request-deadline-change-button');
+    if (!requestForm) return;
+
+    // Unlock date inputs that renderDeadlines() drew (disabled for non-admins).
+    ['contact', 'interview', 'draft', 'review', 'edits'].forEach(key => {
+        const input = document.getElementById(`deadline-${key}`);
+        if (input) input.disabled = false;
+    });
+
+    // Pre-fill the publication request input with the current publication date.
+    const pubInput = document.getElementById('deadline-publication-request');
+    if (pubInput) {
+        const currentPub = (project.deadlines && project.deadlines.publication) || project.deadline || '';
+        pubInput.value = currentPub;
+    }
+
+    // Clear any leftover reason text from a prior cancelled attempt.
+    const reasonEl = document.getElementById('deadline-request-reason');
+    if (reasonEl) reasonEl.value = '';
+
+    requestForm.style.display = 'block';
+    if (requestBtn) requestBtn.style.display = 'none';
+
+    if (reasonEl) reasonEl.focus();
+}
+
+function cancelDeadlineRequest() {
+    const requestForm = document.getElementById('deadline-request-form');
+    const requestBtn = document.getElementById('request-deadline-change-button');
+    if (requestForm) requestForm.style.display = 'none';
+
+    // Re-disable inputs (renderDeadlines will redo this on next refresh too).
+    ['contact', 'interview', 'draft', 'review', 'edits'].forEach(key => {
+        const input = document.getElementById(`deadline-${key}`);
+        if (input && currentUserRole !== 'admin') input.disabled = true;
+    });
+
+    if (requestBtn) {
+        // Show the button only if the user is still allowed to request a change.
+        const project = allProjects.find(p => p.id === currentlyViewedProjectId);
+        const isAuthor = project && currentUser && currentUser.uid === project.authorId;
+        const isEditor = project && currentUser && currentUser.uid === project.editorId;
+        const hasPending = project && (
+            (project.deadlineRequest && project.deadlineRequest.status === 'pending') ||
+            (project.deadlineChangeRequest && project.deadlineChangeRequest.status === 'pending')
+        );
+        requestBtn.style.display = (isAuthor || isEditor) && !hasPending ? 'inline-block' : 'none';
+    }
+}
+
+async function submitDeadlineChangeRequest() {
+    if (!currentlyViewedProjectId) return;
+    const project = allProjects.find(p => p.id === currentlyViewedProjectId);
+    if (!project) {
+        showNotification('Project not found.', 'error');
+        return;
+    }
+
+    const reasonEl = document.getElementById('deadline-request-reason');
+    const reason = reasonEl ? reasonEl.value.trim() : '';
+    if (!reason || reason.length < 5) {
+        showNotification('Please give a short reason (at least 5 characters).', 'error');
+        if (reasonEl) reasonEl.focus();
         return;
     }
 
     const requestedDeadlines = {
+        publication: document.getElementById('deadline-publication-request')?.value || '',
         contact: document.getElementById('deadline-contact')?.value || '',
         interview: document.getElementById('deadline-interview')?.value || '',
         draft: document.getElementById('deadline-draft')?.value || '',
@@ -6977,29 +7139,84 @@ async function handleRequestDeadlineChange() {
         edits: document.getElementById('deadline-edits')?.value || ''
     };
 
+    // Op-Eds don't have contact / interview, so blank them out for sanity.
+    if (project.type === 'Op-Ed') {
+        requestedDeadlines.contact = '';
+        requestedDeadlines.interview = '';
+    }
+
+    // Detect at least one actual change vs the current state. Otherwise the
+    // admin gets a useless email.
+    const currentDeadlines = project.deadlines || {};
+    const currentPub = currentDeadlines.publication || project.deadline || '';
+    const changes = [];
+    if (requestedDeadlines.publication && requestedDeadlines.publication !== currentPub) {
+        changes.push(`Publication: ${currentPub || '—'} → ${requestedDeadlines.publication}`);
+    }
+    ['contact', 'interview', 'draft', 'review', 'edits'].forEach(key => {
+        const cur = currentDeadlines[key] || '';
+        const next = requestedDeadlines[key] || '';
+        if (next && next !== cur) {
+            const labelMap = { contact: 'Contact Professor', interview: 'Interview', draft: 'Draft', review: 'Editor Review', edits: 'Review Edits' };
+            changes.push(`${labelMap[key]}: ${cur || '—'} → ${next}`);
+        }
+    });
+
+    if (changes.length === 0) {
+        showNotification('No date changes detected. Edit a date first, then submit.', 'error');
+        return;
+    }
+
+    const submitBtn = document.getElementById('submit-deadline-request-button');
+    const cancelBtn = document.getElementById('cancel-deadline-request-button');
+    const originalSubmitText = submitBtn ? submitBtn.textContent : 'Submit Request';
+
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
+    if (cancelBtn) cancelBtn.disabled = true;
+
     try {
         await db.collection('projects').doc(currentlyViewedProjectId).update({
             deadlineChangeRequest: {
                 requestedBy: currentUserName,
+                requestedById: currentUser ? currentUser.uid : null,
                 requestedDeadlines: requestedDeadlines,
-                reason: reason.trim(),
+                changesSummary: changes,
+                reason: reason,
                 status: 'pending',
                 requestedAt: new Date()
             },
             activity: firebase.firestore.FieldValue.arrayUnion({
-                text: `requested deadline changes. Reason: ${reason.trim()}`,
+                text: `requested date changes. Reason: ${reason}`,
                 authorName: currentUserName,
                 timestamp: new Date()
             })
         });
 
-        showNotification('Deadline change request submitted successfully!', 'success');
+        // Best-effort admin notification — never block the user flow on a
+        // flaky email send. The server logs an idempotency key so re-firing
+        // the same project's request is a no-op until it's resolved.
+        if (typeof notifyEditorialEvent === 'function') {
+            notifyEditorialEvent('deadline-change-requested', currentlyViewedProjectId);
+        }
 
+        showNotification('Date change request submitted. Admins have been notified.', 'success');
+
+        // Hide the form; renderDeadlineRequestSection will paint the pending
+        // state on the next snapshot refresh.
+        const requestForm = document.getElementById('deadline-request-form');
+        if (requestForm) requestForm.style.display = 'none';
     } catch (error) {
         console.error('[DEADLINE REQUEST ERROR]', error);
-        showNotification('Failed to submit deadline request. Please try again.', 'error');
+        showNotification('Failed to submit request. Please try again.', 'error');
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = originalSubmitText; }
+        if (cancelBtn) cancelBtn.disabled = false;
     }
 }
+
+window.handleRequestDeadlineChange = handleRequestDeadlineChange;
+window.cancelDeadlineRequest = cancelDeadlineRequest;
+window.submitDeadlineChangeRequest = submitDeadlineChangeRequest;
 
 async function handleApproveDeadlineRequest() {
     if (!currentlyViewedProjectId) return;
@@ -7029,6 +7246,16 @@ async function handleApproveDeadlineRequest() {
         }
 
         await db.collection('projects').doc(currentlyViewedProjectId).update(updates);
+
+        // Email the writer that their request was approved (best-effort).
+        // We pass the request snapshot because the Firestore field is being
+        // deleted in the same update — the server can't read it back.
+        if (typeof notifyEditorialEvent === 'function') {
+            notifyEditorialEvent('deadline-change-resolved', currentlyViewedProjectId, {
+                outcome: 'approved',
+                request: request,
+            });
+        }
 
         showNotification('Deadline request approved!', 'success');
 
@@ -7063,6 +7290,14 @@ async function handleRejectDeadlineRequest() {
         }
 
         await db.collection('projects').doc(currentlyViewedProjectId).update(updates);
+
+        // Email the writer that their request was rejected (best-effort).
+        if (typeof notifyEditorialEvent === 'function') {
+            notifyEditorialEvent('deadline-change-resolved', currentlyViewedProjectId, {
+                outcome: 'rejected',
+                request: request,
+            });
+        }
 
         showNotification('Deadline request rejected.', 'info');
 

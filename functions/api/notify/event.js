@@ -28,6 +28,9 @@ import {
   adminWritingCompleteEmail,
   editorAssignedEmail,
   proposalApprovedEmail,
+  adminDeadlineChangeRequestedEmail,
+  writerDeadlineChangeResolvedEmail,
+  writerReviewCompleteEmail,
 } from "../../_utils/reminder-emails.js";
 
 const DEFAULT_ADMIN_RECIPIENTS = [
@@ -36,7 +39,18 @@ const DEFAULT_ADMIN_RECIPIENTS = [
   "aidan.schurr@gwmail.gwu.edu",
 ];
 
-const VALID_TYPES = new Set(["proposal-pending", "writing-complete", "editor-assigned", "proposal-approved"]);
+const VALID_TYPES = new Set([
+  "proposal-pending",
+  "writing-complete",
+  "editor-assigned",
+  "proposal-approved",
+  // Editor checked "Review Complete" → email the writer.
+  "review-complete",
+  // Writer requests one or more date changes → email admins.
+  "deadline-change-requested",
+  // Admin approved or rejected the request → email the writer.
+  "deadline-change-resolved",
+]);
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -75,9 +89,34 @@ export const onRequestPost = async ({ request, env }) => {
     if (!projectDoc) return badRequest("Project not found");
     const project = unwrapProject(projectDoc, projectId);
 
-    const logId = type === "editor-assigned" && project.editorId
-      ? `${projectId}_${type}_${sanitizeId(project.editorId)}`
-      : `${projectId}_${type}`;
+    // Dedup-key strategy:
+    //   * editor-assigned varies per editor so reassignment doesn't get swallowed.
+    //   * deadline-change-* events include the request's requestedAt timestamp
+    //     so a project's second-ever request still emails admins (otherwise
+    //     `${projectId}_deadline-change-requested` would dedupe forever).
+    let logId;
+    if (type === "editor-assigned" && project.editorId) {
+      logId = `${projectId}_${type}_${sanitizeId(project.editorId)}`;
+    } else if (type === "deadline-change-requested") {
+      const stamp = sanitizeId(project.deadlineChangeRequest?.requestedAt || project.deadlineRequest?.requestedAt || "no-stamp");
+      logId = `${projectId}_${type}_${stamp}`;
+    } else if (type === "deadline-change-resolved") {
+      // The request doc has been deleted by approve/reject by the time we run,
+      // so we key by current time bucket — admins resolve at most once per
+      // request, and the bot_event_notify_log just prevents accidental spam
+      // from button double-clicks within the same minute.
+      const minuteBucket = new Date().toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+      logId = `${projectId}_${type}_${sanitizeId(minuteBucket)}`;
+    } else if (type === "review-complete") {
+      // An editor can uncheck → recheck "Review Complete" if they want to
+      // make another pass. The minute bucket lets a same-minute fat-finger
+      // dedup, but a real second send (after the editor revised the notes
+      // and re-marked it) goes through.
+      const minuteBucket = new Date().toISOString().slice(0, 16);
+      logId = `${projectId}_${type}_${sanitizeId(minuteBucket)}`;
+    } else {
+      logId = `${projectId}_${type}`;
+    }
 
     // Idempotency: if we already sent this exact event, bail. Re-checking the
     // "Article Writing Complete" box, or hitting the assign button twice for
@@ -96,6 +135,12 @@ export const onRequestPost = async ({ request, env }) => {
       result = await sendEditorAssigned(env, project, siteUrl);
     } else if (type === "proposal-approved") {
       result = await sendProposalApproved(env, project, siteUrl);
+    } else if (type === "review-complete") {
+      result = await sendReviewComplete(env, project, siteUrl);
+    } else if (type === "deadline-change-requested") {
+      result = await sendDeadlineChangeRequested(env, project, siteUrl);
+    } else if (type === "deadline-change-resolved") {
+      result = await sendDeadlineChangeResolved(env, project, siteUrl, body);
     }
 
     // Log even on partial-send so we don't retry-spam. The log records what we
@@ -170,6 +215,80 @@ async function sendProposalApproved(env, project, siteUrl) {
     return { recipients: [], errors: ["Author has no email on file"] };
   }
   const { subject, html } = proposalApprovedEmail({ project, author, siteUrl });
+  const recipients = [author.email];
+  const errors = [];
+  try {
+    await sendEmail(env, {
+      to: recipients,
+      subject,
+      html,
+      replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+    });
+  } catch (err) {
+    errors.push(err?.message || String(err));
+  }
+  return { recipients, errors };
+}
+
+// Editor just checked "Review Complete" → tell the writer their feedback is
+// ready and they have one week (deadlines.edits, auto-set on the same write)
+// to address it.
+async function sendReviewComplete(env, project, siteUrl) {
+  const author = await loadUserByIdOrEmail(env, project.authorId, project.authorEmail);
+  if (!author || !author.email) {
+    return { recipients: [], errors: ["Author has no email on file"] };
+  }
+  const editor = project.editorId
+    ? await loadUserByIdOrEmail(env, project.editorId, null)
+    : null;
+
+  const { subject, html } = writerReviewCompleteEmail({ project, author, editor, siteUrl });
+  const recipients = [author.email];
+  const errors = [];
+  try {
+    await sendEmail(env, {
+      to: recipients,
+      subject,
+      html,
+      replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+    });
+  } catch (err) {
+    errors.push(err?.message || String(err));
+  }
+  return { recipients, errors };
+}
+
+// Writer just asked for one or more date changes → notify admins so they can
+// review and approve/reject from the tracker.
+async function sendDeadlineChangeRequested(env, project, siteUrl) {
+  const author = await loadUserByIdOrEmail(env, project.authorId, project.authorEmail);
+  const request = project.deadlineChangeRequest || project.deadlineRequest || {};
+  const { subject, html } = adminDeadlineChangeRequestedEmail({ project, author, request, siteUrl });
+  return sendToAdmins(env, { subject, html });
+}
+
+// Admin approved or rejected the date-change request → tell the writer the
+// outcome. The dashboard sends the resolution status in the request body so
+// we don't have to read the request doc back from Firestore (it's been
+// deleted by this point as part of the approve/reject Firestore update).
+async function sendDeadlineChangeResolved(env, project, siteUrl, body) {
+  const author = await loadUserByIdOrEmail(env, project.authorId, project.authorEmail);
+  if (!author || !author.email) {
+    return { recipients: [], errors: ["Author has no email on file"] };
+  }
+  // The dashboard may pass `outcome: "approved" | "rejected"` and the request
+  // payload it had locally. Both are optional — the email gracefully renders
+  // a generic "your request was reviewed" body if they're missing.
+  const outcome = String(body?.outcome || "reviewed").toLowerCase();
+  const requestSnapshot = body?.request || project.deadlineChangeRequest || project.deadlineRequest || null;
+  const { subject, html } = writerDeadlineChangeResolvedEmail({
+    project,
+    author,
+    outcome,
+    request: requestSnapshot,
+    siteUrl,
+  });
+
   const recipients = [author.email];
   const errors = [];
   try {

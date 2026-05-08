@@ -68,7 +68,7 @@ function shell({ title, preheader = "", body, siteUrl }) {
 
 // ─── Writer reminder ─────────────────────────────────────────────────────────
 
-export function writerReminderEmail({ kind, writer, project, deadline, daysUntilDeadline, daysInactive, interviewDate, daysUntilInterview, daysSinceInterview, daysSinceApproval, siteUrl }) {
+export function writerReminderEmail({ kind, writer, project, deadline, daysUntilDeadline, daysInactive, interviewDate, daysUntilInterview, daysSinceInterview, daysSinceApproval, daysSinceContactDeadline, siteUrl }) {
   const firstName = (writer.name || writer.email || "there").split(/\s+/)[0];
   const projectTitle = project.title || "(untitled story)";
   const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
@@ -84,7 +84,7 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
     headline = `Your story is due ${dText}.`;
     paragraphs = [
       `Just checking in — the publication deadline for "${projectTitle}" is ${dText}, and we want to make sure you're on track. Please get your draft in on time.`,
-      `If you need a deadline extension, request it from the pipeline page before the due date — not after. Reply to this email if you're running into a blocker we should know about.`,
+      `If you need a deadline extension, request it from the tracker before the due date — not after. Reply to this email if you're running into a blocker we should know about.`,
     ];
     statusRows = [
       { label: "Story", value: projectTitle },
@@ -111,7 +111,7 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
   } else if (kind === "idle") {
     headline = `We haven't seen activity on your story in ${daysInactive} days.`;
     paragraphs = [
-      `"${projectTitle}" has had no updates in the pipeline for ${daysInactive} days. Please post a progress note in the activity feed or reply here so we know where things stand.`,
+      `"${projectTitle}" has had no updates on the tracker for ${daysInactive} days. Please post a progress note in the activity feed or reply here so we know where things stand.`,
       `If you're stuck — sourcing, structure, scheduling — tell us and we'll help. If you need to step back from the piece, let us know so we can plan accordingly.`,
     ];
     statusRows = [
@@ -128,7 +128,7 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
       `We approved your pitch for "${projectTitle}" ${dText} ago and we're checking in because you haven't scheduled your interview yet. That's the first big step, and we want to make sure you're not stuck.`,
       `If you've already reached out to your source and are just waiting to hear back — great, let us know in the activity feed or reply here so we know where you're at.`,
       `If you haven't reached out yet, now is the time. The longer you wait, the harder it gets to schedule. And if you're not sure who your source should be, or you're running into trouble making contact — text Aidan and Yair right now and we'll help you work it out together. Don't sit on it.`,
-      `Once you have a date locked in, open the pipeline, mark "Interview Scheduled", and enter the interview date so we can plan around it.`,
+      `Once you have a date locked in, open the tracker, mark "Interview Scheduled", and enter the interview date so we can plan around it.`,
     ];
     statusRows = [
       { label: "Story", value: projectTitle },
@@ -137,13 +137,29 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
     ];
     statusTone = "alert";
     cta = { text: "Open your story", url: projectUrl };
+  } else if (kind === "interview-not-scheduled") {
+    const dText = `${daysSinceContactDeadline} day${daysSinceContactDeadline === 1 ? "" : "s"}`;
+    headline = `Have you heard back from your source?`;
+    paragraphs = [
+      `Your "Contact Professor" deadline for "${projectTitle}" passed ${dText} ago, and we still don't see an interview scheduled on the tracker. That usually means one of two things — and either way, we want to help you get unstuck.`,
+      `If you DID hear back and the interview is on the calendar — please open the tracker right now and check off "Interview Scheduled" + enter the interview date. The tracker is how Aidan and Yair know who needs help and who's on track, so keeping it current matters.`,
+      `If you didn't hear back: that happens, and it's not on you. The professional move is to follow up once more (a short, polite nudge) and then pivot. There are usually 2–3 other people who could speak to your topic just as well — sometimes better. Reply to this email and we'll brainstorm new sources together. We can also help you re-pitch the angle if you'd rather change direction entirely.`,
+      `What we don't want is for the story to quietly stall. Tell us where you're at — even a one-line "still waiting, will follow up Friday" is enough.`,
+    ];
+    statusRows = [
+      { label: "Story", value: projectTitle },
+      { label: "Contact deadline", value: project.deadlines?.contact ? `${fmtDate(project.deadlines.contact)} (${dText} ago)` : `${dText} ago` },
+      { label: "Status", value: "Interview not yet scheduled" },
+    ];
+    statusTone = "alert";
+    cta = { text: "Open your story", url: projectUrl };
   } else if (kind === "interview-followup") {
     const whenText = daysSinceInterview === 1 ? "yesterday" : `${daysSinceInterview} days ago`;
     headline = `How did the interview go?`;
     paragraphs = [
-      `We saw your interview for "${projectTitle}" was scheduled for ${whenText} (${fmtDate(interviewDate)}), and wanted to check in. "Interview Complete" still isn't ticked on the pipeline, so we're not sure where things landed.`,
-      `If the interview happened and went well: please check off "Interview Complete" on the pipeline so we know it's done — and start drafting today while the conversation is still fresh in your head. The longer you wait, the more you'll forget the small details (a phrase, a pause, a side comment) that make a story actually feel alive.`,
-      `If the interview didn't actually happen — they pushed it, you pushed it, schedules slipped — please go into the pipeline right now and update the interview date to whenever it's now happening. This is really important. The interview date on the tracker is how Aidan and Yair stay on top of every story, so if it changes and the tracker doesn't, we're flying blind. Same goes for any future reschedule: if the date moves, change it on the tracker.`,
+      `We saw your interview for "${projectTitle}" was scheduled for ${whenText} (${fmtDate(interviewDate)}), and wanted to check in. "Interview Complete" still isn't ticked on the tracker, so we're not sure where things landed.`,
+      `If the interview happened and went well: please check off "Interview Complete" on the tracker so we know it's done — and start drafting today while the conversation is still fresh in your head. The longer you wait, the more you'll forget the small details (a phrase, a pause, a side comment) that make a story actually feel alive.`,
+      `If the interview didn't actually happen — they pushed it, you pushed it, schedules slipped — please go into the tracker right now and update the interview date to whenever it's now happening. This is really important. The interview date on the tracker is how Aidan and Yair stay on top of every story, so if it changes and the tracker doesn't, we're flying blind. Same goes for any future reschedule: if the date moves, change it on the tracker.`,
       `If something else went sideways — they cancelled outright, the recording failed, you didn't get what you needed — that's fine, just tell us. Reply to this email or message Aidan and Yair and we'll figure out the next move together. Don't sit on it.`,
       `Any questions about how to structure the piece, what to lead with, or which quotes to use — ask Aidan and Yair. That's literally what we're here for.`,
     ];
@@ -212,15 +228,15 @@ export function writerReminderEmail({ kind, writer, project, deadline, daysUntil
     </p>
   `;
 
-  const subject = subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval });
-  const preheader = preheaderForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval });
+  const subject = subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval, daysSinceContactDeadline });
+  const preheader = preheaderForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval, daysSinceContactDeadline });
   return {
     subject,
     html: shell({ title: subject, preheader, body, siteUrl }),
   };
 }
 
-function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval }) {
+function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval, daysSinceContactDeadline }) {
   const t = truncate(projectTitle, 40);
   if (kind === "deadline-1d") return `Due tomorrow: "${t}"`;
   if (kind === "deadline-3d") return `Due in ${daysUntilDeadline} days: "${t}"`;
@@ -235,10 +251,11 @@ function subjectForWriterReminder({ kind, projectTitle, daysUntilDeadline, daysI
   }
   if (kind === "interview-followup") return `How did the interview go? — "${t}"`;
   if (kind === "proposal-no-schedule") return `Checking in: interview not yet scheduled — "${t}"`;
+  if (kind === "interview-not-scheduled") return `Heard back from your source? — "${t}"`;
   return `Catalyst: update on "${t}"`;
 }
 
-function preheaderForWriterReminder({ kind, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval }) {
+function preheaderForWriterReminder({ kind, daysUntilDeadline, daysInactive, daysUntilInterview, daysSinceInterview, daysSinceApproval, daysSinceContactDeadline }) {
   if (kind === "deadline-1d") return "Deadline tomorrow. Please submit on time.";
   if (kind === "deadline-3d") return `Deadline in ${daysUntilDeadline} days.`;
   if (kind === "deadline-overdue") return "Response required within 48 hours.";
@@ -249,6 +266,7 @@ function preheaderForWriterReminder({ kind, daysUntilDeadline, daysInactive, day
   }
   if (kind === "interview-followup") return "Check off Interview Complete and start drafting while it's fresh.";
   if (kind === "proposal-no-schedule") return `${daysSinceApproval} days since approval — let us know where you're at.`;
+  if (kind === "interview-not-scheduled") return `Contact deadline passed ${daysSinceContactDeadline} days ago — update the tracker or pivot.`;
   return "Update from The Catalyst editorial team.";
 }
 
@@ -412,7 +430,7 @@ function renderAdminTasksBlock(tasks, siteUrl) {
         ${taskRows}
       </div>
       <div style="padding:14px 20px 18px 20px;background:#fff;">
-        <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-weight:600;font-size:13px;">Open the pipeline</a>
+        <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-weight:600;font-size:13px;">Open the tracker</a>
       </div>
     </div>
   `;
@@ -619,7 +637,7 @@ export function proposalApprovedEmail({ project, author, siteUrl }) {
   ` : `
     <div style="margin:22px 0 0 0;padding:14px 18px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
       <div style="font-size:14px;line-height:1.6;color:#1e3a8a;">
-        Head to the pipeline, open your story, and start writing. If you have any questions about structure, angle, or anything else — reach out to Aidan and Yair. That's what we're here for.
+        Head to the tracker, open your story, and start writing. If you have any questions about structure, angle, or anything else — reach out to Aidan and Yair. That's what we're here for.
       </div>
     </div>
   `;
@@ -658,7 +676,7 @@ export function proposalApprovedEmail({ project, author, siteUrl }) {
   const subject = `Your proposal was approved: "${truncate(projectTitle, 45)}"`;
   const preheader = isInterview
     ? "Congratulations! Time to reach out to your source and lock in the interview."
-    : "Congratulations! Head to the pipeline and start writing.";
+    : "Congratulations! Head to the tracker and start writing.";
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
@@ -716,16 +734,25 @@ export function editorAssignedEmail({ project, editor, author, siteUrl }) {
   const authorName = author?.name || project.authorName || "the writer";
   const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
   const deadline = project.deadlines?.publication || project.deadline || null;
+  // The dashboard auto-sets deadlines.review to assignedAt + 7 days at the
+  // moment of assignment. Surface that here so the editor knows their clock
+  // started and when the review is due.
+  const reviewDeadline = project.deadlines?.review || null;
 
   const statusBlock = buildStatusBlock({
     rows: [
       { label: "Story", value: projectTitle },
       { label: "Type", value: project.type || "—" },
       { label: "Writer", value: authorName },
+      reviewDeadline ? { label: "Your review is due", value: fmtDate(reviewDeadline) } : null,
       deadline ? { label: "Publication deadline", value: fmtDate(deadline) } : null,
     ].filter(Boolean),
     tone: "info",
   });
+
+  const reviewLine = reviewDeadline
+    ? `You have one week to review — your edits are due by <strong>${escapeHtml(fmtDate(reviewDeadline))}</strong>.`
+    : `You have about a week to review and leave feedback.`;
 
   const body = `
     <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
@@ -738,10 +765,10 @@ export function editorAssignedEmail({ project, editor, author, siteUrl }) {
     ${statusBlock}
 
     <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
-      You're the editor for "${escapeHtml(projectTitle)}" by ${escapeHtml(authorName)}. The draft is in the pipeline — please open it, read through, and leave your edits and comments.
+      You're the editor for "${escapeHtml(projectTitle)}" by ${escapeHtml(authorName)}. The draft is on the tracker — please open it, read through, and leave your edits and comments.
     </p>
     <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
-      When you're done, mark "Review Complete" so ${escapeHtml(authorName.split(/\s+/)[0])} knows to look at your feedback.
+      ${reviewLine} When you're done, tick <strong>Review Complete</strong> so ${escapeHtml(authorName.split(/\s+/)[0])} knows to look at your feedback. If you can't make that timeline, reply to this email and we'll work it out.
     </p>
 
     <div style="margin:22px 0 0 0;">
@@ -756,7 +783,242 @@ export function editorAssignedEmail({ project, editor, author, siteUrl }) {
   `;
 
   const subject = `You're the editor for "${truncate(projectTitle, 50)}"`;
-  const preheader = `New editing assignment from The Catalyst.`;
+  const preheader = reviewDeadline
+    ? `New editing assignment — review due ${fmtDate(reviewDeadline)}.`
+    : `New editing assignment from The Catalyst.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// ─── Review complete → notify the writer ────────────────────────────────────
+//
+// Fired the moment an editor checks "Review Complete" on the tracker. The
+// writer gets one week (deadlines.edits = completedAt + 7d, set by
+// auto-deadlines) to read through the edits and tick "Suggestions Reviewed".
+
+export function writerReviewCompleteEmail({ project, author, editor, siteUrl }) {
+  const firstName = (author?.name || project.authorName || "there").split(/\s+/)[0];
+  const editorName = editor?.name || project.editorName || "Your editor";
+  const editorFirst = editorName.split(/\s+/)[0];
+  const projectTitle = project.title || "(untitled story)";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
+  const editsDeadline = project.deadlines?.edits || null;
+  const pubDeadline = project.deadlines?.publication || project.deadline || null;
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Editor", value: editorName },
+      editsDeadline ? { label: "Address edits by", value: fmtDate(editsDeadline) } : null,
+      pubDeadline ? { label: "Publication deadline", value: fmtDate(pubDeadline) } : null,
+    ].filter(Boolean),
+    tone: "info",
+  });
+
+  const dueLine = editsDeadline
+    ? `You have one week — please address ${escapeHtml(editorFirst)}'s feedback by <strong>${escapeHtml(fmtDate(editsDeadline))}</strong>.`
+    : `You have about a week to read through and address the feedback.`;
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      Your review is complete — ${escapeHtml(editorFirst)} has left their notes.
+    </p>
+
+    ${statusBlock}
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      ${escapeHtml(editorName)} just finished editing "${escapeHtml(projectTitle)}" and left their comments and suggestions on your draft. Open the tracker, read through every comment carefully, and work each suggestion into the piece.
+    </p>
+    <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      ${dueLine} Don't just accept everything blindly — if there's a note you disagree with, leave a reply explaining your reasoning. Editing is a conversation. The goal is the strongest possible final draft, not just the fastest path to "done."
+    </p>
+    <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      Once you've worked through everything and the piece is ready, tick <strong>Suggestions Reviewed</strong> on the tracker. If anything in the feedback is unclear, reply to ${escapeHtml(editorFirst)} directly in the activity feed — or to this email — and we'll sort it out.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the tracker</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = `Edits ready on "${truncate(projectTitle, 50)}" — your turn`;
+  const preheader = editsDeadline
+    ? `${editorName} finished editing — please address by ${fmtDate(editsDeadline)}.`
+    : `${editorName} finished editing — please address the feedback.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// ─── Date-change requests (writer ↔ admin) ──────────────────────────────────
+//
+// Writers can ask for any of their dates to move (publication, interview,
+// draft, etc.). The dashboard writes a `deadlineChangeRequest` doc and fires
+// `deadline-change-requested` so admins get this email immediately. When the
+// admin approves or rejects, `deadline-change-resolved` fires the writer
+// email below.
+
+export function adminDeadlineChangeRequestedEmail({ project, author, request, siteUrl }) {
+  const projectTitle = project.title || "(untitled story)";
+  const authorName = author?.name || project.authorName || request?.requestedBy || "Unknown writer";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/all`;
+  const reason = String(request?.reason || "(no reason provided)").trim();
+
+  // The dashboard precomputes `changesSummary` as an array of human-readable
+  // diffs ("Publication: Jan 1 → Jan 8"). If that's missing — older clients,
+  // direct API calls — fall back to rendering the raw requestedDeadlines map.
+  let changesHtml;
+  if (Array.isArray(request?.changesSummary) && request.changesSummary.length) {
+    changesHtml = request.changesSummary
+      .map((line) => `<li style="margin:0 0 6px 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">${escapeHtml(line)}</li>`)
+      .join("");
+  } else {
+    const labelMap = {
+      publication: "Publication",
+      contact: "Contact Professor",
+      interview: "Interview",
+      draft: "Draft",
+      review: "Editor Review",
+      edits: "Review Edits",
+    };
+    const items = Object.entries(request?.requestedDeadlines || {})
+      .filter(([, v]) => v)
+      .map(([k, v]) => `<li style="margin:0 0 6px 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};"><strong>${escapeHtml(labelMap[k] || k)}:</strong> ${escapeHtml(fmtDate(v))}</li>`);
+    changesHtml = items.length ? items.join("") : `<li style="margin:0;font-size:14px;color:${COLORS.muted};">(no specific dates listed)</li>`;
+  }
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Type", value: project.type || "—" },
+      { label: "Writer", value: authorName },
+      { label: "Current deadline", value: project.deadline ? fmtDate(project.deadline) : "—" },
+    ],
+    tone: "alert",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi team,
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(authorName.split(/\s+/)[0])} has requested a date change.
+    </p>
+
+    ${statusBlock}
+
+    <div style="margin:0 0 18px 0;border:1px solid ${COLORS.hairline};border-radius:6px;padding:14px 16px;background:#fafafa;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:10px;">Requested changes</div>
+      <ul style="margin:0;padding-left:18px;">${changesHtml}</ul>
+    </div>
+
+    <div style="margin:0 0 18px 0;border:1px solid ${COLORS.hairline};border-radius:6px;padding:14px 16px;background:#fafafa;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:8px;">Reason</div>
+      <div style="font-size:14px;line-height:1.6;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(reason)}</div>
+    </div>
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      Open the project on the tracker to approve or reject this request.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Review request</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = `Date change requested: "${truncate(projectTitle, 50)}"`;
+  const preheader = `${authorName} asked to move one or more dates. Approve or reject on the tracker.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+export function writerDeadlineChangeResolvedEmail({ project, author, outcome, request, siteUrl }) {
+  const firstName = (author?.name || project.authorName || "there").split(/\s+/)[0];
+  const projectTitle = project.title || "(untitled story)";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
+  const wasApproved = outcome === "approved";
+
+  const headline = wasApproved
+    ? "Your date change was approved."
+    : outcome === "rejected"
+      ? "Your date change wasn't approved."
+      : "Your date change request was reviewed.";
+
+  const tone = wasApproved ? "info" : "alert";
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Outcome", value: wasApproved ? "Approved — dates updated" : (outcome === "rejected" ? "Rejected — dates unchanged" : "Reviewed") },
+      { label: "Current deadline", value: project.deadline ? fmtDate(project.deadline) : "—" },
+    ],
+    tone,
+  });
+
+  // Same diff list we sent the admins, so the writer can confirm what was
+  // actually applied (or what they had asked for, in the rejection case).
+  let changesHtml = "";
+  if (Array.isArray(request?.changesSummary) && request.changesSummary.length) {
+    const items = request.changesSummary
+      .map((line) => `<li style="margin:0 0 6px 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">${escapeHtml(line)}</li>`)
+      .join("");
+    changesHtml = `
+      <div style="margin:0 0 18px 0;border:1px solid ${COLORS.hairline};border-radius:6px;padding:14px 16px;background:#fafafa;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:10px;">${wasApproved ? "Updated dates" : "Dates you requested"}</div>
+        <ul style="margin:0;padding-left:18px;">${items}</ul>
+      </div>
+    `;
+  }
+
+  const followUp = wasApproved
+    ? `Your timeline has been updated in the dashboard. No further action needed.`
+    : outcome === "rejected"
+      ? `Your existing dates remain in place. Reach out to Aidan or Yair if you'd like to discuss — sometimes the answer is "yes, but with a different timeline."`
+      : `Open the project to see the latest state.`;
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(headline)}
+    </p>
+
+    ${statusBlock}
+
+    ${changesHtml}
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">${escapeHtml(followUp)}</p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open project</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = wasApproved
+    ? `Date change approved: "${truncate(projectTitle, 50)}"`
+    : outcome === "rejected"
+      ? `Date change not approved: "${truncate(projectTitle, 50)}"`
+      : `Date change reviewed: "${truncate(projectTitle, 50)}"`;
+  const preheader = wasApproved
+    ? `Your dates have been updated.`
+    : `Your existing dates remain in place.`;
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
@@ -773,7 +1035,29 @@ export function editorReminderEmail({ kind, editor, project, deadline, daysSince
   const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
 
   let headline, paragraphs, statusRows, statusTone;
-  if (kind === "editor-idle") {
+  if (kind === "editor-review-overdue") {
+    // Fired 7+ days after the editor was assigned, when "Review Complete"
+    // still isn't ticked. Tone is firm but not hostile — the goal is to get
+    // the draft moving, not to scold.
+    const dText = daysSinceAssigned == null
+      ? "more than a week"
+      : `${daysSinceAssigned} day${daysSinceAssigned === 1 ? "" : "s"}`;
+    const reviewDeadline = project?.deadlines?.review || null;
+    headline = `Your editor review is past due.`;
+    paragraphs = [
+      `You were assigned to edit "${projectTitle}" ${dText} ago, and "Review Complete" still isn't checked off on the tracker. ${authorName} is waiting on your notes before they can move the piece forward.`,
+      `Please open the draft today, leave your edits and comments, and tick "Review Complete" when you're done. If you need a deadline extension or you're blocked on something specific, reply to this email so we can sort it out.`,
+      `If you can't take this assignment anymore, that's fine — just let us know and we'll reassign it. The worst outcome is silence; the writer's work stalls and the publication date slips.`,
+    ];
+    statusRows = [
+      { label: "Story", value: projectTitle },
+      { label: "Writer", value: authorName },
+      { label: "Assigned", value: `${dText} ago` },
+      reviewDeadline ? { label: "Review deadline", value: fmtDate(reviewDeadline) } : null,
+      deadline ? { label: "Publication deadline", value: fmtDate(deadline) } : null,
+    ].filter(Boolean);
+    statusTone = "overdue";
+  } else if (kind === "editor-idle") {
     headline = `Your edit on "${projectTitle}" is waiting.`;
     paragraphs = [
       `It's been ${daysInactive} days since there's been activity on "${projectTitle}" — and you're the assigned editor. ${authorName}'s draft needs your review.`,
@@ -838,12 +1122,18 @@ export function editorReminderEmail({ kind, editor, project, deadline, daysSince
     </p>
   `;
 
-  const subject = kind === "editor-idle"
-    ? `${daysInactive}d no activity (editor): "${truncate(projectTitle, 40)}"`
-    : `Edit due soon: "${truncate(projectTitle, 50)}"`;
-  const preheader = kind === "editor-idle"
-    ? `${daysInactive} days of editor inactivity. Please review.`
-    : `Editor review needed before deadline.`;
+  let subject, preheader;
+  if (kind === "editor-review-overdue") {
+    const dText = daysSinceAssigned == null ? "1+ week" : `${daysSinceAssigned}d`;
+    subject = `Editor review past due (${dText}): "${truncate(projectTitle, 40)}"`;
+    preheader = `Assigned ${daysSinceAssigned == null ? "over a week" : `${daysSinceAssigned} days`} ago — Review Complete still not checked.`;
+  } else if (kind === "editor-idle") {
+    subject = `${daysInactive}d no activity (editor): "${truncate(projectTitle, 40)}"`;
+    preheader = `${daysInactive} days of editor inactivity. Please review.`;
+  } else {
+    subject = `Edit due soon: "${truncate(projectTitle, 50)}"`;
+    preheader = `Editor review needed before deadline.`;
+  }
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
@@ -884,11 +1174,11 @@ export function bundledReminderEmail({ recipient, role, items, siteUrl }) {
     </div>
 
     <p style="margin:18px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
-      Open the pipeline to update each story. Reply to this email if anything's blocking you.
+      Open the tracker to update each story. Reply to this email if anything's blocking you.
     </p>
 
     <div style="margin:22px 0 0 0;">
-      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the pipeline</a>
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the tracker</a>
     </div>
 
     <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
@@ -901,7 +1191,7 @@ export function bundledReminderEmail({ recipient, role, items, siteUrl }) {
   const subject = role === "editor"
     ? `${count} stories need editor review`
     : `${count} of your stories need an update`;
-  const preheader = `${count} item${count === 1 ? "" : "s"} from The Catalyst editorial pipeline.`;
+  const preheader = `${count} item${count === 1 ? "" : "s"} from The Catalyst editorial tracker.`;
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
@@ -924,8 +1214,16 @@ function bundledItemLabel(item) {
   if (item.kind === "proposal-no-schedule") {
     return `Proposal approved ${item.daysSinceApproval || 5}+ days ago — interview not yet scheduled`;
   }
+  if (item.kind === "interview-not-scheduled") {
+    const d = item.daysSinceContactDeadline || 10;
+    return `Contact deadline passed ${d}+ days ago — update tracker or pivot to a new source`;
+  }
   if (item.kind === "editor-idle") return `Editor: ${item.daysInactive} days idle, awaiting your review`;
   if (item.kind === "editor-deadline-soon") return `Editor: deadline approaching`;
+  if (item.kind === "editor-review-overdue") {
+    const d = item.daysSinceAssigned || 7;
+    return `Editor: ${d}+ days since assignment, "Review Complete" not yet checked`;
+  }
   return item.kind;
 }
 
