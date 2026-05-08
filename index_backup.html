@@ -1811,12 +1811,14 @@
                                 end: 'bottom bottom',
                                 // Mobile uses a tighter scrub so the hero
                                 // responds immediately to short touch scrolls.
-                                // Mobile scrub was 0.35 — extremely tight,
-                                // demanding a new frame redraw on every tiny
-                                // finger movement. Bumped to 1.2 so the
-                                // canvas glides smoothly between scroll
-                                // events instead of stuttering on each one.
-                                scrub: isMobileScrub ? 1.2 : 0.8,
+                                // Mobile scrub: tight enough to feel
+                                // responsive (canvas tracks finger), but not
+                                // so tight that every micro-movement triggers
+                                // a redraw. 0.5 is the sweet spot — paired
+                                // with DPR=1 + flush-to-viewport draw + no
+                                // JIT thrash, the per-tick cost is now low
+                                // enough that fast tracking is fine.
+                                scrub: isMobileScrub ? 0.5 : 0.8,
                                 invalidateOnRefresh: true,
                                 onUpdate: function () {
                                     currentFrame = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(proxy.frame)));
