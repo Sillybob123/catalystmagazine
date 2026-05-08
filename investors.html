@@ -120,7 +120,7 @@
             display: grid;
             grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
             gap: clamp(36px, 5vw, 80px);
-            align-items: end;
+            align-items: center;
         }
 
         body[data-page="investors"] .inv-eyebrow {
@@ -750,26 +750,69 @@
         }
 
         body[data-page="investors"] .inv-form-card {
-            background: #fff;
+            background: var(--i-paper);
             color: var(--i-ink);
             border-radius: var(--i-radius-lg);
-            padding: clamp(28px, 3vw, 40px);
+            padding: clamp(32px, 3.4vw, 48px);
             box-shadow: var(--i-shadow-deep);
+            border: 1px solid rgba(11,17,32,0.06);
         }
         body[data-page="investors"] .inv-form {
             display: flex;
             flex-direction: column;
+            gap: 36px;
+        }
+
+        /* ─── Form group ─── */
+        body[data-page="investors"] .inv-form-group {
+            border: 0;
+            margin: 0;
+            padding: 0;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
             gap: 18px;
         }
+        body[data-page="investors"] .inv-form-group + .inv-form-group {
+            padding-top: 28px;
+            border-top: 1px solid var(--i-line);
+        }
+        body[data-page="investors"] .inv-form-group legend {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 6px;
+            padding: 0;
+        }
+        body[data-page="investors"] .inv-group-num {
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--i-accent);
+            letter-spacing: 0.04em;
+            font-variant-numeric: tabular-nums;
+        }
+        body[data-page="investors"] .inv-group-label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--i-ink-soft);
+        }
+
         body[data-page="investors"] .inv-form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 14px;
+            gap: 16px;
         }
+
+        /* ─── Field ─── */
         body[data-page="investors"] .inv-field {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
+            position: relative;
         }
         body[data-page="investors"] .inv-field label {
             font-size: 13px;
@@ -779,36 +822,39 @@
         }
         body[data-page="investors"] .inv-field label .req {
             color: var(--i-accent);
-            margin-left: 2px;
+            margin-left: 3px;
+            font-weight: 700;
         }
+
         body[data-page="investors"] .inv-field input,
         body[data-page="investors"] .inv-field select,
         body[data-page="investors"] .inv-field textarea {
             width: 100%;
             min-height: 48px;
-            padding: 12px 14px;
-            border-radius: var(--i-radius-sm);
-            border: 1px solid var(--i-line-strong);
+            padding: 13px 14px;
+            border-radius: 8px;
+            border: 1px solid transparent;
             background: #fff;
             font-family: inherit;
             font-size: 16px; /* prevent iOS zoom */
             color: var(--i-ink);
-            transition: border-color 180ms, box-shadow 180ms, background 180ms;
+            box-shadow: inset 0 0 0 1px var(--i-line-strong);
+            transition: box-shadow 180ms, background 180ms, transform 180ms;
         }
         body[data-page="investors"] .inv-field textarea {
-            min-height: 130px;
+            min-height: 150px;
             padding: 14px;
             resize: vertical;
-            line-height: 1.55;
+            line-height: 1.6;
         }
         body[data-page="investors"] .inv-field input::placeholder,
         body[data-page="investors"] .inv-field textarea::placeholder {
-            color: rgba(11,17,32,0.45);
+            color: rgba(11,17,32,0.4);
         }
         body[data-page="investors"] .inv-field input:hover,
         body[data-page="investors"] .inv-field select:hover,
         body[data-page="investors"] .inv-field textarea:hover {
-            border-color: var(--i-ink-soft);
+            box-shadow: inset 0 0 0 1px var(--i-ink-soft);
         }
         body[data-page="investors"] .inv-field input:focus,
         body[data-page="investors"] .inv-field input:focus-visible,
@@ -817,50 +863,63 @@
         body[data-page="investors"] .inv-field textarea:focus,
         body[data-page="investors"] .inv-field textarea:focus-visible {
             outline: none;
-            border-color: var(--i-accent);
-            box-shadow: 0 0 0 4px var(--i-accent-soft);
+            background: #fff;
+            box-shadow:
+                inset 0 0 0 2px var(--i-accent),
+                0 0 0 4px var(--i-accent-soft);
         }
         body[data-page="investors"] .inv-field select {
             appearance: none;
             -webkit-appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e293b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
             background-repeat: no-repeat;
             background-position: right 14px center;
-            background-size: 18px;
-            padding-right: 44px;
+            background-size: 16px;
+            padding-right: 42px;
             cursor: pointer;
         }
 
         body[data-page="investors"] .inv-helper {
-            font-size: 12px;
+            font-size: 12.5px;
             color: var(--i-ink-mute);
-            line-height: 1.5;
+            line-height: 1.55;
             margin-top: -2px;
+            font-style: italic;
         }
 
+        /* ─── Submit ─── */
+        body[data-page="investors"] .inv-form-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            padding-top: 12px;
+            border-top: 1px solid var(--i-line);
+            margin-top: 4px;
+        }
         body[data-page="investors"] .inv-submit {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            min-height: 56px;
-            padding: 16px 28px;
+            gap: 12px;
+            width: 100%;
+            min-height: 60px;
+            padding: 18px 28px;
             border: 0;
-            border-radius: var(--i-radius-sm);
+            border-radius: 999px;
             background: var(--i-ink);
             color: var(--i-paper);
             font-family: inherit;
             font-size: 16px;
             font-weight: 600;
+            letter-spacing: 0.01em;
             cursor: pointer;
             transition: transform 200ms cubic-bezier(0.2,0.8,0.2,1), background 200ms, box-shadow 200ms;
-            box-shadow: var(--i-shadow-soft);
-            margin-top: 8px;
+            box-shadow: 0 1px 2px rgba(11,17,32,0.06), 0 14px 30px -14px rgba(11,17,32,0.4);
         }
         body[data-page="investors"] .inv-submit:hover {
             background: var(--i-accent);
             transform: translateY(-2px);
-            box-shadow: var(--i-shadow-deep);
+            box-shadow: 0 1px 2px rgba(11,17,32,0.06), 0 22px 44px -16px rgba(30,64,175,0.5);
         }
         body[data-page="investors"] .inv-submit:focus-visible {
             outline: 3px solid var(--i-accent);
@@ -872,6 +931,22 @@
             transform: none;
         }
         body[data-page="investors"] .inv-submit svg { width: 18px; height: 18px; }
+
+        body[data-page="investors"] .inv-form-reassure {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 12.5px;
+            color: var(--i-ink-mute);
+            text-align: center;
+            line-height: 1.5;
+        }
+        body[data-page="investors"] .inv-form-reassure svg {
+            width: 14px; height: 14px;
+            color: var(--i-accent);
+            flex-shrink: 0;
+        }
 
         body[data-page="investors"] .inv-response {
             min-height: 24px;
@@ -1015,10 +1090,13 @@
                         <span class="inv-hero-aside-label">As featured in GW Today</span>
 
                         <p class="inv-hero-pull">
-                            &ldquo;The Catalyst has grown <em>fourfold</em> since its launch a year ago.&rdquo;
+                            &ldquo;Can we rewrite the narrative about how people feel about being
+                            STEM students in Washington, D.C.? <em>And can we build a community
+                            of like-minded innovators</em> that want to be advocates for their
+                            field and also better science communicators?&rdquo;
                         </p>
                         <span class="inv-hero-attrib">
-                            &mdash; Greg Varner, <em>GW Today</em>, January&nbsp;2026
+                            &mdash; Aidan Schurr, co-founder, in <em>GW&nbsp;Today</em> &middot; Jan&nbsp;2026
                         </span>
 
                         <hr aria-hidden="true">
@@ -1286,97 +1364,129 @@
 
                     <div class="inv-form-card">
                         <form class="inv-form" id="investor-form" novalidate>
-                            <div class="inv-form-row">
-                                <div class="inv-field">
-                                    <label for="inv-fname">First name <span class="req" aria-hidden="true">*</span></label>
-                                    <input id="inv-fname" type="text" name="firstName" autocomplete="given-name" required>
-                                </div>
-                                <div class="inv-field">
-                                    <label for="inv-lname">Last name <span class="req" aria-hidden="true">*</span></label>
-                                    <input id="inv-lname" type="text" name="lastName" autocomplete="family-name" required>
-                                </div>
-                            </div>
+                            <!-- Group 1: Who you are -->
+                            <fieldset class="inv-form-group">
+                                <legend>
+                                    <span class="inv-group-num">01</span>
+                                    <span class="inv-group-label">Who you are</span>
+                                </legend>
 
-                            <div class="inv-form-row">
-                                <div class="inv-field">
-                                    <label for="inv-email">Email <span class="req" aria-hidden="true">*</span></label>
-                                    <input id="inv-email" type="email" name="email" autocomplete="email" required>
+                                <div class="inv-form-row">
+                                    <div class="inv-field">
+                                        <label for="inv-fname">First name <span class="req" aria-hidden="true">*</span></label>
+                                        <input id="inv-fname" type="text" name="firstName" autocomplete="given-name" required>
+                                    </div>
+                                    <div class="inv-field">
+                                        <label for="inv-lname">Last name <span class="req" aria-hidden="true">*</span></label>
+                                        <input id="inv-lname" type="text" name="lastName" autocomplete="family-name" required>
+                                    </div>
                                 </div>
-                                <div class="inv-field">
-                                    <label for="inv-phone">Phone</label>
-                                    <input id="inv-phone" type="tel" name="phone" autocomplete="tel" inputmode="tel">
-                                </div>
-                            </div>
 
-                            <div class="inv-form-row">
-                                <div class="inv-field">
-                                    <label for="inv-company">Company / fund</label>
-                                    <input id="inv-company" type="text" name="company" autocomplete="organization">
+                                <div class="inv-form-row">
+                                    <div class="inv-field">
+                                        <label for="inv-email">Email <span class="req" aria-hidden="true">*</span></label>
+                                        <input id="inv-email" type="email" name="email" autocomplete="email" placeholder="you@company.com" required>
+                                    </div>
+                                    <div class="inv-field">
+                                        <label for="inv-phone">Phone <span class="inv-helper" style="font-style:normal;display:inline;margin-left:6px;">(optional)</span></label>
+                                        <input id="inv-phone" type="tel" name="phone" autocomplete="tel" inputmode="tel">
+                                    </div>
                                 </div>
-                                <div class="inv-field">
-                                    <label for="inv-role">Role / title</label>
-                                    <input id="inv-role" type="text" name="role" autocomplete="organization-title">
-                                </div>
-                            </div>
+                            </fieldset>
 
-                            <div class="inv-form-row">
-                                <div class="inv-field">
-                                    <label for="inv-website">Website</label>
-                                    <input id="inv-website" type="url" name="website" placeholder="https://" autocomplete="url">
-                                </div>
-                                <div class="inv-field">
-                                    <label for="inv-linkedin">LinkedIn</label>
-                                    <input id="inv-linkedin" type="url" name="linkedin" placeholder="https://linkedin.com/in/…">
-                                </div>
-                            </div>
+                            <!-- Group 2: What you do -->
+                            <fieldset class="inv-form-group">
+                                <legend>
+                                    <span class="inv-group-num">02</span>
+                                    <span class="inv-group-label">What you do</span>
+                                </legend>
 
-                            <div class="inv-form-row">
+                                <div class="inv-form-row">
+                                    <div class="inv-field">
+                                        <label for="inv-company">Company or fund</label>
+                                        <input id="inv-company" type="text" name="company" autocomplete="organization">
+                                    </div>
+                                    <div class="inv-field">
+                                        <label for="inv-role">Your role</label>
+                                        <input id="inv-role" type="text" name="role" autocomplete="organization-title" placeholder="e.g. Partner, Director of Marketing">
+                                    </div>
+                                </div>
+
+                                <div class="inv-form-row">
+                                    <div class="inv-field">
+                                        <label for="inv-website">Website</label>
+                                        <input id="inv-website" type="url" name="website" placeholder="https://" autocomplete="url">
+                                    </div>
+                                    <div class="inv-field">
+                                        <label for="inv-linkedin">LinkedIn</label>
+                                        <input id="inv-linkedin" type="url" name="linkedin" placeholder="https://linkedin.com/in/…">
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <!-- Group 3: What you're imagining -->
+                            <fieldset class="inv-form-group">
+                                <legend>
+                                    <span class="inv-group-num">03</span>
+                                    <span class="inv-group-label">What you&rsquo;re imagining</span>
+                                </legend>
+
+                                <div class="inv-form-row">
+                                    <div class="inv-field">
+                                        <label for="inv-interest">Type of interest</label>
+                                        <select id="inv-interest" name="interestType">
+                                            <option value="exploratory">Exploratory chat</option>
+                                            <option value="ad-partnership">Ad / sponsorship partnership</option>
+                                            <option value="angel-check">Angel or seed check</option>
+                                            <option value="strategic-partner">Strategic partner</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="inv-field">
+                                        <label for="inv-range">Approximate range</label>
+                                        <select id="inv-range" name="range">
+                                            <option value="undecided">Undecided</option>
+                                            <option value="under-1k">Under $1,000</option>
+                                            <option value="1k-5k">$1,000 – $5,000</option>
+                                            <option value="5k-25k">$5,000 – $25,000</option>
+                                            <option value="25k-100k">$25,000 – $100,000</option>
+                                            <option value="100k-plus">$100,000+</option>
+                                            <option value="advisory">Non-cash / advisory</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div class="inv-field">
-                                    <label for="inv-interest">Interest</label>
-                                    <select id="inv-interest" name="interestType">
-                                        <option value="exploratory">Exploratory chat</option>
-                                        <option value="ad-partnership">Ad / sponsorship partnership</option>
-                                        <option value="angel-check">Angel or seed check</option>
-                                        <option value="strategic-partner">Strategic partner</option>
-                                        <option value="other">Other</option>
+                                    <label for="inv-timeline">Timeline</label>
+                                    <select id="inv-timeline" name="timeline">
+                                        <option value="exploring">Just exploring</option>
+                                        <option value="90-days">Within 90 days</option>
+                                        <option value="30-days">Within 30 days</option>
+                                        <option value="now">Ready to talk now</option>
                                     </select>
                                 </div>
+
                                 <div class="inv-field">
-                                    <label for="inv-range">Approximate range</label>
-                                    <select id="inv-range" name="range">
-                                        <option value="undecided">Undecided</option>
-                                        <option value="under-1k">Under $1,000</option>
-                                        <option value="1k-5k">$1,000 – $5,000</option>
-                                        <option value="5k-25k">$5,000 – $25,000</option>
-                                        <option value="25k-100k">$25,000 – $100,000</option>
-                                        <option value="100k-plus">$100,000+</option>
-                                        <option value="advisory">Non-cash / advisory</option>
-                                    </select>
+                                    <label for="inv-message">Tell us a bit about your interest <span class="req" aria-hidden="true">*</span></label>
+                                    <textarea id="inv-message" name="message" rows="5" required placeholder="What drew you to The Catalyst? What kind of partnership are you imagining?"></textarea>
+                                    <p class="inv-helper">The more specific, the better the reply.</p>
                                 </div>
+                            </fieldset>
+
+                            <!-- Footer: submit + reassurance -->
+                            <div class="inv-form-footer">
+                                <button type="submit" class="inv-submit" id="inv-submit">
+                                    <span class="btn-label">Send inquiry</span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+
+                                <p class="inv-form-reassure">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
+                                    A founder replies personally, within 48 hours.
+                                </p>
+
+                                <div class="inv-response" id="inv-response" role="status" aria-live="polite"></div>
                             </div>
-
-                            <div class="inv-field">
-                                <label for="inv-timeline">Timeline</label>
-                                <select id="inv-timeline" name="timeline">
-                                    <option value="exploring">Just exploring</option>
-                                    <option value="90-days">Within 90 days</option>
-                                    <option value="30-days">Within 30 days</option>
-                                    <option value="now">Ready to talk now</option>
-                                </select>
-                            </div>
-
-                            <div class="inv-field">
-                                <label for="inv-message">Tell us a bit about your interest <span class="req" aria-hidden="true">*</span></label>
-                                <textarea id="inv-message" name="message" rows="5" required placeholder="What drew you to The Catalyst? What kind of partnership are you imagining?"></textarea>
-                                <p class="inv-helper">We read everything, personally. The more specific, the better the reply.</p>
-                            </div>
-
-                            <button type="submit" class="inv-submit" id="inv-submit">
-                                <span class="btn-label">Send inquiry</span>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                            </button>
-
-                            <div class="inv-response" id="inv-response" role="status" aria-live="polite"></div>
                         </form>
 
                         <div class="inv-success" id="inv-success" aria-live="polite">
