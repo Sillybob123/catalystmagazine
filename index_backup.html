@@ -1895,8 +1895,14 @@
                             ease: 'power2.out',
                             scrollTrigger: {
                                 trigger: shell,
-                                start: isMobileScrub ? 'top+=34% top' : 'top+=25% top',
-                                end:   isMobileScrub ? 'top+=64% top' : 'top+=55% top',
+                                // Mobile starts much earlier (18% vs 34%) so the
+                                // articles begin fading in WHILE the hero text
+                                // is still mid-fade (hero fades 10–34%) — no
+                                // empty pause between them. Fully visible by
+                                // 48% so the cards are on-screen long before
+                                // the buildings finish coming together.
+                                start: isMobileScrub ? 'top+=18% top' : 'top+=25% top',
+                                end:   isMobileScrub ? 'top+=48% top' : 'top+=55% top',
                                 scrub: isMobileScrub ? 0.55 : 1.0,
                                 onEnter:     function () { articlesStrip.classList.add('is-visible'); },
                                 onEnterBack: function () { articlesStrip.classList.add('is-visible'); },
