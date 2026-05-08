@@ -96,6 +96,7 @@ function wire(form, responseDiv) {
           'success'
         );
         form.reset();
+        dispatchSubscribed(form, { email, alreadySubscribed: true });
       } else {
         showResponse(
           responseDiv,
@@ -103,6 +104,7 @@ function wire(form, responseDiv) {
           'success'
         );
         form.reset();
+        dispatchSubscribed(form, { email, alreadySubscribed: false, emailSent: !!payload.emailSent });
       }
     } catch (err) {
       console.error('[newsletter] error', err);
@@ -129,6 +131,19 @@ function showResponse(div, message, type) {
   div.textContent = message;
   div.className = 'newsletter-response ' + type;
   div.style.display = 'block';
+}
+
+function dispatchSubscribed(form, detail) {
+  try {
+    form.dispatchEvent(
+      new CustomEvent('newsletter:subscribed', {
+        bubbles: true,
+        detail,
+      })
+    );
+  } catch (e) {
+    // Silently swallow — not all browsers we care about will lack CustomEvent.
+  }
 }
 
 function normalizeName(value) {
