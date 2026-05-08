@@ -161,63 +161,77 @@
         position: relative;
       }
 
-      /* ---- Desktop: 3D carousel takeover ----
-         The user's mental model: as you scroll, the article cards
-         physically RISE UP from below the fold, lift OUT OF the page
-         toward the camera, and visually OVERLAP / cover the hero
-         title. The hero title simultaneously recedes deep into the
-         page and dissolves behind them. Net effect: cards "take over"
-         the screen like a carousel arm swinging the next slide into
-         the spotlight. */
+      /* ---------- Tighten the gap between the hero and the next
+         section. The hero was min-height: 95vh + flex-centered, which
+         left a lot of empty air below the cards before the next
+         section began. We let the hero size to its content (with a
+         comfortable floor) and trim the bottom padding so "Featured
+         Stories" sits closer to the cards without crowding them.
+         align-items: flex-start prevents the cards from drifting up
+         to vertical center when the hero auto-sizes. */
+      @media (min-width: 769px) {
+        body[data-page="home"] .hero {
+          min-height: 0;
+          padding-bottom: 32px;
+          align-items: flex-start;
+        }
+        body[data-page="home"] .hero-container {
+          width: 100%;
+        }
+      }
+
+      /* ---- Desktop: 3D carousel takeover (calibrated, not aggressive) ----
+         As you scroll, article cards lift up + come forward in Z,
+         passing in front of the hero copy as it recedes and softens.
+         Tuned to read as cinematic depth, not a gimmick — numbers
+         pulled back from the prior over-aggressive pass. */
       @media (min-width: 769px) {
         body[data-page="home"] .hero-content {
           will-change: transform, opacity, filter;
           transform-origin: 50% 40%;
-          /* push hero deep AWAY (-420px) + shrink (-26%) + heavy blur +
-             fade. Aggressive enough that by the time the cards rise to
-             cover it, the title is already a soft ghost in the back. */
+          /* push hero AWAY + scale down + blur + fade — enough to
+             clearly read as receding, not so much it disappears. */
           transform:
-            translate3d(0, calc(var(--p, 0) * -36px), calc(var(--p, 0) * -420px))
-            scale(calc(1 - var(--p, 0) * 0.26));
-          opacity: calc(1 - var(--p, 0) * 1.6);
-          filter: blur(calc(var(--p, 0) * 14px));
+            translate3d(0, calc(var(--p, 0) * -22px), calc(var(--p, 0) * -260px))
+            scale(calc(1 - var(--p, 0) * 0.18));
+          opacity: calc(1 - var(--p, 0) * 1.4);
+          filter: blur(calc(var(--p, 0) * 8px));
         }
         body[data-page="home"] .hero-title {
           will-change: transform;
-          transform: translate3d(0, calc(var(--p, 0) * -16px), 0);
+          transform: translate3d(0, calc(var(--p, 0) * -10px), 0);
         }
         body[data-page="home"] .hero-description {
           will-change: transform, opacity;
-          transform: translate3d(0, calc(var(--p, 0) * 20px), 0);
-          opacity: calc(1 - var(--p, 0) * 1.8);
+          transform: translate3d(0, calc(var(--p, 0) * 14px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.6);
         }
         body[data-page="home"] .hero-actions {
           will-change: transform, opacity;
-          transform: translate3d(0, calc(var(--p, 0) * 32px), 0);
-          opacity: calc(1 - var(--p, 0) * 2.1);
+          transform: translate3d(0, calc(var(--p, 0) * 24px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.9);
         }
 
-        /* Cards LIFT UP dramatically (Y -380px so they physically
-           travel into and past the hero title region) and translate
-           +320px Z FORWARD so they punch through the page toward the
-           camera. Scale 1 → 1.10 amplifies the "coming at you" feel.
-           The 740px Z-gap between hero (-420) and cards (+320) makes
-           the depth split unmistakable. */
+        /* Cards lift up + forward — moderate, not extreme.
+             • Y: -200px lifts them into the lower hero band but not
+               so far they fly off-screen.
+             • Z: +180px brings them clearly forward of the receding
+               hero (440px Z-gap, plenty for depth read).
+             • scale 1 → 1.05 keeps the forward motion subtle. */
         body[data-page="home"] .hero-featured-wrap {
           will-change: transform;
           transform-origin: 50% 50%;
           transform:
-            translate3d(0, calc(var(--p, 0) * -380px), calc(var(--p, 0) * 320px))
-            scale(calc(1 + var(--p, 0) * 0.10));
+            translate3d(0, calc(var(--p, 0) * -200px), calc(var(--p, 0) * 180px))
+            scale(calc(1 + var(--p, 0) * 0.05));
           position: relative;
           z-index: 5;
         }
 
-        /* The cards themselves get a stronger bottom-pivoted rotateX
-           so the lift reads as a curved carousel arc — the front edge
-           tilts toward the camera as the slab swings up and forward. */
+        /* Subtle bottom-pivoted rotateX so the lift reads as a
+           gentle carousel arc, not a flat slide. */
         body[data-page="home"] .hero-featured {
-          transform: rotateX(calc(var(--p, 0) * -4deg));
+          transform: rotateX(calc(var(--p, 0) * -2.5deg));
           transform-origin: 50% 100%;
         }
 
@@ -529,7 +543,7 @@
         </section>
 
         <!-- Recent Stories Grid -->
-        <section class="section" style="padding-top: 60px;">
+        <section class="section" style="padding-top: 24px;">
             <div class="container">
                 <div class="section-header">
                     <span class="eyebrow">Featured Stories</span>
