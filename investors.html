@@ -73,87 +73,141 @@
         /* ─────────── HERO ─────────── */
         body[data-page="investors"] .inv-hero {
             position: relative;
-            padding: clamp(96px, 14vw, 180px) 0 clamp(60px, 9vw, 110px);
+            padding: clamp(110px, 14vw, 200px) 0 clamp(72px, 9vw, 130px);
             isolation: isolate;
             overflow: hidden;
+            background:
+                radial-gradient(ellipse 60% 50% at 100% 0%, rgba(30, 64, 175, 0.10), transparent 60%),
+                radial-gradient(ellipse 50% 40% at 0% 100%, rgba(180, 83, 9, 0.06), transparent 60%),
+                var(--i-paper);
         }
         body[data-page="investors"] .inv-hero::before {
             content: "";
             position: absolute; inset: 0;
             background-image:
-                linear-gradient(rgba(11,17,32,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(11,17,32,0.05) 1px, transparent 1px);
-            background-size: 60px 60px;
-            -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, #000 40%, transparent 75%);
-                    mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, #000 40%, transparent 75%);
-            opacity: 0.5;
+                linear-gradient(rgba(11,17,32,0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(11,17,32,0.045) 1px, transparent 1px);
+            background-size: 64px 64px;
+            -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 0%, #000 40%, transparent 80%);
+                    mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 0%, #000 40%, transparent 80%);
+            opacity: 0.55;
             z-index: -2;
             pointer-events: none;
         }
+        /* Decorative oversized italic "Investors" mark — type as art */
+        body[data-page="investors"] .inv-hero::after {
+            content: "Investors";
+            position: absolute;
+            top: 78px;
+            right: -2vw;
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: clamp(140px, 22vw, 320px);
+            line-height: 1;
+            color: rgba(11,17,32,0.04);
+            z-index: -1;
+            pointer-events: none;
+            user-select: none;
+            letter-spacing: -0.03em;
+        }
         body[data-page="investors"] .inv-hero .container {
             position: relative;
-            max-width: 1080px;
-            text-align: left;
+            max-width: 1280px;
+        }
+
+        body[data-page="investors"] .inv-hero-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+            gap: clamp(36px, 5vw, 80px);
+            align-items: end;
         }
 
         body[data-page="investors"] .inv-eyebrow {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 14px;
+            gap: 12px;
+            padding: 9px 16px 9px 12px;
             border: 1px solid var(--i-line-strong);
             border-radius: 999px;
-            background: rgba(255,255,255,0.6);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.14em;
             text-transform: uppercase;
             color: var(--i-ink-soft);
-            margin-bottom: 28px;
+            margin-bottom: 32px;
         }
         body[data-page="investors"] .inv-eyebrow .dot {
-            width: 6px; height: 6px; border-radius: 50%;
+            width: 7px; height: 7px; border-radius: 50%;
             background: var(--i-accent);
+            box-shadow: 0 0 0 3px rgba(30,64,175,0.18);
+        }
+        body[data-page="investors"] .inv-eyebrow .sep {
+            width: 3px; height: 3px; border-radius: 50%;
+            background: var(--i-line-strong);
+        }
+        body[data-page="investors"] .inv-eyebrow .meta {
+            color: var(--i-ink-mute);
+            font-weight: 600;
         }
 
         body[data-page="investors"] .inv-title {
             font-family: 'Fraunces', 'Poppins', serif;
             font-weight: 500;
-            font-size: clamp(44px, 7.6vw, 108px);
-            line-height: 0.98;
-            letter-spacing: -0.025em;
+            font-size: clamp(48px, 8vw, 124px);
+            line-height: 0.94;
+            letter-spacing: -0.028em;
             margin: 0;
-            max-width: 18ch;
+            max-width: 14ch;
             color: var(--i-ink);
         }
         body[data-page="investors"] .inv-title em {
             font-style: italic;
             font-weight: 500;
             color: var(--i-accent);
+            position: relative;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        /* Sub-line under the second clause for editorial cadence */
+        body[data-page="investors"] .inv-title-sub {
+            display: block;
+            font-style: italic;
+            color: var(--i-ink-soft);
+            font-weight: 400;
+            font-size: 0.74em;
+            margin-top: 0.05em;
+            letter-spacing: -0.02em;
         }
 
         body[data-page="investors"] .inv-lede {
-            margin: 32px 0 0;
-            max-width: 64ch;
+            margin: 36px 0 0;
+            max-width: 56ch;
             font-size: clamp(17px, 1.55vw, 21px);
             line-height: 1.6;
             color: var(--i-ink-soft);
+        }
+        body[data-page="investors"] .inv-lede strong {
+            color: var(--i-ink);
+            font-weight: 600;
         }
 
         body[data-page="investors"] .inv-hero-actions {
             display: flex;
             flex-wrap: wrap;
             gap: 14px;
-            margin-top: 40px;
+            align-items: center;
+            margin-top: 44px;
         }
         body[data-page="investors"] .inv-btn {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            min-height: 52px;
-            padding: 14px 24px;
+            min-height: 54px;
+            padding: 15px 26px;
             border-radius: 999px;
             font-weight: 600;
             font-size: 16px;
@@ -178,7 +232,7 @@
             border-color: var(--i-line-strong);
         }
         body[data-page="investors"] .inv-btn-ghost:hover {
-            background: var(--i-paper-deep);
+            background: rgba(255,255,255,0.6);
             border-color: var(--i-ink-soft);
             transform: translateY(-2px);
         }
@@ -187,6 +241,116 @@
             outline-offset: 3px;
         }
         body[data-page="investors"] .inv-btn svg { width: 18px; height: 18px; }
+
+        /* Tertiary "skip to form" text link */
+        body[data-page="investors"] .inv-jump-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 4px;
+            min-height: 44px;
+            padding: 8px 4px;
+            color: var(--i-ink-soft);
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            text-decoration-thickness: 1.5px;
+            text-decoration-color: var(--i-line-strong);
+            transition: color 200ms, text-decoration-color 200ms;
+        }
+        body[data-page="investors"] .inv-jump-link:hover {
+            color: var(--i-accent);
+            text-decoration-color: var(--i-accent);
+        }
+        body[data-page="investors"] .inv-jump-link:focus-visible {
+            outline: 2px solid var(--i-accent);
+            outline-offset: 4px;
+            border-radius: 4px;
+        }
+        body[data-page="investors"] .inv-jump-link svg { width: 14px; height: 14px; }
+
+        /* ─── Right column: editorial credibility card ─── */
+        body[data-page="investors"] .inv-hero-aside {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 28px 28px 28px;
+            background: rgba(255,255,255,0.65);
+            border: 1px solid var(--i-line-strong);
+            border-radius: var(--i-radius-lg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--i-shadow-soft);
+            position: relative;
+        }
+        body[data-page="investors"] .inv-hero-aside-label {
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--i-ink-mute);
+        }
+        body[data-page="investors"] .inv-hero-pull {
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-weight: 400;
+            font-size: clamp(20px, 1.7vw, 24px);
+            line-height: 1.35;
+            letter-spacing: -0.012em;
+            color: var(--i-ink);
+            margin: 0;
+        }
+        body[data-page="investors"] .inv-hero-pull em {
+            font-style: italic;
+            color: var(--i-accent);
+            font-weight: 500;
+        }
+        body[data-page="investors"] .inv-hero-attrib {
+            font-size: 13px;
+            color: var(--i-ink-mute);
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        body[data-page="investors"] .inv-hero-aside hr {
+            border: 0;
+            border-top: 1px solid var(--i-line);
+            margin: 0;
+        }
+        body[data-page="investors"] .inv-hero-proofs {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        body[data-page="investors"] .inv-hero-proofs li {
+            display: grid;
+            grid-template-columns: 56px 1fr;
+            gap: 14px;
+            align-items: baseline;
+        }
+        body[data-page="investors"] .inv-hero-proofs .num {
+            font-family: 'Fraunces', serif;
+            font-weight: 500;
+            font-size: 28px;
+            line-height: 1;
+            color: var(--i-ink);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.015em;
+        }
+        body[data-page="investors"] .inv-hero-proofs .num em {
+            font-style: italic;
+            color: var(--i-accent);
+            font-weight: 500;
+        }
+        body[data-page="investors"] .inv-hero-proofs .label {
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--i-ink-soft);
+            font-weight: 500;
+        }
 
         /* ─────────── STATS STRIP ─────────── */
         body[data-page="investors"] .inv-stats {
@@ -314,49 +478,59 @@
             font-weight: 600;
         }
 
-        /* ─────────── WHY IT WORKS (cards) ─────────── */
-        body[data-page="investors"] .inv-why-grid {
+        /* ─────────── WHY IT WORKS (editorial points) ─────────── */
+        body[data-page="investors"] .inv-points {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 18px;
+            grid-template-columns: 1fr 1fr;
+            column-gap: clamp(40px, 6vw, 96px);
+            row-gap: 0;
         }
-        body[data-page="investors"] .inv-card {
-            background: #fff;
-            border: 1px solid var(--i-line);
-            border-radius: var(--i-radius-lg);
-            padding: 32px 28px;
-            box-shadow: var(--i-shadow-soft);
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            transition: transform 240ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 240ms;
+        body[data-page="investors"] .inv-point {
+            display: grid;
+            grid-template-columns: 56px 1fr;
+            gap: 24px;
+            padding: 32px 0;
+            border-top: 1px solid var(--i-line-strong);
+            align-items: baseline;
         }
-        body[data-page="investors"] .inv-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--i-shadow-deep);
+        /* Last row's bottom border */
+        body[data-page="investors"] .inv-point:nth-last-child(-n+2) {
+            border-bottom: 1px solid var(--i-line-strong);
         }
-        body[data-page="investors"] .inv-card-icon {
-            width: 44px; height: 44px;
-            display: grid; place-items: center;
-            background: var(--i-paper-warm);
-            border-radius: 12px;
-            color: var(--i-ink);
-        }
-        body[data-page="investors"] .inv-card-icon svg { width: 22px; height: 22px; }
-        body[data-page="investors"] .inv-card h3 {
+        body[data-page="investors"] .inv-point-num {
             font-family: 'Fraunces', serif;
-            font-weight: 600;
-            font-size: 24px;
-            line-height: 1.2;
-            letter-spacing: -0.012em;
-            color: var(--i-ink);
-            margin: 0;
+            font-style: italic;
+            font-weight: 500;
+            font-size: 22px;
+            color: var(--i-accent);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            padding-top: 4px;
         }
-        body[data-page="investors"] .inv-card p {
-            font-size: 15px;
-            line-height: 1.6;
+        body[data-page="investors"] .inv-point h3 {
+            font-family: 'Fraunces', 'Poppins', serif;
+            font-weight: 500;
+            font-size: clamp(22px, 2.4vw, 30px);
+            line-height: 1.2;
+            letter-spacing: -0.015em;
+            color: var(--i-ink);
+            margin: 0 0 12px;
+        }
+        body[data-page="investors"] .inv-point h3 em {
+            font-style: italic;
+            color: var(--i-accent);
+            font-weight: 500;
+        }
+        body[data-page="investors"] .inv-point p {
+            font-size: 16px;
+            line-height: 1.65;
             color: var(--i-ink-soft);
             margin: 0;
+            max-width: 38ch;
+        }
+        body[data-page="investors"] .inv-point p strong {
+            color: var(--i-ink);
+            font-weight: 600;
         }
 
         /* ─────────── AD OPPORTUNITY (split) ─────────── */
@@ -749,8 +923,10 @@
 
         /* ─────────── RESPONSIVE ─────────── */
         @media (max-width: 1024px) {
+            body[data-page="investors"] .inv-hero-grid { grid-template-columns: 1fr; gap: 40px; align-items: start; }
+            body[data-page="investors"] .inv-hero-aside { padding: 24px; }
             body[data-page="investors"] .inv-stats .container { grid-template-columns: repeat(2, 1fr); gap: 32px 24px; }
-            body[data-page="investors"] .inv-why-grid { grid-template-columns: 1fr 1fr; }
+            body[data-page="investors"] .inv-points { grid-template-columns: 1fr 1fr; }
             body[data-page="investors"] .inv-funds { grid-template-columns: repeat(2, 1fr); }
             body[data-page="investors"] .inv-section-head { grid-template-columns: 140px 1fr; gap: 32px; }
             body[data-page="investors"] .inv-form-grid { grid-template-columns: 1fr; gap: 32px; }
@@ -758,13 +934,21 @@
         }
 
         @media (max-width: 720px) {
+            body[data-page="investors"] .inv-hero { padding-top: clamp(96px, 18vw, 130px); }
+            body[data-page="investors"] .inv-hero::after { font-size: clamp(120px, 38vw, 200px); top: 56px; right: -10vw; }
+            body[data-page="investors"] .inv-hero-actions { gap: 12px; }
+            body[data-page="investors"] .inv-jump-link { margin-left: 0; width: 100%; justify-content: flex-start; }
+            body[data-page="investors"] .inv-hero-aside { padding: 22px; gap: 16px; }
             body[data-page="investors"] .inv-section-head {
                 grid-template-columns: 1fr;
                 gap: 14px;
             }
             body[data-page="investors"] .inv-mission-grid { grid-template-columns: 1fr; }
             body[data-page="investors"] .inv-ad { grid-template-columns: 1fr; }
-            body[data-page="investors"] .inv-why-grid { grid-template-columns: 1fr; }
+            body[data-page="investors"] .inv-points { grid-template-columns: 1fr; }
+            body[data-page="investors"] .inv-point { padding: 26px 0; gap: 18px; grid-template-columns: 36px 1fr; }
+            body[data-page="investors"] .inv-point:nth-last-child(-n+2) { border-bottom: 0; }
+            body[data-page="investors"] .inv-point:last-child { border-bottom: 1px solid var(--i-line-strong); }
             body[data-page="investors"] .inv-funds { grid-template-columns: 1fr; }
             body[data-page="investors"] .inv-form-row { grid-template-columns: 1fr; }
             body[data-page="investors"] .inv-stats .container { grid-template-columns: 1fr 1fr; gap: 24px 16px; }
@@ -796,50 +980,68 @@
                 <span class="inv-eyebrow">
                     <span class="dot" aria-hidden="true"></span>
                     For investors &amp; partners
+                    <span class="sep" aria-hidden="true"></span>
+                    <span class="meta">By appointment</span>
                 </span>
 
-                <h1 class="inv-title">
-                    A magazine that already <em>has</em> the readers.<br>
-                    Now we&rsquo;re building the company.
-                </h1>
+                <div class="inv-hero-grid">
+                    <div class="inv-hero-main">
+                        <h1 class="inv-title">
+                            A magazine that already&nbsp;<em>has</em>&nbsp;readers.
+                            <span class="inv-title-sub">Now we&rsquo;re building the company.</span>
+                        </h1>
 
-                <p class="inv-lede">
-                    The Catalyst is the editorial home for student STEM journalism in Washington, D.C. &mdash;
-                    written by undergraduates at GW, Georgetown, Howard, and beyond. We&rsquo;ve published the
-                    work, earned the readers, and proven we ship. We&rsquo;re looking for partners who want to
-                    help us turn an audience into a sustainable, ad-light, editorially serious media business.
-                </p>
+                        <p class="inv-lede">
+                            The Catalyst is the editorial home for student STEM journalism in
+                            Washington, D.C. &mdash; written by undergraduates at GW, Georgetown,
+                            Howard, and beyond. <strong>We&rsquo;ve published the work, earned the
+                            readers, and proven we ship.</strong> We&rsquo;re looking for partners who
+                            want to help us turn an audience into a sustainable, ad-light,
+                            editorially serious media business.
+                        </p>
 
-                <div class="inv-hero-actions">
-                    <a href="#talk" class="inv-btn inv-btn-primary">
-                        Get in touch
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                    </a>
-                    <a href="#why" class="inv-btn inv-btn-ghost">
-                        Read the case
-                    </a>
-                </div>
-            </div>
-        </section>
+                        <div class="inv-hero-actions">
+                            <a href="#talk" class="inv-btn inv-btn-primary">
+                                Get in touch
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                            </a>
+                            <a href="#why" class="inv-btn inv-btn-ghost">
+                                Read the case
+                            </a>
+                            <a href="#talk" class="inv-jump-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+                                Skip to the contact form
+                            </a>
+                        </div>
+                    </div>
 
-        <!-- ═════════════ STATS STRIP ═════════════ -->
-        <section class="inv-stats" aria-label="At a glance">
-            <div class="container">
-                <div class="inv-stat">
-                    <span class="inv-stat-num"><em>20+</em></span>
-                    <span class="inv-stat-label">Student journalists, editors, and contributors on staff</span>
-                </div>
-                <div class="inv-stat">
-                    <span class="inv-stat-num">4</span>
-                    <span class="inv-stat-label">D.C. universities feeding our newsroom &mdash; GW, Georgetown, Howard, AU</span>
-                </div>
-                <div class="inv-stat">
-                    <span class="inv-stat-num"><em>0</em></span>
-                    <span class="inv-stat-label">Ads, paywalls, or AI-spun filler running today</span>
-                </div>
-                <div class="inv-stat">
-                    <span class="inv-stat-num">&infin;</span>
-                    <span class="inv-stat-label">Stories we want to tell with the right partners behind us</span>
+                    <aside class="inv-hero-aside" aria-label="At a glance">
+                        <span class="inv-hero-aside-label">At a glance</span>
+
+                        <p class="inv-hero-pull">
+                            &ldquo;The Catalyst is one of the most genuinely <em>edited</em>
+                            student publications I&rsquo;ve read &mdash; the kind of work serious
+                            advertisers should want to be next to.&rdquo;
+                        </p>
+                        <span class="inv-hero-attrib">&mdash; A reader, last semester</span>
+
+                        <hr aria-hidden="true">
+
+                        <ul class="inv-hero-proofs">
+                            <li>
+                                <span class="num"><em>20+</em></span>
+                                <span class="label">student journalists, editors, and contributors on staff</span>
+                            </li>
+                            <li>
+                                <span class="num">4</span>
+                                <span class="label">D.C. universities feeding the newsroom</span>
+                            </li>
+                            <li>
+                                <span class="num"><em>0</em></span>
+                                <span class="label">ads, paywalls, or AI filler running today &mdash; intentionally</span>
+                            </li>
+                        </ul>
+                    </aside>
                 </div>
             </div>
         </section>
@@ -890,81 +1092,82 @@
                 <header class="inv-section-head">
                     <span class="inv-section-num">02 &mdash; Why The Catalyst</span>
                     <h2 class="inv-section-title">
-                        We don&rsquo;t need to invent the audience. <em>It&rsquo;s already here.</em>
+                        Six reasons The Catalyst is worth <em>backing right now.</em>
                     </h2>
                 </header>
 
-                <div class="inv-why-grid">
-                    <article class="inv-card">
-                        <div class="inv-card-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M14 4v6h6"/><path d="M9 14h6"/><path d="M9 18h6"/></svg>
+                <div class="inv-points">
+                    <article class="inv-point">
+                        <span class="inv-point-num" aria-hidden="true">01</span>
+                        <div>
+                            <h3>An <em>edited</em> product, not a feed.</h3>
+                            <p>
+                                Long-form features, designed pages, fact-checked science, real bylines.
+                                People come back because the work is good &mdash; not because an algorithm
+                                pushed it in front of them. <strong>Trust is the moat.</strong>
+                            </p>
                         </div>
-                        <h3>An editorial product, not a feed.</h3>
-                        <p>
-                            Long-form features, designed pages, fact-checked science, real bylines.
-                            Readers come back because the work is good &mdash; not because an algorithm
-                            shoved it in their face.
-                        </p>
                     </article>
 
-                    <article class="inv-card">
-                        <div class="inv-card-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <article class="inv-point">
+                        <span class="inv-point-num" aria-hidden="true">02</span>
+                        <div>
+                            <h3>The <em>right</em> readers, in the right city.</h3>
+                            <p>
+                                University students, faculty, alumni, and parents across the D.C. metro
+                                &mdash; the exact audience recruiters, research labs, and STEM-adjacent
+                                brands pay a fortune to reach. <strong>We already have their attention.</strong>
+                            </p>
                         </div>
-                        <h3>A focused, valuable audience.</h3>
-                        <p>
-                            University students, faculty, alumni, and parents in the D.C. metro &mdash;
-                            a market every major recruiter, lab, and STEM-adjacent brand spends a
-                            fortune trying to reach. We already speak to them.
-                        </p>
                     </article>
 
-                    <article class="inv-card">
-                        <div class="inv-card-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="m4.93 4.93 2.83 2.83"/><path d="m16.24 16.24 2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="m4.93 19.07 2.83-2.83"/><path d="m16.24 7.76 2.83-2.83"/></svg>
+                    <article class="inv-point">
+                        <span class="inv-point-num" aria-hidden="true">03</span>
+                        <div>
+                            <h3>Lean by design.</h3>
+                            <p>
+                                Founder-operated. Volunteer-run editorial. A modern stack we own end-to-end.
+                                <strong>Every dollar raised turns into a story, a designer, or a stipend</strong> &mdash;
+                                not into overhead.
+                            </p>
                         </div>
-                        <h3>Built lean, on purpose.</h3>
-                        <p>
-                            Founder-operated. Volunteer-run editorial. A modern, self-hosted
-                            stack we own end-to-end. Every dollar we raise turns directly into
-                            stories, design, distribution, or compensation for our team.
-                        </p>
                     </article>
 
-                    <article class="inv-card">
-                        <div class="inv-card-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg>
+                    <article class="inv-point">
+                        <span class="inv-point-num" aria-hidden="true">04</span>
+                        <div>
+                            <h3>Clear path to growth.</h3>
+                            <p>
+                                Newsletter, social, university partnerships, and a print run on the horizon.
+                                We&rsquo;ve started in the city most ready for it &mdash; <strong>the model is
+                                designed to travel</strong> to other college towns once it&rsquo;s proven.
+                            </p>
                         </div>
-                        <h3>Plenty of room to grow.</h3>
-                        <p>
-                            Newsletter, social channels, partnerships with student orgs and labs,
-                            and a print run on the horizon. We&rsquo;ve started with the city most
-                            ripe for it; the model travels.
-                        </p>
                     </article>
 
-                    <article class="inv-card">
-                        <div class="inv-card-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 9.5 8 11 4.5-1.5 8-6 8-11V5z"/><path d="m9 12 2 2 4-4"/></svg>
+                    <article class="inv-point">
+                        <span class="inv-point-num" aria-hidden="true">05</span>
+                        <div>
+                            <h3>Editorial integrity is the product.</h3>
+                            <p>
+                                We don&rsquo;t take money that bends the work. Sponsored content is labeled.
+                                Coverage isn&rsquo;t for sale. <strong>That discipline is exactly what gives a
+                                media brand long-term value</strong> &mdash; and protects yours when you back us.
+                            </p>
                         </div>
-                        <h3>Editorial integrity is the product.</h3>
-                        <p>
-                            We won&rsquo;t take money that compromises the work. Sponsored content
-                            is labeled. Coverage isn&rsquo;t for sale. That discipline is what makes
-                            an audience trust you &mdash; and what makes a media brand worth backing.
-                        </p>
                     </article>
 
-                    <article class="inv-card">
-                        <div class="inv-card-icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+                    <article class="inv-point">
+                        <span class="inv-point-num" aria-hidden="true">06</span>
+                        <div>
+                            <h3>The <em>right moment.</em></h3>
+                            <p>
+                                AI is rewriting how science gets explained &mdash; and who gets to explain it.
+                                The publications that figure out how to use these tools without losing their
+                                voice will define the next decade of science media. <strong>We&rsquo;re building
+                                to be one of them.</strong>
+                            </p>
                         </div>
-                        <h3>The right moment.</h3>
-                        <p>
-                            AI is reshaping how science gets explained &mdash; and who explains it.
-                            The publications that figure out how to use these tools without losing
-                            their voice will define the next decade of science media. We intend to.
-                        </p>
                     </article>
                 </div>
             </div>
@@ -1235,20 +1438,19 @@
                     message:      String(data.get('message')     || '').trim(),
                 };
 
-                if (!payload.firstName || !payload.lastName) {
-                    response.textContent = 'Please enter your first and last name.';
+                function showError(msg, focusEl) {
+                    response.textContent = msg;
                     response.classList.add('is-error');
-                    return;
+                    if (focusEl) focusEl.focus({ preventScroll: false });
                 }
+
+                if (!payload.firstName) return showError('Please enter your first name.', document.getElementById('inv-fname'));
+                if (!payload.lastName)  return showError('Please enter your last name.',  document.getElementById('inv-lname'));
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
-                    response.textContent = 'Please enter a valid email address.';
-                    response.classList.add('is-error');
-                    return;
+                    return showError('Please enter a valid email address.', document.getElementById('inv-email'));
                 }
                 if (!payload.message) {
-                    response.textContent = 'Please tell us a bit about your interest so we can reply well.';
-                    response.classList.add('is-error');
-                    return;
+                    return showError('Please tell us a bit about your interest so we can reply well.', document.getElementById('inv-message'));
                 }
 
                 submit.disabled = true;
@@ -1263,18 +1465,26 @@
                     const body = await res.json().catch(() => ({}));
 
                     if (!res.ok || !body.ok) {
-                        response.textContent = (body && body.error) || 'Something went wrong. Please try again, or email us directly.';
+                        const fallback = (res.status === 429)
+                            ? 'Too many submissions in a short time. Please try again in a minute.'
+                            : 'Something went wrong on our end. Please try again, or email stemcatalystmagazine@gmail.com directly.';
+                        response.textContent = (body && body.error) || fallback;
                         response.classList.add('is-error');
                         submit.disabled = false;
                         submit.querySelector('.btn-label').textContent = 'Send inquiry';
                         return;
                     }
 
-                    // Success: hide form, show confirmation
+                    // Success: hide form, show confirmation, scroll into view
                     form.style.display = 'none';
                     success.classList.add('is-shown');
+                    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                    success.scrollIntoView({
+                        behavior: reduceMotion ? 'auto' : 'smooth',
+                        block: 'center',
+                    });
                 } catch (err) {
-                    response.textContent = 'Network error. Please try again, or email us directly.';
+                    response.textContent = 'Network error. Please check your connection and try again, or email stemcatalystmagazine@gmail.com.';
                     response.classList.add('is-error');
                     submit.disabled = false;
                     submit.querySelector('.btn-label').textContent = 'Send inquiry';
