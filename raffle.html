@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+    <!-- End Google Tag Manager -->
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Win 5 months of free Claude, ChatGPT, or Gemini — or a $100 gift card. Subscribe to The Catalyst newsletter and follow @thecatalyst_dc on Instagram to enter. Winner announced May 31.">
+    <meta name="keywords" content="Catalyst Magazine raffle, Catalyst giveaway, AI subscription giveaway, Claude Pro raffle, ChatGPT Plus giveaway, Gemini Advanced, $100 gift card, GW STEM, student raffle DC">
+    <title>The Catalyst Raffle — Win 5 Months of Claude, ChatGPT or Gemini | The Catalyst Magazine</title>
+    <link rel="canonical" href="https://www.catalyst-magazine.com/raffle">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="The Catalyst Raffle — Win 5 Months of Premium AI">
+    <meta property="og:description" content="Subscribe to our newsletter and follow @thecatalyst_dc to enter. Win 5 months of Claude, ChatGPT, or Gemini — or a $100 gift card. Winner announced May 31.">
+    <meta property="og:url" content="https://www.catalyst-magazine.com/raffle">
+    <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet"></noscript>
+
+    <link rel="stylesheet" href="/css/styles.css">
+
+    <style>
+        /* ============================================================
+           Raffle page — scoped to body[data-page="raffle"]
+           Premium editorial / playful / Catalyst slate brand.
+           Per CLAUDE.md: gold is reserved for ai-expo only — slate here.
+           Tinted neutrals (no pure #000 / #fff), OKLCH-leaning palette.
+           ============================================================ */
+
+        body[data-page="raffle"] {
+            --r-ink: #0b1120;            /* tinted near-black, slate */
+            --r-ink-soft: #1e293b;
+            --r-paper: #f7f6f1;          /* warm tinted paper */
+            --r-paper-deep: #efece3;
+            --r-line: rgba(11, 17, 32, 0.12);
+            --r-line-strong: rgba(11, 17, 32, 0.22);
+            --r-accent: #2563eb;         /* electric editorial blue */
+            --r-accent-deep: #1d4ed8;
+            --r-accent-glow: rgba(37, 99, 235, 0.18);
+            --r-pop: #ff5b3c;            /* playful coral pop, used sparingly */
+            --r-mint: #b9f0d2;            /* soft confetti color */
+            --r-lilac: #d9c8ff;
+            --r-butter: #ffe8a8;
+            --r-radius-lg: 28px;
+            --r-radius-md: 18px;
+            --r-radius-sm: 10px;
+            --r-shadow-soft: 0 1px 2px rgba(11,17,32,0.04), 0 12px 32px -12px rgba(11,17,32,0.18);
+            --r-shadow-deep: 0 1px 2px rgba(11,17,32,0.06), 0 30px 60px -20px rgba(11,17,32,0.30);
+            background: var(--r-paper);
+            color: var(--r-ink);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Make the whole site nav/footer feel native to this page */
+        body[data-page="raffle"] #site-header,
+        body[data-page="raffle"] #site-footer {
+            background: var(--r-paper);
+        }
+
+        /* Hide the page-specific viewport jump from page-hero global rules */
+        body[data-page="raffle"] main { overflow-x: hidden; }
+
+        /* ─────────── HERO ─────────── */
+        body[data-page="raffle"] .raffle-hero {
+            position: relative;
+            padding: clamp(96px, 14vw, 180px) 0 clamp(60px, 9vw, 120px);
+            overflow: hidden;
+            isolation: isolate;
+        }
+
+        /* Dotted grid texture — adds editorial/print feel without being loud */
+        body[data-page="raffle"] .raffle-hero::before {
+            content: "";
+            position: absolute; inset: 0;
+            background-image: radial-gradient(rgba(11,17,32,0.10) 1px, transparent 1px);
+            background-size: 22px 22px;
+            background-position: 0 0;
+            -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, #000 45%, transparent 75%);
+                    mask-image: radial-gradient(ellipse at 50% 30%, #000 0%, #000 45%, transparent 75%);
+            opacity: 0.6;
+            z-index: -2;
+            pointer-events: none;
+        }
+
+        /* Soft color blooms — playful but premium */
+        body[data-page="raffle"] .raffle-hero::after {
+            content: "";
+            position: absolute;
+            top: -120px; right: -120px;
+            width: 540px; height: 540px;
+            background: radial-gradient(circle, var(--r-accent-glow) 0%, transparent 65%);
+            filter: blur(40px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body[data-page="raffle"] .raffle-hero .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        /* Marquee-style eyebrow row */
+        body[data-page="raffle"] .raffle-eyebrow-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            padding: 10px 18px 10px 14px;
+            border: 1px solid var(--r-line-strong);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.55);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--r-ink-soft);
+            margin-bottom: 28px;
+        }
+        body[data-page="raffle"] .raffle-pulse {
+            position: relative;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--r-pop);
+        }
+        body[data-page="raffle"] .raffle-pulse::after {
+            content: ""; position: absolute; inset: -6px;
+            border-radius: 50%;
+            border: 2px solid var(--r-pop);
+            opacity: 0.5;
+            animation: raffle-pulse 1.8s ease-out infinite;
+        }
+        @keyframes raffle-pulse {
+            0%   { transform: scale(0.6); opacity: 0.7; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+        body[data-page="raffle"] .raffle-eyebrow-row .sep {
+            width: 4px; height: 4px; border-radius: 50%;
+            background: var(--r-line-strong);
+        }
+
+        body[data-page="raffle"] .raffle-title {
+            font-family: 'Fraunces', 'Poppins', serif;
+            font-weight: 600;
+            font-size: clamp(48px, 8.4vw, 124px);
+            line-height: 0.96;
+            letter-spacing: -0.025em;
+            margin: 0 auto;
+            max-width: 14ch;
+            color: var(--r-ink);
+        }
+        body[data-page="raffle"] .raffle-title em {
+            font-style: italic;
+            font-weight: 500;
+            color: var(--r-accent);
+            position: relative;
+            display: inline-block;
+        }
+        body[data-page="raffle"] .raffle-title em::after {
+            content: "";
+            position: absolute;
+            left: -2%; right: -2%;
+            bottom: 0.05em;
+            height: 0.18em;
+            background: var(--r-butter);
+            z-index: -1;
+            border-radius: 4px;
+            transform: skewX(-6deg);
+        }
+
+        body[data-page="raffle"] .raffle-lede {
+            margin: 28px auto 0;
+            max-width: 56ch;
+            font-size: clamp(17px, 1.5vw, 20px);
+            line-height: 1.55;
+            color: var(--r-ink-soft);
+        }
+
+        /* Prize chip stack */
+        body[data-page="raffle"] .raffle-prize-chips {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 36px;
+        }
+        body[data-page="raffle"] .raffle-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--r-ink);
+            background: #fff;
+            border: 1px solid var(--r-line);
+            box-shadow: var(--r-shadow-soft);
+            transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        body[data-page="raffle"] .raffle-chip:hover { transform: translateY(-2px); }
+        body[data-page="raffle"] .raffle-chip svg { width: 18px; height: 18px; }
+        body[data-page="raffle"] .raffle-chip .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+
+        /* Hero CTA scroll cue */
+        body[data-page="raffle"] .raffle-cta-cue {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 44px;
+            padding: 14px 22px;
+            background: var(--r-ink);
+            color: var(--r-paper);
+            border: 1px solid var(--r-ink);
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 15px;
+            text-decoration: none;
+            min-height: 44px;
+            transition: transform 220ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 220ms;
+            box-shadow: var(--r-shadow-soft);
+        }
+        body[data-page="raffle"] .raffle-cta-cue:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--r-shadow-deep);
+        }
+        body[data-page="raffle"] .raffle-cta-cue:focus-visible {
+            outline: 3px solid var(--r-accent);
+            outline-offset: 3px;
+        }
+        body[data-page="raffle"] .raffle-cta-cue svg {
+            width: 18px; height: 18px;
+        }
+
+        /* ─────────── PRIZE GALLERY ─────────── */
+        body[data-page="raffle"] .raffle-prizes {
+            padding: clamp(40px, 6vw, 90px) 0 clamp(60px, 9vw, 120px);
+        }
+
+        body[data-page="raffle"] .raffle-prize-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 18px;
+            max-width: 1180px;
+            margin: 0 auto;
+        }
+
+        body[data-page="raffle"] .prize-card {
+            position: relative;
+            border-radius: var(--r-radius-lg);
+            padding: 32px 28px 28px;
+            min-height: 260px;
+            border: 1px solid var(--r-line);
+            background: #fff;
+            box-shadow: var(--r-shadow-soft);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            isolation: isolate;
+            transition: transform 280ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 280ms;
+        }
+        body[data-page="raffle"] .prize-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--r-shadow-deep);
+        }
+
+        /* Span pattern: 5/4/3 on desktop, stacked on mobile */
+        body[data-page="raffle"] .prize-card.is-grand { grid-column: span 5; min-height: 360px; }
+        body[data-page="raffle"] .prize-card.is-mid { grid-column: span 4; min-height: 360px; }
+        body[data-page="raffle"] .prize-card.is-runner { grid-column: span 3; min-height: 360px; }
+
+        body[data-page="raffle"] .prize-card .badge {
+            position: absolute; top: 18px; right: 18px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            border-radius: 999px;
+            background: var(--r-paper-deep);
+            color: var(--r-ink-soft);
+        }
+        body[data-page="raffle"] .prize-card .prize-eyebrow {
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--r-accent);
+            margin-bottom: 16px;
+        }
+        body[data-page="raffle"] .prize-card .prize-title {
+            font-family: 'Fraunces', 'Poppins', serif;
+            font-weight: 600;
+            font-size: clamp(28px, 3vw, 40px);
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: var(--r-ink);
+            margin: 0 0 12px;
+        }
+        body[data-page="raffle"] .prize-card .prize-desc {
+            color: var(--r-ink-soft);
+            font-size: 15px;
+            line-height: 1.55;
+            max-width: 38ch;
+        }
+
+        body[data-page="raffle"] .prize-card .prize-visual {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: auto;
+            padding-top: 24px;
+        }
+        body[data-page="raffle"] .prize-logo {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: grid; place-items: center;
+            font-family: 'Fraunces', serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--r-paper);
+            border: 1px solid rgba(255,255,255,0.16);
+            box-shadow: 0 6px 14px -6px rgba(11,17,32,0.5);
+        }
+        body[data-page="raffle"] .prize-logo.claude { background: #c87f5a; }
+        body[data-page="raffle"] .prize-logo.gpt { background: #10a37f; }
+        body[data-page="raffle"] .prize-logo.gemini { background: linear-gradient(135deg, #4285F4, #9b72cb 60%, #d96570); }
+
+        body[data-page="raffle"] .prize-card.is-grand {
+            background: linear-gradient(180deg, #fff 0%, #fff 60%, #f6f4ec 100%);
+        }
+        /* Decorative numerals — type-as-art (anti-generic) */
+        body[data-page="raffle"] .prize-card .prize-num {
+            position: absolute;
+            top: -20px; right: -10px;
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-weight: 500;
+            font-size: 220px;
+            line-height: 1;
+            color: rgba(11,17,32,0.04);
+            z-index: -1;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        body[data-page="raffle"] .prize-card.is-runner {
+            background: linear-gradient(180deg, #fff, #fefcf3);
+        }
+        body[data-page="raffle"] .prize-card .gift-icon {
+            width: 56px; height: 56px;
+            display: grid; place-items: center;
+            background: var(--r-butter);
+            border-radius: 16px;
+            color: var(--r-ink);
+        }
+        body[data-page="raffle"] .prize-card .gift-icon svg { width: 30px; height: 30px; }
+
+        /* ─────────── HOW TO ENTER (the 2 steps) ─────────── */
+        body[data-page="raffle"] .raffle-steps {
+            padding: clamp(40px, 6vw, 90px) 0 clamp(80px, 10vw, 140px);
+            background: linear-gradient(180deg, var(--r-paper) 0%, var(--r-paper-deep) 100%);
+            position: relative;
+        }
+        body[data-page="raffle"] .raffle-steps::before {
+            content: "";
+            position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: var(--r-line);
+        }
+
+        body[data-page="raffle"] .steps-header {
+            text-align: center;
+            max-width: 720px;
+            margin: 0 auto clamp(40px, 5vw, 70px);
+        }
+        body[data-page="raffle"] .steps-eyebrow {
+            display: inline-block;
+            font-size: 12px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--r-accent);
+            margin-bottom: 18px;
+        }
+        body[data-page="raffle"] .steps-title {
+            font-family: 'Fraunces', 'Poppins', serif;
+            font-weight: 600;
+            font-size: clamp(36px, 5vw, 64px);
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: var(--r-ink);
+            margin: 0 0 16px;
+        }
+        body[data-page="raffle"] .steps-sub {
+            color: var(--r-ink-soft);
+            font-size: 17px;
+            line-height: 1.5;
+            max-width: 50ch;
+            margin: 0 auto;
+        }
+
+        body[data-page="raffle"] .steps-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        body[data-page="raffle"] .step-card {
+            position: relative;
+            background: #fff;
+            border: 1px solid var(--r-line);
+            border-radius: var(--r-radius-lg);
+            padding: 36px 32px 32px;
+            box-shadow: var(--r-shadow-soft);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            isolation: isolate;
+            overflow: hidden;
+        }
+
+        body[data-page="raffle"] .step-card .step-marker {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--r-ink-soft);
+        }
+        body[data-page="raffle"] .step-card .step-num {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: var(--r-ink);
+            color: var(--r-paper);
+            display: grid; place-items: center;
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        body[data-page="raffle"] .step-card .step-title {
+            font-family: 'Fraunces', 'Poppins', serif;
+            font-weight: 600;
+            font-size: clamp(24px, 2.4vw, 32px);
+            line-height: 1.15;
+            letter-spacing: -0.015em;
+            color: var(--r-ink);
+            margin: 0;
+        }
+        body[data-page="raffle"] .step-card .step-desc {
+            color: var(--r-ink-soft);
+            font-size: 15px;
+            line-height: 1.55;
+        }
+
+        /* Newsletter form (Mailchimp pattern matched to about.html) */
+        body[data-page="raffle"] .raffle-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+            position: relative;
+        }
+        body[data-page="raffle"] .raffle-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        body[data-page="raffle"] .raffle-input {
+            width: 100%;
+            min-height: 48px;
+            padding: 14px 16px;
+            border-radius: var(--r-radius-sm);
+            border: 1px solid var(--r-line-strong);
+            background: var(--r-paper);
+            font-family: inherit;
+            font-size: 16px; /* prevents iOS auto-zoom */
+            color: var(--r-ink);
+            transition: border-color 180ms, box-shadow 180ms, background 180ms;
+        }
+        body[data-page="raffle"] .raffle-input::placeholder {
+            color: rgba(11,17,32,0.45);
+        }
+        body[data-page="raffle"] .raffle-input:hover { border-color: var(--r-ink-soft); }
+        body[data-page="raffle"] .raffle-input:focus,
+        body[data-page="raffle"] .raffle-input:focus-visible {
+            outline: none;
+            border-color: var(--r-accent);
+            background: #fff;
+            box-shadow: 0 0 0 4px var(--r-accent-glow);
+        }
+
+        body[data-page="raffle"] .raffle-submit {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 52px;
+            padding: 14px 24px;
+            border: 0;
+            border-radius: var(--r-radius-sm);
+            background: var(--r-ink);
+            color: var(--r-paper);
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            transition: transform 200ms cubic-bezier(0.2,0.8,0.2,1), background 200ms, box-shadow 200ms;
+            box-shadow: var(--r-shadow-soft);
+        }
+        body[data-page="raffle"] .raffle-submit:hover {
+            background: var(--r-accent);
+            transform: translateY(-2px);
+            box-shadow: var(--r-shadow-deep);
+        }
+        body[data-page="raffle"] .raffle-submit:focus-visible {
+            outline: 3px solid var(--r-accent);
+            outline-offset: 3px;
+        }
+        body[data-page="raffle"] .raffle-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        body[data-page="raffle"] .raffle-submit svg { width: 18px; height: 18px; }
+
+        body[data-page="raffle"] .raffle-response {
+            min-height: 20px;
+            font-size: 14px;
+            line-height: 1.45;
+            color: var(--r-ink-soft);
+        }
+        body[data-page="raffle"] .raffle-response.is-success { color: #15803d; font-weight: 600; }
+        body[data-page="raffle"] .raffle-response.is-error { color: #b91c1c; font-weight: 600; }
+
+        /* Step 2: Instagram, gated until step 1 complete */
+        body[data-page="raffle"] .step-card.step-locked {
+            opacity: 0.65;
+            pointer-events: none;
+            transition: opacity 320ms ease;
+        }
+        body[data-page="raffle"] .step-card.step-locked .step-cta {
+            background: var(--r-paper-deep);
+            color: var(--r-ink-soft);
+            border-color: var(--r-line);
+        }
+        body[data-page="raffle"] .step-card.step-locked .step-cta::after {
+            content: "Subscribe first";
+        }
+        body[data-page="raffle"] .step-card.is-unlocked {
+            opacity: 1;
+            pointer-events: auto;
+            animation: raffle-unlock 600ms cubic-bezier(0.2,0.8,0.2,1) forwards;
+        }
+        @keyframes raffle-unlock {
+            0%   { transform: scale(0.985); }
+            60%  { transform: scale(1.012); }
+            100% { transform: scale(1); }
+        }
+
+        body[data-page="raffle"] .step-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 52px;
+            padding: 14px 22px;
+            border-radius: var(--r-radius-sm);
+            background: var(--r-ink);
+            color: var(--r-paper);
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            border: 1px solid var(--r-ink);
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 200ms cubic-bezier(0.2,0.8,0.2,1), background 200ms, box-shadow 200ms;
+            align-self: flex-start;
+            box-shadow: var(--r-shadow-soft);
+        }
+        body[data-page="raffle"] .step-cta:hover {
+            background: var(--r-accent);
+            border-color: var(--r-accent);
+            transform: translateY(-2px);
+            box-shadow: var(--r-shadow-deep);
+        }
+        body[data-page="raffle"] .step-cta:focus-visible {
+            outline: 3px solid var(--r-accent);
+            outline-offset: 3px;
+        }
+        body[data-page="raffle"] .step-cta svg { width: 20px; height: 20px; }
+
+        body[data-page="raffle"] .step-confirmed {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            padding: 12px 16px;
+            background: rgba(21, 128, 61, 0.08);
+            border: 1px solid rgba(21, 128, 61, 0.25);
+            border-radius: var(--r-radius-sm);
+            color: #15803d;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        body[data-page="raffle"] .step-confirmed.is-shown { display: flex; }
+        body[data-page="raffle"] .step-confirmed svg { width: 18px; height: 18px; }
+
+        body[data-page="raffle"] .step-confirm-link {
+            margin-top: 8px;
+            background: transparent;
+            border: 0;
+            color: var(--r-ink-soft);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            cursor: pointer;
+            padding: 8px 0;
+            align-self: flex-start;
+            min-height: 36px;
+        }
+        body[data-page="raffle"] .step-confirm-link:hover { color: var(--r-accent); }
+        body[data-page="raffle"] .step-confirm-link:focus-visible {
+            outline: 2px solid var(--r-accent);
+            outline-offset: 3px;
+            border-radius: 4px;
+        }
+
+        body[data-page="raffle"] .ig-handle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: var(--r-paper);
+            border: 1px solid var(--r-line);
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--r-ink);
+            align-self: flex-start;
+        }
+        body[data-page="raffle"] .ig-handle svg {
+            width: 16px; height: 16px;
+        }
+
+        /* ─────────── DETAILS / FAQ STRIP ─────────── */
+        body[data-page="raffle"] .raffle-details {
+            padding: clamp(60px, 9vw, 120px) 0;
+            background: var(--r-ink);
+            color: var(--r-paper);
+        }
+        body[data-page="raffle"] .raffle-details .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(40px, 5vw, 80px);
+            align-items: start;
+        }
+        body[data-page="raffle"] .raffle-details h2 {
+            font-family: 'Fraunces', serif;
+            font-weight: 500;
+            font-size: clamp(32px, 4.5vw, 56px);
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: var(--r-paper);
+            margin: 0;
+            max-width: 14ch;
+        }
+        body[data-page="raffle"] .raffle-details h2 em {
+            font-style: italic;
+            color: #ffe8a8;
+            font-weight: 500;
+        }
+        body[data-page="raffle"] .raffle-details .countdown-card {
+            margin-top: 28px;
+            padding: 24px;
+            border: 1px solid rgba(247,246,241,0.18);
+            border-radius: var(--r-radius-md);
+            background: rgba(247,246,241,0.04);
+        }
+        body[data-page="raffle"] .countdown-label {
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(247,246,241,0.6);
+            font-weight: 700;
+        }
+        body[data-page="raffle"] .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 14px;
+        }
+        body[data-page="raffle"] .countdown-cell {
+            padding: 14px 8px;
+            border-radius: 12px;
+            background: rgba(247,246,241,0.06);
+            text-align: center;
+        }
+        body[data-page="raffle"] .countdown-cell .num {
+            font-family: 'Fraunces', serif;
+            font-feature-settings: "tnum" 1;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            font-size: clamp(28px, 3.6vw, 44px);
+            line-height: 1;
+            color: var(--r-paper);
+        }
+        body[data-page="raffle"] .countdown-cell .lbl {
+            display: block;
+            margin-top: 6px;
+            font-size: 11px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(247,246,241,0.6);
+            font-weight: 600;
+        }
+
+        body[data-page="raffle"] .details-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border-top: 1px solid rgba(247,246,241,0.16);
+        }
+        body[data-page="raffle"] .details-list .details-row {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 24px;
+            padding: 18px 0;
+            border-bottom: 1px solid rgba(247,246,241,0.16);
+            align-items: baseline;
+        }
+        body[data-page="raffle"] .details-list dt {
+            font-size: 12px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(247,246,241,0.6);
+            font-weight: 700;
+        }
+        body[data-page="raffle"] .details-list dd {
+            margin: 0;
+            font-size: 16px;
+            line-height: 1.55;
+            color: var(--r-paper);
+        }
+        body[data-page="raffle"] .details-list dd strong { font-weight: 600; }
+
+        /* ─────────── FOOTER FINE PRINT ─────────── */
+        body[data-page="raffle"] .raffle-fineprint {
+            padding: 40px 0 60px;
+            text-align: center;
+            color: rgba(11,17,32,0.55);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        body[data-page="raffle"] .raffle-fineprint a {
+            color: var(--r-accent);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        /* ─────────── CONFETTI BURST (success cue) ─────────── */
+        body[data-page="raffle"] .confetti-burst {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+        }
+        body[data-page="raffle"] .confetti-piece {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 10px; height: 14px;
+            border-radius: 2px;
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+        body[data-page="raffle"] .confetti-burst.is-firing .confetti-piece {
+            animation: confetti-fly 1500ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        @keyframes confetti-fly {
+            0%   { transform: translate(-50%, -50%) rotate(0); opacity: 1; }
+            100% { transform: translate(var(--cx, 0), var(--cy, 0)) rotate(var(--cr, 720deg)); opacity: 0; }
+        }
+
+        /* ─────────── RESPONSIVE ─────────── */
+        @media (max-width: 960px) {
+            body[data-page="raffle"] .raffle-prize-grid { grid-template-columns: 1fr 1fr; }
+            body[data-page="raffle"] .prize-card.is-grand,
+            body[data-page="raffle"] .prize-card.is-mid,
+            body[data-page="raffle"] .prize-card.is-runner {
+                grid-column: span 2;
+                min-height: 280px;
+            }
+            body[data-page="raffle"] .steps-grid { grid-template-columns: 1fr; }
+            body[data-page="raffle"] .raffle-details .container { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            body[data-page="raffle"] .raffle-prize-grid { grid-template-columns: 1fr; }
+            body[data-page="raffle"] .prize-card.is-grand,
+            body[data-page="raffle"] .prize-card.is-mid,
+            body[data-page="raffle"] .prize-card.is-runner {
+                grid-column: span 1;
+                min-height: 240px;
+            }
+            body[data-page="raffle"] .raffle-form-row { grid-template-columns: 1fr; }
+            body[data-page="raffle"] .details-list .details-row { grid-template-columns: 1fr; gap: 4px; }
+            body[data-page="raffle"] .countdown-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+            body[data-page="raffle"] .countdown-cell { padding: 10px 4px; }
+        }
+
+        /* ─────────── REDUCED MOTION ─────────── */
+        @media (prefers-reduced-motion: reduce) {
+            body[data-page="raffle"] *,
+            body[data-page="raffle"] *::before,
+            body[data-page="raffle"] *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+            }
+            body[data-page="raffle"] .raffle-pulse::after { display: none; }
+            body[data-page="raffle"] .confetti-burst { display: none; }
+        }
+    </style>
+</head>
+
+<body data-page="raffle">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <div id="site-header"></div>
+
+    <main>
+        <!-- ═════════════ HERO ═════════════ -->
+        <section class="raffle-hero">
+            <div class="container">
+                <span class="raffle-eyebrow-row" aria-label="Live giveaway">
+                    <span class="raffle-pulse" aria-hidden="true"></span>
+                    Live giveaway
+                    <span class="sep" aria-hidden="true"></span>
+                    Open to all readers
+                    <span class="sep" aria-hidden="true"></span>
+                    Winner: May&nbsp;31
+                </span>
+
+                <h1 class="raffle-title">
+                    Subscribe, follow, <em>win.</em>
+                </h1>
+
+                <p class="raffle-lede">
+                    The Catalyst is giving one lucky reader <strong>5 months of premium AI</strong> &mdash;
+                    Claude, ChatGPT, or Gemini, your pick. A second reader takes home a <strong>$100 gift card</strong>.
+                    Two steps to enter. Thirty seconds. That&rsquo;s it.
+                </p>
+
+                <div class="raffle-prize-chips" role="list">
+                    <span class="raffle-chip" role="listitem">
+                        <span class="dot" style="background:#c87f5a"></span>
+                        Claude Pro
+                    </span>
+                    <span class="raffle-chip" role="listitem">
+                        <span class="dot" style="background:#10a37f"></span>
+                        ChatGPT Plus
+                    </span>
+                    <span class="raffle-chip" role="listitem">
+                        <span class="dot" style="background:linear-gradient(135deg,#4285F4,#9b72cb)"></span>
+                        Gemini Advanced
+                    </span>
+                    <span class="raffle-chip" role="listitem">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                        $100 Gift Card
+                    </span>
+                </div>
+
+                <a href="#enter" class="raffle-cta-cue">
+                    Enter the raffle
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+                </a>
+            </div>
+        </section>
+
+        <!-- ═════════════ PRIZE GALLERY ═════════════ -->
+        <section class="raffle-prizes" aria-labelledby="prizes-heading">
+            <div class="container">
+                <h2 id="prizes-heading" class="visually-hidden" style="position:absolute;left:-9999px">Prizes</h2>
+
+                <div class="raffle-prize-grid">
+                    <!-- Grand prize -->
+                    <article class="prize-card is-grand">
+                        <span class="prize-num" aria-hidden="true">01</span>
+                        <span class="badge">Grand prize</span>
+                        <div>
+                            <p class="prize-eyebrow">Five months · your pick</p>
+                            <h3 class="prize-title">Premium AI, on us.</h3>
+                            <p class="prize-desc">
+                                Five full months of Claude Pro, ChatGPT Plus, or Gemini Advanced &mdash;
+                                whichever you actually use. We cover the bill, you get the smartest desk
+                                partner in your group chat.
+                            </p>
+                        </div>
+                        <div class="prize-visual" aria-hidden="true">
+                            <div class="prize-logo claude" title="Claude">C</div>
+                            <div class="prize-logo gpt" title="ChatGPT">G</div>
+                            <div class="prize-logo gemini" title="Gemini">✦</div>
+                        </div>
+                    </article>
+
+                    <!-- Mid: editorial filler card -->
+                    <article class="prize-card is-mid">
+                        <span class="prize-num" aria-hidden="true">★</span>
+                        <span class="badge">Why we&rsquo;re doing this</span>
+                        <div>
+                            <p class="prize-eyebrow">A small thank-you</p>
+                            <h3 class="prize-title" style="font-size: clamp(22px, 2.4vw, 30px)">
+                                You read us. We read everything you send back. This one&rsquo;s on the house.
+                            </h3>
+                        </div>
+                        <p class="prize-desc">
+                            The Catalyst is built by D.C. students, for curious readers. Subscribers and
+                            followers are the reason this magazine exists &mdash; so we&rsquo;re giving back.
+                        </p>
+                    </article>
+
+                    <!-- Runner-up -->
+                    <article class="prize-card is-runner">
+                        <span class="badge">Runner-up</span>
+                        <div>
+                            <p class="prize-eyebrow">Second draw</p>
+                            <h3 class="prize-title">$100<br>gift card.</h3>
+                            <p class="prize-desc">
+                                Amazon, Visa, or your café of choice. Pick the one you&rsquo;ll actually use.
+                            </p>
+                        </div>
+                        <div class="prize-visual" aria-hidden="true">
+                            <div class="gift-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 12h18"/><path d="M12 8v13"/><path d="M12 8H7.5a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8zM12 8h4.5a2.5 2.5 0 0 0 0-5C13 3 12 8 12 8z"/></svg>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ HOW TO ENTER (STEPS) ═════════════ -->
+        <section class="raffle-steps" id="enter" aria-labelledby="steps-heading">
+            <div class="container">
+                <header class="steps-header">
+                    <span class="steps-eyebrow">How it works</span>
+                    <h2 class="steps-title" id="steps-heading">Two steps. You&rsquo;re entered.</h2>
+                    <p class="steps-sub">
+                        Subscribe to the newsletter first &mdash; that&rsquo;s how we&rsquo;ll reach the winner.
+                        Then follow us on Instagram for the second entry.
+                    </p>
+                </header>
+
+                <div class="steps-grid">
+                    <!-- STEP 1: Newsletter -->
+                    <article class="step-card" id="step-newsletter">
+                        <div>
+                            <div class="step-marker">
+                                <span class="step-num" aria-hidden="true">1</span>
+                                <span>Step one</span>
+                            </div>
+                            <h3 class="step-title">Subscribe to the Catalyst newsletter.</h3>
+                            <p class="step-desc">
+                                Exclusive D.C. STEM stories, student spotlights, and the email we&rsquo;ll use to
+                                tell the winner. No spam &mdash; we send roughly twice a month.
+                            </p>
+                        </div>
+
+                        <form class="raffle-form"
+                              action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d"
+                              method="post"
+                              id="mc-embedded-subscribe-form"
+                              name="mc-embedded-subscribe-form"
+                              target="_blank"
+                              novalidate>
+                            <div class="raffle-form-row">
+                                <label class="visually-hidden" for="raffle-fname" style="position:absolute;left:-9999px">First Name</label>
+                                <input id="raffle-fname" type="text" name="FNAME" class="raffle-input" placeholder="First name" autocomplete="given-name" required>
+                                <label class="visually-hidden" for="raffle-lname" style="position:absolute;left:-9999px">Last Name</label>
+                                <input id="raffle-lname" type="text" name="LNAME" class="raffle-input" placeholder="Last name" autocomplete="family-name" required>
+                            </div>
+                            <label class="visually-hidden" for="mce-EMAIL" style="position:absolute;left:-9999px">Email Address</label>
+                            <input id="mce-EMAIL" type="email" name="EMAIL" class="raffle-input" placeholder="you@email.com" autocomplete="email" required>
+
+                            <!-- Bot prevention (Mailchimp honeypot) -->
+                            <div aria-hidden="true" style="position:absolute;left:-5000px;">
+                                <input type="text" name="b_d76819924b4f0773791d6827b_1ce6c96e6d" tabindex="-1" value="">
+                            </div>
+
+                            <button type="submit" name="subscribe" class="raffle-submit" id="raffle-submit-btn">
+                                <span class="btn-label">Subscribe &amp; enter</span>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                            </button>
+
+                            <div id="mce-response" class="raffle-response" role="status" aria-live="polite"></div>
+                        </form>
+
+                        <div class="step-confirmed" id="step1-confirmed" aria-live="polite">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                            <span>Step 1 complete &mdash; you&rsquo;re subscribed.</span>
+                        </div>
+                    </article>
+
+                    <!-- STEP 2: Instagram (gated) -->
+                    <article class="step-card step-locked" id="step-instagram" aria-disabled="true">
+                        <div>
+                            <div class="step-marker">
+                                <span class="step-num" aria-hidden="true">2</span>
+                                <span>Step two</span>
+                            </div>
+                            <h3 class="step-title">Follow us on Instagram.</h3>
+                            <p class="step-desc">
+                                Tap follow on
+                                <span class="ig-handle">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37a4 4 0 1 1-7.91 1.18 4 4 0 0 1 7.91-1.18z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                                    @thecatalyst_dc
+                                </span>
+                                &mdash; that&rsquo;s your second entry. We post the winner here on May&nbsp;31.
+                            </p>
+                        </div>
+
+                        <a href="https://www.instagram.com/thecatalyst_dc/"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="step-cta"
+                           id="step2-cta">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37a4 4 0 1 1-7.91 1.18 4 4 0 0 1 7.91-1.18z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                            <span>Follow @thecatalyst_dc</span>
+                        </a>
+
+                        <button type="button" class="step-confirm-link" id="step2-confirm-btn" hidden>
+                            I followed &mdash; mark step 2 complete
+                        </button>
+
+                        <div class="step-confirmed" id="step2-confirmed" aria-live="polite">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                            <span>You&rsquo;re in. Both entries locked. Good luck.</span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ DETAILS / RULES ═════════════ -->
+        <section class="raffle-details" aria-labelledby="details-heading">
+            <div class="container">
+                <div>
+                    <h2 id="details-heading">
+                        Drawing on <em>May&nbsp;31</em>. One winner per prize.
+                    </h2>
+
+                    <div class="countdown-card" aria-live="off">
+                        <span class="countdown-label">Time until draw</span>
+                        <div class="countdown-grid" id="raffle-countdown" data-target="2026-05-31T23:59:00-04:00">
+                            <div class="countdown-cell"><span class="num" data-cd="d">--</span><span class="lbl">Days</span></div>
+                            <div class="countdown-cell"><span class="num" data-cd="h">--</span><span class="lbl">Hours</span></div>
+                            <div class="countdown-cell"><span class="num" data-cd="m">--</span><span class="lbl">Min</span></div>
+                            <div class="countdown-cell"><span class="num" data-cd="s">--</span><span class="lbl">Sec</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <dl class="details-list">
+                    <div class="details-row">
+                        <dt>Prizes</dt>
+                        <dd><strong>Grand:</strong> 5 months of Claude Pro, ChatGPT Plus, or Gemini Advanced (winner&rsquo;s choice). <strong>Runner-up:</strong> $100 gift card.</dd>
+                    </div>
+                    <div class="details-row">
+                        <dt>How to enter</dt>
+                        <dd>Subscribe to the newsletter on this page, then follow <strong>@thecatalyst_dc</strong> on Instagram. Both required for full entry.</dd>
+                    </div>
+                    <div class="details-row">
+                        <dt>Eligibility</dt>
+                        <dd>Open to readers worldwide, 13+. One entry per email address.</dd>
+                    </div>
+                    <div class="details-row">
+                        <dt>Drawing</dt>
+                        <dd>Winners are randomly selected and announced on <strong>May&nbsp;31, 2026</strong>. We&rsquo;ll email the newsletter winner and DM the runner-up on Instagram.</dd>
+                    </div>
+                    <div class="details-row">
+                        <dt>No purchase</dt>
+                        <dd>This raffle is free. Not affiliated with, endorsed by, or sponsored by Anthropic, OpenAI, Google, or Meta.</dd>
+                    </div>
+                </dl>
+            </div>
+        </section>
+
+        <p class="raffle-fineprint">
+            Questions? Email
+            <a href="mailto:catalystmagazinedc@gmail.com">catalystmagazinedc@gmail.com</a>.
+            By entering you agree to our <a href="/privacy">privacy policy</a>.
+        </p>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <!-- Confetti container (populated on success) -->
+    <div class="confetti-burst" id="confetti-burst" aria-hidden="true"></div>
+
+    <script defer src="/js/layout.js"></script>
+    <script defer src="/js/data.js"></script>
+    <script defer src="/js/main.js"></script>
+
+    <script>
+        (function () {
+            'use strict';
+
+            const STORAGE_KEY = 'catalyst:raffle:state';
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            function loadState() {
+                try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+                catch (e) { return {}; }
+            }
+            function saveState(s) {
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
+            }
+
+            const state = loadState();
+
+            const stepIg = document.getElementById('step-instagram');
+            const step1Done = document.getElementById('step1-confirmed');
+            const step2Done = document.getElementById('step2-confirmed');
+            const step2ConfirmBtn = document.getElementById('step2-confirm-btn');
+            const igCta = document.getElementById('step2-cta');
+            const responseEl = document.getElementById('mce-response');
+            const submitBtn = document.getElementById('raffle-submit-btn');
+            const form = document.getElementById('mc-embedded-subscribe-form');
+            const emailInput = document.getElementById('mce-EMAIL');
+
+            // ─── Restore state on load ───
+            if (state.step1) {
+                unlockStepTwo({ silent: true });
+                step1Done.classList.add('is-shown');
+                if (responseEl) {
+                    responseEl.textContent = "You're already on the list. Step 2 is unlocked below.";
+                    responseEl.classList.add('is-success');
+                }
+                submitBtn.querySelector('.btn-label').textContent = 'Subscribed ✓';
+            }
+            if (state.step2) {
+                step2Done.classList.add('is-shown');
+                step2ConfirmBtn.hidden = true;
+                igCta.style.opacity = '0.7';
+                igCta.querySelector('span').textContent = 'Following @thecatalyst_dc';
+            }
+
+            // ─── Unlock step 2 ───
+            function unlockStepTwo({ silent = false } = {}) {
+                stepIg.classList.remove('step-locked');
+                stepIg.classList.add('is-unlocked');
+                stepIg.setAttribute('aria-disabled', 'false');
+                step2ConfirmBtn.hidden = false;
+                if (!silent && !reduceMotion) fireConfetti();
+            }
+
+            // ─── Newsletter form submit (jsonp to Mailchimp, optimistic UI) ───
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (!emailInput.value || !emailInput.checkValidity()) {
+                    responseEl.textContent = 'Please enter a valid email.';
+                    responseEl.classList.remove('is-success');
+                    responseEl.classList.add('is-error');
+                    emailInput.focus();
+                    return;
+                }
+                submitBtn.disabled = true;
+                submitBtn.querySelector('.btn-label').textContent = 'Subscribing…';
+                responseEl.textContent = '';
+                responseEl.classList.remove('is-error', 'is-success');
+
+                // Build Mailchimp jsonp URL (avoids CORS, single-page, no redirect)
+                const params = new URLSearchParams(new FormData(form));
+                const url = form.action.replace('/post?', '/post-json?') + '&' + params.toString() + '&c=raffleMcCb';
+
+                window.raffleMcCb = function (data) {
+                    submitBtn.disabled = false;
+                    if (data && data.result === 'success') {
+                        // Success path
+                        responseEl.textContent = "You're in! Now follow us on Instagram for entry #2.";
+                        responseEl.classList.add('is-success');
+                        submitBtn.querySelector('.btn-label').textContent = 'Subscribed ✓';
+                        step1Done.classList.add('is-shown');
+                        state.step1 = true;
+                        saveState(state);
+                        unlockStepTwo();
+                        // Smooth scroll to step 2
+                        setTimeout(() => {
+                            stepIg.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+                        }, 380);
+                    } else {
+                        // Already subscribed = also a "go" condition
+                        const msg = (data && data.msg) ? String(data.msg) : '';
+                        if (/already subscribed/i.test(msg)) {
+                            responseEl.textContent = "You're already on the list — step 2 unlocked below.";
+                            responseEl.classList.add('is-success');
+                            submitBtn.querySelector('.btn-label').textContent = 'Subscribed ✓';
+                            step1Done.classList.add('is-shown');
+                            state.step1 = true;
+                            saveState(state);
+                            unlockStepTwo();
+                        } else {
+                            responseEl.textContent = msg.replace(/<[^>]*>/g, '') || 'Hmm, something went wrong. Try again?';
+                            responseEl.classList.add('is-error');
+                            submitBtn.querySelector('.btn-label').textContent = 'Subscribe & enter';
+                        }
+                    }
+                };
+
+                const s = document.createElement('script');
+                s.src = url;
+                s.onerror = function () {
+                    submitBtn.disabled = false;
+                    submitBtn.querySelector('.btn-label').textContent = 'Subscribe & enter';
+                    responseEl.textContent = 'Connection issue. Please try again.';
+                    responseEl.classList.add('is-error');
+                };
+                document.body.appendChild(s);
+            });
+
+            // ─── Step 2 confirmation ───
+            step2ConfirmBtn.addEventListener('click', function () {
+                state.step2 = true;
+                saveState(state);
+                step2Done.classList.add('is-shown');
+                step2ConfirmBtn.hidden = true;
+                igCta.style.opacity = '0.7';
+                igCta.querySelector('span').textContent = 'Following @thecatalyst_dc';
+                if (!reduceMotion) fireConfetti();
+            });
+
+            // After clicking the IG link, surface the confirm button promptly
+            igCta.addEventListener('click', function () {
+                // The link opens IG in a new tab. When user comes back, allow them to confirm.
+                step2ConfirmBtn.hidden = false;
+            });
+
+            // ─── Confetti ───
+            function fireConfetti() {
+                const wrap = document.getElementById('confetti-burst');
+                if (!wrap) return;
+                wrap.innerHTML = '';
+                const colors = ['#2563eb', '#ff5b3c', '#ffe8a8', '#b9f0d2', '#d9c8ff', '#0b1120'];
+                const count = 60;
+                for (let i = 0; i < count; i++) {
+                    const p = document.createElement('span');
+                    p.className = 'confetti-piece';
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 240 + Math.random() * 280;
+                    const cx = Math.cos(angle) * dist;
+                    const cy = Math.sin(angle) * dist + 120; // bias downward
+                    p.style.setProperty('--cx', cx + 'px');
+                    p.style.setProperty('--cy', cy + 'px');
+                    p.style.setProperty('--cr', (Math.random() * 720 + 360) + 'deg');
+                    p.style.background = colors[i % colors.length];
+                    p.style.animationDelay = (Math.random() * 120) + 'ms';
+                    p.style.width = (6 + Math.random() * 8) + 'px';
+                    p.style.height = (10 + Math.random() * 8) + 'px';
+                    wrap.appendChild(p);
+                }
+                wrap.classList.remove('is-firing');
+                // force reflow
+                void wrap.offsetWidth;
+                wrap.classList.add('is-firing');
+                setTimeout(() => { wrap.classList.remove('is-firing'); wrap.innerHTML = ''; }, 1700);
+            }
+
+            // ─── Countdown to May 31 ───
+            const cd = document.getElementById('raffle-countdown');
+            if (cd) {
+                const target = new Date(cd.getAttribute('data-target')).getTime();
+                const elD = cd.querySelector('[data-cd="d"]');
+                const elH = cd.querySelector('[data-cd="h"]');
+                const elM = cd.querySelector('[data-cd="m"]');
+                const elS = cd.querySelector('[data-cd="s"]');
+                function tick() {
+                    const now = Date.now();
+                    let diff = Math.max(0, target - now);
+                    const d = Math.floor(diff / 86400000); diff -= d * 86400000;
+                    const h = Math.floor(diff / 3600000);  diff -= h * 3600000;
+                    const m = Math.floor(diff / 60000);    diff -= m * 60000;
+                    const s = Math.floor(diff / 1000);
+                    elD.textContent = String(d).padStart(2, '0');
+                    elH.textContent = String(h).padStart(2, '0');
+                    elM.textContent = String(m).padStart(2, '0');
+                    elS.textContent = String(s).padStart(2, '0');
+                }
+                tick();
+                setInterval(tick, 1000);
+            }
+        })();
+    </script>
+</body>
+</html>
