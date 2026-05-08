@@ -153,6 +153,12 @@ function setupNewsletterModal() {
 function setupWelcomePopup() {
     if (isEditorial) return;
 
+    // Pages that already exist to drive a subscription/conversion shouldn't
+    // also throw the popup at the visitor. Add data-suppress-welcome="1"
+    // to <body> on any such page to opt out.
+    if (document.body.dataset.page === 'raffle') return;
+    if (document.body.dataset.suppressWelcome === '1') return;
+
     const STORAGE_KEY = 'catalyst-welcome-seen-v1';
     const COOKIE_KEY = 'catalyst_welcome_seen';
 
