@@ -97,14 +97,14 @@
         gap: 14px;
         margin: 0 auto 22px;
         max-width: 360px;
-        opacity: 0;
-        transform: translate3d(0, 12px, 0);
-        transition: opacity 600ms cubic-bezier(.22,.61,.36,1) 80ms,
-                    transform 600ms cubic-bezier(.22,.61,.36,1) 80ms;
-      }
-      body[data-page="home"].cards-revealed .hero-featured-eyebrow {
+        /* visible on load — no scroll required */
         opacity: 1;
-        transform: translate3d(0, 0, 0);
+      }
+      /* On desktop the eyebrow sits closer to the cards (was hugging them) */
+      @media (min-width: 769px) {
+        body[data-page="home"] .hero-featured-eyebrow {
+          margin: 28px auto 24px;
+        }
       }
       body[data-page="home"] .hero-featured-eyebrow-line {
         flex: 1;
@@ -118,15 +118,74 @@
         color: #475569;
         white-space: nowrap;
       }
-      @media (prefers-reduced-motion: reduce) {
-        body[data-page="home"] .hero-featured-eyebrow {
-          opacity: 1 !important;
-          transform: none !important;
-          transition: none !important;
+
+      /* ---------- Cinematic hero exit (all breakpoints) ---------- */
+      /* As the user scrolls, --p ramps 0→1 and the hero copy zooms,
+         blurs, tilts, and fades — like the camera is punching through
+         it as the articles arrive below. GPU-only transforms + opacity
+         + filter, driven by a tiny rAF scroll listener. */
+      body[data-page="home"] .hero {
+        /* 3D space for the tilt below — works on any screen size */
+        perspective: 1400px;
+        perspective-origin: 50% 35%;
+        position: relative;
+      }
+      body[data-page="home"] .hero-content {
+        will-change: transform, opacity, filter;
+        transform-origin: 50% 35%;
+        transform:
+          translate3d(0, calc(var(--p, 0) * -28px), calc(var(--p, 0) * 180px))
+          scale(calc(1 + var(--p, 0) * 0.32))
+          rotateX(calc(var(--p, 0) * -6deg));
+        opacity: calc(1 - var(--p, 0) * 1.4);
+        filter: blur(calc(var(--p, 0) * 10px));
+      }
+      /* Stagger the individual hero pieces so the exit reads as
+         layered depth instead of one rigid block. */
+      body[data-page="home"] .hero-title {
+        will-change: transform;
+        transform: translate3d(0, calc(var(--p, 0) * -10px), 0)
+                   scale(calc(1 + var(--p, 0) * 0.05));
+      }
+      body[data-page="home"] .hero-description {
+        will-change: transform, opacity;
+        transform: translate3d(0, calc(var(--p, 0) * 16px), 0);
+        opacity: calc(1 - var(--p, 0) * 1.7);
+      }
+      body[data-page="home"] .hero-actions {
+        will-change: transform, opacity;
+        transform: translate3d(0, calc(var(--p, 0) * 28px), 0);
+        opacity: calc(1 - var(--p, 0) * 2.0);
+      }
+      /* Skyline parallax — drifts up + softens for depth */
+      body[data-page="home"] .dc-capitol {
+        transform: translate3d(0, calc(var(--p, 0) * -36px), 0)
+                   scale(calc(1 + var(--p, 0) * 0.04));
+        opacity: calc(0.55 - var(--p, 0) * 0.35);
+      }
+      /* Once the card is in view, lock the hero copy out of pointer
+         events so it doesn't interfere with clicks on the article. */
+      body[data-page="home"].cards-revealed .hero-content {
+        pointer-events: none;
+      }
+
+      /* Mobile pushes the effect harder because the viewport is smaller
+         and the user sees less at once — punchier exit reads better. */
+      @media (max-width: 768px) {
+        body[data-page="home"] .hero-content {
+          transform:
+            translate3d(0, calc(var(--p, 0) * -36px), calc(var(--p, 0) * 220px))
+            scale(calc(1 + var(--p, 0) * 0.42))
+            rotateX(calc(var(--p, 0) * -8deg));
+          opacity: calc(1 - var(--p, 0) * 1.55);
+          filter: blur(calc(var(--p, 0) * 14px));
+        }
+        body[data-page="home"] .dc-capitol {
+          opacity: calc(0.7 - var(--p, 0) * 0.45);
         }
       }
 
-      /* ---------- Mobile hero ---------- */
+      /* ---------- Mobile hero layout ---------- */
       /* The hero owns the first viewport: text + buttons + watercolor skyline.
          The article card is pushed below the fold and animates in as it
          enters view. A tappable chevron invites the user to scroll. */
@@ -135,7 +194,6 @@
           min-height: 100dvh;
           padding-top: 110px;
           padding-bottom: 96px; /* breathing room for the scroll chevron */
-          position: relative;
         }
 
         /* Skyline anchored to the bottom of the hero */
@@ -146,7 +204,6 @@
           bottom: 0;
           background-position: center bottom;
           background-size: 100% auto;
-          opacity: 0.7;
           -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 35%, #000 100%);
                   mask-image: linear-gradient(180deg, transparent 0%, #000 35%, #000 100%);
         }
@@ -165,51 +222,6 @@
         body[data-page="home"] .hero-featured.is-revealed {
           opacity: 1;
           transform: translate3d(0, 0, 0);
-        }
-
-        /* Hero copy: cinematic "warp through the page" exit driven by --p
-           (scroll progress 0→1). The text scales up hard, blurs, tilts,
-           and fades — like the camera is punching through it as the
-           articles emerge. */
-        body[data-page="home"] .hero {
-          /* enable a real 3D space so the tilt below has perspective */
-          perspective: 1100px;
-          perspective-origin: 50% 35%;
-        }
-        body[data-page="home"] .hero-content {
-          will-change: transform, opacity, filter;
-          transform-origin: 50% 35%;
-          transform:
-            translate3d(0, calc(var(--p, 0) * -36px), calc(var(--p, 0) * 220px))
-            scale(calc(1 + var(--p, 0) * 0.42))
-            rotateX(calc(var(--p, 0) * -8deg));
-          opacity: calc(1 - var(--p, 0) * 1.55);
-          filter: blur(calc(var(--p, 0) * 14px));
-        }
-        /* Stagger the individual hero pieces so the exit reads as
-           layered depth instead of one rigid block. */
-        body[data-page="home"] .hero-title {
-          transform: translate3d(0, calc(var(--p, 0) * -12px), 0)
-                     scale(calc(1 + var(--p, 0) * 0.06));
-        }
-        body[data-page="home"] .hero-description {
-          transform: translate3d(0, calc(var(--p, 0) * 18px), 0);
-          opacity: calc(1 - var(--p, 0) * 1.8);
-        }
-        body[data-page="home"] .hero-actions {
-          transform: translate3d(0, calc(var(--p, 0) * 32px), 0);
-          opacity: calc(1 - var(--p, 0) * 2.2);
-        }
-        /* Once the card is in view, lock the hero copy out of pointer
-           events so it doesn't interfere with taps on the article. */
-        body[data-page="home"].cards-revealed .hero-content {
-          pointer-events: none;
-        }
-        /* The watercolor skyline drifts up + softens for depth */
-        body[data-page="home"] .dc-capitol {
-          transform: translate3d(0, calc(var(--p, 0) * -42px), 0)
-                     scale(calc(1 + var(--p, 0) * 0.05));
-          opacity: calc(0.7 - var(--p, 0) * 0.45);
         }
 
         /* Tappable scroll chevron */
@@ -642,10 +654,11 @@
       (function () {
         var body = document.body;
         var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var isMobile = window.matchMedia('(max-width: 768px)').matches;
 
-        // (1) Scroll progress driver (mobile only, rAF-throttled, GPU-only)
-        if (isMobile && !prefersReduced) {
+        // (1) Scroll progress driver — runs on every breakpoint so the
+        // cinematic hero exit fires on desktop AND mobile. rAF-throttled,
+        // GPU-only (transform/opacity/filter), no jank.
+        if (!prefersReduced) {
           var hero = document.querySelector('.hero');
           if (hero) {
             var ticking = false;
