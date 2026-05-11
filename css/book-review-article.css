@@ -81,6 +81,13 @@ body[data-page="article"].is-book-review .back-link:hover {
 .brx-hero-inner {
     max-width: 920px;
 }
+.brx-hero-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px 18px;
+    margin-bottom: 24px;
+}
 .brx-kicker {
     display: inline-flex;
     align-items: center;
@@ -90,12 +97,25 @@ body[data-page="article"].is-book-review .back-link:hover {
     letter-spacing: .26em;
     text-transform: uppercase;
     color: var(--brx-accent);
-    margin-bottom: 24px;
+    margin: 0;
 }
 .brx-kicker::before {
     content: '';
     width: 28px; height: 1px;
     background: var(--brx-accent);
+}
+.brx-genre-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--brx-ink);
+    background: var(--brx-paper-off);
+    border: 1px solid var(--brx-paper-line);
+    border-radius: 999px;
 }
 
 .brx-title {
@@ -154,18 +174,34 @@ body[data-page="article"].is-book-review .back-link:hover {
     color: var(--brx-ink);
 }
 
-/* ─── SPREAD: cover + verdict cards ──────────────────────────────── */
+/* ─── SPREAD: cover + verdict ──────────────────────────────────── */
 .brx-spread {
     display: grid;
-    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
     gap: var(--col-gap);
     align-items: start;
-    margin-bottom: 64px;
+    margin-bottom: 80px;
+    padding-bottom: 56px;
+    border-bottom: 1px solid var(--brx-paper-line);
+    position: relative;
+}
+.brx-spread::after {
+    /* delicate paper-fiber accent — three thin lines suggesting page edge */
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0,
+        var(--brx-accent) 0, var(--brx-accent) 60px,
+        transparent 60px, transparent 100%);
 }
 @media (max-width: 880px) {
     .brx-spread {
         grid-template-columns: 1fr;
         gap: 40px;
+        padding-bottom: 40px;
+        margin-bottom: 56px;
     }
 }
 
@@ -244,49 +280,25 @@ body[data-page="article"].is-book-review .back-link:hover {
     z-index: -1;
 }
 
-.brx-isbn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 26px 0 0;
-    font-size: 12px;
-    color: var(--brx-text-sub);
-}
-.brx-isbn span {
-    font-weight: 600;
-    letter-spacing: .22em;
-    text-transform: uppercase;
-}
-.brx-isbn code {
-    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-    background: var(--brx-paper-off);
-    border: 1px solid var(--brx-paper-line);
-    padding: 4px 8px;
-    border-radius: 6px;
-    color: var(--brx-ink);
-    font-size: 12px;
-}
-
-/* ─── VERDICT CARD ───────────────────────────────────────────────── */
+/* ─── VERDICT (rating + meta + pullquote) ─────────────────────── */
 .brx-verdict {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 32px;
+    padding-top: 8px;
 }
 
 .brx-verdict-card {
-    background: var(--brx-paper-off);
-    border: 1px solid var(--brx-paper-line);
-    border-radius: 14px;
-    padding: 26px 28px;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+    padding: 0 0 28px;
+    border-bottom: 1px solid var(--brx-paper-line);
+    position: relative;
 }
 .brx-verdict-eyebrow {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: .26em;
-    text-transform: uppercase;
-    color: var(--brx-accent);
-    margin-bottom: 18px;
+    display: none; /* visually replaced by the more compact rating-caption */
 }
 .brx-verdict-row {
     display: flex;
@@ -297,39 +309,58 @@ body[data-page="article"].is-book-review .back-link:hover {
 
 .brx-rating-dial {
     position: relative;
-    width: 92px; height: 92px;
+    width: 104px; height: 104px;
     border-radius: 50%;
     background: conic-gradient(var(--brx-accent) calc(var(--score, 0) * 1%), var(--brx-paper-line) 0);
     display: grid;
     place-items: center;
     flex: 0 0 auto;
+    box-shadow: 0 8px 22px -10px rgba(122,31,43,.35);
 }
 .brx-rating-dial::before {
     content: '';
-    position: absolute; inset: 7px;
+    position: absolute; inset: 8px;
     border-radius: 50%;
     background: var(--brx-paper);
+    box-shadow: inset 0 0 0 1px var(--brx-paper-line);
 }
 .brx-rating-num {
     position: relative;
     font-family: 'Playfair Display', Georgia, serif;
-    font-size: 30px;
+    font-size: 34px;
     font-weight: 700;
     color: var(--brx-ink);
     line-height: 1;
+    letter-spacing: -0.01em;
 }
 .brx-rating-num small {
     font-size: 13px;
     font-weight: 400;
     color: var(--brx-text-sub);
     margin-left: 2px;
+    letter-spacing: 0;
 }
 
+.brx-rating-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 140px;
+}
 .brx-rating-stars {
     display: inline-flex;
     gap: 4px;
     color: var(--brx-accent);
 }
+.brx-rating-caption {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--brx-text-sub);
+}
+
 .brx-star {
     display: inline-grid;
     place-items: center;
@@ -337,27 +368,72 @@ body[data-page="article"].is-book-review .back-link:hover {
 }
 .brx-star svg { width: 100%; height: 100%; }
 
-.brx-quickfacts {
-    background: var(--brx-paper);
-    border: 1px solid var(--brx-paper-line);
-    border-radius: 14px;
-    padding: 22px 24px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 14px 22px;
+/* The meta list replaces the old card-style quickfacts. It's a tight
+   key/value list with hairline separators — feels editorial, not formy. */
+.brx-meta-list {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
 }
-.brx-fact { display: flex; flex-direction: column; gap: 4px; }
-.brx-fact-label {
+.brx-meta-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    align-items: baseline;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--brx-paper-line);
+}
+.brx-meta-row:first-child { padding-top: 0; }
+.brx-meta-row:last-child { border-bottom: 0; }
+.brx-meta-row dt {
     font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .18em;
+    font-weight: 700;
+    letter-spacing: .22em;
     text-transform: uppercase;
     color: var(--brx-text-sub);
+    margin: 0;
 }
-.brx-fact-value {
+.brx-meta-row dd {
+    margin: 0;
     font-size: 14px;
     font-weight: 600;
     color: var(--brx-ink);
+}
+.brx-meta-row dd code {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 12px;
+    background: var(--brx-paper-off);
+    border: 1px solid var(--brx-paper-line);
+    padding: 3px 9px;
+    border-radius: 6px;
+    color: var(--brx-ink);
+    font-weight: 500;
+}
+
+/* Editorial pullquote — a confident detail that lifts the spread.
+   Hidden when the hero already shows the deck (deck and pullquote
+   would be duplicate), and shown only as a graceful fallback. */
+.brx-pullquote {
+    position: relative;
+    padding: 22px 0 0 36px;
+    color: var(--brx-text-muted);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-size: clamp(15px, 1.1vw, 17px);
+    line-height: 1.6;
+    border-top: 1px solid var(--brx-paper-line);
+}
+.brx-pullquote[aria-hidden="true"] { display: none; }
+.brx-pullquote p { margin: 0; }
+.brx-pullquote-mark {
+    position: absolute;
+    left: 0;
+    top: 26px;
+    width: 26px;
+    height: 26px;
+    color: var(--brx-accent);
+    opacity: .85;
 }
 
 /* ─── BODY ────────────────────────────────────────────────────────── */
@@ -431,35 +507,71 @@ body[data-page="article"].is-book-review .back-link:hover {
 }
 .brx-body li { margin-bottom: .4em; }
 
-/* ─── SHARE + CTA ──────────────────────────────────────────────── */
+/* ─── CODA (review footer) ───────────────────────────────────────
+   Sits below the body. Editorial sign-off on the left, share on the
+   right. Replaces the old wide share bar that felt like a toolbar. */
+.brx-coda {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 64px;
+    padding: 24px 0;
+    border-top: 1px solid var(--brx-paper-line);
+    border-bottom: 1px solid var(--brx-paper-line);
+}
+.brx-coda-byline {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.brx-coda-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: var(--brx-text-sub);
+}
+.brx-coda-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--brx-ink);
+    letter-spacing: -0.005em;
+}
+
 .brx-share {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     flex-wrap: wrap;
-    padding: 24px 0;
-    margin-top: 56px;
-    border-top: 1px solid var(--brx-paper-line);
-    border-bottom: 1px solid var(--brx-paper-line);
-    font-size: 13px;
-    color: var(--brx-text-muted);
-    font-weight: 600;
-    letter-spacing: .04em;
+}
+.brx-share-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    color: var(--brx-text-sub);
+    margin-right: 6px;
 }
 .brx-share-btn {
     appearance: none;
-    background: var(--brx-paper-off);
+    background: transparent;
     border: 1px solid var(--brx-paper-line);
     color: var(--brx-text-muted);
-    width: 40px; height: 40px;
+    width: 38px; height: 38px;
     border-radius: 50%;
     display: grid; place-items: center;
     cursor: pointer;
-    transition: background .2s ease, color .2s ease, transform .2s ease;
+    transition: background .2s ease, color .2s ease, transform .2s ease, border-color .2s ease;
     text-decoration: none;
 }
 .brx-share-btn:hover {
-    background: var(--brx-accent);
+    background: var(--brx-ink);
+    border-color: var(--brx-ink);
     color: var(--brx-on-dark);
     transform: translateY(-2px);
 }

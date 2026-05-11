@@ -582,8 +582,7 @@ body[data-page="book-reviews"] .header {
    FILTER RAIL — sticky genre pills
    ================================================================= */
 .br-rail-wrap {
-    position: sticky;
-    top: 88px;
+    position: relative;
     z-index: 10;
     background: rgba(247,244,237,.92);
     backdrop-filter: saturate(140%) blur(10px);

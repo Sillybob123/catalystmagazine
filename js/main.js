@@ -1476,6 +1476,20 @@ function renderBookReviewDetail(article, container) {
         backLink.lastChild.textContent = ' Back to Book Reviews';
     }
 
+    // Pretty discipline label for the "Filed under" chip. Mirrors the
+    // /book-reviews pill set so a reader can tell at a glance which shelf
+    // this lives on without us re-listing the title or author.
+    const genreLabel = (() => {
+        const g = (article.genre || '').toLowerCase();
+        const map = {
+            'astronomy': 'Astronomy', 'biology': 'Biology',
+            'computer-science': 'Computer Science', 'physics': 'Physics',
+            'mathematics': 'Mathematics', 'climate': 'Climate',
+            'memoir': 'Memoir', 'stem': 'STEM',
+        };
+        return map[g] || '';
+    })();
+
     container.innerHTML = `
         <article class="brx" data-has-cover="${article.image ? 'true' : 'false'}">
             <header class="brx-hero">
@@ -1484,6 +1498,10 @@ function renderBookReviewDetail(article, container) {
                         <span class="brx-kicker">
                             ${isReaderPick ? 'Reader pick · The Stacks' : 'Catalyst Book Review · The Stacks'}
                         </span>
+                        ${genreLabel
+                            ? `<span class="brx-genre-chip">${escapeHtmlAttr(genreLabel)}</span>`
+                            : ''
+                        }
                     </div>
 
                     <h1 class="brx-title">${escapeHtmlAttr(article.title)}</h1>
@@ -1530,11 +1548,6 @@ function renderBookReviewDetail(article, container) {
                              onerror="this.classList.add('failed')">
                         <div class="brx-cover-shadow" aria-hidden="true"></div>
                     </div>
-
-                    ${isbn
-                        ? `<p class="brx-isbn"><span>ISBN</span><code>${escapeHtmlAttr(isbn)}</code></p>`
-                        : ''
-                    }
                 </aside>
 
                 <div class="brx-verdict">
@@ -1545,28 +1558,40 @@ function renderBookReviewDetail(article, container) {
                                 <div class="brx-rating-dial" style="--score:${ratingPct};">
                                     <span class="brx-rating-num">${rating.toFixed(1)}<small>/5</small></span>
                                 </div>
-                                <div class="brx-rating-stars" aria-label="${rating.toFixed(1)} out of 5">${stars}</div>
+                                <div class="brx-rating-detail">
+                                    <div class="brx-rating-stars" aria-label="${rating.toFixed(1)} out of 5">${stars}</div>
+                                    <div class="brx-rating-caption">${isReaderPick ? "A Catalyzer's verdict" : "From our reviewer"}</div>
+                                </div>
                             </div>
                           </div>`
                         : ''
                     }
 
-                    <div class="brx-quickfacts">
-                        <div class="brx-fact">
-                            <span class="brx-fact-label">Title</span>
-                            <span class="brx-fact-value">${escapeHtmlAttr(article.title)}</span>
-                        </div>
-                        ${article.bookAuthor
-                            ? `<div class="brx-fact">
-                                <span class="brx-fact-label">Author</span>
-                                <span class="brx-fact-value">${escapeHtmlAttr(article.bookAuthor)}</span>
-                              </div>`
-                            : ''
-                        }
-                        <div class="brx-fact">
-                            <span class="brx-fact-label">Reviewed by</span>
-                            <span class="brx-fact-value">${escapeHtmlAttr(article.author || 'The Catalyst')}</span>
-                        </div>
+                    ${(isbn || genreLabel)
+                        ? `<dl class="brx-meta-list">
+                            ${isbn
+                                ? `<div class="brx-meta-row">
+                                    <dt>ISBN</dt>
+                                    <dd><code>${escapeHtmlAttr(isbn)}</code></dd>
+                                  </div>`
+                                : ''
+                            }
+                            ${genreLabel
+                                ? `<div class="brx-meta-row">
+                                    <dt>Filed under</dt>
+                                    <dd>${escapeHtmlAttr(genreLabel)}</dd>
+                                  </div>`
+                                : ''
+                            }
+                          </dl>`
+                        : ''
+                    }
+
+                    <div class="brx-pullquote" aria-hidden="${article.deck ? 'true' : 'false'}">
+                        <svg class="brx-pullquote-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M7.17 6C4.86 6 3 7.84 3 10.13c0 2.29 1.86 4.13 4.17 4.13.36 0 .7-.05 1.03-.13-.46 1.4-1.87 2.46-3.7 2.62l.7 1.25c3.3-.32 5.8-3.13 5.8-7.04C11 7.84 9.45 6 7.17 6zm9.66 0c-2.31 0-4.17 1.84-4.17 4.13 0 2.29 1.86 4.13 4.17 4.13.36 0 .7-.05 1.03-.13-.46 1.4-1.87 2.46-3.7 2.62l.7 1.25c3.3-.32 5.8-3.13 5.8-7.04C20.66 7.84 19.11 6 16.83 6z"/>
+                        </svg>
+                        <p>${escapeHtmlAttr(article.deck || `A short, honest take on ${article.bookAuthor || 'this book'}'s work — what it's about, who it's for, and why it earns its place on the shelf.`)}</p>
                     </div>
                 </div>
             </section>
@@ -1574,18 +1599,24 @@ function renderBookReviewDetail(article, container) {
             <div class="brx-body-wrap">
                 <div class="brx-body">${contentHtml}</div>
 
-                <div class="brx-share" role="group" aria-label="Share this review">
-                    <span>Share this review</span>
-                    <a class="brx-share-btn" href="https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}" target="_blank" rel="noopener" aria-label="Share on X">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    </a>
-                    <a class="brx-share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zM7.78 8h4.37v1.93h.06c.61-1.15 2.1-2.37 4.32-2.37 4.62 0 5.47 3.04 5.47 7v7.45h-4.56v-6.6c0-1.58-.03-3.61-2.2-3.61-2.2 0-2.54 1.72-2.54 3.5V22H7.78V8z"/></svg>
-                    </a>
-                    <button class="brx-share-btn" type="button" onclick="copyArticleLink()" aria-label="Copy link">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    </button>
-                </div>
+                <footer class="brx-coda">
+                    <div class="brx-coda-byline">
+                        <span class="brx-coda-label">Reviewed by</span>
+                        <span class="brx-coda-name">${escapeHtmlAttr(article.author || 'The Catalyst')}</span>
+                    </div>
+                    <div class="brx-share" role="group" aria-label="Share this review">
+                        <span class="brx-share-label">Share</span>
+                        <a class="brx-share-btn" href="https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}" target="_blank" rel="noopener" aria-label="Share on X">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        </a>
+                        <a class="brx-share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zM7.78 8h4.37v1.93h.06c.61-1.15 2.1-2.37 4.32-2.37 4.62 0 5.47 3.04 5.47 7v7.45h-4.56v-6.6c0-1.58-.03-3.61-2.2-3.61-2.2 0-2.54 1.72-2.54 3.5V22H7.78V8z"/></svg>
+                        </a>
+                        <button class="brx-share-btn" type="button" onclick="copyArticleLink()" aria-label="Copy link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        </button>
+                    </div>
+                </footer>
 
                 <a class="brx-cta" href="/book-reviews">
                     <span>Explore more from The Stacks</span>
@@ -2330,6 +2361,7 @@ async function loadFromFirestore() {
                     { fieldPath: 'bookAuthor' },
                     { fieldPath: 'rating' },
                     { fieldPath: 'isbn' },
+                    { fieldPath: 'genre' },
                 ]
             },
             limit: 60
@@ -2398,6 +2430,7 @@ function firestoreDocToArticle(doc) {
     // dedicated book-review template without re-fetching.
     const bookAuthor    = str('bookAuthor');
     const isbn          = str('isbn');
+    const genre         = str('genre');
     const communityPick = f.communityPick?.booleanValue === true;
     const ratingRaw     = f.rating;
     let rating = null;
@@ -2424,6 +2457,7 @@ function firestoreDocToArticle(doc) {
         // Book-review extras (undefined / null for other categories)
         bookAuthor,
         isbn,
+        genre,
         rating,
         communityPick
     };
