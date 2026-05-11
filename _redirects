@@ -25,6 +25,13 @@
 /innovation              /                         301
 /innovation.html         /                         301
 
+# ------ /ai-expo retired → /book-reviews (replaced 2026-05-11) -----
+# AI+ Expo coverage page is gone; The Stacks (book reviews) takes its
+# slot in the primary nav. Send any lingering deep links forward.
+/ai-expo                 /book-reviews             301
+/ai-expo.html            /book-reviews             301
+/ai-expo/*               /book-reviews             301
+
 # ------ Legacy admin URL cleanup ---------------------------
 /writer-login.html       /admin/login              301
 /admin/writer-login      /admin/login              301

@@ -215,6 +215,11 @@ function mountDraftEditor(ctx, container) {
             <option value="News">News</option>
             <option value="Science">Science</option>
           </select>
+          <p class="field-hint" style="margin-top:6px;color:#64748b;font-size:12px;line-height:1.45;">
+            Writing a STEM book review? Use the dedicated
+            <a href="#/book-reviews/write" style="color:#0f172a;font-weight:600;">Write a book review</a> page —
+            it has the right fields for ISBN, rating, and the book metadata.
+          </p>
         </div>
         <div class="field">
           <label class="label">Cover image</label>

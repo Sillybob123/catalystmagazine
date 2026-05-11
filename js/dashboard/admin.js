@@ -181,6 +181,10 @@ function renderRow(a, editors, ctx, reload) {
         };
         if (!a.publishedAt) patch.publishedAt = new Date().toISOString();
         await updateDoc(doc(db, "stories", a.id), patch);
+        // Bust the public listing cache so the article (and especially
+        // book reviews, which read the same cache key) shows up on the
+        // next /book-reviews or /articles load without a hard refresh.
+        try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
         ctx.toast("Published.", "success");
         reload();
       } catch (err) { ctx.toast("Publish failed: " + err.message, "error"); }
@@ -196,6 +200,7 @@ function renderRow(a, editors, ctx, reload) {
           rejectedByName: ctx.profile.name || ctx.user.email,
           updatedAt: new Date().toISOString(),
         });
+        try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
         ctx.toast("Rejected.", "success"); reload();
       } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
     }
@@ -204,6 +209,7 @@ function renderRow(a, editors, ctx, reload) {
       if (!ok) return;
       try {
         await deleteDoc(doc(db, "stories", a.id));
+        try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
         ctx.toast("Deleted.", "success"); reload();
       } catch (err) { ctx.toast("Delete failed: " + err.message, "error"); }
     }

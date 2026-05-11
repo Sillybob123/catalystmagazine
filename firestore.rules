@@ -163,6 +163,19 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ---------- public book-review submissions ("The Catalyzers") ----------
+    // Reader-submitted book reviews. The ONLY write path is the server-side
+    // POST /api/book-reviews/submit endpoint (Cloudflare Pages Function,
+    // service account, IP rate-limited, honeypot, header-injection
+    // hardened, payload size capped). Direct client creates are denied so
+    // attackers can't bypass the rate-limiter or the email-notification
+    // pipeline by writing straight to Firestore. Reads are admin-only —
+    // submissions contain submitter PII (email, IP, user-agent).
+    match /bookReviewSubmissions/{subId} {
+      allow create: if false;                  // server-only (service acct bypasses)
+      allow read, update, delete: if isAdmin();
+    }
+
     // ---------- analytics events (page views, signups, etc.) ----------
     match /analytics_events/{eventId} {
       allow create: if true; // anonymous logging permitted

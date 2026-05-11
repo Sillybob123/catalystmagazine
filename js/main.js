@@ -359,7 +359,14 @@ async function initApp() {
     if (page === 'home' || page === 'articles' || page === 'article') {
         // Reuse the load kicked off at DOMContentLoaded so Firestore runs in
         // parallel with the header/footer fetch instead of serially after it.
-        articleData = await (window.__articlesPromise || loadArticles());
+        const allArticles = await (window.__articlesPromise || loadArticles());
+        // Book reviews route to /book-reviews. Hide them from home + articles
+        // feeds, but keep them in the full set so /article/<slug> still resolves
+        // when a reader follows a direct link to a book review.
+        window.__articleCacheAll = allArticles;
+        articleData = (page === 'article')
+            ? allArticles
+            : allArticles.filter(a => !isBookReview(a));
         // Preload first 3 article images for instant hero display
         if (articleData.length > 0) {
             articleData.slice(0, 3).forEach(article => preloadImage(article.image));
@@ -1165,6 +1172,12 @@ function initArticleDetailPage(data) {
             if (full.deck) article.deck = full.deck;
             if (full.lightCover !== undefined) article.lightCover = full.lightCover;
             if (full.game) article.game = full.game;
+            // Book-review-specific fields. Use `!= null` so 0 / "" / false
+            // don't overwrite a meaningful value from the list fetch.
+            if (full.bookAuthor)    article.bookAuthor    = full.bookAuthor;
+            if (full.isbn)          article.isbn          = full.isbn;
+            if (full.rating != null) article.rating       = full.rating;
+            if (full.communityPick !== undefined) article.communityPick = full.communityPick;
         }
         renderArticleDetail(article);
     }).catch(() => renderArticleDetail(article));
@@ -1188,9 +1201,132 @@ async function fetchFullArticleBody(storyId) {
     }
 }
 
+// =============================================================
+// ISBN → book cover URL (high-quality)
+//
+// Two sources, in order:
+//   1) Google Books API (preferred — gives 1000+ px covers).
+//      https://www.googleapis.com/books/v1/volumes?q=isbn:<ISBN>
+//      Returns volumeInfo.imageLinks.thumbnail / smallThumbnail / etc.
+//      Default thumbnail has &zoom=1 + &edge=curl — we strip both to
+//      get the full-resolution flat scan.
+//   2) Open Library covers (fallback — caps around 500 px, but always
+//      available without an API call: just an image GET).
+//      https://covers.openlibrary.org/b/isbn/<ISBN>-L.jpg?default=false
+//      ?default=false makes it 404 instead of returning a 1×1 placeholder.
+//
+// Both are public, no API key, no auth, CORS-friendly.
+// =============================================================
+function normalizeIsbn(raw) {
+    if (!raw) return '';
+    return String(raw).replace(/[^0-9Xx]/g, '').toUpperCase();
+}
+function openLibraryCoverUrl(isbn, size = 'L') {
+    const clean = normalizeIsbn(isbn);
+    if (!clean) return '';
+    return `https://covers.openlibrary.org/b/isbn/${clean}-${size}.jpg?default=false`;
+}
+
+// Strip the bits of a Google Books image URL that downsize / decorate
+// the cover. zoom=1 → zoom=0 returns the original-resolution scan;
+// removing edge=curl drops the fake page-curl PNG overlay; http→https
+// avoids mixed-content blocking on our HTTPS site.
+function upscaleGoogleBooksUrl(u) {
+    if (!u) return '';
+    let url = String(u).replace(/^http:\/\//i, 'https://');
+    url = url.replace(/(\?|&)zoom=\d+/g, '$1zoom=0');
+    url = url.replace(/(\?|&)edge=curl/g, '$1edge=none');
+    return url;
+}
+
+// Ask Google Books for the best cover URL we can get. Returns null
+// when the book isn't in their catalog or has no image. Cached in
+// sessionStorage so multiple lookups for the same ISBN in one tab
+// only hit Google once.
+async function fetchGoogleBooksCover(isbn) {
+    const clean = normalizeIsbn(isbn);
+    if (!clean) return null;
+    const cacheKey = `gb_cover_${clean}`;
+    try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached !== null) return cached || null;
+    } catch {}
+
+    try {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(clean)}&country=US&maxResults=1`);
+        if (!res.ok) throw new Error('Google Books ' + res.status);
+        const data = await res.json();
+        const item = data.items && data.items[0];
+        const links = item?.volumeInfo?.imageLinks;
+        if (!links) {
+            try { sessionStorage.setItem(cacheKey, ''); } catch {}
+            return null;
+        }
+        // Prefer the most-zoomable URL Google returns. Each link is a
+        // pre-baked scaled version of the same scan; upscaleGoogleBooksUrl
+        // flips zoom=0 on all of them to request the original.
+        const candidate = links.extraLarge || links.large || links.medium ||
+                          links.small || links.thumbnail || links.smallThumbnail;
+        const upscaled = upscaleGoogleBooksUrl(candidate);
+        try { sessionStorage.setItem(cacheKey, upscaled || ''); } catch {}
+        return upscaled || null;
+    } catch {
+        return null;
+    }
+}
+
+// Probe Open Library's covers CDN. Used as the fallback when Google
+// has nothing — and also as an immediate first-paint candidate while
+// the (slower) Google JSON fetch is in flight.
+function probeOpenLibraryCover(isbn) {
+    return new Promise((resolve) => {
+        const url = openLibraryCoverUrl(isbn, 'L');
+        if (!url) return resolve(null);
+        const img = new Image();
+        let settled = false;
+        const done = (val) => { if (!settled) { settled = true; resolve(val); } };
+        img.onload  = () => done(img.naturalWidth > 1 ? url : null);
+        img.onerror = () => done(null);
+        setTimeout(() => done(null), 6000);
+        img.src = url;
+    });
+}
+
+// Main entry point: best-effort high-res cover lookup. Tries Google
+// Books first (high-res); if Google misses, falls back to Open Library.
+// Returns null if nothing usable is found.
+async function fetchIsbnCover(isbn) {
+    const clean = normalizeIsbn(isbn);
+    if (!clean) return null;
+    const fromGoogle = await fetchGoogleBooksCover(clean);
+    if (fromGoogle) return fromGoogle;
+    return await probeOpenLibraryCover(clean);
+}
+
+// Kept around for callers that just need a fast, no-network URL (no
+// probing): use Open Library directly. Falls through to placeholder
+// behaviour in CSS if the cover doesn't exist on Open Library.
+function probeIsbnCover(isbn, size = 'L') {
+    // Backwards-compatibility shim. Async probe with the old name.
+    return probeOpenLibraryCover(isbn);
+}
+
+// Expose for the writer composer module + book-reviews.js so they
+// can reuse the exact same lookup logic.
+window.__catalystIsbnCover     = probeIsbnCover;           // legacy alias
+window.__catalystBestCover     = fetchIsbnCover;           // preferred (Google → OL)
+window.__catalystOpenLibraryUrl = openLibraryCoverUrl;     // fast no-probe URL
+
 function renderArticleDetail(article) {
     const container = document.getElementById('article-detail');
     if (!container) return;
+
+    // Book reviews get their own dedicated template — different layout,
+    // big cover, rating spread, book-metadata header. Keeps reviews from
+    // looking like every other Catalyst article.
+    if ((article.category || '').toLowerCase() === 'book-review') {
+        return renderBookReviewDetail(article, container);
+    }
 
     // --- Meta tags + page title -------------------------------------------
     document.title = `${article.title} | The Catalyst Magazine`;
@@ -1291,6 +1427,232 @@ function renderArticleDetail(article) {
         const body = container.querySelector('.article-body');
         if (body) window.applyGlossary(body);
     }
+}
+
+// =============================================================
+// BOOK REVIEW article template — dedicated layout.
+// Different shape from the regular article: tall standalone book cover,
+// big book title + author header, prominent rating spread, body sits in
+// a narrower column for a book-jacket feel. Styles are isolated under
+// body[data-page="article"].is-book-review in /css/book-review-article.css.
+// =============================================================
+function renderBookReviewDetail(article, container) {
+    // Tag the body so the scoped CSS activates only for this template.
+    document.body.classList.add('is-book-review');
+
+    // --- Meta tags ---
+    document.title = `${article.title} | The Catalyst Book Reviews`;
+    const articleUrl = `${window.location.origin}/article/${encodeURIComponent(titleToSlug(article.title))}`;
+    const articleImage = /^https?:\/\//i.test(article.image || '')
+        ? article.image
+        : `${window.location.origin}/${(article.image || 'NewLogoShape.png').replace(/^\/+/, '')}`;
+    const articleDescription = article.excerpt || article.deck || `A book review by ${article.author || 'The Catalyst'}.`;
+    document.getElementById('meta-description')?.setAttribute('content', articleDescription);
+    document.getElementById('meta-og-url')?.setAttribute('content', articleUrl);
+    document.getElementById('meta-og-title')?.setAttribute('content', article.title);
+    document.getElementById('meta-og-description')?.setAttribute('content', articleDescription);
+    document.getElementById('meta-og-image')?.setAttribute('content', articleImage);
+    document.getElementById('meta-twitter-title')?.setAttribute('content', article.title);
+    document.getElementById('meta-twitter-description')?.setAttribute('content', articleDescription);
+    document.getElementById('meta-twitter-image')?.setAttribute('content', articleImage);
+
+    // --- Derived values ---
+    const contentHtml = article.blocks?.length
+        ? renderContentBlocks(article.blocks)
+        : (article.content || `<p>${escapeHtmlAttr(article.excerpt || '')}</p>`);
+    const readingTime = article.readingTime || estimateReadingTime(article);
+    const rating = (typeof article.rating === 'number' && article.rating >= 0 && article.rating <= 5) ? article.rating : null;
+    const ratingPct = rating != null ? Math.round((rating / 5) * 100) : null;
+    const stars = renderStars(rating);
+    const isReaderPick = !!article.communityPick;
+    const isbn = article.isbn || '';
+    const shareUrl  = encodeURIComponent(articleUrl);
+    const shareText = encodeURIComponent(article.title);
+
+    // The "back" link points back to the column index.
+    const backLink = document.querySelector('.article-page .back-link');
+    if (backLink) {
+        backLink.setAttribute('href', '/book-reviews');
+        backLink.lastChild.textContent = ' Back to Book Reviews';
+    }
+
+    container.innerHTML = `
+        <article class="brx" data-has-cover="${article.image ? 'true' : 'false'}">
+            <header class="brx-hero">
+                <div class="brx-hero-inner">
+                    <div class="brx-hero-meta">
+                        <span class="brx-kicker">
+                            ${isReaderPick ? 'Reader pick · The Stacks' : 'Catalyst Book Review · The Stacks'}
+                        </span>
+                    </div>
+
+                    <h1 class="brx-title">${escapeHtmlAttr(article.title)}</h1>
+
+                    ${article.bookAuthor
+                        ? `<p class="brx-book-author">by <strong>${escapeHtmlAttr(article.bookAuthor)}</strong></p>`
+                        : ''
+                    }
+
+                    ${article.deck
+                        ? `<p class="brx-deck">${escapeHtmlAttr(article.deck)}</p>`
+                        : ''
+                    }
+
+                    <div class="brx-byline">
+                        <div class="brx-byline-pair">
+                            <span class="brx-byline-label">Reviewed by</span>
+                            <span class="brx-byline-name">${escapeHtmlAttr(article.author || 'The Catalyst')}</span>
+                        </div>
+                        ${article.date
+                            ? `<div class="brx-byline-pair">
+                                <span class="brx-byline-label">Published</span>
+                                <span class="brx-byline-name">${escapeHtmlAttr(article.date)}</span>
+                              </div>`
+                            : ''
+                        }
+                        <div class="brx-byline-pair">
+                            <span class="brx-byline-label">Reading time</span>
+                            <span class="brx-byline-name">${escapeHtmlAttr(readingTime)}</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <section class="brx-spread">
+                <aside class="brx-cover-wrap">
+                    <div class="brx-cover">
+                        <img class="brx-cover-img"
+                             alt="Cover of ${escapeHtmlAttr(article.title)}"
+                             src="${escapeHtmlAttr(getBookReviewCover(article))}"
+                             loading="eager"
+                             fetchpriority="high"
+                             onload="this.classList.add('loaded')"
+                             onerror="this.classList.add('failed')">
+                        <div class="brx-cover-shadow" aria-hidden="true"></div>
+                    </div>
+
+                    ${isbn
+                        ? `<p class="brx-isbn"><span>ISBN</span><code>${escapeHtmlAttr(isbn)}</code></p>`
+                        : ''
+                    }
+                </aside>
+
+                <div class="brx-verdict">
+                    ${rating != null
+                        ? `<div class="brx-verdict-card">
+                            <div class="brx-verdict-eyebrow">${isReaderPick ? 'Reader rating' : 'Catalyst rating'}</div>
+                            <div class="brx-verdict-row">
+                                <div class="brx-rating-dial" style="--score:${ratingPct};">
+                                    <span class="brx-rating-num">${rating.toFixed(1)}<small>/5</small></span>
+                                </div>
+                                <div class="brx-rating-stars" aria-label="${rating.toFixed(1)} out of 5">${stars}</div>
+                            </div>
+                          </div>`
+                        : ''
+                    }
+
+                    <div class="brx-quickfacts">
+                        <div class="brx-fact">
+                            <span class="brx-fact-label">Title</span>
+                            <span class="brx-fact-value">${escapeHtmlAttr(article.title)}</span>
+                        </div>
+                        ${article.bookAuthor
+                            ? `<div class="brx-fact">
+                                <span class="brx-fact-label">Author</span>
+                                <span class="brx-fact-value">${escapeHtmlAttr(article.bookAuthor)}</span>
+                              </div>`
+                            : ''
+                        }
+                        <div class="brx-fact">
+                            <span class="brx-fact-label">Reviewed by</span>
+                            <span class="brx-fact-value">${escapeHtmlAttr(article.author || 'The Catalyst')}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="brx-body-wrap">
+                <div class="brx-body">${contentHtml}</div>
+
+                <div class="brx-share" role="group" aria-label="Share this review">
+                    <span>Share this review</span>
+                    <a class="brx-share-btn" href="https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareText}" target="_blank" rel="noopener" aria-label="Share on X">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </a>
+                    <a class="brx-share-btn" href="https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.22 8h4.56v14H.22V8zM7.78 8h4.37v1.93h.06c.61-1.15 2.1-2.37 4.32-2.37 4.62 0 5.47 3.04 5.47 7v7.45h-4.56v-6.6c0-1.58-.03-3.61-2.2-3.61-2.2 0-2.54 1.72-2.54 3.5V22H7.78V8z"/></svg>
+                    </a>
+                    <button class="brx-share-btn" type="button" onclick="copyArticleLink()" aria-label="Copy link">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    </button>
+                </div>
+
+                <a class="brx-cta" href="/book-reviews">
+                    <span>Explore more from The Stacks</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+        </article>
+    `;
+
+    mountReadingProgress();
+
+    // ── Cover upgrade pass ──
+    // The hero <img> has already been set to the best URL we knew about
+    // at render time (the stored coverImage if present, or the fast
+    // Open Library L thumbnail). If a high-res Google Books cover is
+    // available, swap it in once it resolves — the user sees the page
+    // render instantly and the cover only gets sharper, never blurry.
+    if (article.isbn) {
+        fetchIsbnCover(article.isbn).then((url) => {
+            if (!url) return;
+            const img = container.querySelector('.brx-cover-img');
+            if (!img) return;
+            // Don't downgrade: only swap if we got a different URL than
+            // what's currently shown, and only if it's a Google Books
+            // (high-res) result OR the slot is empty / fallback.
+            if (img.src.indexOf('books.google.com') !== -1) return;
+            img.src = url;
+            container.querySelector('.brx')?.setAttribute('data-has-cover', 'true');
+        });
+    }
+}
+
+// Pick the best initial cover URL for the book-review template.
+// Priority: stored article.image (may be high-res Google URL the
+// writer saved at compose time) > Open Library ISBN (instant, no JSON
+// roundtrip) > generic fallback. A second pass after paint may upgrade
+// to the Google Books high-res scan.
+function getBookReviewCover(article) {
+    if (article.image && article.image !== ARTICLE_FALLBACK_IMAGE) return article.image;
+    if (article.isbn) {
+        const u = openLibraryCoverUrl(article.isbn, 'L');
+        if (u) return u;
+    }
+    return ARTICLE_FALLBACK_IMAGE;
+}
+
+// Render a star strip for a 0–5 (half-step) rating. Pure SVG-as-data-uri
+// would work too; inline-SVG is just easier to style.
+function renderStars(rating) {
+    if (rating == null) return '';
+    const out = [];
+    for (let i = 1; i <= 5; i++) {
+        const fill = Math.min(Math.max(rating - (i - 1), 0), 1); // 0, 0.5, or 1
+        out.push(`<span class="brx-star" style="--fill:${fill};">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <defs><linearGradient id="brx-g${i}" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="${fill * 100}%" stop-color="currentColor"/>
+                    <stop offset="${fill * 100}%" stop-color="currentColor" stop-opacity="0.18"/>
+                </linearGradient></defs>
+                <polygon fill="url(#brx-g${i})"
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+        </span>`);
+    }
+    return out.join('');
 }
 
 // Article games: an admin can attach either a Doodle Jump or a Flappy
@@ -1814,6 +2176,9 @@ function formatCategory(category) {
         'editorial': 'Editorial',
         'article': 'Feature',
         'news': 'News',
+        'science': 'Science',
+        'book-review': 'Book Review',
+        'bookreview': 'Book Review',
     };
     return map[category] || category.charAt(0).toUpperCase() + category.slice(1);
 }
@@ -1911,7 +2276,11 @@ async function loadArticles() {
 async function loadFromFirestore() {
     // Session cache: Firestore is the slowest part of startup. Within one tab
     // session the article list doesn't change, so serve the cached copy instantly.
-    const CACHE_KEY = 'catalyst_fs_cache_v4';
+    // Bumped to v5 when we added book-review fields (communityPick,
+    // bookAuthor, rating, isbn) to the shared query projection. Old v4
+    // caches don't carry those fields, which is why fresh book reviews
+    // weren't appearing on /book-reviews after publish.
+    const CACHE_KEY = 'catalyst_fs_cache_v5';
     try {
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) return JSON.parse(cached);
@@ -1934,7 +2303,9 @@ async function loadFromFirestore() {
                 { field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }
             ],
             // Only fetch the fields the listing UI needs — excludes the full
-            // article body which can be 50-200 KB per document.
+            // article body which can be 50-200 KB per document. The
+            // book-review-specific fields are included so /book-reviews can
+            // reuse the same shared sessionStorage cache without re-fetching.
             select: {
                 fields: [
                     { fieldPath: 'title' },
@@ -1952,6 +2323,13 @@ async function loadFromFirestore() {
                     { fieldPath: 'slug' },
                     { fieldPath: 'status' },
                     { fieldPath: 'lightCover' },
+                    // Book-review fields. Free to include even on non-book
+                    // stories — Firestore just returns null for missing
+                    // values, which the renderer ignores.
+                    { fieldPath: 'communityPick' },
+                    { fieldPath: 'bookAuthor' },
+                    { fieldPath: 'rating' },
+                    { fieldPath: 'isbn' },
                 ]
             },
             limit: 60
@@ -1997,7 +2375,7 @@ function firestoreDocToArticle(doc) {
     const title = str('title');
     if (!title) return null;
 
-    const category = (str('category') || 'feature').toLowerCase();
+    const category = (str('category') || 'feature').toLowerCase().replace(/\s+/g, '-');
     const content = str('body') || str('content');
     const deck = str('dek') || str('deck');
     const lightCover = f.lightCover?.booleanValue === true;
@@ -2015,6 +2393,19 @@ function firestoreDocToArticle(doc) {
     // "Games" tab writes a stories/{id}.game map of { questions, title, intro }.
     const game = decodeFirestoreGame(f.game);
 
+    // Book-review-specific fields (only populated when category === 'book-review').
+    // Captured here so the article-detail renderer can branch into the
+    // dedicated book-review template without re-fetching.
+    const bookAuthor    = str('bookAuthor');
+    const isbn          = str('isbn');
+    const communityPick = f.communityPick?.booleanValue === true;
+    const ratingRaw     = f.rating;
+    let rating = null;
+    if (ratingRaw) {
+        if ('doubleValue'  in ratingRaw) rating = Number(ratingRaw.doubleValue);
+        else if ('integerValue' in ratingRaw) rating = parseInt(ratingRaw.integerValue, 10);
+    }
+
     return {
         id: storyId,
         title,
@@ -2029,7 +2420,12 @@ function firestoreDocToArticle(doc) {
         deck,
         content,
         lightCover,
-        game
+        game,
+        // Book-review extras (undefined / null for other categories)
+        bookAuthor,
+        isbn,
+        rating,
+        communityPick
     };
 }
 
@@ -2236,8 +2632,16 @@ function parseDate(row) {
 
 function normalizeCategory(cat = '') {
     const val = cat.toLowerCase().replace(/\s+/g, '-');
-    if (['feature', 'profile', 'interview', 'op-ed', 'editorial'].includes(val)) return val;
+    if (['feature', 'profile', 'interview', 'op-ed', 'editorial', 'book-review', 'news', 'science'].includes(val)) return val;
     return 'feature';
+}
+
+// Book reviews live on their own page (/book-reviews). They must not bleed
+// into the homepage hero/featured grids or the Articles index.
+function isBookReview(article) {
+    if (!article) return false;
+    const cat = String(article.category || '').toLowerCase().replace(/\s+/g, '-');
+    return cat === 'book-review';
 }
 
 function normalizeLink(link = '') {

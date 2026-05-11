@@ -116,7 +116,10 @@
 
     function normalizeArticle(raw) {
         if (!raw || !raw.title) return null;
-        const cat = String(raw.category || 'feature').toLowerCase();
+        const cat = String(raw.category || 'feature').toLowerCase().replace(/\s+/g, '-');
+        // Book reviews live on their dedicated /book-reviews page and must not
+        // appear in the general Articles index.
+        if (cat === 'book-review' || cat === 'bookreview') return null;
         const link = raw.link || raw.url || `/article/${encodeURIComponent(titleToSlug(raw.title))}`;
         return {
             id: raw.id || raw._id || raw.slug || titleToSlug(raw.title),
@@ -147,7 +150,7 @@
     // ---------- Firestore ----------
     async function loadFirestoreArticles() {
         // Reuse the same session cache key main.js uses so we don't re-fetch.
-        const CACHE_KEY = 'catalyst_fs_cache_v4';
+        const CACHE_KEY = 'catalyst_fs_cache_v5';
         try {
             const cached = sessionStorage.getItem(CACHE_KEY);
             if (cached) return JSON.parse(cached).map(fsToNormalized).filter(Boolean);
@@ -180,7 +183,13 @@
                         { fieldPath: 'deck' },
                         { fieldPath: 'dek' },
                         { fieldPath: 'category' },
-                        { fieldPath: 'slug' }
+                        { fieldPath: 'slug' },
+                        // Book-review fields so the shared session cache
+                        // (also read by /book-reviews) carries them.
+                        { fieldPath: 'communityPick' },
+                        { fieldPath: 'bookAuthor' },
+                        { fieldPath: 'rating' },
+                        { fieldPath: 'isbn' }
                     ]
                 },
                 limit: 60

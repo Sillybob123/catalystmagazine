@@ -142,6 +142,25 @@ const ROUTES = {
     group: "write",
     loader: () => import("./guidelines.js"),
   },
+  // Book reviews are intentionally NOT in the regular draft flow. They have
+  // their own composer with book-specific fields (ISBN, rating, book author
+  // separate from byline) and publish straight to the Book Reviews page.
+  "#/book-reviews/write": {
+    label: "Write a book review",
+    icon: ICONS.pen,
+    roles: ["admin", "editor", "writer"],
+    group: "write",
+    loader: () => import("./book-reviews-writer.js"),
+    mountKey: "write",
+  },
+  "#/book-reviews/mine": {
+    label: "My book reviews",
+    icon: ICONS.book,
+    roles: ["admin", "editor", "writer"],
+    group: "write",
+    loader: () => import("./book-reviews-writer.js"),
+    mountKey: "mine",
+  },
   "#/editor/queue": {
     label: "Editing queue",
     icon: ICONS.check,
@@ -243,6 +262,13 @@ const ROUTES = {
     roles: ["admin"],
     group: "admin",
     loader: () => import("./activity.js"),
+  },
+  "#/admin/book-reviews": {
+    label: "Book reviews",
+    icon: ICONS.book,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./book-reviews-admin.js"),
   },
   // Final-review page — the shareable link the admin sends to the writer after
   // approving. Either the writer (story author) or any admin/editor can land

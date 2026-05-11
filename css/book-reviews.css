@@ -1,0 +1,1233 @@
+/* =====================================================
+   book-reviews.css — Catalyst Magazine
+   "The Stacks" — premium STEM book-review vertical.
+   Built with Impeccable v3.0.6 + UI/UX Pro Max + Taste:
+     • OKLCH-style tinted neutrals (no pure #000/#fff)
+     • Slate monochrome with a single committed wine accent
+       (gold is reserved for ai-expo per CLAUDE.md)
+     • 44px+ touch targets, :focus-visible everywhere
+     • prefers-reduced-motion fully honored
+     • min-h-100dvh on hero to avoid iOS Safari jump
+   ===================================================== */
+
+body[data-page="book-reviews"] {
+    --ink:          #0e1117;     /* slate-tinted near-black */
+    --ink-deep:     #06080c;
+    --ink-soft:     #181d28;
+    --ink-line:     rgba(247,244,237,0.10);
+    --paper:        #f7f4ed;     /* warm cream */
+    --paper-off:    #efe9da;
+    --paper-line:   #e2dccb;
+    --text:         #1a1d24;
+    --text-muted:   #4a4f5c;
+    --text-subtle:  #7a808d;
+    --accent:       #7a1f2b;     /* bookmark wine — the committed accent */
+    --accent-soft:  #c4525e;
+    --accent-deep:  #4a0f17;
+    --on-dark-text: #efe9da;
+    --on-dark-muted:rgba(239,233,218,0.62);
+    --on-dark-sub:  rgba(239,233,218,0.35);
+
+    background: var(--paper);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
+}
+
+/* The shared site header sits on cream here; nudge its contrast pieces. */
+body[data-page="book-reviews"] .header {
+    background: rgba(247,244,237,0.85);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--paper-line);
+}
+
+/* =================================================================
+   GLOBAL — Reveal-on-scroll (matches ai-expo pattern, retuned)
+   ================================================================= */
+.br-reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+        opacity .75s cubic-bezier(.16,1,.3,1),
+        transform .75s cubic-bezier(.16,1,.3,1);
+    will-change: transform, opacity;
+}
+.br-reveal.in { opacity: 1; transform: none; }
+.br-d1 { transition-delay: .08s; }
+.br-d2 { transition-delay: .18s; }
+.br-d3 { transition-delay: .30s; }
+.br-d4 { transition-delay: .44s; }
+
+@media (prefers-reduced-motion: reduce) {
+    .br-reveal { opacity: 1; transform: none; transition: none; }
+    .br-orb, .br-marquee-track, .br-stack-book,
+    .br-hero-glyph, .br-spine-spark { animation: none !important; }
+    * { scroll-behavior: auto !important; }
+}
+
+/* =================================================================
+   HERO — "The Stacks"
+   ================================================================= */
+.br-hero {
+    position: relative;
+    min-height: 100dvh;            /* iOS-safe (Taste rule) */
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--on-dark-text);
+    /* Top padding clears the fixed header (~80px) plus a small breathing
+       gap; bottom keeps the section from feeling cramped at the marquee. */
+    padding: 104px 0 96px;
+    isolation: isolate;
+}
+
+/* Ambient orbs — slow drift, brand-tinted (no AI purple). */
+.br-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+    animation: br-drift 22s ease-in-out infinite alternate;
+}
+.br-orb-1 { width: 520px; height: 520px; top: -120px;  left: -120px;
+            background: radial-gradient(circle, rgba(122,31,43,.65), transparent 70%); }
+.br-orb-2 { width: 460px; height: 460px; bottom: -140px; right: -100px;
+            background: radial-gradient(circle, rgba(196,82,94,.45), transparent 70%);
+            animation-duration: 28s; animation-direction: alternate-reverse; }
+.br-orb-3 { width: 340px; height: 340px; top: 38%;  right: 22%;
+            background: radial-gradient(circle, rgba(239,233,218,.18), transparent 70%);
+            animation-duration: 34s; }
+@keyframes br-drift {
+    0%   { transform: translate(0,0) scale(1); }
+    100% { transform: translate(40px, -30px) scale(1.06); }
+}
+
+/* Subtle marbled-paper noise overlay (premium feel, very subtle). */
+.br-hero-grain {
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(circle at 20% 30%, rgba(239,233,218,.04) 0, transparent 1px),
+        radial-gradient(circle at 70% 65%, rgba(239,233,218,.05) 0, transparent 1.5px),
+        radial-gradient(circle at 45% 80%, rgba(239,233,218,.03) 0, transparent 1px);
+    background-size: 6px 6px, 9px 9px, 11px 11px;
+    opacity: .8;
+    z-index: 1;
+    pointer-events: none;
+    mix-blend-mode: screen;
+}
+
+.br-hero-inner {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 72px;
+    align-items: center;
+}
+@media (max-width: 960px) {
+    .br-hero { padding: 88px 0 72px; }
+    .br-hero-inner { grid-template-columns: 1fr; gap: 48px; padding: 0 24px; }
+}
+
+/* Editorial eyebrow with bracket lines (matches ai-expo aesthetic). */
+.br-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--accent-soft);
+    margin-bottom: 28px;
+}
+.br-hero-eyebrow::before,
+.br-hero-eyebrow::after {
+    content: '';
+    height: 1px; width: 36px;
+    background: linear-gradient(90deg, transparent, var(--accent-soft), transparent);
+}
+
+.br-hero-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(48px, 7.4vw, 110px);
+    line-height: 0.94;
+    letter-spacing: -0.022em;
+    color: var(--on-dark-text);
+    margin: 0 0 28px;
+}
+.br-hero-title em {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent-soft);
+    display: inline-block;
+    padding-right: 0.04em;
+}
+
+.br-hero-kicker {
+    max-width: 56ch;
+    font-size: clamp(15px, 1.1vw, 17.5px);
+    line-height: 1.7;
+    color: var(--on-dark-muted);
+    margin: 0 0 36px;
+}
+
+.br-hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px 40px;
+    border-top: 1px solid var(--ink-line);
+    padding-top: 28px;
+    margin-top: 8px;
+}
+.br-hero-meta-item .br-hero-meta-label {
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--on-dark-sub);
+    margin-bottom: 6px;
+}
+.br-hero-meta-item .br-hero-meta-value {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px;
+    color: var(--on-dark-text);
+}
+
+/* ---- Hero stack visual (three tilted "books") ----
+   Scroll-spread: as the user scrolls the hero, JS sets
+   --br-spread (0 → 1) on .br-hero-stack. At 0 the books
+   are stacked close together; at 1 they fan outward and
+   scale up dramatically (the "blow up" effect).
+   Each book also has a subtle idle float, applied via a
+   nested wrapper so the spread + float multiply cleanly. */
+.br-hero-stack {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    width: 100%;
+    max-width: 520px;
+    margin-left: auto;
+    /* Nudge the stack upward so it sits closer to the title row instead of
+       drifting low under the hero's flex centering. */
+    margin-top: -56px;
+    perspective: 1600px;
+    --br-spread: 0;            /* updated by JS on scroll */
+    will-change: contents;
+}
+.br-stack-book {
+    position: absolute;
+    border-radius: 4px;
+    box-shadow:
+        0 30px 60px -20px rgba(0,0,0,.55),
+        0 0 0 1px rgba(239,233,218,.06) inset;
+    overflow: hidden;
+    /* Outer transform: spread + scale driven by scroll progress.
+       Inner ::before/::after stay aligned because we wrap the
+       float on the host element itself with calc() values. */
+    transform:
+        translate3d(
+            calc(var(--br-spread) * var(--tx, 0px)),
+            calc(var(--br-spread) * var(--ty, 0px)),
+            calc(var(--br-spread) * var(--tz, 0px))
+        )
+        rotate(calc(var(--r, 0deg) + var(--br-spread) * var(--rs, 0deg)))
+        scale(calc(1 + var(--br-spread) * var(--sc, 0.25)));
+    transform-origin: center center;
+    transition: box-shadow .4s ease;
+    will-change: transform;
+}
+.br-hero-stack[data-spread="1"] .br-stack-book {
+    box-shadow:
+        0 60px 120px -20px rgba(0,0,0,.7),
+        0 0 0 1px rgba(239,233,218,.10) inset;
+}
+.br-stack-book::before {
+    /* spine highlight */
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 14px;
+    background: linear-gradient(90deg, rgba(0,0,0,.45), transparent);
+    pointer-events: none;
+}
+.br-stack-book::after {
+    /* title plate */
+    content: attr(data-title);
+    position: absolute;
+    inset: auto 16px 18px 28px;
+    color: rgba(239,233,218,.92);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-size: 14px;
+    letter-spacing: .02em;
+    line-height: 1.25;
+    text-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+
+/* Per-book base position, rest rotation, and spread vector.
+   --tx/--ty/--tz: how far it travels when fully blown up.
+   --rs:           extra rotation added at full spread.
+   --sc:           extra scale added at full spread (0.25 = +25%). */
+.br-stack-book-1 {
+    inset: 4% 14% 8% 0;
+    background: linear-gradient(155deg, #2b1a1c 0%, #6b1f2a 55%, #3a1117 100%);
+    --r: -7deg;
+    --tx: -120px; --ty: -60px; --tz: 80px;
+    --rs: -10deg; --sc: .32;
+}
+.br-stack-book-2 {
+    inset: 14% 0 0 16%;
+    background: linear-gradient(155deg, #1a232f 0%, #2b3a52 55%, #0e1117 100%);
+    --r: 3deg;
+    --tx: 110px; --ty: -90px; --tz: 60px;
+    --rs: 14deg; --sc: .28;
+}
+.br-stack-book-3 {
+    inset: 28% 22% -4% 8%;
+    background: linear-gradient(155deg, #3a2a14 0%, #6b4a22 55%, #261a09 100%);
+    --r: -2deg;
+    --tx: 30px; --ty: 130px; --tz: 110px;
+    --rs: -6deg; --sc: .36;
+}
+
+@media (max-width: 960px) {
+    .br-hero-stack { max-width: 360px; margin: -16px auto 0; }
+    /* Smaller travel on mobile so the books don't leave the viewport */
+    .br-stack-book-1 { --tx: -70px;  --ty: -40px; --tz: 40px; --sc: .22; }
+    .br-stack-book-2 { --tx: 60px;   --ty: -55px; --tz: 30px; --sc: .20; }
+    .br-stack-book-3 { --tx: 20px;   --ty: 80px;  --tz: 60px; --sc: .26; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* Honor user preference: skip the scroll-spread entirely. */
+    .br-stack-book { transform: rotate(var(--r, 0deg)); }
+}
+
+/* =================================================================
+   SECTION SCAFFOLDING
+   ================================================================= */
+.br-section { padding: 100px 0; position: relative; }
+.br-container { max-width: 1320px; margin: 0 auto; padding: 0 32px; }
+@media (max-width: 720px) {
+    .br-section { padding: 72px 0; }
+    .br-container { padding: 0 22px; }
+}
+.br-section-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 18px;
+}
+.br-section-eyebrow::before {
+    content: '';
+    width: 28px; height: 1px;
+    background: var(--accent);
+}
+.br-section-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(34px, 4.4vw, 60px);
+    line-height: 1.04;
+    letter-spacing: -0.018em;
+    color: var(--ink);
+    margin: 0 0 18px;
+}
+.br-section-title em { font-style: italic; color: var(--accent); }
+.br-section-lede {
+    max-width: 60ch;
+    font-size: 17px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin: 0 0 48px;
+}
+
+/* =================================================================
+   FEATURED REVIEW — split-screen spotlight
+   ================================================================= */
+.br-featured {
+    background: var(--paper);
+    border-top: 1px solid var(--paper-line);
+    border-bottom: 1px solid var(--paper-line);
+}
+.br-featured-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 80px;
+    align-items: center;
+}
+@media (max-width: 960px) {
+    .br-featured-grid { grid-template-columns: 1fr; gap: 48px; }
+}
+.br-featured-cover {
+    position: relative;
+    /* Slightly taller than 3:4 (closer to typical hardback proportions)
+       so paperback scans don't show top/bottom padding. */
+    aspect-ratio: 2 / 3;
+    border-radius: 6px;
+    overflow: hidden;
+    /* Warm paper backing behind the cover so the moment before / after
+       the image loads doesn't look like a black void. */
+    background:
+        radial-gradient(circle at 50% 30%, rgba(239,233,218,.06), transparent 60%),
+        var(--ink);
+    box-shadow:
+        0 40px 60px -20px rgba(14,17,23,.45),
+        0 0 0 1px var(--paper-line);
+    transform: rotate(-2.4deg);
+    transition: transform .8s cubic-bezier(.16,1,.3,1);
+}
+.br-featured-cover:hover { transform: rotate(0) scale(1.015); }
+.br-featured-cover img {
+    width: 100%; height: 100%;
+    /* contain (not cover) so the WHOLE book jacket is visible — never
+       crops title or spine. */
+    object-fit: contain;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+}
+/* Spine shadow only makes sense when the cover fills the frame
+   (object-fit: cover). With contain we drop it to avoid the
+   shadow floating over empty background. */
+.br-featured-cover::after { display: none; }
+.br-featured-body {
+    padding-right: 8px;
+}
+.br-featured-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(122,31,43,.08);
+    border: 1px solid rgba(122,31,43,.18);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 999px;
+    margin-bottom: 24px;
+}
+.br-featured-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(34px, 4.6vw, 56px);
+    line-height: 1.04;
+    letter-spacing: -0.018em;
+    color: var(--ink);
+    margin: 0 0 14px;
+}
+.br-featured-author {
+    font-style: italic;
+    font-size: 18px;
+    color: var(--text-muted);
+    margin: 0 0 24px;
+}
+.br-featured-dek {
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--text);
+    margin: 0 0 32px;
+    max-width: 56ch;
+}
+.br-featured-byline {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-top: 24px;
+    border-top: 1px solid var(--paper-line);
+    margin-bottom: 32px;
+}
+.br-featured-byline strong {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 14px;
+}
+.br-featured-byline span {
+    font-size: 13px;
+    color: var(--text-subtle);
+}
+
+/* Rating dial */
+.br-rating {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 36px;
+}
+.br-rating-dial {
+    position: relative;
+    width: 76px; height: 76px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--score,0) * 1%), var(--paper-line) 0);
+    display: grid; place-items: center;
+}
+.br-rating-dial::before {
+    content: '';
+    position: absolute; inset: 6px;
+    border-radius: 50%;
+    background: var(--paper);
+}
+.br-rating-dial-value {
+    position: relative;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    z-index: 1;
+}
+.br-rating-dial-value small {
+    font-size: 12px;
+    color: var(--text-subtle);
+    font-weight: 400;
+}
+.br-rating-label {
+    font-size: 12px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.br-featured-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--ink);
+    color: var(--on-dark-text);
+    padding: 16px 28px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-decoration: none;
+    transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+    min-height: 48px;       /* ≥44px touch target (Pro Max P2) */
+}
+.br-featured-cta:hover {
+    background: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 16px 32px -12px rgba(122,31,43,.5);
+}
+.br-featured-cta svg { transition: transform .25s ease; }
+.br-featured-cta:hover svg { transform: translateX(4px); }
+.br-featured-cta:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* =================================================================
+   MARQUEE — running titles ticker
+   ================================================================= */
+.br-marquee {
+    background: var(--ink);
+    color: var(--on-dark-text);
+    padding: 14px 0;
+    overflow: hidden;
+    border-top: 1px solid var(--ink-line);
+    border-bottom: 1px solid var(--ink-line);
+    position: relative;
+}
+.br-marquee::before,
+.br-marquee::after {
+    content: '';
+    position: absolute; top: 0; bottom: 0; width: 100px;
+    z-index: 2; pointer-events: none;
+}
+.br-marquee::before { left: 0;  background: linear-gradient(90deg, var(--ink), transparent); }
+.br-marquee::after  { right: 0; background: linear-gradient(270deg, var(--ink), transparent); }
+.br-marquee-track {
+    display: flex;
+    gap: 44px;
+    width: max-content;
+    animation: br-marquee 42s linear infinite;
+}
+.br-marquee:hover .br-marquee-track { animation-play-state: paused; }
+@keyframes br-marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.br-marquee-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-size: clamp(15px, 1.3vw, 19px);
+    color: var(--on-dark-text);
+    white-space: nowrap;
+    line-height: 1;
+}
+.br-marquee-item::after {
+    content: '';
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    opacity: .7;
+}
+
+/* =================================================================
+   FILTER RAIL — sticky genre pills
+   ================================================================= */
+.br-rail-wrap {
+    position: sticky;
+    top: 88px;
+    z-index: 10;
+    background: rgba(247,244,237,.92);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--paper-line);
+    padding: 18px 0;
+}
+.br-rail {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.br-rail::-webkit-scrollbar { display: none; }
+.br-rail-search {
+    flex: 0 0 240px;
+    position: relative;
+}
+.br-rail-search input {
+    width: 100%;
+    height: 44px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 999px;
+    padding: 0 16px 0 42px;
+    font-size: 14px;
+    color: var(--ink);
+    transition: border-color .2s, box-shadow .2s;
+}
+.br-rail-search input:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+}
+.br-rail-search svg {
+    position: absolute; left: 16px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-subtle);
+    pointer-events: none;
+}
+.br-pill-group {
+    display: inline-flex;
+    gap: 8px;
+    padding: 4px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 999px;
+    position: relative;
+}
+.br-pill {
+    position: relative;
+    z-index: 1;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 10px 18px;
+    min-height: 44px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 999px;
+    transition: color .25s ease;
+    white-space: nowrap;
+}
+.br-pill[aria-selected="true"] { color: var(--paper); }
+.br-pill:hover { color: var(--ink); }
+.br-pill:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+.br-pill-indicator {
+    position: absolute;
+    top: 4px; bottom: 4px; left: 0;
+    background: var(--ink);
+    border-radius: 999px;
+    transition:
+        transform .45s cubic-bezier(.16,1,.3,1),
+        width .45s cubic-bezier(.16,1,.3,1);
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* =================================================================
+   REVIEWS GRID — asymmetric "spine" cards
+   ================================================================= */
+.br-feed {
+    padding-top: 64px;
+}
+.br-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 36px 28px;
+}
+.br-card {
+    grid-column: span 4;
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: transform .5s cubic-bezier(.16,1,.3,1);
+    opacity: 0;
+    transform: translateY(20px);
+}
+.br-card.in-view { opacity: 1; transform: none; }
+.br-card.wide { grid-column: span 6; }
+.br-card:hover { transform: translateY(-6px); }
+.br-card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: 8px;
+}
+@media (max-width: 960px) {
+    .br-grid { grid-template-columns: repeat(6, 1fr); }
+    .br-card, .br-card.wide { grid-column: span 6; }
+}
+
+.br-card-media {
+    position: relative;
+    /* Book-jacket proportion: ~2:3. Paired with object-fit: contain on
+       the <img> below means the whole cover is always visible — never
+       cropped through the title or spine. */
+    aspect-ratio: 2 / 3;
+    border-radius: 4px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 30%, rgba(239,233,218,.05), transparent 60%),
+        var(--ink-soft);
+    box-shadow:
+        0 20px 40px -16px rgba(14,17,23,.32),
+        0 0 0 1px rgba(14,17,23,.06);
+    margin-bottom: 24px;
+}
+/* "Wide" variant — used for the asymmetric large tiles. Still keep the
+   whole cover visible, just within a wider frame. */
+.br-card.wide .br-card-media { aspect-ratio: 4 / 5; }
+
+.br-card-media img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: contain;
+    transition: transform .8s cubic-bezier(.16,1,.3,1), opacity .4s ease;
+    opacity: 0;
+    image-rendering: -webkit-optimize-contrast;
+}
+.br-card-media img.loaded { opacity: 1; }
+.br-card:hover .br-card-media img { transform: scale(1.04); }
+/* Spine edge shadow only applies cleanly when the cover fills the
+   frame edge-to-edge (object-fit: cover). With contain, the shadow
+   could float over empty paper-tone background, so we omit it. The
+   box-shadow on .br-card-media still gives the elevated-book feel. */
+.br-card-media::after { display: none; }
+.br-card.wide .br-card-media::after { display: none; }
+
+.br-card-rating {
+    position: absolute;
+    top: 14px; left: 14px;
+    background: rgba(14,17,23,.85);
+    backdrop-filter: blur(6px);
+    color: var(--on-dark-text);
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 8px 12px;
+    border-radius: 4px;
+    line-height: 1;
+    display: inline-flex; align-items: baseline; gap: 2px;
+}
+.br-card-rating small {
+    font-size: 11px;
+    opacity: .6;
+    font-weight: 400;
+    margin-left: 2px;
+}
+.br-card-genre {
+    position: absolute;
+    bottom: 14px; left: 14px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 999px;
+}
+
+.br-card-body { padding-right: 8px; }
+.br-card-book {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: 22px;
+    line-height: 1.18;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    margin: 0 0 6px;
+    transition: color .25s ease;
+}
+.br-card:hover .br-card-book { color: var(--accent); }
+.br-card-author {
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0 0 14px;
+}
+.br-card-blurb {
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text);
+    margin: 0 0 18px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.br-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-subtle);
+    padding-top: 14px;
+    border-top: 1px solid var(--paper-line);
+}
+.br-card-meta strong {
+    font-weight: 600;
+    color: var(--ink);
+}
+.br-card-meta .br-dot {
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: var(--text-subtle);
+    display: inline-block;
+}
+
+/* Skeleton */
+.br-card.skeleton .br-card-media { background: var(--paper-off); }
+.br-card.skeleton .br-card-media::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+    animation: br-shimmer 1.6s ease-in-out infinite;
+}
+.br-sk-bar {
+    height: 14px;
+    background: var(--paper-off);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+}
+.br-sk-bar::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+    animation: br-shimmer 1.6s ease-in-out infinite;
+}
+.br-sk-bar.title { height: 24px; width: 80%; }
+.br-sk-bar.short { width: 55%; }
+@keyframes br-shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Empty state */
+.br-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 24px;
+    color: var(--text-muted);
+}
+.br-empty-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 20px;
+    color: var(--accent);
+    opacity: .7;
+}
+.br-empty h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 26px;
+    color: var(--ink);
+    margin: 0 0 10px;
+}
+
+/* Load more */
+.br-loadmore-wrap {
+    margin-top: 56px;
+    display: flex;
+    justify-content: center;
+}
+.br-loadmore {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    padding: 16px 32px;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    cursor: pointer;
+    min-height: 48px;
+    transition: background .25s ease, color .25s ease, border-color .25s ease;
+}
+.br-loadmore:hover {
+    background: var(--ink);
+    color: var(--on-dark-text);
+}
+.br-loadmore:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+/* =================================================================
+   PITCH — call for writers
+   ================================================================= */
+.br-pitch {
+    background: var(--ink);
+    color: var(--on-dark-text);
+    text-align: center;
+}
+.br-pitch .br-section-title { color: var(--on-dark-text); }
+.br-pitch .br-section-lede { color: var(--on-dark-muted); margin: 0 auto 36px; }
+.br-pitch-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--accent);
+    color: var(--on-dark-text);
+    padding: 18px 32px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: .04em;
+    min-height: 48px;
+    transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+}
+.br-pitch-cta:hover {
+    background: var(--accent-soft);
+    color: var(--ink);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 36px -12px rgba(196,82,94,.45);
+}
+.br-pitch-cta:focus-visible {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 3px;
+}
+
+/* =================================================================
+   COMMUNITY SECTION — "From the Catalyzers"
+   Sits below the writer reviews; visually distinct (cream-on-cream
+   with a subtle band) so readers know it's reader-submitted.
+   ================================================================= */
+.br-community {
+    background: var(--paper-off);
+    border-top: 1px solid var(--paper-line);
+    border-bottom: 1px solid var(--paper-line);
+}
+.br-community .br-section-eyebrow { color: var(--accent); }
+.br-community .br-section-title em { color: var(--accent); }
+
+.br-community-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 48px;
+    align-items: end;
+    margin-bottom: 48px;
+}
+@media (max-width: 860px) {
+    .br-community-head { grid-template-columns: 1fr; gap: 28px; }
+}
+
+/* Submit CTA — the button that opens the submission modal. */
+.br-submit-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    appearance: none;
+    background: var(--accent);
+    color: var(--on-dark-text);
+    border: 0;
+    padding: 16px 28px;
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: .02em;
+    cursor: pointer;
+    min-height: 48px;
+    justify-self: end;
+    transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
+}
+.br-submit-cta:hover {
+    background: var(--accent-deep);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 36px -12px rgba(122,31,43,.45);
+}
+.br-submit-cta:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+@media (max-width: 860px) {
+    .br-submit-cta { justify-self: start; }
+}
+
+/* "Reader pick" badge on community cards so it's obvious where each came from. */
+.br-card-pick {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: var(--accent);
+    color: var(--on-dark-text);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 6px;
+}
+.br-card-pick svg { width: 11px; height: 11px; }
+
+/* =================================================================
+   SUBMISSION MODAL — public form
+   ================================================================= */
+.br-modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(14,17,23,.62);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    transition: opacity .3s ease;
+}
+.br-modal-backdrop.is-open {
+    display: flex;
+    opacity: 1;
+}
+.br-modal {
+    background: var(--paper);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 620px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,.55);
+    transform: translateY(20px) scale(.98);
+    transition: transform .35s cubic-bezier(.16,1,.3,1);
+    position: relative;
+}
+.br-modal-backdrop.is-open .br-modal {
+    transform: none;
+}
+.br-modal-head {
+    padding: 32px 32px 16px;
+    border-bottom: 1px solid var(--paper-line);
+    position: sticky; top: 0;
+    background: var(--paper);
+    border-radius: 16px 16px 0 0;
+    z-index: 1;
+}
+.br-modal-eyebrow {
+    font-size: 11px;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.br-modal-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 6px;
+    letter-spacing: -.01em;
+    line-height: 1.15;
+}
+.br-modal-sub {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+.br-modal-close {
+    position: absolute;
+    top: 18px; right: 18px;
+    appearance: none;
+    background: var(--paper-off);
+    border: 0;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--text);
+    display: grid; place-items: center;
+    transition: background .2s ease;
+}
+.br-modal-close:hover { background: var(--paper-line); }
+.br-modal-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.br-modal-body {
+    padding: 24px 32px 32px;
+}
+.br-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 18px;
+}
+.br-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.br-form-field.full { grid-column: 1 / -1; }
+.br-form-field label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.br-form-field label .req { color: var(--accent); }
+.br-form-field input,
+.br-form-field textarea,
+.br-form-field select {
+    appearance: none;
+    background: var(--paper-off);
+    border: 1px solid var(--paper-line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    min-height: 48px;
+}
+.br-form-field textarea {
+    min-height: 140px;
+    resize: vertical;
+    line-height: 1.6;
+}
+.br-form-field input:focus-visible,
+.br-form-field textarea:focus-visible,
+.br-form-field select:focus-visible {
+    outline: none;
+    background: var(--paper);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+}
+.br-form-field .hint {
+    font-size: 12px;
+    color: var(--text-subtle);
+}
+.br-form-error {
+    background: rgba(122,31,43,.08);
+    border: 1px solid rgba(122,31,43,.22);
+    color: var(--accent-deep);
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+.br-form-success {
+    text-align: center;
+    padding: 20px 8px 8px;
+}
+.br-form-success-icon {
+    width: 56px; height: 56px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-dark-text);
+    display: grid; place-items: center;
+}
+.br-form-success h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 24px;
+    margin: 0 0 8px;
+    color: var(--ink);
+}
+.br-form-success p {
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin: 0 auto 16px;
+    max-width: 42ch;
+}
+
+.br-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--paper-line);
+    padding-top: 18px;
+}
+.br-btn {
+    appearance: none;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 13px 24px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    min-height: 46px;
+    transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.br-btn-ghost {
+    color: var(--text);
+    border-color: var(--paper-line);
+}
+.br-btn-ghost:hover { background: var(--paper-off); }
+.br-btn-primary {
+    background: var(--ink);
+    color: var(--on-dark-text);
+}
+.br-btn-primary:hover { background: var(--accent); }
+.br-btn-primary:disabled {
+    background: var(--paper-line);
+    color: var(--text-subtle);
+    cursor: not-allowed;
+}
+.br-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+@media (max-width: 540px) {
+    .br-form-grid { grid-template-columns: 1fr; }
+    .br-modal-head { padding: 24px 22px 14px; }
+    .br-modal-body { padding: 18px 22px 24px; }
+    .br-modal-actions { flex-direction: column-reverse; }
+    .br-modal-actions .br-btn { width: 100%; }
+}

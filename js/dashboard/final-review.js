@@ -161,6 +161,10 @@ export async function mount(ctx, container) {
       // the edit modal, or it carried over from a legacy import).
       if (!story.publishedAt) patch.publishedAt = new Date().toISOString();
       await updateDoc(docRef, patch);
+      // Bust the public listing cache so /book-reviews and /articles
+      // pick up the freshly-published story on the next load instead of
+      // serving the previous session-cache snapshot.
+      try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
       ctx.toast("Published. It's live on the site.", "success");
       publishBtn.textContent = "Published";
     } catch (err) {

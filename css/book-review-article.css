@@ -1,0 +1,502 @@
+/* =====================================================
+   book-review-article.css — dedicated detail layout
+   Activated by JS adding .is-book-review to <body data-page="article">.
+   ALL selectors below are scoped to that combo so they can't leak
+   into normal article pages.
+   ===================================================== */
+
+body[data-page="article"].is-book-review {
+    /* Match the slate site palette; the book-review accent is the wine
+       used on the /book-reviews index, scoped to this template only. */
+    --brx-ink:        #0e1117;
+    --brx-ink-soft:   #181d28;
+    --brx-paper:      #fbfaf6;     /* warm jacket-paper */
+    --brx-paper-off:  #f1ede2;
+    --brx-paper-line: #e3ddcd;
+    --brx-text:       #1a1d24;
+    --brx-text-muted: #4a4f5c;
+    --brx-text-sub:   #7a808d;
+    --brx-accent:     #7a1f2b;
+    --brx-accent-soft:#c4525e;
+    --brx-on-dark:    #efe9da;
+
+    background: var(--brx-paper);
+    color: var(--brx-text);
+}
+
+/* Tone down the global "bg-blobs" decoration so it doesn't fight the
+   book-jacket aesthetic. The blobs live behind the article page on
+   normal stories — for book reviews we want clean paper. */
+body[data-page="article"].is-book-review .bg-blobs { display: none; }
+body[data-page="article"].is-book-review .dc-capitol,
+body[data-page="article"].is-book-review .dc-silhouette { display: none; }
+
+/* Hide the default related-articles strip; the in-template CTA points
+   readers back to /book-reviews instead, which is the right next step. */
+body[data-page="article"].is-book-review .related-articles-wrap { display: none; }
+
+body[data-page="article"].is-book-review .article-page {
+    background: var(--brx-paper);
+    padding-top: 56px;
+    padding-bottom: 120px;
+}
+body[data-page="article"].is-book-review .article-page .container {
+    max-width: 1200px;
+}
+body[data-page="article"].is-book-review .back-link {
+    color: var(--brx-accent);
+    font-weight: 600;
+}
+body[data-page="article"].is-book-review .back-link:hover {
+    color: var(--brx-accent-soft);
+}
+
+/* The renderer drops <article class="brx"> into #article-detail, so
+   everything below is scoped under .brx (defensive against future changes
+   to .article-detail). */
+
+.brx {
+    --col-gap: 64px;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ─── HERO ─────────────────────────────────────────────────────── */
+.brx-hero {
+    padding: 24px 0 48px;
+    border-bottom: 1px solid var(--brx-paper-line);
+    margin-bottom: 56px;
+    position: relative;
+}
+.brx-hero::after {
+    /* a deliberate hairline accent under the kicker — a small detail
+       that signals "this is a column, not just an article" */
+    content: '';
+    position: absolute;
+    left: 0; bottom: -1px;
+    width: 80px; height: 3px;
+    background: var(--brx-accent);
+    border-radius: 2px;
+}
+
+.brx-hero-inner {
+    max-width: 920px;
+}
+.brx-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: var(--brx-accent);
+    margin-bottom: 24px;
+}
+.brx-kicker::before {
+    content: '';
+    width: 28px; height: 1px;
+    background: var(--brx-accent);
+}
+
+.brx-title {
+    font-family: 'Playfair Display', 'Source Serif Pro', Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(38px, 6vw, 76px);
+    line-height: 1.02;
+    letter-spacing: -0.022em;
+    color: var(--brx-ink);
+    margin: 0 0 14px;
+}
+
+.brx-book-author {
+    font-style: italic;
+    font-family: 'Playfair Display', 'Source Serif Pro', Georgia, serif;
+    font-size: clamp(20px, 2.4vw, 28px);
+    color: var(--brx-text-muted);
+    margin: 0 0 28px;
+}
+.brx-book-author strong {
+    color: var(--brx-ink);
+    font-weight: 600;
+    font-style: normal;
+}
+
+.brx-deck {
+    font-family: 'Playfair Display', 'Source Serif Pro', Georgia, serif;
+    font-style: italic;
+    font-size: clamp(18px, 1.5vw, 23px);
+    line-height: 1.45;
+    color: var(--brx-text);
+    margin: 0 0 36px;
+    max-width: 720px;
+    padding-left: 18px;
+    border-left: 3px solid var(--brx-accent);
+}
+
+.brx-byline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 36px;
+    padding-top: 24px;
+    border-top: 1px solid var(--brx-paper-line);
+}
+.brx-byline-pair { display: flex; flex-direction: column; gap: 4px; }
+.brx-byline-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--brx-text-sub);
+}
+.brx-byline-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--brx-ink);
+}
+
+/* ─── SPREAD: cover + verdict cards ──────────────────────────────── */
+.brx-spread {
+    display: grid;
+    grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+    gap: var(--col-gap);
+    align-items: start;
+    margin-bottom: 64px;
+}
+@media (max-width: 880px) {
+    .brx-spread {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+}
+
+.brx-cover-wrap {
+    position: sticky;
+    top: 96px;
+    z-index: 1;
+}
+@media (max-width: 880px) {
+    .brx-cover-wrap { position: static; max-width: 280px; margin: 0 auto; }
+}
+
+.brx-cover {
+    position: relative;
+    /* Most book covers are taller than 2:3 (closer to 6.4 × 9.6 ≈ 2:3.0,
+       but trade-paperback scans skew 5.5 × 8.5 ≈ 2:3.1). Letting the
+       container be slightly taller and using object-fit: contain means
+       we never crop the spine or top off a cover. */
+    aspect-ratio: 2 / 3.05;
+    border-radius: 4px;
+    overflow: hidden;
+    /* Warm paper tone behind the cover so the moment between load
+       states reads as a book on a shelf rather than a blank rectangle. */
+    background:
+        radial-gradient(circle at 50% 30%, rgba(239,233,218,.08), transparent 60%),
+        var(--brx-ink-soft);
+    box-shadow:
+        0 50px 60px -30px rgba(14,17,23,.45),
+        0 0 0 1px var(--brx-paper-line);
+    transform: rotate(-1.5deg);
+    transition: transform .8s cubic-bezier(.16,1,.3,1);
+}
+.brx-cover:hover { transform: rotate(0) scale(1.015); }
+.brx-cover-img {
+    width: 100%; height: 100%;
+    /* contain (not cover) preserves the full book jacket — never
+       crops the title or spine. Pairs with the slightly tall
+       aspect-ratio above so most scans fill the frame edge-to-edge. */
+    object-fit: contain;
+    display: block;
+    opacity: 0;
+    transition: opacity .5s ease;
+    /* High-DPI sharpness hints. WebKit + Blink honor -webkit-optimize-contrast;
+       Firefox honors crisp-edges (only for upscaling). When the source
+       file is already high enough resolution these are no-ops, so they
+       only kick in when we're stretching a smaller scan. */
+    image-rendering: -webkit-optimize-contrast;
+}
+.brx-cover-img.loaded { opacity: 1; }
+.brx-cover-img.failed {
+    /* When Open Library has no cover, the image errors out — show a
+       paper-tone placeholder with a tiny book glyph instead of an X. */
+    opacity: 1;
+    object-fit: contain;
+    padding: 30%;
+    background:
+        radial-gradient(circle at 50% 40%, rgba(239,233,218,.04), transparent 60%),
+        var(--brx-ink-soft);
+}
+.brx-cover::after {
+    /* Spine highlight on the left edge — pure CSS, no asset */
+    content: '';
+    position: absolute; inset: 0 auto 0 0;
+    width: 14px;
+    background: linear-gradient(90deg, rgba(0,0,0,.35), transparent);
+    pointer-events: none;
+}
+.brx-cover-shadow {
+    position: absolute;
+    inset: auto -8% -10% 4%;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(14,17,23,.25);
+    filter: blur(18px);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.brx-isbn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 26px 0 0;
+    font-size: 12px;
+    color: var(--brx-text-sub);
+}
+.brx-isbn span {
+    font-weight: 600;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+}
+.brx-isbn code {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    background: var(--brx-paper-off);
+    border: 1px solid var(--brx-paper-line);
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: var(--brx-ink);
+    font-size: 12px;
+}
+
+/* ─── VERDICT CARD ───────────────────────────────────────────────── */
+.brx-verdict {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.brx-verdict-card {
+    background: var(--brx-paper-off);
+    border: 1px solid var(--brx-paper-line);
+    border-radius: 14px;
+    padding: 26px 28px;
+}
+.brx-verdict-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: var(--brx-accent);
+    margin-bottom: 18px;
+}
+.brx-verdict-row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+
+.brx-rating-dial {
+    position: relative;
+    width: 92px; height: 92px;
+    border-radius: 50%;
+    background: conic-gradient(var(--brx-accent) calc(var(--score, 0) * 1%), var(--brx-paper-line) 0);
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+}
+.brx-rating-dial::before {
+    content: '';
+    position: absolute; inset: 7px;
+    border-radius: 50%;
+    background: var(--brx-paper);
+}
+.brx-rating-num {
+    position: relative;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--brx-ink);
+    line-height: 1;
+}
+.brx-rating-num small {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--brx-text-sub);
+    margin-left: 2px;
+}
+
+.brx-rating-stars {
+    display: inline-flex;
+    gap: 4px;
+    color: var(--brx-accent);
+}
+.brx-star {
+    display: inline-grid;
+    place-items: center;
+    width: 22px; height: 22px;
+}
+.brx-star svg { width: 100%; height: 100%; }
+
+.brx-quickfacts {
+    background: var(--brx-paper);
+    border: 1px solid var(--brx-paper-line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 14px 22px;
+}
+.brx-fact { display: flex; flex-direction: column; gap: 4px; }
+.brx-fact-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--brx-text-sub);
+}
+.brx-fact-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--brx-ink);
+}
+
+/* ─── BODY ────────────────────────────────────────────────────────── */
+.brx-body-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+}
+.brx-body {
+    font-family: 'Source Serif Pro', Georgia, serif;
+    font-size: clamp(17px, 1.15vw, 19.5px);
+    line-height: 1.75;
+    color: var(--brx-text);
+}
+
+/* The body content can come from two pipelines:
+   (a) writer composer → wraps every paragraph in <p>;
+   (b) older renderContentBlocks → mixes <p>, <h2>, <blockquote>, <img>, etc.
+   Style both, scoped to .brx-body so it doesn't fight article-premium.css. */
+.brx-body > * + * { margin-top: 1.1em; }
+.brx-body p {
+    margin: 0 0 1.1em;
+}
+.brx-body p:first-child::first-letter {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    font-size: 4.4em;
+    float: left;
+    line-height: 0.88;
+    padding-right: 12px;
+    padding-top: 6px;
+    color: var(--brx-accent);
+}
+.brx-body h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(24px, 2.4vw, 32px);
+    color: var(--brx-ink);
+    margin: 2em 0 0.6em;
+    letter-spacing: -0.012em;
+}
+.brx-body h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(20px, 1.8vw, 24px);
+    color: var(--brx-ink);
+    margin: 1.6em 0 0.5em;
+}
+.brx-body blockquote {
+    margin: 1.6em 0;
+    padding: 4px 0 4px 24px;
+    border-left: 3px solid var(--brx-accent);
+    font-style: italic;
+    color: var(--brx-text-muted);
+    font-size: 1.08em;
+}
+.brx-body a {
+    color: var(--brx-accent);
+    border-bottom: 1px solid rgba(122,31,43,0.3);
+    text-decoration: none;
+    transition: border-color .2s;
+}
+.brx-body a:hover { border-bottom-color: var(--brx-accent); }
+.brx-body img {
+    max-width: 100%;
+    border-radius: 6px;
+    margin: 1.4em auto;
+    display: block;
+    box-shadow: 0 20px 32px -16px rgba(14,17,23,.2);
+}
+.brx-body ul, .brx-body ol {
+    padding-left: 1.4em;
+    margin: 1.1em 0;
+}
+.brx-body li { margin-bottom: .4em; }
+
+/* ─── SHARE + CTA ──────────────────────────────────────────────── */
+.brx-share {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 24px 0;
+    margin-top: 56px;
+    border-top: 1px solid var(--brx-paper-line);
+    border-bottom: 1px solid var(--brx-paper-line);
+    font-size: 13px;
+    color: var(--brx-text-muted);
+    font-weight: 600;
+    letter-spacing: .04em;
+}
+.brx-share-btn {
+    appearance: none;
+    background: var(--brx-paper-off);
+    border: 1px solid var(--brx-paper-line);
+    color: var(--brx-text-muted);
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease, transform .2s ease;
+    text-decoration: none;
+}
+.brx-share-btn:hover {
+    background: var(--brx-accent);
+    color: var(--brx-on-dark);
+    transform: translateY(-2px);
+}
+.brx-share-btn:focus-visible {
+    outline: 2px solid var(--brx-accent);
+    outline-offset: 3px;
+}
+
+.brx-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 40px;
+    background: var(--brx-ink);
+    color: var(--brx-on-dark);
+    padding: 16px 28px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    transition: background .25s ease, transform .25s ease, box-shadow .25s ease;
+}
+.brx-cta:hover {
+    background: var(--brx-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 36px -12px rgba(122,31,43,.45);
+}
+.brx-cta:focus-visible {
+    outline: 2px solid var(--brx-accent);
+    outline-offset: 3px;
+}
+.brx-cta svg { transition: transform .25s ease; }
+.brx-cta:hover svg { transform: translateX(4px); }
+
+/* ─── Reduced motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .brx-cover { transform: none !important; transition: none; }
+    .brx-share-btn, .brx-cta { transition: none; }
+}
