@@ -953,16 +953,95 @@ body[data-page="book-reviews"] .header {
 
 .br-community-head {
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-    gap: 48px;
-    align-items: end;
-    margin-bottom: 48px;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 56px;
+    align-items: stretch;
+    margin-bottom: 36px;
 }
-@media (max-width: 860px) {
-    .br-community-head { grid-template-columns: 1fr; gap: 28px; }
+@media (max-width: 960px) {
+    .br-community-head { grid-template-columns: 1fr; gap: 32px; }
 }
 
-/* Submit CTA — the button that opens the submission modal. */
+/* Lockup: stamp badge + lede. The stamp is a deliberate editorial mark —
+   feels like a stamp on a postcard or a wax seal on a letter. */
+.br-community-lockup {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+}
+@media (max-width: 720px) {
+    .br-community-lockup { grid-template-columns: 96px minmax(0, 1fr); gap: 22px; }
+}
+
+.br-community-stamp {
+    position: relative;
+    width: 132px;
+    height: 132px;
+    flex: 0 0 132px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 50% 38%, rgba(255,255,255,.4), transparent 60%),
+        var(--paper);
+    transform: rotate(-6deg);
+    box-shadow:
+        inset 0 0 0 6px var(--paper-off),
+        inset 0 0 0 7px var(--accent),
+        0 12px 24px -16px rgba(122,31,43,.45);
+    isolation: isolate;
+}
+.br-community-stamp::before {
+    /* Dashed inner ring so it reads as a real stamp/seal, not just a circle. */
+    content: '';
+    position: absolute;
+    inset: 14px;
+    border: 1.5px dashed var(--accent);
+    border-radius: 50%;
+    opacity: .55;
+}
+.br-community-stamp-mark {
+    position: absolute;
+    top: 14px;
+    font-size: 18px;
+    line-height: 1;
+    color: var(--accent);
+    opacity: .85;
+}
+.br-community-stamp-label {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.05;
+    letter-spacing: -.005em;
+    color: var(--accent);
+    text-align: center;
+}
+@media (max-width: 720px) {
+    .br-community-stamp { width: 96px; height: 96px; flex: 0 0 96px; }
+    .br-community-stamp::before { inset: 10px; }
+    .br-community-stamp-label { font-size: 13px; }
+    .br-community-stamp-mark { top: 10px; font-size: 13px; }
+}
+
+/* Aside: submit CTA + stats. Stacks below on narrow screens. */
+.br-community-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding-top: 6px;
+}
+@media (max-width: 960px) {
+    .br-community-aside { align-items: flex-start; }
+}
+
 .br-submit-cta {
     display: inline-flex;
     align-items: center;
@@ -979,7 +1058,6 @@ body[data-page="book-reviews"] .header {
     letter-spacing: .02em;
     cursor: pointer;
     min-height: 48px;
-    justify-self: end;
     transition: transform .25s ease, box-shadow .25s ease, background .25s ease;
 }
 .br-submit-cta:hover {
@@ -991,9 +1069,131 @@ body[data-page="book-reviews"] .header {
     outline: 2px solid var(--accent);
     outline-offset: 4px;
 }
-@media (max-width: 860px) {
-    .br-submit-cta { justify-self: start; }
+
+/* Stats strip: editorial key/value pairs separated by a hairline */
+.br-community-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 320px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 14px;
+    overflow: hidden;
 }
+.br-community-stats > div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 18px;
+}
+.br-community-stats > div + div {
+    border-left: 1px solid var(--paper-line);
+}
+.br-community-stats dt {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    margin: 0;
+}
+.br-community-stats dd {
+    margin: 0;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: -.01em;
+    /* The "top genre" value can run long ("Computer Science"); allow soft
+       break without forcing a smaller font for the count column. */
+    word-break: break-word;
+}
+@media (max-width: 720px) {
+    .br-community-stats { max-width: 100%; }
+}
+
+/* Toolbar: search bar + status line, sat above the grid */
+.br-community-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 28px;
+}
+.br-community-toolbar[hidden] { display: none; }
+.br-community-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 999px;
+    padding: 6px 14px 6px 18px;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.br-community-search:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+    background: #fff;
+}
+.br-community-search > svg {
+    flex: 0 0 auto;
+    color: var(--text-sub);
+}
+.br-community-search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    padding: 12px 0;
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    outline: none;
+}
+.br-community-search input::placeholder {
+    color: var(--text-sub);
+    opacity: .85;
+}
+.br-community-search input::-webkit-search-decoration,
+.br-community-search input::-webkit-search-cancel-button { display: none; }
+
+.br-community-search-clear {
+    appearance: none;
+    background: var(--paper-off);
+    border: 1px solid var(--paper-line);
+    color: var(--text-sub);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+.br-community-search-clear:hover {
+    background: var(--accent);
+    color: var(--on-dark-text);
+    transform: scale(1.04);
+}
+.br-community-search-clear:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.br-community-status {
+    margin: 0 0 0 18px;
+    font-size: 13px;
+    color: var(--text-sub);
+    font-weight: 500;
+    min-height: 1em;
+}
+.br-community-status:empty { display: none; }
 
 /* "Reader pick" badge on community cards so it's obvious where each came from. */
 .br-card-pick {

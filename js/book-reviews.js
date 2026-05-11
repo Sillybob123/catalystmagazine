@@ -28,8 +28,20 @@
     const statLatest   = document.getElementById('br-stat-latest');
 
     // Community-section refs (added when we split the page in two).
-    const communityFeedEl  = document.getElementById('br-community-feed');
-    const communityEmptyEl = document.getElementById('br-community-empty');
+    const communityFeedEl       = document.getElementById('br-community-feed');
+    const communityEmptyEl      = document.getElementById('br-community-empty');
+    const communityNoMatchEl    = document.getElementById('br-community-no-match');
+    const communitySearchEl     = document.getElementById('br-community-search-input');
+    const communitySearchClear  = document.getElementById('br-community-search-clear');
+    const communityStatusEl     = document.getElementById('br-community-status');
+    const communityCountEl      = document.getElementById('br-community-count');
+    const communityTopGenreEl   = document.getElementById('br-community-top-genre');
+    const communityLoadMoreEl   = document.getElementById('br-community-loadmore');
+    const communityLoadMoreWrap = document.getElementById('br-community-loadmore-wrap');
+
+    const COMMUNITY_PAGE_SIZE = 9;
+    let communityQuery   = '';
+    let communityShown   = COMMUNITY_PAGE_SIZE;
 
     // Modal refs
     const modalEl       = document.getElementById('br-submit-modal');
@@ -581,22 +593,166 @@
     }
 
     // ---------- Community feed (separate from the writer feed) ----------
+    // Apply the current search query across the community pool. Searches
+    // book title, book author, reviewer name (submitter), and deck so
+    // readers can find a pick by any of those.
+    function filterCommunity() {
+        const q = communityQuery.trim().toLowerCase();
+        if (!q) return communityReviews.slice();
+        return communityReviews.filter((r) => {
+            const hay = [
+                r.title,
+                r.bookTitle,
+                r.bookAuthor,
+                r.author,
+                r.submitterName,
+                r.deck,
+                r.excerpt,
+            ]
+                .filter(Boolean)
+                .map((s) => String(s).toLowerCase())
+                .join(' • ');
+            return hay.includes(q);
+        });
+    }
+
+    function updateCommunityStats() {
+        const total = communityReviews.length;
+        if (communityCountEl) communityCountEl.textContent = total ? String(total) : '—';
+
+        if (communityTopGenreEl) {
+            if (!total) {
+                communityTopGenreEl.textContent = '—';
+            } else {
+                const counts = new Map();
+                communityReviews.forEach((r) => {
+                    const g = (r.genre || '').toString();
+                    if (!g) return;
+                    counts.set(g, (counts.get(g) || 0) + 1);
+                });
+                let top = '';
+                let topN = 0;
+                counts.forEach((n, g) => {
+                    if (n > topN) { topN = n; top = g; }
+                });
+                communityTopGenreEl.textContent = top
+                    ? top.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+                    : '—';
+            }
+        }
+    }
+
     function renderCommunityFeed() {
         if (!communityFeedEl) return;
+
+        updateCommunityStats();
+
+        const toolbarEl = document.querySelector('.br-community-toolbar');
+
+        // Brand-new community pool empty — show the "be the first" empty state
+        // and hide the search bar entirely (nothing to search yet).
         if (!communityReviews.length) {
             communityFeedEl.innerHTML = '';
-            if (communityEmptyEl) communityEmptyEl.hidden = false;
+            if (communityEmptyEl)   communityEmptyEl.hidden = false;
+            if (communityNoMatchEl) communityNoMatchEl.hidden = true;
+            if (communityStatusEl)  communityStatusEl.textContent = '';
+            if (communityLoadMoreWrap) communityLoadMoreWrap.hidden = true;
+            if (toolbarEl) toolbarEl.hidden = true;
             return;
         }
+
+        if (toolbarEl) toolbarEl.hidden = false;
         if (communityEmptyEl) communityEmptyEl.hidden = true;
-        // Show the most recent 6 community picks; the rest can be reached
-        // via search on the main grid (community + writers).
-        const slice = communityReviews.slice(0, 6);
+
+        const matches = filterCommunity();
+        const hasQuery = communityQuery.trim().length > 0;
+
+        // No matches for the active query — distinct empty state.
+        if (!matches.length) {
+            communityFeedEl.innerHTML = '';
+            if (communityNoMatchEl) communityNoMatchEl.hidden = false;
+            if (communityStatusEl)  communityStatusEl.textContent = `No matches for "${communityQuery.trim()}"`;
+            if (communityLoadMoreWrap) communityLoadMoreWrap.hidden = true;
+            return;
+        }
+        if (communityNoMatchEl) communityNoMatchEl.hidden = true;
+
+        // Reset paging whenever the visible set is shorter than what we'd show.
+        if (communityShown > matches.length) communityShown = COMMUNITY_PAGE_SIZE;
+        const slice = matches.slice(0, communityShown);
+
         communityFeedEl.innerHTML = slice
             .map((r, i) => cardHtml(r, variantFor(i)))
             .join('');
         observeCards(communityFeedEl.querySelectorAll('.br-card:not(.in-view)'));
         backfillIsbnCovers(communityFeedEl);
+
+        // Status line: "Showing 9 of 23 reader picks" / "12 picks match …".
+        if (communityStatusEl) {
+            if (hasQuery) {
+                const matchWord = matches.length === 1 ? 'pick matches' : 'picks match';
+                communityStatusEl.textContent =
+                    matches.length <= slice.length
+                        ? `${matches.length} ${matchWord} "${communityQuery.trim()}"`
+                        : `Showing ${slice.length} of ${matches.length} ${matchWord} "${communityQuery.trim()}"`;
+            } else if (communityReviews.length > slice.length) {
+                communityStatusEl.textContent = `Showing ${slice.length} of ${communityReviews.length} reader picks`;
+            } else {
+                communityStatusEl.textContent = '';
+            }
+        }
+
+        if (communityLoadMoreWrap) {
+            communityLoadMoreWrap.hidden = matches.length <= slice.length;
+        }
+    }
+
+    function bindCommunitySearch() {
+        if (!communitySearchEl) return;
+
+        let debounce;
+        const apply = (val) => {
+            communityQuery = val || '';
+            communityShown = COMMUNITY_PAGE_SIZE;
+            if (communitySearchClear) communitySearchClear.hidden = !communityQuery;
+            renderCommunityFeed();
+        };
+
+        communitySearchEl.addEventListener('input', (e) => {
+            clearTimeout(debounce);
+            const val = e.target.value;
+            debounce = setTimeout(() => apply(val), 120);
+        });
+
+        // Submitting the form (Enter key) shouldn't navigate — it's a live
+        // filter, not a form submission.
+        communitySearchEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(debounce);
+                apply(communitySearchEl.value);
+            }
+            if (e.key === 'Escape' && communitySearchEl.value) {
+                communitySearchEl.value = '';
+                apply('');
+            }
+        });
+
+        if (communitySearchClear) {
+            communitySearchClear.addEventListener('click', () => {
+                communitySearchEl.value = '';
+                apply('');
+                communitySearchEl.focus();
+            });
+        }
+    }
+
+    function bindCommunityLoadMore() {
+        if (!communityLoadMoreEl) return;
+        communityLoadMoreEl.addEventListener('click', () => {
+            communityShown += COMMUNITY_PAGE_SIZE;
+            renderCommunityFeed();
+        });
     }
 
     // ---------- Filtering & paging ----------
@@ -869,6 +1025,9 @@
         }
         loadMoreBtn?.addEventListener('click', () => renderFeed(false));
         window.addEventListener('resize', movePillIndicator);
+
+        bindCommunitySearch();
+        bindCommunityLoadMore();
     }
 
     // Split the merged review set into writer reviews (drive the featured
