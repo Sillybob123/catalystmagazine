@@ -547,8 +547,9 @@
         const targetW = variant === 'wide' ? 1100 : 720;
         const imgSrc  = getCoverImageUrl(raw, targetW, 88);
 
-        // Community submissions get a clear "Reader pick" badge so it's
-        // obvious where each card came from at a glance.
+        // Community submissions get a clear "Reader pick" badge in the
+        // card body instead of over the cover, so the jacket art stays
+        // unobstructed.
         const pickBadge = review.community ? `
             <span class="br-card-pick" aria-label="Reader pick">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -580,13 +581,15 @@
                          loading="lazy" decoding="async"
                          onload="this.classList.add('loaded')"
                          onerror="${imageOnErrorAttr(raw, imgSrc)}">
-                    <span class="br-card-rating" aria-label="Rated ${review.rating.toFixed(1)} out of 5">
-                        ${review.rating.toFixed(1)}<small>/5</small>
-                    </span>
                     <span class="br-card-genre">${escapeHtml(GENRE_LABEL[review.genre] || 'STEM')}</span>
-                    ${pickBadge}
                 </div>
                 <div class="br-card-body">
+                    <div class="br-card-kicker">
+                        <span class="br-card-rating" aria-label="Rated ${review.rating.toFixed(1)} out of 5">
+                            ${review.rating.toFixed(1)}<small>/5</small>
+                        </span>
+                        ${pickBadge}
+                    </div>
                     <h3 class="br-card-book">${escapeHtml(review.bookTitle)}</h3>
                     ${review.bookAuthor ? `<p class="br-card-author">by ${escapeHtml(review.bookAuthor)}</p>` : ''}
                     ${review.blurb ? `<p class="br-card-blurb">${escapeHtml(review.blurb)}</p>` : ''}
