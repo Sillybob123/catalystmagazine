@@ -1613,13 +1613,57 @@
             // Focus the first field for keyboard users.
             const firstInput = modalForm.querySelector('input, textarea, select');
             if (firstInput) requestAnimationFrame(() => firstInput.focus());
-            // Lazy-render the bot check. If the Turnstile script hasn't loaded
-            // yet, try again shortly — the form submit also re-checks.
-            ensureTurnstile();
-            if (!turnstileWidgetId && window.TURNSTILE_SITE_KEY) {
-                setTimeout(ensureTurnstile, 400);
-                setTimeout(ensureTurnstile, 1200);
-            }
+            // DON'T render Turnstile on open. The widget's iframe loads
+            // network resources and (on some networks) momentarily steals
+            // focus, which made the modal feel "frozen" — users reported
+            // being unable to type or move the rating slider until the
+            // widget finished loading. Instead, render it lazily the
+            // first time the user actually interacts with the form, AND
+            // also at submit-time as a safety net (see submit handler).
+            scheduleLazyTurnstile();
+        }
+
+        // Render Turnstile only after the form is genuinely in use — so it
+        // never competes with the user for focus during the first paint of
+        // the modal. We listen for the first input/keydown event and then
+        // remove the listener so we don't fire repeatedly.
+        let lazyTurnstileScheduled = false;
+        function scheduleLazyTurnstile() {
+            if (lazyTurnstileScheduled) return;
+            lazyTurnstileScheduled = true;
+
+            // If there's no site key configured (local dev), don't bother.
+            if (!window.TURNSTILE_SITE_KEY) return;
+
+            const onFirstInteract = () => {
+                modalForm.removeEventListener('input', onFirstInteract, true);
+                modalForm.removeEventListener('keydown', onFirstInteract, true);
+                modalForm.removeEventListener('change', onFirstInteract, true);
+                // Render after a short idle so the user's keystroke lands
+                // first; Turnstile then paints in the background.
+                const fire = () => {
+                    ensureTurnstile();
+                    if (!turnstileWidgetId) {
+                        setTimeout(ensureTurnstile, 600);
+                        setTimeout(ensureTurnstile, 1800);
+                    }
+                };
+                if (typeof window.requestIdleCallback === 'function') {
+                    window.requestIdleCallback(fire, { timeout: 1200 });
+                } else {
+                    setTimeout(fire, 200);
+                }
+            };
+            modalForm.addEventListener('input', onFirstInteract, true);
+            modalForm.addEventListener('keydown', onFirstInteract, true);
+            modalForm.addEventListener('change', onFirstInteract, true);
+
+            // Failsafe: if the user just stares at the form for 4s without
+            // typing, render Turnstile anyway so the widget is ready when
+            // they finally hit Submit.
+            setTimeout(() => {
+                if (!turnstileWidgetId && window.TURNSTILE_SITE_KEY) onFirstInteract();
+            }, 4000);
         }
 
         function closeModal() {
@@ -1636,6 +1680,8 @@
             if (lastFocused && typeof lastFocused.focus === 'function') {
                 lastFocused.focus();
             }
+            // Re-arm the lazy Turnstile loader for the next open.
+            lazyTurnstileScheduled = false;
         }
 
         modalOpenBtn?.addEventListener('click', openModal);
@@ -1705,7 +1751,12 @@
             if (!payload.genre)          errors.push('Please pick a discipline so we can shelve it right.');
             if (payload.deck.length < 10) errors.push('Please add a one-sentence summary of the book.');
             if (payload.reviewText.length < 40) errors.push('Tell us a little more — at least a few sentences.');
+            // Turnstile is rendered lazily (on first form input), so if a
+            // user somehow reaches Submit without having interacted (e.g.
+            // pasted everything via autofill) the widget may not be on
+            // screen yet. Trigger it now and ask them to complete it.
             if (window.TURNSTILE_SITE_KEY && !payload.turnstileToken) {
+                ensureTurnstile();
                 errors.push('Please complete the human-verification check below before submitting.');
             }
             if (errors.length) {
