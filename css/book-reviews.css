@@ -1956,6 +1956,31 @@ body[data-page="book-reviews"] .header {
     align-items: center;
     height: 36px;
 }
+/* Visible progress rail behind the stars/thumb. A thin 4px line
+   centered vertically in the 36px hit-area, painted via ::before so
+   it's a real element we can style independently from the stars
+   layer above. Two stacked gradients give us the faded baseline
+   plus the accent fill (driven by --br-pct from JS). */
+.br-rating-slider-track::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 4px;
+    transform: translateY(-50%);
+    border-radius: 999px;
+    background:
+        linear-gradient(
+            to right,
+            var(--accent) 0%,
+            var(--accent) calc(var(--br-pct, 0) * 1%),
+            rgba(15, 23, 42, 0.14) calc(var(--br-pct, 0) * 1%),
+            rgba(15, 23, 42, 0.14) 100%
+        );
+    z-index: 0;
+    pointer-events: none;
+}
 .br-rating-slider-stars {
     /* The stars row spans the full track width. Both base (faded)
        and fill (accent) layers are laid out at the SAME size with
