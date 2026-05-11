@@ -165,6 +165,7 @@
     const GENRE_MAP = {
         astronomy:        ['astronomy','astro','cosmos','cosmology','space','universe','planet','star','galaxy'],
         biology:          ['biology','genetics','dna','evolution','medicine','neuro','brain','cell','organism','life'],
+        chemistry:        ['chemistry','chemical','periodic','molecule','reaction','element','compound','atom'],
         'computer-science':['computer','code','coding','algorithm','machine learning','ai','artificial intelligence','software','programming'],
         physics:          ['physics','quantum','relativity','particle','thermodynamics','newton','einstein'],
         mathematics:      ['math','mathematics','geometry','statistics','probability','calculus','number'],
@@ -179,7 +180,8 @@
         return 'stem';
     }
     const GENRE_LABEL = {
-        astronomy:'Astronomy', biology:'Biology', 'computer-science':'Computer Science',
+        astronomy:'Astronomy', biology:'Biology', chemistry:'Chemistry',
+        'computer-science':'Computer Science',
         physics:'Physics', mathematics:'Mathematics', memoir:'Memoir', climate:'Climate', stem:'STEM'
     };
 

@@ -122,11 +122,12 @@ async function mountComposer(ctx, container) {
               <option value="">— Pick the closest fit —</option>
               <option value="astronomy">Astronomy</option>
               <option value="biology">Biology</option>
-              <option value="computer-science">Computer Science</option>
-              <option value="physics">Physics</option>
-              <option value="mathematics">Mathematics</option>
+              <option value="chemistry">Chemistry</option>
               <option value="climate">Climate</option>
+              <option value="computer-science">Computer Science</option>
+              <option value="mathematics">Mathematics</option>
               <option value="memoir">Memoir</option>
+              <option value="physics">Physics</option>
               <option value="stem">Other STEM</option>
             </select>
             <div class="hint">Sorts the review onto the right shelf on The Stacks.</div>
@@ -269,7 +270,7 @@ async function saveStory(ctx, card, editingId, desiredStatus, showError, clearEr
   // Closed set mirrors the pill filter on /book-reviews so the discipline
   // we save here lines up with how the public page shelves it.
   const ALLOWED_GENRES = new Set([
-    "astronomy","biology","computer-science","physics",
+    "astronomy","biology","chemistry","computer-science","physics",
     "mathematics","climate","memoir","stem",
   ]);
   const genre = ALLOWED_GENRES.has(genreRaw) ? genreRaw : "";

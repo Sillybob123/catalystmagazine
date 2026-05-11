@@ -1501,6 +1501,7 @@ function renderBookReviewDetail(article, container) {
         const g = (article.genre || '').toLowerCase();
         const map = {
             'astronomy': 'Astronomy', 'biology': 'Biology',
+            'chemistry': 'Chemistry',
             'computer-science': 'Computer Science', 'physics': 'Physics',
             'mathematics': 'Mathematics', 'climate': 'Climate',
             'memoir': 'Memoir', 'stem': 'STEM',

@@ -711,12 +711,93 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
   const publishedAtISO = story.publishedAt ? toDatetimeLocal(story.publishedAt) : "";
   const createdAtISO = story.createdAt ? toDatetimeLocal(story.createdAt) : "";
 
+  // Book reviews get a dedicated editor: the public-facing fields are
+  // bookTitle / bookAuthor / isbn / rating / genre / deck — none of which
+  // exist on a normal Article. We branch the form layout but keep the
+  // shared infrastructure (status, publish date, slug, authors, cover, body)
+  // so admins don't lose any of the corrective levers they're used to.
+  const isBookReview = isBookReviewStory(story);
+  const initialBookTitle  = story.bookTitle  || (isBookReview ? story.title : "") || "";
+  const initialBookAuthor = story.bookAuthor || "";
+  const initialIsbn       = story.isbn || "";
+  const initialRating     = story.rating != null ? String(story.rating) : "";
+  const initialGenre      = (story.genre || "").toLowerCase();
+
+  // Shelf options shared with the writer composer + the public dropdowns.
+  // Chemistry was added 2026-05-11.
+  const SHELVES = [
+    { v: "astronomy",        l: "Astronomy" },
+    { v: "biology",          l: "Biology" },
+    { v: "chemistry",        l: "Chemistry" },
+    { v: "climate",          l: "Climate" },
+    { v: "computer-science", l: "Computer Science" },
+    { v: "mathematics",      l: "Mathematics" },
+    { v: "memoir",           l: "Memoir" },
+    { v: "physics",          l: "Physics" },
+    { v: "stem",             l: "Other STEM" },
+  ];
+
   const body = el("div", {});
   body.innerHTML = `
-    <div class="field">
-      <label class="label">Title</label>
-      <input class="input" id="sd-title" value="${escAttr(story.title || "")}">
-    </div>
+    ${isBookReview ? `
+      <!-- Book-review-only header. Title is renamed "Book title", and the
+           reviewer's name lives in the Authors block further down. -->
+      <div class="field" style="padding:14px 14px 12px;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2,rgba(122,31,43,.04));margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent,#7a1f2b);">Book details</span>
+        </div>
+        <div class="grid grid-2" style="gap:12px;">
+          <div class="field" style="margin:0;">
+            <label class="label">Book title</label>
+            <input class="input" id="sd-book-title" value="${escAttr(initialBookTitle)}" placeholder="e.g. Astrophysics for People in a Hurry">
+          </div>
+          <div class="field" style="margin:0;">
+            <label class="label">Book author</label>
+            <input class="input" id="sd-book-author" value="${escAttr(initialBookAuthor)}" placeholder="e.g. Neil deGrasse Tyson">
+          </div>
+        </div>
+        <div class="grid grid-2" style="gap:12px;margin-top:10px;">
+          <div class="field" style="margin:0;">
+            <label class="label">ISBN</label>
+            <input class="input" id="sd-book-isbn" value="${escAttr(initialIsbn)}" placeholder="optional — fills the cover automatically" inputmode="numeric" pattern="[0-9Xx\\- ]*" maxlength="32">
+            <div class="hint">Helps the public page show the right Open Library cover.</div>
+          </div>
+          <div class="field" style="margin:0;">
+            <label class="label">Rating</label>
+            <select class="select" id="sd-book-rating">
+              <option value="">— None —</option>
+              ${[
+                ["5","★★★★★ 5 — Couldn't put it down"],
+                ["4.5","★★★★½ 4.5"],
+                ["4","★★★★ 4 — Strongly recommend"],
+                ["3.5","★★★½ 3.5"],
+                ["3","★★★ 3 — Solid"],
+                ["2.5","★★½ 2.5"],
+                ["2","★★ 2 — Mixed"],
+                ["1","★ 1 — Skip it"],
+              ].map(([v,l]) => `<option value="${v}" ${v === initialRating ? "selected" : ""}>${l}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin:10px 0 0;">
+          <label class="label">Shelf (discipline)</label>
+          <select class="select" id="sd-book-genre">
+            <option value="">— Pick the closest fit —</option>
+            ${SHELVES.map(s => `<option value="${s.v}" ${s.v === initialGenre ? "selected" : ""}>${s.l}</option>`).join("")}
+          </select>
+          <div class="hint">Sorts the review onto the right shelf on /book-reviews.</div>
+        </div>
+      </div>
+      <!-- Hidden mirror of the title field so the rest of the editor (slug
+           autofill, preview, save patch) keeps working without a parallel
+           code path. We keep sd-title in sync with sd-book-title below. -->
+      <input type="hidden" id="sd-title" value="${escAttr(initialBookTitle)}">
+    ` : `
+      <div class="field">
+        <label class="label">Title</label>
+        <input class="input" id="sd-title" value="${escAttr(story.title || "")}">
+      </div>
+    `}
     <div class="grid grid-2">
       <div class="field">
         <label class="label">Status</label>
@@ -755,10 +836,10 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     </div>
 
     <div class="field">
-      <label class="label">Authors</label>
+      <label class="label">${isBookReview ? "Reviewer" : "Authors"}</label>
       <div id="sd-authors"></div>
-      <button class="btn btn-ghost btn-xs" id="sd-add-author" type="button" style="margin-top:6px;">+ Add author</button>
-      <div class="hint">Add as many authors as the piece has. The first one is used for bylines that only take a single name.</div>
+      <button class="btn btn-ghost btn-xs" id="sd-add-author" type="button" style="margin-top:6px;">+ Add ${isBookReview ? "reviewer" : "author"}</button>
+      <div class="hint">${isBookReview ? "The Catalyst contributor who wrote this review. Add a second name if it's a joint review." : "Add as many authors as the piece has. The first one is used for bylines that only take a single name."}</div>
     </div>
 
     <div class="field">
@@ -782,8 +863,9 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     </div>
 
     <div class="field">
-      <label class="label">Excerpt / dek</label>
-      <textarea class="textarea" id="sd-dek" rows="2">${esc(story.dek || story.excerpt || "")}</textarea>
+      <label class="label">${isBookReview ? "One-sentence summary" : "Excerpt / dek"}</label>
+      <textarea class="textarea" id="sd-dek" rows="2" ${isBookReview ? 'placeholder="A one-line pitch — what makes this book worth reading. Shows up under the title on the card and at the top of the page."' : ""}>${esc(story.dek || story.excerpt || "")}</textarea>
+      ${isBookReview ? '<div class="hint">Shows up under the title on the review card and at the top of the article.</div>' : ""}
     </div>
 
     <details style="margin-top:12px;">
@@ -831,6 +913,21 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     authors.push({ name: "" });
     renderAuthorRows();
   });
+
+  // For book reviews, the visible field is #sd-book-title; the hidden
+  // #sd-title is its mirror so all downstream logic (slug autofill, save,
+  // preview) keeps reading a single canonical source. Wire the proxy.
+  const bookTitleInput = body.querySelector("#sd-book-title");
+  const bookAuthorInput = body.querySelector("#sd-book-author");
+  if (bookTitleInput) {
+    bookTitleInput.addEventListener("input", () => {
+      const t = body.querySelector("#sd-title");
+      if (t) {
+        t.value = bookTitleInput.value;
+        t.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+  }
 
   // Auto-fill the slug from the title until the admin edits the slug by hand.
   // Once they type in the slug field we stop overwriting it.
@@ -905,7 +1002,10 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     class: "btn btn-ghost",
     title: "Open a full preview of how this article will look when published — with cover, headers, and sections.",
   }, "Preview as published");
-  const m = openModal({ title: `Edit story — ${story.title || "Untitled"}`, body, footer: [cancelBtn, previewBtn, saveBtn] });
+  const modalTitle = isBookReview
+    ? `Edit book review — ${initialBookTitle || story.title || "Untitled"}`
+    : `Edit story — ${story.title || "Untitled"}`;
+  const m = openModal({ title: modalTitle, body, footer: [cancelBtn, previewBtn, saveBtn] });
   cancelBtn.addEventListener("click", m.close);
 
   previewBtn.addEventListener("click", () => {
@@ -943,11 +1043,20 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     const publishedAt = publishedLocal ? new Date(publishedLocal).toISOString() : null;
     const status = body.querySelector("#sd-status").value;
 
+    // For a book review the "Book title" field is the canonical title; we
+    // mirrored it into the hidden #sd-title, so reading either one would
+    // work. We pull from the visible book-title field directly to be safe
+    // against missed input events.
+    const titleFromForm = (isBookReview
+      ? (body.querySelector("#sd-book-title")?.value || "")
+      : (body.querySelector("#sd-title")?.value || "")
+    ).trim();
+
     const patch = {
-      title: body.querySelector("#sd-title").value.trim(),
+      title: titleFromForm,
       status,
       category: normalizeStoryCategory(body.querySelector("#sd-category").value),
-      slug: (body.querySelector("#sd-slug").value.trim() || slugify(body.querySelector("#sd-title").value.trim())) || null,
+      slug: (body.querySelector("#sd-slug").value.trim() || slugify(titleFromForm)) || null,
       coverImage: body.querySelector("#sd-cover").value.trim(),
       lightCover: !!body.querySelector("#sd-light-cover")?.checked,
       dek: body.querySelector("#sd-dek").value.trim(),
@@ -963,6 +1072,29 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       editedByAdminName: ctx.profile.name || ctx.user.email,
       editedByAdminAt: new Date().toISOString(),
     };
+
+    // Book-review-specific fields. These are what /book-reviews and the
+    // detail renderer (.is-book-review) actually read for the card + page.
+    if (isBookReview) {
+      const bookTitle  = (body.querySelector("#sd-book-title")?.value || "").trim();
+      const bookAuthor = (body.querySelector("#sd-book-author")?.value || "").trim();
+      const isbnRaw    = (body.querySelector("#sd-book-isbn")?.value || "").trim();
+      const isbn       = isbnRaw.replace(/[^0-9Xx-]/g, "").slice(0, 32);
+      const ratingRaw  = body.querySelector("#sd-book-rating")?.value || "";
+      const rating     = ratingRaw === "" ? null : Number(ratingRaw);
+      const genre      = (body.querySelector("#sd-book-genre")?.value || "").trim().toLowerCase();
+
+      if (!bookTitle)  { msg.textContent = "Book title is required.";  return; }
+      if (!bookAuthor) { msg.textContent = "Book author is required."; return; }
+
+      patch.title       = bookTitle; // canonical
+      patch.bookTitle   = bookTitle;
+      patch.bookAuthor  = bookAuthor;
+      patch.isbn        = isbn || "";
+      patch.rating      = rating;
+      patch.genre       = genre || "stem";
+    }
+
     if (publishedAt) patch.publishedAt = publishedAt;
     // If admin flipped this to "published" but no date set, stamp now.
     if (status === "published" && !patch.publishedAt && !story.publishedAt) {

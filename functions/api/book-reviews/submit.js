@@ -127,7 +127,7 @@ export const onRequestPost = async ({ request, env }) => {
     // Mirrors GENRE_MAP keys in js/book-reviews.js so the pill filter on
     // /book-reviews shelves community picks the same way as writer picks.
     const ALLOWED_GENRES = new Set([
-      "astronomy","biology","computer-science","physics",
+      "astronomy","biology","chemistry","computer-science","physics",
       "mathematics","climate","memoir","stem",
     ]);
     const genre = ALLOWED_GENRES.has(genreRaw) ? genreRaw : "";

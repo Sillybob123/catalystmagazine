@@ -116,7 +116,7 @@ export const onRequestPost = async ({ request, env }) => {
     // Same closed set as submit.js — anything else falls back to empty
     // (the public renderer auto-detects "stem" when no genre is set).
     const ALLOWED_GENRES = new Set([
-      "astronomy","biology","computer-science","physics",
+      "astronomy","biology","chemistry","computer-science","physics",
       "mathematics","climate","memoir","stem",
     ]);
     const genre = (typeof sub.genre === "string" && ALLOWED_GENRES.has(sub.genre))
