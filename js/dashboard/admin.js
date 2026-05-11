@@ -43,12 +43,22 @@ async function mountArticles(ctx, container) {
         </select>
       </div>
     </div>
+    <div class="pipeline-tabs article-type-tabs" role="tablist" aria-label="Choose story type">
+      <button class="pipeline-tab active" type="button" role="tab" aria-selected="true" data-type-filter="stories">
+        Stories <span class="count" data-count="stories">0</span>
+      </button>
+      <button class="pipeline-tab" type="button" role="tab" aria-selected="false" data-type-filter="book-reviews">
+        Book reviews <span class="count" data-count="book-reviews">0</span>
+      </button>
+    </div>
     <div class="card-body card-body--flush" id="articles-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
   container.appendChild(card);
 
   // Cache editors for assignment dropdown.
   const editors = await getEditors();
   const filterEl = card.querySelector("#filter-status");
+  const typeTabs = [...card.querySelectorAll("[data-type-filter]")];
+  let typeFilter = "stories";
 
   const load = async () => {
     const body = card.querySelector("#articles-body");
@@ -57,11 +67,22 @@ async function mountArticles(ctx, container) {
       const snap = await getDocs(query(collection(db, "stories"), orderBy("updatedAt", "desc")));
       const rows = [];
       snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
-      const filtered = filterEl.value === "all"
+      const statusFiltered = filterEl.value === "all"
         ? rows
         : rows.filter((r) => (r.status || "draft") === filterEl.value);
+      const storyCount = statusFiltered.filter((r) => !isBookReviewStory(r)).length;
+      const bookReviewCount = statusFiltered.filter(isBookReviewStory).length;
+      card.querySelector('[data-count="stories"]').textContent = storyCount;
+      card.querySelector('[data-count="book-reviews"]').textContent = bookReviewCount;
 
-      if (!filtered.length) { body.innerHTML = `<div class="empty-state">Nothing here.</div>`; return; }
+      const filtered = statusFiltered.filter((r) =>
+        typeFilter === "book-reviews" ? isBookReviewStory(r) : !isBookReviewStory(r)
+      );
+
+      if (!filtered.length) {
+        body.innerHTML = `<div class="empty-state">${typeFilter === "book-reviews" ? "No book reviews match this status." : "No regular stories match this status."}</div>`;
+        return;
+      }
 
       body.innerHTML = "";
       const list = el("div", { class: "articles-list" });
@@ -73,11 +94,27 @@ async function mountArticles(ctx, container) {
   };
 
   filterEl.addEventListener("change", load);
+  typeTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      typeFilter = tab.dataset.typeFilter || "stories";
+      typeTabs.forEach((t) => {
+        const active = t === tab;
+        t.classList.toggle("active", active);
+        t.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      load();
+    });
+  });
   load();
 }
 
 function categoryKey(category = "") {
   return String(category || "").trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+function isBookReviewStory(story = {}) {
+  const key = categoryKey(story.category);
+  return key === "book-review" || key === "bookreview";
 }
 
 function normalizeStoryCategory(category = "") {
