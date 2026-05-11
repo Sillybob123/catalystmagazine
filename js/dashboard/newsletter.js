@@ -77,8 +77,26 @@ async function mountBuilder(ctx, container) {
                   <button type="button" class="btn btn-ghost btn-xs" id="btn-clear-picks">Clear</button>
                 </div>
               </div>
-              <div class="hint" style="margin-bottom:10px;">Check up to 3 articles. The 3 most recent are selected by default — override if you want a different mix.</div>
+              <div class="hint" style="margin-bottom:10px;">Check up to 3 articles. The 3 most recent are selected by default — override if you want a different mix. Book reviews live in their own section below.</div>
               <div id="article-picker"><div class="loading-state" style="padding:12px;"><div class="spinner"></div>Loading articles…</div></div>
+            </div>
+          </div>
+
+          <!-- Separate book-reviews picker. Reviews render as their own
+               "From The Stacks" block at the bottom of the email — they
+               aren't editorial articles, so they don't belong in the same
+               container as the cards above. Capped at 2 to keep the issue
+               scannable. -->
+          <div class="card" style="margin-top:16px;background:var(--surface-2);">
+            <div class="card-body">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <div class="section-title" style="margin:0;">Book reviews in this issue</div>
+                <div style="display:flex;gap:6px;">
+                  <button type="button" class="btn btn-ghost btn-xs" id="btn-clear-reviews">Clear</button>
+                </div>
+              </div>
+              <div class="hint" style="margin-bottom:10px;">Optional. Pick up to 2 reviews — they'll appear as a "From The Stacks" block at the bottom of the newsletter.</div>
+              <div id="review-picker"><div class="loading-state" style="padding:12px;"><div class="spinner"></div>Loading book reviews…</div></div>
             </div>
           </div>
         </div>
@@ -103,8 +121,10 @@ async function mountBuilder(ctx, container) {
     intro: card.querySelector("#f-intro"),
     status: card.querySelector("#builder-status"),
     picker: card.querySelector("#article-picker"),
+    reviewPicker: card.querySelector("#review-picker"),
     btnTop3: card.querySelector("#btn-pick-top3"),
     btnClear: card.querySelector("#btn-clear-picks"),
+    btnClearReviews: card.querySelector("#btn-clear-reviews"),
     iframe: card.querySelector("#preview-frame"),
     frameWrap: card.querySelector("#preview-frame-wrap"),
     sizeHint: card.querySelector("#preview-size-hint"),
@@ -124,9 +144,15 @@ async function mountBuilder(ctx, container) {
   let activeTheme = "classic";
 
   // Available published articles (most recent first). Populated once on mount.
+  // The list is split into "articles" (everything except book reviews) and
+  // "reviews" so each picker has its own pool — book reviews render in their
+  // own section of the email and shouldn't compete for the article slots.
   let availableArticles = [];
+  let availableReviews = [];
   const MAX_PICK = 3;
+  const MAX_REVIEW_PICK = 2;
   const selectedIds = new Set();
+  const selectedReviewIds = new Set();
 
   // Theme toggle — switches between "classic" (branded card template) and
   // "inbox" (plain letter style optimized for Gmail Primary placement).
@@ -169,6 +195,7 @@ async function mountBuilder(ctx, container) {
 
   let currentHtml = "";
   let currentArticles = [];
+  let currentBookReviews = [];
   // Track the last auto-filled headline so we can refresh it when the
   // article count changes — but only if the user hasn't typed a custom one.
   let lastAutoHeadline = "";
@@ -181,11 +208,13 @@ async function mountBuilder(ctx, container) {
 
   async function regenerate() {
     const ids = Array.from(selectedIds);
+    const reviewIds = Array.from(selectedReviewIds);
     if (!ids.length) {
       els.status.textContent = "Pick at least one article to preview.";
       renderPreview(els.iframe, "<html><body style='font-family:sans-serif;padding:40px;color:#666;text-align:center;'>Select one to three articles on the left to see the preview.</body></html>");
       currentHtml = "";
       currentArticles = [];
+      currentBookReviews = [];
       return;
     }
     els.status.textContent = "Generating preview…";
@@ -203,6 +232,9 @@ async function mountBuilder(ctx, container) {
         method: "POST",
         body: JSON.stringify({
           articleIds: ids,
+          // Server caps at 2; sending more is harmless but we trim here too
+          // so the network payload mirrors what'll actually be rendered.
+          bookReviewIds: reviewIds.slice(0, MAX_REVIEW_PICK),
           subject: els.subject.value,
           headline,
           intro: els.intro.value,
@@ -213,8 +245,12 @@ async function mountBuilder(ctx, container) {
       if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
       currentHtml = data.html;
       currentArticles = data.articles || [];
+      currentBookReviews = data.bookReviews || [];
       renderPreview(els.iframe, currentHtml);
-      els.status.textContent = `Preview ready — ${currentArticles.length} article(s).${activeTheme === "inbox" ? " (Inbox version — preview shows \"Hi Reader\" greeting; real sends use each subscriber's first name.)" : ""}`;
+      const reviewSuffix = currentBookReviews.length
+        ? ` + ${currentBookReviews.length} book review${currentBookReviews.length === 1 ? "" : "s"}`
+        : "";
+      els.status.textContent = `Preview ready — ${currentArticles.length} article(s)${reviewSuffix}.${activeTheme === "inbox" ? " (Inbox version — preview shows \"Hi Reader\" greeting; real sends use each subscriber's first name.)" : ""}`;
     } catch (err) {
       els.status.textContent = "Could not generate preview: " + err.message;
     }
@@ -248,6 +284,33 @@ async function mountBuilder(ctx, container) {
     }).join("");
   }
 
+  // Same shape as the article picker but bound to selectedReviewIds and
+  // capped at MAX_REVIEW_PICK. Surfaces the book title + reviewer + rating
+  // so admins can pick the right two without having to flip back to the
+  // /book-reviews page.
+  function renderReviewPicker() {
+    if (!availableReviews.length) {
+      els.reviewPicker.innerHTML = `<div class="empty-state" style="padding:12px;">No published book reviews yet.</div>`;
+      return;
+    }
+    const atMax = selectedReviewIds.size >= MAX_REVIEW_PICK;
+    els.reviewPicker.innerHTML = availableReviews.map((r) => {
+      const checked = selectedReviewIds.has(r.id);
+      const disabled = !checked && atMax;
+      const ratingStr = (typeof r.rating === "number") ? `★ ${r.rating.toFixed(1)}` : "";
+      const sub = [r.bookAuthor ? `by ${r.bookAuthor}` : "", r.author ? `reviewed by ${r.author}` : "", ratingStr]
+        .filter(Boolean).join(" · ");
+      return `
+        <label class="article-row" style="margin-bottom:6px;padding:10px 12px;display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;cursor:${disabled ? "not-allowed" : "pointer"};opacity:${disabled ? "0.5" : "1"};">
+          <input type="checkbox" data-review-id="${esc(r.id)}" ${checked ? "checked" : ""} ${disabled ? "disabled" : ""} style="margin-top:3px;">
+          <div>
+            <div class="article-title" style="font-size:14px;">${esc(r.title || "Untitled")}</div>
+            <div class="article-meta">${esc(sub) || "Book Review"}${r.date ? " · " + esc(r.date) : ""}</div>
+          </div>
+        </label>`;
+    }).join("");
+  }
+
   els.picker.addEventListener("change", (e) => {
     const cb = e.target.closest('input[type="checkbox"][data-article-id]');
     if (!cb) return;
@@ -259,6 +322,20 @@ async function mountBuilder(ctx, container) {
       selectedIds.delete(id);
     }
     renderPicker();
+    regenerate();
+  });
+
+  els.reviewPicker.addEventListener("change", (e) => {
+    const cb = e.target.closest('input[type="checkbox"][data-review-id]');
+    if (!cb) return;
+    const id = cb.dataset.reviewId;
+    if (cb.checked) {
+      if (selectedReviewIds.size >= MAX_REVIEW_PICK) { cb.checked = false; return; }
+      selectedReviewIds.add(id);
+    } else {
+      selectedReviewIds.delete(id);
+    }
+    renderReviewPicker();
     regenerate();
   });
 
@@ -275,25 +352,41 @@ async function mountBuilder(ctx, container) {
     regenerate();
   });
 
-  // Load published articles for the picker, preselect top 3, then regenerate.
-  loadPublishedArticles()
-    .then((list) => {
-      availableArticles = list;
-      list.slice(0, MAX_PICK).forEach((a) => selectedIds.add(a.id));
+  els.btnClearReviews.addEventListener("click", () => {
+    selectedReviewIds.clear();
+    renderReviewPicker();
+    regenerate();
+  });
+
+  // Load published articles + book reviews in parallel. Articles preselect
+  // the most-recent 3; book reviews stay unchecked by default — admins
+  // opt in to the bottom shelf rather than getting it automatically.
+  Promise.all([loadPublishedArticles(), loadPublishedBookReviews()])
+    .then(([articles, reviews]) => {
+      availableArticles = articles;
+      availableReviews = reviews;
+      articles.slice(0, MAX_PICK).forEach((a) => selectedIds.add(a.id));
       renderPicker();
+      renderReviewPicker();
       regenerate();
     })
     .catch((err) => {
       els.picker.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
+      els.reviewPicker.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
     });
 
-  // Build the inboxParams payload needed by the server to re-render per subscriber.
-  // Only used when activeTheme === "inbox".
+  // Build the inboxParams payload needed by the server to re-render per
+  // subscriber. Used by BOTH the classic and inbox themes — the send flow
+  // re-renders HTML per recipient so each greeting + unsubscribe URL is
+  // personalized. We always include `bookReviews` so the bottom-of-issue
+  // shelf survives the re-render even if the picker was empty for `inbox`
+  // theme (in which case the field is just an empty array).
   function buildInboxParams() {
     return {
       headline: els.headline.value.trim(),
       intro: els.intro.value.trim(),
       articles: currentArticles,
+      bookReviews: currentBookReviews,
       siteUrl: "https://www.catalyst-magazine.com",
     };
   }
@@ -309,7 +402,12 @@ async function mountBuilder(ctx, container) {
         testEmail,
         theme: activeTheme,
       };
-      if (activeTheme === "inbox") payload.inboxParams = buildInboxParams();
+      // Always send inboxParams — both themes re-render per recipient so
+      // each subscriber gets a personalized greeting + unsubscribe URL,
+      // and the bottom-of-issue book-review shelf needs to survive that
+      // re-render. The server only enforces presence for inbox theme but
+      // both consumers spread inboxParams into the per-recipient builder.
+      payload.inboxParams = buildInboxParams();
       const res = await ctx.authedFetch("/api/newsletter/send", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -381,7 +479,12 @@ async function mountBuilder(ctx, container) {
         theme: activeTheme,
         scheduledAt: utcIso,
       };
-      if (activeTheme === "inbox") payload.inboxParams = buildInboxParams();
+      // Always send inboxParams — both themes re-render per recipient so
+      // each subscriber gets a personalized greeting + unsubscribe URL,
+      // and the bottom-of-issue book-review shelf needs to survive that
+      // re-render. The server only enforces presence for inbox theme but
+      // both consumers spread inboxParams into the per-recipient builder.
+      payload.inboxParams = buildInboxParams();
       const res = await ctx.authedFetch("/api/newsletter/send", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -412,7 +515,12 @@ async function mountBuilder(ctx, container) {
         html: currentHtml,
         theme: activeTheme,
       };
-      if (activeTheme === "inbox") payload.inboxParams = buildInboxParams();
+      // Always send inboxParams — both themes re-render per recipient so
+      // each subscriber gets a personalized greeting + unsubscribe URL,
+      // and the bottom-of-issue book-review shelf needs to survive that
+      // re-render. The server only enforces presence for inbox theme but
+      // both consumers spread inboxParams into the per-recipient builder.
+      payload.inboxParams = buildInboxParams();
       const res = await ctx.authedFetch("/api/newsletter/send", {
         method: "POST",
         body: JSON.stringify(payload),
@@ -435,7 +543,48 @@ async function mountBuilder(ctx, container) {
 // Public Firestore REST query — stories with status=published are publicly
 // readable per firestore.rules, so no auth token is required. Mirrors the
 // query used by the public site in js/main.js.
+//
+// Book reviews are filtered out at the JS layer: they have their own picker
+// and their own section in the email, so mixing them into the article list
+// would let an admin accidentally promote a review as an editorial article.
 async function loadPublishedArticles() {
+  const rows = await runPublishedStoriesQuery(40);
+  return rows
+    .map(normalizePublishedDoc)
+    .filter((a) => a.id && a.title)
+    .filter((a) => {
+      const cat = String(a.category || "").toLowerCase().replace(/\s+/g, "-");
+      return cat !== "book-review" && cat !== "bookreview";
+    });
+}
+
+// Pull only published book reviews. Surfaces the title/bookAuthor/rating so
+// the picker UI can show "by <author> · ★ 4.5" inline without a second fetch.
+async function loadPublishedBookReviews() {
+  const rows = await runPublishedStoriesQuery(40);
+  return rows
+    .map((doc) => {
+      const base = normalizePublishedDoc(doc);
+      const f = doc.fields || {};
+      const ratingRaw = f.rating;
+      let rating = null;
+      if (ratingRaw) {
+        if ("doubleValue" in ratingRaw) rating = Number(ratingRaw.doubleValue);
+        else if ("integerValue" in ratingRaw) rating = parseInt(ratingRaw.integerValue, 10);
+      }
+      return {
+        ...base,
+        bookAuthor: f.bookAuthor?.stringValue || "",
+        rating,
+      };
+    })
+    .filter((a) => {
+      const cat = String(a.category || "").toLowerCase().replace(/\s+/g, "-");
+      return a.id && a.title && (cat === "book-review" || cat === "bookreview");
+    });
+}
+
+async function runPublishedStoriesQuery(limit = 40) {
   const projectId = "catalystwriters-5ce43";
   const endpoint = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
   const body = {
@@ -449,7 +598,7 @@ async function loadPublishedArticles() {
         },
       },
       orderBy: [{ field: { fieldPath: "publishedAt" }, direction: "DESCENDING" }],
-      limit: 40,
+      limit,
     },
   };
   const res = await fetch(endpoint, {
@@ -460,24 +609,22 @@ async function loadPublishedArticles() {
   if (!res.ok) throw new Error(`Firestore ${res.status}`);
   const rows = await res.json();
   if (!Array.isArray(rows)) return [];
-  return rows
-    .map((r) => r.document)
-    .filter(Boolean)
-    .map((doc) => {
-      const id = (doc.name || "").split("/").pop();
-      const f = doc.fields || {};
-      const str = (k) => f[k]?.stringValue ?? "";
-      const ts = f.publishedAt?.timestampValue || f.createdAt?.timestampValue || "";
-      const date = ts ? new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
-      return {
-        id,
-        title: str("title"),
-        author: str("authorName") || str("author"),
-        category: str("category"),
-        date,
-      };
-    })
-    .filter((a) => a.id && a.title);
+  return rows.map((r) => r.document).filter(Boolean);
+}
+
+function normalizePublishedDoc(doc) {
+  const id = (doc.name || "").split("/").pop();
+  const f = doc.fields || {};
+  const str = (k) => f[k]?.stringValue ?? "";
+  const ts = f.publishedAt?.timestampValue || f.createdAt?.timestampValue || "";
+  const date = ts ? new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+  return {
+    id,
+    title: str("title"),
+    author: str("authorName") || str("author"),
+    category: str("category"),
+    date,
+  };
 }
 
 function renderPreview(iframe, html) {

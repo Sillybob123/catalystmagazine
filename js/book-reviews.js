@@ -190,7 +190,10 @@
         const cat = String(raw.category || '').toLowerCase().replace(/\s+/g, '-');
         if (cat !== 'book-review' && cat !== 'bookreview') return null;
 
-        const link = raw.link || raw.url || `/article/${encodeURIComponent(titleToSlug(raw.title))}`;
+        // Book reviews canonicalize on /book-review/<slug>. Don't trust
+        // raw.link from cached JSON either — it may still say /article/
+        // from before the URL move.
+        const link = `/book-review/${encodeURIComponent(raw.slug || titleToSlug(raw.title))}`;
         const community = raw.communityPick === true || raw.communityPick === 'true';
         // Pick the best cover URL we know about right now. The ISBN
         // fallback (Open Library) is attempted async after render so
@@ -364,7 +367,9 @@
             author: str('authorName') || str('author') || 'The Catalyst',
             date: dateStr,
             image,
-            link: `/article/${encodeURIComponent(slug)}`,
+            // This loader only ever returns book-reviews (filtered downstream),
+            // so the link prefix is /book-review/.
+            link: `/book-review/${encodeURIComponent(slug)}`,
             category: (str('category') || '').toLowerCase().replace(/\s+/g, '-'),
             excerpt: str('deck') || str('dek') || str('excerpt') || '',
             communityPick: bool('communityPick'),

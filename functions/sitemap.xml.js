@@ -8,6 +8,7 @@ import { listAllArticles, titleToSlug, SITE_URL, getSiteUrl } from "./_utils/art
 const STATIC_PAGES = [
   { path: "/", priority: "1.0", changefreq: "daily" },
   { path: "/articles", priority: "0.9", changefreq: "daily" },
+  { path: "/book-reviews", priority: "0.8", changefreq: "weekly" },
   { path: "/about", priority: "0.7", changefreq: "monthly" },
   { path: "/sponsors", priority: "0.7", changefreq: "monthly" },
   { path: "/collaborate", priority: "0.6", changefreq: "monthly" },
@@ -41,7 +42,12 @@ export const onRequestGet = async ({ request, env }) => {
   for (const a of articles) {
     const slug = a.slug || titleToSlug(a.title);
     if (!slug) continue;
-    const loc = `${siteUrl}/article/${encodeURIComponent(slug)}`;
+    // Book reviews live under /book-review/<slug> so the sitemap reflects
+    // their new canonical URL space.
+    const isBookReview = String(a.category || "").toLowerCase() === "book-review";
+    const loc = isBookReview
+      ? `${siteUrl}/book-review/${encodeURIComponent(slug)}`
+      : `${siteUrl}/article/${encodeURIComponent(slug)}`;
     const lastmod = toIsoDate(a.publishedAt || a.date) || today;
     const image = a.image ? `<image:image><image:loc>${escapeXml(a.image)}</image:loc><image:title>${escapeXml(a.title)}</image:title></image:image>` : "";
     urls.push(

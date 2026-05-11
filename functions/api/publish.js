@@ -50,7 +50,9 @@ function resolveSquareImage(src) {
 }
 
 async function createSocialDrafts(env, { title, slug, author, coverImage, category, deck, siteUrl, publishedBy, publisherName }) {
-  const articleUrl = buildArticleUrl({ title, slug }, siteUrl);
+  // Pass category through so book reviews resolve to /book-review/<slug>
+  // and everything else stays on /article/<slug>.
+  const articleUrl = buildArticleUrl({ title, slug, category }, siteUrl);
   const squareImage = resolveSquareImage(coverImage);
   const deadlineDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const now = new Date().toISOString();
@@ -244,7 +246,8 @@ export const onRequestPost = async ({ request, env }) => {
     // /sitemap.xml so Google sees the new article on its next sitemap crawl.
     // Failures here must not fail the publish response.
     const publishedSiteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
-    const articlePath = buildArticlePath({ title, slug });
+    const publishedCategory = storyFields.category?.stringValue || "Feature";
+    const articlePath = buildArticlePath({ title, slug, category: publishedCategory });
     const seoResult = await notifyArticlePublished(env, publishedSiteUrl, articlePath).catch(
       (e) => ({ error: String(e?.message || e) })
     );

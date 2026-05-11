@@ -2176,15 +2176,22 @@ async function mountSocialPosts(ctx, container) {
   }
 
   // ── Load published articles for the generator dropdown ─────────────────────
+  // Book reviews are deliberately excluded — the social post composer is
+  // for editorial articles only. Reviews have their own promo flow on
+  // the /book-reviews page and don't fit the article-card carousel format.
   async function loadArticles() {
     try {
-      publishedArticles = await firestoreQueryArticles(ctx.authedFetch, {
+      const all = await firestoreQueryArticles(ctx.authedFetch, {
         from: [{ collectionId: "stories" }],
         where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
         orderBy: [{ field: { fieldPath: "publishedAt" }, direction: "DESCENDING" }],
         limit: 60,
       });
-      console.log("[loadArticles] loaded", publishedArticles.length, "articles. First article coverImage:", publishedArticles[0]?.coverImage, "image:", publishedArticles[0]?.image);
+      publishedArticles = (all || []).filter((a) => {
+        const cat = String(a?.category || "").toLowerCase().replace(/\s+/g, "-");
+        return cat !== "book-review" && cat !== "bookreview";
+      });
+      console.log("[loadArticles] loaded", publishedArticles.length, "articles (book reviews filtered out). First article coverImage:", publishedArticles[0]?.coverImage, "image:", publishedArticles[0]?.image);
     } catch (err) {
       console.error("[loadArticles] error:", err);
       publishedArticles = [];

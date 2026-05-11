@@ -570,7 +570,9 @@ function storiesToTxt(stories) {
       ["Published at", fmtDate(s.publishedAt)],
       ["Created at", fmtDate(s.createdAt)],
       ["Updated at", fmtDate(s.updatedAt)],
-      ["URL", s.slug ? `/article/${s.slug}` : (s.id ? `/posts/${s.id}.html` : "")],
+      ["URL", s.slug
+        ? `${String(s.category || "").toLowerCase() === "book-review" ? "/book-review/" : "/article/"}${s.slug}`
+        : (s.id ? `/posts/${s.id}.html` : "")],
       ["Cover image", s.coverImage || s.image || ""],
       ["Light cover", s.lightCover || ""],
       ["Excerpt / Dek", s.dek || s.excerpt || ""],

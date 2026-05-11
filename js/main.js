@@ -1137,8 +1137,10 @@ function initArticleDetailPage(data) {
         return;
     }
 
-    // Support both /article/<slug> and legacy /article.html?id=<id>
-    const pathSlug = window.location.pathname.match(/\/article\/([^/?#]+)/)?.[1];
+    // Support /article/<slug>, /book-review/<slug>, and the legacy
+    // /article.html?id=<id> URL. Both slug routes serve the same shell;
+    // the renderer picks the right template based on the article's category.
+    const pathSlug = window.location.pathname.match(/\/(?:article|book-review)\/([^/?#]+)/)?.[1];
     const urlParams = new URLSearchParams(window.location.search);
     const rawId = urlParams.get('id');
 
@@ -1442,7 +1444,8 @@ function renderBookReviewDetail(article, container) {
 
     // --- Meta tags ---
     document.title = `${article.title} | The Catalyst Book Reviews`;
-    const articleUrl = `${window.location.origin}/article/${encodeURIComponent(article.slug || titleToSlug(article.title))}`;
+    // Book reviews canonicalize on /book-review/<slug> (the dedicated route).
+    const articleUrl = `${window.location.origin}/book-review/${encodeURIComponent(article.slug || titleToSlug(article.title))}`;
     const socialImage = getBookReviewCover(article);
     const articleImage = /^https?:\/\//i.test(socialImage || '')
         ? socialImage
@@ -1639,6 +1642,15 @@ function renderBookReviewDetail(article, container) {
                     </div>
                 </footer>
 
+                <section class="brx-shelf" aria-labelledby="brx-shelf-title" hidden>
+                    <header class="brx-shelf-head">
+                        <span class="brx-shelf-eyebrow">Next on the shelf</span>
+                        <h2 class="brx-shelf-title" id="brx-shelf-title">Other books you might enjoy</h2>
+                        <p class="brx-shelf-deck">Hand-picked from The Stacks based on the genre and feel of this review.</p>
+                    </header>
+                    <div class="brx-shelf-grid" role="list"></div>
+                </section>
+
                 <a class="brx-cta" href="/book-reviews">
                     <span>Explore more from The Stacks</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1651,6 +1663,7 @@ function renderBookReviewDetail(article, container) {
 
     mountBookReviewCoverFallback(container);
     mountReadingProgress();
+    renderRelatedBookReviews(article, container);
 
     // ── Cover upgrade pass ──
     // The hero <img> has already been set to the best URL we knew about
@@ -1671,6 +1684,107 @@ function renderBookReviewDetail(article, container) {
             container.querySelector('.brx')?.setAttribute('data-has-cover', 'true');
         });
     }
+}
+
+// =============================================================
+// Related book reviews — "Other books you might enjoy".
+// Picks up to 3 other published book reviews. Same-genre matches
+// come first; if there aren't enough we fill with the most recent
+// other reviews so the shelf is never empty.
+// =============================================================
+function renderRelatedBookReviews(currentArticle, container) {
+    const shelf = container.querySelector('.brx-shelf');
+    const grid  = shelf?.querySelector('.brx-shelf-grid');
+    if (!shelf || !grid) return;
+
+    const pool = (window.__articleCacheAll || articleData || []).filter((a) =>
+        a && isBookReview(a) && String(a.id) !== String(currentArticle.id)
+    );
+    if (!pool.length) return;
+
+    const currentGenre = String(currentArticle.genre || '').toLowerCase();
+    const sameGenre = currentGenre
+        ? pool.filter((a) => String(a.genre || '').toLowerCase() === currentGenre)
+        : [];
+    const others   = pool.filter((a) => !sameGenre.includes(a));
+
+    // Newest first within each bucket; same-genre wins ties.
+    const byNewest = (a, b) => {
+        const da = Date.parse(a.publishedAt || a.date || 0) || 0;
+        const db = Date.parse(b.publishedAt || b.date || 0) || 0;
+        return db - da;
+    };
+    sameGenre.sort(byNewest);
+    others.sort(byNewest);
+
+    const picks = [...sameGenre, ...others].slice(0, 3);
+    if (!picks.length) return;
+
+    grid.innerHTML = picks.map((review) => {
+        const slug = review.slug || titleToSlug(review.title || '');
+        const href = `/book-review/${encodeURIComponent(slug)}`;
+        const cover = getBookReviewCover(review);
+        const fallback = getUploadedReviewCover(review) || ARTICLE_FALLBACK_IMAGE;
+        const rating = (typeof review.rating === 'number' && review.rating >= 0 && review.rating <= 5)
+            ? review.rating.toFixed(1)
+            : null;
+        const genre = formatBookReviewGenre(review.genre);
+        return `
+            <a class="brx-shelf-card" role="listitem" href="${escapeHtmlAttr(href)}">
+                <div class="brx-shelf-cover">
+                    <img class="brx-shelf-cover-img"
+                         src="${escapeHtmlAttr(cover)}"
+                         data-fallback-src="${escapeHtmlAttr(fallback)}"
+                         alt="Cover of ${escapeHtmlAttr(review.title || '')}"
+                         loading="lazy" decoding="async">
+                </div>
+                <div class="brx-shelf-body">
+                    ${genre ? `<span class="brx-shelf-genre">${escapeHtmlAttr(genre)}</span>` : ''}
+                    <h3 class="brx-shelf-book">${escapeHtmlAttr(review.title || '')}</h3>
+                    ${review.bookAuthor
+                        ? `<p class="brx-shelf-author">by ${escapeHtmlAttr(review.bookAuthor)}</p>`
+                        : ''}
+                    <div class="brx-shelf-meta">
+                        ${rating
+                            ? `<span class="brx-shelf-rating" aria-label="Rated ${rating} out of 5">★ ${rating}</span>`
+                            : ''}
+                        <span class="brx-shelf-byline">Reviewed by ${escapeHtmlAttr(review.author || 'The Catalyst')}</span>
+                    </div>
+                </div>
+            </a>
+        `;
+    }).join('');
+
+    // Wire fallback covers (Open Library 1×1 placeholder → uploaded cover).
+    grid.querySelectorAll('.brx-shelf-cover-img').forEach((img) => {
+        const fall = img.dataset.fallbackSrc || ARTICLE_FALLBACK_IMAGE;
+        let used = false;
+        const useFallback = () => {
+            if (used) return;
+            used = true;
+            img.src = fall;
+        };
+        img.addEventListener('error', useFallback);
+        img.addEventListener('load', () => {
+            if (img.naturalWidth <= 1 || img.naturalHeight <= 1) useFallback();
+        });
+    });
+
+    shelf.hidden = false;
+}
+
+// Pretty discipline label for the book-review shelf chips. Mirrors the
+// inline genre map used inside renderBookReviewDetail() so chips on the
+// related-books shelf read the same way as the detail page.
+function formatBookReviewGenre(genre) {
+    const g = String(genre || '').toLowerCase();
+    const map = {
+        'astronomy': 'Astronomy', 'biology': 'Biology', 'chemistry': 'Chemistry',
+        'computer-science': 'Computer Science', 'physics': 'Physics',
+        'mathematics': 'Mathematics', 'climate': 'Climate', 'memoir': 'Memoir',
+        'stem': 'STEM',
+    };
+    return map[g] || '';
 }
 
 function mountBookReviewCoverFallback(container) {
@@ -2274,13 +2388,14 @@ function viewArticle(linkOrId) {
     const decoded = decodeURIComponent(linkOrId);
     if (decoded.startsWith('http') || decoded.startsWith('posts/')) {
         window.location.href = decoded;
-    } else if (decoded.startsWith('/article/')) {
+    } else if (decoded.startsWith('/article/') || decoded.startsWith('/book-review/')) {
         window.location.href = decoded;
     } else {
-        // Legacy id — find the article and navigate by slug
+        // Legacy id — find the article and navigate by slug. Use
+        // getArticleLink so book reviews route to /book-review/<slug>.
         const article = articleData.find(a => String(a.id) === String(decoded));
         if (article) {
-            window.location.href = `/article/${encodeURIComponent(titleToSlug(article.title))}`;
+            window.location.href = getArticleLink(article);
         } else {
             window.location.href = `/article/${encodeURIComponent(decoded)}`;
         }
@@ -2308,7 +2423,26 @@ function formatCategory(category) {
 }
 
 function getArticleLink(article) {
-    return article.link || `/article/${encodeURIComponent(titleToSlug(article.title))}`;
+    if (!article) return '/articles';
+    const slug = article.slug || titleToSlug(article.title);
+    if (isBookReview(article)) {
+        // Book reviews live under /book-review/<slug> so the category is
+        // legible in the URL. We DON'T trust article.link here — the cached
+        // record may have been built before the move, and it would still say
+        // /article/<slug>. Always rebuild from the slug.
+        return `/book-review/${encodeURIComponent(slug)}`;
+    }
+    return article.link || `/article/${encodeURIComponent(slug)}`;
+}
+
+// Same path logic as getArticleLink but exposed for callers that build
+// `link` fields up front (the Firestore loader, the home / articles
+// renderers). Centralizing here keeps the /article/ vs /book-review/
+// decision in one place.
+function buildArticlePath(slug, category) {
+    const cat = String(category || '').toLowerCase().replace(/\s+/g, '-');
+    const prefix = cat === 'book-review' ? '/book-review/' : '/article/';
+    return `${prefix}${encodeURIComponent(slug)}`;
 }
 
 // ============================================
@@ -2365,15 +2499,17 @@ async function loadArticles() {
         window.articles.forEach(raw => {
             if (!raw || !raw.title) return;
             const link = raw.link || raw.url || '';
+            const cat = (raw.category || 'feature').toLowerCase();
+            const fallbackPath = buildArticlePath(titleToSlug(raw.title), cat);
             tryAdd({
                 id: raw.id || nextId++,
                 title: raw.title,
                 author: raw.author || 'The Catalyst',
                 date: raw.date || '',
                 image: raw.image || ARTICLE_FALLBACK_IMAGE,
-                link: link || `/article/${encodeURIComponent(titleToSlug(raw.title))}`,
-                url: link || `/article/${encodeURIComponent(titleToSlug(raw.title))}`,
-                category: (raw.category || 'feature').toLowerCase(),
+                link: link || fallbackPath,
+                url: link || fallbackPath,
+                category: cat,
                 tags: raw.tags || [],
                 excerpt: raw.deck || raw.excerpt || '',
                 deck: raw.deck || '',
@@ -2543,8 +2679,8 @@ function firestoreDocToArticle(doc) {
         date: dateStr,
         image,
         slug,
-        link: `/article/${encodeURIComponent(slug)}`,
-        url: `/article/${encodeURIComponent(slug)}`,
+        link: buildArticlePath(slug, category),
+        url: buildArticlePath(slug, category),
         category,
         tags: arr('tags'),
         excerpt,

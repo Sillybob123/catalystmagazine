@@ -117,7 +117,10 @@ export async function mount(ctx, container) {
   const shareCopyBtn = articleEl.querySelector("[data-fr-copy-share]");
   if (shareCopyBtn) {
     shareCopyBtn.addEventListener("click", async () => {
-      const url = `${window.location.origin}/article/${encodeURIComponent(slugFor(story))}`;
+      // Book reviews canonicalize on /book-review/<slug>; everything else on /article/<slug>.
+      const isBookReview = String(story.category || "").toLowerCase() === "book-review";
+      const prefix = isBookReview ? "book-review" : "article";
+      const url = `${window.location.origin}/${prefix}/${encodeURIComponent(slugFor(story))}`;
       try { await navigator.clipboard.writeText(url); ctx.toast("Article link copied.", "success"); }
       catch { ctx.toast("Copy failed — URL: " + url, "info", 6000); }
     });
@@ -363,8 +366,9 @@ function renderArticleMarkup(story) {
 
   // Share row mirrors the live article. It links to the eventual public URL
   // so the writer can sanity-check what gets shared, even though the article
-  // isn't live yet.
-  const articleUrl = `${window.location.origin}/article/${encodeURIComponent(titleToSlug(title))}`;
+  // isn't live yet. Book reviews live under /book-review/<slug>.
+  const sharePrefix = rawCategory === "book-review" ? "book-review" : "article";
+  const articleUrl = `${window.location.origin}/${sharePrefix}/${encodeURIComponent(titleToSlug(title))}`;
   const shareUrl = encodeURIComponent(articleUrl);
   const shareText = encodeURIComponent(title);
 

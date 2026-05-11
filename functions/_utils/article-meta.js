@@ -117,6 +117,7 @@ function normalizeArticleSlug(value) {
     .replace(/^\/+|\/+$/g, "");
   if (!raw) return "";
   if (raw.startsWith("article/")) return raw.slice("article/".length);
+  if (raw.startsWith("book-review/")) return raw.slice("book-review/".length);
   if (raw.includes("/")) return "";
   return raw;
 }
@@ -127,7 +128,13 @@ export function buildArticlePath(article = {}) {
     titleToSlug(article.title) ||
     normalizeArticleSlug(article.url) ||
     normalizeArticleSlug(article.link);
-  if (slug) return `/article/${encodeURIComponent(slug)}`;
+  if (slug) {
+    // Book reviews live under /book-review/<slug> so the URL surfaces the
+    // category. All other categories share /article/<slug>.
+    const cat = String(article.category || "").toLowerCase();
+    const prefix = cat === "book-review" ? "/book-review/" : "/article/";
+    return `${prefix}${encodeURIComponent(slug)}`;
+  }
 
   const rawFallback = String(article.url || article.link || "").trim();
   if (/^https?:\/\//i.test(rawFallback)) return rawFallback;

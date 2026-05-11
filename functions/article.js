@@ -23,6 +23,18 @@ export const onRequestGet = async ({ request, env, next }) => {
 
   const siteUrl = getSiteUrl(request, env);
 
+  // Book reviews canonicalize on /book-review/<slug>. If the article is a
+  // book review, 301 to that URL so /article.html?id=<id> bookmarks
+  // converge on the new path before we even touch the response body.
+  const isBookReview = String(article.category || "").toLowerCase() === "book-review";
+  if (isBookReview && article.title) {
+    const target = `${siteUrl}/book-review/${encodeURIComponent(titleToSlug(article.title))}`;
+    return new Response(null, {
+      status: 301,
+      headers: { Location: target, "Cache-Control": "public, max-age=300, s-maxage=600" },
+    });
+  }
+
   // Pull the static article.html asset from Pages.
   const origin = await next();
   if (!origin.ok) return origin;

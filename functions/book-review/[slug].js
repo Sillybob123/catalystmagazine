@@ -1,22 +1,29 @@
-// Handles GET /article/<slug> — slug is the article title in kebab-case.
+// Handles GET /book-review/<slug> — slug is the book-review title in
+// kebab-case. Mirrors functions/article/[slug].js but is dedicated to
+// book reviews so the URL surfaces the category.
 //
-// Responsibilities:
-//   1. Look up the article whose slug matches the URL segment.
-//   2. Serve the static article.html shell (via next()) so the browser
-//      gets the page content.
-//   3. Use HTMLRewriter to inject correct OG / Twitter / JSON-LD meta so
-//      that link-preview crawlers (which don't run JS) see the right data.
+// The page itself is still served by the existing article.html shell;
+// js/main.js routes to renderBookReviewDetail() when category === 'book-review',
+// so the only differences from /article/<slug> are:
+//   • only resolves articles whose category is "book-review"
+//     (other categories 404 here so the URL stays clean)
+//   • canonical URL is /book-review/<slug>, not /article/<slug>
+//   • JSON-LD type is Review (with itemReviewed = the book) rather than
+//     NewsArticle, so search engines surface the rating + author of the
+//     book being reviewed.
 //
-// Slug lookup strategy:
-//   a) Scan all JSON posts (posts/article<N>.json) for a title whose slug
-//      matches — these are numbered articles migrated to Firestore.
-//   b) Query Firestore `stories` collection for a published doc where the
-//      stored `slug` field matches, OR whose title slugifies to the same
-//      value.
-//   c) Fall back to serving the bare article.html shell (client JS will
-//      redirect to /articles if nothing is found).
+// Backward-compat: /article/<slug> still resolves book reviews and
+// 301-redirects to the new URL — see functions/article/[slug].js.
 
-import { findArticleBySlug, listAllArticles, titleToSlug, resolveOgImage, getSiteUrl, getFallbackImage, buildArticleDescription } from "../_utils/article-meta.js";
+import {
+  findArticleBySlug,
+  listAllArticles,
+  titleToSlug,
+  resolveOgImage,
+  getSiteUrl,
+  getFallbackImage,
+  buildArticleDescription,
+} from "../_utils/article-meta.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
@@ -24,8 +31,8 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   const slug = params.slug || "";
   if (!slug) return next();
 
-  // Try direct slug field match first (fast — one Firestore query).
-  // Fall back to title-derived slug scan only if needed.
+  // Try direct slug field match first (fast — one Firestore query),
+  // then fall back to title-derived slug scan.
   let article = await findArticleBySlug(slug.toLowerCase()).catch(() => null);
   if (!article) {
     const articles = await listAllArticles().catch(() => []);
@@ -34,39 +41,44 @@ export const onRequestGet = async ({ request, env, params, next }) => {
 
   const siteUrl = getSiteUrl(request, env);
 
-  // Book reviews moved to their own URL space (/book-review/<slug>) so the
-  // category is visible in the URL. Old /article/<slug> links keep working
-  // — we 301 them to the canonical book-review URL so SEO + bookmarks
-  // converge on the new path.
-  if (article && String(article.category || "").toLowerCase() === "book-review") {
+  // Reject non-book-review hits at this URL — keep the path category-correct.
+  // If a normal article slipped in, send the reader to the correct /article/<slug>.
+  if (article && String(article.category || "").toLowerCase() !== "book-review") {
     const canonicalSlug = article.slug || titleToSlug(article.title) || slug;
-    const target = `${siteUrl}/book-review/${encodeURIComponent(canonicalSlug)}`;
     return new Response(null, {
       status: 301,
       headers: {
-        Location: target,
+        Location: `${siteUrl}/article/${encodeURIComponent(canonicalSlug)}`,
         "Cache-Control": "public, max-age=300, s-maxage=600",
       },
     });
   }
 
-  // Fetch article.html shell by absolute URL to avoid Cloudflare Pages'
-  // automatic 308 redirect that fires when next() resolves article.html.
+  // Fetch article.html shell by absolute URL — avoids Cloudflare Pages'
+  // automatic 308 redirect when next() resolves the static asset.
   const origin = new URL(request.url).origin;
   const origin_response = await fetch(`${origin}/article`);
   if (!origin_response.ok) return origin_response;
 
   if (!article) return origin_response;
 
-  const canonical = `${siteUrl}/article/${encodeURIComponent(slug)}`;
+  const canonical = `${siteUrl}/book-review/${encodeURIComponent(slug)}`;
   const title = `${article.title} | ${SITE_NAME}`;
   const description = buildArticleDescription(article, 160);
   const image = resolveOgImage(article.image, siteUrl) || getFallbackImage(siteUrl);
   const author = article.author || SITE_NAME;
   const published = toIsoDate(article.publishedAt || article.date);
-  const section = formatCategory(article.category);
 
-  const jsonLd = buildArticleJsonLd({ title: article.title, description, image, author, published, section, canonical, siteUrl });
+  const jsonLd = buildBookReviewJsonLd({
+    article,
+    title,
+    description,
+    image,
+    author,
+    published,
+    canonical,
+    siteUrl,
+  });
 
   const rewriter = new HTMLRewriter()
     .on("title", { element: (el) => el.setInnerContent(escapeHtml(title)) })
@@ -94,9 +106,7 @@ export const onRequestGet = async ({ request, env, params, next }) => {
         if (published) {
           el.append(`<meta property="article:published_time" content="${escapeAttr(published)}">`, { html: true });
         }
-        if (section) {
-          el.append(`<meta property="article:section" content="${escapeAttr(section)}">`, { html: true });
-        }
+        el.append(`<meta property="article:section" content="Book Review">`, { html: true });
         el.append(`<meta name="author" content="${escapeAttr(author)}">`, { html: true });
         el.append(`<script type="application/ld+json">${jsonLd}</script>`, { html: true });
         // Embed the article ID so client JS can load without a slug→id lookup.
@@ -112,38 +122,61 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 };
 
-function truncate(str, max) {
-  const s = (str || "").replace(/\s+/g, " ").trim();
-  if (s.length <= max) return s;
-  return s.slice(0, max - 1).replace(/\s+\S*$/, "") + "…";
-}
-
 function toIsoDate(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   return isNaN(d) ? "" : d.toISOString();
 }
 
-function formatCategory(cat) {
-  if (!cat) return "Feature";
-  const map = { feature: "Feature", profile: "Profile", interview: "Interview", "op-ed": "Op-Ed", oped: "Op-Ed", editorial: "Editorial", news: "News" };
-  return map[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
-}
+// Schema.org Review structured data — gives Google a rating, an author for
+// the review, and (when ISBN is present) a Book itemReviewed so rich
+// results can show the star rating.
+function buildBookReviewJsonLd({ article, title, description, image, author, published, canonical, siteUrl }) {
+  const rating =
+    typeof article.rating === "number" && article.rating >= 0 && article.rating <= 5
+      ? article.rating
+      : null;
 
-function buildArticleJsonLd({ title, description, image, author, published, section, canonical, siteUrl }) {
+  const itemReviewed = {
+    "@type": "Book",
+    name: article.title,
+  };
+  if (article.bookAuthor) {
+    itemReviewed.author = { "@type": "Person", name: article.bookAuthor };
+  }
+  if (article.isbn) {
+    itemReviewed.isbn = article.isbn;
+  }
+
   const data = {
     "@context": "https://schema.org",
-    "@type": "NewsArticle",
+    "@type": "Review",
     headline: title,
+    name: article.title,
     description,
     image: [image],
-    author: [{ "@type": "Person", name: author }],
-    publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: `${siteUrl}/NewLogoShape.png` } },
+    author: { "@type": "Person", name: author },
+    publisher: {
+      "@type": "Organization",
+      name: SITE_NAME,
+      logo: { "@type": "ImageObject", url: `${siteUrl}/NewLogoShape.png` },
+    },
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
     url: canonical,
-    articleSection: section,
+    itemReviewed,
   };
-  if (published) { data.datePublished = published; data.dateModified = published; }
+  if (rating != null) {
+    data.reviewRating = {
+      "@type": "Rating",
+      ratingValue: rating,
+      bestRating: 5,
+      worstRating: 0,
+    };
+  }
+  if (published) {
+    data.datePublished = published;
+    data.dateModified = published;
+  }
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 

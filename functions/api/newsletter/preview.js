@@ -5,7 +5,8 @@
 // Body: {
 //   count?: 1 | 2 | 3 (default 3),
 //   subject?, headline?, intro?,
-//   articleIds?: string[]  // optional explicit selection (overrides count)
+//   articleIds?: string[],     // optional explicit selection (overrides count)
+//   bookReviewIds?: string[],  // optional 0–2 book reviews for the bottom shelf
 // }
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
@@ -54,6 +55,15 @@ export const onRequestPost = async ({ request, env }) => {
 
     if (!articles.length) return badRequest("No published stories found.");
 
+    // Optional book-review section. Capped at 2 to keep the email scannable
+    // and keep image weight under Gmail's clipping threshold.
+    let bookReviews = [];
+    if (Array.isArray(body.bookReviewIds) && body.bookReviewIds.length) {
+      const ids = body.bookReviewIds.slice(0, 2);
+      const results = await Promise.all(ids.map((id) => firestoreGet(env, `stories/${id}`)));
+      bookReviews = results.filter(Boolean).map(docToBookReview);
+    }
+
     const slicedArticles = articles.slice(0, count);
     const html = theme === "inbox"
       ? buildInboxNewsletter({
@@ -62,6 +72,7 @@ export const onRequestPost = async ({ request, env }) => {
           headline,
           intro,
           articles: slicedArticles,
+          bookReviews,
           siteUrl,
           recipientFirstName: "Reader",
         })
@@ -71,11 +82,12 @@ export const onRequestPost = async ({ request, env }) => {
           headline,
           intro,
           articles: slicedArticles,
+          bookReviews,
           siteUrl,
           recipientFirstName: "Reader",
         });
 
-    return json({ ok: true, html, subject, articles, theme });
+    return json({ ok: true, html, subject, articles, bookReviews, theme });
   } catch (err) {
     return serverError(err);
   }
@@ -117,4 +129,30 @@ function docToArticle(firestoreDoc) {
   };
   article.url = buildArticlePath(article);
   return article;
+}
+
+// Same shape as docToArticle but pulls the book-review-specific fields
+// (bookAuthor, rating, isbn) the email template uses.
+function docToBookReview(firestoreDoc) {
+  const f = firestoreDoc.fields || {};
+  const pick = (k) => (f[k]?.stringValue ?? f[k]?.integerValue ?? "");
+  const ratingRaw = f.rating;
+  let rating = null;
+  if (ratingRaw) {
+    if ("doubleValue" in ratingRaw) rating = Number(ratingRaw.doubleValue);
+    else if ("integerValue" in ratingRaw) rating = parseInt(ratingRaw.integerValue, 10);
+  }
+  const id = firestoreDoc.name ? firestoreDoc.name.split("/").pop() : null;
+  return {
+    id,
+    title: pick("title") || "Untitled",
+    excerpt: pick("excerpt") || pick("deck") || pick("dek") || "",
+    coverImage: pick("coverImage") || pick("image") || "",
+    category: "book-review",
+    author: pick("authorName") || pick("author") || "",
+    bookAuthor: pick("bookAuthor") || "",
+    isbn: pick("isbn") || "",
+    rating,
+    slug: pick("slug") || "",
+  };
 }

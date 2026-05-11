@@ -22,12 +22,17 @@ export function buildNewsletter({
   headline = "New Stories From The Catalyst",
   intro = "Here is the latest reporting from our team of student writers.",
   articles = [],
+  // Optional second-section: 0–2 book reviews. Rendered as a dedicated
+  // "From The Stacks" block at the bottom of the issue, separate from the
+  // editorial article cards above.
+  bookReviews = [],
   siteUrl = "https://www.catalyst-magazine.com",
   unsubscribeUrl = null,
   recipientEmail = null,
   recipientFirstName = null,
 }) {
   const cardHtml = articles.map((a, i) => articleCard(a, siteUrl, i === 0)).join("");
+  const bookReviewSection = renderBookReviewSection(bookReviews, siteUrl);
   const unsub = unsubscribeUrl
     ? `<a href="${esc(unsubscribeUrl)}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`
     : `<a href="${esc(siteUrl)}/api/unsubscribe/${encodeURIComponent(recipientEmail || "__RECIPIENT__")}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`;
@@ -109,6 +114,16 @@ export function buildNewsletter({
             </td>
           </tr>
 
+          ${bookReviewSection ? `
+          <!-- Book reviews — appears at the bottom of the issue, visually
+               distinct from the editorial article cards above. Hidden when
+               no reviews are picked. -->
+          <tr>
+            <td class="px-40" style="padding:8px 40px 24px 40px;">
+              ${bookReviewSection}
+            </td>
+          </tr>` : ""}
+
           <!-- Sign-off — text link instead of a pill button so the layout
                doesn't read as marketing. The strongest Primary-inbox signal
                is inviting a reply. -->
@@ -183,6 +198,114 @@ function articleCard(a, siteUrl, isFirst) {
     </table>`;
 }
 
+// Render the optional "From The Stacks" book-review section. Returns "" when
+// the picker is empty so the caller can guard rendering with a single check.
+//
+// Layout: a labeled section (eyebrow + heading + 1-line deck) followed by
+// 1–2 horizontal review cards. Each card is a 2-col table — book cover on
+// the left (~110px), title/author/rating/blurb on the right. Designed to
+// feel different from the editorial article cards above (which are vertical
+// + image-heavy) so readers register this as a separate "shelf" segment.
+function renderBookReviewSection(bookReviews, siteUrl) {
+  if (!Array.isArray(bookReviews) || !bookReviews.length) return "";
+  const cards = bookReviews.slice(0, 2).map((r) => bookReviewCard(r, siteUrl)).join("");
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="margin:24px 0 0 0;border:1px solid ${COLORS.hairline};border-radius:16px;overflow:hidden;background:#fbfaf6;">
+      <tr>
+        <td style="padding:22px 26px 6px 26px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:#7a1f2b;margin-bottom:8px;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">From The Stacks</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:1.25;color:${COLORS.ink};font-weight:700;margin-bottom:6px;">Book reviews this issue</div>
+          <p style="margin:0 0 16px 0;font-size:13px;line-height:1.55;color:${COLORS.muted};font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">A short take (or two) from our reading desk on what's worth your weekend.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 18px 18px 18px;">
+          ${cards}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 26px 22px 26px;">
+          <a href="${esc(siteUrl)}/book-reviews" style="font-size:13px;color:#7a1f2b;text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">Browse the full Stacks &rarr;</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+function bookReviewCard(review, siteUrl) {
+  const slug = review.slug || "";
+  // Book reviews canonicalize on /book-review/<slug>. Fall back to the
+  // /book-reviews index if a slug somehow isn't present.
+  const href = slug
+    ? `${siteUrl}/book-review/${encodeURIComponent(slug)}`
+    : `${siteUrl}/book-reviews`;
+  const cover = resizeForEmail(review.coverImage || review.image || "", 220);
+  const title = review.title || "Untitled";
+  const bookAuthor = review.bookAuthor || "";
+  const reviewer = review.author || review.authorName || "";
+  const rating =
+    typeof review.rating === "number" && review.rating >= 0 && review.rating <= 5
+      ? review.rating.toFixed(1)
+      : null;
+  const blurb = (review.excerpt || review.deck || review.dek || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const blurbShort = blurb.length > 140 ? blurb.slice(0, 139).trimEnd() + "…" : blurb;
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="margin:0 0 10px 0;background:${COLORS.surface};border:1px solid ${COLORS.hairline};border-radius:12px;overflow:hidden;">
+      <tr>
+        <td valign="top" width="120" style="padding:14px 0 14px 14px;width:120px;vertical-align:top;">
+          ${cover ? `
+          <a href="${esc(href)}" style="display:block;text-decoration:none;line-height:0;font-size:0;">
+            <img src="${escAttr(cover)}" alt="${escAttr(title)}" width="106"
+                 style="width:106px;height:auto;max-height:160px;display:block;border:0;border-radius:4px;box-shadow:0 4px 12px rgba(14,17,23,0.18);">
+          </a>` : `<div style="width:106px;height:160px;background:#f1ede2;border-radius:4px;"></div>`}
+        </td>
+        <td valign="top" style="padding:14px 18px 14px 16px;">
+          <a href="${esc(href)}" style="text-decoration:none;color:${COLORS.ink};">
+            <div style="font-family:Georgia,'Times New Roman',serif;font-size:16px;font-weight:700;line-height:1.25;color:${COLORS.ink};margin-bottom:4px;">${esc(title)}</div>
+          </a>
+          ${bookAuthor ? `<div style="font-size:12px;color:${COLORS.muted};margin-bottom:8px;font-style:italic;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">by ${esc(bookAuthor)}</div>` : ""}
+          ${rating ? `
+          <div style="margin-bottom:8px;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">
+            <span style="display:inline-block;font-size:12px;font-weight:700;color:#7a1f2b;letter-spacing:0.02em;">★ ${esc(rating)}</span>
+            <span style="display:inline-block;font-size:11px;color:${COLORS.muted};margin-left:4px;">/ 5</span>
+          </div>` : ""}
+          ${blurbShort ? `<div style="font-size:13px;line-height:1.55;color:${COLORS.inkSoft};margin-bottom:10px;font-family:Georgia,'Times New Roman',serif;">${esc(blurbShort)}</div>` : ""}
+          ${reviewer ? `<div style="font-size:11px;color:${COLORS.muted};margin-bottom:10px;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:0.04em;text-transform:uppercase;font-weight:600;">Reviewed by ${esc(reviewer)}</div>` : ""}
+          <a href="${esc(href)}" style="font-size:12px;color:#7a1f2b;text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">Read the review &rarr;</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+// Append a "From The Stacks" plain-text section to the running line array.
+// No-op when bookReviews is empty so callers can call it unconditionally.
+function appendBookReviewsText(lines, bookReviews, siteUrl) {
+  if (!Array.isArray(bookReviews) || !bookReviews.length) return;
+  lines.push("---");
+  lines.push("FROM THE STACKS — BOOK REVIEWS");
+  lines.push("");
+  bookReviews.slice(0, 2).forEach((r) => {
+    const slug = r.slug || "";
+    const href = slug
+      ? `${siteUrl}/book-review/${encodeURIComponent(slug)}`
+      : `${siteUrl}/book-reviews`;
+    lines.push(r.title || "Untitled");
+    if (r.bookAuthor) lines.push(`by ${r.bookAuthor}`);
+    if (typeof r.rating === "number") lines.push(`Rating: ${r.rating.toFixed(1)} / 5`);
+    if (r.author || r.authorName) lines.push(`Reviewed by ${r.author || r.authorName}`);
+    const blurb = (r.excerpt || r.deck || r.dek || "").replace(/\s+/g, " ").trim();
+    if (blurb) lines.push(blurb.length > 200 ? blurb.slice(0, 199) + "…" : blurb);
+    lines.push(`Read: ${href}`);
+    lines.push("");
+  });
+  lines.push(`Browse the full Stacks: ${siteUrl}/book-reviews`);
+  lines.push("");
+}
+
 // ─── Inbox-optimized "letter" template ───────────────────────────────────────
 // Plain single-column, no banner images, text links only, personal greeting.
 // Designed to look like a human wrote it — avoids every "Promotions" trigger:
@@ -197,6 +320,8 @@ export function buildInboxNewsletter({
   headline = "New Stories From The Catalyst",
   intro = "",
   articles = [],
+  // 0–2 book reviews; rendered as a "From The Stacks" block under the articles.
+  bookReviews = [],
   siteUrl = "https://www.catalyst-magazine.com",
   unsubscribeUrl = null,
   recipientEmail = null,
@@ -213,6 +338,10 @@ export function buildInboxNewsletter({
   // Articles 1–2 → thumbnail left + text right inside a subtle card
   const heroArticle = articles[0];
   const supportingArticles = articles.slice(1);
+
+  // Optional "From The Stacks" book-review section — same renderer as the
+  // classic theme so the two issue formats stay visually consistent.
+  const bookReviewSection = renderBookReviewSection(bookReviews, siteUrl);
 
   function heroBlock(a) {
     if (!a) return "";
@@ -354,6 +483,15 @@ export function buildInboxNewsletter({
             </td>
           </tr>
 
+          ${bookReviewSection ? `
+          <!-- Book reviews block — visually distinct "From The Stacks"
+               section under the editorial articles. -->
+          <tr>
+            <td class="wrap-pad" style="padding:8px 36px 16px 36px;">
+              ${bookReviewSection}
+            </td>
+          </tr>` : ""}
+
           <!-- Sign-off -->
           <tr>
             <td style="padding:4px 36px 28px 36px;">
@@ -394,6 +532,7 @@ export function buildNewsletterText({
   headline = "New Stories From The Catalyst",
   intro = "Here is the latest reporting from our team of student writers.",
   articles = [],
+  bookReviews = [],
   siteUrl = "https://www.catalyst-magazine.com",
   recipientEmail = null,
   recipientFirstName = null,
@@ -419,6 +558,8 @@ export function buildNewsletterText({
     lines.push("");
   });
 
+  appendBookReviewsText(lines, bookReviews, siteUrl);
+
   lines.push(`More stories: ${siteUrl}/articles`);
   lines.push("");
   lines.push("---");
@@ -433,6 +574,7 @@ export function buildNewsletterText({
 export function buildInboxNewsletterText({
   intro = "",
   articles = [],
+  bookReviews = [],
   siteUrl = "https://www.catalyst-magazine.com",
   recipientEmail = null,
   recipientFirstName = null,
@@ -458,6 +600,8 @@ export function buildInboxNewsletterText({
     lines.push(href);
     lines.push("");
   });
+
+  appendBookReviewsText(lines, bookReviews, siteUrl);
 
   lines.push("Thanks for reading,");
   lines.push("The Catalyst Team");
