@@ -907,13 +907,10 @@ body[data-page="book-reviews"] .header {
 
 .br-community-head {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
-    gap: 44px;
-    align-items: center;
-    margin-bottom: 42px;
-}
-@media (max-width: 960px) {
-    .br-community-head { grid-template-columns: 1fr; gap: 32px; }
+    grid-template-columns: 1fr;
+    gap: 28px;
+    align-items: start;
+    margin-bottom: 38px;
 }
 
 /* Lockup: stamp badge + lede. The stamp is a deliberate editorial mark —
@@ -929,7 +926,7 @@ body[data-page="book-reviews"] .header {
 }
 .br-community-copy .br-section-title {
     white-space: nowrap;
-    font-size: clamp(38px, 3.7vw, 58px);
+    font-size: clamp(38px, 4vw, 62px);
     margin-bottom: 18px;
 }
 .br-community-lede {
@@ -1002,22 +999,19 @@ body[data-page="book-reviews"] .header {
 
 /* Aside: submit CTA + stats. Stacks below on narrow screens. */
 .br-community-aside {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) minmax(0, 420px);
+    gap: 16px;
     align-items: stretch;
-    justify-content: center;
+    justify-content: start;
     width: 100%;
-    max-width: 420px;
-    justify-self: end;
-    background: rgba(255,255,255,.46);
-    border: 1px solid var(--paper-line);
-    border-radius: 20px;
-    padding: 16px;
-    box-shadow: 0 18px 42px -30px rgba(14,17,23,.28);
+    max-width: 760px;
 }
-@media (max-width: 960px) {
-    .br-community-aside { justify-self: start; }
+@media (max-width: 720px) {
+    .br-community-aside {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+    }
 }
 
 .br-submit-cta {
@@ -1031,7 +1025,7 @@ body[data-page="book-reviews"] .header {
     width: 100%;
     justify-content: center;
     padding: 15px 22px;
-    border-radius: 14px;
+    border-radius: 999px;
     font: inherit;
     font-weight: 600;
     font-size: 15px;
@@ -1061,7 +1055,7 @@ body[data-page="book-reviews"] .header {
     margin: 0;
     padding: 0;
     width: 100%;
-    max-width: 420px;
+    max-width: none;
     background: var(--paper);
     border: 1px solid var(--paper-line);
     border-radius: 14px;
