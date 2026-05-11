@@ -64,15 +64,16 @@ export const onRequestPost = async ({ request, env }) => {
       return json({ ok: false, error: "Payload too large" }, { status: 413 });
     }
 
-    // 3) IP rate-limit. Hard-fail if KV isn't bound — better to 503 than to
-    //    leave a public endpoint un-throttled.
+    // 3) IP rate-limit (best-effort). If RATE_LIMIT_KV isn't bound (local
+    //    dev, fresh Pages project) we log and continue — Turnstile + the
+    //    honeypot + body/email validation are the real anti-spam line.
+    //    Locking the form out when KV is missing means legitimate readers
+    //    can't submit at all.
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
     const rl = await rateLimit(env, `book-review-submit:${ip}`, { limit: 6, windowSeconds: 600 });
     if (rl.skipped) {
-      console.error("RATE_LIMIT_KV not configured — refusing submission");
-      return json({ ok: false, error: "Service unavailable" }, { status: 503 });
-    }
-    if (!rl.ok) {
+      console.warn("RATE_LIMIT_KV not configured — proceeding without IP rate limit");
+    } else if (!rl.ok) {
       return json({ ok: false, error: "Too many submissions. Please try again later." }, { status: 429 });
     }
 
@@ -91,6 +92,23 @@ export const onRequestPost = async ({ request, env }) => {
     //    Treat as success so bots get no signal; just drop the request.
     const honeypot = String(body.website || "").trim();
     if (honeypot) return json({ ok: true });
+
+    // 5b) Cloudflare Turnstile verification. Token is set by the widget
+    //     on the public submission form. If the secret isn't configured
+    //     (local dev / fresh project) we log and skip so the form still
+    //     works — same fail-open posture as the rate limit.
+    if (env.TURNSTILE_SECRET_KEY) {
+      const token = String(body.turnstileToken || "").trim();
+      if (!token) {
+        return badRequest("Please complete the human-verification check and try again.");
+      }
+      const ok = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, token, ip);
+      if (!ok) {
+        return badRequest("Human-verification check failed. Please try again.");
+      }
+    } else {
+      console.warn("TURNSTILE_SECRET_KEY not configured — skipping bot check");
+    }
 
     // 6) Trim + bound + strip CRLF on every text field. CRLF stripping is
     //    critical for fields that will end up in email headers (name, email,
@@ -275,4 +293,28 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
+}
+
+// Verify a Cloudflare Turnstile token. Returns true if Cloudflare says the
+// token is valid for this secret + (optionally) this IP. Any network or
+// parse error returns false — fail closed so a flaky CF response doesn't
+// become a way around the bot check. Docs:
+// https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
+async function verifyTurnstile(secret, token, remoteIp) {
+  try {
+    const form = new FormData();
+    form.append("secret",   secret);
+    form.append("response", token);
+    if (remoteIp && remoteIp !== "unknown") form.append("remoteip", remoteIp);
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) return false;
+    const data = await res.json().catch(() => null);
+    return !!(data && data.success === true);
+  } catch (err) {
+    console.error("Turnstile verify failed:", err.message);
+    return false;
+  }
 }

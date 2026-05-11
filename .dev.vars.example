@@ -49,3 +49,14 @@ SITE_URL=https://catalystmagazine.pages.dev
 # Admins can also trigger the bot manually from the dashboard Overview page
 # using their Firebase ID token — the cron secret is only needed for cron.
 BOT_CRON_SECRET=replace-with-long-random-string
+
+# === Cloudflare Turnstile (anti-bot for the public book-review form) ========
+# SECRET. Server-side verification key. Create a widget at:
+#   https://dash.cloudflare.com/?to=/:account/turnstile
+# Add catalyst-magazine.com (and your *.pages.dev / localhost for testing)
+# to the widget's allowed hostnames. The SITE key (public) is set on the
+# client in book-reviews.html as window.TURNSTILE_SITE_KEY — replace the
+# placeholder there with the same widget's site key.
+# If TURNSTILE_SECRET_KEY is unset, the server logs a warning and skips
+# verification, so local dev still works without configuring it.
+TURNSTILE_SECRET_KEY=0x4AAAAAAAxxxxxxxxxxxxxxxxxxxxxxxxxx

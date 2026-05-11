@@ -254,6 +254,13 @@ function setupWelcomePopup() {
     };
 
     const close = () => {
+        // Blur any focused element inside the popup *before* hiding it from
+        // assistive tech, or the browser warns "Blocked aria-hidden on an
+        // element because its descendant retained focus."
+        const active = document.activeElement;
+        if (active && popup.contains(active) && typeof active.blur === 'function') {
+            active.blur();
+        }
         popup.classList.remove('active');
         popup.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';

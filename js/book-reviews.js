@@ -928,7 +928,32 @@
         if (!modalEl || !modalForm) return;
 
         let lastFocused = null;
+        let turnstileWidgetId = null;
+        const turnstileSlot = document.getElementById('br-turnstile-slot');
         const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])';
+
+        // Render (or reset) the Turnstile widget. Safe to call multiple times.
+        // No-ops if no site key is configured or the Turnstile script hasn't
+        // finished loading yet — book-reviews-submit retries it on every
+        // modal open.
+        function ensureTurnstile() {
+            const key = (typeof window !== 'undefined' && window.TURNSTILE_SITE_KEY) || '';
+            if (!key || !turnstileSlot || !window.turnstile) return;
+            if (turnstileWidgetId !== null) {
+                try { window.turnstile.reset(turnstileWidgetId); } catch {}
+                return;
+            }
+            turnstileSlot.innerHTML = '';
+            try {
+                turnstileWidgetId = window.turnstile.render(turnstileSlot, {
+                    sitekey: key,
+                    theme: 'auto',
+                    action: 'book-review-submit',
+                });
+            } catch (err) {
+                console.warn('[book-reviews] Turnstile render failed:', err);
+            }
+        }
 
         function openModal() {
             lastFocused = document.activeElement;
@@ -942,9 +967,23 @@
             // Focus the first field for keyboard users.
             const firstInput = modalForm.querySelector('input, textarea, select');
             if (firstInput) requestAnimationFrame(() => firstInput.focus());
+            // Lazy-render the bot check. If the Turnstile script hasn't loaded
+            // yet, try again shortly — the form submit also re-checks.
+            ensureTurnstile();
+            if (!turnstileWidgetId && window.TURNSTILE_SITE_KEY) {
+                setTimeout(ensureTurnstile, 400);
+                setTimeout(ensureTurnstile, 1200);
+            }
         }
 
         function closeModal() {
+            // Move focus OUT of the modal *before* hiding it from assistive
+            // tech. Otherwise the browser logs "Blocked aria-hidden on an
+            // element because its descendant retained focus."
+            const active = document.activeElement;
+            if (active && modalEl.contains(active) && typeof active.blur === 'function') {
+                active.blur();
+            }
             modalEl.classList.remove('is-open');
             modalEl.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
@@ -993,6 +1032,9 @@
             modalError.hidden = true;
 
             const data = new FormData(modalForm);
+            // Turnstile injects its token as a hidden input named
+            // cf-turnstile-response inside the widget container.
+            const turnstileToken = String(data.get('cf-turnstile-response') || '').trim();
             const payload = {
                 submitterName:  String(data.get('submitterName')  || '').trim(),
                 submitterEmail: String(data.get('submitterEmail') || '').trim(),
@@ -1003,6 +1045,7 @@
                 genre:          String(data.get('genre')          || '').trim(),
                 deck:           String(data.get('deck')           || '').trim(),
                 reviewText:     String(data.get('reviewText')     || '').trim(),
+                turnstileToken,
                 // Honeypot. Real users send this empty; bots will fill it.
                 website:        String(data.get('website')        || '').trim(),
             };
@@ -1016,6 +1059,9 @@
             if (!payload.genre)          errors.push('Please pick a discipline so we can shelve it right.');
             if (payload.deck.length < 10) errors.push('Please add a one-sentence summary of the book.');
             if (payload.reviewText.length < 40) errors.push('Tell us a little more — at least a few sentences.');
+            if (window.TURNSTILE_SITE_KEY && !payload.turnstileToken) {
+                errors.push('Please complete the human-verification check below before submitting.');
+            }
             if (errors.length) {
                 modalError.textContent = errors[0];
                 modalError.hidden = false;
@@ -1050,6 +1096,9 @@
             } catch (err) {
                 modalError.textContent = err.message || 'Something went wrong. Please try again.';
                 modalError.hidden = false;
+                // Reset Turnstile so the user can retry — each token is
+                // single-use and the server has already consumed it.
+                ensureTurnstile();
             } finally {
                 modalSubmitBtn.disabled = false;
                 if (idle) idle.hidden = false;

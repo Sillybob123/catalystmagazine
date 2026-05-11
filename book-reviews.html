@@ -356,6 +356,14 @@
                         </div>
                     </div>
 
+                    <!-- Cloudflare Turnstile bot check. The widget is rendered
+                         by book-reviews.js if a site key is configured; the
+                         token comes back via the cf-turnstile-response input
+                         the widget injects into this container. If no site
+                         key is set (local dev), the slot stays empty and the
+                         server side skips verification too. -->
+                    <div class="br-form-field full" id="br-turnstile-slot" style="min-height:0;"></div>
+
                     <div class="br-modal-actions">
                         <button class="br-btn br-btn-ghost" type="button" id="br-modal-cancel">Cancel</button>
                         <button class="br-btn br-btn-primary" type="submit" id="br-modal-submit">
@@ -381,10 +389,20 @@
 
     <div id="site-footer"></div>
 
+    <!-- Cloudflare Turnstile (anti-bot for the public submission form).
+         The site key is public; the secret lives in Cloudflare Pages env
+         as TURNSTILE_SECRET_KEY. Replace "" with your widget's site key
+         from https://dash.cloudflare.com/?to=/:account/turnstile and
+         allow catalyst-magazine.com (+ your *.pages.dev hostname). Leave
+         empty and both client + server skip verification (useful in
+         local dev). -->
+    <script>window.TURNSTILE_SITE_KEY = "";</script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" defer></script>
+
     <script defer src="/js/layout.js"></script>
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/lqip-manifest.js"></script>
     <script defer src="/js/data.js?v=2"></script>
-    <script defer src="/js/book-reviews.js?v=1"></script>
+    <script defer src="/js/book-reviews.js?v=2"></script>
 </body>
 </html>
