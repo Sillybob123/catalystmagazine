@@ -3602,6 +3602,63 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 16px;
   resize: vertical;
 }
+.brw-editor {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--hairline, #e5e7eb);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--surface, #fff);
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+.brw-editor:focus-within {
+  border-color: #7a1f2b;
+  box-shadow: 0 0 0 3px rgba(122,31,43,.12);
+}
+.brw-toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--hairline, #e5e7eb);
+  background: var(--surface-2, #f8fafc);
+}
+.brw-tb-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-width: 36px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-2, #1f2937);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.brw-tb-btn:hover { background: var(--surface-3, #f1f5f9); border-color: var(--hairline, #e5e7eb); }
+.brw-tb-btn:active { background: var(--hairline, #e5e7eb); }
+.brw-tb-btn:focus-visible {
+  outline: none;
+  border-color: #7a1f2b;
+  box-shadow: 0 0 0 3px rgba(122,31,43,.18);
+}
+.brw-editor .brw-textarea {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.brw-editor .brw-textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+.brw-field .hint code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  background: var(--surface-3, #f1f5f9);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
 .brw-actions {
   display: flex;
   gap: 10px;

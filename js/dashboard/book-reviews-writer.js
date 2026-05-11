@@ -157,10 +157,18 @@ async function mountComposer(ctx, container) {
 
           <div class="brw-field brw-field-wide">
             <label class="label" for="brw-body">Your review <span class="req">*</span></label>
-            <textarea class="textarea brw-textarea" id="brw-body" name="body" minlength="120" maxlength="8000" required
-                      rows="14"
-                      placeholder="A few paragraphs on what the book is about, what it does well, who it's for, and why it earned a spot on the shelf."></textarea>
-            <div class="hint">Plain text or paragraphs separated by blank lines. No markdown needed.</div>
+            <div class="brw-editor">
+              <div class="brw-toolbar" role="toolbar" aria-label="Formatting">
+                <button type="button" class="brw-tb-btn" data-format="bold" title="Bold (Ctrl/Cmd+B)" aria-label="Bold"><strong>B</strong></button>
+                <button type="button" class="brw-tb-btn" data-format="italic" title="Italic (Ctrl/Cmd+I)" aria-label="Italic"><em>I</em></button>
+                <button type="button" class="brw-tb-btn" data-format="link" title="Link (Ctrl/Cmd+K)" aria-label="Link">Link</button>
+                <button type="button" class="brw-tb-btn" data-format="quote" title="Block quote" aria-label="Block quote">&ldquo; &rdquo;</button>
+              </div>
+              <textarea class="textarea brw-textarea" id="brw-body" name="body" minlength="120" maxlength="8000" required
+                        rows="14"
+                        placeholder="A few paragraphs on what the book is about, what it does well, who it's for, and why it earned a spot on the shelf."></textarea>
+            </div>
+            <div class="hint">Separate paragraphs with a blank line. Use the toolbar (or <code>**bold**</code>, <code>*italic*</code>, <code>[text](url)</code>, <code>&gt; quote</code>) for formatting.</div>
           </div>
         </div>
 
@@ -181,6 +189,7 @@ async function mountComposer(ctx, container) {
   // range input and keeps the hidden #brw-rating in sync — the submit
   // handler still reads .value off that hidden input.
   const syncRatingSlider = wireRatingSlider(card);
+  wireFormattingToolbar(card);
 
   // Prefill if editing
   if (initial) {
@@ -235,9 +244,25 @@ async function mountComposer(ctx, container) {
 function bodyFromStory(story) {
   if (story.bodyPlain) return story.bodyPlain;
   if (!story.body && !story.content) return "";
-  const html = story.body || story.content;
-  // Strip tags but preserve paragraph breaks (<p> → \n\n, <br> → \n).
-  return String(html)
+  let html = String(story.body || story.content);
+  // Convert inline formatting tags back to their markdown markers so the
+  // textarea round-trips cleanly on edit. Order matters: strong/em first
+  // (so their attributes don't interfere with anchor parsing), then
+  // anchors, then blockquotes.
+  html = html
+    .replace(/<(strong|b)\b[^>]*>([\s\S]*?)<\/\1>/gi, "**$2**")
+    .replace(/<(em|i)\b[^>]*>([\s\S]*?)<\/\1>/gi, "*$2*")
+    .replace(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)")
+    .replace(/<blockquote\b[^>]*>([\s\S]*?)<\/blockquote>/gi, (_, inner) => {
+      // Each paragraph or line inside becomes its own quoted line.
+      const text = inner
+        .replace(/<\s*br\s*\/?>/gi, "\n")
+        .replace(/<\/p\s*>/gi, "\n\n")
+        .replace(/<[^>]+>/g, "")
+        .trim();
+      return text.split(/\n/).map((l) => l.trim() ? `> ${l}` : "").join("\n");
+    });
+  return html
     .replace(/<\s*br\s*\/?>/gi, "\n")
     .replace(/<\/p\s*>/gi, "\n\n")
     .replace(/<[^>]+>/g, "")
@@ -250,17 +275,45 @@ function bodyFromStory(story) {
     .trim();
 }
 
-// Convert plain text (paragraphs separated by blank lines) into safe HTML
-// for the story body. We escape every HTML metachar so a writer's text can
-// never become a script tag in the article renderer.
+// Convert plain text with markdown-light syntax into safe HTML for the
+// story body. Supports: **bold**, *italic*, [text](url), and > quote at
+// line start. Every HTML metachar is escaped FIRST so writer text can
+// never become a real tag; then the markers are matched against the
+// escaped string and replaced with real tags. URLs inside links are
+// validated against an http/https/mailto allowlist.
 function paragraphsToSafeHtml(text) {
-  const escChar = (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]);
-  return String(text || "")
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => `<p>${p.replace(/[&<>]/g, escChar).replace(/\n/g, "<br>")}</p>`)
-    .join("\n");
+  const escChar = (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]);
+  const esc = (s) => String(s).replace(/[&<>"']/g, escChar);
+  const isSafeUrl = (u) => /^(https?:\/\/|mailto:)/i.test(String(u).trim());
+
+  // Apply inline markdown to an already-escaped string.
+  function inline(s) {
+    return s
+      // Links — [text](url). Reject URLs that don't match the allowlist
+      // (drop the link entirely, keep raw text).
+      .replace(/\[([^\]\n]+)\]\(([^)\s]+)\)/g, (m, txt, url) => {
+        const decoded = url.replace(/&amp;/g, "&");
+        if (!isSafeUrl(decoded)) return `${txt} (${url})`;
+        return `<a href="${esc(decoded)}" target="_blank" rel="noopener noreferrer">${txt}</a>`;
+      })
+      // Bold — **text**
+      .replace(/\*\*([^*\n][^*\n]*?)\*\*/g, "<strong>$1</strong>")
+      // Italic — *text* (after bold so we don't eat its delimiters)
+      .replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, "<em>$1</em>");
+  }
+
+  const blocks = String(text || "").split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+
+  return blocks.map((block) => {
+    const lines = block.split("\n");
+    const allQuoted = lines.every((l) => /^>\s?/.test(l));
+    if (allQuoted) {
+      const inner = lines.map((l) => l.replace(/^>\s?/, "")).join("\n");
+      const html = inline(esc(inner)).replace(/\n/g, "<br>");
+      return `<blockquote><p>${html}</p></blockquote>`;
+    }
+    return `<p>${inline(esc(block)).replace(/\n/g, "<br>")}</p>`;
+  }).join("\n");
 }
 
 async function saveStory(ctx, card, editingId, desiredStatus, showError, clearError) {
@@ -573,6 +626,96 @@ function wireRatingSlider(card) {
     input.value = String(safe);
     render();
   };
+}
+
+// Wires the lightweight formatting toolbar above the review textarea.
+// Each button rewrites the current selection in the #brw-body textarea
+// using a tiny markdown-ish vocabulary that paragraphsToSafeHtml below
+// understands: **bold**, *italic*, [text](url), and > quote at line
+// start. Keyboard shortcuts: Ctrl/Cmd+B, +I, +K (link).
+function wireFormattingToolbar(card) {
+  const ta = card.querySelector("#brw-body");
+  const bar = card.querySelector(".brw-toolbar");
+  if (!ta || !bar) return;
+
+  function wrap(prefix, suffix, placeholder) {
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const sel   = ta.value.slice(start, end);
+    const text  = sel || placeholder || "";
+    const next  = ta.value.slice(0, start) + prefix + text + suffix + ta.value.slice(end);
+    ta.value = next;
+    // Place cursor: if there was a selection, keep it inside the new wrappers.
+    const newStart = start + prefix.length;
+    const newEnd   = newStart + text.length;
+    ta.setSelectionRange(newStart, newEnd);
+    ta.focus();
+  }
+
+  function toggleQuote() {
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const before = ta.value.slice(0, start);
+    const lineStart = before.lastIndexOf("\n") + 1;
+    const rest   = ta.value.slice(end);
+    const afterNl = rest.indexOf("\n");
+    const lineEnd = end + (afterNl === -1 ? rest.length : afterNl);
+    const block = ta.value.slice(lineStart, lineEnd);
+    const allQuoted = block.split("\n").every((l) => /^> ?/.test(l) || l.trim() === "");
+    const next = block.split("\n").map((l) => {
+      if (l.trim() === "") return l;
+      return allQuoted ? l.replace(/^> ?/, "") : `> ${l}`;
+    }).join("\n");
+    ta.value = ta.value.slice(0, lineStart) + next + ta.value.slice(lineEnd);
+    ta.setSelectionRange(lineStart, lineStart + next.length);
+    ta.focus();
+  }
+
+  function linkPrompt() {
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    const sel   = ta.value.slice(start, end);
+    const url = window.prompt("Link URL (https://…):", "https://");
+    if (!url) return;
+    const trimmed = url.trim();
+    if (!/^(https?:\/\/|mailto:)/i.test(trimmed)) {
+      toast("Link URL must start with https://, http://, or mailto:", "error");
+      return;
+    }
+    const text = sel || "link text";
+    const insert = `[${text}](${trimmed})`;
+    ta.value = ta.value.slice(0, start) + insert + ta.value.slice(end);
+    // If there was no selection, leave the cursor positioned over the
+    // placeholder "link text" so the writer can immediately retype it.
+    if (sel) {
+      const after = start + insert.length;
+      ta.setSelectionRange(after, after);
+    } else {
+      ta.setSelectionRange(start + 1, start + 1 + text.length);
+    }
+    ta.focus();
+  }
+
+  bar.addEventListener("click", (e) => {
+    const btn = e.target.closest(".brw-tb-btn");
+    if (!btn) return;
+    e.preventDefault();
+    switch (btn.dataset.format) {
+      case "bold":   wrap("**", "**", "bold text"); break;
+      case "italic": wrap("*", "*", "italic text"); break;
+      case "link":   linkPrompt(); break;
+      case "quote":  toggleQuote(); break;
+    }
+  });
+
+  ta.addEventListener("keydown", (e) => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (!mod) return;
+    const k = e.key.toLowerCase();
+    if (k === "b") { e.preventDefault(); wrap("**", "**", "bold text"); }
+    else if (k === "i") { e.preventDefault(); wrap("*", "*", "italic text"); }
+    else if (k === "k") { e.preventDefault(); linkPrompt(); }
+  });
 }
 
 async function bestCoverForIsbn(isbn) {
