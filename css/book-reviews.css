@@ -615,6 +615,7 @@ body[data-page="book-reviews"] .header {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
     gap: 36px 28px;
+    align-items: stretch;
 }
 .br-card {
     grid-column: span 4;
@@ -623,6 +624,7 @@ body[data-page="book-reviews"] .header {
     color: inherit;
     display: flex;
     flex-direction: column;
+    height: 100%;
     transition: transform .5s cubic-bezier(.16,1,.3,1);
     opacity: 0;
     transform: translateY(20px);
@@ -710,7 +712,12 @@ body[data-page="book-reviews"] .header {
     border-radius: 999px;
 }
 
-.br-card-body { padding-right: 8px; }
+.br-card-body {
+    padding-right: 8px;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+}
 .br-card-book {
     font-family: 'Playfair Display', Georgia, serif;
     font-weight: 600;
@@ -720,6 +727,10 @@ body[data-page="book-reviews"] .header {
     color: var(--ink);
     margin: 0 0 6px;
     transition: color .25s ease;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 .br-card:hover .br-card-book { color: var(--accent); }
 .br-card-author {
@@ -745,6 +756,7 @@ body[data-page="book-reviews"] .header {
     font-size: 12px;
     color: var(--text-subtle);
     padding-top: 14px;
+    margin-top: auto;
     border-top: 1px solid var(--paper-line);
 }
 .br-card-meta strong {

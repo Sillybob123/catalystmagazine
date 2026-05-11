@@ -509,9 +509,10 @@
     }
 
     function variantFor(index) {
-        // Asymmetric: every 5th tile is wide for visual rhythm.
-        const mod = index % 5;
-        return (mod === 2) ? 'wide' : '';
+        // Keep review grids uniform: equal-width cards read cleaner,
+        // especially in the reader-picks section where there may only be
+        // three reviews.
+        return '';
     }
 
     // Book-cover-aware URL helper. Skips the wsrv.nl proxy for sources
