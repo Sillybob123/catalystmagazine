@@ -124,7 +124,7 @@
         .hero-inner {
             position: relative;
             z-index: 1;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: 1fr;
@@ -220,10 +220,11 @@
         }
         .hero-meta {
             display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-            gap: 48px 64px;
+            grid-template-columns: minmax(0, 1.2fr) minmax(280px, 1fr);
+            gap: 48px 56px;
             align-items: start;
             margin-bottom: 56px;
+            max-width: 980px;
         }
         .hero-subtitle {
             font-size: clamp(1.05rem, 1.4vw, 1.25rem);
@@ -416,7 +417,7 @@
             background: linear-gradient(90deg, transparent, var(--border-strong) 50%, transparent);
         }
         .stats-inner {
-            max-width: 1000px;
+            max-width: 920px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -477,7 +478,7 @@
             position: relative;
         }
         .section-header {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto 64px;
             display: grid;
             grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
@@ -531,7 +532,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 1px;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             background: var(--border-strong);
             border: 1px solid var(--border-strong);
@@ -611,7 +612,7 @@
             pointer-events: none;
         }
         .roles-section-inner {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             padding-top: 110px;
             padding-bottom: 110px;
@@ -717,7 +718,7 @@
             position: relative;
         }
         .action-section-header {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto 56px;
             text-align: left;
             display: grid;
@@ -729,13 +730,13 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
             gap: 24px;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
         /* ── Sponsors aside — quiet "or, alternatively" strip ── */
         .sponsors-aside {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 36px auto 0;
             padding: 22px 28px;
             display: flex;
@@ -1150,8 +1151,8 @@
         }
 
         /* ── Responsive ────────────────────────────── */
-        @media (max-width: 960px) {
-            .hero-meta { grid-template-columns: 1fr; gap: 32px; }
+        @media (max-width: 1080px) {
+            .hero-meta { grid-template-columns: 1fr; gap: 28px; max-width: 640px; }
             .hero-aside { padding-left: 0; border-left: none; padding-top: 24px; border-top: 1px solid var(--border-strong); }
             .section-header,
             .action-section-header {
