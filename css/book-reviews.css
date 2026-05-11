@@ -1100,6 +1100,7 @@ body[data-page="book-reviews"] .header {
     text-transform: uppercase;
     color: var(--text-sub);
     margin: 0;
+    white-space: nowrap;
 }
 .br-community-stats dd {
     margin: 0;
@@ -1121,10 +1122,21 @@ body[data-page="book-reviews"] .header {
 .br-community-toolbar {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     margin-bottom: 28px;
 }
 .br-community-toolbar[hidden] { display: none; }
+
+.br-community-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: stretch;
+}
+@media (max-width: 560px) {
+    .br-community-controls { grid-template-columns: 1fr; }
+}
+
 .br-community-search {
     position: relative;
     display: flex;
@@ -1184,6 +1196,64 @@ body[data-page="book-reviews"] .header {
 .br-community-search-clear:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+}
+
+/* Discipline filter — sits beside the search bar so readers can narrow
+   by shelf. Native <select> with a label + custom caret. */
+.br-community-filter {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 999px;
+    padding: 6px 18px 6px 22px;
+    cursor: pointer;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.br-community-filter:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+    background: #fff;
+}
+.br-community-filter-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--text-sub);
+    pointer-events: none;
+}
+.br-community-filter select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 12px 26px 12px 0;
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink);
+    outline: none;
+    cursor: pointer;
+    /* No native dropdown arrow — we draw our own caret below. */
+    background-image: none;
+}
+.br-community-filter select:focus { outline: none; }
+.br-community-filter-caret {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-sub);
+    pointer-events: none;
+    transition: transform .2s ease, color .2s ease;
+}
+.br-community-filter:focus-within .br-community-filter-caret {
+    color: var(--accent);
+    transform: translateY(-50%) rotate(-180deg);
 }
 
 .br-community-status {

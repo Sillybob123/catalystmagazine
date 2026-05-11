@@ -1457,9 +1457,26 @@ function renderBookReviewDetail(article, container) {
     document.getElementById('meta-twitter-image')?.setAttribute('content', articleImage);
 
     // --- Derived values ---
-    const contentHtml = article.blocks?.length
+    // Pull the review body from whichever field carries it. The public
+    // submission flow saves to `content`; some legacy writer-saved stories
+    // use `body` or `reviewText`. Falling back through these keeps older
+    // reviews from rendering with only the deck/excerpt.
+    const rawBody = article.content
+        || article.body
+        || article.reviewText
+        || '';
+    let bodyHtml = article.blocks?.length
         ? renderContentBlocks(article.blocks)
-        : (article.content || `<p>${escapeHtmlAttr(article.excerpt || '')}</p>`);
+        : (rawBody ? rawBody : `<p>${escapeHtmlAttr(article.excerpt || '')}</p>`);
+
+    // Auto-promote any standalone quoted paragraph (a <p> whose entire
+    // text content is wrapped in quotation marks) into a <blockquote>
+    // so it renders as a proper pullquote. This runs at view time so
+    // older reviews that pre-date the server-side detection in
+    // decide.js still get the nicer treatment.
+    bodyHtml = promotePullquotes(bodyHtml);
+
+    const contentHtml = bodyHtml;
     const readingTime = article.readingTime || estimateReadingTime(article);
     const rating = (typeof article.rating === 'number' && article.rating >= 0 && article.rating <= 5) ? article.rating : null;
     const ratingPct = rating != null ? Math.round((rating / 5) * 100) : null;
@@ -1648,6 +1665,42 @@ function renderBookReviewDetail(article, container) {
             img.src = url;
             container.querySelector('.brx')?.setAttribute('data-has-cover', 'true');
         });
+    }
+}
+
+// Promote standalone quoted paragraphs in a review body into <blockquote>
+// pullquotes so they get the editorial quote treatment automatically.
+// A paragraph qualifies when its full visible text (after trimming) starts
+// AND ends with a quotation mark — straight, smart, or guillemet.
+//
+// We use DOMParser so the transformation operates on actual nodes rather
+// than fragile string regex (the content is already-rendered HTML by the
+// time this runs, so we can trust DOM semantics).
+function promotePullquotes(html) {
+    if (!html || typeof html !== 'string') return html;
+    if (typeof DOMParser === 'undefined') return html;
+    const OPEN_Q  = /^["“”«]/;
+    const CLOSE_Q = /["“”»]$/;
+    try {
+        const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+        const root = doc.body.firstChild;
+        if (!root) return html;
+        root.querySelectorAll('p').forEach((p) => {
+            // Only promote plain quoted lines — leave anything that contains
+            // links, images, or inline formatting alone so we don't strip
+            // intent from a thoughtfully formatted paragraph.
+            if (p.querySelector('a, img, strong, em, br, code')) return;
+            const text = (p.textContent || '').trim();
+            if (text.length < 12) return;
+            if (!OPEN_Q.test(text) || !CLOSE_Q.test(text)) return;
+            const stripped = text.replace(/^["“”«]\s*/, '').replace(/\s*["“”»]$/, '');
+            const bq = doc.createElement('blockquote');
+            bq.textContent = stripped;
+            p.replaceWith(bq);
+        });
+        return root.innerHTML;
+    } catch {
+        return html;
     }
 }
 
@@ -2408,7 +2461,10 @@ function firestoreDocToArticle(doc) {
     if (!title) return null;
 
     const category = (str('category') || 'feature').toLowerCase().replace(/\s+/g, '-');
-    const content = str('body') || str('content');
+    // Book-review submissions used to be stored under `reviewText`; the
+    // newer pipeline writes them as `content`. Fall through any of the
+    // three so older approved reviews still render with their full body.
+    const content = str('body') || str('content') || str('reviewText');
     const deck = str('dek') || str('deck');
     const lightCover = f.lightCover?.booleanValue === true;
     const excerpt = deck || (content ? content.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 220) : '');

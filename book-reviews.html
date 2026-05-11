@@ -44,7 +44,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap">
 
     <link rel="stylesheet" href="/css/styles.css?v=cover2">
-    <link rel="stylesheet" href="/css/book-reviews.css?v=3">
+    <link rel="stylesheet" href="/css/book-reviews.css?v=4">
 </head>
 <body data-page="book-reviews">
     <!-- Google Tag Manager (noscript) -->
@@ -238,19 +238,38 @@
                 </div>
 
                 <div class="br-community-toolbar" role="search">
-                    <label class="br-community-search">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <circle cx="11" cy="11" r="8"/>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                        </svg>
-                        <input type="search" id="br-community-search-input" placeholder="Search reader picks by book, author, or reviewer…" autocomplete="off" spellcheck="false" aria-label="Search reader-submitted book reviews">
-                        <button type="button" class="br-community-search-clear" id="br-community-search-clear" aria-label="Clear search" hidden>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <line x1="18" y1="6" x2="6" y2="18"/>
-                                <line x1="6" y1="6" x2="18" y2="18"/>
+                    <div class="br-community-controls">
+                        <label class="br-community-search">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                             </svg>
-                        </button>
-                    </label>
+                            <input type="search" id="br-community-search-input" placeholder="Search reader picks by book, author, or reviewer…" autocomplete="off" spellcheck="false" aria-label="Search reader-submitted book reviews">
+                            <button type="button" class="br-community-search-clear" id="br-community-search-clear" aria-label="Clear search" hidden>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </label>
+                        <label class="br-community-filter">
+                            <span class="br-community-filter-label">Shelf</span>
+                            <select id="br-community-genre-filter" aria-label="Filter reader picks by discipline">
+                                <option value="all">All disciplines</option>
+                                <option value="astronomy">Astronomy</option>
+                                <option value="biology">Biology</option>
+                                <option value="computer-science">Computer Science</option>
+                                <option value="physics">Physics</option>
+                                <option value="mathematics">Mathematics</option>
+                                <option value="climate">Climate</option>
+                                <option value="memoir">Memoir</option>
+                                <option value="stem">Other STEM</option>
+                            </select>
+                            <svg class="br-community-filter-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </label>
+                    </div>
                     <p class="br-community-status" id="br-community-status" aria-live="polite"></p>
                 </div>
 
@@ -451,6 +470,6 @@
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/lqip-manifest.js"></script>
     <script defer src="/js/data.js?v=2"></script>
-    <script defer src="/js/book-reviews.js?v=3"></script>
+    <script defer src="/js/book-reviews.js?v=4"></script>
 </body>
 </html>

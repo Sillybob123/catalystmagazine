@@ -207,15 +207,32 @@ function unpackDoc(doc) {
 // that can break out of a <p> body context. The output is consumed by the
 // public article renderer (no attribute interpolation), so " and ' don't
 // need to be escaped here.
+//
+// Standalone quoted paragraphs — a single line of body text that begins
+// and ends with a quotation mark — get auto-promoted to <blockquote> so
+// they render as proper pullquotes in the published review. Quotation
+// marks the form accepts include straight ", smart "/", and «/».
 function paragraphsToHtml(text) {
   const safe = (s) => String(s).replace(/[&<>]/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])
   );
+  const OPEN_Q  = /^["“”«]/;
+  const CLOSE_Q = /["“”»]$/;
   return String(text || "")
     .split(/\n{2,}/)
     .map((p) => p.trim())
     .filter(Boolean)
-    .map((p) => `<p>${safe(p).replace(/\n/g, "<br>")}</p>`)
+    .map((p) => {
+      const oneLine = !/\n/.test(p);
+      const isQuote = oneLine && OPEN_Q.test(p) && CLOSE_Q.test(p) && p.length > 12;
+      if (isQuote) {
+        // Strip the wrapping quote marks so the visual quote treatment
+        // (oversized open-quote, italic) doesn't double-up on a literal ".
+        const stripped = p.replace(/^["“”«]\s*/, "").replace(/\s*["“”»]$/, "");
+        return `<blockquote>${safe(stripped)}</blockquote>`;
+      }
+      return `<p>${safe(p).replace(/\n/g, "<br>")}</p>`;
+    })
     .join("\n");
 }
 

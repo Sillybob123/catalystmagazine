@@ -38,9 +38,11 @@
     const communityTopGenreEl   = document.getElementById('br-community-top-genre');
     const communityLoadMoreEl   = document.getElementById('br-community-loadmore');
     const communityLoadMoreWrap = document.getElementById('br-community-loadmore-wrap');
+    const communityGenreEl      = document.getElementById('br-community-genre-filter');
 
     const COMMUNITY_PAGE_SIZE = 9;
     let communityQuery   = '';
+    let communityGenre   = 'all';
     let communityShown   = COMMUNITY_PAGE_SIZE;
 
     // Modal refs
@@ -598,8 +600,13 @@
     // readers can find a pick by any of those.
     function filterCommunity() {
         const q = communityQuery.trim().toLowerCase();
-        if (!q) return communityReviews.slice();
+        const g = (communityGenre || 'all').toLowerCase();
         return communityReviews.filter((r) => {
+            if (g !== 'all') {
+                const reviewGenre = String(r.genre || '').toLowerCase();
+                if (reviewGenre !== g) return false;
+            }
+            if (!q) return true;
             const hay = [
                 r.title,
                 r.bookTitle,
@@ -666,12 +673,23 @@
 
         const matches = filterCommunity();
         const hasQuery = communityQuery.trim().length > 0;
+        const hasGenre = (communityGenre || 'all') !== 'all';
+        const genreLabel = hasGenre
+            ? communityGenre.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+            : '';
+        // Friendly "filter pinned" suffix used in status messages.
+        const filterTail = (() => {
+            if (hasQuery && hasGenre) return ` in ${genreLabel} for "${communityQuery.trim()}"`;
+            if (hasQuery)              return ` for "${communityQuery.trim()}"`;
+            if (hasGenre)              return ` in ${genreLabel}`;
+            return '';
+        })();
 
-        // No matches for the active query — distinct empty state.
+        // No matches for the active query / filter — distinct empty state.
         if (!matches.length) {
             communityFeedEl.innerHTML = '';
             if (communityNoMatchEl) communityNoMatchEl.hidden = false;
-            if (communityStatusEl)  communityStatusEl.textContent = `No matches for "${communityQuery.trim()}"`;
+            if (communityStatusEl)  communityStatusEl.textContent = `No reader picks${filterTail}.`;
             if (communityLoadMoreWrap) communityLoadMoreWrap.hidden = true;
             return;
         }
@@ -687,14 +705,15 @@
         observeCards(communityFeedEl.querySelectorAll('.br-card:not(.in-view)'));
         backfillIsbnCovers(communityFeedEl);
 
-        // Status line: "Showing 9 of 23 reader picks" / "12 picks match …".
+        // Status line: "Showing 9 of 23 reader picks in Biology for 'rna'".
         if (communityStatusEl) {
-            if (hasQuery) {
-                const matchWord = matches.length === 1 ? 'pick matches' : 'picks match';
+            const filterActive = hasQuery || hasGenre;
+            if (filterActive) {
+                const word = matches.length === 1 ? 'pick' : 'picks';
                 communityStatusEl.textContent =
                     matches.length <= slice.length
-                        ? `${matches.length} ${matchWord} "${communityQuery.trim()}"`
-                        : `Showing ${slice.length} of ${matches.length} ${matchWord} "${communityQuery.trim()}"`;
+                        ? `${matches.length} ${word}${filterTail}`
+                        : `Showing ${slice.length} of ${matches.length} ${word}${filterTail}`;
             } else if (communityReviews.length > slice.length) {
                 communityStatusEl.textContent = `Showing ${slice.length} of ${communityReviews.length} reader picks`;
             } else {
@@ -751,6 +770,15 @@
         if (!communityLoadMoreEl) return;
         communityLoadMoreEl.addEventListener('click', () => {
             communityShown += COMMUNITY_PAGE_SIZE;
+            renderCommunityFeed();
+        });
+    }
+
+    function bindCommunityGenreFilter() {
+        if (!communityGenreEl) return;
+        communityGenreEl.addEventListener('change', (e) => {
+            communityGenre = (e.target.value || 'all').toLowerCase();
+            communityShown = COMMUNITY_PAGE_SIZE;
             renderCommunityFeed();
         });
     }
@@ -1028,6 +1056,7 @@
 
         bindCommunitySearch();
         bindCommunityLoadMore();
+        bindCommunityGenreFilter();
     }
 
     // Split the merged review set into writer reviews (drive the featured

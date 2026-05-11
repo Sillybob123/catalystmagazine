@@ -471,13 +471,46 @@ body[data-page="article"].is-book-review .back-link:hover {
     color: var(--brx-ink);
     margin: 1.6em 0 0.5em;
 }
+/* Pullquote — a standalone quoted line gets promoted to <blockquote>
+   automatically (see promotePullquotes in js/main.js). The treatment
+   reads as editorial, not as plain indentation. */
 .brx-body blockquote {
-    margin: 1.6em 0;
-    padding: 4px 0 4px 24px;
-    border-left: 3px solid var(--brx-accent);
+    position: relative;
+    margin: 2em 0;
+    padding: 14px 8px 14px 44px;
+    border-left: 0;
+    font-family: 'Playfair Display', Georgia, serif;
     font-style: italic;
-    color: var(--brx-text-muted);
-    font-size: 1.08em;
+    font-weight: 500;
+    font-size: 1.22em;
+    line-height: 1.5;
+    color: var(--brx-ink);
+    letter-spacing: -0.005em;
+}
+.brx-body blockquote::before {
+    content: '\201C'; /* big left double-quote */
+    position: absolute;
+    left: -2px;
+    top: -14px;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 3.6em;
+    line-height: 1;
+    color: var(--brx-accent);
+    opacity: .9;
+}
+.brx-body blockquote::after {
+    /* hairline rule under the quote so it visually closes the block */
+    content: '';
+    position: absolute;
+    left: 44px;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--brx-paper-line);
+}
+@media (max-width: 720px) {
+    .brx-body blockquote { font-size: 1.12em; padding-left: 36px; }
+    .brx-body blockquote::before { font-size: 2.8em; top: -8px; }
 }
 .brx-body a {
     color: var(--brx-accent);
