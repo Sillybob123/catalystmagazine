@@ -1535,6 +1535,212 @@ body[data-page="book-reviews"] .header {
 .br-card-pick svg { width: 11px; height: 11px; }
 
 /* =================================================================
+   AGGREGATE CARD — community feed
+   Used when 2+ reader reviews share the same book. The card replaces
+   the usual <a> wrapper with a <div> (the cover is still a link to the
+   lead review). A stack-of-papers ::before behind the cover hints
+   visually that there's more than one review inside, and an expand
+   button reveals the individual reviews stacked below.
+   ================================================================= */
+.br-card-aggregate {
+    /* mirror .br-card defaults so layout + grid behavior is identical */
+    position: relative;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 18px 36px -24px rgba(15,23,42,.22);
+    transition: transform .35s cubic-bezier(.16,1,.3,1),
+                box-shadow .35s ease,
+                border-color .25s ease;
+    opacity: 0;
+    transform: translateY(14px);
+}
+.br-card-aggregate.in-view { opacity: 1; transform: none; }
+.br-card-aggregate:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 24px 48px -22px rgba(122,31,43,.28);
+}
+.br-card-aggregate.wide { grid-column: span 6; }
+.br-card-aggregate-media {
+    position: relative;
+    display: block;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    background: var(--paper-off);
+}
+.br-card-aggregate.wide .br-card-aggregate-media { aspect-ratio: 4 / 5; }
+.br-card-aggregate-media img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity .4s ease, transform .6s ease;
+}
+.br-card-aggregate-media img.loaded { opacity: 1; }
+.br-card-aggregate:hover .br-card-aggregate-media img { transform: scale(1.04); }
+/* Stacked-papers hint — three offset shadow planes peeking out from
+   behind the cover, signalling "there are more reviews inside". */
+.br-card-aggregate-stack {
+    position: absolute;
+    inset: 6px 0 0 0;
+    pointer-events: none;
+    z-index: 0;
+}
+.br-card-aggregate-stack span {
+    position: absolute;
+    inset: 4px 8px 0 8px;
+    border-radius: 6px 6px 0 0;
+    background: var(--paper-line);
+    transform-origin: center bottom;
+}
+.br-card-aggregate-stack span:nth-child(1) { transform: translateY(-6px) rotate(-1.4deg); opacity: .55; }
+.br-card-aggregate-stack span:nth-child(2) { transform: translateY(-10px) rotate(1deg);    opacity: .35; }
+.br-card-aggregate-stack span:nth-child(3) { transform: translateY(-14px) rotate(-.6deg);  opacity: .22; }
+
+.br-card-aggregate .br-card-body {
+    padding: 20px 22px 22px;
+}
+.br-card-aggregate-note {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    margin: 8px 0 14px;
+}
+.br-card-aggregate-note strong {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+/* Expand/collapse button */
+.br-aggregate-toggle {
+    appearance: none;
+    background: var(--paper-off);
+    border: 1px solid var(--paper-line);
+    color: var(--ink);
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    cursor: pointer;
+    transition: background .2s ease, border-color .2s ease, color .2s ease;
+    min-height: 40px;
+}
+.br-aggregate-toggle:hover {
+    background: var(--paper);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.br-aggregate-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+.br-aggregate-toggle-caret {
+    width: 14px;
+    height: 14px;
+    transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
+    flex: 0 0 auto;
+}
+.br-aggregate-toggle[aria-expanded="true"] .br-aggregate-toggle-caret {
+    transform: rotate(-180deg);
+}
+
+/* Individual reviews list (shown when expanded) */
+.br-aggregate-reviews {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.br-aggregate-reviews[hidden] { display: none; }
+.br-aggregate-review {
+    border-top: 1px solid var(--paper-line);
+    padding-top: 14px;
+}
+.br-aggregate-review:first-child { border-top: 0; padding-top: 4px; }
+.br-aggregate-review-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.br-aggregate-review-rating {
+    display: inline-flex;
+    align-items: baseline;
+    padding: 4px 10px;
+    background: rgba(122, 31, 43, 0.08);
+    border: 1px solid rgba(122, 31, 43, 0.18);
+    color: var(--accent-deep);
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1;
+}
+.br-aggregate-review-rating-num {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 15px;
+    font-weight: 700;
+}
+.br-aggregate-review-rating small {
+    font-size: 10px;
+    font-weight: 500;
+    margin-left: 2px;
+    opacity: .8;
+}
+.br-aggregate-review-byline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+.br-aggregate-review-byline strong {
+    color: var(--ink);
+    font-weight: 600;
+}
+.br-aggregate-review-blurb {
+    margin: 8px 0 6px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--text-muted);
+    /* Keep it tight — one short paragraph; the "read full review" link
+       below opens the standalone article page if the reader wants more. */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.br-aggregate-review-link {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(122,31,43,.3);
+    padding-bottom: 1px;
+    transition: border-color .2s, color .2s;
+}
+.br-aggregate-review-link:hover {
+    color: var(--accent-deep);
+    border-bottom-color: var(--accent-deep);
+}
+
+/* =================================================================
    SUBMISSION MODAL — public form
    ================================================================= */
 .br-modal-backdrop {
@@ -1668,6 +1874,132 @@ body[data-page="book-reviews"] .header {
 .br-form-field .hint {
     font-size: 12px;
     color: var(--text-subtle);
+}
+
+/* =================================================================
+   RATING SLIDER — public submission form
+   Continuous 0.0–5.0 rating with a star bar above (filled by width),
+   a native <input type="range">, and a live numeric readout + flavor
+   label below. Form handler still reads the hidden #br-rating input.
+   ================================================================= */
+.br-rating-slider {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--paper-off);
+    border: 1px solid var(--paper-line);
+    border-radius: 12px;
+}
+.br-rating-slider-stars {
+    position: relative;
+    line-height: 1;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 30px;
+    letter-spacing: 6px;
+    user-select: none;
+}
+.br-rating-slider-stars-base {
+    color: rgba(15, 23, 42, 0.16);
+}
+.br-rating-slider-stars-fill {
+    position: absolute;
+    top: 0; left: 0;
+    width: 0%;
+    overflow: hidden;
+    white-space: nowrap;
+    color: var(--accent);
+    /* Slightly delayed transition so the bar visually trails the thumb
+       and reads as continuous rather than jumpy when the user drags. */
+    transition: width .12s ease-out;
+}
+.br-rating-slider-row {
+    padding: 6px 2px 2px;
+}
+.br-rating-slider-input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) calc(var(--br-pct, 0) * 1%),
+        rgba(15, 23, 42, 0.12) calc(var(--br-pct, 0) * 1%),
+        rgba(15, 23, 42, 0.12) 100%
+    );
+    border-radius: 999px;
+    outline: none;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+.br-rating-slider-input::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 2px solid var(--accent);
+    box-shadow: 0 4px 10px -2px rgba(122, 31, 43, .45);
+    cursor: grab;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+.br-rating-slider-input::-moz-range-thumb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 2px solid var(--accent);
+    box-shadow: 0 4px 10px -2px rgba(122, 31, 43, .45);
+    cursor: grab;
+}
+.br-rating-slider-input:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
+}
+.br-rating-slider-input:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
+}
+.br-rating-slider-input:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.1); }
+.br-rating-slider-readout {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.br-rating-slider-value {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--ink);
+    line-height: 1;
+    /* The "— Optional —" placeholder uses the same line; lower its size
+       so it doesn't read as if a rating is set. */
+}
+.br-rating-slider[data-value="0"] .br-rating-slider-value {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-subtle);
+}
+.br-rating-slider-value small {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-subtle);
+    margin-left: 4px;
+}
+.br-rating-slider-flavor {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .01em;
+    color: var(--accent-deep);
+    font-style: italic;
+    text-align: right;
+    min-height: 1em;
+}
+@media (prefers-reduced-motion: reduce) {
+    .br-rating-slider-stars-fill,
+    .br-rating-slider-input::-webkit-slider-thumb { transition: none; }
 }
 .br-form-error {
     background: rgba(122,31,43,.08);

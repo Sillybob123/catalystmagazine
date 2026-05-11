@@ -150,11 +150,14 @@ export const onRequestPost = async ({ request, env }) => {
     if (!reviewText || reviewText.length < 40)
       return badRequest("Please share at least a few sentences about the book.");
 
-    // 8) Rating is optional. Cast safely. Anything else → ignored (null).
+    // 8) Rating is optional. Cast safely and snap to one decimal place so
+    //    users can land on any value the slider supports (e.g. 4.2, 3.7).
+    //    The previous behavior snapped to nearest 0.5 which was too coarse
+    //    once we moved off the fixed-step dropdown.
     let rating = null;
     if (ratingRaw != null && ratingRaw !== "") {
       const n = Number(ratingRaw);
-      if (Number.isFinite(n) && n >= 1 && n <= 5) rating = Math.round(n * 2) / 2;
+      if (Number.isFinite(n) && n >= 0.5 && n <= 5) rating = Math.round(n * 10) / 10;
     }
 
     // 9) Persist. The submission is server-only; rules deny direct reads.

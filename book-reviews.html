@@ -10,8 +10,8 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="The Stacks — The Catalyst Magazine's monthly STEM book column. Short, honest recommendations from Catalyst contributors on science, technology, math, and medicine books worth your shelf space.">
-    <meta name="keywords" content="STEM book recommendations, science books, Catalyst Magazine, popular science, science reading list, STEM reading">
+    <meta name="description" content="The Stacks — The Catalyst Magazine's monthly STEM book column. Honest reviews from our contributors and readers, across astronomy, biology, chemistry, climate, computer science, mathematics, physics, and science memoir.">
+    <meta name="keywords" content="STEM book reviews, science book recommendations, chemistry books, biology books, physics books, popular science reading, The Catalyst Magazine">
     <meta name="author" content="The Catalyst Magazine">
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#0e1117">
@@ -27,6 +27,61 @@
     <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+
+    <!-- Schema.org structured data — helps Google understand that this is a
+         book-review hub (CollectionPage) inside a magazine (Periodical).
+         The breadcrumb gives a proper trail in search results. -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "The Stacks — STEM book reviews",
+      "headline": "Books that change how we see the world",
+      "description": "Monthly STEM book recommendations from The Catalyst Magazine's contributors. Short, honest reviews on science, math, computer science, chemistry, climate, and memoir.",
+      "url": "https://www.catalyst-magazine.com/book-reviews",
+      "isPartOf": {
+        "@type": "Periodical",
+        "name": "The Catalyst Magazine",
+        "url": "https://www.catalyst-magazine.com/"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "The Catalyst Magazine",
+        "url": "https://www.catalyst-magazine.com/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.catalyst-magazine.com/NewLogoShape.png"
+        }
+      },
+      "about": [
+        { "@type": "Thing", "name": "Astronomy" },
+        { "@type": "Thing", "name": "Biology" },
+        { "@type": "Thing", "name": "Chemistry" },
+        { "@type": "Thing", "name": "Climate" },
+        { "@type": "Thing", "name": "Computer Science" },
+        { "@type": "Thing", "name": "Mathematics" },
+        { "@type": "Thing", "name": "Memoir" },
+        { "@type": "Thing", "name": "Physics" }
+      ],
+      "breadcrumb": {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://www.catalyst-magazine.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Book Reviews",
+            "item": "https://www.catalyst-magazine.com/book-reviews"
+          }
+        ]
+      }
+    }
+    </script>
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -466,17 +521,37 @@
                         </div>
                         <div class="br-form-field">
                             <label for="br-rating">Your rating</label>
-                            <select id="br-rating" name="rating">
-                                <option value="">— Optional —</option>
-                                <option value="5">★★★★★ 5 — Couldn't put it down</option>
-                                <option value="4.5">★★★★½ 4.5</option>
-                                <option value="4">★★★★ 4 — Strongly recommend</option>
-                                <option value="3.5">★★★½ 3.5</option>
-                                <option value="3">★★★ 3 — Solid</option>
-                                <option value="2.5">★★½ 2.5</option>
-                                <option value="2">★★ 2 — Mixed</option>
-                                <option value="1">★ 1 — Skip it</option>
-                            </select>
+                            <!-- Slider replaces the old fixed-step dropdown so readers can
+                                 land on any decimal value (e.g. 4.2). The number under the
+                                 stars updates live; a flavor label ("Strongly recommend",
+                                 "Couldn't put it down", etc.) is mapped from the current
+                                 value so the previous tone is preserved. The hidden
+                                 `br-rating` input still carries the submitted number — the
+                                 form handler doesn't change. -->
+                            <div class="br-rating-slider"
+                                 id="br-rating-slider"
+                                 data-value="0"
+                                 role="group"
+                                 aria-label="Your rating, on a 0 to 5 scale">
+                                <div class="br-rating-slider-stars" aria-hidden="true">
+                                    <div class="br-rating-slider-stars-base">★★★★★</div>
+                                    <div class="br-rating-slider-stars-fill" id="br-rating-stars-fill" style="width:0%;">★★★★★</div>
+                                </div>
+                                <div class="br-rating-slider-row">
+                                    <input type="range"
+                                           class="br-rating-slider-input"
+                                           id="br-rating-input"
+                                           min="0" max="5" step="0.1" value="0"
+                                           aria-label="Slide to set your rating">
+                                </div>
+                                <div class="br-rating-slider-readout">
+                                    <span class="br-rating-slider-value" id="br-rating-value">— Optional —</span>
+                                    <span class="br-rating-slider-flavor" id="br-rating-flavor"></span>
+                                </div>
+                            </div>
+                            <!-- Submitted value (the form handler reads this id). It is
+                                 set by the slider script in book-reviews.js. -->
+                            <input type="hidden" id="br-rating" name="rating" value="">
                         </div>
 
                         <div class="br-form-field">

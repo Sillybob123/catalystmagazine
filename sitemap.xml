@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The Catalyst Magazine — XML sitemap
+  ====================================
+  Lists the static + dynamic surfaces of catalyst-magazine.com so search
+  engines can crawl efficiently. Individual articles and book reviews are
+  served at /article/<slug> and discovered by the crawler from the link
+  graph on /articles and /book-reviews respectively (the underlying data
+  lives in Firestore, so we don't enumerate every slug here — a static
+  per-article sitemap would go stale within minutes of the next publish).
+
+  Tip for future edits:
+  - <lastmod> is the date the URL's CONTENT last meaningfully changed,
+    not when this file was last edited.
+  - <changefreq> is a hint, not a contract. Google ignores it; some
+    other crawlers still honor it.
+  - <priority> is relative within this sitemap; the home page is 1.0
+    and everything else is anchored against it.
+
+  Last manually refreshed: 2026-05-11
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+  <!-- ============================================================
+       PRIMARY NAVIGATION
+       ============================================================ -->
+  <url>
+    <loc>https://www.catalyst-magazine.com/</loc>
+    <lastmod>2026-05-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/articles</loc>
+    <lastmod>2026-05-11</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/book-reviews</loc>
+    <lastmod>2026-05-11</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/collaborate</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/about</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- ============================================================
+       SECONDARY PAGES
+       ============================================================ -->
+  <url>
+    <loc>https://www.catalyst-magazine.com/contact</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/sponsors</loc>
+    <lastmod>2026-05-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/brain-teaser</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/raffle</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- ============================================================
+       LEGAL / POLICY
+       ============================================================ -->
+  <url>
+    <loc>https://www.catalyst-magazine.com/privacy</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/terms</loc>
+    <lastmod>2026-04-23</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>

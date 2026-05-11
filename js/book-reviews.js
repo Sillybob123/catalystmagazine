@@ -604,7 +604,173 @@
         `;
     }
 
+    // Aggregate card — used when 2+ community reviews share the same
+    // book. Surfaces the lead cover and combined rating (average), with
+    // an expand button that toggles the individual review list below.
+    // Single-review groups render through cardHtml() unchanged.
+    const expandedGroups = new Set();
+    function aggregateCardHtml(group, variant) {
+        const lead = group.lead;
+        const classes = ['br-card', 'br-card-aggregate'];
+        if (variant) classes.push(variant);
+
+        const raw = lead.image || FALLBACK_IMAGE;
+        const targetW = variant === 'wide' ? 1100 : 720;
+        const imgSrc  = getCoverImageUrl(raw, targetW, 88);
+
+        const storedIsOpenLibrary = !!lead.image &&
+            /covers\.openlibrary\.org\/b\/isbn\//.test(lead.image);
+        const needsIsbnBackfill = !!lead.isbn &&
+            (!lead.hasStoredImage || storedIsOpenLibrary);
+
+        const avg = group.avgRating != null ? group.avgRating : null;
+        const ratingDisplay = avg != null
+            ? `${avg.toFixed(1)}<small>/5</small>`
+            : '—';
+        const reviewerWord = group.count === 1 ? 'reader' : 'readers';
+
+        const isOpen = expandedGroups.has(group.key);
+
+        // Individual reviews list. Renders ALL N reviews stacked vertically,
+        // each with the reviewer's name, their rating, their one-line summary,
+        // and a "read full review" link to the standalone article page.
+        const reviewsList = group.reviews.map((r) => {
+            const rd = r.rating != null ? r.rating.toFixed(1) : '—';
+            const dateStr = r.date ? formatDate(r.date) : '';
+            const blurb = r.blurb || r.excerpt || '';
+            return `
+                <li class="br-aggregate-review">
+                    <div class="br-aggregate-review-head">
+                        <span class="br-aggregate-review-rating" aria-label="Rated ${rd} out of 5">
+                            <span class="br-aggregate-review-rating-num">${rd}</span><small>/5</small>
+                        </span>
+                        <div class="br-aggregate-review-byline">
+                            <strong>${escapeHtml(r.author || 'A Catalyzer')}</strong>
+                            ${dateStr ? `<span class="br-dot"></span><span>${escapeHtml(dateStr)}</span>` : ''}
+                        </div>
+                    </div>
+                    ${blurb ? `<p class="br-aggregate-review-blurb">${escapeHtml(blurb)}</p>` : ''}
+                    <a class="br-aggregate-review-link" href="${escapeHtml(r.link)}">Read the full review →</a>
+                </li>
+            `;
+        }).join('');
+
+        // The wrapper is a <div> (not <a>) because the cover area is a link
+        // to the lead review, but the body has its own interactive button +
+        // nested links. Nesting <a> inside <a> is invalid HTML.
+        return `
+            <div class="${classes.join(' ')}"
+                 data-group-key="${escapeHtml(group.key)}"
+                 data-community="true"
+                 data-aggregate="true"
+                 ${isOpen ? 'data-expanded="true"' : ''}
+                 data-genre="${escapeHtml(lead.genre)}">
+                <a class="br-card-media br-card-aggregate-media"
+                   href="${escapeHtml(lead.link)}"
+                   aria-label="Open the top review of ${escapeHtml(lead.bookTitle)}"
+                   ${needsIsbnBackfill ? `data-isbn="${escapeHtml(lead.isbn)}"` : ''}>
+                    <img src="${escapeHtml(imgSrc)}"
+                         alt="Cover of ${escapeHtml(lead.bookTitle)}"
+                         loading="lazy" decoding="async"
+                         onload="this.classList.add('loaded')"
+                         onerror="${imageOnErrorAttr(raw, imgSrc)}">
+                    <span class="br-card-genre">${escapeHtml(GENRE_LABEL[lead.genre] || 'STEM')}</span>
+                    <span class="br-card-aggregate-stack" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                    </span>
+                </a>
+                <div class="br-card-body">
+                    <div class="br-card-kicker">
+                        <span class="br-card-rating" aria-label="Average rating ${avg != null ? avg.toFixed(1) : 'unrated'} out of 5">
+                            ${ratingDisplay}
+                        </span>
+                        <span class="br-card-pick">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M20 12l-1.42-1.42M12 4V2M5.42 5.42L4 4M2 12h2M4 20l1.42-1.42M22 12h-2M20 4l-1.42 1.42M12 20v2"/>
+                                <circle cx="12" cy="12" r="4"/>
+                            </svg>
+                            ${group.count} ${reviewerWord}
+                        </span>
+                    </div>
+                    <h3 class="br-card-book">${escapeHtml(lead.bookTitle)}</h3>
+                    ${lead.bookAuthor ? `<p class="br-card-author">by ${escapeHtml(lead.bookAuthor)}</p>` : ''}
+                    <p class="br-card-aggregate-note">
+                        Reviewed by <strong>${group.count}</strong> Catalyzers. Average
+                        rating <strong>${avg != null ? avg.toFixed(1) : '—'}/5</strong>.
+                    </p>
+                    <button type="button"
+                            class="br-aggregate-toggle"
+                            data-group-key="${escapeHtml(group.key)}"
+                            aria-expanded="${isOpen ? 'true' : 'false'}">
+                        <span class="br-aggregate-toggle-label">
+                            ${isOpen ? 'Hide individual reviews' : `See all ${group.count} reviews`}
+                        </span>
+                        <svg class="br-aggregate-toggle-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <ul class="br-aggregate-reviews" ${isOpen ? '' : 'hidden'}>
+                        ${reviewsList}
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+
     // ---------- Community feed (separate from the writer feed) ----------
+    // Group reviews about the same book together. A "book key" is the
+    // normalized (title + author) tuple. When N≥2 reviews share a key, we
+    // render ONE aggregate card (avg rating, N reviewers) instead of N
+    // duplicate cards. The aggregate card can be expanded to show each
+    // individual reader review inline.
+    function bookKeyOf(r) {
+        const norm = (s) => String(s || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim();
+        const t = norm(r.bookTitle || r.title);
+        const a = norm(r.bookAuthor);
+        return a ? `${t}::${a}` : t;
+    }
+    function groupCommunityByBook(reviews) {
+        const map = new Map();
+        for (const r of reviews) {
+            const key = bookKeyOf(r);
+            if (!key) continue;
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(r);
+        }
+        // Sort each group: highest-rated first, then most recent. This gives
+        // us a stable "lead review" to use as the aggregate card's surface.
+        const groups = [];
+        for (const [key, list] of map) {
+            list.sort((a, b) => {
+                const rb = (b.rating || 0) - (a.rating || 0);
+                if (rb !== 0) return rb;
+                return (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
+            });
+            const ratings = list.map((r) => r.rating).filter((x) => Number.isFinite(x) && x > 0);
+            const avg = ratings.length
+                ? Math.round((ratings.reduce((s, x) => s + x, 0) / ratings.length) * 10) / 10
+                : null;
+            groups.push({
+                key,
+                lead: list[0],
+                reviews: list,
+                count: list.length,
+                avgRating: avg,
+            });
+        }
+        // Overall ordering: most-reviewed first (genuine social signal), then
+        // by the lead review's date so newly-added single picks stay near the
+        // top of the feed.
+        groups.sort((a, b) => {
+            if (b.count !== a.count) return b.count - a.count;
+            return (Date.parse(b.lead.date) || 0) - (Date.parse(a.lead.date) || 0);
+        });
+        return groups;
+    }
+
     // Apply the current search query across the community pool. Searches
     // book title, book author, reviewer name (submitter), and deck so
     // readers can find a pick by any of those.
@@ -705,34 +871,50 @@
         }
         if (communityNoMatchEl) communityNoMatchEl.hidden = true;
 
-        // Reset paging whenever the visible set is shorter than what we'd show.
-        if (communityShown > matches.length) communityShown = COMMUNITY_PAGE_SIZE;
-        const slice = matches.slice(0, communityShown);
+        // Group reviews by book so duplicates collapse into a single aggregate
+        // card. Single-book groups still render through cardHtml() so the look
+        // doesn't change for the common case. Pagination is keyed on groups,
+        // not raw reviews, so the "Show more" count is meaningful.
+        const groups = groupCommunityByBook(matches);
+        if (communityShown > groups.length) communityShown = COMMUNITY_PAGE_SIZE;
+        const slice = groups.slice(0, communityShown);
 
         communityFeedEl.innerHTML = slice
-            .map((r, i) => cardHtml(r, variantFor(i)))
+            .map((g, i) => g.count > 1
+                ? aggregateCardHtml(g, variantFor(i))
+                : cardHtml(g.lead, variantFor(i)))
             .join('');
         observeCards(communityFeedEl.querySelectorAll('.br-card:not(.in-view)'));
         backfillIsbnCovers(communityFeedEl);
 
-        // Status line: "Showing 9 of 23 reader picks in Biology for 'rna'".
+        // Status line. After grouping, the visible unit is a book (group) not
+        // a raw review, so we report "books" when groups < matches and
+        // "picks" otherwise (single-review groups feel like reviews).
         if (communityStatusEl) {
             const filterActive = hasQuery || hasGenre;
+            const hasGroups = groups.length !== matches.length;
+            const groupWord = groups.length === 1 ? 'book' : 'books';
+            const reviewWord = matches.length === 1 ? 'review' : 'reviews';
+
             if (filterActive) {
-                const word = matches.length === 1 ? 'pick' : 'picks';
+                if (groups.length <= slice.length) {
+                    communityStatusEl.textContent = hasGroups
+                        ? `${groups.length} ${groupWord} (${matches.length} ${reviewWord})${filterTail}`
+                        : `${matches.length} ${reviewWord}${filterTail}`;
+                } else {
+                    communityStatusEl.textContent =
+                        `Showing ${slice.length} of ${groups.length} ${groupWord}${filterTail}`;
+                }
+            } else if (groups.length > slice.length) {
                 communityStatusEl.textContent =
-                    matches.length <= slice.length
-                        ? `${matches.length} ${word}${filterTail}`
-                        : `Showing ${slice.length} of ${matches.length} ${word}${filterTail}`;
-            } else if (communityReviews.length > slice.length) {
-                communityStatusEl.textContent = `Showing ${slice.length} of ${communityReviews.length} reader picks`;
+                    `Showing ${slice.length} of ${groups.length} ${groupWord}`;
             } else {
                 communityStatusEl.textContent = '';
             }
         }
 
         if (communityLoadMoreWrap) {
-            communityLoadMoreWrap.hidden = matches.length <= slice.length;
+            communityLoadMoreWrap.hidden = groups.length <= slice.length;
         }
     }
 
@@ -792,6 +974,43 @@
             renderCommunityFeed();
         });
         enhanceShelfSelect(communityGenreEl);
+    }
+
+    // Delegated click handler for the aggregate-card "See all N reviews"
+    // button. expandedGroups (declared near aggregateCardHtml) keeps state
+    // across re-renders, so filtering / search / load-more don't reset
+    // which groups the user has expanded.
+    function bindCommunityAggregateToggle() {
+        if (!communityFeedEl) return;
+        communityFeedEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('.br-aggregate-toggle');
+            if (!btn) return;
+            const key = btn.dataset.groupKey;
+            if (!key) return;
+            const card = btn.closest('.br-card-aggregate');
+            const list = card ? card.querySelector('.br-aggregate-reviews') : null;
+            const label = btn.querySelector('.br-aggregate-toggle-label');
+            const willOpen = !expandedGroups.has(key);
+
+            if (willOpen) expandedGroups.add(key);
+            else expandedGroups.delete(key);
+
+            btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if (card) card.dataset.expanded = willOpen ? 'true' : '';
+            if (list) {
+                if (willOpen) list.removeAttribute('hidden');
+                else list.setAttribute('hidden', '');
+            }
+            if (label) {
+                // Recompute the review count from the rendered list so the
+                // label stays accurate even if a future feed re-render swaps
+                // the underlying data while this card was still expanded.
+                const n = list ? list.querySelectorAll('.br-aggregate-review').length : 0;
+                label.textContent = willOpen
+                    ? 'Hide individual reviews'
+                    : `See all ${n} reviews`;
+            }
+        });
     }
 
     // ---------- Custom dropdown for the Shelf selects ----------
@@ -1223,6 +1442,7 @@
         bindCommunitySearch();
         bindCommunityLoadMore();
         bindCommunityGenreFilter();
+        bindCommunityAggregateToggle();
     }
 
     // Split the merged review set into writer reviews (drive the featured
@@ -1271,6 +1491,73 @@
     }
 
     // =============================================================
+    // RATING SLIDER — continuous 0.0–5.0 input
+    // Wires .br-rating-slider so dragging the range input updates:
+    //   • the star bar (filled by width %)
+    //   • the numeric readout ("4.2 / 5")
+    //   • the flavor label ("Strongly recommend", etc.)
+    //   • the hidden form input the submit handler reads
+    // RATING_FLAVORS is the original dropdown copy, kept verbatim.
+    // =============================================================
+    const RATING_FLAVORS = [
+        { min: 4.7, label: "Couldn't put it down" },
+        { min: 4.0, label: 'Strongly recommend' },
+        { min: 3.5, label: 'Very good' },
+        { min: 2.8, label: 'Solid' },
+        { min: 2.0, label: 'Mixed' },
+        { min: 1.0, label: 'Disappointing' },
+        { min: 0.1, label: 'Skip it' },
+    ];
+    function flavorForRating(n) {
+        if (!Number.isFinite(n) || n <= 0) return '';
+        for (const f of RATING_FLAVORS) {
+            if (n >= f.min) return f.label;
+        }
+        return '';
+    }
+    function wireRatingSlider({ root, hiddenInputId } = {}) {
+        if (!root) return;
+        const input = root.querySelector('.br-rating-slider-input');
+        const fill = root.querySelector('.br-rating-slider-stars-fill');
+        const value = root.querySelector('.br-rating-slider-value');
+        const flavor = root.querySelector('.br-rating-slider-flavor');
+        const hidden = hiddenInputId ? document.getElementById(hiddenInputId) : null;
+        if (!input) return;
+
+        const sync = () => {
+            const raw = parseFloat(input.value);
+            const n = Number.isFinite(raw) ? Math.round(raw * 10) / 10 : 0;
+            const pct = Math.max(0, Math.min(100, (n / 5) * 100));
+            root.style.setProperty('--br-pct', String(pct));
+            root.dataset.value = n > 0 ? String(n) : '0';
+            if (fill) fill.style.width = pct + '%';
+            if (value) {
+                if (n > 0) {
+                    value.innerHTML = `${n.toFixed(1)}<small>/ 5</small>`;
+                } else {
+                    value.textContent = '— Optional —';
+                }
+            }
+            if (flavor) flavor.textContent = flavorForRating(n);
+            if (hidden) hidden.value = n > 0 ? n.toFixed(1) : '';
+        };
+
+        // Browsers fire `input` while dragging and `change` on release. The
+        // first one drives the live readout; the second one is a safety net.
+        input.addEventListener('input', sync);
+        input.addEventListener('change', sync);
+
+        // Reset hook — called by the modal after the form resets so the
+        // slider doesn't carry a previous submission's value.
+        root.__resetRatingSlider = () => {
+            input.value = '0';
+            sync();
+        };
+
+        sync();
+    }
+
+    // =============================================================
     // SUBMISSION MODAL — public form
     // The modal is wired up once at start(). Opening/closing toggles
     // .is-open on the backdrop; submit POSTs to /api/book-reviews/submit
@@ -1279,6 +1566,12 @@
     // =============================================================
     function setupSubmitModal() {
         if (!modalEl || !modalForm) return;
+
+        // Hook up the rating slider on first modal init.
+        const ratingSliderEl = document.getElementById('br-rating-slider');
+        if (ratingSliderEl) {
+            wireRatingSlider({ root: ratingSliderEl, hiddenInputId: 'br-rating' });
+        }
 
         let lastFocused = null;
         let turnstileWidgetId = null;
@@ -1443,6 +1736,13 @@
                 // Success — flip to the thank-you panel and reset the form
                 // so a re-open is a clean slate.
                 modalForm.reset();
+                // <input type="range"> doesn't always honor form.reset() (and
+                // the linked stars/readout would lag the underlying value), so
+                // explicitly reset the slider helper too.
+                const ratingSliderReset = document.getElementById('br-rating-slider');
+                if (ratingSliderReset && ratingSliderReset.__resetRatingSlider) {
+                    ratingSliderReset.__resetRatingSlider();
+                }
                 modalForm.hidden = true;
                 modalSuccess.hidden = false;
                 modalSuccess.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
