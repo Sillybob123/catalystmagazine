@@ -58,7 +58,7 @@
     <!-- DNS prefetch for external image sources -->
 
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet"></noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"></noscript>
     <link rel="preload" href="css/styles.css" as="style">
     <link rel="stylesheet" href="css/styles.css">
 
@@ -410,7 +410,7 @@
          No structural changes — keeps all 3D scroll choreography intact.
          ═══════════════════════════════════════════════════════════════ */
       body[data-page="home"] {
-        --serif: 'Fraunces', 'Times New Roman', serif;
+        --serif: 'Source Serif Pro', 'Georgia', 'Times New Roman', serif;
         --ease-emph: cubic-bezier(0.2, 0, 0, 1);
         --ink: #0b1220;
         --ink-2: #1f2937;
@@ -432,8 +432,8 @@
       body[data-page="home"] .hero-title .highlight {
         font-family: var(--serif);
         font-style: italic;
-        font-weight: 500;
-        letter-spacing: -0.025em;
+        font-weight: 600;
+        letter-spacing: -0.015em;
         color: var(--ink);
         background: none;
         -webkit-text-fill-color: currentColor;
@@ -567,8 +567,8 @@
       body[data-page="home"] .section-title em {
         font-family: var(--serif);
         font-style: italic;
-        font-weight: 500;
-        letter-spacing: -0.025em;
+        font-weight: 600;
+        letter-spacing: -0.015em;
       }
 
       body[data-page="home"] .section-subtitle {
@@ -612,8 +612,8 @@
       body[data-page="home"] .brain-teaser-question em.brain-teaser-serif {
         font-family: var(--serif);
         font-style: italic;
-        font-weight: 500;
-        letter-spacing: -0.02em;
+        font-weight: 600;
+        letter-spacing: -0.012em;
       }
       /* The riddle verse box — re-tone the indigo "What am I?" + bold answer-words */
       body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] {
@@ -624,11 +624,11 @@
       body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] p:first-of-type {
         font-family: var(--serif) !important;
         font-style: italic !important;
-        font-weight: 500 !important;
-        font-size: 1.08rem !important;
+        font-weight: 400 !important;
+        font-size: 1.12rem !important;
         line-height: 1.85 !important;
         color: var(--ink-2) !important;
-        letter-spacing: -0.005em !important;
+        letter-spacing: 0 !important;
       }
       body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] p:first-of-type em {
         font-family: var(--serif) !important;
@@ -662,8 +662,8 @@
       body[data-page="home"] .newsletter-title em {
         font-family: var(--serif);
         font-style: italic;
-        font-weight: 500;
-        letter-spacing: -0.02em;
+        font-weight: 600;
+        letter-spacing: -0.012em;
       }
 
       /* ───── Category cards — softer arrow motion ───── */
@@ -673,7 +673,7 @@
       body[data-page="home"] .category-card h3 em {
         font-family: var(--serif);
         font-style: italic;
-        font-weight: 500;
+        font-weight: 600;
       }
       body[data-page="home"] .category-arrow {
         transition: transform 0.3s var(--ease-emph);
