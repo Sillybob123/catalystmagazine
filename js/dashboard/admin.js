@@ -663,8 +663,16 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       <div class="field">
         <label class="label">Category</label>
         <select class="select" id="sd-category">
-          ${["Feature","Profile","Interview","Op-Ed","News","Science"].map(c =>
-            `<option ${c === (story.category || "Feature") ? "selected" : ""}>${c}</option>`).join("")}
+          ${[
+            { v: "Feature",     l: "Feature" },
+            { v: "Profile",     l: "Profile" },
+            { v: "Interview",   l: "Interview" },
+            { v: "Op-Ed",       l: "Op-Ed" },
+            { v: "News",        l: "News" },
+            { v: "Science",     l: "Science" },
+            { v: "book-review", l: "Book review" },
+          ].map(c =>
+            `<option value="${c.v}" ${c.v === (story.category || "Feature") ? "selected" : ""}>${c.l}</option>`).join("")}
         </select>
       </div>
     </div>
@@ -898,6 +906,10 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     saveBtn.disabled = true; saveBtn.textContent = "Saving…";
     try {
       await updateDoc(doc(db, "stories", storyId), patch);
+      // Bust the shared public-listing cache so /book-reviews and /articles
+      // pick up the edit on their very next load instead of waiting for
+      // the per-tab sessionStorage cache to expire.
+      try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
       ctx.toast("Story updated.", "success");
       m.close();
       onDone && onDone();

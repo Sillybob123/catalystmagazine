@@ -30,6 +30,7 @@ import {
   query, where, orderBy, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, confirmDialog, fmtRelative, fmtDate, slugify, statusPill } from "./ui.js";
+import { uploadToFirebase } from "./writer.js";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -116,10 +117,34 @@ async function mountComposer(ctx, container) {
           </div>
 
           <div class="brw-field brw-field-wide">
-            <label class="label" for="brw-coverImage">Cover image URL</label>
+            <label class="label" for="brw-genre">Discipline <span class="req">*</span></label>
+            <select class="select" id="brw-genre" name="genre" required>
+              <option value="">— Pick the closest fit —</option>
+              <option value="astronomy">Astronomy</option>
+              <option value="biology">Biology</option>
+              <option value="computer-science">Computer Science</option>
+              <option value="physics">Physics</option>
+              <option value="mathematics">Mathematics</option>
+              <option value="climate">Climate</option>
+              <option value="memoir">Memoir</option>
+              <option value="stem">Other STEM</option>
+            </select>
+            <div class="hint">Sorts the review onto the right shelf on The Stacks.</div>
+          </div>
+
+          <div class="brw-field brw-field-wide">
+            <label class="label" for="brw-coverImage">Cover image</label>
+            <div class="cover-picker">
+              <button type="button" class="btn btn-secondary btn-sm" id="brw-cover-upload-btn">Upload from computer</button>
+              <input type="file" id="brw-cover-file" accept="image/*" hidden>
+              <div class="cover-picker-progress" id="brw-cover-progress" hidden>
+                <div class="cover-picker-progress-track"><div class="cover-picker-progress-fill" id="brw-cover-progress-fill"></div></div>
+                <div class="cover-picker-progress-text" id="brw-cover-progress-text">Uploading…</div>
+              </div>
+            </div>
             <input class="input" id="brw-coverImage" name="coverImage" maxlength="2048"
-                   placeholder="https://…">
-            <div class="hint">Paste a direct link to the book cover. We'll resize automatically.</div>
+                   placeholder="https://… or upload above" style="margin-top:10px;">
+            <div class="hint">Upload an image or paste a direct URL. Uploading converts to WebP automatically.</div>
           </div>
 
           <div class="brw-field brw-field-wide">
@@ -155,6 +180,7 @@ async function mountComposer(ctx, container) {
     card.querySelector("#brw-bookAuthor").value = initial.bookAuthor || "";
     card.querySelector("#brw-isbn").value       = initial.isbn || "";
     card.querySelector("#brw-rating").value     = initial.rating != null ? String(initial.rating) : "";
+    card.querySelector("#brw-genre").value      = initial.genre || "";
     card.querySelector("#brw-coverImage").value = initial.coverImage || "";
     card.querySelector("#brw-deck").value       = initial.deck || initial.dek || initial.excerpt || "";
     card.querySelector("#brw-body").value       = bodyFromStory(initial);
@@ -165,6 +191,7 @@ async function mountComposer(ctx, container) {
   // preview thumbnail appears next to the ISBN field so the writer can
   // see what they're about to publish with.
   wireIsbnCoverLookup(card);
+  wireCoverUpload(card, ctx);
 
   // Wire actions
   const errBox = card.querySelector("#brw-error");
@@ -234,13 +261,25 @@ async function saveStory(ctx, card, editingId, desiredStatus, showError, clearEr
   const isbnRaw    = card.querySelector("#brw-isbn").value.trim();
   const isbn       = isbnRaw.replace(/[^0-9Xx-]/g, "").slice(0, 32);
   const ratingRaw  = card.querySelector("#brw-rating").value;
+  const genreRaw   = (card.querySelector("#brw-genre").value || "").trim().toLowerCase();
   const coverRaw   = card.querySelector("#brw-coverImage").value.trim();
   const deck       = card.querySelector("#brw-deck").value.trim();
   const bodyText   = card.querySelector("#brw-body").value;
 
+  // Closed set mirrors the pill filter on /book-reviews so the discipline
+  // we save here lines up with how the public page shelves it.
+  const ALLOWED_GENRES = new Set([
+    "astronomy","biology","computer-science","physics",
+    "mathematics","climate","memoir","stem",
+  ]);
+  const genre = ALLOWED_GENRES.has(genreRaw) ? genreRaw : "";
+
   // Required-field validation (Firestore rules re-validate)
   if (!bookTitle)  return showError("Book title is required.");
   if (!bookAuthor) return showError("Book author is required.");
+  if (!genre && desiredStatus === "pending") {
+    return showError("Pick a discipline before submitting for review.");
+  }
   if (!deck)       return showError("A one-line summary is required.");
   if (!bodyText || bodyText.trim().length < 120) {
     return showError("Please write a few paragraphs about the book (at least ~120 characters).");
@@ -300,6 +339,7 @@ async function saveStory(ctx, card, editingId, desiredStatus, showError, clearEr
     bookAuthor,
     isbn,
     rating,
+    genre,                           // shelved by the pill filter on /book-reviews
     category: "book-review",
     communityPick: false,            // writer authored, not a reader pick
     status: desiredStatus,           // "draft" or "pending"
@@ -348,6 +388,49 @@ async function saveStory(ctx, card, editingId, desiredStatus, showError, clearEr
 // Firestore instead of serving a stale listing.
 function bustStoriesCache() {
   try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+}
+
+// ============================================================
+// Cover image upload
+// ============================================================
+function wireCoverUpload(card, ctx) {
+  const uploadBtn    = card.querySelector("#brw-cover-upload-btn");
+  const fileInput    = card.querySelector("#brw-cover-file");
+  const coverInput   = card.querySelector("#brw-coverImage");
+  const progress     = card.querySelector("#brw-cover-progress");
+  const progressFill = card.querySelector("#brw-cover-progress-fill");
+  const progressText = card.querySelector("#brw-cover-progress-text");
+  if (!uploadBtn || !fileInput || !coverInput) return;
+
+  uploadBtn.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast("Please choose an image file.", "error"); return; }
+
+    progress.hidden = false;
+    progressFill.style.width = "0%";
+    progressText.textContent = "Preparing…";
+    uploadBtn.disabled = true;
+
+    try {
+      const url = await uploadToFirebase(file, "image", ctx, (pct) => {
+        progressFill.style.width = pct + "%";
+        progressText.textContent = `Uploading… ${pct}%`;
+      });
+      coverInput.value = url;
+      coverInput.dispatchEvent(new Event("input", { bubbles: true }));
+      progressText.textContent = "Uploaded.";
+      setTimeout(() => { progress.hidden = true; }, 800);
+    } catch (err) {
+      toast("Cover upload failed: " + (err?.message || err), "error");
+      progress.hidden = true;
+    } finally {
+      uploadBtn.disabled = false;
+      fileInput.value = "";
+    }
+  });
 }
 
 // ============================================================

@@ -101,7 +101,18 @@ export const onRequestPost = async ({ request, env }) => {
     const bookAuthor     = sanitize(body.bookAuthor,     MAX_FIELD);
     const isbn           = sanitize(body.isbn, 32).replace(/[^0-9Xx-]/g, "");
     const reviewText     = sanitize(body.reviewText, MAX_REVIEW, /* allowNewlines */ true);
+    const deck           = sanitize(body.deck, 220);
+    const genreRaw       = sanitize(body.genre, 40).toLowerCase();
     const ratingRaw      = body.rating;
+
+    // Closed set of disciplines — anything else is dropped to "stem".
+    // Mirrors GENRE_MAP keys in js/book-reviews.js so the pill filter on
+    // /book-reviews shelves community picks the same way as writer picks.
+    const ALLOWED_GENRES = new Set([
+      "astronomy","biology","computer-science","physics",
+      "mathematics","climate","memoir","stem",
+    ]);
+    const genre = ALLOWED_GENRES.has(genreRaw) ? genreRaw : "";
 
     // 7) Validate required fields.
     if (!submitterName || submitterName.length < 2)
@@ -114,6 +125,10 @@ export const onRequestPost = async ({ request, env }) => {
       return badRequest("Book title is required.");
     if (!bookAuthor)
       return badRequest("Book author is required.");
+    if (!genre)
+      return badRequest("Please pick a discipline so we can shelve it right.");
+    if (!deck || deck.length < 10)
+      return badRequest("Please add a one-sentence summary of the book.");
     if (!reviewText || reviewText.length < 40)
       return badRequest("Please share at least a few sentences about the book.");
 
@@ -136,6 +151,8 @@ export const onRequestPost = async ({ request, env }) => {
       bookAuthor,
       isbn,
       rating,
+      genre,
+      deck,
       reviewText,
       coverImageUrl: "",     // sealed: only admins can set this
       status: "pending",
@@ -158,7 +175,7 @@ export const onRequestPost = async ({ request, env }) => {
         subject: scrubHeader(`[Book Review Submission] "${bookTitle}" — ${submitterName}`).slice(0, 200),
         html:    buildAdminEmail({
           submitterName, submitterEmail,
-          bookTitle, bookAuthor, isbn, rating, reviewText,
+          bookTitle, bookAuthor, isbn, rating, genre, deck, reviewText,
           createdAt: now,
           adminUrl: `${env.SITE_URL || "https://www.catalyst-magazine.com"}/admin/#/admin/book-reviews`,
         }),
@@ -207,15 +224,20 @@ function isDisposableEmail(email) {
 
 function buildAdminEmail({
   submitterName, submitterEmail,
-  bookTitle, bookAuthor, isbn, rating, reviewText,
+  bookTitle, bookAuthor, isbn, rating, genre, deck, reviewText,
   createdAt, adminUrl,
 }) {
   const ratingLabel = rating != null ? `${rating}/5` : "—";
+  const genreLabel = genre
+    ? genre.replace(/\b\w/g, (c) => c.toUpperCase()).replace(/-/g, " ")
+    : "—";
   const rows = [
     ["Submitter",   `${esc(submitterName)} &lt;${esc(submitterEmail)}&gt;`],
     ["Book",        `${esc(bookTitle)} — ${esc(bookAuthor)}`],
     ["ISBN",        isbn ? esc(isbn) : "—"],
     ["Rating",      esc(ratingLabel)],
+    ["Discipline",  esc(genreLabel)],
+    ["Summary",     deck ? esc(deck) : "—"],
     ["Submitted",   esc(createdAt)],
   ];
 

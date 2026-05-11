@@ -111,6 +111,12 @@ function renderRow(sub, kind, reload) {
   const isbnHtml = sub.isbn
     ? `<span class="brq-meta-item">ISBN ${esc(sub.isbn)}</span>`
     : "";
+  const genreHtml = sub.genre
+    ? `<span class="brq-meta-item">${esc(sub.genre.replace(/\b\w/g, (c) => c.toUpperCase()).replace(/-/g, " "))}</span>`
+    : "";
+  const deckHtml = sub.deck
+    ? `<p class="brq-deck" style="margin:6px 0 0;color:var(--ink-2);font-style:italic;">“${esc(sub.deck)}”</p>`
+    : "";
 
   // Truncate the review to ~3 lines in the row; "Show full" opens a dialog
   // with the entire text so the admin can read before deciding.
@@ -128,9 +134,11 @@ function renderRow(sub, kind, reload) {
         <h4 class="brq-book-title">${esc(sub.bookTitle || "Untitled")}</h4>
         <p class="brq-book-meta">
           by <strong>${esc(sub.bookAuthor || "—")}</strong>
+          ${genreHtml}
           ${isbnHtml}
           ${ratingHtml}
         </p>
+        ${deckHtml}
       </div>
       <div class="brq-row-status">
         <span class="brq-pill brq-pill-${esc(sub.status || "pending")}">${esc(sub.status || "pending")}</span>

@@ -104,9 +104,24 @@ export const onRequestPost = async ({ request, env }) => {
     // but produced entirely server-side from paragraphsToHtml(), which
     // escapes & < > — no user-controlled HTML reaches the renderer.
     const reviewBodyHtml = paragraphsToHtml(sub.reviewText);
-    const dek = buildDek(sub);
+    // Prefer the submitter's own one-sentence pitch (the deck they filled
+    // in on the submission form). Fall back to the legacy heuristic for
+    // older submissions that pre-date the deck field.
+    const dek = (typeof sub.deck === "string" && sub.deck.trim().length >= 10)
+      ? String(sub.deck).slice(0, 220)
+      : buildDek(sub);
     const slugBase = titleToSlug(`${sub.bookTitle} review by ${sub.submitterName}`) || "book-review";
     const slug = `${slugBase}-${shortHash(submissionId)}`;
+
+    // Same closed set as submit.js — anything else falls back to empty
+    // (the public renderer auto-detects "stem" when no genre is set).
+    const ALLOWED_GENRES = new Set([
+      "astronomy","biology","computer-science","physics",
+      "mathematics","climate","memoir","stem",
+    ]);
+    const genre = (typeof sub.genre === "string" && ALLOWED_GENRES.has(sub.genre))
+      ? sub.genre
+      : "";
 
     const storyFields = {
       title: String(sub.bookTitle || "").slice(0, 300),
@@ -127,6 +142,7 @@ export const onRequestPost = async ({ request, env }) => {
       rating: (typeof sub.rating === "number" && sub.rating >= 1 && sub.rating <= 5) ? sub.rating : null,
       isbn: String(sub.isbn || "").slice(0, 32),
       bookAuthor: String(sub.bookAuthor || "").slice(0, 200),
+      genre,
       createdAt: now,
       updatedAt: now,
       publishedAt: now,

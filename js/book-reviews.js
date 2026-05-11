@@ -198,12 +198,19 @@
         const rating = (typeof raw.rating === 'number' && raw.rating >= 1 && raw.rating <= 5)
             ? raw.rating
             : extractRating(article);
+        // Prefer the explicit `genre` field from Firestore (writer dropdown
+        // / public submission form) over the heuristic keyword detector.
+        // The detector is a fallback for legacy reviews that pre-date the
+        // dropdown.
+        const explicitGenre = String(raw.genre || '').toLowerCase().replace(/\s+/g, '-');
+        const validGenres = new Set(Object.keys(GENRE_LABEL));
+        const genre = validGenres.has(explicitGenre) ? explicitGenre : detectGenre(article);
         return Object.assign(article, {
             bookTitle: meta.bookTitle,
             bookAuthor: raw.bookAuthor || meta.bookAuthor,
             blurb: meta.blurb,
             rating,
-            genre: detectGenre(article)
+            genre
         });
     }
 
@@ -272,7 +279,8 @@
                         { fieldPath: 'communityPick' },
                         { fieldPath: 'bookAuthor' },
                         { fieldPath: 'rating' },
-                        { fieldPath: 'isbn' }
+                        { fieldPath: 'isbn' },
+                        { fieldPath: 'genre' }
                     ]
                 },
                 limit: 80
@@ -342,7 +350,8 @@
             communityPick: bool('communityPick'),
             bookAuthor: str('bookAuthor'),
             rating: num('rating'),
-            isbn: str('isbn')
+            isbn: str('isbn'),
+            genre: (str('genre') || '').toLowerCase().replace(/\s+/g, '-')
         };
     }
 
@@ -499,7 +508,9 @@
             const host = new URL(src).hostname;
             if (host.includes('books.google.com') ||
                 host.includes('googleusercontent.com') ||
-                host.includes('covers.openlibrary.org')) {
+                host.includes('covers.openlibrary.org') ||
+                host.includes('firebasestorage.googleapis.com') ||
+                host.includes('storage.googleapis.com')) {
                 return src;
             }
         } catch { /* not a URL — fall through */ }
@@ -989,6 +1000,8 @@
                 bookAuthor:     String(data.get('bookAuthor')     || '').trim(),
                 isbn:           String(data.get('isbn')           || '').trim(),
                 rating:         String(data.get('rating')         || '').trim(),
+                genre:          String(data.get('genre')          || '').trim(),
+                deck:           String(data.get('deck')           || '').trim(),
                 reviewText:     String(data.get('reviewText')     || '').trim(),
                 // Honeypot. Real users send this empty; bots will fill it.
                 website:        String(data.get('website')        || '').trim(),
@@ -1000,6 +1013,8 @@
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.submitterEmail)) errors.push('Please enter a valid email address.');
             if (!payload.bookTitle)      errors.push('Book title is required.');
             if (!payload.bookAuthor)     errors.push('Book author is required.');
+            if (!payload.genre)          errors.push('Please pick a discipline so we can shelve it right.');
+            if (payload.deck.length < 10) errors.push('Please add a one-sentence summary of the book.');
             if (payload.reviewText.length < 40) errors.push('Tell us a little more — at least a few sentences.');
             if (errors.length) {
                 modalError.textContent = errors[0];

@@ -327,6 +327,28 @@
                             </select>
                         </div>
 
+                        <div class="br-form-field">
+                            <label for="br-genre">Discipline <span class="req">*</span></label>
+                            <select id="br-genre" name="genre" required>
+                                <option value="">— Pick the closest fit —</option>
+                                <option value="astronomy">Astronomy</option>
+                                <option value="biology">Biology</option>
+                                <option value="computer-science">Computer Science</option>
+                                <option value="physics">Physics</option>
+                                <option value="mathematics">Mathematics</option>
+                                <option value="climate">Climate</option>
+                                <option value="memoir">Memoir</option>
+                                <option value="stem">Other STEM</option>
+                            </select>
+                            <span class="hint">So we can sort it onto the right shelf.</span>
+                        </div>
+
+                        <div class="br-form-field full">
+                            <label for="br-deck">One-sentence summary <span class="req">*</span></label>
+                            <input type="text" id="br-deck" name="deck" required minlength="10" maxlength="220" placeholder="A one-sentence pitch — what's the book about, and why should someone pick it up?">
+                            <span class="hint">Shows up under the title on the card. Keep it short and inviting.</span>
+                        </div>
+
                         <div class="br-form-field full">
                             <label for="br-review-text">Your review <span class="req">*</span></label>
                             <textarea id="br-review-text" name="reviewText" required minlength="40" maxlength="4000" placeholder="A few sentences on what the book is about, why you loved it, and who else should read it…"></textarea>
