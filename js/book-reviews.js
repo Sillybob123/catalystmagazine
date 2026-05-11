@@ -1085,6 +1085,10 @@
         if (mq.matches) return;
 
         let ticking = false;
+        let pointerX = 0;
+        let pointerY = 0;
+        let spread = 0;
+
         const update = () => {
             const rect = hero.getBoundingClientRect();
             // viewport height is the "exit window": progress reaches 1 as
@@ -1094,17 +1098,45 @@
             const traveled = Math.min(Math.max(-rect.top / Math.max(rect.height - vh * 0.3, 1), 0), 1);
             // Ease with a smoothstep so the books accelerate gracefully
             const eased = traveled * traveled * (3 - 2 * traveled);
-            stack.style.setProperty('--br-spread', eased.toFixed(3));
+            spread = eased;
+            const glow = Math.min(1, eased * 1.18);
+            const orbit = 16 + eased * 132 + pointerX * 10;
+            const tiltX = (-2.5 + eased * 5.5 + pointerY * -3.5);
+            const tiltY = (3.5 - eased * 7 + pointerX * 4.5);
+            const scanX = -70 + eased * 140;
+            stack.style.setProperty('--br-spread', spread.toFixed(3));
+            stack.style.setProperty('--br-glow', glow.toFixed(3));
+            stack.style.setProperty('--br-orbit', `${orbit.toFixed(2)}deg`);
+            stack.style.setProperty('--br-orbit-reverse', `${(orbit * -1).toFixed(2)}deg`);
+            stack.style.setProperty('--br-tilt-x', `${tiltX.toFixed(2)}deg`);
+            stack.style.setProperty('--br-tilt-y', `${tiltY.toFixed(2)}deg`);
+            stack.style.setProperty('--br-scan-x', `${scanX.toFixed(2)}%`);
             stack.dataset.spread = eased > 0.7 ? '1' : '0';
             ticking = false;
         };
-        const onScroll = () => {
+        const requestUpdate = () => {
             if (ticking) return;
             ticking = true;
             requestAnimationFrame(update);
         };
-        window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', onScroll, { passive: true });
+        const onPointerMove = event => {
+            const rect = stack.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            pointerX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+            pointerY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+            pointerX = Math.min(Math.max(pointerX, -1), 1);
+            pointerY = Math.min(Math.max(pointerY, -1), 1);
+            requestUpdate();
+        };
+        const onPointerLeave = () => {
+            pointerX = 0;
+            pointerY = 0;
+            requestUpdate();
+        };
+        window.addEventListener('scroll', requestUpdate, { passive: true });
+        window.addEventListener('resize', requestUpdate, { passive: true });
+        stack.addEventListener('pointermove', onPointerMove, { passive: true });
+        stack.addEventListener('pointerleave', onPointerLeave, { passive: true });
         update();
     }
 

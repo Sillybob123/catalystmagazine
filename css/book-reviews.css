@@ -221,7 +221,53 @@ body[data-page="book-reviews"] .header {
     margin-top: -56px;
     perspective: 1600px;
     --br-spread: 0;            /* updated by JS on scroll */
-    will-change: contents;
+    --br-glow: 0;              /* updated by JS on scroll */
+    --br-orbit: 0deg;          /* updated by JS on scroll */
+    --br-orbit-reverse: 0deg;  /* updated by JS on scroll */
+    --br-tilt-x: 0deg;         /* updated by JS from pointer/scroll */
+    --br-tilt-y: 0deg;         /* updated by JS from pointer/scroll */
+    --br-scan-x: -70%;         /* updated by JS on scroll */
+    isolation: isolate;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--br-tilt-x)) rotateY(var(--br-tilt-y));
+    transition: transform .16s linear;
+    will-change: transform;
+}
+.br-hero-stack::before,
+.br-hero-stack::after {
+    content: '';
+    position: absolute;
+    inset: -10%;
+    border-radius: 24px;
+    pointer-events: none;
+    transform-style: preserve-3d;
+}
+.br-hero-stack::before {
+    z-index: -2;
+    background:
+        linear-gradient(90deg, rgb(239 233 218 / .08) 1px, transparent 1px),
+        linear-gradient(0deg, rgb(239 233 218 / .06) 1px, transparent 1px);
+    background-size: 42px 42px;
+    opacity: calc(.08 + var(--br-glow) * .2);
+    transform: translateZ(-120px) rotate(var(--br-orbit)) scale(calc(.92 + var(--br-spread) * .08));
+    -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0 42%, transparent 73%);
+    mask-image: radial-gradient(circle at 50% 50%, #000 0 42%, transparent 73%);
+}
+.br-hero-stack::after {
+    z-index: -1;
+    inset: -18%;
+    background:
+        conic-gradient(
+            from var(--br-orbit),
+            transparent 0deg,
+            rgb(239 233 218 / .16) 38deg,
+            rgb(196 82 94 / .2) 74deg,
+            transparent 118deg,
+            transparent 360deg
+        );
+    filter: blur(20px);
+    opacity: calc(.1 + var(--br-glow) * .35);
+    transform: translateZ(-80px) rotate(var(--br-orbit-reverse)) scale(calc(.92 + var(--br-spread) * .12));
 }
 .br-stack-book {
     position: absolute;
@@ -239,24 +285,37 @@ body[data-page="book-reviews"] .header {
             calc(var(--br-spread) * var(--ty, 0px)),
             calc(var(--br-spread) * var(--tz, 0px))
         )
-        rotate(calc(var(--r, 0deg) + var(--br-spread) * var(--rs, 0deg)))
+        rotateX(calc(var(--br-spread) * var(--rx, 0deg)))
+        rotateY(calc(var(--br-spread) * var(--ry, 0deg)))
+        rotateZ(calc(var(--r, 0deg) + var(--br-spread) * var(--rs, 0deg)))
         scale(calc(1 + var(--br-spread) * var(--sc, 0.25)));
     transform-origin: center center;
-    transition: box-shadow .4s ease;
-    will-change: transform;
+    transform-style: preserve-3d;
+    filter:
+        saturate(calc(1 + var(--br-glow) * .18))
+        contrast(calc(1 + var(--br-glow) * .08));
+    transition: box-shadow .4s ease, filter .4s ease;
+    will-change: transform, filter;
 }
 .br-hero-stack[data-spread="1"] .br-stack-book {
     box-shadow:
         0 60px 120px -20px rgba(0,0,0,.7),
+        0 24px 48px -26px rgba(196,82,94,.65),
         0 0 0 1px rgba(239,233,218,.10) inset;
 }
 .br-stack-book::before {
-    /* spine highlight */
+    /* spine, gloss, and scanline layer */
     content: '';
     position: absolute;
-    inset: 0 auto 0 0;
-    width: 14px;
-    background: linear-gradient(90deg, rgba(0,0,0,.45), transparent);
+    inset: 0;
+    background:
+        linear-gradient(90deg, rgba(0,0,0,.48) 0 14px, rgba(255,255,255,.07) 15px, transparent 42px),
+        linear-gradient(115deg, transparent 0 34%, rgba(255,255,255,.16) 46%, transparent 58%),
+        repeating-linear-gradient(0deg, transparent 0 11px, rgb(239 233 218 / .045) 12px, transparent 13px);
+    background-size: auto, 220% 100%, auto;
+    background-position: 0 0, var(--br-scan-x) 0, 0 0;
+    opacity: calc(.7 + var(--br-glow) * .3);
+    mix-blend-mode: screen;
     pointer-events: none;
 }
 .br-stack-book::after {
@@ -282,21 +341,21 @@ body[data-page="book-reviews"] .header {
     background: linear-gradient(155deg, #2b1a1c 0%, #6b1f2a 55%, #3a1117 100%);
     --r: -7deg;
     --tx: -120px; --ty: -60px; --tz: 80px;
-    --rs: -10deg; --sc: .32;
+    --rs: -10deg; --rx: 7deg; --ry: -18deg; --sc: .32;
 }
 .br-stack-book-2 {
     inset: 14% 0 0 16%;
     background: linear-gradient(155deg, #1a232f 0%, #2b3a52 55%, #0e1117 100%);
     --r: 3deg;
     --tx: 110px; --ty: -90px; --tz: 60px;
-    --rs: 14deg; --sc: .28;
+    --rs: 14deg; --rx: -5deg; --ry: 15deg; --sc: .28;
 }
 .br-stack-book-3 {
     inset: 28% 22% -4% 8%;
     background: linear-gradient(155deg, #3a2a14 0%, #6b4a22 55%, #261a09 100%);
     --r: -2deg;
     --tx: 30px; --ty: 130px; --tz: 110px;
-    --rs: -6deg; --sc: .36;
+    --rs: -6deg; --rx: 12deg; --ry: 7deg; --sc: .36;
 }
 
 @media (max-width: 960px) {
@@ -309,6 +368,9 @@ body[data-page="book-reviews"] .header {
 
 @media (prefers-reduced-motion: reduce) {
     /* Honor user preference: skip the scroll-spread entirely. */
+    .br-hero-stack { transform: none; }
+    .br-hero-stack::before,
+    .br-hero-stack::after { display: none; }
     .br-stack-book { transform: rotate(var(--r, 0deg)); }
 }
 
