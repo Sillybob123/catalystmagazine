@@ -70,3 +70,7 @@ build/
 /book1.png
 /book2.png
 /book3.png
+
+# Source images for social previews — optimized versions live in
+# /images/social/ and are what actually ships.
+/bookprevie.jpeg

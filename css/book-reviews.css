@@ -1829,6 +1829,10 @@ body[data-page="book-reviews"] .header {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px 18px;
+    /* Each cell takes its own intrinsic height instead of being stretched
+       to match the tallest sibling in the same row. Keeps the rating card
+       sitting at the top of its cell, aligned with the adjacent label. */
+    align-items: start;
 }
 .br-form-field {
     display: flex;
@@ -1885,18 +1889,24 @@ body[data-page="book-reviews"] .header {
 .br-rating-slider {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px 16px;
+    gap: 8px;
+    /* Match the visual chrome of the sibling text inputs — same paper-off
+       background, same 1px paper-line border, same 10px radius — so the
+       rating cell feels like a peer to the inputs across the row, not
+       like a different control. */
+    padding: 12px 14px;
     background: var(--paper-off);
     border: 1px solid var(--paper-line);
-    border-radius: 12px;
+    border-radius: 10px;
 }
 .br-rating-slider-stars {
     position: relative;
     line-height: 1;
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: 30px;
-    letter-spacing: 6px;
+    /* Stars sized to match the inline-input height so the card reads as
+       a single 48px tall row of stars + slider + readout, all aligned. */
+    font-size: 22px;
+    letter-spacing: 4px;
     user-select: none;
 }
 .br-rating-slider-stars-base {
@@ -1914,7 +1924,7 @@ body[data-page="book-reviews"] .header {
     transition: width .12s ease-out;
 }
 .br-rating-slider-row {
-    padding: 10px 2px 6px;
+    padding: 6px 2px 4px;
 }
 
 /* The form-field default styles (.br-form-field input) add cream
@@ -2011,7 +2021,7 @@ body[data-page="book-reviews"] .header {
 .br-rating-slider-value {
     font-family: 'Playfair Display', Georgia, serif;
     font-weight: 600;
-    font-size: 22px;
+    font-size: 18px;
     color: var(--ink);
     line-height: 1;
     /* The "— Optional —" placeholder uses the same line; lower its size
@@ -2019,24 +2029,26 @@ body[data-page="book-reviews"] .header {
 }
 .br-rating-slider[data-value="0"] .br-rating-slider-value {
     font-family: inherit;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 500;
     color: var(--text-subtle);
 }
 .br-rating-slider-value small {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 400;
     color: var(--text-subtle);
-    margin-left: 4px;
+    margin-left: 3px;
 }
 .br-rating-slider-flavor {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     letter-spacing: .01em;
     color: var(--accent-deep);
     font-style: italic;
     text-align: right;
     min-height: 1em;
+    /* On a narrow column the flavor + value fit on one line; if wrap
+       triggers we let them stack but keep them right-aligned. */
 }
 @media (prefers-reduced-motion: reduce) {
     .br-rating-slider-stars-fill,
