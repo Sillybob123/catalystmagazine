@@ -222,7 +222,7 @@ const ROUTES = {
     icon: ICONS.shield,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js"),
+    loader: () => import("./admin.js?v=bookreview-tabs"),
     mountKey: "articles",
   },
   "#/admin/games": {
@@ -237,7 +237,7 @@ const ROUTES = {
     icon: ICONS.users,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js"),
+    loader: () => import("./admin.js?v=bookreview-tabs"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -245,7 +245,7 @@ const ROUTES = {
     icon: ICONS.pipeline,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js"),
+    loader: () => import("./admin.js?v=bookreview-tabs"),
     mountKey: "images",
   },
   "#/admin/advanced": {

@@ -559,10 +559,10 @@ img {
    nav gets cramped (between the 768px mobile breakpoint and ~1100px).
    The screen-reader name comes from aria-label on the <a>, so both spans
    are safe to hide visually. */
-.nav-link-short { display: none; }
+.nav-link-short { display: none !important; }
 @media (min-width: 769px) and (max-width: 1100px) {
   .nav-link-full { display: none; }
-  .nav-link-short { display: inline; }
+  .nav-link-short { display: inline !important; }
 }
 
 .nav-cta {
