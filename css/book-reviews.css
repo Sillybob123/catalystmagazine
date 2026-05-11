@@ -1067,23 +1067,49 @@ body[data-page="book-reviews"] .header {
     max-width: 68ch;
     margin: 0;
 }
+/* Mobile lockup — stack vertically with the stamp centered above the
+   headline + lede so the whole block reads as a single editorial unit.
+   Centering everything (eyebrow, title, lede) gives the reader-picks
+   section a real "stamp at the top, message below" feel on phones. */
 @media (max-width: 720px) {
-    .br-community-lockup { grid-template-columns: 84px minmax(0, 1fr); gap: 18px; }
+    .br-community-lockup {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        justify-items: center;
+        text-align: center;
+    }
+    .br-community-copy { text-align: center; }
+    /* Eyebrow has an `::before` hairline; convert from inline-flex to
+       a centered flex line so the hairline + text both center. */
+    .br-community-copy .br-section-eyebrow {
+        justify-content: center;
+        letter-spacing: .22em;
+    }
     .br-community-copy .br-section-title {
         white-space: normal;
         font-size: clamp(26px, 8.4vw, 40px);
         word-break: break-word;
         hyphens: auto;
+        margin-left: auto;
+        margin-right: auto;
     }
-    .br-community-lede { max-width: 60ch; }
+    .br-community-lede {
+        max-width: 56ch;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    /* Aside centers too — CTA + stats stack vertically below the lede. */
+    .br-community-aside {
+        justify-self: center;
+        margin-left: auto;
+        margin-right: auto;
+    }
 }
-/* Very narrow phones — eyebrow letter-spacing + 28px ::before can overflow
-   the 1fr column next to the stamp. Trim both so the headline stack always
-   stays inside the container gutters. */
+/* Very narrow phones — trim the eyebrow tracking + leading hairline so
+   the line doesn't wrap onto two lines on iPhone-mini sizes. */
 @media (max-width: 420px) {
-    .br-community-lockup { grid-template-columns: 1fr; gap: 18px; justify-items: start; }
     .br-community-copy .br-section-eyebrow {
-        letter-spacing: .22em;
+        letter-spacing: .18em;
         gap: 10px;
         font-size: 10.5px;
     }
@@ -1255,7 +1281,13 @@ body[data-page="book-reviews"] .header {
 }
 @media (max-width: 720px) {
     .br-community-stats { max-width: 100%; }
-    .br-community-stats > div { padding: 14px 18px; }
+    /* Center the dt/dd pairs on mobile so the stats card matches the
+       overall centered alignment of the lockup above. */
+    .br-community-stats > div {
+        padding: 14px 18px;
+        align-items: center;
+        text-align: center;
+    }
     .br-community-stats dt {
         font-size: 10px;
         letter-spacing: .16em;
@@ -1925,17 +1957,22 @@ body[data-page="book-reviews"] .header {
     height: 36px;
 }
 .br-rating-slider-stars {
+    /* The stars row spans the full track width. Both base (faded)
+       and fill (accent) layers are laid out at the SAME size with
+       5 stars distributed via flex `space-around` — so each star
+       sits at the same physical pixel position in both layers.
+       The fill layer is clipped from the right via clip-path:inset
+       at the current rating %, naturally hiding any unfilled stars.
+       (clip-path beats overflow:hidden + width:% here because the
+       flex layout doesn't reflow when clipped — the spans stay at
+       their full-width positions.) */
     position: absolute;
     inset: 0;
-    display: flex;
-    align-items: center;
     pointer-events: none;
     line-height: 1;
     font-family: Georgia, 'Times New Roman', serif;
-    font-size: 18px;
-    letter-spacing: 6px;
+    font-size: 22px;
     user-select: none;
-    /* Stars sit visually centered behind the slider thumb. */
     z-index: 0;
 }
 .br-rating-slider-stars-base,
@@ -1944,17 +1981,26 @@ body[data-page="book-reviews"] .header {
     inset: 0;
     display: flex;
     align-items: center;
-    padding-left: 2px;
+    justify-content: space-around;
+    padding: 0 8px;
+    white-space: nowrap;
 }
 .br-rating-slider-stars-base {
     color: rgba(15, 23, 42, 0.18);
 }
 .br-rating-slider-stars-fill {
-    width: 0%;
-    overflow: hidden;
-    white-space: nowrap;
     color: var(--accent);
-    transition: width .12s ease-out;
+    /* Clip from the right edge based on --br-pct (set by JS). At
+       0% rating, inset 0 100% 0 0 fully clips the fill; at 100%
+       rating, inset 0 0 0 0 shows everything. */
+    clip-path: inset(0 calc(100% - var(--br-pct, 0) * 1%) 0 0);
+    transition: clip-path .12s ease-out;
+    /* width prop is no longer used for clipping, but we keep it at
+       100% so the inner flex layout matches the base exactly. */
+    width: 100%;
+}
+.br-rating-slider-stars span {
+    flex: 0 0 auto;
 }
 
 /* Slider sits ON TOP of the stars — transparent track so the stars

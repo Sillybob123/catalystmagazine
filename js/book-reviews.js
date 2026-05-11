@@ -1532,9 +1532,12 @@
             const raw = parseFloat(input.value);
             const n = Number.isFinite(raw) ? Math.round(raw * 10) / 10 : 0;
             const pct = Math.max(0, Math.min(100, (n / 5) * 100));
+            // --br-pct drives:
+            //   • the slider track's progress gradient (in CSS)
+            //   • the stars-fill clip-path (CSS reads var(--br-pct))
+            // so we only need to set it once on the root.
             root.style.setProperty('--br-pct', String(pct));
             root.dataset.value = n > 0 ? String(n) : '0';
-            if (fill) fill.style.width = pct + '%';
             if (value) {
                 if (n > 0) {
                     value.innerHTML = `${n.toFixed(1)}<small>/ 5</small>`;
