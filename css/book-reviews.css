@@ -1914,25 +1914,47 @@ body[data-page="book-reviews"] .header {
     transition: width .12s ease-out;
 }
 .br-rating-slider-row {
-    padding: 6px 2px 2px;
+    padding: 10px 2px 6px;
 }
-.br-rating-slider-input {
+
+/* The form-field default styles (.br-form-field input) add cream
+   background + border + padding + min-height: 48px to every <input>.
+   The range slider needs none of that; reset all four explicitly so
+   the track pseudo-elements below are what actually paints. */
+.br-rating-slider-input,
+.br-form-field .br-rating-slider-input {
     appearance: none;
     -webkit-appearance: none;
+    -moz-appearance: none;
     width: 100%;
-    height: 4px;
+    height: 22px;            /* hit-area; the visual track is shorter */
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-height: 0;
+    border-radius: 0;
+    outline: none;
+    cursor: pointer;
+    /* Expose the current fill % to the track gradient. JS writes
+       --br-pct on the .br-rating-slider container; we read it here
+       so the gradient can use it across all browsers' track pseudos. */
+}
+
+/* WebKit / Blink — Safari, Chrome, modern Edge. The track is painted
+   by the runnable-track pseudo-element, NOT by the <input> background,
+   which is why the previous gradient was invisible on macOS. */
+.br-rating-slider-input::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
     background: linear-gradient(
         to right,
         var(--accent) 0%,
         var(--accent) calc(var(--br-pct, 0) * 1%),
-        rgba(15, 23, 42, 0.12) calc(var(--br-pct, 0) * 1%),
-        rgba(15, 23, 42, 0.12) 100%
+        rgba(15, 23, 42, 0.16) calc(var(--br-pct, 0) * 1%),
+        rgba(15, 23, 42, 0.16) 100%
     );
-    border-radius: 999px;
-    outline: none;
-    margin: 0;
-    padding: 0;
-    cursor: pointer;
+    border: 1px solid rgba(15, 23, 42, 0.08);
 }
 .br-rating-slider-input::-webkit-slider-thumb {
     appearance: none;
@@ -1944,6 +1966,22 @@ body[data-page="book-reviews"] .header {
     box-shadow: 0 4px 10px -2px rgba(122, 31, 43, .45);
     cursor: grab;
     transition: transform .12s ease, box-shadow .12s ease;
+    /* Center the 22px thumb on the 6px track. (22 - 6) / 2 = 8, with
+       a -1px nudge to account for the track border. */
+    margin-top: -9px;
+}
+
+/* Firefox — track + progress are separate pseudo-elements. */
+.br-rating-slider-input::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.16);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+.br-rating-slider-input::-moz-range-progress {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--accent);
 }
 .br-rating-slider-input::-moz-range-thumb {
     width: 22px; height: 22px;
@@ -1953,6 +1991,8 @@ body[data-page="book-reviews"] .header {
     box-shadow: 0 4px 10px -2px rgba(122, 31, 43, .45);
     cursor: grab;
 }
+
+/* Focus + active states, per-engine */
 .br-rating-slider-input:focus-visible::-webkit-slider-thumb {
     box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
 }
@@ -1960,6 +2000,7 @@ body[data-page="book-reviews"] .header {
     box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
 }
 .br-rating-slider-input:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.1); }
+.br-rating-slider-input:active::-moz-range-thumb     { cursor: grabbing; transform: scale(1.1); }
 .br-rating-slider-readout {
     display: flex;
     align-items: baseline;
