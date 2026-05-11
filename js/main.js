@@ -1526,7 +1526,7 @@ function renderBookReviewDetail(article, container) {
                         }
                     </div>
 
-                    <h1 class="brx-title">${escapeHtmlAttr(article.title)}</h1>
+                    <h1 class="brx-title" data-length="${(article.title || '').length < 40 ? 'short' : (article.title || '').length < 80 ? 'medium' : (article.title || '').length < 120 ? 'long' : 'xlong'}">${escapeHtmlAttr(article.title)}</h1>
 
                     ${article.bookAuthor
                         ? `<p class="brx-book-author">by <strong>${escapeHtmlAttr(article.bookAuthor)}</strong></p>`
