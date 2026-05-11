@@ -56,12 +56,22 @@ export const onRequestPost = async ({ request, env }) => {
     if (!articles.length) return badRequest("No published stories found.");
 
     // Optional book-review section. Capped at 2 to keep the email scannable
-    // and keep image weight under Gmail's clipping threshold.
+    // and keep image weight under Gmail's clipping threshold. Each fetch is
+    // wrapped so a single missing doc doesn't 500 the whole preview — we'd
+    // rather render the issue without that one review than block the admin.
     let bookReviews = [];
     if (Array.isArray(body.bookReviewIds) && body.bookReviewIds.length) {
       const ids = body.bookReviewIds.slice(0, 2);
-      const results = await Promise.all(ids.map((id) => firestoreGet(env, `stories/${id}`)));
+      const results = await Promise.all(
+        ids.map((id) =>
+          firestoreGet(env, `stories/${id}`).catch((err) => {
+            console.warn("[newsletter/preview] firestoreGet stories/" + id + " failed:", err?.message || err);
+            return null;
+          })
+        )
+      );
       bookReviews = results.filter(Boolean).map(docToBookReview);
+      console.log("[newsletter/preview] bookReviewIds:", ids, "→ resolved:", bookReviews.length);
     }
 
     const slicedArticles = articles.slice(0, count);

@@ -174,7 +174,8 @@ const ROUTES = {
     icon: ICONS.mail,
     roles: ["admin", "newsletter_builder"],
     group: "newsletter",
-    loader: () => import("./newsletter.js"),
+    // Cache-bust: bump when newsletter.js changes shape (e.g. picker UI).
+    loader: () => import("./newsletter.js?v=bookreview-picker"),
     mountKey: "builder",
   },
   "#/newsletter/history": {

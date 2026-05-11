@@ -246,6 +246,15 @@ async function mountBuilder(ctx, container) {
       currentHtml = data.html;
       currentArticles = data.articles || [];
       currentBookReviews = data.bookReviews || [];
+      // Debug: surface picker → server roundtrip in devtools so a stuck
+      // book-review section is one console glance away from a diagnosis.
+      console.log("[newsletter] preview:", {
+        articleIds: ids,
+        bookReviewIds: reviewIds,
+        articlesReturned: currentArticles.length,
+        bookReviewsReturned: currentBookReviews.length,
+        bookReviewTitles: currentBookReviews.map((r) => r.title),
+      });
       renderPreview(els.iframe, currentHtml);
       const reviewSuffix = currentBookReviews.length
         ? ` + ${currentBookReviews.length} book review${currentBookReviews.length === 1 ? "" : "s"}`
