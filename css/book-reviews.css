@@ -922,8 +922,33 @@ body[data-page="book-reviews"] .header {
     gap: 32px;
     align-items: start;
 }
+.br-community-copy {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+    align-items: start;
+}
+.br-community-copy .br-section-eyebrow,
+.br-community-copy .br-section-title {
+    grid-column: 2;
+}
+.br-community-copy .br-section-title {
+    white-space: nowrap;
+    font-size: clamp(34px, 3.6vw, 54px);
+}
+.br-community-lede {
+    grid-column: 1 / -1;
+    max-width: 72ch;
+    margin: 10px 0 0;
+}
 @media (max-width: 720px) {
     .br-community-lockup { grid-template-columns: 96px minmax(0, 1fr); gap: 22px; }
+    .br-community-copy { display: block; }
+    .br-community-copy .br-section-title {
+        white-space: normal;
+        font-size: clamp(32px, 11vw, 44px);
+    }
+    .br-community-lede { max-width: 60ch; margin-bottom: 0; }
 }
 
 .br-community-stamp {
