@@ -438,7 +438,7 @@
 
                     <div class="br-rating">
                         <div class="br-rating-dial" style="--score:${score}">
-                            <span class="br-rating-dial-value">${review.rating.toFixed(1)}<small>/5</small></span>
+                            <span class="br-rating-dial-value">${review.rating.toFixed(1)}</span>
                         </div>
                         <div>
                             <div class="br-rating-label">Catalyst rating</div>

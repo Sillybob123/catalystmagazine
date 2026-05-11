@@ -1577,7 +1577,7 @@ function renderBookReviewDetail(article, container) {
                             <div class="brx-verdict-eyebrow">${isReaderPick ? 'Reader rating' : 'Catalyst rating'}</div>
                             <div class="brx-verdict-row">
                                 <div class="brx-rating-dial" style="--score:${ratingPct};">
-                                    <span class="brx-rating-num">${rating.toFixed(1)}<small>/5</small></span>
+                                    <span class="brx-rating-num">${rating.toFixed(1)}</span>
                                 </div>
                                 <div class="brx-rating-detail">
                                     <div class="brx-rating-stars" aria-label="${rating.toFixed(1)} out of 5">${stars}</div>

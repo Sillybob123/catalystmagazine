@@ -601,7 +601,6 @@ body[data-page="book-reviews"] .header {
     width: 76px; height: 76px;
     border-radius: 50%;
     background: conic-gradient(var(--accent) calc(var(--score,0) * 1%), var(--paper-line) 0);
-    display: grid; place-items: center;
 }
 .br-rating-dial::before {
     content: '';
@@ -610,17 +609,17 @@ body[data-page="book-reviews"] .header {
     background: var(--paper);
 }
 .br-rating-dial-value {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 26px;
     font-weight: 700;
+    line-height: 1;
     color: var(--ink);
     z-index: 1;
-}
-.br-rating-dial-value small {
-    font-size: 12px;
-    color: var(--text-subtle);
-    font-weight: 400;
+    white-space: nowrap;
 }
 .br-rating-label {
     font-size: 12px;

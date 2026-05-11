@@ -325,8 +325,6 @@ body[data-page="article"].is-book-review .back-link:hover {
     width: 104px; height: 104px;
     border-radius: 50%;
     background: conic-gradient(var(--brx-accent) calc(var(--score, 0) * 1%), var(--brx-paper-line) 0);
-    display: grid;
-    place-items: center;
     flex: 0 0 auto;
     box-shadow: 0 8px 22px -10px rgba(122,31,43,.35);
 }
@@ -338,20 +336,18 @@ body[data-page="article"].is-book-review .back-link:hover {
     box-shadow: inset 0 0 0 1px var(--brx-paper-line);
 }
 .brx-rating-num {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 34px;
     font-weight: 700;
     color: var(--brx-ink);
     line-height: 1;
     letter-spacing: -0.01em;
-}
-.brx-rating-num small {
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--brx-text-sub);
-    margin-left: 2px;
-    letter-spacing: 0;
+    z-index: 1;
+    white-space: nowrap;
 }
 
 .brx-rating-detail {
