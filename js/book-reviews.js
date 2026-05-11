@@ -1158,6 +1158,7 @@
             railGenreEl.addEventListener('change', (e) => {
                 setGenre(e.target.value || 'all');
             });
+            enhanceShelfSelect(railGenreEl);
         }
 
         if (searchInput) {

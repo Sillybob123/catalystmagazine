@@ -585,7 +585,7 @@ body[data-page="book-reviews"] .header {
    ================================================================= */
 .br-rail-wrap {
     position: relative;
-    z-index: 10;
+    z-index: 80;
     background: rgba(247,244,237,.92);
     backdrop-filter: saturate(140%) blur(10px);
     -webkit-backdrop-filter: saturate(140%) blur(10px);
@@ -593,13 +593,15 @@ body[data-page="book-reviews"] .header {
     padding: 18px 0;
 }
 .br-rail {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px;
     align-items: stretch;
 }
 .br-rail-search { width: 100%; min-width: 0; }
-.br-rail-filter { flex: 0 0 auto; }
+.br-rail-filter { flex: 0 0 auto; z-index: 90; }
+.br-rail-filter[data-open="true"] { z-index: 240; }
 
 @media (max-width: 560px) {
     .br-rail { grid-template-columns: 1fr; }
