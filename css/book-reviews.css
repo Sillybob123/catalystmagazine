@@ -905,10 +905,10 @@ body[data-page="book-reviews"] .header {
 
 .br-community-head {
     display: grid;
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-    gap: 56px;
-    align-items: stretch;
-    margin-bottom: 36px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+    gap: 44px;
+    align-items: center;
+    margin-bottom: 42px;
 }
 @media (max-width: 960px) {
     .br-community-head { grid-template-columns: 1fr; gap: 32px; }
@@ -918,44 +918,36 @@ body[data-page="book-reviews"] .header {
    feels like a stamp on a postcard or a wax seal on a letter. */
 .br-community-lockup {
     display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
-    gap: 32px;
-    align-items: start;
+    grid-template-columns: 116px minmax(0, 1fr);
+    gap: 30px;
+    align-items: center;
 }
 .br-community-copy {
-    display: grid;
-    grid-template-columns: subgrid;
-    grid-column: 1 / -1;
-    align-items: start;
-}
-.br-community-copy .br-section-eyebrow,
-.br-community-copy .br-section-title {
-    grid-column: 2;
+    min-width: 0;
 }
 .br-community-copy .br-section-title {
     white-space: nowrap;
-    font-size: clamp(34px, 3.6vw, 54px);
+    font-size: clamp(38px, 3.7vw, 58px);
+    margin-bottom: 18px;
 }
 .br-community-lede {
-    grid-column: 1 / -1;
-    max-width: 72ch;
-    margin: 10px 0 0;
+    max-width: 68ch;
+    margin: 0;
 }
 @media (max-width: 720px) {
     .br-community-lockup { grid-template-columns: 96px minmax(0, 1fr); gap: 22px; }
-    .br-community-copy { display: block; }
     .br-community-copy .br-section-title {
         white-space: normal;
         font-size: clamp(32px, 11vw, 44px);
     }
-    .br-community-lede { max-width: 60ch; margin-bottom: 0; }
+    .br-community-lede { max-width: 60ch; }
 }
 
 .br-community-stamp {
     position: relative;
-    width: 132px;
-    height: 132px;
-    flex: 0 0 132px;
+    width: 116px;
+    height: 116px;
+    flex: 0 0 116px;
     display: grid;
     place-items: center;
     text-align: center;
@@ -1010,10 +1002,9 @@ body[data-page="book-reviews"] .header {
 .br-community-aside {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 18px;
     align-items: flex-end;
-    justify-content: flex-start;
-    padding-top: 6px;
+    justify-content: center;
 }
 @media (max-width: 960px) {
     .br-community-aside { align-items: flex-start; }
