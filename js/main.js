@@ -1593,12 +1593,12 @@ function renderBookReviewDetail(article, container) {
                         </svg>
                         <p>${escapeHtmlAttr(article.deck || `A short, honest take on ${article.bookAuthor || 'this book'}'s work — what it's about, who it's for, and why it earns its place on the shelf.`)}</p>
                     </div>
+
+                    <div class="brx-body">${contentHtml}</div>
                 </div>
             </section>
 
             <div class="brx-body-wrap">
-                <div class="brx-body">${contentHtml}</div>
-
                 <footer class="brx-coda">
                     <div class="brx-coda-byline">
                         <span class="brx-coda-label">Reviewed by</span>
