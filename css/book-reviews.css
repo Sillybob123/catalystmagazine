@@ -219,9 +219,11 @@ body[data-page="book-reviews"] .header {
     width: 100%;
     max-width: 520px;
     margin-left: auto;
-    /* Nudge the stack upward so it sits closer to the title row instead of
-       drifting low under the hero's flex centering. */
-    margin-top: -56px;
+    /* Sit just below the floating header so the top book doesn't get clipped
+       by the nav bar. The negative margin used to be -56px (pulled the stack
+       under the header); now we let it sit at the natural flex-centered
+       position with a small positive offset on top. */
+    margin-top: 32px;
     perspective: 1600px;
     --br-spread: 0;            /* updated by JS on scroll */
     --br-glow: 0;              /* updated by JS on scroll */
@@ -406,24 +408,29 @@ body[data-page="book-reviews"] .header {
     z-index: 3;
 }
 .br-stack-book-3 {
-    /* Middle of the stack — upper-right, tilted right. */
+    /* Middle of the stack — pushed further right so a clear band of the
+       green cover sticks out past the cream book in front of it. */
     width: 62%;
-    top: 10%;
-    left: 36%;
+    top: 6%;
+    left: 48%;
     background: linear-gradient(155deg, #142a1f 0%, #1f4233 55%, #0a1b13 100%);
-    --r: 3deg;
-    --tx: 110px; --ty: -90px; --tz: 60px;
+    --r: 4deg;
+    --tx: 130px; --ty: -90px; --tz: 60px;
     --rs: 14deg; --rx: -5deg; --ry: 15deg; --sc: .28;
     z-index: 2;
 }
 .br-stack-book-1 { z-index: 1; }
 
 @media (max-width: 960px) {
-    .br-hero-stack { max-width: 360px; margin: -16px auto 0; }
+    .br-hero-stack { max-width: 360px; margin: 0 auto; }
     /* Smaller travel on mobile so the books don't leave the viewport */
     .br-stack-book-1 { --tx: -70px;  --ty: -40px; --tz: 40px; --sc: .22; }
     .br-stack-book-2 { --tx: 60px;   --ty: -55px; --tz: 30px; --sc: .20; }
     .br-stack-book-3 { --tx: 20px;   --ty: 80px;  --tz: 60px; --sc: .26; }
+    /* Pull book-3 back in a bit so it doesn't bleed off the right side of
+       the narrower mobile stack while still peeking out behind the cream
+       cover. */
+    .br-stack-book-3 { left: 42%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
