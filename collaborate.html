@@ -44,37 +44,50 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://wsrv.nl" crossorigin>
     <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet"></noscript>
     <link rel="preload" href="/css/styles.css" as="style">
     <link rel="stylesheet" href="/css/styles.css">
 
     <style>
         /* ══════════════════════════════════════════
-           COLLABORATE PAGE — Apple-grade aesthetic
+           COLLABORATE PAGE — Editorial premium v2
            ══════════════════════════════════════════ */
 
-        /* ── CSS Custom Properties ─────────────────── */
+        /* ── Design tokens ─────────────────────────── */
         :root {
-            --indigo: #5c5ff5;
-            --indigo-dark: #4244d4;
-            --indigo-light: rgba(92, 95, 245, 0.08);
-            --indigo-glow: rgba(92, 95, 245, 0.18);
+            --slate: #0f172a;
+            --slate-mid: #1e293b;
+            --slate-soft: #334155;
+            --slate-light: rgba(15, 23, 42, 0.08);
+            --slate-glow: rgba(15, 23, 42, 0.18);
             --surface: #ffffff;
-            --surface-alt: #f9f9fb;
-            --border: rgba(0,0,0,0.07);
-            --border-strong: rgba(0,0,0,0.12);
-            --ink: #1d1d1f;
-            --ink-2: #3a3a3c;
-            --muted: #6e6e73;
-            --muted-light: #8e8e93;
+            --surface-alt: #f8fafc;
+            --surface-warm: #faf8f4;       /* paper, warmer than slate-50 */
+            --border: rgba(15,23,42,0.07);
+            --border-strong: rgba(15,23,42,0.13);
+            --ink: #0b1220;
+            --ink-2: #1f2937;
+            --muted: #4b5563;
+            --muted-light: #6b7280;
+            --serif: 'Fraunces', 'Times New Roman', serif;
             --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
             --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+            --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        /* Page-level paper tone so sections meld */
+        body[data-page="collaborate"] {
+            background: var(--surface-warm);
+        }
+        body[data-page="collaborate"] main {
+            position: relative;
+            isolation: isolate;
         }
 
         /* ── Hero ──────────────────────────────────── */
         .hero {
-            padding: 160px 24px 80px;
-            text-align: center;
+            padding: 170px 24px 80px;
+            text-align: left;
             position: relative;
             overflow: hidden;
         }
@@ -82,106 +95,229 @@
             position: absolute;
             inset: 0;
             pointer-events: none;
+            z-index: 0;
         }
-        /* Radial aurora blobs */
+        /* Dot grid — editorial paper feel */
         .hero-bg::before {
             content: '';
             position: absolute;
-            top: -10%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 900px;
-            height: 600px;
-            background: radial-gradient(ellipse at center, rgba(92,95,245,0.1) 0%, rgba(99,102,241,0.05) 40%, transparent 70%);
-            border-radius: 50%;
+            inset: 0;
+            background-image: radial-gradient(rgba(15,23,42,0.085) 1px, transparent 1px);
+            background-size: 28px 28px;
+            background-position: 0 0;
+            mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 80%);
+            opacity: 0.55;
         }
+        /* Mouse-tracked spotlight */
         .hero-bg::after {
             content: '';
             position: absolute;
-            bottom: -20%;
-            right: -10%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(ellipse at center, rgba(168,85,247,0.05) 0%, transparent 65%);
-            border-radius: 50%;
+            inset: 0;
+            background: radial-gradient(
+                600px circle at var(--mx, 50%) var(--my, 40%),
+                rgba(15,23,42,0.07) 0%,
+                transparent 60%
+            );
+            transition: background 200ms var(--ease-out);
         }
         .hero-inner {
             position: relative;
-            max-width: 720px;
+            z-index: 1;
+            max-width: 1100px;
             margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
         }
         .hero-badge {
             display: inline-flex;
+            align-self: flex-start;
             align-items: center;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.14em;
+            gap: 14px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.24em;
             text-transform: uppercase;
-            color: var(--indigo);
-            background: var(--indigo-light);
-            padding: 7px 18px;
-            border-radius: 100px;
-            border: 1px solid rgba(92,95,245,0.2);
-            margin-bottom: 28px;
+            color: var(--ink-2);
+            background: transparent;
+            padding: 0 0 0 2px;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            margin-bottom: 40px;
+        }
+        .hero-badge::before {
+            content: '';
+            width: 28px;
+            height: 1px;
+            background: var(--ink);
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .hero-badge-dot {
+            position: relative;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #15803d;
+            flex-shrink: 0;
+            margin-right: 2px;
+        }
+        .hero-badge-dot::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid rgba(21,128,61,0.35);
+            animation: heroPulse 2.6s var(--ease-out) infinite;
+        }
+        @keyframes heroPulse {
+            0%   { transform: scale(0.8); opacity: 0.8; }
+            70%  { transform: scale(2);   opacity: 0; }
+            100% { transform: scale(2);   opacity: 0; }
         }
         .hero-title {
-            font-size: clamp(3rem, 7vw, 5.5rem);
-            font-weight: 900;
+            font-size: clamp(2.6rem, 8.5vw, 7rem);
+            font-weight: 800;
             letter-spacing: -0.04em;
-            line-height: 1.12;
+            line-height: 0.98;
             color: var(--ink);
-            margin: 0 0 24px;
-            padding-bottom: 0.12em;
+            margin: 0 0 32px;
+            padding-bottom: 0.06em;
+            overflow-wrap: break-word;
+            word-break: normal;
+            hyphens: none;
+            max-width: 16ch;
         }
         .hero-title-accent {
+            font-family: var(--serif);
+            font-style: italic;
+            font-weight: 500;
+            letter-spacing: -0.025em;
+            color: var(--slate);
+            position: relative;
             display: inline-block;
             padding-bottom: 0.08em;
-            background: linear-gradient(135deg, #5c5ff5 0%, #a855f7 60%, #ec4899 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        }
+        .hero-title-accent::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0.08em;
+            height: 6px;
+            background: var(--slate);
+            transform-origin: left center;
+            transform: scaleX(0);
+            border-radius: 4px;
+            animation: heroDrawLine 1.1s var(--ease-emphasized) 0.5s forwards;
+        }
+        @keyframes heroDrawLine {
+            from { transform: scaleX(0); }
+            to   { transform: scaleX(1); }
+        }
+        .hero-meta {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+            gap: 48px 64px;
+            align-items: start;
+            margin-bottom: 56px;
         }
         .hero-subtitle {
-            font-size: clamp(1.05rem, 2vw, 1.3rem);
+            font-size: clamp(1.05rem, 1.4vw, 1.25rem);
             color: var(--muted);
-            max-width: 560px;
-            margin: 0 auto 48px;
-            line-height: 1.65;
+            max-width: 50ch;
+            margin: 0;
+            line-height: 1.55;
             font-weight: 400;
+        }
+        .hero-aside {
+            padding-left: 24px;
+            border-left: 1px solid var(--border-strong);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .hero-aside-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--muted-light);
+        }
+        .hero-aside-text {
+            font-family: var(--serif);
+            font-style: italic;
+            font-weight: 500;
+            font-size: 1.05rem;
+            line-height: 1.45;
+            color: var(--ink-2);
+            margin: 0;
+        }
+        .hero-aside-attr {
+            font-size: 0.78rem;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+            margin-top: 4px;
         }
         .hero-ctas {
             display: flex;
             gap: 14px;
-            justify-content: center;
+            justify-content: flex-start;
             flex-wrap: wrap;
+            align-items: center;
         }
         .hero-cta-primary {
             display: inline-flex;
             align-items: center;
-            gap: 9px;
-            padding: 16px 32px;
-            background: var(--indigo);
+            gap: 12px;
+            padding: 18px 30px;
+            background: var(--slate);
             color: #fff;
             border-radius: 100px;
             font-size: 0.97rem;
-            font-weight: 700;
+            font-weight: 600;
             font-family: inherit;
+            letter-spacing: -0.005em;
             border: none;
             cursor: pointer;
-            transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 24px rgba(92,95,245,0.35);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s var(--ease-emphasized), box-shadow 0.25s var(--ease-emphasized);
+            box-shadow: 0 8px 24px -8px rgba(15,23,42,0.45), 0 2px 4px rgba(15,23,42,0.08);
+        }
+        .hero-cta-primary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+            transform: translateX(-110%);
+            transition: transform 0.7s var(--ease-emphasized);
+            pointer-events: none;
         }
         .hero-cta-primary:hover {
-            background: var(--indigo-dark);
             transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(92,95,245,0.45);
+            box-shadow: 0 16px 36px -12px rgba(15,23,42,0.55), 0 4px 8px rgba(15,23,42,0.12);
+        }
+        .hero-cta-primary:hover::after {
+            transform: translateX(110%);
+        }
+        .hero-cta-primary svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s var(--ease-emphasized);
+        }
+        .hero-cta-primary:hover svg {
+            transform: translateX(4px);
         }
         .hero-cta-secondary {
             display: inline-flex;
             align-items: center;
-            gap: 9px;
-            padding: 16px 32px;
-            background: var(--surface);
+            gap: 10px;
+            padding: 18px 28px;
+            background: transparent;
             color: var(--ink);
             border-radius: 100px;
             font-size: 0.97rem;
@@ -189,167 +325,410 @@
             font-family: inherit;
             border: 1.5px solid var(--border-strong);
             cursor: pointer;
-            transition: background 0.2s, transform 0.2s, border-color 0.2s;
+            transition: background 0.2s, transform 0.25s var(--ease-emphasized), border-color 0.2s;
             text-decoration: none;
         }
         .hero-cta-secondary:hover {
-            background: var(--surface-alt);
+            background: var(--ink);
+            color: #fff;
+            border-color: var(--ink);
             transform: translateY(-2px);
-            border-color: rgba(0,0,0,0.18);
+        }
+        .hero-cta-helper {
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-left: 6px;
+            padding-left: 18px;
+            border-left: 1px solid var(--border-strong);
+            line-height: 1.4;
+            max-width: 18ch;
+        }
+
+        /* ── Marquee of partner universities ───────── */
+        .marquee {
+            position: relative;
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+        }
+        .marquee-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--muted-light);
+            margin-bottom: 14px;
+        }
+        .marquee-viewport {
+            position: relative;
+            overflow: hidden;
+            mask-image: linear-gradient(90deg, transparent 0%, #000 15%, #000 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 15%, #000 85%, transparent 100%);
+        }
+        .marquee-track {
+            display: flex;
+            gap: 56px;
+            width: max-content;
+            animation: marqueeScroll 38s linear infinite;
+            align-items: center;
+        }
+        .marquee-viewport:hover .marquee-track {
+            animation-play-state: paused;
+        }
+        .marquee-item {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: 1.4rem;
+            color: var(--ink-2);
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 56px;
+            flex-shrink: 0;
+        }
+        .marquee-item::after {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--border-strong);
+            flex-shrink: 0;
+        }
+        @keyframes marqueeScroll {
+            from { transform: translate3d(0, 0, 0); }
+            to   { transform: translate3d(-50%, 0, 0); }
         }
 
         /* ── Stats strip ───────────────────────────── */
         .stats-strip {
-            padding: 0 24px 72px;
+            padding: 56px 24px 96px;
+            position: relative;
+        }
+        .stats-strip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(680px, 90%);
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-strong) 50%, transparent);
         }
         .stats-inner {
-            max-width: 860px;
+            max-width: 1000px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1px;
-            background: var(--border);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 20px rgba(0,0,0,0.04);
+            gap: 0;
+            background: transparent;
+            border-radius: 0;
+            overflow: visible;
+            border: none;
+            box-shadow: none;
+            position: relative;
         }
         .stat-item {
-            background: var(--surface);
-            padding: 36px 28px;
-            text-align: center;
+            background: transparent;
+            padding: 12px 28px 12px;
+            text-align: left;
+            position: relative;
+        }
+        .stat-item + .stat-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 18px;
+            bottom: 18px;
+            width: 1px;
+            background: var(--border-strong);
         }
         .stat-num {
-            font-size: 2.4rem;
-            font-weight: 900;
+            font-family: var(--serif);
+            font-size: clamp(3rem, 6vw, 4.6rem);
+            font-weight: 500;
             letter-spacing: -0.04em;
             color: var(--ink);
             line-height: 1;
-            margin-bottom: 6px;
+            margin-bottom: 14px;
+            font-feature-settings: 'lnum', 'tnum';
+        }
+        .stat-num sup {
+            font-size: 0.45em;
+            font-weight: 500;
+            vertical-align: super;
+            margin-left: 4px;
+            color: var(--muted-light);
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: 0;
         }
         .stat-label {
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             color: var(--muted);
             font-weight: 500;
             line-height: 1.4;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
 
         /* ── "Why join" section ────────────────────── */
         .why-section {
-            padding: 0 24px 96px;
+            padding: 24px 24px 120px;
+            position: relative;
+        }
+        .section-header {
+            max-width: 1000px;
+            margin: 0 auto 64px;
+            display: grid;
+            grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+            gap: 32px 64px;
+            align-items: end;
+        }
+        .section-header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
         .section-eyebrow {
-            text-align: center;
-            font-size: 0.72rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.68rem;
             font-weight: 700;
-            letter-spacing: 0.14em;
+            letter-spacing: 0.22em;
             text-transform: uppercase;
-            color: var(--indigo);
-            margin-bottom: 16px;
+            color: var(--muted);
+        }
+        .section-eyebrow::before {
+            content: '';
+            width: 28px;
+            height: 1px;
+            background: var(--ink);
         }
         .section-title {
-            text-align: center;
             font-size: clamp(2rem, 4vw, 3rem);
-            font-weight: 800;
-            letter-spacing: -0.03em;
+            font-weight: 700;
+            letter-spacing: -0.035em;
             color: var(--ink);
-            margin-bottom: 16px;
-            line-height: 1.1;
+            margin: 0;
+            line-height: 1.05;
+        }
+        .section-title em {
+            font-family: var(--serif);
+            font-style: italic;
+            font-weight: 500;
+            letter-spacing: -0.025em;
         }
         .section-sub {
-            text-align: center;
-            font-size: 1.05rem;
+            font-size: 1.02rem;
             color: var(--muted);
-            max-width: 520px;
-            margin: 0 auto 60px;
-            line-height: 1.65;
+            margin: 0;
+            line-height: 1.6;
+            max-width: 50ch;
+            padding-bottom: 4px;
         }
         .why-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            gap: 1px;
             max-width: 1000px;
             margin: 0 auto;
+            background: var(--border-strong);
+            border: 1px solid var(--border-strong);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 30px 60px -30px rgba(15,23,42,0.15);
         }
         .why-card {
             background: var(--surface);
-            border-radius: 20px;
-            padding: 36px 32px;
-            border: 1px solid var(--border);
-            box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-            transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+            padding: 36px 32px 32px;
+            border: none;
+            box-shadow: none;
+            position: relative;
+            transition: background 0.35s var(--ease-out);
+            min-height: 230px;
+            display: flex;
+            flex-direction: column;
+        }
+        .why-card-num {
+            display: block;
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 0.95rem;
+            color: var(--muted-light);
+            font-weight: 500;
+            letter-spacing: 0.04em;
+            margin-bottom: 18px;
+        }
+        .why-card-num::after {
+            content: '';
+            display: inline-block;
+            width: 22px;
+            height: 1px;
+            background: var(--border-strong);
+            vertical-align: middle;
+            margin-left: 10px;
+            transition: width 0.4s var(--ease-emphasized);
         }
         .why-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.09);
+            background: var(--surface-warm);
+        }
+        .why-card:hover .why-card-num::after {
+            width: 44px;
         }
         .why-card-title {
-            font-size: 1.05rem;
-            font-weight: 700;
+            font-size: 1.1rem;
+            font-weight: 600;
             color: var(--ink);
             margin-bottom: 10px;
-            letter-spacing: -0.01em;
+            letter-spacing: -0.015em;
+            line-height: 1.3;
         }
         .why-card-desc {
             font-size: 0.9rem;
             color: var(--muted);
-            line-height: 1.65;
+            line-height: 1.6;
+            margin-top: auto;
         }
 
-        /* ── Role showcase ─────────────────────────── */
+        /* ── Role showcase — dark section ──────────── */
         .roles-section {
-            padding: 0 24px 96px;
-            background: var(--surface-alt);
+            padding: 0 24px;
+            background: var(--ink);
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .roles-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+            background-size: 28px 28px;
+            mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 80%);
+            opacity: 0.6;
+            pointer-events: none;
         }
         .roles-section-inner {
-            max-width: 1000px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding-top: 80px;
-            padding-bottom: 80px;
+            padding-top: 110px;
+            padding-bottom: 110px;
+            position: relative;
+            z-index: 1;
+        }
+        .roles-section .section-eyebrow {
+            color: rgba(255,255,255,0.6);
+        }
+        .roles-section .section-eyebrow::before {
+            background: rgba(255,255,255,0.6);
+        }
+        .roles-section .section-title {
+            color: #fff;
+        }
+        .roles-section .section-sub {
+            color: rgba(255,255,255,0.62);
         }
         .roles-grid {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 16px;
-            margin-top: 48px;
+            gap: 14px;
+            margin-top: 24px;
         }
         .role-chip {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            min-height: 140px;
-            padding: 24px 22px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 18px;
+            min-height: 210px;
+            padding: 26px 26px 24px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+            justify-content: space-between;
+            gap: 16px;
+            transition: border-color 0.25s, background 0.25s, transform 0.3s var(--ease-emphasized);
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+            font: inherit;
+            color: inherit;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .role-chip::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(400px circle at var(--rx, 50%) var(--ry, 50%),
+                rgba(255,255,255,0.08) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
         }
         .role-chip:hover {
-            border-color: var(--indigo);
-            box-shadow: 0 0 0 3px var(--indigo-light);
+            border-color: rgba(255,255,255,0.28);
+            background: rgba(255,255,255,0.07);
             transform: translateY(-3px);
         }
-        .role-chip-name {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--ink);
-            margin-bottom: 4px;
+        .role-chip:hover::after {
+            opacity: 1;
         }
+        .role-chip-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .role-chip-name {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: -0.015em;
+            line-height: 1.2;
+        }
+        .role-chip-arrow {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.7);
+            flex-shrink: 0;
+            transition: transform 0.3s var(--ease-emphasized), background 0.25s, color 0.25s;
+        }
+        .role-chip:hover .role-chip-arrow {
+            background: #fff;
+            color: var(--ink);
+            transform: translate(2px, -2px);
+        }
+        .role-chip-arrow svg { width: 12px; height: 12px; stroke-width: 2.4; }
         .role-chip-desc {
-            font-size: 0.78rem;
-            color: var(--muted-light);
-            line-height: 1.5;
+            font-size: 0.86rem;
+            color: rgba(255,255,255,0.66);
+            line-height: 1.55;
         }
 
         /* ── Main action cards ─────────────────────── */
         .action-section {
-            padding: 80px 24px 120px;
+            padding: 120px 24px 120px;
+            position: relative;
+        }
+        .action-section-header {
+            max-width: 1000px;
+            margin: 0 auto 56px;
+            text-align: left;
+            display: grid;
+            grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+            gap: 32px 64px;
+            align-items: end;
         }
         .action-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-            gap: 28px;
+            gap: 24px;
             max-width: 1000px;
             margin: 0 auto;
         }
@@ -428,68 +807,113 @@
             background: var(--surface);
             border-radius: 28px;
             overflow: hidden;
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 24px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-strong);
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 24px 48px -32px rgba(15,23,42,0.15);
             display: flex;
             flex-direction: column;
-            transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
+            position: relative;
+            transition: transform 0.4s var(--ease-emphasized), box-shadow 0.4s var(--ease-emphasized);
         }
         .action-card:hover {
             transform: translateY(-6px);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 36px 72px -28px rgba(15,23,42,0.28);
         }
         .action-card-header {
-            padding: 44px 44px 0;
+            padding: 44px 40px 32px !important;
             min-height: 248px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            text-align: center;
+            justify-content: flex-end;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+        .action-card-header::before {
+            content: attr(data-label);
+            position: absolute;
+            top: 28px;
+            left: 40px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--muted);
         }
         .action-card-header-alt {
-            background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%);
+            background: linear-gradient(145deg, #0f172a 0%, #1e293b 100%) !important;
+            position: relative;
+        }
+        .action-card-header-alt::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px);
+            background-size: 20px 20px;
+            mask-image: radial-gradient(ellipse at 30% 40%, #000 0%, transparent 65%);
+            -webkit-mask-image: radial-gradient(ellipse at 30% 40%, #000 0%, transparent 65%);
+            pointer-events: none;
         }
         .action-card-header-alt .action-card-title { color: #fff; }
-        .action-card-header-alt .action-card-tagline { color: rgba(255,255,255,0.6); }
+        .action-card-header-alt .action-card-tagline { color: rgba(255,255,255,0.62); }
+        .action-card-header-alt::before {
+            color: rgba(255,255,255,0.5) !important;
+        }
         .action-card-title {
-            font-size: 1.6rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.035em;
             color: var(--ink);
-            margin: 0 auto 10px;
+            margin: 0 0 12px;
+            line-height: 1.05;
+            position: relative;
+            z-index: 1;
+        }
+        .action-card-title em {
+            font-family: var(--serif);
+            font-style: italic;
+            font-weight: 500;
+            letter-spacing: -0.025em;
         }
         .action-card-tagline {
-            font-size: 0.95rem;
+            font-size: 0.93rem;
             color: var(--muted);
-            line-height: 1.65;
-            margin-bottom: 0;
-            margin-left: auto;
-            margin-right: auto;
-            max-width: 30ch;
+            line-height: 1.55;
+            margin: 0;
+            max-width: 38ch;
+            position: relative;
+            z-index: 1;
         }
         .action-card-body {
-            padding: 32px 44px 44px;
+            padding: 28px 40px 40px;
             flex: 1;
             display: flex;
             flex-direction: column;
         }
         .action-card-detail {
-            margin-bottom: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 16px;
+            align-items: baseline;
+        }
+        .action-card-detail:last-of-type { border-bottom: none; }
+        .action-card-detail-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted-light);
+            min-width: 110px;
+            flex-shrink: 0;
         }
         .action-card-detail-text {
             font-size: 0.88rem;
-            color: var(--muted);
-            line-height: 1.6;
-        }
-        .action-card-detail-text strong {
             color: var(--ink-2);
-            font-weight: 600;
+            line-height: 1.5;
         }
-        .action-card-spacer { flex: 1; }
+        .action-card-spacer { flex: 1; min-height: 16px; }
         .action-card-divider {
-            height: 1px;
-            background: var(--border);
-            margin: 28px 0;
+            display: none;
         }
 
         /* Buttons */
@@ -497,37 +921,55 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 9px;
-            padding: 16px 32px;
+            gap: 10px;
+            padding: 17px 32px;
             border-radius: 100px;
             font-size: 0.97rem;
-            font-weight: 700;
+            font-weight: 600;
             font-family: inherit;
             cursor: pointer;
             border: none;
-            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s var(--ease-emphasized), box-shadow 0.25s var(--ease-emphasized);
             width: 100%;
-            letter-spacing: -0.01em;
+            letter-spacing: -0.005em;
         }
+        .btn svg {
+            width: 16px; height: 16px;
+            transition: transform 0.3s var(--ease-emphasized);
+        }
+        .btn:hover svg { transform: translateX(4px); }
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+            transform: translateX(-110%);
+            transition: transform 0.7s var(--ease-emphasized);
+            pointer-events: none;
+        }
+        .btn:hover::after { transform: translateX(110%); }
         .btn-indigo {
-            background: var(--indigo);
+            background: var(--slate);
             color: #fff;
-            box-shadow: 0 4px 20px rgba(92,95,245,0.32);
+            box-shadow: 0 8px 24px -8px rgba(15,23,42,0.45), 0 2px 4px rgba(15,23,42,0.08);
         }
         .btn-indigo:hover {
-            background: var(--indigo-dark);
+            background: var(--slate-mid);
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(92,95,245,0.45);
+            box-shadow: 0 16px 36px -12px rgba(15,23,42,0.55);
         }
         .btn-dark {
-            background: #1d1d1f;
-            color: #fff;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+            background: #fff;
+            color: var(--ink);
+            border: 1.5px solid rgba(255,255,255,0.9);
+            box-shadow: 0 8px 24px -10px rgba(0,0,0,0.4);
         }
         .btn-dark:hover {
-            background: #000;
+            background: var(--surface-warm);
             transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.28);
+            box-shadow: 0 16px 36px -12px rgba(0,0,0,0.5);
         }
 
         /* ── Modal ─────────────────────────────────── */
@@ -571,7 +1013,7 @@
             font-weight: 700;
             letter-spacing: 0.14em;
             text-transform: uppercase;
-            color: var(--indigo);
+            color: var(--muted);
             margin-bottom: 8px;
         }
         .collab-modal h2 {
@@ -633,9 +1075,9 @@
         .collab-form select:focus,
         .collab-form textarea:focus {
             outline: none;
-            border-color: var(--indigo);
+            border-color: var(--slate-soft);
             background: #fff;
-            box-shadow: 0 0 0 3.5px rgba(92,95,245,0.14);
+            box-shadow: 0 0 0 3.5px rgba(15,23,42,0.09);
         }
         .collab-form textarea { min-height: 120px; resize: vertical; }
         .collab-form .help { font-size: 0.78rem; color: var(--muted-light); margin-top: 5px; }
@@ -649,6 +1091,22 @@
         }
         .collab-form-status.is-error   { color: #dc2626; background: #fef2f2; padding: 12px 16px; }
         .collab-form-status.is-success { color: #047857; background: #f0fdf4; padding: 12px 16px; }
+
+        /* ── Focus-visible outlines ────────────────── */
+        .hero-cta-primary:focus-visible,
+        .hero-cta-secondary:focus-visible,
+        .btn:focus-visible {
+            outline: 2px solid var(--slate);
+            outline-offset: 3px;
+        }
+        .role-chip:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 3px;
+        }
+        .collab-modal .modal-close:focus-visible {
+            outline: 2px solid var(--slate);
+            outline-offset: 2px;
+        }
 
         /* ── Scroll reveal ─────────────────────────── */
         .reveal {
@@ -667,23 +1125,86 @@
         .reveal-delay-5 { transition-delay: 0.40s; }
         .reveal-delay-6 { transition-delay: 0.48s; }
 
+        /* ── Reduced motion ────────────────────────── */
+        @media (prefers-reduced-motion: reduce) {
+            .reveal {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+            .collab-modal { animation: none; }
+            .hero-title-accent::after { animation: none; transform: scaleX(1); }
+            .hero-badge-dot { animation: none; }
+            .marquee-track { animation: none; }
+            .hero-bg::after { display: none; }
+            .why-card,
+            .role-chip,
+            .action-card,
+            .hero-cta-primary,
+            .hero-cta-secondary,
+            .btn {
+                transition: none;
+            }
+            .hero-cta-primary::after,
+            .btn::after { display: none; }
+        }
+
         /* ── Responsive ────────────────────────────── */
+        @media (max-width: 960px) {
+            .hero-meta { grid-template-columns: 1fr; gap: 32px; }
+            .hero-aside { padding-left: 0; border-left: none; padding-top: 24px; border-top: 1px solid var(--border-strong); }
+            .section-header,
+            .action-section-header {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                align-items: start;
+            }
+            .section-sub { padding-bottom: 0; }
+        }
         @media (max-width: 860px) {
             .why-grid { grid-template-columns: repeat(2, 1fr); }
             .roles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .stats-inner { grid-template-columns: 1fr; gap: 0; }
+            .stat-item { padding: 22px 0; }
+            .stat-item + .stat-item::before {
+                left: 0; right: 0; top: 0; bottom: auto;
+                width: auto; height: 1px;
+            }
         }
         @media (max-width: 640px) {
-            .hero { padding: 120px 20px 60px; }
-            .hero-ctas { flex-direction: column; align-items: center; }
-            .hero-cta-primary, .hero-cta-secondary { width: 100%; justify-content: center; }
-            .stats-inner { grid-template-columns: 1fr; }
+            .hero { padding: 130px 20px 80px; }
+            .hero-title { font-size: clamp(2.1rem, 11vw, 3.6rem); max-width: 100%; }
+            .hero-ctas { flex-direction: column; align-items: stretch; gap: 12px; }
+            .hero-cta-primary, .hero-cta-secondary {
+                width: 100%; justify-content: center;
+            }
+            .hero-cta-helper {
+                margin-left: 0; padding-left: 0; border-left: none;
+                padding-top: 8px; border-top: 1px solid var(--border);
+                max-width: none; text-align: center;
+            }
+            .marquee { margin-top: 64px; }
+            .marquee-item { font-size: 1.1rem; gap: 36px; }
+            .marquee-track { gap: 36px; }
+            .stats-strip { padding: 56px 24px 64px; }
+            .why-section { padding-bottom: 80px; }
             .why-grid { grid-template-columns: 1fr; }
+            .roles-section-inner { padding: 72px 0; }
+            .action-section { padding: 80px 24px 100px; }
             .action-cards { grid-template-columns: 1fr; }
-            .action-card-header { min-height: auto; }
-            .action-card-header, .action-card-body { padding: 28px; }
+            .action-card-header { min-height: auto; padding: 56px 28px 24px !important; }
+            .action-card-header::before { top: 24px; left: 28px; }
+            .action-card-body { padding: 24px 28px 32px; }
+            .action-card-title { font-size: 1.6rem; }
+            .action-card-detail {
+                flex-direction: column;
+                gap: 4px;
+                padding: 14px 0;
+            }
+            .action-card-detail-label { min-width: 0; }
             .collab-modal-scroll { padding: 28px 22px; }
             .roles-grid { grid-template-columns: 1fr; }
-            .role-chip { min-height: auto; }
+            .role-chip { min-height: auto; padding: 22px 22px 20px; }
         }
     </style>
 </head>
@@ -698,25 +1219,57 @@
 
         <!-- ═══════ HERO ═══════ -->
         <section class="hero">
-            <div class="hero-bg"></div>
+            <div class="hero-bg" id="heroBg"></div>
             <div class="hero-inner">
                 <div class="hero-badge reveal">
-                    Now accepting applications
+                    <span class="hero-badge-dot" aria-hidden="true"></span>
+                    <span>Now accepting applications</span>
                 </div>
                 <h1 class="hero-title reveal reveal-delay-1">
                     Your story<br>
                     <span class="hero-title-accent">belongs here.</span>
                 </h1>
-                <p class="hero-subtitle reveal reveal-delay-2">
-                    The Catalyst is Washington D.C.'s premier student-run STEM magazine — and we're looking for bold voices to help shape what science storytelling looks like next.
-                </p>
+                <div class="hero-meta reveal reveal-delay-2">
+                    <p class="hero-subtitle">
+                        The Catalyst is Washington D.C.'s premier student-run STEM magazine — and we're looking for bold voices to help shape what science storytelling looks like next.
+                    </p>
+                    <aside class="hero-aside" aria-label="A note from the editors">
+                        <span class="hero-aside-label">From the editors</span>
+                        <p class="hero-aside-text">"We publish students who can't stop thinking about the question — not the ones with the cleanest CV."</p>
+                        <span class="hero-aside-attr">— Catalyst Editorial Board</span>
+                    </aside>
+                </div>
                 <div class="hero-ctas reveal reveal-delay-3">
                     <button type="button" class="hero-cta-primary" data-open-modal="join-team-modal">
-                        Join Our Team
+                        Join the team
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </button>
                     <button type="button" class="hero-cta-secondary" data-open-modal="proposal-modal">
-                        Submit an Article
+                        Submit an article
                     </button>
+                    <span class="hero-cta-helper">Both routes read by editors within a week.</span>
+                </div>
+
+                <!-- Marquee of partner universities -->
+                <div class="marquee reveal reveal-delay-4">
+                    <div class="marquee-label">Contributors come from</div>
+                    <div class="marquee-viewport" aria-hidden="true">
+                        <div class="marquee-track">
+                            <span class="marquee-item">George Washington</span>
+                            <span class="marquee-item">Georgetown</span>
+                            <span class="marquee-item">Howard</span>
+                            <span class="marquee-item">American</span>
+                            <span class="marquee-item">UMD</span>
+                            <span class="marquee-item">Johns Hopkins</span>
+                            <!-- duplicate for seamless loop -->
+                            <span class="marquee-item">George Washington</span>
+                            <span class="marquee-item">Georgetown</span>
+                            <span class="marquee-item">Howard</span>
+                            <span class="marquee-item">American</span>
+                            <span class="marquee-item">UMD</span>
+                            <span class="marquee-item">Johns Hopkins</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -725,11 +1278,11 @@
         <section class="stats-strip">
             <div class="stats-inner reveal">
                 <div class="stat-item">
-                    <div class="stat-num">5+</div>
+                    <div class="stat-num" data-count="5" data-suffix="+">0<sup>+</sup></div>
                     <div class="stat-label">Universities represented</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-num">100%</div>
+                    <div class="stat-num" data-count="100" data-suffix="%">0<sup>%</sup></div>
                     <div class="stat-label">Student-run &amp; independent</div>
                 </div>
                 <div class="stat-item">
@@ -741,127 +1294,171 @@
 
         <!-- ═══════ WHY JOIN ═══════ -->
         <section class="why-section">
-            <p class="section-eyebrow reveal">Why Catalyst</p>
-            <h2 class="section-title reveal reveal-delay-1">More than a byline.</h2>
-            <p class="section-sub reveal reveal-delay-2">
-                Joining The Catalyst means real work, real readers, and real growth — not just another club to list on your résumé.
-            </p>
+            <div class="section-header">
+                <div class="section-header-left">
+                    <p class="section-eyebrow reveal">Why Catalyst</p>
+                    <h2 class="section-title reveal reveal-delay-1">More than <em>a byline.</em></h2>
+                </div>
+                <p class="section-sub reveal reveal-delay-2">
+                    Joining The Catalyst means real work, real readers, and real growth — not just another club to list on your résumé.
+                </p>
+            </div>
             <div class="why-grid">
                 <div class="why-card reveal reveal-delay-1">
-                    <div class="why-card-title">Published Work, Real Audiences</div>
-                    <div class="why-card-desc">Your articles, essays, and features reach real readers across D.C.'s top universities and beyond — not just a class assignment nobody sees.</div>
+                    <span class="why-card-num">01</span>
+                    <div class="why-card-title">Published work, real audiences</div>
+                    <div class="why-card-desc">Your articles, essays, and features reach real readers across D.C.'s top universities — not a class assignment nobody sees.</div>
                 </div>
                 <div class="why-card reveal reveal-delay-2">
-                    <div class="why-card-title">Cross-Campus Community</div>
+                    <span class="why-card-num">02</span>
+                    <div class="why-card-title">Cross-campus community</div>
                     <div class="why-card-desc">Connect with passionate students from GW, Georgetown, Howard, American, and more — a network that extends well past graduation.</div>
                 </div>
                 <div class="why-card reveal reveal-delay-3">
-                    <div class="why-card-title">Portfolio-Worthy Experience</div>
+                    <span class="why-card-num">03</span>
+                    <div class="why-card-title">Portfolio-worthy experience</div>
                     <div class="why-card-desc">Every piece you write, edit, or design is a tangible asset for graduate school, jobs, and grants — with editorial mentorship along the way.</div>
                 </div>
                 <div class="why-card reveal reveal-delay-4">
-                    <div class="why-card-title">Editorial Freedom</div>
+                    <span class="why-card-num">04</span>
+                    <div class="why-card-title">Editorial freedom</div>
                     <div class="why-card-desc">Pitch the stories you care about. No corporate gatekeepers — just a collaborative editorial process that trusts your curiosity and voice.</div>
                 </div>
                 <div class="why-card reveal reveal-delay-5">
-                    <div class="why-card-title">Work on Real Impact</div>
+                    <span class="why-card-num">05</span>
+                    <div class="why-card-title">Work on real impact</div>
                     <div class="why-card-desc">STEM journalism shapes how the public understands science. At Catalyst, your work contributes to an informed, scientifically literate D.C.</div>
                 </div>
                 <div class="why-card reveal reveal-delay-6">
-                    <div class="why-card-title">Your Work, Your Credit</div>
+                    <span class="why-card-num">06</span>
+                    <div class="why-card-title">Your work, your credit</div>
                     <div class="why-card-desc">Every contributor is credited by name. Your contributions are yours — we're here to amplify your voice, not absorb it.</div>
                 </div>
             </div>
         </section>
 
-        <!-- ═══════ OPEN ROLES ═══════ -->
+        <!-- ═══════ OPEN ROLES (DARK) ═══════ -->
         <section class="roles-section">
             <div class="roles-section-inner">
-                <p class="section-eyebrow reveal">Open Roles</p>
-                <h2 class="section-title reveal reveal-delay-1">Find your place on the team.</h2>
-                <p class="section-sub reveal reveal-delay-2">
-                    Whether you write, design, or organize — there's a role shaped around what you do best.
-                </p>
+                <div class="section-header">
+                    <div class="section-header-left">
+                        <p class="section-eyebrow reveal">Open Roles</p>
+                        <h2 class="section-title reveal reveal-delay-1">Find your place on the <em>team.</em></h2>
+                    </div>
+                    <p class="section-sub reveal reveal-delay-2">
+                        Whether you write, design, or organize — there's a role shaped around what you do best.
+                    </p>
+                </div>
                 <div class="roles-grid">
-                    <div class="role-chip reveal reveal-delay-1" data-open-modal="join-team-modal">
-                        <div class="role-chip-name">Writer</div>
-                        <div class="role-chip-desc">Report, profile, and tell STEM stories that matter</div>
-                    </div>
-                    <div class="role-chip reveal reveal-delay-2" data-open-modal="join-team-modal">
-                        <div class="role-chip-name">Editor</div>
-                        <div class="role-chip-desc">Shape and elevate pitches into polished features</div>
-                    </div>
-                    <div class="role-chip reveal reveal-delay-3" data-open-modal="join-team-modal">
-                        <div class="role-chip-name">Designer</div>
-                        <div class="role-chip-desc">Craft the visual identity of our stories and brand</div>
-                    </div>
-                    <div class="role-chip reveal reveal-delay-4" data-open-modal="join-team-modal">
-                        <div class="role-chip-name">Operations</div>
-                        <div class="role-chip-desc">Keep the machine running — events, logistics, growth</div>
-                    </div>
-                    <div class="role-chip reveal reveal-delay-5" data-open-modal="join-team-modal">
-                        <div class="role-chip-name">Campus Ambassador</div>
-                        <div class="role-chip-desc">Grow Catalyst's presence at your university</div>
-                    </div>
-                    <div class="role-chip reveal reveal-delay-6" data-open-modal="join-team-modal">
-                        <div class="role-chip-name">Other</div>
-                        <div class="role-chip-desc">Have a skill we haven't listed? Let's hear it</div>
-                    </div>
+                    <button type="button" class="role-chip reveal reveal-delay-1" data-open-modal="join-team-modal">
+                        <div class="role-chip-head">
+                            <div class="role-chip-name">Writer</div>
+                            <span class="role-chip-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>
+                        </div>
+                        <div class="role-chip-desc">Pitch features, profiles, and reported essays on the people and ideas shaping STEM in D.C. — and get edited by people who care about your sentences.</div>
+                    </button>
+                    <button type="button" class="role-chip reveal reveal-delay-2" data-open-modal="join-team-modal">
+                        <div class="role-chip-head">
+                            <div class="role-chip-name">Editor</div>
+                            <span class="role-chip-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>
+                        </div>
+                        <div class="role-chip-desc">Shape pitches into publishable features, work line-by-line with writers, and own the standard of clarity, accuracy, and voice across an issue.</div>
+                    </button>
+                    <button type="button" class="role-chip reveal reveal-delay-3" data-open-modal="join-team-modal">
+                        <div class="role-chip-head">
+                            <div class="role-chip-name">Designer</div>
+                            <span class="role-chip-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>
+                        </div>
+                        <div class="role-chip-desc">Direct the look of articles, illustrations, and social — from feature spreads to the Catalyst masthead. Type, layout, and identity work all in scope.</div>
+                    </button>
+                    <button type="button" class="role-chip reveal reveal-delay-4" data-open-modal="join-team-modal">
+                        <div class="role-chip-head">
+                            <div class="role-chip-name">Operations</div>
+                            <span class="role-chip-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>
+                        </div>
+                        <div class="role-chip-desc">Run the machine behind the magazine: event logistics, partnerships, distribution, newsletter ops, and the systems that keep the team shipping on time.</div>
+                    </button>
+                    <button type="button" class="role-chip reveal reveal-delay-5" data-open-modal="join-team-modal">
+                        <div class="role-chip-head">
+                            <div class="role-chip-name">Campus Ambassador</div>
+                            <span class="role-chip-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>
+                        </div>
+                        <div class="role-chip-desc">Be Catalyst on the ground at your university — surface story leads, recruit writers, host campus events, and grow our reach across the D.C. consortium.</div>
+                    </button>
+                    <button type="button" class="role-chip reveal reveal-delay-6" data-open-modal="join-team-modal">
+                        <div class="role-chip-head">
+                            <div class="role-chip-name">Other</div>
+                            <span class="role-chip-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></span>
+                        </div>
+                        <div class="role-chip-desc">Photographer, illustrator, data-viz, podcaster, fact-checker, developer — if you bring a skill that strengthens the magazine, tell us how you'd use it.</div>
+                    </button>
                 </div>
             </div>
         </section>
 
         <!-- ═══════ ACTION CARDS ═══════ -->
         <section class="action-section">
-            <p class="section-eyebrow reveal">Get Involved</p>
-            <h2 class="section-title reveal reveal-delay-1">Ready to contribute?</h2>
-            <p class="section-sub reveal reveal-delay-2">Pick the path that fits — we'll take it from there.</p>
+            <div class="action-section-header">
+                <div class="section-header-left">
+                    <p class="section-eyebrow reveal">Get Involved</p>
+                    <h2 class="section-title reveal reveal-delay-1">Ready to <em>contribute?</em></h2>
+                </div>
+                <p class="section-sub reveal reveal-delay-2">
+                    Pick the path that fits — we'll take it from there. Both are read by editors, never by an algorithm.
+                </p>
+            </div>
             <div class="action-cards">
 
                 <!-- Submit Article Card -->
                 <div class="action-card reveal reveal-delay-1">
-                    <div class="action-card-header" style="padding: 44px 44px 32px; background: linear-gradient(145deg, #f4f3ff 0%, #eef2ff 100%);">
-                        <h2 class="action-card-title">Submit an Article<br>or Opinion</h2>
+                    <div class="action-card-header" data-label="01 · Pitch" style="background: linear-gradient(165deg, #f5f1e8 0%, #ece6d6 100%);">
+                        <h2 class="action-card-title">Submit an article <em>or opinion.</em></h2>
                         <p class="action-card-tagline">Have a story to tell? A perspective that needs a platform? Send us your pitch — our editors read every one.</p>
                     </div>
                     <div class="action-card-body">
                         <div class="action-card-detail">
-                            <div class="action-card-detail-text"><strong>Formats accepted:</strong> DOC, PDF, JPG, MP3, MP4 · Max 40 MB</div>
+                            <span class="action-card-detail-label">Formats</span>
+                            <span class="action-card-detail-text">DOC, PDF, JPG, MP3, MP4 · 40 MB max</span>
                         </div>
                         <div class="action-card-detail">
-                            <div class="action-card-detail-text"><strong>Response time:</strong> We aim to reply within 5–7 business days</div>
+                            <span class="action-card-detail-label">Response</span>
+                            <span class="action-card-detail-text">Editors reply within 5–7 business days</span>
                         </div>
                         <div class="action-card-detail">
-                            <div class="action-card-detail-text"><strong>Submission method:</strong> Google Drive, Dropbox, or any shareable link</div>
+                            <span class="action-card-detail-label">Send via</span>
+                            <span class="action-card-detail-text">Google Drive, Dropbox, or any shareable link</span>
                         </div>
                         <div class="action-card-spacer"></div>
-                        <div class="action-card-divider"></div>
                         <button type="button" class="btn btn-indigo" data-open-modal="proposal-modal">
-                            Send a Proposal
+                            Send a proposal
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </button>
                     </div>
                 </div>
 
                 <!-- Join Team Card -->
                 <div class="action-card reveal reveal-delay-2">
-                    <div class="action-card-header action-card-header-alt" style="padding: 44px 44px 32px;">
-                        <h2 class="action-card-title">Join Our Team</h2>
+                    <div class="action-card-header action-card-header-alt" data-label="02 · Build">
+                        <h2 class="action-card-title">Join the <em>team.</em></h2>
                         <p class="action-card-tagline">We're building something worth being part of. If you're passionate about STEM and great writing, we want to hear from you.</p>
                     </div>
                     <div class="action-card-body">
                         <div class="action-card-detail">
-                            <div class="action-card-detail-text"><strong>Open roles:</strong> Writer, Editor, Designer, Operations, Campus Ambassador</div>
+                            <span class="action-card-detail-label">Open roles</span>
+                            <span class="action-card-detail-text">Writer, Editor, Designer, Operations, Campus Ambassador</span>
                         </div>
                         <div class="action-card-detail">
-                            <div class="action-card-detail-text"><strong>We review every application</strong> — no automatic rejections, no algorithms</div>
+                            <span class="action-card-detail-label">Review</span>
+                            <span class="action-card-detail-text">Every application read by a human — no algorithms</span>
                         </div>
                         <div class="action-card-detail">
-                            <div class="action-card-detail-text"><strong>Submission method:</strong> LinkedIn, Google Drive, or personal portfolio link</div>
+                            <span class="action-card-detail-label">Send via</span>
+                            <span class="action-card-detail-text">LinkedIn, Google Drive, or personal portfolio link</span>
                         </div>
                         <div class="action-card-spacer"></div>
-                        <div class="action-card-divider"></div>
                         <button type="button" class="btn btn-dark" data-open-modal="join-team-modal">
-                            Apply Now
+                            Apply now
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                         </button>
                     </div>
                 </div>
@@ -923,7 +1520,8 @@
                         <textarea id="p-message" name="message" required placeholder="What's the story about, and why are you the right person to tell it?"></textarea>
                     </div>
                     <button type="submit" class="btn btn-indigo">
-                        Submit Proposal
+                        Submit proposal
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </button>
                     <p class="collab-form-status" data-status></p>
                 </form>
@@ -982,8 +1580,9 @@
                         <label for="j-message">Why do you want to join?</label>
                         <textarea id="j-message" name="message" required placeholder="Tell us about yourself and what draws you to The Catalyst."></textarea>
                     </div>
-                    <button type="submit" class="btn btn-dark">
-                        Submit Application
+                    <button type="submit" class="btn btn-indigo">
+                        Submit application
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </button>
                     <p class="collab-form-status" data-status></p>
                 </form>
@@ -994,6 +1593,8 @@
     <script defer src="/js/layout.js"></script>
     <script>
         (function () {
+            const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
             /* ── Scroll reveal ── */
             const revealObserver = new IntersectionObserver((entries) => {
                 entries.forEach((e) => {
@@ -1004,6 +1605,66 @@
                 });
             }, { threshold: 0.1, rootMargin: "0px 0px -40px 0px" });
             document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
+
+            /* ── Hero mouse-tracked spotlight ── */
+            const hero = document.querySelector(".hero");
+            const heroBg = document.getElementById("heroBg");
+            if (hero && heroBg && !prefersReducedMotion && window.matchMedia("(hover: hover)").matches) {
+                let raf = 0;
+                hero.addEventListener("pointermove", (e) => {
+                    if (raf) return;
+                    raf = requestAnimationFrame(() => {
+                        const r = hero.getBoundingClientRect();
+                        const mx = ((e.clientX - r.left) / r.width) * 100;
+                        const my = ((e.clientY - r.top) / r.height) * 100;
+                        heroBg.style.setProperty("--mx", mx + "%");
+                        heroBg.style.setProperty("--my", my + "%");
+                        raf = 0;
+                    });
+                });
+            }
+
+            /* ── Count-up stats ── */
+            const counters = document.querySelectorAll("[data-count]");
+            if (counters.length) {
+                const countObserver = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (!entry.isIntersecting) return;
+                        const el = entry.target;
+                        const target = parseInt(el.getAttribute("data-count"), 10);
+                        const suffix = el.getAttribute("data-suffix") || "";
+                        if (prefersReducedMotion) {
+                            el.innerHTML = target + (suffix ? `<sup>${suffix}</sup>` : "");
+                        } else {
+                            const duration = 1200;
+                            const start = performance.now();
+                            const step = (now) => {
+                                const t = Math.min(1, (now - start) / duration);
+                                // ease-out cubic
+                                const eased = 1 - Math.pow(1 - t, 3);
+                                const value = Math.floor(target * eased);
+                                el.innerHTML = value + (suffix ? `<sup>${suffix}</sup>` : "");
+                                if (t < 1) requestAnimationFrame(step);
+                                else el.innerHTML = target + (suffix ? `<sup>${suffix}</sup>` : "");
+                            };
+                            requestAnimationFrame(step);
+                        }
+                        countObserver.unobserve(el);
+                    });
+                }, { threshold: 0.4 });
+                counters.forEach((c) => countObserver.observe(c));
+            }
+
+            /* ── Role chip cursor glow ── */
+            if (!prefersReducedMotion && window.matchMedia("(hover: hover)").matches) {
+                document.querySelectorAll(".role-chip").forEach((chip) => {
+                    chip.addEventListener("pointermove", (e) => {
+                        const r = chip.getBoundingClientRect();
+                        chip.style.setProperty("--rx", ((e.clientX - r.left) / r.width) * 100 + "%");
+                        chip.style.setProperty("--ry", ((e.clientY - r.top) / r.height) * 100 + "%");
+                    });
+                });
+            }
 
             /* ── Modal helpers ── */
             const openModal = (id) => {
