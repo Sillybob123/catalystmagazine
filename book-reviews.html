@@ -129,8 +129,12 @@
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap">
 
-    <link rel="stylesheet" href="/css/styles.css?v=bookreview-tabs">
-    <link rel="stylesheet" href="/css/book-reviews.css?v=uniform-cards">
+    <!-- Asset version bumped 2026-05-11. Browsers and CDN edges that
+         cached the previous `?v=uniform-cards` URL will treat this as a
+         different file and re-fetch — fixes the stale book-hero + rating
+         slider that some users were still seeing post-deploy. -->
+    <link rel="stylesheet" href="/css/styles.css?v=20260511">
+    <link rel="stylesheet" href="/css/book-reviews.css?v=20260511">
 </head>
 <body data-page="book-reviews">
     <!-- Google Tag Manager (noscript) -->
@@ -641,6 +645,6 @@
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/lqip-manifest.js"></script>
     <script defer src="/js/data.js?v=2"></script>
-    <script defer src="/js/book-reviews.js?v=uniform-cards"></script>
+    <script defer src="/js/book-reviews.js?v=20260511"></script>
 </body>
 </html>

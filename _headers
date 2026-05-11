@@ -15,6 +15,16 @@
 /js/main.js
   Cache-Control: public, max-age=0, must-revalidate
 
+# All CSS and JS bundles revalidate on every request so a cache-busting
+# `?v=` query bump (or a freshly-deployed asset) is picked up by browsers
+# and the Cloudflare edge immediately, instead of waiting hours for the
+# default cache to expire. Cheap because most checks return 304 Not Modified.
+/css/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/js/*
+  Cache-Control: public, max-age=0, must-revalidate
+
 /posts/games/_doodle_template*
   Cache-Control: public, max-age=0, must-revalidate
 

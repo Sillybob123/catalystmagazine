@@ -2051,10 +2051,12 @@ body[data-page="book-reviews"] .header {
     z-index: 1; /* above the .br-rating-slider-stars */
 }
 
-/* WebKit / Blink track — transparent so the stars below read as the
-   "filled" portion. Thumb is a small accent-bordered circle. */
+/* WebKit / Blink — runnable-track is sized to MATCH the visual rail
+   (4px) so the thumb's center auto-aligns with the rail. The whole
+   <input> is 36px tall and absolutely-positioned over the track for
+   a comfortable hit-area; the visible track inside it is only 4px. */
 .br-rating-slider-input::-webkit-slider-runnable-track {
-    height: 100%;
+    height: 4px;
     background: transparent;
     border: 0;
 }
@@ -2067,11 +2069,12 @@ body[data-page="book-reviews"] .header {
     border: 2px solid var(--accent);
     box-shadow: 0 3px 8px -2px rgba(122, 31, 43, .55);
     cursor: grab;
-    margin-top: 0;
+    /* Center the 18px thumb on the 4px track: (4 - 18) / 2 = -7. */
+    margin-top: -7px;
     transition: transform .12s ease, box-shadow .12s ease;
 }
 .br-rating-slider-input::-moz-range-track {
-    height: 100%;
+    height: 4px;
     background: transparent;
     border: 0;
 }
@@ -2082,6 +2085,12 @@ body[data-page="book-reviews"] .header {
     border: 2px solid var(--accent);
     box-shadow: 0 3px 8px -2px rgba(122, 31, 43, .55);
     cursor: grab;
+}
+/* Firefox renders a tiny progress fill from 0 → thumb by default; the
+   stars + rail already convey progress, so hide Firefox's stripe. */
+.br-rating-slider-input::-moz-range-progress {
+    height: 4px;
+    background: transparent;
 }
 .br-rating-slider-input:focus-visible::-webkit-slider-thumb {
     box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
