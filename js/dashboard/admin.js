@@ -763,20 +763,20 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
             <div class="hint">Helps the public page show the right Open Library cover.</div>
           </div>
           <div class="field" style="margin:0;">
-            <label class="label">Rating</label>
-            <select class="select" id="sd-book-rating">
-              <option value="">— None —</option>
-              ${[
-                ["5","★★★★★ 5 — Couldn't put it down"],
-                ["4.5","★★★★½ 4.5"],
-                ["4","★★★★ 4 — Strongly recommend"],
-                ["3.5","★★★½ 3.5"],
-                ["3","★★★ 3 — Solid"],
-                ["2.5","★★½ 2.5"],
-                ["2","★★ 2 — Mixed"],
-                ["1","★ 1 — Skip it"],
-              ].map(([v,l]) => `<option value="${v}" ${v === initialRating ? "selected" : ""}>${l}</option>`).join("")}
-            </select>
+            <label class="label" for="sd-book-rating-input">Rating</label>
+            <div class="brw-rating-slider" id="sd-book-rating-slider" data-value="0" role="group" aria-label="Rating, on a 0 to 5 scale">
+              <div class="brw-rating-slider-track" aria-hidden="true">
+                <input type="range" class="brw-rating-slider-input" id="sd-book-rating-input"
+                       min="0" max="5" step="0.1" value="0" aria-label="Slide to set rating">
+                <div class="brw-rating-slider-stars">
+                  <div class="brw-rating-slider-stars-base"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+                  <div class="brw-rating-slider-stars-fill"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+                </div>
+              </div>
+              <div class="brw-rating-slider-value">— None —</div>
+            </div>
+            <span class="hint brw-rating-slider-flavor">Drag to set a rating from 0 to 5. Optional.</span>
+            <input type="hidden" id="sd-book-rating" value="${escAttr(initialRating)}">
           </div>
         </div>
         <div class="field" style="margin:10px 0 0;">
@@ -928,6 +928,12 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       }
     });
   }
+
+  // Rating slider — same widget as the writer composer. The save handler
+  // reads the hidden #sd-book-rating input, so wiring is just: drive the
+  // range input from the initial value, keep the hidden mirror in sync,
+  // and paint the stars/flavor as the admin drags.
+  wireAdminRatingSlider(body, initialRating);
 
   // Auto-fill the slug from the title until the admin edits the slug by hand.
   // Once they type in the slug field we stop overwriting it.
@@ -1133,6 +1139,57 @@ function toDatetimeLocal(v) {
 }
 
 function escAttr(s) { return esc(s); }
+
+// Wires the rating slider inside the story editor modal. Same widget as
+// the writer composer (.brw-rating-slider-*), but the hidden mirror is
+// #sd-book-rating so the existing save patch in saveDetails() reads
+// .value off it unchanged. Accepts the initial rating ("4.5" or "") so
+// the slider lands on the saved value when the modal opens.
+function wireAdminRatingSlider(body, initialRating) {
+  const root    = body.querySelector("#sd-book-rating-slider");
+  const input   = body.querySelector("#sd-book-rating-input");
+  const valueEl = body.querySelector(".brw-rating-slider-value");
+  const flavor  = body.querySelector(".brw-rating-slider-flavor");
+  const hidden  = body.querySelector("#sd-book-rating");
+  if (!root || !input || !hidden) return;
+
+  const FLAVORS = [
+    { min: 4.7, label: "Couldn't put it down" },
+    { min: 4.0, label: "Strongly recommend" },
+    { min: 3.5, label: "Very good" },
+    { min: 2.8, label: "Solid" },
+    { min: 2.0, label: "Mixed" },
+    { min: 1.0, label: "Disappointing" },
+    { min: 0.1, label: "Skip it" },
+  ];
+  const flavorFor = (n) => {
+    if (!Number.isFinite(n) || n <= 0) return "";
+    for (const f of FLAVORS) if (n >= f.min) return f.label;
+    return "";
+  };
+
+  const render = () => {
+    const raw = parseFloat(input.value);
+    const n = Number.isFinite(raw) ? Math.round(raw * 10) / 10 : 0;
+    const pct = Math.max(0, Math.min(100, (n / 5) * 100));
+    root.style.setProperty("--brw-pct", String(pct));
+    root.dataset.value = n > 0 ? String(n) : "0";
+    if (valueEl) {
+      if (n > 0) valueEl.innerHTML = `${n.toFixed(1)}<small>/ 5</small>`;
+      else valueEl.textContent = "— None —";
+    }
+    if (flavor) flavor.textContent = flavorFor(n) || "Drag to set a rating from 0 to 5. Optional.";
+    hidden.value = n > 0 ? n.toFixed(1) : "";
+  };
+
+  input.addEventListener("input", render);
+  input.addEventListener("change", render);
+
+  // Seed from the saved rating, if any.
+  const seed = Number(initialRating);
+  if (Number.isFinite(seed) && seed >= 0 && seed <= 5) input.value = String(seed);
+  render();
+}
 
 // Shown after an admin presses Approve. Hands the admin the shareable URL
 // they need to paste into an email/Slack to the writer. The writer (or the
