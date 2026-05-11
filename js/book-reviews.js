@@ -19,10 +19,9 @@
     const feedEl       = document.getElementById('br-feed');
     const emptyEl      = document.getElementById('br-empty');
     const loadMoreBtn  = document.getElementById('br-loadmore');
-    const pillGroup    = document.querySelector('.br-pill-group');
-    const pillIndicator= document.getElementById('br-pill-indicator');
-    const pills        = Array.from(document.querySelectorAll('.br-pill'));
     const searchInput  = document.getElementById('br-search-input');
+    const searchClear  = document.getElementById('br-search-clear');
+    const railGenreEl  = document.getElementById('br-rail-genre-select');
     const statCount    = document.getElementById('br-stat-count');
     const statGenres   = document.getElementById('br-stat-genres');
     const statLatest   = document.getElementById('br-stat-latest');
@@ -1000,22 +999,11 @@
         els.forEach(e => io.observe(e));
     }
 
-    // ---------- Pill indicator ----------
-    function movePillIndicator() {
-        const active = pillGroup?.querySelector('.br-pill[aria-selected="true"]');
-        if (!active || !pillIndicator) return;
-        const groupRect = pillGroup.getBoundingClientRect();
-        const rect = active.getBoundingClientRect();
-        pillIndicator.style.width = `${rect.width}px`;
-        pillIndicator.style.transform = `translateX(${rect.left - groupRect.left - 4}px)`;
-    }
     function setGenre(g) {
-        currentGenre = g;
-        pills.forEach(p => {
-            const is = p.dataset.genre === g;
-            p.setAttribute('aria-selected', is ? 'true' : 'false');
-        });
-        movePillIndicator();
+        currentGenre = (g || 'all').toLowerCase();
+        if (railGenreEl && railGenreEl.value !== currentGenre) {
+            railGenreEl.value = currentGenre;
+        }
         renderFeed(true);
     }
 
@@ -1039,20 +1027,36 @@
 
     // ---------- Wiring ----------
     function bindEvents() {
-        pills.forEach(p => p.addEventListener('click', () => setGenre(p.dataset.genre)));
+        if (railGenreEl) {
+            railGenreEl.addEventListener('change', (e) => {
+                setGenre(e.target.value || 'all');
+            });
+        }
 
         if (searchInput) {
             let t = null;
+            const apply = (val) => {
+                currentQuery = val || '';
+                if (searchClear) searchClear.hidden = !currentQuery;
+                renderFeed(true);
+            };
             searchInput.addEventListener('input', e => {
                 clearTimeout(t);
-                t = setTimeout(() => {
-                    currentQuery = e.target.value || '';
-                    renderFeed(true);
-                }, 120);
+                t = setTimeout(() => apply(e.target.value), 120);
+            });
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && searchInput.value) {
+                    searchInput.value = '';
+                    apply('');
+                }
+            });
+            searchClear?.addEventListener('click', () => {
+                searchInput.value = '';
+                apply('');
+                searchInput.focus();
             });
         }
         loadMoreBtn?.addEventListener('click', () => renderFeed(false));
-        window.addEventListener('resize', movePillIndicator);
 
         bindCommunitySearch();
         bindCommunityLoadMore();
@@ -1083,7 +1087,6 @@
         paintStats(combined);
         renderFeed(true);
         renderCommunityFeed();
-        requestAnimationFrame(movePillIndicator);
     }
 
     function kickFirestore() {

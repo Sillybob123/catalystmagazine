@@ -44,7 +44,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap">
 
     <link rel="stylesheet" href="/css/styles.css?v=cover2">
-    <link rel="stylesheet" href="/css/book-reviews.css?v=4">
+    <link rel="stylesheet" href="/css/book-reviews.css?v=5">
 </head>
 <body data-page="book-reviews">
     <!-- Google Tag Manager (noscript) -->
@@ -132,30 +132,42 @@
         </section>
 
         <!-- ============================================================
-             FILTER RAIL — sticky genre + search
+             FILTER RAIL — search + discipline dropdown
+             Mirrors the Catalyzers toolbar below for visual consistency.
              ============================================================ -->
         <div class="br-rail-wrap">
             <div class="br-container">
-                <div class="br-rail">
-                    <label class="br-rail-search">
+                <div class="br-rail" role="search">
+                    <label class="br-community-search br-rail-search">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <circle cx="11" cy="11" r="8"/>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                         </svg>
-                        <input type="search" id="br-search-input" placeholder="Search reviews…" autocomplete="off" spellcheck="false" aria-label="Search book reviews">
+                        <input type="search" id="br-search-input" placeholder="Search reviews by book, author, or reviewer…" autocomplete="off" spellcheck="false" aria-label="Search book reviews">
+                        <button type="button" class="br-community-search-clear" id="br-search-clear" aria-label="Clear search" hidden>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
                     </label>
 
-                    <div class="br-pill-group" role="tablist" aria-label="Filter reviews by discipline">
-                        <span class="br-pill-indicator" id="br-pill-indicator" aria-hidden="true"></span>
-                        <button class="br-pill" data-genre="all" role="tab" aria-selected="true">All</button>
-                        <button class="br-pill" data-genre="astronomy" role="tab" aria-selected="false">Astronomy</button>
-                        <button class="br-pill" data-genre="biology" role="tab" aria-selected="false">Biology</button>
-                        <button class="br-pill" data-genre="computer-science" role="tab" aria-selected="false">Computer Science</button>
-                        <button class="br-pill" data-genre="physics" role="tab" aria-selected="false">Physics</button>
-                        <button class="br-pill" data-genre="mathematics" role="tab" aria-selected="false">Mathematics</button>
-                        <button class="br-pill" data-genre="climate" role="tab" aria-selected="false">Climate</button>
-                        <button class="br-pill" data-genre="memoir" role="tab" aria-selected="false">Memoir</button>
-                    </div>
+                    <label class="br-community-filter br-rail-filter">
+                        <span class="br-community-filter-label">Shelf</span>
+                        <select id="br-rail-genre-select" aria-label="Filter reviews by discipline">
+                            <option value="all">All disciplines</option>
+                            <option value="astronomy">Astronomy</option>
+                            <option value="biology">Biology</option>
+                            <option value="computer-science">Computer Science</option>
+                            <option value="physics">Physics</option>
+                            <option value="mathematics">Mathematics</option>
+                            <option value="climate">Climate</option>
+                            <option value="memoir">Memoir</option>
+                        </select>
+                        <svg class="br-community-filter-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </label>
                 </div>
             </div>
         </div>
@@ -470,6 +482,6 @@
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/lqip-manifest.js"></script>
     <script defer src="/js/data.js?v=2"></script>
-    <script defer src="/js/book-reviews.js?v=4"></script>
+    <script defer src="/js/book-reviews.js?v=5"></script>
 </body>
 </html>
