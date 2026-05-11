@@ -109,17 +109,16 @@
             -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 80%);
             opacity: 0.55;
         }
-        /* Mouse-tracked spotlight */
+        /* Static warm highlight (cheaper than mouse-tracked spotlight) */
         .hero-bg::after {
             content: '';
             position: absolute;
             inset: 0;
             background: radial-gradient(
-                600px circle at var(--mx, 50%) var(--my, 40%),
-                rgba(15,23,42,0.07) 0%,
-                transparent 60%
+                700px circle at 50% 30%,
+                rgba(15,23,42,0.05) 0%,
+                transparent 65%
             );
-            transition: background 200ms var(--ease-out);
         }
         .hero-inner {
             position: relative;
@@ -363,20 +362,34 @@
         .marquee-viewport {
             position: relative;
             overflow: hidden;
-            mask-image: linear-gradient(90deg,
-                transparent 0%,
-                rgba(0,0,0,0.4) 6%,
-                #000 18%,
-                #000 70%,
-                rgba(0,0,0,0.4) 90%,
-                transparent 100%);
-            -webkit-mask-image: linear-gradient(90deg,
-                transparent 0%,
-                rgba(0,0,0,0.4) 6%,
-                #000 18%,
-                #000 70%,
-                rgba(0,0,0,0.4) 90%,
-                transparent 100%);
+        }
+        .marquee-viewport::before,
+        .marquee-viewport::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 140px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .marquee-viewport::before {
+            left: 0;
+            background: linear-gradient(
+                to right,
+                var(--surface-warm) 0%,
+                rgba(250, 248, 244, 0.85) 30%,
+                rgba(250, 248, 244, 0.0) 100%
+            );
+        }
+        .marquee-viewport::after {
+            right: 0;
+            background: linear-gradient(
+                to left,
+                var(--surface-warm) 0%,
+                rgba(250, 248, 244, 0.85) 30%,
+                rgba(250, 248, 244, 0.0) 100%
+            );
         }
         .marquee-track {
             display: flex;
@@ -384,6 +397,8 @@
             width: max-content;
             animation: marqueeScroll 38s linear infinite;
             align-items: center;
+            will-change: transform;
+            backface-visibility: hidden;
         }
         .marquee-viewport:hover .marquee-track {
             animation-play-state: paused;
@@ -1232,7 +1247,7 @@
 
         <!-- ═══════ HERO ═══════ -->
         <section class="hero">
-            <div class="hero-bg" id="heroBg"></div>
+            <div class="hero-bg"></div>
             <div class="hero-inner">
                 <div class="hero-badge reveal">
                     <span class="hero-badge-dot" aria-hidden="true"></span>
@@ -1619,25 +1634,7 @@
             }, { threshold: 0.1, rootMargin: "0px 0px -40px 0px" });
             document.querySelectorAll(".reveal").forEach((el) => revealObserver.observe(el));
 
-            /* ── Hero mouse-tracked spotlight ── */
-            const hero = document.querySelector(".hero");
-            const heroBg = document.getElementById("heroBg");
-            if (hero && heroBg && !prefersReducedMotion && window.matchMedia("(hover: hover)").matches) {
-                let raf = 0;
-                hero.addEventListener("pointermove", (e) => {
-                    if (raf) return;
-                    raf = requestAnimationFrame(() => {
-                        const r = hero.getBoundingClientRect();
-                        const mx = ((e.clientX - r.left) / r.width) * 100;
-                        const my = ((e.clientY - r.top) / r.height) * 100;
-                        heroBg.style.setProperty("--mx", mx + "%");
-                        heroBg.style.setProperty("--my", my + "%");
-                        raf = 0;
-                    });
-                });
-            }
-
-            /* ── Count-up stats ── */
+/* ── Count-up stats ── */
             const counters = document.querySelectorAll("[data-count]");
             if (counters.length) {
                 const countObserver = new IntersectionObserver((entries) => {
@@ -1668,13 +1665,21 @@
                 counters.forEach((c) => countObserver.observe(c));
             }
 
-            /* ── Role chip cursor glow ── */
+            /* ── Role chip cursor glow (throttled to 1 update per frame) ── */
             if (!prefersReducedMotion && window.matchMedia("(hover: hover)").matches) {
                 document.querySelectorAll(".role-chip").forEach((chip) => {
+                    let raf = 0;
+                    let pendingX = 0, pendingY = 0;
                     chip.addEventListener("pointermove", (e) => {
                         const r = chip.getBoundingClientRect();
-                        chip.style.setProperty("--rx", ((e.clientX - r.left) / r.width) * 100 + "%");
-                        chip.style.setProperty("--ry", ((e.clientY - r.top) / r.height) * 100 + "%");
+                        pendingX = ((e.clientX - r.left) / r.width) * 100;
+                        pendingY = ((e.clientY - r.top) / r.height) * 100;
+                        if (raf) return;
+                        raf = requestAnimationFrame(() => {
+                            chip.style.setProperty("--rx", pendingX + "%");
+                            chip.style.setProperty("--ry", pendingY + "%");
+                            raf = 0;
+                        });
                     });
                 });
             }
