@@ -780,6 +780,124 @@
             communityShown = COMMUNITY_PAGE_SIZE;
             renderCommunityFeed();
         });
+        enhanceShelfSelect(communityGenreEl);
+    }
+
+    // ---------- Custom dropdown for the Shelf selects ----------
+    // Wraps a native <select> with a styled menu so the dropdown panel
+    // matches the rest of the page. The native <select> stays mounted
+    // (kept in sync via .value) so form semantics + screen readers
+    // still work, and we re-emit a 'change' event on it whenever the
+    // user picks an option from the custom menu.
+    function enhanceShelfSelect(selectEl) {
+        if (!selectEl || selectEl.dataset.enhanced === 'true') return;
+        const wrapper = selectEl.closest('.br-community-filter');
+        if (!wrapper) return;
+
+        wrapper.dataset.enhanced = 'true';
+        selectEl.setAttribute('tabindex', '-1');
+
+        // Build the custom menu from the <option>s currently in the DOM.
+        const menu = document.createElement('div');
+        menu.className = 'br-shelf-menu';
+        menu.setAttribute('role', 'listbox');
+        menu.setAttribute('aria-label', selectEl.getAttribute('aria-label') || 'Choose a shelf');
+        menu.hidden = true;
+
+        const checkSvg = `<svg class="br-shelf-option-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+        const options = Array.from(selectEl.options);
+        const buttons = options.map((opt) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'br-shelf-option';
+            btn.setAttribute('role', 'option');
+            btn.dataset.value = opt.value;
+            btn.innerHTML = `<span>${opt.textContent}</span>${checkSvg}`;
+            btn.addEventListener('click', () => {
+                selectEl.value = opt.value;
+                selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                refreshSelected();
+                close();
+                // Move focus back to the trigger so keyboard users keep flow.
+                triggerArea.focus();
+            });
+            return btn;
+        });
+        buttons.forEach((b) => menu.appendChild(b));
+        wrapper.appendChild(menu);
+
+        // The clickable trigger zone — entire wrapper minus the menu.
+        // We use a focusable element so keyboard users can open it with
+        // Enter/Space. The wrapper itself is a <label>, but we don't
+        // want clicking the label to bubble into native-select-open,
+        // so we attach a separate button-like span that intercepts.
+        const triggerArea = document.createElement('span');
+        triggerArea.className = 'br-community-filter-trigger';
+        triggerArea.setAttribute('role', 'combobox');
+        triggerArea.setAttribute('aria-haspopup', 'listbox');
+        triggerArea.setAttribute('aria-expanded', 'false');
+        triggerArea.setAttribute('tabindex', '0');
+        triggerArea.style.cssText =
+            'position:absolute;inset:0;border-radius:inherit;outline:none;cursor:pointer;';
+        wrapper.appendChild(triggerArea);
+
+        function refreshSelected() {
+            buttons.forEach((b) => {
+                b.setAttribute('aria-selected', b.dataset.value === selectEl.value ? 'true' : 'false');
+            });
+        }
+        function open() {
+            menu.hidden = false;
+            requestAnimationFrame(() => {
+                menu.dataset.open = 'true';
+                wrapper.dataset.open = 'true';
+                triggerArea.setAttribute('aria-expanded', 'true');
+            });
+            document.addEventListener('mousedown', onDocDown, true);
+            document.addEventListener('keydown', onKeyDown);
+            // Focus the currently-selected option so keyboard arrows work.
+            const active = buttons.find((b) => b.dataset.value === selectEl.value) || buttons[0];
+            active?.focus();
+        }
+        function close() {
+            menu.dataset.open = 'false';
+            wrapper.dataset.open = 'false';
+            triggerArea.setAttribute('aria-expanded', 'false');
+            // Match the transition duration before hiding so animation plays.
+            setTimeout(() => { if (menu.dataset.open !== 'true') menu.hidden = true; }, 200);
+            document.removeEventListener('mousedown', onDocDown, true);
+            document.removeEventListener('keydown', onKeyDown);
+        }
+        function toggle() {
+            if (menu.dataset.open === 'true') close();
+            else open();
+        }
+        function onDocDown(e) {
+            if (!wrapper.contains(e.target)) close();
+        }
+        function onKeyDown(e) {
+            if (e.key === 'Escape') { e.preventDefault(); close(); triggerArea.focus(); return; }
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const i = buttons.indexOf(document.activeElement);
+                const next = (i + (e.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+                buttons[next]?.focus();
+            }
+        }
+
+        triggerArea.addEventListener('click', toggle);
+        triggerArea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                open();
+            }
+        });
+
+        // Initialize selected state, and keep buttons in sync if the
+        // native select is mutated elsewhere (e.g., setGenre()).
+        refreshSelected();
+        selectEl.addEventListener('change', refreshSelected);
     }
 
     // ---------- Filtering & paging ----------

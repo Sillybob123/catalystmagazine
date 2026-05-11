@@ -76,9 +76,37 @@ async function mountArticles(ctx, container) {
   load();
 }
 
+function categoryKey(category = "") {
+  return String(category || "").trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+function normalizeStoryCategory(category = "") {
+  const raw = String(category || "").trim();
+  const key = categoryKey(raw);
+  if (key === "book-review" || key === "bookreview") return "book-review";
+  return raw || "Feature";
+}
+
+function formatStoryCategory(category = "") {
+  const key = categoryKey(category);
+  const labels = {
+    "feature": "Feature",
+    "profile": "Profile",
+    "interview": "Interview",
+    "op-ed": "Op-Ed",
+    "oped": "Op-Ed",
+    "editorial": "Editorial",
+    "news": "News",
+    "science": "Science",
+    "book-review": "Book Review",
+    "bookreview": "Book Review",
+  };
+  return labels[key] || (category || "Feature").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function renderRow(a, editors, ctx, reload) {
   const tr = el("div", { class: "ar-row" });
-  const categoryLabel = esc((a.category || "Feature").replace(/\b\w/g, (c) => c.toUpperCase()));
+  const categoryLabel = esc(formatStoryCategory(a.category));
   const editorSelect = `<select class="select ar-editor-select" data-action="assign-editor" data-id="${esc(a.id)}">
       <option value="">— Unassigned —</option>
       ${editors.map((e) => `<option value="${esc(e.id)}" ${e.id === a.editorId ? "selected" : ""}>${esc(e.name || e.email)}</option>`).join("")}
@@ -670,10 +698,11 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
             { v: "Op-Ed",       l: "Op-Ed" },
             { v: "News",        l: "News" },
             { v: "Science",     l: "Science" },
-            { v: "book-review", l: "Book review" },
+            { v: "book-review", l: "Book Review" },
           ].map(c =>
-            `<option value="${c.v}" ${c.v === (story.category || "Feature") ? "selected" : ""}>${c.l}</option>`).join("")}
+            `<option value="${c.v}" ${categoryKey(c.v) === categoryKey(story.category || "Feature") ? "selected" : ""}>${c.l}</option>`).join("")}
         </select>
+        <div class="hint">Book Review stories appear on /book-reviews and are hidden from the home page and main Articles index.</div>
       </div>
     </div>
     <div class="grid grid-2">
@@ -724,7 +753,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       <summary style="cursor:pointer;font-weight:600;color:var(--ink-2);padding:8px 0;">Advanced: edit body HTML</summary>
       <div class="field" style="margin-top:8px;">
         <label class="label">Body (HTML)</label>
-        <textarea class="textarea" id="sd-body" rows="10" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">${esc(story.body || "")}</textarea>
+        <textarea class="textarea" id="sd-body" rows="10" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">${esc(story.body || story.content || story.reviewText || "")}</textarea>
         <div class="hint">Full rewrite of the article body. Use the review surface for inline edits; this is for post-publish corrections.</div>
       </div>
     </details>
@@ -880,7 +909,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     const patch = {
       title: body.querySelector("#sd-title").value.trim(),
       status,
-      category: body.querySelector("#sd-category").value,
+      category: normalizeStoryCategory(body.querySelector("#sd-category").value),
       slug: (body.querySelector("#sd-slug").value.trim() || slugify(body.querySelector("#sd-title").value.trim())) || null,
       coverImage: body.querySelector("#sd-cover").value.trim(),
       lightCover: !!body.querySelector("#sd-light-cover")?.checked,

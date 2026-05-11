@@ -1151,7 +1151,7 @@ function initArticleDetailPage(data) {
         }
         if (!article) {
             const slug = decodeURIComponent(pathSlug).toLowerCase();
-            article = data.find(a => titleToSlug(a.title) === slug);
+            article = data.find(a => String(a.slug || '').toLowerCase() === slug || slugKey(a.link || a.url || '') === slug || titleToSlug(a.title) === slug);
         }
     } else if (rawId) {
         article = data.find(a => String(a.id) === String(rawId));
@@ -1324,14 +1324,14 @@ function renderArticleDetail(article) {
     // Book reviews get their own dedicated template — different layout,
     // big cover, rating spread, book-metadata header. Keeps reviews from
     // looking like every other Catalyst article.
-    if ((article.category || '').toLowerCase() === 'book-review') {
+    if (isBookReview(article)) {
         return renderBookReviewDetail(article, container);
     }
 
     // --- Meta tags + page title -------------------------------------------
     document.title = `${article.title} | The Catalyst Magazine`;
 
-    const articleUrl = `${window.location.origin}/article/${encodeURIComponent(titleToSlug(article.title))}`;
+    const articleUrl = `${window.location.origin}/article/${encodeURIComponent(article.slug || titleToSlug(article.title))}`;
     const articleImage = /^https?:\/\//i.test(article.image || '')
         ? article.image
         : `${window.location.origin}/${(article.image || 'NewLogoShape.png').replace(/^\/+/, '')}`;
@@ -1442,10 +1442,11 @@ function renderBookReviewDetail(article, container) {
 
     // --- Meta tags ---
     document.title = `${article.title} | The Catalyst Book Reviews`;
-    const articleUrl = `${window.location.origin}/article/${encodeURIComponent(titleToSlug(article.title))}`;
-    const articleImage = /^https?:\/\//i.test(article.image || '')
-        ? article.image
-        : `${window.location.origin}/${(article.image || 'NewLogoShape.png').replace(/^\/+/, '')}`;
+    const articleUrl = `${window.location.origin}/article/${encodeURIComponent(article.slug || titleToSlug(article.title))}`;
+    const socialImage = getBookReviewCover(article);
+    const articleImage = /^https?:\/\//i.test(socialImage || '')
+        ? socialImage
+        : `${window.location.origin}/${(socialImage || 'NewLogoShape.png').replace(/^\/+/, '')}`;
     const articleDescription = article.excerpt || article.deck || `A book review by ${article.author || 'The Catalyst'}.`;
     document.getElementById('meta-description')?.setAttribute('content', articleDescription);
     document.getElementById('meta-og-url')?.setAttribute('content', articleUrl);
@@ -1507,8 +1508,11 @@ function renderBookReviewDetail(article, container) {
         return map[g] || '';
     })();
 
+    const coverSrc = getBookReviewCover(article);
+    const coverFallback = getUploadedReviewCover(article) || ARTICLE_FALLBACK_IMAGE;
+
     container.innerHTML = `
-        <article class="brx" data-has-cover="${article.image ? 'true' : 'false'}">
+        <article class="brx" data-has-cover="${coverSrc !== ARTICLE_FALLBACK_IMAGE ? 'true' : 'false'}">
             <header class="brx-hero">
                 <div class="brx-hero-inner">
                     <div class="brx-hero-meta">
@@ -1558,11 +1562,10 @@ function renderBookReviewDetail(article, container) {
                     <div class="brx-cover">
                         <img class="brx-cover-img"
                              alt="Cover of ${escapeHtmlAttr(article.title)}"
-                             src="${escapeHtmlAttr(getBookReviewCover(article))}"
+                             src="${escapeHtmlAttr(coverSrc)}"
+                             data-fallback-src="${escapeHtmlAttr(coverFallback)}"
                              loading="eager"
-                             fetchpriority="high"
-                             onload="this.classList.add('loaded')"
-                             onerror="this.classList.add('failed')">
+                             fetchpriority="high">
                         <div class="brx-cover-shadow" aria-hidden="true"></div>
                     </div>
                 </aside>
@@ -1645,6 +1648,7 @@ function renderBookReviewDetail(article, container) {
         </article>
     `;
 
+    mountBookReviewCoverFallback(container);
     mountReadingProgress();
 
     // ── Cover upgrade pass ──
@@ -1666,6 +1670,36 @@ function renderBookReviewDetail(article, container) {
             container.querySelector('.brx')?.setAttribute('data-has-cover', 'true');
         });
     }
+}
+
+function mountBookReviewCoverFallback(container) {
+    const img = container.querySelector('.brx-cover-img');
+    if (!img) return;
+    const fallback = img.dataset.fallbackSrc || ARTICLE_FALLBACK_IMAGE;
+    let fallbackApplied = false;
+    const useFallback = () => {
+        if (fallbackApplied) {
+            img.classList.add('failed');
+            return;
+        }
+        fallbackApplied = true;
+        img.src = fallback;
+        if (fallback === ARTICLE_FALLBACK_IMAGE) img.classList.add('failed');
+    };
+    const markLoadedOrFallback = () => {
+        // Open Library's default=false can still yield a tiny placeholder in
+        // some edge cases. Treat that as "no ISBN cover" and fall back to the
+        // uploaded/admin cover.
+        if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
+            useFallback();
+            return;
+        }
+        img.classList.remove('failed');
+        img.classList.add('loaded');
+    };
+    img.addEventListener('load', markLoadedOrFallback);
+    img.addEventListener('error', useFallback);
+    if (img.complete) markLoadedOrFallback();
 }
 
 // Promote standalone quoted paragraphs in a review body into <blockquote>
@@ -1705,16 +1739,21 @@ function promotePullquotes(html) {
 }
 
 // Pick the best initial cover URL for the book-review template.
-// Priority: stored article.image (may be high-res Google URL the
-// writer saved at compose time) > Open Library ISBN (instant, no JSON
-// roundtrip) > generic fallback. A second pass after paint may upgrade
-// to the Google Books high-res scan.
+// Priority: ISBN-derived cover first (Open Library instantly, upgraded to
+// Google Books after paint) > uploaded/admin cover > generic fallback.
 function getBookReviewCover(article) {
-    if (article.image && article.image !== ARTICLE_FALLBACK_IMAGE) return article.image;
     if (article.isbn) {
         const u = openLibraryCoverUrl(article.isbn, 'L');
         if (u) return u;
     }
+    const uploaded = getUploadedReviewCover(article);
+    if (uploaded) return uploaded;
+    return ARTICLE_FALLBACK_IMAGE;
+}
+
+function getUploadedReviewCover(article) {
+    const candidate = article.image || article.coverImage || '';
+    if (candidate && candidate !== ARTICLE_FALLBACK_IMAGE) return candidate;
     return ARTICLE_FALLBACK_IMAGE;
 }
 
@@ -2461,6 +2500,7 @@ function firestoreDocToArticle(doc) {
     if (!title) return null;
 
     const category = (str('category') || 'feature').toLowerCase().replace(/\s+/g, '-');
+    const slug = str('slug') || titleToSlug(title);
     // Book-review submissions used to be stored under `reviewText`; the
     // newer pipeline writes them as `content`. Fall through any of the
     // three so older approved reviews still render with their full body.
@@ -2501,8 +2541,9 @@ function firestoreDocToArticle(doc) {
         author: str('authorName') || str('author') || 'The Catalyst',
         date: dateStr,
         image,
-        link: `/article/${encodeURIComponent(titleToSlug(title))}`,
-        url: `/article/${encodeURIComponent(titleToSlug(title))}`,
+        slug,
+        link: `/article/${encodeURIComponent(slug)}`,
+        url: `/article/${encodeURIComponent(slug)}`,
         category,
         tags: arr('tags'),
         excerpt,

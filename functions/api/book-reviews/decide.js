@@ -139,6 +139,7 @@ export const onRequestPost = async ({ request, env }) => {
       deck: dek,
       dek,
       content: reviewBodyHtml,
+      body: reviewBodyHtml,
       rating: (typeof sub.rating === "number" && sub.rating >= 1 && sub.rating <= 5) ? sub.rating : null,
       isbn: String(sub.isbn || "").slice(0, 32),
       bookAuthor: String(sub.bookAuthor || "").slice(0, 200),

@@ -429,6 +429,9 @@ function formatCategory(category) {
     "editorial": "Editorial",
     "article": "Feature",
     "news": "News",
+    "science": "Science",
+    "book-review": "Book Review",
+    "bookreview": "Book Review",
   };
   if (!category) return "Feature";
   return map[category] || category.charAt(0).toUpperCase() + category.slice(1);

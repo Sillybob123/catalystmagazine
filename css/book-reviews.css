@@ -1005,15 +1005,18 @@ body[data-page="book-reviews"] .header {
     outline-offset: 4px;
 }
 
-/* Stats strip: editorial key/value pairs separated by a hairline */
+/* Stats strip: editorial key/value pairs separated by a hairline. The
+   second column has to fit "MOST-LOVED SHELF" (≈18ch with letter-
+   spacing), so we give the whole strip a roomier max-width and let
+   each cell keep generous inline padding. */
 .br-community-stats {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(140px, auto) minmax(180px, auto);
     gap: 0;
     margin: 0;
     padding: 0;
     width: 100%;
-    max-width: 320px;
+    max-width: 420px;
     background: var(--paper);
     border: 1px solid var(--paper-line);
     border-radius: 14px;
@@ -1023,9 +1026,12 @@ body[data-page="book-reviews"] .header {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 14px 22px;
+    padding: 16px 26px;
+    min-width: 0;
 }
-.br-community-stats > div:last-child { padding-right: 26px; }
+.br-community-stats > div:last-child {
+    padding-right: 30px;
+}
 .br-community-stats > div + div {
     border-left: 1px solid var(--paper-line);
 }
@@ -1135,20 +1141,29 @@ body[data-page="book-reviews"] .header {
 }
 
 /* Discipline filter — sits beside the search bar so readers can narrow
-   by shelf. Native <select> with a label + custom caret. */
+   by shelf. Trigger is the styled "pill"; the menu below is a custom
+   one rendered by JS (br-shelf-menu) because native <option> styling
+   is locked down by the OS and looks rough next to the rest of the UI. */
 .br-community-filter {
     position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     background: var(--paper);
     border: 1px solid var(--paper-line);
     border-radius: 999px;
-    padding: 6px 18px 6px 22px;
+    padding: 6px 16px 6px 22px;
     cursor: pointer;
-    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease, transform .15s ease;
+    user-select: none;
 }
-.br-community-filter:focus-within {
+.br-community-filter:hover {
+    background: #fff;
+    border-color: var(--paper-line);
+    transform: translateY(-1px);
+}
+.br-community-filter:focus-within,
+.br-community-filter[data-open="true"] {
     border-color: var(--accent);
     box-shadow: 0 0 0 4px rgba(122,31,43,.12);
     background: #fff;
@@ -1167,7 +1182,7 @@ body[data-page="book-reviews"] .header {
     -moz-appearance: none;
     background: transparent;
     border: 0;
-    padding: 12px 26px 12px 0;
+    padding: 12px 28px 12px 0;
     font: inherit;
     font-size: 14.5px;
     font-weight: 600;
@@ -1176,8 +1191,20 @@ body[data-page="book-reviews"] .header {
     cursor: pointer;
     /* No native dropdown arrow — we draw our own caret below. */
     background-image: none;
+    /* When the custom menu is active, hide the native one but keep the
+       <select> focusable for keyboard users + form a11y semantics. */
 }
 .br-community-filter select:focus { outline: none; }
+.br-community-filter select::-ms-expand { display: none; }
+
+/* When JS is enabled, we render a custom menu and route clicks through
+   the wrapper, so the native dropdown should never actually open. The
+   pointer-events:none on the select keeps clicks falling through to the
+   wrapper handler; the select stays focusable via the custom trigger. */
+.br-community-filter[data-enhanced="true"] select {
+    pointer-events: none;
+}
+
 .br-community-filter-caret {
     position: absolute;
     right: 18px;
@@ -1185,11 +1212,85 @@ body[data-page="book-reviews"] .header {
     transform: translateY(-50%);
     color: var(--text-sub);
     pointer-events: none;
-    transition: transform .2s ease, color .2s ease;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), color .2s ease;
 }
-.br-community-filter:focus-within .br-community-filter-caret {
+.br-community-filter:focus-within .br-community-filter-caret,
+.br-community-filter[data-open="true"] .br-community-filter-caret {
     color: var(--accent);
     transform: translateY(-50%) rotate(-180deg);
+}
+
+/* Custom dropdown menu — replaces the native <option> list. Animates
+   in with a soft scale + fade, and respects prefers-reduced-motion. */
+.br-shelf-menu {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 240px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow:
+        0 1px 2px rgba(15,23,42,.04),
+        0 20px 40px -16px rgba(15,23,42,.18);
+    transform-origin: top right;
+    opacity: 0;
+    transform: scale(.96) translateY(-4px);
+    pointer-events: none;
+    transition: opacity .18s ease, transform .22s cubic-bezier(.16,1,.3,1);
+}
+.br-shelf-menu[data-open="true"] {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+}
+.br-shelf-menu[hidden] { display: none; }
+
+.br-shelf-option {
+    appearance: none;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    text-align: left;
+    padding: 11px 14px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: background .12s ease, color .12s ease;
+}
+.br-shelf-option:hover,
+.br-shelf-option:focus-visible {
+    background: var(--paper-off);
+    color: var(--ink);
+    outline: none;
+}
+.br-shelf-option[aria-selected="true"] {
+    color: var(--accent);
+    font-weight: 600;
+    background: rgba(122,31,43,.06);
+}
+.br-shelf-option-check {
+    width: 16px;
+    height: 16px;
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity .15s ease;
+}
+.br-shelf-option[aria-selected="true"] .br-shelf-option-check { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+    .br-community-filter,
+    .br-community-filter-caret,
+    .br-shelf-menu { transition: none; }
 }
 
 .br-community-status {
