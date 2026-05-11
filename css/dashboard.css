@@ -3625,6 +3625,180 @@ button { font-family: inherit; cursor: pointer; }
   .brw-actions .btn[id="brw-delete"] { margin-left: 0 !important; margin-top: 8px; }
 }
 
+/* Rating slider — continuous 0.0–5.0 input with a star track, numeric
+   readout, and flavor label. Mirrors the public form's slider so the
+   admin composer feels like the same form, just inside the dashboard
+   chrome. JS sets --brw-pct on the wrapper; the rail and stars-fill
+   read it to paint progress. */
+.brw-rating-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--hairline, #e5e7eb);
+  border-radius: var(--radius-sm, 8px);
+  min-height: 44px;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.brw-rating-slider:focus-within {
+  border-color: #7a1f2b;
+  box-shadow: 0 0 0 3px rgba(122,31,43,.12);
+}
+.brw-rating-slider-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
+.brw-rating-slider-track::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      to right,
+      #7a1f2b 0%,
+      #7a1f2b calc(var(--brw-pct, 0) * 1%),
+      rgba(15, 23, 42, 0.14) calc(var(--brw-pct, 0) * 1%),
+      rgba(15, 23, 42, 0.14) 100%
+    );
+  z-index: 0;
+  pointer-events: none;
+}
+.brw-rating-slider-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  line-height: 1;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 20px;
+  user-select: none;
+  z-index: 0;
+}
+.brw-rating-slider-stars-base,
+.brw-rating-slider-stars-fill {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+.brw-rating-slider-stars-base { color: rgba(15, 23, 42, 0.18); }
+.brw-rating-slider-stars-fill {
+  color: #7a1f2b;
+  clip-path: inset(0 calc(100% - var(--brw-pct, 0) * 1%) 0 0);
+  transition: clip-path .12s ease-out;
+  width: 100%;
+}
+.brw-rating-slider-stars span { flex: 0 0 auto; }
+
+.brw-rating-slider-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+  z-index: 1;
+}
+.brw-rating-slider-input::-webkit-slider-runnable-track {
+  height: 4px;
+  background: transparent;
+  border: 0;
+}
+.brw-rating-slider-input::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #7a1f2b;
+  box-shadow: 0 3px 8px -2px rgba(122, 31, 43, .55);
+  cursor: grab;
+  margin-top: -7px;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.brw-rating-slider-input::-moz-range-track {
+  height: 4px;
+  background: transparent;
+  border: 0;
+}
+.brw-rating-slider-input::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #7a1f2b;
+  box-shadow: 0 3px 8px -2px rgba(122, 31, 43, .55);
+  cursor: grab;
+}
+.brw-rating-slider-input::-moz-range-progress {
+  height: 4px;
+  background: transparent;
+}
+.brw-rating-slider-input:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
+}
+.brw-rating-slider-input:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
+}
+.brw-rating-slider-input:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.1); }
+.brw-rating-slider-input:active::-moz-range-thumb     { cursor: grabbing; transform: scale(1.1); }
+
+.brw-rating-slider-value {
+  flex: 0 0 auto;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink, #0b1220);
+  line-height: 1;
+  min-width: 56px;
+  text-align: right;
+  white-space: nowrap;
+}
+.brw-rating-slider[data-value="0"] .brw-rating-slider-value {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted, #64748b);
+}
+.brw-rating-slider-value small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted, #64748b);
+  margin-left: 2px;
+}
+
+.brw-rating-slider-flavor {
+  color: var(--muted, #64748b);
+  min-height: 1.2em;
+}
+.brw-rating-slider:not([data-value="0"]) ~ .brw-rating-slider-flavor {
+  color: #7a1f2b;
+  font-style: italic;
+  font-weight: 500;
+}
+@media (prefers-reduced-motion: reduce) {
+  .brw-rating-slider-stars-fill,
+  .brw-rating-slider-input::-webkit-slider-thumb { transition: none; }
+}
+
 /* ISBN auto-cover status chip (book-reviews writer composer) */
 .brw-isbn-status { margin-top: 6px; }
 .brw-isbn-status-text {

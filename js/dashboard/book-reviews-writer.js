@@ -101,19 +101,20 @@ async function mountComposer(ctx, container) {
             <div class="hint">Optional. Lets us auto-fetch the cover later.</div>
           </div>
           <div class="brw-field">
-            <label class="label" for="brw-rating">Your rating</label>
-            <select class="select" id="brw-rating" name="rating">
-              <option value="">— Optional —</option>
-              <option value="5">★★★★★ 5</option>
-              <option value="4.5">★★★★½ 4.5</option>
-              <option value="4">★★★★ 4</option>
-              <option value="3.5">★★★½ 3.5</option>
-              <option value="3">★★★ 3</option>
-              <option value="2.5">★★½ 2.5</option>
-              <option value="2">★★ 2</option>
-              <option value="1.5">★½ 1.5</option>
-              <option value="1">★ 1</option>
-            </select>
+            <label class="label" for="brw-rating-input">Your rating</label>
+            <div class="brw-rating-slider" id="brw-rating-slider" data-value="0" role="group" aria-label="Your rating, on a 0 to 5 scale">
+              <div class="brw-rating-slider-track" aria-hidden="true">
+                <input type="range" class="brw-rating-slider-input" id="brw-rating-input"
+                       min="0" max="5" step="0.1" value="0" aria-label="Slide to set your rating">
+                <div class="brw-rating-slider-stars">
+                  <div class="brw-rating-slider-stars-base"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+                  <div class="brw-rating-slider-stars-fill"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+                </div>
+              </div>
+              <div class="brw-rating-slider-value">— Optional —</div>
+            </div>
+            <span class="hint brw-rating-slider-flavor">Drag to set a rating from 0 to 5. Optional.</span>
+            <input type="hidden" id="brw-rating" name="rating" value="">
           </div>
 
           <div class="brw-field brw-field-wide">
@@ -175,6 +176,12 @@ async function mountComposer(ctx, container) {
   `;
   container.appendChild(card);
 
+  // Wire the rating slider before prefill so we can drive it from the
+  // initial value when editing. Sets up event listeners on the visible
+  // range input and keeps the hidden #brw-rating in sync — the submit
+  // handler still reads .value off that hidden input.
+  const syncRatingSlider = wireRatingSlider(card);
+
   // Prefill if editing
   if (initial) {
     card.querySelector("#brw-bookTitle").value  = initial.bookTitle || initial.title || "";
@@ -185,6 +192,8 @@ async function mountComposer(ctx, container) {
     card.querySelector("#brw-coverImage").value = initial.coverImage || "";
     card.querySelector("#brw-deck").value       = initial.deck || initial.dek || initial.excerpt || "";
     card.querySelector("#brw-body").value       = bodyFromStory(initial);
+    // Drive the slider's visual state from the hidden input we just set.
+    if (initial.rating != null) syncRatingSlider(Number(initial.rating));
   }
 
   // ISBN auto-cover. When the writer leaves the ISBN field, probe
@@ -511,6 +520,61 @@ function wireIsbnCoverLookup(card) {
 //      the fallback so the writer never gets a "no cover found"
 //      message when Open Library has one we could ship.
 // Both are public, no API key needed, CORS-friendly.
+// Wires the rating slider widget. Mirrors the public form's slider:
+// drag a 0–5 range input, update the star fill, numeric readout, flavor
+// label, and hidden #brw-rating input the submit handler reads. Returns
+// a sync(value) function so prefill on edit can drive the slider from
+// the loaded review's rating.
+const RATING_FLAVORS = [
+  { min: 4.7, label: "Couldn't put it down" },
+  { min: 4.0, label: "Strongly recommend" },
+  { min: 3.5, label: "Very good" },
+  { min: 2.8, label: "Solid" },
+  { min: 2.0, label: "Mixed" },
+  { min: 1.0, label: "Disappointing" },
+  { min: 0.1, label: "Skip it" },
+];
+function flavorForRating(n) {
+  if (!Number.isFinite(n) || n <= 0) return "";
+  for (const f of RATING_FLAVORS) if (n >= f.min) return f.label;
+  return "";
+}
+function wireRatingSlider(card) {
+  const root    = card.querySelector("#brw-rating-slider");
+  const input   = card.querySelector("#brw-rating-input");
+  const valueEl = card.querySelector(".brw-rating-slider-value");
+  const flavor  = card.querySelector(".brw-rating-slider-flavor");
+  const hidden  = card.querySelector("#brw-rating");
+  if (!root || !input || !hidden) return () => {};
+
+  const render = () => {
+    const raw = parseFloat(input.value);
+    const n = Number.isFinite(raw) ? Math.round(raw * 10) / 10 : 0;
+    const pct = Math.max(0, Math.min(100, (n / 5) * 100));
+    root.style.setProperty("--brw-pct", String(pct));
+    root.dataset.value = n > 0 ? String(n) : "0";
+    if (valueEl) {
+      if (n > 0) valueEl.innerHTML = `${n.toFixed(1)}<small>/ 5</small>`;
+      else valueEl.textContent = "— Optional —";
+    }
+    if (flavor) {
+      flavor.textContent = flavorForRating(n) || "Drag to set a rating from 0 to 5. Optional.";
+    }
+    hidden.value = n > 0 ? n.toFixed(1) : "";
+  };
+
+  input.addEventListener("input", render);
+  input.addEventListener("change", render);
+  render();
+
+  // Sync from external value (used by prefill on edit).
+  return (n) => {
+    const safe = Number.isFinite(n) && n >= 0 && n <= 5 ? n : 0;
+    input.value = String(safe);
+    render();
+  };
+}
+
 async function bestCoverForIsbn(isbn) {
   const clean = String(isbn || "").replace(/[^0-9Xx]/g, "").toUpperCase();
   if (!clean) return null;
