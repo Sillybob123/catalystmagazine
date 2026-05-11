@@ -58,7 +58,7 @@
     <!-- DNS prefetch for external image sources -->
 
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet"></noscript>
     <link rel="preload" href="css/styles.css" as="style">
     <link rel="stylesheet" href="css/styles.css">
 
@@ -403,6 +403,893 @@
       @media (prefers-reduced-motion: reduce) {
         body[data-page="home"] .dc-capitol { will-change: auto; }
       }
+
+      /* ═══════════════════════════════════════════════════════════════
+         EDITORIAL PREMIUM OVERRIDES (index_copy.html only)
+         Aesthetic-only: typography, eyebrows, accents, copy detail.
+         No structural changes — keeps all 3D scroll choreography intact.
+         ═══════════════════════════════════════════════════════════════ */
+      body[data-page="home"] {
+        --serif: 'Fraunces', 'Times New Roman', serif;
+        --ease-emph: cubic-bezier(0.2, 0, 0, 1);
+        --ink: #0b1220;
+        --ink-2: #1f2937;
+        --muted: #4b5563;
+        --muted-light: #6b7280;
+        --hair: rgba(15, 23, 42, 0.13);
+      }
+
+      /* ───── Hero title ───── */
+      body[data-page="home"] .hero-title {
+        font-weight: 700;
+        letter-spacing: -0.045em;
+        line-height: 0.98;
+        font-size: clamp(2.8rem, 6.4vw, 5.6rem);
+        gap: 0.22em 0.28em;
+        align-items: baseline;
+      }
+      /* Strip the gradient + glow on "Capital" — replace with elegant italic serif */
+      body[data-page="home"] .hero-title .highlight {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 500;
+        letter-spacing: -0.025em;
+        color: var(--ink);
+        background: none;
+        -webkit-text-fill-color: currentColor;
+        position: relative;
+        padding-bottom: 0.06em;
+        /* Preserve the dramatic-entry, but kill the shimmerGlow that was
+           designed for the gradient text fill (would just brighten flat ink). */
+        animation: dramaticEntry 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s forwards;
+        filter: none !important;
+      }
+      body[data-page="home"] .hero-title .highlight::after {
+        content: '';
+        position: absolute;
+        /* Explicitly reset all four edges so the global `inset: -4px`
+           cascade doesn't push us into a 4px-tall glow halo. */
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: -0.12em !important;
+        height: 4px !important;
+        background: var(--ink) !important;
+        border-radius: 2px !important;
+        transform: scaleX(0);
+        transform-origin: left center;
+        animation: heroDrawLine 1.1s var(--ease-emph) 1.6s forwards;
+        opacity: 0.88;
+        z-index: 1 !important;
+        filter: none !important;
+        inset: auto 0 -0.12em 0 !important;
+      }
+      @keyframes heroDrawLine {
+        from { transform: scaleX(0); }
+        to   { transform: scaleX(1); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        body[data-page="home"] .hero-title .highlight::after {
+          animation: none;
+          transform: scaleX(1);
+        }
+      }
+
+      /* ───── Hero description ───── */
+      body[data-page="home"] .hero-description {
+        font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+        line-height: 1.6;
+        max-width: 62ch;
+        color: var(--muted);
+        font-weight: 400;
+        letter-spacing: -0.005em;
+        margin-bottom: 44px;
+      }
+
+      /* ───── Hero CTAs — refined button system ───── */
+      body[data-page="home"] .hero-actions .btn {
+        position: relative;
+        overflow: hidden;
+        padding: 16px 28px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+        transition: transform 0.25s var(--ease-emph), box-shadow 0.25s var(--ease-emph);
+      }
+      body[data-page="home"] .hero-actions .btn svg {
+        transition: transform 0.3s var(--ease-emph);
+      }
+      body[data-page="home"] .hero-actions .btn:hover svg {
+        transform: translateX(4px);
+      }
+      body[data-page="home"] .hero-actions .btn-primary {
+        background: var(--ink);
+        box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.45), 0 2px 4px rgba(15, 23, 42, 0.08);
+        border: none;
+      }
+      body[data-page="home"] .hero-actions .btn-primary:hover {
+        background: #1e293b;
+        box-shadow: 0 16px 36px -12px rgba(15, 23, 42, 0.55), 0 4px 8px rgba(15, 23, 42, 0.12);
+      }
+      body[data-page="home"] .hero-actions .btn-primary::after,
+      body[data-page="home"] .hero-actions .btn-secondary::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+        transform: translateX(-110%);
+        transition: transform 0.7s var(--ease-emph);
+        pointer-events: none;
+      }
+      body[data-page="home"] .hero-actions .btn-primary:hover::after,
+      body[data-page="home"] .hero-actions .btn-secondary:hover::after {
+        transform: translateX(110%);
+      }
+
+      /* ───── Section eyebrows — masthead labels, no pills ───── */
+      body[data-page="home"] .eyebrow {
+        background: none;
+        border: none;
+        padding: 0;
+        border-radius: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 18px;
+      }
+      body[data-page="home"] .eyebrow::before {
+        content: '';
+        width: 28px;
+        height: 1px;
+        background: var(--ink);
+        display: inline-block;
+      }
+
+      /* Section header — left-align the eyebrow that the rest of the site centers */
+      body[data-page="home"] .section-header {
+        text-align: center;
+      }
+      body[data-page="home"] .section-header .eyebrow {
+        justify-content: center;
+      }
+
+      /* ───── Section titles — italic serif accents on last word ───── */
+      body[data-page="home"] .section-title {
+        font-weight: 700;
+        letter-spacing: -0.035em;
+        line-height: 1.04;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+      }
+      body[data-page="home"] .section-title em {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 500;
+        letter-spacing: -0.025em;
+      }
+
+      body[data-page="home"] .section-subtitle {
+        font-size: 1.04rem;
+        line-height: 1.6;
+        color: var(--muted);
+        letter-spacing: -0.005em;
+        max-width: 58ch;
+      }
+
+      /* ───── "Recent Stories" inline eyebrow already has masthead vibe;
+         tighten the typography only ───── */
+      body[data-page="home"] .hero-featured-eyebrow-text {
+        font-family: 'Poppins', system-ui, sans-serif;
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.26em;
+        color: var(--muted);
+      }
+      body[data-page="home"] .hero-featured-eyebrow-line {
+        background: var(--hair);
+        opacity: 1;
+      }
+
+      /* ───── Brain Teaser section — editorial polish ───── */
+      body[data-page="home"] .brain-teaser-section .brain-teaser-card {
+        border-radius: 24px;
+      }
+      body[data-page="home"] .brain-teaser-card > p:first-child {
+        /* "New Puzzle · Issue No. 02" — match masthead style; was indigo */
+        color: var(--muted) !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.22em !important;
+        font-size: 0.65rem !important;
+      }
+      body[data-page="home"] .brain-teaser-question {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+      body[data-page="home"] .brain-teaser-question em.brain-teaser-serif {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+      /* The riddle verse box — re-tone the indigo "What am I?" + bold answer-words */
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] {
+        border-color: var(--hair) !important;
+        background: #fafaf6 !important;
+        border-radius: 16px !important;
+      }
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] p:first-of-type {
+        font-family: var(--serif) !important;
+        font-style: italic !important;
+        font-weight: 500 !important;
+        font-size: 1.08rem !important;
+        line-height: 1.85 !important;
+        color: var(--ink-2) !important;
+        letter-spacing: -0.005em !important;
+      }
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] p:first-of-type em {
+        font-family: var(--serif) !important;
+        font-style: italic !important;
+        font-weight: 600 !important;
+        color: var(--ink) !important;
+        background: linear-gradient(transparent 68%, rgba(15,23,42,0.1) 68%, rgba(15,23,42,0.1) 90%, transparent 90%);
+        padding: 0 2px;
+      }
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] p:last-of-type {
+        color: var(--muted) !important;
+        letter-spacing: 0.28em !important;
+        font-size: 0.65rem !important;
+      }
+      body[data-page="home"] .brain-teaser-card hr {
+        background: var(--hair) !important;
+      }
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] > div[aria-hidden] {
+        background: linear-gradient(90deg, transparent, var(--hair), transparent) !important;
+      }
+      body[data-page="home"] .brain-teaser-reveal {
+        background: var(--ink) !important;
+        border: none !important;
+        box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.45) !important;
+      }
+      body[data-page="home"] .brain-teaser-reveal:hover {
+        background: #1e293b !important;
+      }
+
+      /* ───── Newsletter — editorial title accent ───── */
+      body[data-page="home"] .newsletter-title em {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+
+      /* ───── Category cards — softer arrow motion ───── */
+      body[data-page="home"] .category-card {
+        transition: transform 0.4s var(--ease-emph), box-shadow 0.4s var(--ease-emph);
+      }
+      body[data-page="home"] .category-card h3 em {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 500;
+      }
+      body[data-page="home"] .category-arrow {
+        transition: transform 0.3s var(--ease-emph);
+      }
+      body[data-page="home"] .category-card:hover .category-arrow {
+        transform: translate(4px, -4px);
+      }
+
+      /* ───── Category-filter pills — quieter, more editorial ───── */
+      body[data-page="home"] .category-filters .filter-btn {
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+
+      /* ───── Search box — softer focus ───── */
+      body[data-page="home"] .search-box {
+        transition: border-color 0.25s var(--ease-emph), box-shadow 0.25s var(--ease-emph);
+      }
+      body[data-page="home"] .search-box:focus-within {
+        border-color: var(--ink) !important;
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.08) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         BACKGROUND — kill the floating colored blobs, KEEP the D.C.
+         skyline (Capitol + Washington Monument watercolor). Set warm
+         paper tone underneath.
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] {
+        background: #faf8f4 !important;
+      }
+      /* Hide ONLY the 4 abstract gradient blobs — the .dc-capitol
+         skyline lives in the same .bg-blobs container and must stay. */
+      body[data-page="home"] .blob {
+        display: none !important;
+      }
+      body[data-page="home"] .bg-blobs::after {
+        display: none !important;
+      }
+
+      /* Subtle editorial paper-grain layered BEHIND the skyline
+         (z-index: -2 vs the global .bg-blobs at -1) */
+      body[data-page="home"]::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse at 15% 12%, rgba(15,23,42,0.04) 0%, transparent 45%),
+          radial-gradient(ellipse at 85% 88%, rgba(15,23,42,0.03) 0%, transparent 40%);
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         FEATURED CARDS (hero 3-up grid) — strip glassmorphism
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .featured-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 18px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 16px 36px -22px rgba(15, 23, 42, 0.18) !important;
+        transition: transform 0.4s var(--ease-emph), box-shadow 0.4s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .featured-card:hover {
+        transform: translateY(-4px) !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 28px 48px -24px rgba(15, 23, 42, 0.3) !important;
+        background: #ffffff !important;
+        border-color: rgba(15, 23, 42, 0.18) !important;
+      }
+      body[data-page="home"] .featured-card-image-wrapper {
+        height: 220px !important;
+      }
+      body[data-page="home"] .featured-card-image-wrapper .card-img {
+        filter: saturate(1) !important;
+        transition: transform 0.6s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .featured-card:hover .featured-card-image-wrapper .card-img {
+        filter: saturate(1.05) brightness(1.02) !important;
+        transform: scale(1.04) !important;
+      }
+      body[data-page="home"] .featured-card-overlay {
+        padding: 22px 22px 22px !important;
+        gap: 10px !important;
+      }
+      body[data-page="home"] .featured-card-category {
+        background: none !important;
+        color: var(--muted) !important;
+        padding: 0 !important;
+        font-size: 0.66rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.22em !important;
+        text-transform: uppercase !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+      }
+      body[data-page="home"] .featured-card-category::before {
+        content: '';
+        width: 18px;
+        height: 1px;
+        background: var(--ink);
+      }
+      body[data-page="home"] .featured-card-title {
+        font-size: 1.15rem !important;
+        font-weight: 700 !important;
+        line-height: 1.28 !important;
+        letter-spacing: -0.022em !important;
+        color: var(--ink) !important;
+      }
+      body[data-page="home"] .featured-card-meta {
+        font-size: 0.78rem !important;
+        font-weight: 500 !important;
+        color: var(--muted) !important;
+        letter-spacing: 0.01em !important;
+        border-top: 1px solid var(--hair) !important;
+        padding-top: 12px !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         ARTICLE CARDS — clean editorial chrome
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .article-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 16px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 12px 28px -18px rgba(15, 23, 42, 0.16) !important;
+        transition: transform 0.4s var(--ease-emph), box-shadow 0.4s var(--ease-emph), border-color 0.4s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .article-card:hover {
+        transform: translateY(-4px) !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 24px 40px -20px rgba(15, 23, 42, 0.28) !important;
+        background: #ffffff !important;
+        border-color: rgba(15, 23, 42, 0.18) !important;
+      }
+      body[data-page="home"] .article-card:hover .article-image img,
+      body[data-page="home"] .article-card:hover .article-image .card-img.loaded {
+        transform: scale(1.05) !important;
+        filter: saturate(1.04) brightness(1.02) !important;
+      }
+      body[data-page="home"] .article-image {
+        height: 220px !important;
+      }
+      body[data-page="home"] .article-content {
+        padding: 22px 22px 22px !important;
+      }
+      body[data-page="home"] .article-title {
+        font-size: 1.15rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.022em !important;
+        line-height: 1.28 !important;
+        color: var(--ink) !important;
+      }
+      body[data-page="home"] .article-excerpt {
+        font-size: 0.9rem !important;
+        line-height: 1.55 !important;
+        color: var(--muted) !important;
+        margin-top: 8px !important;
+      }
+      body[data-page="home"] .article-meta {
+        margin-top: 16px !important;
+        padding-top: 14px !important;
+        border-top: 1px solid var(--hair) !important;
+        font-size: 0.78rem !important;
+        color: var(--muted) !important;
+        letter-spacing: 0.01em !important;
+      }
+      body[data-page="home"] .article-author {
+        color: var(--ink) !important;
+        font-weight: 600 !important;
+      }
+      body[data-page="home"] .reading-time {
+        color: var(--muted-light) !important;
+      }
+      /* Category badge on article cards — flat slate chip */
+      body[data-page="home"] .article-category {
+        background: rgba(15, 23, 42, 0.92) !important;
+        color: #fff !important;
+        padding: 6px 12px !important;
+        font-size: 0.62rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.16em !important;
+        border-radius: 100px !important;
+        box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.4) !important;
+        top: 14px !important;
+        left: 14px !important;
+      }
+      body[data-page="home"] .article-category.feature,
+      body[data-page="home"] .article-category.profile,
+      body[data-page="home"] .article-category.interview,
+      body[data-page="home"] .article-category.op-ed,
+      body[data-page="home"] .article-category.editorial {
+        background: rgba(15, 23, 42, 0.92) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         FEATURED-STORY-CARD — same editorial treatment
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .featured-story-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 16px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 12px 28px -18px rgba(15, 23, 42, 0.16) !important;
+      }
+      body[data-page="home"] .featured-story-card:hover {
+        transform: translateY(-4px) !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 24px 40px -20px rgba(15, 23, 42, 0.28) !important;
+        border-color: rgba(15, 23, 42, 0.18) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         CATEGORY-CARDS — editorial paper cards, no glass
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .category-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 20px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 18px 36px -22px rgba(15, 23, 42, 0.18) !important;
+        padding: 32px 32px 28px !important;
+        transition: transform 0.4s var(--ease-emph), box-shadow 0.4s var(--ease-emph), border-color 0.4s var(--ease-emph) !important;
+        gap: 0 !important;
+      }
+      body[data-page="home"] .category-card:hover {
+        transform: translateY(-4px) !important;
+        background: #ffffff !important;
+        border-color: rgba(15, 23, 42, 0.22) !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 28px 48px -24px rgba(15, 23, 42, 0.3) !important;
+      }
+      body[data-page="home"] .category-card::before {
+        display: none !important;
+      }
+      body[data-page="home"] .category-card::after {
+        display: none !important;
+      }
+      body[data-page="home"] .category-card h3 {
+        font-size: 1.6rem !important;
+        font-weight: 600 !important;
+        color: var(--ink) !important;
+        letter-spacing: -0.025em !important;
+        margin-bottom: 12px !important;
+        padding-top: 8px !important;
+      }
+      body[data-page="home"] .category-card p {
+        color: var(--muted) !important;
+        font-size: 0.93rem !important;
+        line-height: 1.6 !important;
+        margin: 0 !important;
+        flex: 1;
+        padding-bottom: 24px;
+      }
+      body[data-page="home"] .category-arrow {
+        align-self: flex-end !important;
+        width: 36px !important;
+        height: 36px !important;
+        background: rgba(15, 23, 42, 0.05) !important;
+        color: var(--ink) !important;
+        border: 1px solid var(--hair) !important;
+        transition: transform 0.3s var(--ease-emph), background 0.3s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .category-card:hover .category-arrow {
+        background: var(--ink) !important;
+        color: #fff !important;
+        transform: translate(4px, -4px) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         CATEGORY FILTERS — editorial tab bar, hairline-anchored
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .category-filters {
+        display: flex !important;
+        align-items: stretch !important;
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+        gap: 0 !important;
+        padding: 0 !important;
+        border-top: 1px solid var(--hair) !important;
+        border-bottom: 1px solid var(--hair) !important;
+        max-width: 720px !important;
+        margin: 0 auto 40px !important;
+      }
+      body[data-page="home"] .filter-btn {
+        background: transparent !important;
+        border: none !important;
+        color: var(--muted) !important;
+        padding: 18px 28px !important;
+        font-size: 0.74rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.18em !important;
+        text-transform: uppercase !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        position: relative !important;
+        transition: color 0.25s var(--ease-emph) !important;
+        text-decoration: none !important;
+      }
+      body[data-page="home"] .filter-btn + .filter-btn {
+        border-left: 1px solid var(--hair) !important;
+      }
+      body[data-page="home"] .filter-btn::after {
+        content: '' !important;
+        position: absolute !important;
+        left: 50% !important;
+        bottom: -1px !important;
+        transform: translateX(-50%) scaleX(0) !important;
+        transform-origin: center !important;
+        width: 32px !important;
+        height: 2px !important;
+        background: var(--ink) !important;
+        transition: transform 0.3s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .filter-btn:hover {
+        color: var(--ink) !important;
+        background: transparent !important;
+        transform: none !important;
+      }
+      body[data-page="home"] .filter-btn:hover::after {
+        transform: translateX(-50%) scaleX(0.6) !important;
+        opacity: 0.4 !important;
+      }
+      body[data-page="home"] .filter-btn.active {
+        color: var(--ink) !important;
+        background: transparent !important;
+      }
+      body[data-page="home"] .filter-btn.active::after {
+        transform: translateX(-50%) scaleX(1) !important;
+        opacity: 1 !important;
+      }
+      @media (max-width: 640px) {
+        body[data-page="home"] .filter-btn {
+          padding: 14px 18px !important;
+          font-size: 0.7rem !important;
+          letter-spacing: 0.15em !important;
+        }
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         SEARCH BOX — flat paper input with hairline
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .search-box {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 8px 24px -18px rgba(15, 23, 42, 0.18) !important;
+      }
+      body[data-page="home"] .search-box:focus-within {
+        border-color: var(--ink) !important;
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+      }
+      body[data-page="home"] .search-input {
+        font-size: 0.97rem !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         NEWSLETTER — light editorial dispatch, paper-on-paper
+         Kills all the global gradients, animations, rotating overlay.
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .newsletter {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 28px !important;
+        padding: 0 !important;
+        text-align: left !important;
+        overflow: hidden !important;
+        position: relative !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 30px 60px -32px rgba(15, 23, 42, 0.22) !important;
+      }
+      /* Kill the rotating gradient + radial-light overlays from the global */
+      body[data-page="home"] .newsletter::before,
+      body[data-page="home"] .newsletter::after {
+        content: none !important;
+        display: none !important;
+        animation: none !important;
+        background: none !important;
+      }
+      body[data-page="home"] .newsletter-content {
+        position: relative !important;
+        z-index: 1 !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) !important;
+        gap: 64px !important;
+        align-items: center !important;
+        padding: 72px 64px !important;
+        text-align: left !important;
+      }
+      body[data-page="home"] .newsletter-text {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      body[data-page="home"] .newsletter-eyebrow {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        font-family: 'Poppins', system-ui, sans-serif !important;
+        font-size: 0.66rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.24em !important;
+        text-transform: uppercase !important;
+        color: var(--muted) !important;
+        margin: 0 0 24px !important;
+      }
+      body[data-page="home"] .newsletter-eyebrow::before {
+        content: '' !important;
+        width: 28px !important;
+        height: 1px !important;
+        background: var(--ink) !important;
+        display: inline-block !important;
+      }
+      body[data-page="home"] .newsletter-title {
+        color: var(--ink) !important;
+        font-size: clamp(2rem, 3.4vw, 3rem) !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.038em !important;
+        line-height: 1 !important;
+        margin: 0 0 20px !important;
+      }
+      body[data-page="home"] .newsletter-subtitle {
+        color: var(--muted) !important;
+        font-size: 1.04rem !important;
+        line-height: 1.6 !important;
+        max-width: 44ch !important;
+        margin: 0 0 28px !important;
+      }
+      body[data-page="home"] .newsletter-fineprint {
+        font-size: 0.76rem !important;
+        color: var(--muted-light) !important;
+        letter-spacing: 0.02em !important;
+        line-height: 1.55 !important;
+        margin: 0 !important;
+        padding-top: 22px !important;
+        border-top: 1px solid var(--hair) !important;
+        max-width: 44ch !important;
+      }
+      /* Form panel — subtle warm-paper inset card */
+      body[data-page="home"] .newsletter .newsletter-form-glass {
+        position: relative !important;
+        background: #faf8f4 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 20px !important;
+        padding: 28px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+      }
+      body[data-page="home"] .newsletter .newsletter-form-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px !important;
+      }
+      body[data-page="home"] .newsletter .form-input-glass {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        color: var(--ink) !important;
+        font-size: 0.95rem !important;
+        font-family: inherit !important;
+        padding: 14px 16px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        transition: border-color 0.25s var(--ease-emph), box-shadow 0.25s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .newsletter .form-input-glass::placeholder {
+        color: var(--muted-light) !important;
+      }
+      body[data-page="home"] .newsletter .form-input-glass:focus,
+      body[data-page="home"] .newsletter .form-input-glass:hover {
+        background: #ffffff !important;
+        border-color: var(--ink) !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08) !important;
+      }
+      body[data-page="home"] .newsletter .btn-glass {
+        background: var(--ink) !important;
+        color: #fff !important;
+        border: none !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: -0.005em !important;
+        padding: 16px 22px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        justify-content: center !important;
+        box-shadow: 0 8px 24px -10px rgba(15, 23, 42, 0.45) !important;
+        margin-top: 6px !important;
+        position: relative !important;
+        overflow: hidden !important;
+        transition: transform 0.25s var(--ease-emph), background 0.25s var(--ease-emph), box-shadow 0.25s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .newsletter .btn-glass:hover {
+        background: #1e293b !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 14px 32px -10px rgba(15, 23, 42, 0.55) !important;
+      }
+      body[data-page="home"] .newsletter .btn-glass svg {
+        transition: transform 0.3s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .newsletter .btn-glass:hover svg {
+        transform: translateX(4px) !important;
+      }
+      @media (max-width: 880px) {
+        body[data-page="home"] .newsletter-content {
+          grid-template-columns: 1fr !important;
+          gap: 32px !important;
+          padding: 48px 36px !important;
+        }
+        body[data-page="home"] .newsletter-subtitle,
+        body[data-page="home"] .newsletter-fineprint {
+          max-width: 100% !important;
+        }
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         BRAIN TEASER CARD — paper card on warm bg
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .brain-teaser-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 24px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 24px 48px -28px rgba(15, 23, 42, 0.2) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         "VIEW ALL ARTICLES" CTA — quieter
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .load-more-container .btn-secondary {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1.5px solid var(--ink) !important;
+        color: var(--ink) !important;
+        font-weight: 600 !important;
+        padding: 16px 28px !important;
+        box-shadow: none !important;
+        transition: background 0.25s var(--ease-emph), color 0.25s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .load-more-container .btn-secondary:hover {
+        background: var(--ink) !important;
+        color: #fff !important;
+        transform: translateY(-2px) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         SECTION HEADER — left-anchor on desktop, editorial rhythm
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .section-header {
+        max-width: 720px;
+        margin: 0 auto 56px !important;
+      }
+      body[data-page="home"] .section-title::after {
+        display: none !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         RESPONSIVE
+         ───────────────────────────────────────────────────────────── */
+      @media (max-width: 640px) {
+        body[data-page="home"] .hero-title {
+          font-size: clamp(2.4rem, 11vw, 3.4rem);
+        }
+        body[data-page="home"] .hero-description {
+          font-size: 1rem;
+          line-height: 1.55;
+        }
+        body[data-page="home"] .newsletter {
+          border-radius: 22px !important;
+        }
+        body[data-page="home"] .newsletter-content {
+          padding: 40px 28px !important;
+        }
+        body[data-page="home"] .category-card {
+          padding: 28px 24px !important;
+        }
+        body[data-page="home"] .featured-card-overlay,
+        body[data-page="home"] .article-content {
+          padding: 18px !important;
+        }
+      }
     </style>
 
     <!-- Structured Data for SEO -->
@@ -511,7 +1398,7 @@
                         <span class="hero-word hero-word-5 highlight">Capital</span></span>
                     </h1>
                     <p class="hero-description">
-                        Discover groundbreaking research, meet brilliant minds, and explore the innovations shaping our future—all through the lens of student journalists at the forefront of STEM.
+                        Profiles, interviews, and features on the science shaping D.C. — reported, edited, and designed by the students at the front of the room.
                     </p>
                     <div class="hero-actions">
                         <a href="/articles" class="btn btn-primary">
@@ -547,8 +1434,8 @@
             <div class="container">
                 <div class="section-header">
                     <span class="eyebrow">Featured Stories</span>
-                    <h2 class="section-title">Latest from The Catalyst</h2>
-                    <p class="section-subtitle">Exploring groundbreaking research and the brilliant minds driving innovation in D.C. and beyond</p>
+                    <h2 class="section-title">Latest from <em>The Catalyst.</em></h2>
+                    <p class="section-subtitle">Exploring groundbreaking research and the brilliant minds driving innovation in D.C. and beyond.</p>
                 </div>
 
                 <div class="featured-stories-grid" id="featured-stories-grid">
@@ -583,8 +1470,9 @@
         <section class="section">
             <div class="container">
                 <div class="section-header">
-                    <h2 class="section-title">Latest Stories</h2>
-                    <p class="section-subtitle">Explore profiles, features, and interviews from our contributors</p>
+                    <span class="eyebrow">The Archive</span>
+                    <h2 class="section-title">Latest <em>stories.</em></h2>
+                    <p class="section-subtitle">Explore profiles, features, and interviews from our contributors.</p>
                 </div>
 
                 <!-- Category Pills -->
@@ -614,8 +1502,9 @@
         <section class="section category-explore-section">
             <div class="container">
                 <div class="section-header">
-                    <h2 class="section-title">Explore By Category</h2>
-                    <p class="section-subtitle">Discover stories that spark your curiosity</p>
+                    <span class="eyebrow">By Section</span>
+                    <h2 class="section-title">Explore by <em>category.</em></h2>
+                    <p class="section-subtitle">Discover stories that spark your curiosity.</p>
                 </div>
 
                 <div class="category-grid">
@@ -667,13 +1556,13 @@
             <div class="container">
                 <div class="section-header">
                     <span class="eyebrow">Challenge Yourself</span>
-                    <h2 class="section-title">The Catalyst Riddle</h2>
-                    <p class="section-subtitle">A new riddle of language and meaning &mdash; only the sharpest minds will unlock the Winners' Lounge</p>
+                    <h2 class="section-title">The Catalyst <em>Riddle.</em></h2>
+                    <p class="section-subtitle">A new riddle of language and meaning &mdash; only the sharpest minds will unlock the Winners' Lounge.</p>
                 </div>
 
                 <div class="brain-teaser-card" id="brain-teaser-card">
                     <p style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #6366f1; margin-bottom: 20px;">New Puzzle &middot; Issue No. 02</p>
-                    <h3 class="brain-teaser-question">Can you solve The Catalyst Riddle?</h3>
+                    <h3 class="brain-teaser-question">Can you <em class="brain-teaser-serif">solve</em> The Catalyst Riddle?</h3>
                     <p style="color: var(--text-muted); margin: 16px 0 32px; font-size: 0.97rem; line-height: 1.65;">
                         A four-line verse hides a single, ordinary answer in plain sight. Read carefully &mdash; the words themselves are the clue.
                     </p>
@@ -706,14 +1595,18 @@
             <div class="container">
                 <div class="newsletter">
                     <div class="newsletter-content">
-                        <h3 class="newsletter-title">Join the Changemakers</h3>
-                        <p class="newsletter-subtitle">Sign up for our newsletter to stay connected with exclusive stories and D.C. STEM spotlights.</p>
+                        <div class="newsletter-text">
+                            <span class="newsletter-eyebrow">The Dispatch &middot; Issue No. 02</span>
+                            <h3 class="newsletter-title">Join the <em>changemakers.</em></h3>
+                            <p class="newsletter-subtitle">A monthly dispatch from D.C.'s student-run STEM desk — exclusive stories, profiles, and spotlights, straight to your inbox.</p>
+                            <p class="newsletter-fineprint">Read by students at GW, Georgetown, Howard, American &amp; UMD. No spam. Unsubscribe anytime.</p>
+                        </div>
                         <form action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="newsletter-form-glass" novalidate>
                             <div class="newsletter-form-grid">
-                                <input type="text" name="FNAME" class="form-input-glass" placeholder="First Name" required>
-                                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last Name" required>
+                                <input type="text" name="FNAME" class="form-input-glass" placeholder="First name" required>
+                                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last name" required>
                             </div>
-                            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL" placeholder="Email Address" required>
+                            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL" placeholder="you@university.edu" required>
 
                             <!-- Bot prevention -->
                             <div aria-hidden="true" style="position: absolute; left: -5000px;">
@@ -721,7 +1614,7 @@
                             </div>
 
                             <button type="submit" name="subscribe" class="btn btn-primary btn-glass">
-                                Subscribe
+                                Subscribe to The Dispatch
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                     <path d="M5 12h14M12 5l7 7-7 7"/>
                                 </svg>
