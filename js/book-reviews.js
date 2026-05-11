@@ -129,11 +129,15 @@
         return `this.onerror=function(){this.onerror=null;this.src='${fb}';this.classList.add('loaded');};this.src='${raw}';`;
     }
 
-    // Try to extract the book title and author from the dek/excerpt.
-    // Writers are encouraged to write deks like: "Book Title — Author Name. Verdict…"
-    // but we degrade gracefully when they don't.
+    // Try to extract legacy book title/author data from the dek/excerpt.
+    // Firestore book reviews store the actual book title in `title`, so this
+    // parser is only for older/local records whose title field was generic
+    // and whose dek looked like: "Book Title — Author Name. Verdict…".
     function parseBookMeta(article) {
         const excerpt = (article.excerpt || '').trim();
+        const fallback = { bookTitle: article.title, bookAuthor: '', blurb: excerpt };
+        if (!article.allowExcerptMetaParse) return fallback;
+
         // Pattern: "Title — Author. Rest" or "Title - Author. Rest"
         const m = excerpt.match(/^([^—\-•|]+)\s*[—\-•|]\s*([^.|]+?)[.|]\s*(.*)$/);
         if (m) {
@@ -143,7 +147,7 @@
                 blurb: m[3].trim() || excerpt
             };
         }
-        return { bookTitle: article.title, bookAuthor: '', blurb: excerpt };
+        return fallback;
     }
 
     // Pull a numeric rating (0-5 or 0-10) from tags/title/excerpt, default 4.2.
@@ -202,6 +206,7 @@
             category: 'book-review',
             community,
             excerpt: (raw.excerpt || raw.deck || raw.dek || '').replace(/\s+/g, ' ').trim(),
+            allowExcerptMetaParse: raw.source === 'local',
             tags: raw.tags || []
         };
         const meta = parseBookMeta(article);
@@ -238,7 +243,7 @@
     // ---------- Data loading ----------
     function loadLocal() {
         const list = Array.isArray(window.articles) ? window.articles : [];
-        return list.map(normalizeReview).filter(Boolean);
+        return list.map((item) => normalizeReview({ ...item, source: 'local' })).filter(Boolean);
     }
 
     // Synchronous cache reader. Returns whatever the shared session cache
