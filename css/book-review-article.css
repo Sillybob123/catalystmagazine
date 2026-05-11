@@ -40,8 +40,30 @@ body[data-page="article"].is-book-review .article-page {
     padding-top: 56px;
     padding-bottom: 120px;
 }
+/* article-premium.css resets .article-page > .container to max-width:none;
+   padding:0 (full-bleed for normal stories). Book reviews aren't full-bleed
+   editorial spreads — they're column reads with a cover rail — so restore
+   normal gutters and a sensible max-width on this template only. */
 body[data-page="article"].is-book-review .article-page .container {
     max-width: 1200px;
+    padding-left: 32px;
+    padding-right: 32px;
+}
+@media (max-width: 720px) {
+    body[data-page="article"].is-book-review .article-page {
+        padding-top: 32px;
+        padding-bottom: 72px;
+    }
+    body[data-page="article"].is-book-review .article-page .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}
+@media (max-width: 420px) {
+    body[data-page="article"].is-book-review .article-page .container {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
 }
 body[data-page="article"].is-book-review .back-link {
     color: var(--brx-accent);
@@ -511,6 +533,47 @@ body[data-page="article"].is-book-review .back-link:hover {
 @media (max-width: 720px) {
     .brx-body blockquote { font-size: 1.12em; padding-left: 36px; }
     .brx-body blockquote::before { font-size: 2.8em; top: -8px; }
+}
+
+/* ─── Mobile fine-tuning ────────────────────────────────────────
+   The container gutter is restored above, so .brx only needs to tame
+   internal max-widths and rhythm; never assume the container has 0
+   side-padding when adding values here. */
+@media (max-width: 720px) {
+    .brx { --col-gap: 32px; }
+    .brx-hero { padding: 8px 0 32px; margin-bottom: 36px; }
+    .brx-title { font-size: clamp(30px, 8vw, 44px); }
+    .brx-book-author { font-size: clamp(18px, 4.6vw, 22px); margin-bottom: 22px; }
+    .brx-deck {
+        font-size: clamp(16px, 4vw, 19px);
+        padding-left: 14px;
+        margin-bottom: 28px;
+    }
+    .brx-byline { gap: 12px 24px; padding-top: 18px; }
+    .brx-spread { gap: 32px; }
+    .brx-cover-wrap { max-width: 220px; }
+    .brx-verdict-card { gap: 18px; padding-bottom: 22px; }
+    .brx-rating-dial { width: 88px; height: 88px; }
+    .brx-rating-num { font-size: 28px; }
+    .brx-meta-row {
+        grid-template-columns: 100px 1fr;
+        gap: 12px;
+        padding: 10px 0;
+    }
+    .brx-coda { margin-top: 44px; padding: 20px 0; }
+}
+@media (max-width: 420px) {
+    .brx-title { font-size: clamp(26px, 9vw, 36px); letter-spacing: -0.018em; }
+    .brx-hero-meta { gap: 10px 14px; margin-bottom: 18px; }
+    .brx-kicker { font-size: 11px; letter-spacing: .22em; }
+    .brx-kicker::before { width: 20px; }
+    .brx-cover-wrap { max-width: 190px; }
+    .brx-meta-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+        padding: 10px 0;
+    }
+    .brx-meta-row dd { font-size: 13.5px; }
 }
 .brx-body a {
     color: var(--brx-accent);

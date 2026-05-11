@@ -64,3 +64,9 @@ build/
 # public/assets/hero-frames/ ARE committed and shipped.
 *.mov
 *.mp4
+
+# Local source PNGs for hero book covers — converted to /images/book-reviews/*.webp
+# which is what actually ships. Keep the heavy originals out of the repo.
+/book1.png
+/book2.png
+/book3.png

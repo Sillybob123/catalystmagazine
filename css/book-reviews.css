@@ -160,11 +160,14 @@ body[data-page="book-reviews"] .header {
 .br-hero-title {
     font-family: 'Playfair Display', Georgia, serif;
     font-weight: 700;
-    font-size: clamp(48px, 7.4vw, 110px);
-    line-height: 0.94;
-    letter-spacing: -0.022em;
+    /* Reduced from clamp(48, 7.4vw, 110) — the previous setting peaked at
+       110px on desktop which felt aggressive next to the book stack. The
+       new ceiling of 84px keeps the editorial weight without shouting. */
+    font-size: clamp(40px, 5.8vw, 84px);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
     color: var(--on-dark-text);
-    margin: 0 0 28px;
+    margin: 0 0 24px;
 }
 .br-hero-title em {
     font-style: italic;
@@ -271,6 +274,12 @@ body[data-page="book-reviews"] .header {
 }
 .br-stack-book {
     position: absolute;
+    /* Lock every slot to the same ~2:3 ratio (100:145 ≈ 0.69, matching the
+       average of the three cover scans) so all three books share identical
+       proportions and the placeholder is exactly the same shape as the image
+       that fills it. Per-book size + anchor are set on .br-stack-book-N
+       below using width/top/left. */
+    aspect-ratio: 100 / 145;
     border-radius: 4px;
     box-shadow:
         0 30px 60px -20px rgba(0,0,0,.55),
@@ -294,8 +303,14 @@ body[data-page="book-reviews"] .header {
     filter:
         saturate(calc(1 + var(--br-glow) * .18))
         contrast(calc(1 + var(--br-glow) * .08));
-    transition: box-shadow .4s ease, filter .4s ease;
+    transition: box-shadow .4s ease, filter .4s ease, background-color .35s ease;
     will-change: transform, filter;
+}
+/* Once the cover image has loaded, drop the tinted placeholder gradient on
+   the parent so there's no halo of fake-book color peeking around the real
+   artwork. The transition above gives the swap a soft handoff. */
+.br-stack-book[data-loaded="true"] {
+    background: transparent !important;
 }
 .br-hero-stack[data-spread="1"] .br-stack-book {
     box-shadow:
@@ -304,59 +319,104 @@ body[data-page="book-reviews"] .header {
         0 0 0 1px rgba(239,233,218,.10) inset;
 }
 .br-stack-book::before {
-    /* spine, gloss, and scanline layer */
+    /* spine highlight + gloss sweep + scanline. Sits ABOVE the cover image
+       (z-index: 2) so the parallax glints still read on the real artwork. */
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 2;
     background:
-        linear-gradient(90deg, rgba(0,0,0,.48) 0 14px, rgba(255,255,255,.07) 15px, transparent 42px),
-        linear-gradient(115deg, transparent 0 34%, rgba(255,255,255,.16) 46%, transparent 58%),
-        repeating-linear-gradient(0deg, transparent 0 11px, rgb(239 233 218 / .045) 12px, transparent 13px);
+        linear-gradient(90deg, rgba(0,0,0,.42) 0 10px, rgba(255,255,255,.06) 11px, transparent 36px),
+        linear-gradient(115deg, transparent 0 34%, rgba(255,255,255,.14) 46%, transparent 58%),
+        repeating-linear-gradient(0deg, transparent 0 11px, rgb(239 233 218 / .035) 12px, transparent 13px);
     background-size: auto, 220% 100%, auto;
     background-position: 0 0, var(--br-scan-x) 0, 0 0;
-    opacity: calc(.7 + var(--br-glow) * .3);
+    opacity: calc(.55 + var(--br-glow) * .3);
     mix-blend-mode: screen;
     pointer-events: none;
 }
-.br-stack-book::after {
-    /* title plate */
-    content: attr(data-title);
+
+/* Cover artwork. The img sits over the gradient placeholder; when it
+   finishes loading we add .is-loaded which fades it in AND we set
+   data-loaded="true" on the parent so the gradient gets cleared (see
+   the .br-stack-book[data-loaded] rule above). On slow connections /
+   image errors, the placeholder stays put indefinitely — graceful
+   degradation for low-bandwidth users. */
+.br-stack-book-img {
     position: absolute;
-    inset: auto 16px 18px 28px;
-    color: rgba(239,233,218,.92);
-    font-family: 'Playfair Display', Georgia, serif;
-    font-style: italic;
-    font-size: 14px;
-    letter-spacing: .02em;
-    line-height: 1.25;
-    text-shadow: 0 2px 8px rgba(0,0,0,.5);
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    /* The parent is locked to 4:5 (same as the WebP), so neither cover nor
+       contain is needed — `fill` paints corner-to-corner with no crop and
+       no letterbox. Defensive object-fit: cover stays as a fallback in case
+       a future cover ships at a slightly different ratio. */
+    object-fit: cover;
+    object-position: center;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity .6s cubic-bezier(.16, 1, .3, 1);
+    /* Hint at GPU compositing — same layer the parent already lives on
+       thanks to transform-style: preserve-3d above. */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    /* Slight contrast bump to match the dramatic shadow stack on the parent. */
+    filter: saturate(1.04) contrast(1.02);
+}
+.br-stack-book-img.is-loaded { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .br-stack-book-img { transition: none; }
 }
 
 /* Per-book base position, rest rotation, and spread vector.
+   Each slot is sized by `width` only — `aspect-ratio: 4 / 5` on the
+   base class gives the height automatically so the slot is always the
+   same shape as the cover image inside it (no halo of gradient). top/left
+   anchor the slot inside the .br-hero-stack box; the rest stays the same.
    --tx/--ty/--tz: how far it travels when fully blown up.
    --rs:           extra rotation added at full spread.
-   --sc:           extra scale added at full spread (0.25 = +25%). */
+   --sc:           extra scale added at full spread (0.25 = +25%).
+   The background gradients are tinted to the dominant tone of each cover
+   so the load-in transition reads as "ghost → real art", and they get
+   cleared once data-loaded="true" lands on the slot. */
+/* All three slots share the same WIDTH (and therefore — because of the
+   aspect-ratio rule on .br-stack-book — the same HEIGHT). Only the top/left
+   anchor + base rotation differ, so the books look like three identical
+   editions stacked at different angles instead of three differently-sized
+   props. */
 .br-stack-book-1 {
-    inset: 4% 14% 8% 0;
-    background: linear-gradient(155deg, #2b1a1c 0%, #6b1f2a 55%, #3a1117 100%);
+    /* Back of the stack — upper-left, tilted left. */
+    width: 62%;
+    top: 0%;
+    left: 6%;
+    background: linear-gradient(155deg, #0f1a36 0%, #1e3270 55%, #0a142a 100%);
     --r: -7deg;
     --tx: -120px; --ty: -60px; --tz: 80px;
     --rs: -10deg; --rx: 7deg; --ry: -18deg; --sc: .32;
 }
 .br-stack-book-2 {
-    inset: 14% 0 0 16%;
-    background: linear-gradient(155deg, #1a232f 0%, #2b3a52 55%, #0e1117 100%);
-    --r: 3deg;
-    --tx: 110px; --ty: -90px; --tz: 60px;
-    --rs: 14deg; --rx: -5deg; --ry: 15deg; --sc: .28;
-}
-.br-stack-book-3 {
-    inset: 28% 22% -4% 8%;
-    background: linear-gradient(155deg, #3a2a14 0%, #6b4a22 55%, #261a09 100%);
+    /* Front of the stack — lower-center, cream cover leads the eye. */
+    width: 62%;
+    top: 22%;
+    left: 18%;
+    background: linear-gradient(155deg, #ece4d2 0%, #d8cdb3 55%, #b6a98a 100%);
     --r: -2deg;
     --tx: 30px; --ty: 130px; --tz: 110px;
     --rs: -6deg; --rx: 12deg; --ry: 7deg; --sc: .36;
+    z-index: 3;
 }
+.br-stack-book-3 {
+    /* Middle of the stack — upper-right, tilted right. */
+    width: 62%;
+    top: 10%;
+    left: 36%;
+    background: linear-gradient(155deg, #142a1f 0%, #1f4233 55%, #0a1b13 100%);
+    --r: 3deg;
+    --tx: 110px; --ty: -90px; --tz: 60px;
+    --rs: 14deg; --rx: -5deg; --ry: 15deg; --sc: .28;
+    z-index: 2;
+}
+.br-stack-book-1 { z-index: 1; }
 
 @media (max-width: 960px) {
     .br-hero-stack { max-width: 360px; margin: -16px auto 0; }
@@ -1001,12 +1061,29 @@ body[data-page="book-reviews"] .header {
     margin: 0;
 }
 @media (max-width: 720px) {
-    .br-community-lockup { grid-template-columns: 96px minmax(0, 1fr); gap: 22px; }
+    .br-community-lockup { grid-template-columns: 84px minmax(0, 1fr); gap: 18px; }
     .br-community-copy .br-section-title {
         white-space: normal;
-        font-size: clamp(32px, 11vw, 44px);
+        font-size: clamp(26px, 8.4vw, 40px);
+        word-break: break-word;
+        hyphens: auto;
     }
     .br-community-lede { max-width: 60ch; }
+}
+/* Very narrow phones — eyebrow letter-spacing + 28px ::before can overflow
+   the 1fr column next to the stamp. Trim both so the headline stack always
+   stays inside the container gutters. */
+@media (max-width: 420px) {
+    .br-community-lockup { grid-template-columns: 1fr; gap: 18px; justify-items: start; }
+    .br-community-copy .br-section-eyebrow {
+        letter-spacing: .22em;
+        gap: 10px;
+        font-size: 10.5px;
+    }
+    .br-community-copy .br-section-eyebrow::before { width: 20px; }
+    .br-community-copy .br-section-title {
+        font-size: clamp(26px, 9vw, 36px);
+    }
 }
 
 .br-community-stamp {
@@ -1058,10 +1135,16 @@ body[data-page="book-reviews"] .header {
     text-align: center;
 }
 @media (max-width: 720px) {
-    .br-community-stamp { width: 96px; height: 96px; flex: 0 0 96px; }
-    .br-community-stamp::before { inset: 10px; }
-    .br-community-stamp-label { font-size: 13px; }
-    .br-community-stamp-mark { top: 10px; font-size: 13px; }
+    .br-community-stamp { width: 84px; height: 84px; flex: 0 0 84px; }
+    .br-community-stamp::before { inset: 9px; }
+    .br-community-stamp-label { font-size: 12px; }
+    .br-community-stamp-mark { top: 9px; font-size: 12px; }
+}
+@media (max-width: 420px) {
+    .br-community-stamp { width: 72px; height: 72px; flex: 0 0 72px; transform: rotate(-4deg); }
+    .br-community-stamp::before { inset: 7px; }
+    .br-community-stamp-label { font-size: 10.5px; }
+    .br-community-stamp-mark { top: 7px; font-size: 11px; }
 }
 
 /* Aside: submit CTA + stats. Stacks below on narrow screens. */
@@ -1165,6 +1248,22 @@ body[data-page="book-reviews"] .header {
 }
 @media (max-width: 720px) {
     .br-community-stats { max-width: 100%; }
+    .br-community-stats > div { padding: 14px 18px; }
+    .br-community-stats dt {
+        font-size: 10px;
+        letter-spacing: .16em;
+        /* On narrow phones "MOST-LOVED SHELF" was the prime overflow vector;
+           let it wrap rather than force a 155px nowrap line. */
+        white-space: normal;
+    }
+    .br-community-stats dd { font-size: 20px; }
+}
+@media (max-width: 420px) {
+    .br-community-aside { padding: 10px; border-radius: 16px; }
+    .br-community-stats { border-radius: 12px; }
+    .br-community-stats > div { padding: 12px 14px; }
+    .br-community-stats dd { font-size: 18px; }
+    .br-submit-cta { padding: 14px 18px; font-size: 13.5px; }
 }
 
 /* Toolbar: search bar + status line, sat above the grid */

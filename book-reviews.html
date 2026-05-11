@@ -40,6 +40,27 @@
 
     <link rel="preload" as="image" href="/WebLogo.png" fetchpriority="high">
     <link rel="preload" as="image" href="/NewLogoShape.png" fetchpriority="high">
+    <!-- Hero stack book covers — RESPONSIVE preload. imagesrcset + imagesizes
+         mirrors the <img> srcset/sizes so the browser preloads exactly the
+         resource it would have fetched (1x on standard displays, @2x on
+         retina) — no duplicate-fetch when the <img> later parses. All three
+         are fetchpriority="high" so they paint with the LCP frame instead of
+         queuing behind less-important assets. -->
+    <link rel="preload" as="image" type="image/webp"
+          href="/images/book-reviews/hero-book-1.webp"
+          imagesrcset="/images/book-reviews/hero-book-1.webp 480w, /images/book-reviews/hero-book-1@2x.webp 960w"
+          imagesizes="(max-width: 960px) 280px, 420px"
+          fetchpriority="high">
+    <link rel="preload" as="image" type="image/webp"
+          href="/images/book-reviews/hero-book-2.webp"
+          imagesrcset="/images/book-reviews/hero-book-2.webp 480w, /images/book-reviews/hero-book-2@2x.webp 960w"
+          imagesizes="(max-width: 960px) 280px, 420px"
+          fetchpriority="high">
+    <link rel="preload" as="image" type="image/webp"
+          href="/images/book-reviews/hero-book-3.webp"
+          imagesrcset="/images/book-reviews/hero-book-3.webp 480w, /images/book-reviews/hero-book-3@2x.webp 960w"
+          imagesizes="(max-width: 960px) 280px, 420px"
+          fetchpriority="high">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap">
 
@@ -94,10 +115,59 @@
                 </div>
 
                 <div class="br-hero-stack br-reveal br-d2" aria-hidden="true">
-                    <div class="br-stack-book br-stack-book-1" data-title="An Immense World"></div>
-                    <div class="br-stack-book br-stack-book-2" data-title="The Disordered Cosmos"></div>
-                    <div class="br-stack-book br-stack-book-3" data-title="How Infrastructure Works"></div>
+                    <!-- Each book is its own positioned tile. The gradient on
+                         .br-stack-book-N is now a low-fi placeholder tinted to
+                         the book's dominant color — visible only while the
+                         WebP cover loads (or if it fails on a slow/old browser).
+                         Once the cover is in, the .br-stack-book-img layer
+                         fades over the gradient, and the gloss/scanline
+                         ::before stays on top so the parallax effect is
+                         preserved. -->
+                    <div class="br-stack-book br-stack-book-1">
+                        <img class="br-stack-book-img"
+                             src="/images/book-reviews/hero-book-1.webp"
+                             srcset="/images/book-reviews/hero-book-1.webp 480w, /images/book-reviews/hero-book-1@2x.webp 960w"
+                             sizes="(max-width: 960px) 280px, 420px"
+                             alt=""
+                             width="480" height="696"
+                             decoding="sync"
+                             fetchpriority="high"
+                             onload="this.classList.add('is-loaded');this.parentElement.dataset.loaded='true'">
+                    </div>
+                    <div class="br-stack-book br-stack-book-2">
+                        <img class="br-stack-book-img"
+                             src="/images/book-reviews/hero-book-2.webp"
+                             srcset="/images/book-reviews/hero-book-2.webp 480w, /images/book-reviews/hero-book-2@2x.webp 960w"
+                             sizes="(max-width: 960px) 280px, 420px"
+                             alt=""
+                             width="480" height="696"
+                             decoding="sync"
+                             fetchpriority="high"
+                             onload="this.classList.add('is-loaded');this.parentElement.dataset.loaded='true'">
+                    </div>
+                    <div class="br-stack-book br-stack-book-3">
+                        <img class="br-stack-book-img"
+                             src="/images/book-reviews/hero-book-3.webp"
+                             srcset="/images/book-reviews/hero-book-3.webp 480w, /images/book-reviews/hero-book-3@2x.webp 960w"
+                             sizes="(max-width: 960px) 280px, 420px"
+                             alt=""
+                             width="480" height="696"
+                             decoding="sync"
+                             fetchpriority="high"
+                             onload="this.classList.add('is-loaded');this.parentElement.dataset.loaded='true'">
+                    </div>
                 </div>
+                <!-- Catch images that were already in the browser cache (e.g.
+                     after a soft refresh) — the inline `onload` won't fire for
+                     a complete image at parse time, so we sweep once here. -->
+                <script>
+                    document.querySelectorAll('.br-stack-book-img').forEach(function (img) {
+                        if (img.complete && img.naturalWidth > 0) {
+                            img.classList.add('is-loaded');
+                            if (img.parentElement) img.parentElement.dataset.loaded = 'true';
+                        }
+                    });
+                </script>
             </div>
         </section>
 
