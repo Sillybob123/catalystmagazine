@@ -1520,7 +1520,11 @@
         const input = root.querySelector('.br-rating-slider-input');
         const fill = root.querySelector('.br-rating-slider-stars-fill');
         const value = root.querySelector('.br-rating-slider-value');
-        const flavor = root.querySelector('.br-rating-slider-flavor');
+        // Flavor label now lives in the hint slot OUTSIDE the slider root
+        // (so it sits below the pill, where text-input hints render).
+        // Try root first for backwards compat, then look at the sibling.
+        const flavor = root.querySelector('.br-rating-slider-flavor')
+            || document.getElementById('br-rating-flavor');
         const hidden = hiddenInputId ? document.getElementById(hiddenInputId) : null;
         if (!input) return;
 
@@ -1538,7 +1542,10 @@
                     value.textContent = '— Optional —';
                 }
             }
-            if (flavor) flavor.textContent = flavorForRating(n);
+            if (flavor) {
+                const f = flavorForRating(n);
+                flavor.textContent = f || 'Drag to set a rating from 0 to 5. Optional.';
+            }
             if (hidden) hidden.value = n > 0 ? n.toFixed(1) : '';
         };
 
@@ -1613,57 +1620,13 @@
             // Focus the first field for keyboard users.
             const firstInput = modalForm.querySelector('input, textarea, select');
             if (firstInput) requestAnimationFrame(() => firstInput.focus());
-            // DON'T render Turnstile on open. The widget's iframe loads
-            // network resources and (on some networks) momentarily steals
-            // focus, which made the modal feel "frozen" — users reported
-            // being unable to type or move the rating slider until the
-            // widget finished loading. Instead, render it lazily the
-            // first time the user actually interacts with the form, AND
-            // also at submit-time as a safety net (see submit handler).
-            scheduleLazyTurnstile();
-        }
-
-        // Render Turnstile only after the form is genuinely in use — so it
-        // never competes with the user for focus during the first paint of
-        // the modal. We listen for the first input/keydown event and then
-        // remove the listener so we don't fire repeatedly.
-        let lazyTurnstileScheduled = false;
-        function scheduleLazyTurnstile() {
-            if (lazyTurnstileScheduled) return;
-            lazyTurnstileScheduled = true;
-
-            // If there's no site key configured (local dev), don't bother.
-            if (!window.TURNSTILE_SITE_KEY) return;
-
-            const onFirstInteract = () => {
-                modalForm.removeEventListener('input', onFirstInteract, true);
-                modalForm.removeEventListener('keydown', onFirstInteract, true);
-                modalForm.removeEventListener('change', onFirstInteract, true);
-                // Render after a short idle so the user's keystroke lands
-                // first; Turnstile then paints in the background.
-                const fire = () => {
-                    ensureTurnstile();
-                    if (!turnstileWidgetId) {
-                        setTimeout(ensureTurnstile, 600);
-                        setTimeout(ensureTurnstile, 1800);
-                    }
-                };
-                if (typeof window.requestIdleCallback === 'function') {
-                    window.requestIdleCallback(fire, { timeout: 1200 });
-                } else {
-                    setTimeout(fire, 200);
-                }
-            };
-            modalForm.addEventListener('input', onFirstInteract, true);
-            modalForm.addEventListener('keydown', onFirstInteract, true);
-            modalForm.addEventListener('change', onFirstInteract, true);
-
-            // Failsafe: if the user just stares at the form for 4s without
-            // typing, render Turnstile anyway so the widget is ready when
-            // they finally hit Submit.
-            setTimeout(() => {
-                if (!turnstileWidgetId && window.TURNSTILE_SITE_KEY) onFirstInteract();
-            }, 4000);
+            // Turnstile is NOT rendered at modal-open. The widget's iframe
+            // and verification routine briefly fight the form for focus +
+            // event-loop time on some connections, which made the modal
+            // feel "frozen" — users reported not being able to type or
+            // move the rating slider during widget load. We render it
+            // only when the user actually presses Submit; until then the
+            // form is fully usable with zero network activity.
         }
 
         function closeModal() {
@@ -1680,8 +1643,48 @@
             if (lastFocused && typeof lastFocused.focus === 'function') {
                 lastFocused.focus();
             }
-            // Re-arm the lazy Turnstile loader for the next open.
-            lazyTurnstileScheduled = false;
+        }
+
+        // Lazily render Turnstile, then wait for a token. Returns the token
+        // string, or '' if the user cancels or it times out. Called at
+        // submit time so the widget never runs during the user's typing.
+        async function waitForTurnstileToken(maxWaitMs = 30000) {
+            if (!window.TURNSTILE_SITE_KEY) return '';
+            // Maybe we already have a token sitting in the form from a
+            // previous render (e.g. an earlier failed submit).
+            const existing = String(new FormData(modalForm).get('cf-turnstile-response') || '').trim();
+            if (existing) return existing;
+
+            // Render the widget if we haven't yet. The Turnstile script tag
+            // was deferred at page load, so window.turnstile is almost
+            // always ready by now. If it's STILL loading on a slow
+            // connection, poll a few times before giving up.
+            const renderWhenReady = () => new Promise((resolve) => {
+                let tries = 0;
+                const tick = () => {
+                    if (window.turnstile) { ensureTurnstile(); resolve(true); return; }
+                    if (++tries > 40) { resolve(false); return; } // ~8 s
+                    setTimeout(tick, 200);
+                };
+                tick();
+            });
+            const ready = await renderWhenReady();
+            if (!ready) return '';
+
+            // Poll for the token. Turnstile inserts a hidden
+            // <input name="cf-turnstile-response"> when the challenge
+            // resolves. On invisible/managed mode this usually completes
+            // in well under a second.
+            return new Promise((resolve) => {
+                const started = Date.now();
+                const poll = () => {
+                    const t = String(new FormData(modalForm).get('cf-turnstile-response') || '').trim();
+                    if (t) return resolve(t);
+                    if (Date.now() - started > maxWaitMs) return resolve('');
+                    setTimeout(poll, 200);
+                };
+                poll();
+            });
         }
 
         modalOpenBtn?.addEventListener('click', openModal);
@@ -1724,9 +1727,6 @@
             modalError.hidden = true;
 
             const data = new FormData(modalForm);
-            // Turnstile injects its token as a hidden input named
-            // cf-turnstile-response inside the widget container.
-            const turnstileToken = String(data.get('cf-turnstile-response') || '').trim();
             const payload = {
                 submitterName:  String(data.get('submitterName')  || '').trim(),
                 submitterEmail: String(data.get('submitterEmail') || '').trim(),
@@ -1737,12 +1737,14 @@
                 genre:          String(data.get('genre')          || '').trim(),
                 deck:           String(data.get('deck')           || '').trim(),
                 reviewText:     String(data.get('reviewText')     || '').trim(),
-                turnstileToken,
+                turnstileToken: '',  // filled in after waitForTurnstileToken()
                 // Honeypot. Real users send this empty; bots will fill it.
                 website:        String(data.get('website')        || '').trim(),
             };
 
-            // Lightweight client-side validation; the server re-validates too.
+            // Validate content first — fail fast on missing fields BEFORE
+            // we kick off the Turnstile dance, so the user isn't told
+            // "verifying…" when their form was incomplete anyway.
             const errors = [];
             if (!payload.submitterName)  errors.push('Please tell us your name.');
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.submitterEmail)) errors.push('Please enter a valid email address.');
@@ -1751,14 +1753,6 @@
             if (!payload.genre)          errors.push('Please pick a discipline so we can shelve it right.');
             if (payload.deck.length < 10) errors.push('Please add a one-sentence summary of the book.');
             if (payload.reviewText.length < 40) errors.push('Tell us a little more — at least a few sentences.');
-            // Turnstile is rendered lazily (on first form input), so if a
-            // user somehow reaches Submit without having interacted (e.g.
-            // pasted everything via autofill) the widget may not be on
-            // screen yet. Trigger it now and ask them to complete it.
-            if (window.TURNSTILE_SITE_KEY && !payload.turnstileToken) {
-                ensureTurnstile();
-                errors.push('Please complete the human-verification check below before submitting.');
-            }
             if (errors.length) {
                 modalError.textContent = errors[0];
                 modalError.hidden = false;
@@ -1772,6 +1766,22 @@
             modalSubmitBtn.disabled = true;
             if (idle) idle.hidden = true;
             if (busy) busy.hidden = false;
+
+            // NOW render Turnstile and wait for a token. This is the
+            // FIRST moment the widget appears on the page, so the user
+            // never had any chance for it to interfere with their typing.
+            if (window.TURNSTILE_SITE_KEY) {
+                payload.turnstileToken = await waitForTurnstileToken();
+                if (!payload.turnstileToken) {
+                    modalError.textContent = 'Please complete the human-verification check that just appeared, then press Send again.';
+                    modalError.hidden = false;
+                    modalError.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    modalSubmitBtn.disabled = false;
+                    if (idle) idle.hidden = false;
+                    if (busy) busy.hidden = true;
+                    return;
+                }
+            }
 
             try {
                 const res = await fetch('/api/book-reviews/submit', {

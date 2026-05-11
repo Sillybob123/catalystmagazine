@@ -1829,37 +1829,20 @@ body[data-page="book-reviews"] .header {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px 18px;
-    /* Stretch each row so the rating card (tallest control) sets the
-       row height and the adjacent ISBN / Discipline cells fill to match.
-       Inside each .br-form-field we use min-content rows + a 1fr filler
-       so the input stays pinned at the natural place and the extra
-       vertical space sits below the hint — producing the visually
-       balanced grid the user expects. */
-    align-items: stretch;
+    /* Each row sizes to its natural content. The rating card was
+       previously much taller than a text input, which created visible
+       gaps; it's now a compact single-row control (see .br-rating-slider
+       below) so cells in the same row are the same height naturally,
+       without us forcing a min-height floor that produced dead space
+       in the other cells. */
+    align-items: start;
 }
 .br-form-field {
-    /* Grid (not flex) so we can absorb extra height when the row gets
-       stretched to match a taller neighbor (e.g. the rating card). The
-       three content rows are intrinsic-sized; a trailing 1fr "filler"
-       row swallows whatever vertical slack remains in the cell, so the
-       input + hint stay pinned to the top of the cell instead of being
-       centered or stretched. */
-    display: grid;
-    grid-template-rows: auto auto auto 1fr;
-    row-gap: 6px;
-    /* Every single-line field in the grid floors at this height so the
-       rating card (which is the tallest control) doesn't tower over the
-       ISBN / Discipline rows. The value matches the rating card's
-       rendered height: label (≈22px) + card (≈106px) ≈ 128px. */
-    min-height: 128px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
-/* Full-width fields (deck, review textarea) don't need the floor — the
-   textarea is intentionally tall and the deck is a single-line above the
-   long review. Reset the min-height for those so we don't add ugly slack. */
-.br-form-field.full {
-    grid-column: 1 / -1;
-    min-height: 0;
-}
+.br-form-field.full { grid-column: 1 / -1; }
 .br-form-field label {
     font-size: 12px;
     font-weight: 600;
@@ -1902,62 +1885,90 @@ body[data-page="book-reviews"] .header {
 
 /* =================================================================
    RATING SLIDER — public submission form
-   Continuous 0.0–5.0 rating with a star bar above (filled by width),
-   a native <input type="range">, and a live numeric readout + flavor
-   label below. Form handler still reads the hidden #br-rating input.
+   Compact single-row control sized to match the height of an adjacent
+   text input, so the form grid keeps clean even-row geometry. Inside
+   the pill: a star-overlay track (filled by width %) on the left, the
+   slider thumb riding on top, and a numeric readout on the right.
+   The flavor label ("Strongly recommend", etc.) lives in the hint
+   slot beneath the pill, mirroring how text-input hints render.
+   Form handler still reads the hidden #br-rating input.
    ================================================================= */
 .br-rating-slider {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    /* Match the visual chrome of the sibling text inputs — same paper-off
-       background, same 1px paper-line border, same 10px radius — so the
-       rating cell feels like a peer to the inputs across the row, not
-       like a different control. */
-    padding: 12px 14px;
+    align-items: center;
+    gap: 12px;
+    /* Match the visual chrome AND height of the sibling text inputs
+       (.br-form-field input) so the rating cell is a true peer in the
+       grid — same paper-off background, same border, same radius, and
+       same 48px minimum height. */
+    padding: 6px 14px;
     background: var(--paper-off);
     border: 1px solid var(--paper-line);
     border-radius: 10px;
+    min-height: 48px;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.br-rating-slider:focus-within {
+    background: var(--paper);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+}
+/* Star track — a thin row of stars that fills with accent color from
+   left as the value rises. Positioned UNDER the slider thumb so the
+   star bar reads as the track itself, not as a separate widget. */
+.br-rating-slider-track {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    height: 36px;
 }
 .br-rating-slider-stars {
-    position: relative;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
     line-height: 1;
     font-family: Georgia, 'Times New Roman', serif;
-    /* Stars sized to match the inline-input height so the card reads as
-       a single 48px tall row of stars + slider + readout, all aligned. */
-    font-size: 22px;
-    letter-spacing: 4px;
+    font-size: 18px;
+    letter-spacing: 6px;
     user-select: none;
+    /* Stars sit visually centered behind the slider thumb. */
+    z-index: 0;
 }
-.br-rating-slider-stars-base {
-    color: rgba(15, 23, 42, 0.16);
-}
+.br-rating-slider-stars-base,
 .br-rating-slider-stars-fill {
     position: absolute;
-    top: 0; left: 0;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    padding-left: 2px;
+}
+.br-rating-slider-stars-base {
+    color: rgba(15, 23, 42, 0.18);
+}
+.br-rating-slider-stars-fill {
     width: 0%;
     overflow: hidden;
     white-space: nowrap;
     color: var(--accent);
-    /* Slightly delayed transition so the bar visually trails the thumb
-       and reads as continuous rather than jumpy when the user drags. */
     transition: width .12s ease-out;
 }
-.br-rating-slider-row {
-    padding: 6px 2px 4px;
-}
 
-/* The form-field default styles (.br-form-field input) add cream
-   background + border + padding + min-height: 48px to every <input>.
-   The range slider needs none of that; reset all four explicitly so
-   the track pseudo-elements below are what actually paints. */
+/* Slider sits ON TOP of the stars — transparent track so the stars
+   show through, thumb visible. Reset all the inherited form-field
+   defaults that would otherwise paint a pill over the stars. */
 .br-rating-slider-input,
 .br-form-field .br-rating-slider-input {
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    position: absolute;
+    inset: 0;
     width: 100%;
-    height: 22px;            /* hit-area; the visual track is shorter */
+    height: 100%;
     background: transparent;
     border: 0;
     padding: 0;
@@ -1966,63 +1977,41 @@ body[data-page="book-reviews"] .header {
     border-radius: 0;
     outline: none;
     cursor: pointer;
-    /* Expose the current fill % to the track gradient. JS writes
-       --br-pct on the .br-rating-slider container; we read it here
-       so the gradient can use it across all browsers' track pseudos. */
+    z-index: 1; /* above the .br-rating-slider-stars */
 }
 
-/* WebKit / Blink — Safari, Chrome, modern Edge. The track is painted
-   by the runnable-track pseudo-element, NOT by the <input> background,
-   which is why the previous gradient was invisible on macOS. */
+/* WebKit / Blink track — transparent so the stars below read as the
+   "filled" portion. Thumb is a small accent-bordered circle. */
 .br-rating-slider-input::-webkit-slider-runnable-track {
-    height: 6px;
-    border-radius: 999px;
-    background: linear-gradient(
-        to right,
-        var(--accent) 0%,
-        var(--accent) calc(var(--br-pct, 0) * 1%),
-        rgba(15, 23, 42, 0.16) calc(var(--br-pct, 0) * 1%),
-        rgba(15, 23, 42, 0.16) 100%
-    );
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    height: 100%;
+    background: transparent;
+    border: 0;
 }
 .br-rating-slider-input::-webkit-slider-thumb {
     appearance: none;
     -webkit-appearance: none;
-    width: 22px; height: 22px;
+    width: 18px; height: 18px;
     border-radius: 50%;
     background: var(--paper);
     border: 2px solid var(--accent);
-    box-shadow: 0 4px 10px -2px rgba(122, 31, 43, .45);
+    box-shadow: 0 3px 8px -2px rgba(122, 31, 43, .55);
     cursor: grab;
+    margin-top: 0;
     transition: transform .12s ease, box-shadow .12s ease;
-    /* Center the 22px thumb on the 6px track. (22 - 6) / 2 = 8, with
-       a -1px nudge to account for the track border. */
-    margin-top: -9px;
 }
-
-/* Firefox — track + progress are separate pseudo-elements. */
 .br-rating-slider-input::-moz-range-track {
-    height: 6px;
-    border-radius: 999px;
-    background: rgba(15, 23, 42, 0.16);
-    border: 1px solid rgba(15, 23, 42, 0.08);
-}
-.br-rating-slider-input::-moz-range-progress {
-    height: 6px;
-    border-radius: 999px;
-    background: var(--accent);
+    height: 100%;
+    background: transparent;
+    border: 0;
 }
 .br-rating-slider-input::-moz-range-thumb {
-    width: 22px; height: 22px;
+    width: 18px; height: 18px;
     border-radius: 50%;
     background: var(--paper);
     border: 2px solid var(--accent);
-    box-shadow: 0 4px 10px -2px rgba(122, 31, 43, .45);
+    box-shadow: 0 3px 8px -2px rgba(122, 31, 43, .55);
     cursor: grab;
 }
-
-/* Focus + active states, per-engine */
 .br-rating-slider-input:focus-visible::-webkit-slider-thumb {
     box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
 }
@@ -2031,44 +2020,44 @@ body[data-page="book-reviews"] .header {
 }
 .br-rating-slider-input:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.1); }
 .br-rating-slider-input:active::-moz-range-thumb     { cursor: grabbing; transform: scale(1.1); }
-.br-rating-slider-readout {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-}
+
+/* Numeric readout on the right end of the pill — "4.2 / 5". */
 .br-rating-slider-value {
+    flex: 0 0 auto;
     font-family: 'Playfair Display', Georgia, serif;
     font-weight: 600;
-    font-size: 18px;
+    font-size: 16px;
     color: var(--ink);
     line-height: 1;
-    /* The "— Optional —" placeholder uses the same line; lower its size
-       so it doesn't read as if a rating is set. */
+    min-width: 56px;
+    text-align: right;
+    white-space: nowrap;
 }
 .br-rating-slider[data-value="0"] .br-rating-slider-value {
     font-family: inherit;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--text-subtle);
 }
 .br-rating-slider-value small {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 400;
     color: var(--text-subtle);
-    margin-left: 3px;
+    margin-left: 2px;
 }
+
+/* Flavor sits in the hint slot below the pill — same typography as
+   the other hints in the form so the cell visually matches a text
+   input + hint stack. */
 .br-rating-slider-flavor {
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: .01em;
+    color: var(--text-subtle);
+    font-style: normal;
+    min-height: 1.2em;
+}
+.br-rating-slider:not([data-value="0"]) + .br-rating-slider-flavor {
     color: var(--accent-deep);
     font-style: italic;
-    text-align: right;
-    min-height: 1em;
-    /* On a narrow column the flavor + value fit on one line; if wrap
-       triggers we let them stack but keep them right-aligned. */
+    font-weight: 500;
 }
 @media (prefers-reduced-motion: reduce) {
     .br-rating-slider-stars-fill,

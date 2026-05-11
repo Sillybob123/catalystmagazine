@@ -538,27 +538,30 @@
                                  value so the previous tone is preserved. The hidden
                                  `br-rating` input still carries the submitted number — the
                                  form handler doesn't change. -->
+                            <!-- Compact single-row layout: slider on the left,
+                                 numeric value on the right, flavor label below
+                                 in the "hint" slot. Sizes naturally to ~match
+                                 the height of an adjacent text input so the
+                                 grid row doesn't get forced taller. -->
                             <div class="br-rating-slider"
                                  id="br-rating-slider"
                                  data-value="0"
                                  role="group"
                                  aria-label="Your rating, on a 0 to 5 scale">
-                                <div class="br-rating-slider-stars" aria-hidden="true">
-                                    <div class="br-rating-slider-stars-base">★★★★★</div>
-                                    <div class="br-rating-slider-stars-fill" id="br-rating-stars-fill" style="width:0%;">★★★★★</div>
-                                </div>
-                                <div class="br-rating-slider-row">
+                                <div class="br-rating-slider-track" aria-hidden="true">
                                     <input type="range"
                                            class="br-rating-slider-input"
                                            id="br-rating-input"
                                            min="0" max="5" step="0.1" value="0"
                                            aria-label="Slide to set your rating">
+                                    <div class="br-rating-slider-stars">
+                                        <div class="br-rating-slider-stars-base">★★★★★</div>
+                                        <div class="br-rating-slider-stars-fill" id="br-rating-stars-fill" style="width:0%;">★★★★★</div>
+                                    </div>
                                 </div>
-                                <div class="br-rating-slider-readout">
-                                    <span class="br-rating-slider-value" id="br-rating-value">— Optional —</span>
-                                    <span class="br-rating-slider-flavor" id="br-rating-flavor"></span>
-                                </div>
+                                <div class="br-rating-slider-value" id="br-rating-value">— Optional —</div>
                             </div>
+                            <span class="hint br-rating-slider-flavor" id="br-rating-flavor">Drag to set a rating from 0 to 5. Optional.</span>
                             <!-- Submitted value (the form handler reads this id). It is
                                  set by the slider script in book-reviews.js. -->
                             <input type="hidden" id="br-rating" name="rating" value="">
