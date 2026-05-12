@@ -167,7 +167,7 @@ const ROUTES = {
     icon: ICONS.list,
     roles: ["*"],
     group: "main",
-    loader: () => import("./tasks.js?v=tasks-v3"),
+    loader: () => import("./tasks.js?v=tasks-v4"),
   },
   "#/writer/draft": {
     label: "Submit a draft",

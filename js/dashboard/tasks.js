@@ -363,10 +363,12 @@ function openTaskDetailModal(taskId) {
           priority: task.priority || "medium",
           deadline: task.deadline || null,
           creatorName: task.creatorName || _profile.name || _ctx.user.email,
-          assignees: buildAssigneePayload(
-            task.assigneeEmails || [],
-            task.assigneeNames || [],
-            task.assigneeExtraEmails || []
+          // Prefer the flat notify list (which already expanded
+          // primary + extraEmails at create time). Fall back to
+          // assigneeEmails for tasks that predate the flat fields.
+          assignees: zipNotifyList(
+            task.notifyEmails || task.assigneeEmails || [],
+            task.notifyNames  || task.assigneeNames  || []
           ),
         });
         toast("Task approved — assignees notified by email.", "success", 4000); m.close();
@@ -539,14 +541,31 @@ function openTaskCreateModal() {
     if (title.length < 2) { errEl.textContent = "Title is required."; return; }
 
     const checked = [...body.querySelectorAll("#tc-assignees input:checked")];
-    const assigneeIds         = checked.map(c => c.value);
-    const assigneeNames       = checked.map(c => c.dataset.name);
-    const assigneeEmails      = checked.map(c => c.dataset.email || "");
-    const assigneeExtraEmails = checked.map(c => (c.dataset.extraEmails || "").split(";").filter(Boolean));
+    const assigneeIds    = checked.map(c => c.value);
+    const assigneeNames  = checked.map(c => c.dataset.name);
+    const assigneeEmails = checked.map(c => c.dataset.email || "");
     if (!checked.length) {
       errEl.textContent = "Pick at least one assignee.";
       return;
     }
+
+    // Flatten primary + extra emails into a single notification list.
+    // Firestore rejects nested arrays (`[[a,b],[c]]`) so we store two
+    // parallel flat arrays — `notifyEmails` and `notifyNames` — that
+    // line up index-for-index. Each notify entry is one email; users
+    // with extraEmails contribute multiple entries that share a name.
+    const notifyEmails = [];
+    const notifyNames  = [];
+    checked.forEach((c) => {
+      const name = c.dataset.name;
+      const primary = (c.dataset.email || "").trim();
+      const extras  = (c.dataset.extraEmails || "").split(";").map(s => s.trim()).filter(Boolean);
+      [primary, ...extras].forEach((e) => {
+        if (!e) return;
+        notifyEmails.push(e);
+        notifyNames.push(name);
+      });
+    });
 
     // Admin-created tasks skip the "pending" stage. The whole point of
     // pending → approved was to give admins a veto over writer-proposed
@@ -571,7 +590,12 @@ function openTaskCreateModal() {
         assigneeName: assigneeNames[0] || null,
         assigneeNames,
         assigneeEmails,
-        assigneeExtraEmails,
+        // Two parallel flat arrays of (email, name) for everyone who
+        // should be notified — primary + extraEmails for each assignee
+        // already expanded out. Stored flat (not [[…]]) because
+        // Firestore rejects nested arrays.
+        notifyEmails,
+        notifyNames,
         createdAt: nowIso,
         updatedAt: nowIso,
         activity: [{
@@ -592,7 +616,7 @@ function openTaskCreateModal() {
           title, description: desc, priority,
           deadline: deadline || null,
           creatorName,
-          assignees: buildAssigneePayload(assigneeEmails, assigneeNames, assigneeExtraEmails),
+          assignees: zipNotifyList(notifyEmails, notifyNames),
         });
       }
 
@@ -641,22 +665,18 @@ async function _notify(payload) {
   }
 }
 
-// Zip emails + names + extras into the [{email, name}] shape the API
-// expects. Each user's extra emails are flattened into their own row so
-// the server can send to every address they've added on the Users &
-// Roles page (Lori has both gwmail + gmail, Aidan has both gmail +
-// gwmail — both addresses get the assignment email).
-function buildAssigneePayload(emails, names, extraEmailsList) {
+// Zip two parallel flat arrays into the [{email, name}] shape the API
+// expects. The arrays are assumed to already be expanded — i.e. each
+// row is one email, with the user's name repeated for every extra
+// address they have on file. (We can't store nested arrays in
+// Firestore, so the expansion happens at create-time and the result
+// is what gets persisted.)
+function zipNotifyList(emails, names) {
   const out = [];
   emails.forEach((email, i) => {
-    const name = (names[i] || "").trim();
-    const primary = (email || "").trim();
-    if (primary) out.push({ email: primary, name });
-    const extras = Array.isArray(extraEmailsList?.[i]) ? extraEmailsList[i] : [];
-    for (const e of extras) {
-      const trimmed = (e || "").trim();
-      if (trimmed) out.push({ email: trimmed, name });
-    }
+    const trimmed = (email || "").trim();
+    if (!trimmed) return;
+    out.push({ email: trimmed, name: (names[i] || "").trim() });
   });
   return out;
 }
