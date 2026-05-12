@@ -213,9 +213,22 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
   outline: 2px solid var(--brx-accent, #7a1f2b);
   outline-offset: 3px;
 }
+/* Mobile/tablet — the .article-page padding-top drops to 32px and the
+   floating site header pill is ~56-60px tall (top: 10-12px), so the
+   back-link needs ~48px of its own top margin to clear it with a
+   comfortable gap. 32 + 48 = 80px total, which beats the header
+   bottom edge (~68-76px) on every mobile viewport. */
 @media (max-width: 720px) {
   body[data-page="article"].is-book-review .back-link {
-    margin: 16px 0 8px 0;
+    margin: 48px 0 8px 0;
+  }
+}
+@media (max-width: 480px) {
+  body[data-page="article"].is-book-review .back-link {
+    /* Slightly tighter on phones — header is only ~56px tall here. */
+    margin: 44px 0 6px 0;
+    font-size: 12px;
+    padding: 7px 12px 7px 10px;
   }
 }
 
