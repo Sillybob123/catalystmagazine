@@ -1131,7 +1131,7 @@ function showNotification(message, type = 'success') {
 // ============================================
 // ARTICLE DETAIL PAGE
 // ============================================
-function initArticleDetailPage(data) {
+async function initArticleDetailPage(data) {
     if (!Array.isArray(data)) {
         window.location.href = '/articles';
         return;
@@ -1143,25 +1143,23 @@ function initArticleDetailPage(data) {
     const pathSlug = window.location.pathname.match(/\/(?:article|book-review)\/([^/?#]+)/)?.[1];
     const urlParams = new URLSearchParams(window.location.search);
     const rawId = urlParams.get('id');
+    const isBookReviewUrl = window.location.pathname.startsWith('/book-review/');
 
-    let article;
-    if (pathSlug) {
-        // Prefer the article ID injected by the Cloudflare Function (no scan needed)
-        const injectedId = document.querySelector('meta[name="catalyst-article-id"]')?.content;
-        if (injectedId) {
-            article = data.find(a => String(a.id) === String(injectedId));
-        }
-        if (!article) {
-            const slug = decodeURIComponent(pathSlug).toLowerCase();
-            article = data.find(a => String(a.slug || '').toLowerCase() === slug || slugKey(a.link || a.url || '') === slug || titleToSlug(a.title) === slug);
-        }
-    } else if (rawId) {
-        article = data.find(a => String(a.id) === String(rawId));
-    }
+    let article = await resolveArticleForDetailPage({ data, pathSlug, rawId });
 
     if (!article) {
-        window.location.href = '/articles';
+        // Last-resort: book-review URLs always have a sibling /book-reviews
+        // index, so route there instead of /articles. Otherwise fall back
+        // to the normal articles index.
+        window.location.href = isBookReviewUrl ? '/book-reviews' : '/articles';
         return;
+    }
+
+    // The resolver may have returned an article that wasn't yet in the
+    // cached list (e.g. fetched directly by ID). Make sure it's in
+    // articleData so related-articles / related-books picks see it.
+    if (!data.some(a => String(a.id) === String(article.id))) {
+        data.push(article);
     }
 
     // Fetch the full Firestore document to get the article body (body/content),
@@ -1185,6 +1183,134 @@ function initArticleDetailPage(data) {
     }).catch(() => renderArticleDetail(article));
 
     renderRelatedArticles(article, data);
+}
+
+// =============================================================
+// Article-detail resolver — multi-strategy lookup so a stale cache,
+// a truncated URL, or a Firestore listing failure doesn't bounce
+// the reader to /articles when there's a real article behind the URL.
+//
+// Strategies, in order:
+//   1. <meta name="catalyst-article-id"> — set by the Pages function
+//      when the slug resolved server-side. Always trust this if present.
+//      Fetches by ID directly if the ID isn't in the local cache.
+//   2. Local cache match (slug, link slug, or title→slug).
+//   3. Prefix-tolerant local cache match — handles URLs that got
+//      truncated by mail clients / iMessage / Twitter (the long-title
+//      reviews are most affected: "the-disappearing-spoon-and-…" can
+//      lose its tail and still be unambiguously matchable).
+//   4. Direct Firestore slug query (cold cache, listing query failure).
+// =============================================================
+async function resolveArticleForDetailPage({ data, pathSlug, rawId }) {
+    const injectedId = document.querySelector('meta[name="catalyst-article-id"]')?.content || '';
+
+    if (injectedId) {
+        const cached = data.find(a => String(a.id) === String(injectedId));
+        if (cached) return cached;
+        const fetched = await fetchArticleByIdAsListing(injectedId);
+        if (fetched) return fetched;
+    }
+
+    if (rawId && !pathSlug) {
+        const cached = data.find(a => String(a.id) === String(rawId));
+        if (cached) return cached;
+        const fetched = await fetchArticleByIdAsListing(rawId);
+        if (fetched) return fetched;
+    }
+
+    if (!pathSlug) return null;
+
+    const wantedSlug = decodeURIComponent(pathSlug).toLowerCase();
+
+    // Exact match in the local cache.
+    let match = data.find(a =>
+        String(a.slug || '').toLowerCase() === wantedSlug
+        || slugKey(a.link || a.url || '') === wantedSlug
+        || titleToSlug(a.title) === wantedSlug
+    );
+    if (match) return match;
+
+    // Prefix-tolerant fallback. If the URL got truncated mid-slug, this
+    // still matches as long as the prefix is unique. We require ≥40 chars
+    // of prefix to avoid collisions on short titles.
+    if (wantedSlug.length >= 40) {
+        const candidates = data.filter(a => {
+            const s = String(a.slug || '').toLowerCase() || titleToSlug(a.title);
+            return s && s.startsWith(wantedSlug);
+        });
+        if (candidates.length === 1) return candidates[0];
+        // The other direction: cached slug is a prefix of the wanted slug
+        // (rare — happens when the title was edited but the URL is from a
+        // share before the edit landed).
+        const reverse = data.filter(a => {
+            const s = String(a.slug || '').toLowerCase() || titleToSlug(a.title);
+            return s && s.length >= 40 && wantedSlug.startsWith(s);
+        });
+        if (reverse.length === 1) return reverse[0];
+    }
+
+    // Last resort: ask Firestore directly for a doc with this slug. Covers
+    // the case where the listing query failed but the article exists.
+    const fetched = await fetchArticleBySlug(wantedSlug);
+    if (fetched) return fetched;
+
+    return null;
+}
+
+// Fetch a single published story by Firestore doc ID and shape it like a
+// listing record (so the rest of the article-detail page can consume it).
+async function fetchArticleByIdAsListing(storyId) {
+    if (!storyId) return null;
+    const projectId = 'catalystwriters-5ce43';
+    try {
+        const res = await fetch(
+            `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/stories/${encodeURIComponent(storyId)}`
+        );
+        if (!res.ok) return null;
+        const doc = await res.json();
+        if (doc.fields?.status?.stringValue !== 'published') return null;
+        return firestoreDocToArticle(doc);
+    } catch {
+        return null;
+    }
+}
+
+// Fetch a single published story whose `slug` field equals the given value.
+// Used as a final fallback when the cached articleData listing didn't
+// contain the article (cold cache, listing query failure, etc.).
+async function fetchArticleBySlug(slug) {
+    if (!slug) return null;
+    const projectId = 'catalystwriters-5ce43';
+    try {
+        const res = await fetch(
+            `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    structuredQuery: {
+                        from: [{ collectionId: 'stories' }],
+                        where: {
+                            compositeFilter: {
+                                op: 'AND',
+                                filters: [
+                                    { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'published' } } },
+                                    { fieldFilter: { field: { fieldPath: 'slug' },   op: 'EQUAL', value: { stringValue: slug } } },
+                                ],
+                            },
+                        },
+                        limit: 1,
+                    },
+                }),
+            }
+        );
+        if (!res.ok) return null;
+        const rows = await res.json();
+        const doc = Array.isArray(rows) && rows[0]?.document;
+        return doc ? firestoreDocToArticle(doc) : null;
+    } catch {
+        return null;
+    }
 }
 
 async function fetchFullArticleBody(storyId) {

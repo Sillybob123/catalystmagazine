@@ -250,34 +250,77 @@ function bookReviewCard(review, siteUrl) {
   const blurb = (review.excerpt || review.deck || review.dek || "")
     .replace(/\s+/g, " ")
     .trim();
-  const blurbShort = blurb.length > 140 ? blurb.slice(0, 139).trimEnd() + "…" : blurb;
+  // Full-width blurb beneath the cover/title row gets more room than the
+  // old sidebar layout — bump the cap so good one-sentence pitches don't
+  // get clipped mid-thought.
+  const blurbShort = blurb.length > 220 ? blurb.slice(0, 219).trimEnd() + "…" : blurb;
 
+  // Two-row layout per the editorial brief:
+  //   Row 1: [ cover image | title + author + rating ]
+  //   Row 2: [ blurb spanning the full card width    ]
+  //
+  // Cover keeps its natural 2:3 book-jacket aspect (no cropping). Title
+  // sits to the right at top so the rating + author cluster has breathing
+  // room next to the cover. The blurb runs full-width below, which is
+  // where most of the reading happens — gives long sentences enough column
+  // to breathe instead of squeezing them into a 200px sidebar.
+  //
+  // Implementation note: each "row" is its own <table> stacked inside the
+  // card wrapper. Outlook + Gmail's mobile clipper handle two stacked
+  // tables more reliably than a single table with rowspans, and stacking
+  // also lets the cover keep a fixed pixel width without breaking the
+  // blurb's responsive flow underneath.
+  const sansStack = "-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif";
+  const serifStack = "Georgia,'Times New Roman',serif";
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="margin:0 0 10px 0;background:${COLORS.surface};border:1px solid ${COLORS.hairline};border-radius:12px;overflow:hidden;">
+           style="margin:0 0 14px 0;background:${COLORS.surface};border:1px solid ${COLORS.hairline};border-radius:12px;overflow:hidden;">
+      <!-- Row 1: cover (left) + title cluster (right) -->
       <tr>
-        <td valign="top" width="120" style="padding:14px 0 14px 14px;width:120px;vertical-align:top;">
-          ${cover ? `
-          <a href="${esc(href)}" style="display:block;text-decoration:none;line-height:0;font-size:0;">
-            <img src="${escAttr(cover)}" alt="${escAttr(title)}" width="106"
-                 style="width:106px;height:auto;max-height:160px;display:block;border:0;border-radius:4px;box-shadow:0 4px 12px rgba(14,17,23,0.18);">
-          </a>` : `<div style="width:106px;height:160px;background:#f1ede2;border-radius:4px;"></div>`}
-        </td>
-        <td valign="top" style="padding:14px 18px 14px 16px;">
-          <a href="${esc(href)}" style="text-decoration:none;color:${COLORS.ink};">
-            <div style="font-family:Georgia,'Times New Roman',serif;font-size:16px;font-weight:700;line-height:1.25;color:${COLORS.ink};margin-bottom:4px;">${esc(title)}</div>
-          </a>
-          ${bookAuthor ? `<div style="font-size:12px;color:${COLORS.muted};margin-bottom:8px;font-style:italic;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">by ${esc(bookAuthor)}</div>` : ""}
-          ${rating ? `
-          <div style="margin-bottom:8px;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">
-            <span style="display:inline-block;font-size:12px;font-weight:700;color:#7a1f2b;letter-spacing:0.02em;">★ ${esc(rating)}</span>
-            <span style="display:inline-block;font-size:11px;color:${COLORS.muted};margin-left:4px;">/ 5</span>
-          </div>` : ""}
-          ${blurbShort ? `<div style="font-size:13px;line-height:1.55;color:${COLORS.inkSoft};margin-bottom:10px;font-family:Georgia,'Times New Roman',serif;">${esc(blurbShort)}</div>` : ""}
-          ${reviewer ? `<div style="font-size:11px;color:${COLORS.muted};margin-bottom:10px;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:0.04em;text-transform:uppercase;font-weight:600;">Reviewed by ${esc(reviewer)}</div>` : ""}
-          <a href="${esc(href)}" style="font-size:12px;color:#7a1f2b;text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">Read the review &rarr;</a>
+        <td style="padding:18px 20px 14px 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <!-- Cover keeps its natural book-jacket aspect (~2:3). No
+                   cropping — the cover IS the brand cue for a review card. -->
+              <td valign="top" width="110" style="width:110px;padding-right:18px;vertical-align:top;">
+                ${cover ? `
+                <a href="${esc(href)}" style="display:block;text-decoration:none;line-height:0;font-size:0;">
+                  <img src="${escAttr(cover)}" alt="${escAttr(title)}" width="110"
+                       style="width:110px;height:auto;display:block;border:0;border-radius:3px;box-shadow:0 6px 16px rgba(14,17,23,0.22);background:#f1ede2;">
+                </a>` : `<div style="width:110px;height:165px;background:#f1ede2;border-radius:3px;"></div>`}
+              </td>
+              <!-- Title + author + rating, anchored top-left next to the cover. -->
+              <td valign="top" style="vertical-align:top;">
+                <a href="${esc(href)}" style="text-decoration:none;color:${COLORS.ink};">
+                  <div style="font-family:${serifStack};font-size:18px;font-weight:700;line-height:1.25;color:${COLORS.ink};margin:0 0 6px 0;letter-spacing:-0.005em;">${esc(title)}</div>
+                </a>
+                ${bookAuthor ? `<div style="font-size:13px;color:${COLORS.muted};margin:0 0 10px 0;font-style:italic;font-family:${sansStack};">by ${esc(bookAuthor)}</div>` : ""}
+                ${rating ? `
+                <div style="margin:2px 0 8px 0;font-family:${sansStack};">
+                  <span style="display:inline-block;font-size:13px;font-weight:700;color:#7a1f2b;letter-spacing:0.02em;">★ ${esc(rating)}</span>
+                  <span style="display:inline-block;font-size:11px;color:${COLORS.muted};margin-left:4px;">/ 5</span>
+                </div>` : ""}
+                ${reviewer ? `<div style="font-size:10px;color:${COLORS.muted};font-family:${sansStack};letter-spacing:0.08em;text-transform:uppercase;font-weight:700;margin:2px 0 0 0;">Reviewed by ${esc(reviewer)}</div>` : ""}
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
+      ${blurbShort ? `
+      <!-- Row 2: blurb runs full width below, with a thin hairline so the
+           card reads as two distinct registers (catalog header → review). -->
+      <tr>
+        <td style="padding:0 20px 18px 20px;">
+          <div style="height:1px;background:${COLORS.hairline};font-size:1px;line-height:1px;margin:0 0 14px 0;">&nbsp;</div>
+          <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:${COLORS.inkSoft};font-family:${serifStack};">${esc(blurbShort)}</p>
+          <a href="${esc(href)}" style="font-size:13px;color:#7a1f2b;text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:${sansStack};">Read the review &rarr;</a>
+        </td>
+      </tr>` : `
+      <tr>
+        <td style="padding:0 20px 18px 20px;">
+          <a href="${esc(href)}" style="font-size:13px;color:#7a1f2b;text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:${sansStack};">Read the review &rarr;</a>
+        </td>
+      </tr>`}
     </table>`;
 }
 
