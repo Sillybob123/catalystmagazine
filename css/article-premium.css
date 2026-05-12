@@ -78,13 +78,18 @@ body[data-page="article"] .article-page > .container { max-width: none; padding:
 }
 
 /* Pill — moved down well below the floating header so it never
-   collides with the nav. Sits in the lower-right corner where most
-   reading-progress indicators live (Medium, Substack). */
+   collides with the nav. Lives in the lower-right corner above the
+   scroll-to-top button (.scroll-top is 48px tall, bottom: 32px, so
+   the pill sits at bottom: 92px = 32 + 48 + 12 gap). The two stack
+   cleanly without overlap.
+   Right offset is 36px so the pill's text center aligns with the
+   round button below it (48px button - 11px pill diff / 2). */
 .reading-progress__pill {
   position: fixed;
-  bottom: 22px;
-  right: 22px;
+  bottom: 92px;
+  right: 36px;
   top: auto;
+  left: auto;
   display: inline-flex;
   align-items: baseline;
   gap: 8px;
@@ -129,14 +134,17 @@ body[data-page="article"] .article-page > .container { max-width: none; padding:
    easy to mis-tap on a narrow viewport). The pill stays, repositioned
    to clear the bottom safe area. We DON'T hide the .reading-progress
    wrapper itself because the pill is a sibling inside it — the wrapper
-   has no visual surface of its own, so leaving it visible is free. */
+   has no visual surface of its own, so leaving it visible is free.
+   Still stacked above the scroll-to-top button (which stays at
+   bottom: 32px / right: 32px on mobile too — there's no responsive
+   override for .scroll-top). */
 @media (max-width: 720px) {
   .reading-progress__track {
     display: none;
   }
   .reading-progress__pill {
-    bottom: 16px;
-    right: 14px;
+    bottom: 92px;
+    right: 36px;
     padding: 7px 12px;
   }
   .reading-progress__remaining { display: none; }
