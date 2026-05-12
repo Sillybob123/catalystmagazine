@@ -7,7 +7,14 @@
  * - Assignees mark tasks complete.
  */
 
-import { db as workflowDb } from "../firebase-dual-config.js";
+// Both task documents AND the canonical user directory (Users & Roles)
+// live in the primary catalystwriters-5ce43 Firestore. Earlier the
+// import here was `db as workflowDb` which read fine but was misleading
+// — tasks were never in the secondary catalystmonday project. We now
+// import `db` plainly and use it for both task writes and assignee
+// lookups, so the picker is guaranteed to match what an admin sees on
+// the Users & Roles page (no duplicates, no email-less ghosts).
+import { db } from "../firebase-dual-config.js";
 import {
   collection,
   doc,
@@ -16,6 +23,8 @@ import {
   deleteDoc,
   onSnapshot,
   arrayUnion,
+  query,
+  orderBy,
   serverTimestamp,
   getDocs,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -137,7 +146,7 @@ export async function mount(ctx, container) {
 
   header.querySelector("#new-task-btn").addEventListener("click", () => openTaskCreateModal());
 
-  const unsub = onSnapshot(collection(workflowDb, "tasks"), snap => {
+  const unsub = onSnapshot(collection(db, "tasks"), snap => {
     _allTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderBoard();
   }, err => {
@@ -147,11 +156,54 @@ export async function mount(ctx, container) {
   return () => unsub();
 }
 
+// Pull staff users from the same Firestore collection (and same shape)
+// the Users & Roles admin page renders. Matching the source guarantees
+// the assignee picker stays in lock-step with the admin's mental model
+// — what they see on /admin/#/admin/users is what they pick from here.
+//
+// Filters applied:
+//   • role 'reader' is hidden — readers are signed-up subscribers, not
+//     people you'd assign editorial tasks to.
+//   • status === 'inactive' is hidden — no point assigning to someone
+//     who's been off-boarded.
+//   • users with no email are hidden from the picker entirely (they
+//     can't receive reminder emails, and surfacing them just creates
+//     the "ghost" rows the user complained about).
+//   • dedupe on email so the same person on two roles doesn't appear
+//     twice (rare, but happens during migrations).
 async function loadUsers() {
   try {
-    const snap = await getDocs(collection(workflowDb, "users"));
-    _allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  } catch { /* ignore */ }
+    const snap = await getDocs(query(collection(db, "users"), orderBy("name")));
+    const seenEmails = new Set();
+    const cleaned = [];
+    snap.forEach((d) => {
+      const u = { id: d.id, ...d.data() };
+      const role = (u.role || "").toLowerCase();
+      const status = (u.status || "active").toLowerCase();
+      const primaryEmail = (u.email || "").trim().toLowerCase();
+      if (!primaryEmail) return;
+      if (role === "reader") return;
+      if (status === "inactive" || status === "suspended") return;
+      if (seenEmails.has(primaryEmail)) return;
+      seenEmails.add(primaryEmail);
+      cleaned.push({
+        id: u.id,
+        name: u.name || u.email,
+        email: u.email,
+        // extraEmails (loripreci has two; aidan has two) — preserved so
+        // when we send the assignment notification, every address the
+        // user has on file gets the email.
+        extraEmails: Array.isArray(u.extraEmails) ? u.extraEmails.filter(Boolean) : [],
+        role: u.role || "",
+      });
+    });
+    // Sort by name ascending, case-insensitive — stable, easy to scan.
+    cleaned.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    _allUsers = cleaned;
+  } catch (err) {
+    console.warn("[tasks] loadUsers failed:", err);
+    _allUsers = [];
+  }
 }
 
 // ─── Board ────────────────────────────────────────────────────────────────────
@@ -299,7 +351,7 @@ function openTaskDetailModal(taskId) {
     approveBtn.onclick = async () => {
       approveBtn.disabled = true;
       try {
-        await updateDoc(doc(workflowDb, "tasks", task.id), {
+        await updateDoc(doc(db, "tasks", task.id), {
           status: "approved",
           updatedAt: new Date().toISOString(),
           activity: arrayUnion({ text: "approved this task", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
@@ -311,7 +363,11 @@ function openTaskDetailModal(taskId) {
           priority: task.priority || "medium",
           deadline: task.deadline || null,
           creatorName: task.creatorName || _profile.name || _ctx.user.email,
-          assignees: buildAssigneePayload(task.assigneeEmails || [], task.assigneeNames || []),
+          assignees: buildAssigneePayload(
+            task.assigneeEmails || [],
+            task.assigneeNames || [],
+            task.assigneeExtraEmails || []
+          ),
         });
         toast("Task approved — assignees notified by email.", "success", 4000); m.close();
       } catch (e) { toast(e.message, "error"); approveBtn.disabled = false; }
@@ -324,7 +380,7 @@ function openTaskDetailModal(taskId) {
       if (!ok) return;
       rejectBtn.disabled = true;
       try {
-        await updateDoc(doc(workflowDb, "tasks", task.id), {
+        await updateDoc(doc(db, "tasks", task.id), {
           status: "rejected",
           updatedAt: new Date().toISOString(),
           activity: arrayUnion({ text: "rejected this task", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
@@ -344,7 +400,7 @@ function openTaskDetailModal(taskId) {
     completeBtn.onclick = async () => {
       completeBtn.disabled = true;
       try {
-        await updateDoc(doc(workflowDb, "tasks", task.id), {
+        await updateDoc(doc(db, "tasks", task.id), {
           status: "completed",
           completedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -364,7 +420,7 @@ function openTaskDetailModal(taskId) {
       const ok = await confirmDialog(`Delete "${task.title}"?`, { confirmText: "Delete", danger: true });
       if (!ok) return;
       try {
-        await deleteDoc(doc(workflowDb, "tasks", task.id));
+        await deleteDoc(doc(db, "tasks", task.id));
         await notifyTaskClosed(task.id, "deleted");
         toast("Task deleted.", "success"); m.close();
       } catch (e) { toast(e.message, "error"); }
@@ -386,7 +442,7 @@ function openTaskDetailModal(taskId) {
     const btn = body.querySelector("#task-post-comment-btn");
     btn.disabled = true;
     try {
-      await updateDoc(doc(workflowDb, "tasks", task.id), {
+      await updateDoc(doc(db, "tasks", task.id), {
         activity: arrayUnion({ text: `commented: "${text}"`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
         updatedAt: new Date().toISOString(),
       });
@@ -440,24 +496,30 @@ function openTaskCreateModal() {
     </div>
     <div id="tc-err" style="color:var(--danger);font-size:12px;margin-top:4px;"></div>`;
 
-  // Render assignee checkboxes. We capture email + name on the input so
-  // the create flow can send them to /api/tasks/notify without a second
-  // user lookup. Users without an email still render (so the assignee
-  // appears in the task), but they get a "no email" hint and won't
-  // receive any reminders.
+  // Render assignee checkboxes. The list is sourced from the same
+  // primary `users` collection that powers the Users & Roles admin
+  // page, with readers / inactives / email-less ghosts already filtered
+  // out in loadUsers(). Each checkbox carries the user's primary email
+  // *and* any extraEmails (semicolon-joined) so the create flow can
+  // notify every address on file without a second lookup.
   const assigneeList = body.querySelector("#tc-assignees");
   for (const u of _allUsers) {
-    const displayName = u.name || u.email || "Unknown";
+    const displayName = u.name;
+    const extras = (u.extraEmails || []).filter(Boolean);
+    const allEmails = [u.email, ...extras].filter(Boolean);
     const row = el("label", { class: "assignee-check-row" });
-    const noEmailHint = u.email
-      ? ""
-      : `<span class="assignee-role" style="color:var(--danger);">no email — won't get reminders</span>`;
     row.innerHTML = `
-      <input type="checkbox" value="${esc(u.id)}" data-name="${esc(displayName)}" data-email="${esc(u.email || "")}">
+      <input type="checkbox"
+             value="${esc(u.id)}"
+             data-name="${esc(displayName)}"
+             data-email="${esc(u.email || "")}"
+             data-extra-emails="${esc(extras.join(";"))}">
       <div class="kc-avatar" style="background:${stringToColor(displayName)};width:24px;height:24px;font-size:11px;">${displayName[0].toUpperCase()}</div>
       <span>${esc(displayName)}</span>
       <span class="assignee-role">${esc(u.role || "")}</span>
-      ${noEmailHint}`;
+      ${allEmails.length > 1
+        ? `<span class="assignee-role" style="color:var(--muted);font-size:10px;">+${allEmails.length - 1} more email${allEmails.length > 2 ? "s" : ""}</span>`
+        : ""}`;
     assigneeList.appendChild(row);
   }
 
@@ -477,9 +539,10 @@ function openTaskCreateModal() {
     if (title.length < 2) { errEl.textContent = "Title is required."; return; }
 
     const checked = [...body.querySelectorAll("#tc-assignees input:checked")];
-    const assigneeIds    = checked.map(c => c.value);
-    const assigneeNames  = checked.map(c => c.dataset.name);
-    const assigneeEmails = checked.map(c => c.dataset.email || "");
+    const assigneeIds         = checked.map(c => c.value);
+    const assigneeNames       = checked.map(c => c.dataset.name);
+    const assigneeEmails      = checked.map(c => c.dataset.email || "");
+    const assigneeExtraEmails = checked.map(c => (c.dataset.extraEmails || "").split(";").filter(Boolean));
     if (!checked.length) {
       errEl.textContent = "Pick at least one assignee.";
       return;
@@ -497,7 +560,7 @@ function openTaskCreateModal() {
 
     saveBtn.disabled = true; saveBtn.textContent = "Creating…";
     try {
-      const taskRef = await addDoc(collection(workflowDb, "tasks"), {
+      const taskRef = await addDoc(collection(db, "tasks"), {
         title, description: desc, priority,
         deadline: deadline || null,
         status: initialStatus,
@@ -508,6 +571,7 @@ function openTaskCreateModal() {
         assigneeName: assigneeNames[0] || null,
         assigneeNames,
         assigneeEmails,
+        assigneeExtraEmails,
         createdAt: nowIso,
         updatedAt: nowIso,
         activity: [{
@@ -528,7 +592,7 @@ function openTaskCreateModal() {
           title, description: desc, priority,
           deadline: deadline || null,
           creatorName,
-          assignees: buildAssigneePayload(assigneeEmails, assigneeNames),
+          assignees: buildAssigneePayload(assigneeEmails, assigneeNames, assigneeExtraEmails),
         });
       }
 
@@ -577,15 +641,24 @@ async function _notify(payload) {
   }
 }
 
-// Zip emails + names into the [{email, name}] shape the API expects.
-// Empty emails are dropped server-side, but we don't filter here so the
-// payload's array index still matches the assigneeIds array if anyone
-// later wants to cross-reference.
-function buildAssigneePayload(emails, names) {
-  return emails.map((email, i) => ({
-    email: (email || "").trim(),
-    name: (names[i] || "").trim(),
-  }));
+// Zip emails + names + extras into the [{email, name}] shape the API
+// expects. Each user's extra emails are flattened into their own row so
+// the server can send to every address they've added on the Users &
+// Roles page (Lori has both gwmail + gmail, Aidan has both gmail +
+// gwmail — both addresses get the assignment email).
+function buildAssigneePayload(emails, names, extraEmailsList) {
+  const out = [];
+  emails.forEach((email, i) => {
+    const name = (names[i] || "").trim();
+    const primary = (email || "").trim();
+    if (primary) out.push({ email: primary, name });
+    const extras = Array.isArray(extraEmailsList?.[i]) ? extraEmailsList[i] : [];
+    for (const e of extras) {
+      const trimmed = (e || "").trim();
+      if (trimmed) out.push({ email: trimmed, name });
+    }
+  });
+  return out;
 }
 
 function fmtActTime(v) {

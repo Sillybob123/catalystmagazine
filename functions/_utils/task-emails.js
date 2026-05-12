@@ -1,16 +1,18 @@
 // functions/_utils/task-emails.js
 //
 // Email templates for the editorial task system. Three trigger points:
-//   1. taskAssignedEmail        — fires the moment a task is assigned to
-//      a writer (or when an admin approves a writer-proposed task).
-//   2. taskDeadlineSoonEmail    — fires 2 calendar days before deadline.
+//   1. taskAssignedEmail        — fires the moment a task is assigned.
+//   2. taskDeadlineSoonEmail    — fires N days before deadline (the cron
+//      decides which day(s) to fire based on task.priority).
 //   3. taskDeadlineTodayEmail   — fires on the day of the deadline.
 //
-// Tone matches the existing writer-reminder emails (reminder-emails.js)
-// — direct, editor-voice, no marketing fluff. All three are
-// plain-text first; the HTML wrapper is the same minimal Apple-style
-// envelope used elsewhere so emails feel consistent across the
-// product.
+// Voice: written as if Yair and Aidan are pinging the assignee directly.
+// First-person plural, low ceremony, no marketing chrome. The footer
+// signs as "Yair & Aidan · The Catalyst" with a real "reply to me" line
+// — no robot phrasing, no "Catalyst editorial bot" attribution. The
+// emails should feel like a teammate sent them, even though the cron
+// fires them automatically. Keeping the visible accent bar + meta table
+// preserves the polished look without the "automated" feel.
 
 const PRIORITY_LABEL = {
   urgent: "Urgent",
@@ -19,59 +21,125 @@ const PRIORITY_LABEL = {
   low:    "Low priority",
 };
 
+// Editorial signers — keep in one constant so we can adjust the names
+// in one place later. The reply-to address on the outbound email is
+// already MAIL_REPLY_TO (stemcatalystmagazine@gmail.com), which Yair &
+// Aidan both monitor.
+const SIGNERS = "Yair & Aidan";
+
 // ─── Public helpers ──────────────────────────────────────────────────────────
 
 export function taskAssignedEmail({ assigneeName, task, siteUrl }) {
-  const subject = `New task assigned: "${task.title}"`;
-  const headline = `You've been assigned a new task.`;
+  const isUrgent = task.priority === "urgent";
+  const isHigh   = task.priority === "high";
+  const subject = isUrgent
+    ? `[Urgent] New task for you — "${task.title}"`
+    : `New task for you: "${task.title}"`;
+  const headline = isUrgent
+    ? `Quick one — we need this one moving fast.`
+    : `Hey, we just put a new task on your plate.`;
+
+  // First-person plural so it reads like a real teammate ping. The
+  // creator name only goes in the meta table, not the body, because
+  // most assignments are admin → writer and the writer already knows
+  // who runs the magazine.
   const lines = [
-    `${task.creatorName ? `${task.creatorName} just assigned you` : "You've just been assigned"} a new task on the editorial board: "${task.title}".`,
-    task.description
-      ? `Quick brief: ${task.description}`
-      : `No extra description was attached — open the dashboard for the full context.`,
-    task.deadline
-      ? `The deadline is ${fmtDate(task.deadline)}. We'll send you a heads-up two days before the deadline and another note on the day itself, so you have built-in checkpoints.`
-      : `No deadline is set on this task yet — feel free to reach out if you want to negotiate one.`,
+    `We just assigned you "${task.title}" on the editorial dashboard.${
+      task.deadline
+        ? ` The deadline we put on it is ${fmtDate(task.deadline)} — we'll ping you again as we get close so it doesn't slip past you.`
+        : " No deadline set yet — open it and tell us what timeline works."
+    }`,
   ];
+  if (task.description) {
+    lines.push(`Here's the brief: ${task.description}`);
+  }
+  if (isUrgent) {
+    lines.push(`Flagging this as urgent because it can't wait — if there's any chance you can't take it on, hit reply right now and we'll find someone else. Better to know now than three days in.`);
+  } else if (isHigh) {
+    lines.push(`This one's marked high-priority, so if you've already got a full plate, let us know now and we'll figure something out.`);
+  } else {
+    lines.push(`Open it when you get a chance. If something about the brief is unclear or the deadline doesn't work, just reply to this email — it goes straight to us.`);
+  }
+
   const cta = { label: "Open the task", url: `${siteUrl}/admin/#/tasks` };
   const meta = [
     task.deadline ? { label: "Deadline", value: fmtDate(task.deadline) } : null,
     task.priority ? { label: "Priority", value: PRIORITY_LABEL[task.priority] || task.priority } : null,
-    task.creatorName ? { label: "Assigned by", value: task.creatorName } : null,
+    task.creatorName ? { label: "From", value: task.creatorName } : null,
   ].filter(Boolean);
   return {
     subject,
-    text: textBody({ greeting: assigneeName, headline, lines, cta, meta }),
-    html: htmlBody({ greeting: assigneeName, headline, lines, cta, meta, accent: "#0f172a" }),
+    text: textBody({ greeting: assigneeName, lines, cta, meta }),
+    html: htmlBody({ greeting: assigneeName, headline, lines, cta, meta, accent: isUrgent ? "#b91c1c" : "#0f172a" }),
   };
 }
 
+// Generic "due in N days" reminder — same voice as the assigned email,
+// just with the days-out injected so we can use this for the 3-day,
+// 2-day, and 1-day windows the urgency-aware schedule fires.
 export function taskDeadlineSoonEmail({ assigneeName, task, daysUntil, siteUrl }) {
-  const subject = `Due in ${daysUntil} day${daysUntil === 1 ? "" : "s"}: "${task.title}"`;
-  const headline = `Your task is due in ${daysUntil} day${daysUntil === 1 ? "" : "s"}.`;
-  const lines = [
-    `Just a heads-up: "${task.title}" is due on ${fmtDate(task.deadline)}.`,
-    `If you're on track, ignore this — it's an automated nudge so nothing slips. If you're not, reply now so we can adjust together. Last-minute extension requests after the deadline don't land well.`,
-  ];
+  const isUrgent = task.priority === "urgent";
+  const dayWord = daysUntil === 1 ? "tomorrow" : `in ${daysUntil} days`;
+  const subject = `Heads up — "${task.title}" is due ${dayWord}`;
+
+  // Different opening line for tomorrow vs further-out — a 1-day note
+  // should feel sharper than a 3-day "fyi".
+  const headline = daysUntil === 1
+    ? `Quick reminder: this one's due tomorrow.`
+    : `Just a heads up — your task is due in ${daysUntil} days.`;
+
+  const lines = [];
+  lines.push(
+    daysUntil === 1
+      ? `"${task.title}" is due tomorrow (${fmtDate(task.deadline)}). Wanted to make sure it's on your radar.`
+      : `"${task.title}" is due ${dayWord} — ${fmtDate(task.deadline)}. Sending you this now so you've got runway.`
+  );
+
+  if (daysUntil === 1) {
+    lines.push(
+      `If you're on track, no action needed — just keep going. If you're not going to make it, reply to this email today rather than tomorrow morning. We'd much rather hear "I need a day" now than after the deadline.`
+    );
+  } else {
+    lines.push(
+      `If you're on track, ignore this — it's just a checkpoint so nothing surprises you. If something's blocking you (interview not scheduled, source not responding, conflict with another piece), reply now and we'll help unstick it.`
+    );
+  }
+  if (isUrgent) {
+    lines.push(`Flagging again that this one's urgent — please don't let it slide.`);
+  }
+
   const cta = { label: "Open the task", url: `${siteUrl}/admin/#/tasks` };
   const meta = [
-    { label: "Deadline", value: `${fmtDate(task.deadline)} (in ${daysUntil} day${daysUntil === 1 ? "" : "s"})` },
+    { label: "Deadline", value: `${fmtDate(task.deadline)} (${daysUntil === 1 ? "tomorrow" : `in ${daysUntil} days`})` },
     task.priority ? { label: "Priority", value: PRIORITY_LABEL[task.priority] || task.priority } : null,
   ].filter(Boolean);
   return {
     subject,
-    text: textBody({ greeting: assigneeName, headline, lines, cta, meta }),
-    html: htmlBody({ greeting: assigneeName, headline, lines, cta, meta, accent: "#b45309" }),
+    text: textBody({ greeting: assigneeName, lines, cta, meta }),
+    html: htmlBody({
+      greeting: assigneeName,
+      headline,
+      lines,
+      cta,
+      meta,
+      // Color escalates as we approach the deadline: 3d=slate, 2d=amber,
+      // 1d=red. Visual cue admins themselves rely on when scanning their
+      // inbox.
+      accent: daysUntil === 1 ? "#b91c1c" : daysUntil === 2 ? "#b45309" : "#0f172a",
+    }),
   };
 }
 
 export function taskDeadlineTodayEmail({ assigneeName, task, siteUrl }) {
-  const subject = `Due today: "${task.title}"`;
-  const headline = `Your task is due today.`;
+  const subject = `Today's the day — "${task.title}" is due`;
+  const headline = `This one's due today.`;
   const lines = [
-    `Today's the day for "${task.title}". The deadline you agreed to is ${fmtDate(task.deadline)}.`,
-    `If it's done, take 5 seconds and mark it complete in the dashboard so we can clear it from the board. If you're going to miss it, please reply now — we'd rather know before the day ends than chase you for it tomorrow.`,
+    `"${task.title}" is on today's deadline — ${fmtDate(task.deadline)}. Just confirming you're tracking it.`,
+    `If it's already done, take 5 seconds and mark it complete in the dashboard so we can move it off the board. If you're not going to make it today, reply now — we'd much rather hear from you before the day ends than chase it down tomorrow morning.`,
   ];
+  if (task.priority === "urgent") {
+    lines.push(`This one was flagged urgent from the jump, so the deadline really matters here.`);
+  }
   const cta = { label: "Mark this task complete", url: `${siteUrl}/admin/#/tasks` };
   const meta = [
     { label: "Deadline", value: `${fmtDate(task.deadline)} (today)` },
@@ -79,7 +147,7 @@ export function taskDeadlineTodayEmail({ assigneeName, task, siteUrl }) {
   ].filter(Boolean);
   return {
     subject,
-    text: textBody({ greeting: assigneeName, headline, lines, cta, meta }),
+    text: textBody({ greeting: assigneeName, lines, cta, meta }),
     html: htmlBody({ greeting: assigneeName, headline, lines, cta, meta, accent: "#b91c1c" }),
   };
 }
@@ -88,13 +156,11 @@ export function taskDeadlineTodayEmail({ assigneeName, task, siteUrl }) {
 
 // Plain-text body. Required for deliverability — Gmail/Outlook treat
 // HTML-only mail as a spam signal. Mirrors htmlBody() structurally so
-// the two renderings carry identical content.
-function textBody({ greeting, headline, lines, cta, meta }) {
+// the two renderings carry identical content. Signed off as the
+// editors so it reads like a teammate wrote it, not a robot.
+function textBody({ greeting, lines, cta, meta }) {
   const out = [];
   out.push(`Hi ${greeting || "there"},`);
-  out.push("");
-  out.push(headline);
-  out.push("=".repeat(Math.min(headline.length, 60)));
   out.push("");
   for (const line of lines) {
     out.push(line);
@@ -109,7 +175,9 @@ function textBody({ greeting, headline, lines, cta, meta }) {
     out.push(cta.url);
     out.push("");
   }
-  out.push("— The Catalyst editorial bot");
+  out.push("Thanks,");
+  out.push(SIGNERS);
+  out.push("The Catalyst");
   return out.join("\n");
 }
 
@@ -166,9 +234,18 @@ function htmlBody({ greeting, headline, lines, cta, meta, accent }) {
             </td>
           </tr>
           <tr>
+            <td style="padding:18px 32px 8px 32px;">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">
+                Thanks,<br>
+                <strong style="color:#1d1d1f;">${esc(SIGNERS)}</strong><br>
+                <span style="color:#6e6e73;font-size:13px;">The Catalyst</span>
+              </p>
+            </td>
+          </tr>
+          <tr>
             <td style="padding:14px 32px 26px 32px;border-top:1px solid #e5e5e7;">
               <p style="margin:0;font-size:12px;color:#6e6e73;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">
-                Sent by the Catalyst editorial bot. Reply to this email if you want to talk to the team — it goes straight to a real person.
+                Reply directly to this email — it lands in our inbox.
               </p>
             </td>
           </tr>

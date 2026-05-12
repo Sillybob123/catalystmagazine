@@ -323,20 +323,26 @@ export const onRequestPost = async ({ request, env }) => {
 
     // ── Task deadline reminders ──────────────────────────────────────────────
     //
-    // Two firing windows per task: 2 calendar days before the deadline,
-    // and the day-of. Both compared against America/New_York (the
-    // editorial team's timezone) so a deadline of "Friday May 23" reads
-    // the same on a phone in DC and a laptop in Tokyo.
+    // Reminder windows depend on the task's priority — louder tasks get
+    // earlier and more frequent nudges:
     //
-    // Source of truth: task_reminders/<taskId> mirror docs in the primary
-    // Firestore. The mirrors are written by /api/tasks/notify when a task
-    // is assigned, and flipped to status=completed/deleted when the task
-    // closes. Cron skips anything not "active" so completed tasks stop
-    // generating noise immediately.
+    //   urgent → 3 days before, 1 day before, day-of
+    //   high   → 2 days before, 1 day before, day-of
+    //   medium → 2 days before,                day-of   (default)
+    //   low    →                              day-of   (one nudge total)
+    //
+    // All comparisons against America/New_York so "tomorrow" reads the
+    // same on a phone in DC and a laptop in Tokyo. Source of truth:
+    // task_reminders/<taskId> mirror docs in the primary Firestore.
+    // Mirrors are written by /api/tasks/notify when a task is assigned
+    // and flipped to status=completed/deleted when the task closes — so
+    // closed tasks immediately stop generating noise.
     //
     // Dedupe: same `bot_reminder_log` doc as the article reminders; one
-    // key per (taskId, kind) so we never double-fire even if the cron
-    // happens to run twice in the same calendar day.
+    // key per (taskId, kind, recipient) so we never double-fire even if
+    // the cron happens to run twice in the same calendar day, and so
+    // re-assigning a task to a new person re-arms only that person's
+    // reminders.
     if (mode === "auto" || mode === "tasks") {
       try {
         const taskMirrors = await loadTaskReminders(env);
@@ -348,11 +354,14 @@ export const onRequestPost = async ({ request, env }) => {
           if (t.status !== "active") continue;
           if (!t.deadline) continue;
           const days = daysBetweenYMD(today, t.deadline);
-          // Negative days = deadline is in the past; we only fire 2-day
-          // and day-of, never an overdue email here. (Article reminders
-          // already cover overdue; tasks don't need a third escalation.)
-          if (days === 2) taskJobs.push({ task: t, kind: "task-deadline-2d", daysUntil: 2 });
-          else if (days === 0) taskJobs.push({ task: t, kind: "task-deadline-0d", daysUntil: 0 });
+          if (days == null || days < 0) continue; // overdue isn't this bot's job
+          const fireDays = scheduleForPriority(t.priority);
+          if (!fireDays.includes(days)) continue;
+          taskJobs.push({
+            task: t,
+            kind: `task-deadline-${days}d`,
+            daysUntil: days,
+          });
         }
         result.taskReminders.planned = taskJobs.reduce(
           (n, j) => n + (j.task.assignees?.length || 0),
@@ -371,10 +380,10 @@ export const onRequestPost = async ({ request, env }) => {
               continue;
             }
 
-            const builder = job.kind === "task-deadline-0d"
-              ? taskDeadlineTodayEmail
-              : taskDeadlineSoonEmail;
-            const { subject, html, text } = builder({
+            // Day-of uses the dedicated "today" template; everything
+            // earlier (1d / 2d / 3d) uses the generic "soon" template
+            // which adapts its tone based on daysUntil.
+            const taskCommon = {
               assigneeName: a.name || "there",
               task: {
                 title: job.task.title,
@@ -383,9 +392,11 @@ export const onRequestPost = async ({ request, env }) => {
                 priority: job.task.priority,
                 creatorName: job.task.creatorName,
               },
-              daysUntil: job.daysUntil,
               siteUrl,
-            });
+            };
+            const { subject, html, text } = job.daysUntil === 0
+              ? taskDeadlineTodayEmail(taskCommon)
+              : taskDeadlineSoonEmail({ ...taskCommon, daysUntil: job.daysUntil });
 
             result.taskReminders.items.push({
               taskId: job.task.taskId,
@@ -801,6 +812,26 @@ function isSaturdayIn(timeZone, now) {
     weekday: "short",
   }).format(now);
   return weekday === "Sat";
+}
+
+// Reminder schedule per task priority. Returns the set of "days before
+// deadline" on which we'll fire a reminder. Higher-priority tasks get
+// earlier and more frequent nudges so urgent work doesn't slide past
+// the assignee. Day 0 is the day of the deadline itself.
+//
+// urgent → 3d + 1d + 0d
+// high   → 2d + 1d + 0d
+// medium → 2d + 0d         (the "default" cadence; matches the original
+//                           "two days before + day-of" behavior)
+// low    → 0d              (one nudge — day-of only)
+function scheduleForPriority(priority) {
+  switch (String(priority || "medium").toLowerCase()) {
+    case "urgent": return [3, 1, 0];
+    case "high":   return [2, 1, 0];
+    case "low":    return [0];
+    case "medium":
+    default:       return [2, 0];
+  }
 }
 
 // Today (or any moment) as YYYY-MM-DD in the given timezone. The cron
