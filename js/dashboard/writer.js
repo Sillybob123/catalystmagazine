@@ -58,9 +58,9 @@ function mountDraftEditor(ctx, container) {
         <span class="compose-status" id="editor-status"></span>
       </div>
       <div class="compose-bar-right">
-        <button class="btn btn-ghost btn-sm" id="toggle-settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Settings
+        <button class="btn btn-secondary btn-sm compose-settings-btn" id="toggle-settings" title="Cover image, category, and article settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          Cover &amp; settings
         </button>
         <button class="btn btn-ghost btn-sm" id="editorial-standards-btn" title="Open Catalyst's editorial standards in a new tab">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -79,9 +79,22 @@ function mountDraftEditor(ctx, container) {
       </div>
     </div>
 
-    <!-- Floating formatting toolbar -->
+    <!-- Formatting toolbar — Google Docs–style ribbon. Groups (left → right):
+         history → text style → inline format → color → list → indent →
+         align → script → insert → structure → clear. Every control uses
+         document.execCommand under the hood (the same execCommand the
+         contenteditable already relies on for B/I/U keyboard shortcuts),
+         so nothing here introduces a new dependency. -->
     <div class="rt-toolbar" id="rt-toolbar" role="toolbar" aria-label="Formatting">
-      <div class="rt-group">
+      <div class="rt-group" aria-label="History">
+        <button class="rt-btn" data-cmd="undo" title="Undo (⌘Z)" aria-label="Undo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        </button>
+        <button class="rt-btn" data-cmd="redo" title="Redo (⌘⇧Z)" aria-label="Redo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
+        </button>
+      </div>
+      <div class="rt-group" aria-label="Text style">
         <select class="rt-select" data-block title="Text style">
           <option value="p">Paragraph</option>
           <option value="h2">Heading 1</option>
@@ -89,13 +102,31 @@ function mountDraftEditor(ctx, container) {
           <option value="h4">Section label</option>
         </select>
       </div>
-      <div class="rt-group">
+      <div class="rt-group" aria-label="Inline formatting">
         <button class="rt-btn" data-cmd="bold" title="Bold (⌘B)" aria-label="Bold"><span style="font-weight:800;">B</span></button>
         <button class="rt-btn" data-cmd="italic" title="Italic (⌘I)" aria-label="Italic"><span style="font-style:italic;font-family:Georgia,serif;">I</span></button>
         <button class="rt-btn" data-cmd="underline" title="Underline (⌘U)" aria-label="Underline"><span style="text-decoration:underline;text-underline-offset:3px;">U</span></button>
         <button class="rt-btn" data-cmd="strikeThrough" title="Strikethrough" aria-label="Strikethrough"><span style="text-decoration:line-through;">S</span></button>
       </div>
-      <div class="rt-group">
+      <div class="rt-group" aria-label="Color">
+        <!-- Native color inputs — no JS needed for the picker UI itself.
+             A small swatch label sits over the hidden input so the
+             button reads as a normal toolbar control. The 'data-color
+             foreground/background' attribute tells the wired handler
+             which execCommand to fire on input. -->
+        <label class="rt-btn rt-btn-color" title="Text color" aria-label="Text color">
+          <span class="rt-color-glyph"><span style="font-weight:800;">A</span><span class="rt-color-bar" id="rt-color-bar-fg" style="background:#0f172a"></span></span>
+          <input type="color" data-color="foreground" value="#0f172a" tabindex="-1" aria-hidden="true">
+        </label>
+        <label class="rt-btn rt-btn-color" title="Highlight color" aria-label="Highlight color">
+          <span class="rt-color-glyph">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h3l6-6"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.83 0L9 11l6-6 5.6 5.6a2 2 0 0 1 0 2.83z"/></svg>
+            <span class="rt-color-bar" id="rt-color-bar-bg" style="background:#fde68a"></span>
+          </span>
+          <input type="color" data-color="background" value="#fde68a" tabindex="-1" aria-hidden="true">
+        </label>
+      </div>
+      <div class="rt-group" aria-label="Lists">
         <button class="rt-btn" data-cmd="insertUnorderedList" title="Bulleted list" aria-label="Bulleted list">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></svg>
         </button>
@@ -103,8 +134,31 @@ function mountDraftEditor(ctx, container) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
         </button>
       </div>
-      <div class="rt-group">
-        <button class="rt-btn" data-action="link" title="Insert link" aria-label="Insert link">
+      <div class="rt-group" aria-label="Indent">
+        <button class="rt-btn" data-cmd="outdent" title="Decrease indent" aria-label="Decrease indent">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 6 5 12 11 18"/><line x1="20" y1="6" x2="13" y2="6"/><line x1="20" y1="12" x2="13" y2="12"/><line x1="20" y1="18" x2="13" y2="18"/></svg>
+        </button>
+        <button class="rt-btn" data-cmd="indent" title="Increase indent" aria-label="Increase indent">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 6 19 12 13 18"/><line x1="4" y1="6" x2="11" y2="6"/><line x1="4" y1="12" x2="11" y2="12"/><line x1="4" y1="18" x2="11" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="rt-group" aria-label="Alignment">
+        <button class="rt-btn" data-cmd="justifyLeft" title="Align left" aria-label="Align left">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+        </button>
+        <button class="rt-btn" data-cmd="justifyCenter" title="Align center" aria-label="Align center">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4.5" y1="18" x2="19.5" y2="18"/></svg>
+        </button>
+        <button class="rt-btn" data-cmd="justifyRight" title="Align right" aria-label="Align right">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="rt-group" aria-label="Script">
+        <button class="rt-btn" data-cmd="superscript" title="Superscript" aria-label="Superscript"><span style="font-size:11px;">X<sup style="font-size:8px;">2</sup></span></button>
+        <button class="rt-btn" data-cmd="subscript" title="Subscript" aria-label="Subscript"><span style="font-size:11px;">X<sub style="font-size:8px;">2</sub></span></button>
+      </div>
+      <div class="rt-group" aria-label="Insert">
+        <button class="rt-btn" data-action="link" title="Insert link (⌘K)" aria-label="Insert link">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
         </button>
         <button class="rt-btn" data-action="blockquote" title="Pull quote" aria-label="Pull quote">
@@ -120,7 +174,7 @@ function mountDraftEditor(ctx, container) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         </button>
       </div>
-      <div class="rt-group">
+      <div class="rt-group" aria-label="Structure">
         <button class="rt-btn rt-btn-wide" data-action="new-section" title="Insert a new section (heading + paragraph)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <span>New section</span>
@@ -134,7 +188,7 @@ function mountDraftEditor(ctx, container) {
              so older articles with quizzes keep rendering; we just don't
              surface a way to insert a new one from the composer. -->
       </div>
-      <div class="rt-group">
+      <div class="rt-group" aria-label="Clear">
         <button class="rt-btn" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V4h16v3"/><line x1="5" y1="20" x2="19" y2="20"/><path d="M13 4L8 20"/></svg>
         </button>
@@ -215,7 +269,16 @@ function mountDraftEditor(ctx, container) {
             <option value="News">News</option>
             <option value="Science">Science</option>
           </select>
-          <p class="field-hint" style="margin-top:6px;color:#64748b;font-size:12px;line-height:1.45;">
+          <!-- Inline description that swaps based on the selected
+               category. Helps a writer pick the right one when the
+               labels alone are ambiguous (Feature vs Profile vs
+               Science is non-obvious). Wired by the change-handler
+               that already updates .compose-hero-category. -->
+          <div class="category-help" id="category-help" data-category="Feature">
+            <strong class="category-help-title"></strong>
+            <span class="category-help-body"></span>
+          </div>
+          <p class="field-hint" style="margin-top:10px;color:#64748b;font-size:12px;line-height:1.45;">
             Writing a STEM book review? Use the dedicated
             <a href="#/book-reviews/write" style="color:#0f172a;font-weight:600;">Write a book review</a> page —
             it has the right fields for ISBN, rating, and the book metadata.
@@ -372,6 +435,48 @@ function wireRichToolbar(wrap, editorEl, ctx) {
     btn.addEventListener("click", () => handleBlockAction(btn.dataset.action, editorEl, ctx));
   });
 
+  // Color pickers — native <input type="color"> sit hidden inside the
+  // .rt-btn-color labels. Clicking the label opens the OS picker; on
+  // change we apply foreColor / hiliteColor and refresh the visible
+  // swatch bar so the next click defaults to the same color (Docs-style
+  // memory). Selection has to be restored before execCommand because
+  // the color popover steals focus from contenteditable on macOS.
+  toolbar.querySelectorAll('input[type="color"][data-color]').forEach((inp) => {
+    const kind = inp.dataset.color === "foreground" ? "foreColor" : "hiliteColor";
+    let savedRange = null;
+    // Capture the caret/selection the moment the swatch is clicked,
+    // before the OS picker steals focus.
+    const captureRange = () => {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount && editorEl.contains(sel.anchorNode)) {
+        savedRange = sel.getRangeAt(0).cloneRange();
+      } else {
+        savedRange = null;
+      }
+    };
+    inp.parentElement.addEventListener("mousedown", captureRange);
+    inp.parentElement.addEventListener("touchstart", captureRange, { passive: true });
+    inp.addEventListener("input", () => {
+      if (savedRange) {
+        editorEl.focus();
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(savedRange);
+      } else {
+        editorEl.focus();
+      }
+      try { document.execCommand("styleWithCSS", false, true); } catch {}
+      document.execCommand(kind, false, inp.value);
+      // Update the visible swatch bar under the icon so the writer can
+      // see (and re-apply) the last color they used.
+      const bar = inp.dataset.color === "foreground"
+        ? toolbar.querySelector("#rt-color-bar-fg")
+        : toolbar.querySelector("#rt-color-bar-bg");
+      if (bar) bar.style.background = inp.value;
+      updateToolbarState(toolbar);
+    });
+  });
+
   // Reflect active states as user moves caret
   const update = () => updateToolbarState(toolbar);
   editorEl.addEventListener("keyup", update);
@@ -403,6 +508,17 @@ function wireRichToolbar(wrap, editorEl, ctx) {
     document.execCommand("insertText", false, text);
   });
 
+  // ── "New section?" hint after double-Enter ────────────────────────────
+  //
+  // When a writer hits Enter on an already-empty paragraph (i.e. they've
+  // left a blank line between blocks of text), surface a floating chip
+  // near the caret offering to drop a section heading + paragraph there.
+  // It's strictly opt-in: clicking the chip inserts the section, pressing
+  // Esc dismisses, typing or moving the caret hides it. No keystroke is
+  // intercepted, so the editor still behaves normally if the writer
+  // ignores the chip.
+  installSectionHintFlow(editorEl);
+
   // Click on an inserted image/video figure → open the edit dialog so the
   // writer can change size, caption, alt text, or replace/remove the media.
   // We don't hijack clicks on the <video> element itself — those should play
@@ -429,10 +545,145 @@ function updateToolbarState(toolbar) {
   };
   toolbar.querySelectorAll("[data-cmd]").forEach((btn) => {
     const cmd = btn.dataset.cmd;
-    if (["bold", "italic", "underline", "strikeThrough", "insertUnorderedList", "insertOrderedList"].includes(cmd)) {
+    if (["bold", "italic", "underline", "strikeThrough", "insertUnorderedList", "insertOrderedList",
+         "subscript", "superscript", "justifyLeft", "justifyCenter", "justifyRight"].includes(cmd)) {
       btn.classList.toggle("active", check(cmd));
     }
   });
+}
+
+// ─── "New section?" hint ────────────────────────────────────────────────────
+//
+// Watches for the "Enter on an already-empty paragraph" pattern (Google
+// Docs / Notion both treat this gesture as a request to insert
+// something). When detected, we render a small floating chip near the
+// caret offering to convert the empty space into a new section
+// (heading + paragraph, the same block "+ New section" inserts).
+//
+// Strictly opt-in:
+//   • clicking the chip → inserts the section at the caret
+//   • Esc                → dismisses, won't re-show until next gesture
+//   • typing / moving caret → dismisses
+//   • outside click       → dismisses
+//
+// We don't preventDefault on Enter; the editor still behaves normally.
+function installSectionHintFlow(editorEl) {
+  let hintEl = null;
+
+  const removeHint = () => {
+    if (!hintEl) return;
+    hintEl.remove();
+    hintEl = null;
+  };
+
+  // Find the block-level ancestor (P/DIV) the caret currently sits in.
+  // Returns null if the caret isn't inside the editor.
+  const blockAtCaret = () => {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return null;
+    const node = sel.getRangeAt(0).startContainer;
+    let n = node.nodeType === 1 ? node : node.parentNode;
+    while (n && n !== editorEl && !/^(P|DIV|H1|H2|H3|H4|LI|BLOCKQUOTE)$/i.test(n.tagName)) {
+      n = n.parentNode;
+    }
+    return n && n !== editorEl ? n : null;
+  };
+
+  const isEmptyBlock = (block) => {
+    if (!block) return false;
+    const t = (block.textContent || "").replace(/​/g, "").trim();
+    return t === "";
+  };
+
+  const showHintNear = (block) => {
+    removeHint();
+    const rect = block.getBoundingClientRect();
+    if (!rect.width) return;
+    const chip = document.createElement("div");
+    chip.className = "rt-section-hint";
+    chip.setAttribute("role", "dialog");
+    chip.setAttribute("aria-label", "Insert new section?");
+    chip.innerHTML = `
+      <button type="button" class="rt-section-hint-action" data-hint-action="insert">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>Insert new section</span>
+        <kbd>↵</kbd>
+      </button>
+      <button type="button" class="rt-section-hint-dismiss" data-hint-action="dismiss" aria-label="Dismiss">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    `;
+    document.body.appendChild(chip);
+
+    // Position right of the empty block, vertically centered on it.
+    // Falls below if there isn't room on the right.
+    const chipRect = chip.getBoundingClientRect();
+    const top = window.scrollY + rect.top + (rect.height / 2) - (chipRect.height / 2);
+    let left = window.scrollX + rect.left + Math.min(rect.width * 0.5, 60);
+    // If we'd overflow the viewport on the right, anchor to the left
+    // edge of the block instead.
+    if (left + chipRect.width > window.scrollX + window.innerWidth - 12) {
+      left = window.scrollX + rect.left;
+    }
+    chip.style.top = `${top}px`;
+    chip.style.left = `${left}px`;
+
+    // Wire chip actions.
+    chip.addEventListener("mousedown", (e) => e.preventDefault());
+    chip.querySelector("[data-hint-action='insert']").addEventListener("click", () => {
+      // Place the caret inside the empty block, then run the existing
+      // new-section action (heading + paragraph) which uses the same
+      // insertBlockAtCaret path the toolbar uses.
+      const range = document.createRange();
+      range.selectNodeContents(block);
+      range.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      removeHint();
+      handleBlockAction("new-section", editorEl, null);
+    });
+    chip.querySelector("[data-hint-action='dismiss']").addEventListener("click", removeHint);
+
+    hintEl = chip;
+  };
+
+  // The chip is shown only when the caret is on a *second consecutive*
+  // empty block — i.e. the writer has hit Enter into a blank line. We
+  // detect that on keyup of Enter rather than keydown so the new
+  // paragraph element exists in the DOM by the time we check.
+  editorEl.addEventListener("keyup", (e) => {
+    if (e.key !== "Enter") return;
+    const block = blockAtCaret();
+    if (!block || !isEmptyBlock(block)) { removeHint(); return; }
+    const prev = block.previousElementSibling;
+    if (!prev || !isEmptyBlock(prev)) { removeHint(); return; }
+    showHintNear(block);
+  });
+
+  // Any subsequent keystroke other than Enter dismisses the chip.
+  editorEl.addEventListener("keydown", (e) => {
+    if (!hintEl) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      removeHint();
+      return;
+    }
+    if (e.key !== "Enter" && e.key !== "Shift" && e.key !== "Meta" && e.key !== "Control" && e.key !== "Alt") {
+      removeHint();
+    }
+  });
+
+  // Clicks outside the editor or chip dismiss.
+  document.addEventListener("mousedown", (e) => {
+    if (!hintEl) return;
+    if (hintEl.contains(e.target) || editorEl.contains(e.target)) return;
+    removeHint();
+  });
+
+  // Reposition / dismiss on scroll so the chip doesn't float over the
+  // wrong line as the writer scrolls.
+  window.addEventListener("scroll", removeHint, { passive: true });
 }
 
 function handleBlockAction(action, editorEl, ctx) {
@@ -2526,8 +2777,28 @@ function wireHeroPreview(wrap) {
       article.setAttribute("data-has-cover", "false");
     }
   };
+  // Per-category description that appears under the dropdown so writers
+  // know which one they actually want. Pulled out of the JSX so the
+  // copy is editable in one place. Keep titles short — the wider span
+  // does the explanatory work.
+  const CATEGORY_HELP = {
+    "Feature":   { title: "In-depth reported story",   body: "A long-form piece with reporting, multiple sources, and a clear narrative arc — your default for ambitious work." },
+    "Profile":   { title: "Person- or lab-led story",  body: "Focuses on a researcher, professor, lab, or student. Built around interviews + their work; the person is the through-line." },
+    "Interview": { title: "Q&A format",                body: "Lightly edited Q&A with one interview subject. Use this only when the back-and-forth IS the story; otherwise use Profile or Feature." },
+    "Op-Ed":     { title: "Opinion / argument",        body: "First-person argument with a clear take. Cite sources, but the angle is yours. Editors will press for a sharp thesis." },
+    "News":      { title: "Time-sensitive update",     body: "Short, factual report on a development that just happened. Lead with the news; depth comes from a follow-up Feature." },
+    "Science":   { title: "Explainer / concept piece", body: "Unpacks a STEM concept, finding, or method for a college-level reader. Less reporting-heavy than a Feature; more teaching." },
+  };
+  const helpEl = wrap.querySelector("#category-help");
   const refreshCategory = () => {
-    heroCategory.textContent = (categoryEl.value || "Feature").toUpperCase();
+    const value = categoryEl.value || "Feature";
+    heroCategory.textContent = value.toUpperCase();
+    if (helpEl) {
+      const meta = CATEGORY_HELP[value] || { title: value, body: "" };
+      helpEl.dataset.category = value;
+      helpEl.querySelector(".category-help-title").textContent = meta.title;
+      helpEl.querySelector(".category-help-body").textContent = meta.body;
+    }
   };
   const lightCoverCb = wrap.querySelector("#f-cover-light");
   const refreshLightCover = () => {
