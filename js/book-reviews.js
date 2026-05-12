@@ -381,19 +381,24 @@
     }
 
     function mergeReviews(primary, secondary) {
-        const keyFor = (a) => (a.link || '').split('/').pop().toLowerCase() || titleToSlug(a.title);
-        const byKey   = new Map();
-        const byTitle = new Map();
+        // Dedupe on STORY IDENTITY, not title. Two community reviews of the
+        // same book are legitimate distinct entries — the aggregate card
+        // collapses them back together for display. We previously deduped
+        // by lowercase title here, which silently dropped every duplicate
+        // pick so the aggregate card never had >1 review to combine.
+        const keyFor = (a) =>
+            String(a.id || (a.link || '').split('/').pop() || titleToSlug(a.title))
+                .toLowerCase();
+        const byKey = new Map();
         for (const a of primary) {
-            byKey.set(keyFor(a), a);
-            byTitle.set(a.title.toLowerCase().trim(), a);
+            const k = keyFor(a);
+            if (!k) continue;
+            byKey.set(k, a);
         }
         for (const a of secondary) {
             const k = keyFor(a);
-            const t = a.title.toLowerCase().trim();
-            if (byKey.has(k) || byTitle.has(t)) continue;
+            if (!k || byKey.has(k)) continue;
             byKey.set(k, a);
-            byTitle.set(t, a);
         }
         return sortReviews(Array.from(byKey.values()));
     }
@@ -1192,15 +1197,25 @@
     // upgrade in place. The image element keeps the same DOM node so the
     // CSS doesn't re-trigger the fade-in animation.
     function backfillIsbnCovers(scope) {
-        const targets = scope.querySelectorAll('.br-card[data-isbn]:not([data-isbn-tried])');
+        // Plain cards carry data-isbn on the outer .br-card anchor; aggregate
+        // cards (multi-review books) carry it on the inner media link because
+        // the outer element is a <div>. Pick up both shapes so aggregate
+        // covers also get the Open Library / Google Books upgrade.
+        const targets = scope.querySelectorAll(
+            '.br-card[data-isbn]:not([data-isbn-tried]), .br-card-aggregate-media[data-isbn]:not([data-isbn-tried])'
+        );
         targets.forEach(card => {
             card.setAttribute('data-isbn-tried', '1');
             const isbn = card.getAttribute('data-isbn');
             if (!isbn) return;
-            const img = card.querySelector('.br-card-media img');
+            const img = card.querySelector('img');
 
-            // Stage 1: Open Library (fast).
+            // Stage 1: Open Library (fast). Use a fresh probe Image PER
+            // card — a previously-shared global would let later iterations
+            // clobber earlier ones' onload handlers, so only the last card
+            // in the loop ever got its cover backfilled.
             const olUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
+            const probe = new Image();
             probe.onload = () => {
                 if (probe.naturalWidth <= 1) return;
                 if (img) {
@@ -1255,10 +1270,12 @@
                  || container.querySelector('img');
         if (!img) return;
         // Preload the high-res before swapping so the user doesn't see a
-        // flicker between the smaller and larger versions.
+        // flicker between the smaller and larger versions. Require a real
+        // cover-sized image (Google's "no preview" placeholder is ≈128×177
+        // and is served with a 200 OK, so a >1px check isn't enough).
         const pre = new Image();
         pre.onload = () => {
-            if (pre.naturalWidth > 1) {
+            if (pre.naturalWidth >= 200 && pre.naturalHeight >= 200) {
                 img.src = url;
                 img.classList.add('loaded');
             }
