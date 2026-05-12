@@ -791,8 +791,15 @@ body[data-page="article"] .back-link:hover {
   .article-hero__category { font-size: 10px; padding: 4px 10px; margin-bottom: 16px; }
 }
 
-/* --- Site header + footer tune-up on article pages ----------------------- */
-body[data-page="article"] #site-header { display: none; }
+/* --- Site header + footer tune-up on article pages -----------------------
+   The header stays visible on article pages (readers need to navigate
+   back to the magazine). We previously hid #site-header here, which
+   meant /article/<slug> and /book-review/<slug> were rendering with no
+   top nav at all — making the site feel like a dead end. Restored.
+
+   The header is `position: fixed` (see .header in styles.css), so the
+   article hero already has its own top padding to clear the floating
+   pill nav; no layout adjustment is needed here. */
 body[data-page="article"] #site-footer { background: var(--paper); }
 
 /* Related articles block sits inside the full-bleed container; give it its
