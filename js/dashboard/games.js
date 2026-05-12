@@ -67,7 +67,16 @@ export async function mount(ctx, container) {
         orderBy("publishedAt", "desc")
       ));
       allRows = [];
-      snap.forEach((d) => allRows.push({ id: d.id, ...d.data() }));
+      snap.forEach((d) => {
+        const data = d.data();
+        // Book reviews aren't editorial articles — they live on their own
+        // page and have no quiz/game functionality on the public side.
+        // Adding a Doodle Jump game to a book review wouldn't render
+        // anywhere, so they shouldn't appear in the picker.
+        const cat = String(data.category || "").toLowerCase().replace(/\s+/g, "-");
+        if (cat === "book-review" || cat === "bookreview") return;
+        allRows.push({ id: d.id, ...data });
+      });
       paint();
     } catch (err) {
       console.error("[games] load failed", err);

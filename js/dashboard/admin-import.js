@@ -17,104 +17,221 @@ import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 // off a welcome email to new arrivals without scrolling.
 const RECENT_JOIN_DAYS = 14;
 
+// ─── Tool registry ──────────────────────────────────────────────────────────
+//
+// Each tool is one entry in this array. The mount function renders a left
+// rail of these and shows the active one's pane on the right; clicking a
+// rail item swaps panes without re-fetching anything that's already mounted.
+// Adding a new tool = appending one entry here and writing its `mount`.
+//
+// Layout choice: the previous version stacked all 5 tools in one long
+// scroll, which forced admins to read 5 dense help blocks just to find
+// the one tool they wanted. Settings-style picker UIs (System Prefs,
+// GitHub Settings, Linear, Notion) all use a left rail because the eye
+// can pattern-match icon + name in ~200ms vs reading paragraphs.
+const TOOLS = [
+  {
+    id: "import",
+    label: "Import Wix posts",
+    summary: "Bulk import an old Wix blog export into the article queue as drafts.",
+    danger: "writes",
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+    mount: mountImportTool,
+  },
+  {
+    id: "export",
+    label: "Export all articles",
+    summary: "Download every story (title, byline, body, URL) as a single .txt for LLM editing.",
+    danger: null,
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+    mount: mountExportTool,
+  },
+  {
+    id: "welcome",
+    label: "Welcome emails",
+    summary: "Send a role-specific onboarding walkthrough to any contributor.",
+    danger: null,
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1 0 2 1 2 2v12c0 1-1 2-2 2H4c-1 0-2-1-2-2V6c0-1 1-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>`,
+    mount: mountWelcomeTool,
+  },
+  {
+    id: "guidance",
+    label: "Help-email composer",
+    summary: "Send a polished workflow walkthrough from Aidan & Yair to a confused teammate.",
+    danger: null,
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    mount: mountGuidanceTool,
+  },
+  {
+    id: "winners",
+    label: "Winners' Chat",
+    summary: "Edit or delete messages in the Brain Teaser Winners' Lounge.",
+    danger: "writes",
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+    mount: mountWinnersTool,
+  },
+];
+
 export async function mount(ctx, container) {
   container.innerHTML = "";
-  const card = el("div", { class: "card" });
+  ensureAdvancedToolsStyles();
+
+  // Pick the initial tool from the URL hash query (?tool=…) so refresh /
+  // back-forward keep the same tool open. Falls back to the first tool.
+  const urlParams = new URLSearchParams(location.hash.split("?")[1] || "");
+  const initialId = urlParams.get("tool") || TOOLS[0].id;
+  let activeId = TOOLS.some((t) => t.id === initialId) ? initialId : TOOLS[0].id;
+
+  const card = el("div", { class: "card adv-card" });
   card.innerHTML = `
-    <div class="card-header">
+    <div class="card-header adv-header">
       <div>
         <div class="card-title">Advanced tools</div>
-        <div class="card-subtitle">Admin-only utilities. Use with care — these write directly to the live database.</div>
+        <div class="card-subtitle">Admin-only utilities. Each writes directly to the live database — pick one tool at a time and use it deliberately.</div>
       </div>
     </div>
-    <div class="card-body" style="display:grid;gap:16px;">
-      <div style="border:1px solid var(--hairline);border-radius:10px;padding:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:700;color:var(--ink-1);">Import from Wix CSV</div>
-            <div class="hint" style="margin-top:4px;max-width:640px;">
-              Upload a <code>Posts.csv</code> export from your old Wix blog. Each row becomes a <strong>draft</strong>
-              you can review and publish from <em>All articles &amp; approvals</em>. Existing articles with the same slug are skipped.
-            </div>
-          </div>
-          <label class="btn btn-accent btn-sm" style="cursor:pointer;">
-            <input id="csv-file" type="file" accept=".csv,text/csv" style="display:none;">
-            Choose CSV file
-          </label>
-        </div>
-        <div id="import-panel" style="margin-top:16px;"></div>
-      </div>
-
-      <div style="border:1px solid var(--hairline);border-radius:10px;padding:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:700;color:var(--ink-1);">Export all articles as TXT</div>
-            <div class="hint" style="margin-top:4px;max-width:640px;">
-              Downloads a single <code>.txt</code> with every article's title, byline, status, URL, cover image,
-              excerpt, and full body. Use it to paste into an LLM for grammar or editing help.
-            </div>
-          </div>
-          <button id="export-txt" class="btn btn-secondary btn-sm">Export articles</button>
-        </div>
-        <div id="export-status" class="hint" style="margin-top:10px;"></div>
-      </div>
-
-      <div style="border:1px solid var(--hairline);border-radius:10px;padding:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:700;color:var(--ink-1);">Welcome email sender</div>
-            <div class="hint" style="margin-top:4px;max-width:640px;">
-              Send a new contributor an onboarding email with their sign-in details and a role-specific
-              walkthrough of the editorial suite. Recently joined users (last ${RECENT_JOIN_DAYS} days) are
-              highlighted at the top — but you can force-send the welcome email to any user.
-            </div>
-          </div>
-          <button id="welcome-refresh" class="btn btn-secondary btn-sm">Refresh list</button>
-        </div>
-        <div id="welcome-panel" style="margin-top:14px;">
-          <div class="loading-state"><div class="spinner"></div>Loading users…</div>
-        </div>
-      </div>
-
-      <div style="border:1px solid #b7e4c7;border-left:4px solid #22c55e;border-radius:10px;padding:16px;background:#f0fdf4;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:800;color:#14532d;">Send email guidance</div>
-            <div class="hint" style="margin-top:4px;max-width:720px;color:#166534;">
-              Send a polished, detailed help email from Aidan and Yair to a selected user. Use this when a writer,
-              editor, newsletter builder, or marketing teammate is confused about a dashboard workflow.
-            </div>
-          </div>
-          <button id="guidance-refresh" class="btn btn-secondary btn-sm">Refresh</button>
-        </div>
-        <div id="guidance-panel" style="margin-top:14px;">
-          <div class="loading-state"><div class="spinner"></div>Loading guidance tool…</div>
-        </div>
-      </div>
-
-      <div style="border:1px solid var(--hairline);border-left:4px solid #6366f1;border-radius:10px;padding:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-          <div>
-            <div style="font-weight:700;color:var(--ink-1);">Winners' Chat manager</div>
-            <div class="hint" style="margin-top:4px;max-width:720px;">
-              Edit any message that solvers have left in the Winners' Lounge. You can change the
-              <strong>display name</strong>, <strong>title</strong>, <strong>message text</strong>, <strong>like count</strong>,
-              and <strong>posted date</strong>, or delete a message entirely.
-            </div>
-          </div>
-          <button id="winners-chat-refresh" class="btn btn-secondary btn-sm">Refresh</button>
-        </div>
-        <div id="winners-chat-panel" style="margin-top:14px;">
-          <div class="loading-state"><div class="spinner"></div>Loading messages…</div>
-        </div>
-      </div>
+    <div class="adv-body">
+      <aside class="adv-rail" role="tablist" aria-label="Advanced tools"></aside>
+      <section class="adv-pane" id="adv-pane" role="tabpanel" aria-live="polite"></section>
     </div>`;
   container.appendChild(card);
 
-  const fileInput = card.querySelector("#csv-file");
-  const panel = card.querySelector("#import-panel");
-  const exportBtn = card.querySelector("#export-txt");
-  const exportStatus = card.querySelector("#export-status");
+  const rail = card.querySelector(".adv-rail");
+  const pane = card.querySelector("#adv-pane");
+  const mountedPanes = new Map(); // tool.id -> {el, cleanup}
+
+  // Render the left rail once. Each item is a button so keyboard users
+  // can tab through them; aria-selected reflects active state.
+  for (const tool of TOOLS) {
+    const item = el("button", {
+      type: "button",
+      class: "adv-rail-item",
+      role: "tab",
+      "data-tool-id": tool.id,
+      "aria-selected": tool.id === activeId ? "true" : "false",
+    });
+    item.innerHTML = `
+      <span class="adv-rail-icon" aria-hidden="true">${tool.iconSvg}</span>
+      <span class="adv-rail-text">
+        <span class="adv-rail-label">
+          ${esc(tool.label)}
+          ${tool.danger === "writes" ? `<span class="adv-rail-badge" title="This tool writes to the live database">Live writes</span>` : ""}
+        </span>
+        <span class="adv-rail-summary">${esc(tool.summary)}</span>
+      </span>
+    `;
+    item.addEventListener("click", () => switchTo(tool.id));
+    rail.appendChild(item);
+  }
+
+  // Pane swap. We mount each tool lazily on first selection and *keep
+  // its DOM cached* for fast re-entry — important because the welcome
+  // tool fetches a user list and the import tool keeps mid-flight CSV
+  // preview state. Cached panes are hidden via display:none, not
+  // unmounted, so any open dialog or in-flight upload survives a tool
+  // switch.
+  function switchTo(nextId) {
+    const tool = TOOLS.find((t) => t.id === nextId);
+    if (!tool) return;
+    activeId = nextId;
+    rail.querySelectorAll(".adv-rail-item").forEach((b) => {
+      b.setAttribute("aria-selected", b.dataset.toolId === nextId ? "true" : "false");
+    });
+    // Update the URL so refresh keeps the same tool open without
+    // disturbing the hash route.
+    const [route, qs] = location.hash.split("?");
+    const params = new URLSearchParams(qs || "");
+    params.set("tool", nextId);
+    location.replace(`${route}?${params.toString()}`);
+
+    // Hide every previously-mounted pane.
+    for (const { el: e } of mountedPanes.values()) e.style.display = "none";
+
+    let mounted = mountedPanes.get(nextId);
+    if (!mounted) {
+      const wrap = el("div", { class: "adv-pane-content" });
+      pane.appendChild(wrap);
+      let cleanup = null;
+      try {
+        cleanup = tool.mount(ctx, wrap) || null;
+      } catch (err) {
+        console.error(`[advanced-tools] ${nextId} mount failed`, err);
+        wrap.innerHTML = `<div class="error-state">Could not load ${esc(tool.label)}: ${esc(err.message || err)}</div>`;
+      }
+      mounted = { el: wrap, cleanup };
+      mountedPanes.set(nextId, mounted);
+    }
+    mounted.el.style.display = "";
+  }
+
+  switchTo(activeId);
+
+  // Module cleanup — fire each tool's optional cleanup on unmount.
+  return () => {
+    for (const { cleanup } of mountedPanes.values()) {
+      if (typeof cleanup === "function") {
+        try { cleanup(); } catch (err) { console.warn(err); }
+      }
+    }
+  };
+}
+
+// ─── Pane renderers ─────────────────────────────────────────────────────────
+
+function paneHeader(title, sub) {
+  return `
+    <header class="adv-pane-header">
+      <h2 class="adv-pane-title">${esc(title)}</h2>
+      ${sub ? `<p class="adv-pane-sub">${sub}</p>` : ""}
+    </header>`;
+}
+
+function mountImportTool(ctx, root) {
+  root.innerHTML = `
+    ${paneHeader("Import from Wix CSV", `Upload a <code>Posts.csv</code> export from your old Wix blog. Each row becomes a <strong>draft</strong> you can review and publish from <em>All articles &amp; approvals</em>. Existing articles with the same slug are skipped — re-imports are safe.`)}
+    <div class="adv-actions">
+      <label class="btn btn-accent btn-sm" style="cursor:pointer;">
+        <input id="csv-file" type="file" accept=".csv,text/csv" style="display:none;">
+        Choose CSV file
+      </label>
+      <span class="adv-action-hint">Files stay in your browser until you click "Import" on the preview.</span>
+    </div>
+    <div id="import-panel" class="adv-pane-body"></div>`;
+
+  const fileInput = root.querySelector("#csv-file");
+  const panel = root.querySelector("#import-panel");
+
+  fileInput.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    panel.innerHTML = `<div class="loading-state"><div class="spinner"></div>Parsing ${esc(file.name)}…</div>`;
+    try {
+      const text = await file.text();
+      const { headers, rows } = parseCSV(text);
+      const parsed = rows.map((r) => mapRow(headers, r)).filter((p) => p.title && p.body);
+      if (!parsed.length) {
+        panel.innerHTML = `<div class="empty-state">No usable rows found. Make sure the CSV has Title and Plain Content columns.</div>`;
+        return;
+      }
+      renderPreview(ctx, panel, parsed);
+    } catch (err) {
+      console.error(err);
+      panel.innerHTML = `<div class="error-state">Parse failed: ${esc(err.message)}</div>`;
+    }
+    fileInput.value = "";
+  });
+}
+
+function mountExportTool(ctx, root) {
+  root.innerHTML = `
+    ${paneHeader("Export all articles as TXT", `Downloads a single <code>.txt</code> with every article's title, byline, status, URL, cover image, excerpt, and full body. Drop the file into ChatGPT or Claude for editing help.`)}
+    <div class="adv-actions">
+      <button id="export-txt" class="btn btn-accent btn-sm">Export articles</button>
+      <span id="export-status" class="adv-action-hint"></span>
+    </div>`;
+
+  const exportBtn = root.querySelector("#export-txt");
+  const exportStatus = root.querySelector("#export-status");
 
   exportBtn.addEventListener("click", async () => {
     exportBtn.disabled = true;
@@ -141,52 +258,209 @@ export async function mount(ctx, container) {
       exportBtn.textContent = "Export articles";
     }
   });
+}
 
-  // ---------- Welcome email sender ----------
-  const welcomePanel = card.querySelector("#welcome-panel");
-  const welcomeRefresh = card.querySelector("#welcome-refresh");
+function mountWelcomeTool(ctx, root) {
+  root.innerHTML = `
+    ${paneHeader("Welcome email sender", `Send a new contributor an onboarding email with their sign-in details and a role-specific walkthrough of the editorial suite. Recently joined users (last ${RECENT_JOIN_DAYS} days) are highlighted at the top — but you can force-send the welcome email to any user.`)}
+    <div class="adv-actions">
+      <button id="welcome-refresh" class="btn btn-secondary btn-sm">Refresh list</button>
+    </div>
+    <div id="welcome-panel" class="adv-pane-body">
+      <div class="loading-state"><div class="spinner"></div>Loading users…</div>
+    </div>`;
+
+  const welcomePanel = root.querySelector("#welcome-panel");
+  const welcomeRefresh = root.querySelector("#welcome-refresh");
   const loadWelcome = () => loadWelcomeEmailSender(ctx, welcomePanel);
-  // Attach the click delegate once — loadWelcomeEmailSender only swaps innerHTML, so
-  // the panel element itself sticks around and a single listener handles
-  // every Send button across refreshes.
+  // Attach the click delegate once — loadWelcomeEmailSender only swaps
+  // innerHTML, so the panel element itself sticks around and a single
+  // listener handles every Send button across refreshes.
   welcomePanel.addEventListener("click", (e) => handleWelcomeClick(e, ctx));
   welcomeRefresh.addEventListener("click", loadWelcome);
   loadWelcome();
+}
 
-  // ---------- Email Guidance ----------
-  const guidancePanel = card.querySelector("#guidance-panel");
-  const guidanceRefresh = card.querySelector("#guidance-refresh");
+function mountGuidanceTool(ctx, root) {
+  root.innerHTML = `
+    ${paneHeader("Send email guidance", `Send a polished, detailed help email from Aidan and Yair to a selected user. Use this when a writer, editor, newsletter builder, or marketing teammate is confused about a dashboard workflow.`)}
+    <div class="adv-actions">
+      <button id="guidance-refresh" class="btn btn-secondary btn-sm">Refresh</button>
+    </div>
+    <div id="guidance-panel" class="adv-pane-body">
+      <div class="loading-state"><div class="spinner"></div>Loading guidance tool…</div>
+    </div>`;
+
+  const guidancePanel = root.querySelector("#guidance-panel");
+  const guidanceRefresh = root.querySelector("#guidance-refresh");
   const loadGuidance = () => loadGuidanceEmailTool(ctx, guidancePanel);
   guidanceRefresh.addEventListener("click", loadGuidance);
   loadGuidance();
+}
 
-  // ---------- Winners' Chat manager ----------
-  const winnersPanel = card.querySelector("#winners-chat-panel");
-  const winnersRefresh = card.querySelector("#winners-chat-refresh");
+function mountWinnersTool(ctx, root) {
+  root.innerHTML = `
+    ${paneHeader("Winners' Chat manager", `Edit any message that solvers have left in the Winners' Lounge. Change the <strong>display name</strong>, <strong>title</strong>, <strong>message text</strong>, <strong>like count</strong>, and <strong>posted date</strong>, or delete a message entirely.`)}
+    <div class="adv-actions">
+      <button id="winners-chat-refresh" class="btn btn-secondary btn-sm">Refresh</button>
+    </div>
+    <div id="winners-chat-panel" class="adv-pane-body">
+      <div class="loading-state"><div class="spinner"></div>Loading messages…</div>
+    </div>`;
+
+  const winnersPanel = root.querySelector("#winners-chat-panel");
+  const winnersRefresh = root.querySelector("#winners-chat-refresh");
   const loadWinners = () => loadWinnersChat(winnersPanel);
   winnersPanel.addEventListener("click", (e) => handleWinnersChatClick(e, winnersPanel));
   winnersRefresh.addEventListener("click", loadWinners);
   loadWinners();
+}
 
-  fileInput.addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    panel.innerHTML = `<div class="loading-state"><div class="spinner"></div>Parsing ${esc(file.name)}…</div>`;
-    try {
-      const text = await file.text();
-      const { headers, rows } = parseCSV(text);
-      const parsed = rows.map((r) => mapRow(headers, r)).filter((p) => p.title && p.body);
-      if (!parsed.length) {
-        panel.innerHTML = `<div class="empty-state">No usable rows found. Make sure the CSV has Title and Plain Content columns.</div>`;
-        return;
-      }
-      renderPreview(ctx, panel, parsed);
-    } catch (err) {
-      console.error(err);
-      panel.innerHTML = `<div class="error-state">Parse failed: ${esc(err.message)}</div>`;
+// ─── Styles ─────────────────────────────────────────────────────────────────
+
+function ensureAdvancedToolsStyles() {
+  if (document.getElementById("adv-tools-styles")) return;
+  const s = document.createElement("style");
+  s.id = "adv-tools-styles";
+  s.textContent = `
+    .adv-card { overflow:hidden; }
+    .adv-header { border-bottom:1px solid var(--hairline); }
+
+    /* ── 2-col layout: rail + pane ── */
+    .adv-body {
+      display:grid;
+      grid-template-columns: 280px 1fr;
+      min-height:540px;
     }
-    fileInput.value = "";
-  });
+    @media (max-width: 880px) {
+      .adv-body { grid-template-columns: 1fr; }
+      .adv-rail { border-right:0; border-bottom:1px solid var(--hairline); }
+    }
+
+    /* ── Left rail ── */
+    .adv-rail {
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      padding:14px 10px;
+      background:var(--surface-2, #f8fafc);
+      border-right:1px solid var(--hairline);
+    }
+    .adv-rail-item {
+      all:unset;
+      display:grid;
+      grid-template-columns:32px 1fr;
+      gap:12px;
+      align-items:flex-start;
+      padding:10px 12px;
+      border-radius:8px;
+      cursor:pointer;
+      color:var(--ink-2);
+      transition:background .12s ease, color .12s ease;
+    }
+    .adv-rail-item:hover {
+      background:rgba(15,23,42,0.05);
+      color:var(--ink);
+    }
+    .adv-rail-item:focus-visible {
+      outline:2px solid var(--ink);
+      outline-offset:2px;
+    }
+    .adv-rail-item[aria-selected="true"] {
+      background:#fff;
+      color:var(--ink);
+      box-shadow:0 1px 2px rgba(15,23,42,0.05), inset 3px 0 0 var(--ink, #0f172a);
+    }
+    .adv-rail-icon {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:32px; height:32px;
+      border-radius:6px;
+      background:rgba(15,23,42,0.06);
+    }
+    .adv-rail-icon svg { width:16px; height:16px; }
+    .adv-rail-item[aria-selected="true"] .adv-rail-icon {
+      background:var(--ink);
+      color:#fff;
+    }
+    .adv-rail-text { display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .adv-rail-label {
+      font-size:13px;
+      font-weight:600;
+      letter-spacing:-0.005em;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .adv-rail-summary {
+      font-size:11.5px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+    .adv-rail-badge {
+      font-size:9px;
+      font-weight:700;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+      color:#92400e;
+      background:#fef3c7;
+      padding:2px 6px;
+      border-radius:999px;
+    }
+
+    /* ── Right pane ── */
+    .adv-pane {
+      padding:28px 32px 32px;
+      background:#fff;
+      min-width:0;
+    }
+    @media (max-width: 880px) {
+      .adv-pane { padding:22px 18px 24px; }
+    }
+    .adv-pane-content { display:flex; flex-direction:column; gap:18px; }
+    .adv-pane-header { padding:0; margin:0; }
+    .adv-pane-title {
+      font-size:20px;
+      font-weight:700;
+      letter-spacing:-0.015em;
+      color:var(--ink);
+      margin:0 0 6px;
+    }
+    .adv-pane-sub {
+      font-size:13.5px;
+      line-height:1.55;
+      color:var(--muted);
+      margin:0;
+      max-width:680px;
+    }
+    .adv-pane-sub code {
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+      font-size:12px;
+      background:var(--surface-2,#f1f5f9);
+      padding:1px 6px;
+      border-radius:4px;
+    }
+    .adv-pane-body { margin-top:6px; }
+
+    /* ── Action row (button + status hint) ── */
+    .adv-actions {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      flex-wrap:wrap;
+      padding:14px 0;
+      border-top:1px solid var(--hairline);
+      border-bottom:1px solid var(--hairline);
+    }
+    .adv-action-hint {
+      font-size:12.5px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+  `;
+  document.head.appendChild(s);
 }
 
 // ---------- CSV parsing ----------
