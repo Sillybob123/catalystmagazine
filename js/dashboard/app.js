@@ -33,18 +33,74 @@ const ROLE_LABELS = {
   reader: "Reader",
 };
 
-// Icons as SVG strings (used in nav).
+// Icons as SVG strings (used in nav). One icon per nav entry — duplicates
+// make the sidebar hard to scan because the eye uses shape, not text, to
+// orient. Each icon below is referenced by exactly one route except where
+// the meaning is genuinely the same (e.g. both editing screens use `check`).
 const ICONS = {
-  home: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-  pipeline: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>`,
-  pen: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
-  check: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
-  mail: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1 0 2 1 2 2v12c0 1-1 2-2 2H4c-1 0-2-1-2-2V6c0-1 1-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
-  chart: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
-  shield: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
-  users: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-  book: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
-  activity: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
+  // Workspace
+  home:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  // Catalyst in the Capital — a microphone (interview-led pipeline)
+  mic:         `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`,
+  // Op-Eds — a quill (opinion / argument)
+  quill:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17" y1="15" x2="9" y2="15"/></svg>`,
+  // My assignments — a clipboard with checks
+  clipboard:   `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><polyline points="9 14 11 16 15 12"/></svg>`,
+  // Tasks — a numbered list
+  list:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>`,
+
+  // Writing
+  // Submit a draft — a pen drafting a line
+  pen:         `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+  // My articles — stacked pages with a folded corner
+  pages:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>`,
+  // Articles in the works — a bullhorn / shared feed
+  feed:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v3a1 1 0 0 0 1 1h2.5l5 4.5V6.5l-5 4.5z"/><path d="M16 8a4 4 0 0 1 0 8"/><path d="M18.5 5a8 8 0 0 1 0 14"/></svg>`,
+  // Editorial standards — an open book
+  bookOpen:    `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5C5 3 7.5 3 12 4.5V21c-4.5-1.5-7-1.5-10 0z"/><path d="M22 4.5C19 3 16.5 3 12 4.5V21c4.5-1.5 7-1.5 10 0z"/></svg>`,
+
+  // Book reviews
+  // Write a book review — a book + pencil mash-up
+  bookPen:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H17v13H6.5A2.5 2.5 0 0 0 4 17.5z"/><path d="M4 17.5A2.5 2.5 0 0 0 6.5 20H17"/><path d="M14 7l4 4-5 5h-4v-4z"/></svg>`,
+  // My book reviews — bookmark on a page
+  bookmark:    `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`,
+  // Admin: Book reviews queue — a stacked-books library
+  library:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="6" x2="9" y2="14"/><line x1="13" y1="6" x2="13" y2="14"/></svg>`,
+
+  // Editing
+  check:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+
+  // Newsletter
+  // Newsletter builder — paper airplane (composing/sending)
+  send:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  // Campaign history — clock with rewind
+  history:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/><polyline points="12 7 12 12 15 14"/></svg>`,
+
+  // Marketing
+  // Subscribers & growth — bar chart with trend arrow
+  chart:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+  // Subscriber list — group of people
+  users:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  // Collaboration requests — a handshake
+  handshake:   `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l2 2a1 1 0 0 0 1.41 0l4-4"/><path d="M3 12l4-4 5 5 1-1 5 5"/><path d="M14 12l-2-2-3 3"/><path d="M3 12l3 3 6-6"/></svg>`,
+  // Social media posts — share-arrow
+  share:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+
+  // Admin
+  // All articles & approvals — a shield with a check (curation/approvals)
+  shieldCheck: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
+  // Games — a controller / dice
+  game:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><circle cx="15" cy="12" r="1"/><circle cx="18" cy="10" r="1"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>`,
+  // Users & roles — single user with a settings cog
+  userCog:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="19" cy="11" r="2"/><path d="M19 8v1"/><path d="M19 13v1"/><path d="M16 11h1"/><path d="M21 11h1"/></svg>`,
+  // Image library — image / picture frame
+  image:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
+  // Advanced tools — a wrench
+  wrench:      `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`,
+  // Activity — pulse line
+  activity:    `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
+  // Admin: Submissions — an inbox tray
+  inbox:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
 };
 
 // ---------- state ----------
@@ -82,7 +138,7 @@ const ROUTES = {
   },
   "#/pipeline/interviews": {
     label: "Catalyst in the Capital",
-    icon: ICONS.pipeline,
+    icon: ICONS.mic,
     roles: ["*"],
     group: "main",
     loader: () => import("./pipeline.js"),
@@ -90,7 +146,7 @@ const ROUTES = {
   },
   "#/pipeline/opeds": {
     label: "Op-Eds",
-    icon: ICONS.book,
+    icon: ICONS.quill,
     roles: ["*"],
     group: "main",
     loader: () => import("./pipeline.js"),
@@ -98,7 +154,7 @@ const ROUTES = {
   },
   "#/pipeline/mine": {
     label: "My assignments",
-    icon: ICONS.users,
+    icon: ICONS.clipboard,
     roles: ["*"],
     group: "main",
     loader: () => import("./pipeline.js"),
@@ -106,7 +162,7 @@ const ROUTES = {
   },
   "#/tasks": {
     label: "Tasks",
-    icon: ICONS.check,
+    icon: ICONS.list,
     roles: ["*"],
     group: "main",
     loader: () => import("./tasks.js"),
@@ -121,7 +177,7 @@ const ROUTES = {
   },
   "#/writer/mine": {
     label: "My articles",
-    icon: ICONS.book,
+    icon: ICONS.pages,
     roles: ["admin", "editor", "writer"],
     group: "write",
     loader: () => import("./writer.js"),
@@ -129,7 +185,7 @@ const ROUTES = {
   },
   "#/writer/feed": {
     label: "Articles in the works",
-    icon: ICONS.book,
+    icon: ICONS.feed,
     roles: ["admin", "editor", "writer"],
     group: "write",
     loader: () => import("./writer.js"),
@@ -137,29 +193,38 @@ const ROUTES = {
   },
   "#/writer/guidelines": {
     label: "Editorial standards",
-    icon: ICONS.book,
+    icon: ICONS.bookOpen,
     roles: ["admin", "editor", "writer"],
     group: "write",
     loader: () => import("./guidelines.js"),
   },
-  // Book reviews are intentionally NOT in the regular draft flow. They have
-  // their own composer with book-specific fields (ISBN, rating, book author
-  // separate from byline) and publish straight to the Book Reviews page.
+  // Book reviews live in their own sidebar group ("Book reviews") so the
+  // composer + writer's own list + admin queue are next to each other.
+  // They have a distinct composer with book-specific fields (ISBN, rating,
+  // book author separate from byline) and publish straight to the Book
+  // Reviews page rather than the regular article pipeline.
   "#/book-reviews/write": {
     label: "Write a book review",
-    icon: ICONS.pen,
+    icon: ICONS.bookPen,
     roles: ["admin", "editor", "writer"],
-    group: "write",
+    group: "book-reviews",
     loader: () => import("./book-reviews-writer.js"),
     mountKey: "write",
   },
   "#/book-reviews/mine": {
     label: "My book reviews",
-    icon: ICONS.book,
+    icon: ICONS.bookmark,
     roles: ["admin", "editor", "writer"],
-    group: "write",
+    group: "book-reviews",
     loader: () => import("./book-reviews-writer.js"),
     mountKey: "mine",
+  },
+  "#/admin/book-reviews": {
+    label: "Reader-submitted reviews",
+    icon: ICONS.library,
+    roles: ["admin"],
+    group: "book-reviews",
+    loader: () => import("./book-reviews-admin.js"),
   },
   "#/editor/queue": {
     label: "Editing queue",
@@ -171,7 +236,7 @@ const ROUTES = {
   },
   "#/newsletter/builder": {
     label: "Newsletter builder",
-    icon: ICONS.mail,
+    icon: ICONS.send,
     roles: ["admin", "newsletter_builder"],
     group: "newsletter",
     // Cache-bust: bump when newsletter.js changes shape (e.g. picker UI).
@@ -180,7 +245,7 @@ const ROUTES = {
   },
   "#/newsletter/history": {
     label: "Campaign history",
-    icon: ICONS.mail,
+    icon: ICONS.history,
     roles: ["admin", "newsletter_builder", "marketing"],
     group: "newsletter",
     loader: () => import("./newsletter.js"),
@@ -204,7 +269,7 @@ const ROUTES = {
   },
   "#/marketing/collabs": {
     label: "Collaboration requests",
-    icon: ICONS.users,
+    icon: ICONS.handshake,
     roles: ["admin", "marketing"],
     group: "marketing",
     loader: () => import("./marketing.js"),
@@ -212,7 +277,7 @@ const ROUTES = {
   },
   "#/marketing/social": {
     label: "Social media posts",
-    icon: ICONS.activity,
+    icon: ICONS.share,
     roles: ["admin", "marketing"],
     group: "marketing",
     loader: () => import("./marketing.js"),
@@ -220,22 +285,32 @@ const ROUTES = {
   },
   "#/admin/articles": {
     label: "All articles & approvals",
-    icon: ICONS.shield,
+    icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
     loader: () => import("./admin.js?v=bookreview-tabs"),
     mountKey: "articles",
   },
+  // Submissions inbox — Join-the-Team applications + Article proposals
+  // sent through the public collaborate page. Admins triage them here:
+  // see all the fields a submitter filled in, mark as reviewed, reply.
+  "#/admin/submissions": {
+    label: "Submissions inbox",
+    icon: ICONS.inbox,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./submissions.js?v=1"),
+  },
   "#/admin/games": {
     label: "Games",
-    icon: ICONS.activity,
+    icon: ICONS.game,
     roles: ["admin"],
     group: "admin",
     loader: () => import("./games.js"),
   },
   "#/admin/users": {
     label: "Users & roles",
-    icon: ICONS.users,
+    icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
     loader: () => import("./admin.js?v=bookreview-tabs"),
@@ -243,7 +318,7 @@ const ROUTES = {
   },
   "#/admin/images": {
     label: "Image library",
-    icon: ICONS.pipeline,
+    icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
     loader: () => import("./admin.js?v=bookreview-tabs"),
@@ -251,7 +326,7 @@ const ROUTES = {
   },
   "#/admin/advanced": {
     label: "Advanced tools",
-    icon: ICONS.shield,
+    icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
     loader: () => import("./admin-import.js"),
@@ -263,13 +338,6 @@ const ROUTES = {
     roles: ["admin"],
     group: "admin",
     loader: () => import("./activity.js"),
-  },
-  "#/admin/book-reviews": {
-    label: "Book reviews",
-    icon: ICONS.book,
-    roles: ["admin"],
-    group: "admin",
-    loader: () => import("./book-reviews-admin.js"),
   },
   // Final-review page — the shareable link the admin sends to the writer after
   // approving. Either the writer (story author) or any admin/editor can land
@@ -287,6 +355,11 @@ const ROUTES = {
 const GROUPS = [
   { id: "main", label: "Workspace" },
   { id: "write", label: "Writing" },
+  // Book reviews are an editorial product, not a sub-section of writing.
+  // Surfacing them as their own group makes the composer + writer's own
+  // list (and, for admins, the reader-submission queue) easy to find
+  // without scanning past every article-pipeline entry.
+  { id: "book-reviews", label: "Book reviews" },
   { id: "edit", label: "Editing" },
   { id: "newsletter", label: "Newsletter" },
   { id: "marketing", label: "Marketing" },
