@@ -29,7 +29,7 @@
 # article.html is the single-page renderer; JS reads the slug/ID from
 # the path and fetches the right Firestore document. The 200 rewrite
 # (not a redirect) keeps the original URL in the browser bar.
-/book-review/*               /article.html             200
+/book-review/*               /article                  200
 
 # ------ /ai-expo retired → /book-reviews (replaced 2026-05-11) -----
 # AI+ Expo coverage page is gone; The Stacks (book reviews) takes its

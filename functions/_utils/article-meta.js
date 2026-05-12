@@ -188,6 +188,14 @@ function firestoreDocToArticle(doc) {
   if (!id) return null;
   const f = doc.fields || {};
   const str = (k) => f[k]?.stringValue ?? "";
+  const bool = (k) => f[k]?.booleanValue === true;
+  const num = (k) => {
+    const v = f[k];
+    if (!v) return null;
+    if ("doubleValue" in v) return Number(v.doubleValue);
+    if ("integerValue" in v) return parseInt(v.integerValue, 10);
+    return null;
+  };
   const title = str("title");
   if (!title) return null;
 
@@ -205,10 +213,11 @@ function firestoreDocToArticle(doc) {
     }
   }
 
-  const deck = str("deck");
-  const content = str("content");
+  const deck = str("dek") || str("deck");
+  const content = str("content") || str("body") || str("reviewText");
   const excerpt =
     deck ||
+    str("excerpt") ||
     (content
       ? content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 220)
       : "Read this story on The Catalyst Magazine.");
@@ -219,10 +228,15 @@ function firestoreDocToArticle(doc) {
     slug: str("slug") || "",
     author: str("authorName") || str("author") || "The Catalyst",
     date,
-    image: resolveImage(str("coverImage")),
+    image: resolveImage(str("coverImage") || str("image")),
     excerpt,
     category: (str("category") || "feature").toLowerCase(),
     publishedAt: publishedRaw,
+    bookAuthor: str("bookAuthor"),
+    isbn: str("isbn"),
+    genre: str("genre"),
+    rating: num("rating"),
+    communityPick: bool("communityPick"),
   };
 }
 

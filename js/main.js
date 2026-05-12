@@ -1198,12 +1198,12 @@ async function initArticleDetailPage(data) {
 //   1. <meta name="catalyst-article-id"> — set by the Pages function
 //      when the slug resolved server-side. Always trust this if present.
 //      Fetches by ID directly if the ID isn't in the local cache.
-//   2. Local cache match (slug, link slug, or title→slug).
+//   2. Local cache match (ID, slug, link slug, or title→slug).
 //   3. Prefix-tolerant local cache match — handles URLs that got
 //      truncated by mail clients / iMessage / Twitter (the long-title
 //      reviews are most affected: "the-disappearing-spoon-and-…" can
 //      lose its tail and still be unambiguously matchable).
-//   4. Direct Firestore slug query (cold cache, listing query failure).
+//   4. Direct Firestore ID / slug query (cold cache, listing query failure).
 // =============================================================
 async function resolveArticleForDetailPage({ data, pathSlug, rawId }) {
     const injectedId = document.querySelector('meta[name="catalyst-article-id"]')?.content || '';
@@ -1224,19 +1224,27 @@ async function resolveArticleForDetailPage({ data, pathSlug, rawId }) {
 
     if (!pathSlug) return null;
 
-    const wantedSlug = decodeURIComponent(pathSlug).toLowerCase();
+    const wantedRaw = safeDecodeURIComponent(pathSlug);
+    const wantedSlug = wantedRaw.toLowerCase();
 
     // Exact match in the local cache. Also accept the legacy slug form so
     // historic URLs that pre-date the NFKD diacritic-strip (e.g.
     // "g-del-escher-bach…" for "Gödel, Escher, Bach…") still resolve to the
     // article and don't bounce the reader back to /book-reviews.
     let match = data.find(a =>
-        String(a.slug || '').toLowerCase() === wantedSlug
+        String(a.id || '') === wantedRaw
+        || String(a.slug || '').toLowerCase() === wantedSlug
         || slugKey(a.link || a.url || '') === wantedSlug
         || titleToSlug(a.title) === wantedSlug
         || titleToLegacySlug(a.title) === wantedSlug
     );
     if (match) return match;
+
+    // `/book-review/<Firestore document ID>` is used for duplicate reviews
+    // of the same book. Those reviews can share a title-based slug, so the
+    // path segment must also be allowed to resolve as the story document ID.
+    const byId = await fetchArticleByIdAsListing(wantedRaw);
+    if (byId) return byId;
 
     // Prefix-tolerant fallback. If the URL got truncated mid-slug, this
     // still matches as long as the prefix is unique. We require ≥40 chars
@@ -1263,6 +1271,14 @@ async function resolveArticleForDetailPage({ data, pathSlug, rawId }) {
     if (fetched) return fetched;
 
     return null;
+}
+
+function safeDecodeURIComponent(value) {
+    try {
+        return decodeURIComponent(value || '');
+    } catch {
+        return value || '';
+    }
 }
 
 // Fetch a single published story by Firestore doc ID and shape it like a
@@ -1578,8 +1594,11 @@ function renderBookReviewDetail(article, container) {
 
     // --- Meta tags ---
     document.title = `${article.title} | The Catalyst Book Reviews`;
-    // Book reviews canonicalize on /book-review/<slug> (the dedicated route).
-    const articleUrl = `${window.location.origin}/book-review/${encodeURIComponent(article.slug || titleToSlug(article.title))}`;
+    // Book reviews normally use /book-review/<slug>, but duplicate reviews of
+    // the same book can share that title slug. In that case the listing modal
+    // links to /book-review/<Firestore document ID>; preserve that exact detail
+    // URL for share/meta output once it resolves.
+    const articleUrl = getBookReviewDetailUrl(article);
     const socialImage = getBookReviewCover(article);
     const articleImage = /^https?:\/\//i.test(socialImage || '')
         ? socialImage
@@ -1833,6 +1852,28 @@ function renderBookReviewDetail(article, container) {
             probe.src = url;
         });
     }
+}
+
+function getBookReviewDetailUrl(article) {
+    const current = window.location.pathname.match(/^\/book-review\/([^/?#]+)/);
+    const canonicalSlug = article.slug || titleToSlug(article.title || '');
+    if (current) {
+        const rawSegment = current[1];
+        const decodedSegment = safeDecodeURIComponent(rawSegment);
+        const segmentSlug = decodedSegment.toLowerCase();
+        const matchesCurrentArticle =
+            decodedSegment === String(article.id || '') ||
+            segmentSlug === String(canonicalSlug || '').toLowerCase() ||
+            segmentSlug === titleToSlug(article.title || '') ||
+            segmentSlug === titleToLegacySlug(article.title || '');
+
+        if (matchesCurrentArticle) {
+            return `${window.location.origin}/book-review/${rawSegment}`;
+        }
+    }
+
+    const fallbackSegment = canonicalSlug || article.id || '';
+    return `${window.location.origin}/book-review/${encodeURIComponent(fallbackSegment)}`;
 }
 
 // =============================================================

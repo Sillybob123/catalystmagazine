@@ -16,6 +16,7 @@
 // 301-redirects to the new URL — see functions/article/[slug].js.
 
 import {
+  fetchArticleById,
   findArticleBySlug,
   listAllArticles,
   titleToSlug,
@@ -29,8 +30,9 @@ import {
 const SITE_NAME = "The Catalyst Magazine";
 
 export const onRequestGet = async ({ request, env, params, next }) => {
-  const slug = params.slug || "";
+  const slug = String(params.slug || "").trim();
   if (!slug) return next();
+  const origin = new URL(request.url).origin;
 
   // Try direct slug field match first (fast — one Firestore query),
   // then fall back to title-derived slug scan. We try both the canonical
@@ -42,9 +44,13 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   if (!article) {
     const articles = await listAllArticles().catch(() => []);
     article =
+      articles.find((a) => String(a.id || "") === slug) ||
       articles.find((a) => titleToSlug(a.title) === wanted) ||
       articles.find((a) => titleToLegacySlug(a.title) === wanted) ||
       null;
+  }
+  if (!article) {
+    article = await fetchArticleById(slug, origin).catch(() => null);
   }
 
   const siteUrl = getSiteUrl(request, env);
@@ -64,13 +70,15 @@ export const onRequestGet = async ({ request, env, params, next }) => {
 
   // Fetch article.html shell by absolute URL — avoids Cloudflare Pages'
   // automatic 308 redirect when next() resolves the static asset.
-  const origin = new URL(request.url).origin;
   const origin_response = await fetch(`${origin}/article`);
   if (!origin_response.ok) return origin_response;
 
   if (!article) return origin_response;
 
-  const canonical = `${siteUrl}/book-review/${encodeURIComponent(slug)}`;
+  const canonicalSegment = String(article.id || "") === slug
+    ? slug
+    : (article.slug || titleToSlug(article.title) || slug);
+  const canonical = `${siteUrl}/book-review/${encodeURIComponent(canonicalSegment)}`;
   const title = `${article.title} | ${SITE_NAME}`;
   const description = buildArticleDescription(article, 160);
   const image = resolveOgImage(article.image, siteUrl) || getFallbackImage(siteUrl);
