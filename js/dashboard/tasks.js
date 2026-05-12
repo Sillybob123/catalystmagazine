@@ -356,7 +356,7 @@ function openTaskDetailModal(taskId) {
           updatedAt: new Date().toISOString(),
           activity: arrayUnion({ text: "approved this task", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
         });
-        await notifyAssigned({
+        const notifySummary = await notifyAssigned({
           taskId: task.id,
           title: task.title,
           description: task.description || "",
@@ -371,7 +371,8 @@ function openTaskDetailModal(taskId) {
             task.notifyNames  || task.assigneeNames  || []
           ),
         });
-        toast("Task approved — assignees notified by email.", "success", 4000); m.close();
+        const summary = summarizeNotify(notifySummary, "approved");
+        toast(summary.message, summary.kind, 5500); m.close();
       } catch (e) { toast(e.message, "error"); approveBtn.disabled = false; }
     };
     footerBtns.push(approveBtn);
@@ -610,8 +611,9 @@ function openTaskCreateModal() {
       // the task is actually approved — pending tasks shouldn't ping the
       // assignee yet because an admin might still reject it. The bot
       // notification will fire later when an admin clicks "Approve".
+      let notifySummary = null;
       if (initialStatus === "approved") {
-        await notifyAssigned({
+        notifySummary = await notifyAssigned({
           taskId: taskRef.id,
           title, description: desc, priority,
           deadline: deadline || null,
@@ -620,12 +622,11 @@ function openTaskCreateModal() {
         });
       }
 
-      toast(
-        initialStatus === "approved"
-          ? "Task created — assignees notified by email."
-          : "Task created — pending admin approval.",
-        "success", 4000
-      );
+      // Honest toast: show what actually happened. If the email send
+      // failed (bad address, Resend down, missing env var), tell the
+      // admin instead of a silent "notified by email" lie.
+      const summary = summarizeNotify(notifySummary, initialStatus);
+      toast(summary.message, summary.kind, 5500);
       m.close();
     } catch (e) { errEl.textContent = e.message; saveBtn.disabled = false; saveBtn.textContent = "Create task"; }
   };
@@ -635,10 +636,10 @@ function openTaskCreateModal() {
 //
 // Three actions: assigned (send the welcome email + write the mirror
 // doc), completed (silence reminders), deleted (silence reminders).
-// Always swallow errors with a console warning — task creation /
-// completion / deletion has already succeeded in Firestore by the time
-// this is called, so a failed reminder shouldn't surface to the user as
-// "Task X failed" when it actually didn't.
+// We return a structured summary {ok, notified, failed, error} so the
+// caller can render an honest toast — the previous version swallowed
+// errors silently and toasted "notified by email" even when the email
+// had failed, which left admins thinking emails went out when they hadn't.
 
 async function notifyAssigned({ taskId, title, description, priority, deadline, creatorName, assignees }) {
   return _notify({ action: "assigned", taskId, title, description, priority, deadline, creatorName, assignees });
@@ -654,15 +655,64 @@ async function _notify(payload) {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    const data = await res.json().catch(() => ({}));
+    // Read as text first so a non-JSON response (HTML 5xx page,
+    // redirect) surfaces with a useful snippet instead of a generic
+    // SyntaxError.
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch {
+      const snippet = raw.slice(0, 160).replace(/\s+/g, " ").trim();
+      console.warn("[tasks/notify] non-JSON response:", res.status, snippet);
+      return { ok: false, transportError: `HTTP ${res.status}: ${snippet || "(empty body)"}` };
+    }
     if (!res.ok || !data.ok) {
       console.warn("[tasks/notify]", payload.action, "non-OK response:", data);
+      return { ok: false, transportError: data.error || data.message || `HTTP ${res.status}`, ...data };
     }
     return data;
   } catch (err) {
     console.warn("[tasks/notify]", payload.action, "request failed:", err);
-    return null;
+    return { ok: false, transportError: err?.message || String(err) };
   }
+}
+
+// Turn the notify response into a user-facing toast message. Three cases:
+//   • Network / server error           → red error toast with the cause
+//   • Some emails failed (Resend etc.) → orange warning toast with count
+//   • All emails went out              → green success toast
+function summarizeNotify(summary, initialStatus) {
+  if (initialStatus !== "approved") {
+    return { kind: "success", message: "Task created — pending admin approval." };
+  }
+  if (!summary) {
+    return { kind: "success", message: "Task created." };
+  }
+  if (summary.transportError) {
+    return {
+      kind: "error",
+      message: `Task saved, but the assignment email did NOT go out. ${summary.transportError}`,
+    };
+  }
+  const notified = Number(summary.notified || 0);
+  const failed = Array.isArray(summary.failed) ? summary.failed : [];
+  if (notified === 0 && failed.length === 0) {
+    return {
+      kind: "info",
+      message: "Task saved. No assignees had a valid email — no notifications sent.",
+    };
+  }
+  if (failed.length) {
+    const detail = failed.map((f) => `${f.email}: ${f.error || "unknown"}`).join("; ");
+    return {
+      kind: "error",
+      message: `Task saved. ${notified} email${notified === 1 ? "" : "s"} sent, ${failed.length} FAILED — ${detail}`,
+    };
+  }
+  return {
+    kind: "success",
+    message: `Task saved — ${notified} email${notified === 1 ? "" : "s"} sent to assignees.`,
+  };
 }
 
 // Zip two parallel flat arrays into the [{email, name}] shape the API
