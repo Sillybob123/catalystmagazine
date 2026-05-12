@@ -616,15 +616,23 @@ body[data-page="article"] .back-link:hover {
   font-family: var(--sans);
 }
 .article-byline__avatar {
-  width: 52px; height: 52px;
+  width: 48px; height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-soft));
-  color: #fff;
+  /* Was a green-to-mint diagonal gradient that read as default-AI.
+     Now a flat ink-on-paper monogram in the spirit of NYT / Atlantic
+     bylines — single ink color, hairline ring, restrained type.
+     The slight inner highlight gives it physical depth without ever
+     reading as a "glow effect". */
+  background: var(--ink);
+  color: var(--paper, #fbfbf9);
   display: flex; align-items: center; justify-content: center;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.04em;
+  font-family: var(--serif, "Source Serif Pro", Georgia, serif);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
+  border: 1px solid var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 .article-byline__name {
   font-weight: 700;

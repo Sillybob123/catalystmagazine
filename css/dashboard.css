@@ -1257,7 +1257,11 @@ button { font-family: inherit; cursor: pointer; }
   min-height: 440px;
   display: flex;
   align-items: flex-end;
-  padding: 48px clamp(24px, 5vw, 64px);
+  /* Padding matches .compose-body-wrap exactly so the headline / deck
+     ghost text starts at the same x-coordinate as the body's
+     'Opening paragraph…' ghost. Was clamp(24,5vw,64) which made the
+     hero column visibly inset deeper than the body underneath. */
+  padding: 48px clamp(24px, 3vw, 48px);
   color: #fff;
   isolation: isolate;
   overflow: hidden;
@@ -1394,7 +1398,10 @@ button { font-family: inherit; cursor: pointer; }
 }
 .compose-hero-inner {
   width: 100%;
-  max-width: 960px;
+  /* Was 960. Bumped to 1140 so it matches .compose-body's max-width
+     exactly — that's what aligns the headline column with the body
+     column underneath. */
+  max-width: 1140px;
   margin: 0 auto;
 }
 .compose-hero-surface {

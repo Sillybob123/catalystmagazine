@@ -1058,74 +1058,78 @@ function setupMagazineSearch(data) {
 
 
 function showNotification(message, type = 'success') {
-    // Remove existing notification
+    // Remove any toast that's still on screen so a quick second
+    // action doesn't stack pills on top of each other.
     const existing = document.querySelector('.notification');
     if (existing) existing.remove();
 
     const notification = document.createElement('div');
-    notification.className = 'notification';
+    notification.className = `notification notification--${type === 'error' ? 'error' : 'success'}`;
 
-    // Choose icon and colors based on type
+    // Minimalist toast — small ink dot for success, hairline cross for
+    // error. The previous design used a heavy gradient pill (blue for
+    // success, red for error) that read as a default "AI generic" toast
+    // and clashed with the editorial typography. New design follows the
+    // same pattern Linear / Apple System notifications use: solid dark
+    // surface, restrained type, soft shadow, no color encoding beyond a
+    // tiny accent dot.
     const isError = type === 'error';
-    const icon = isError
-        ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-           </svg>`
-        : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-            <polyline points="22 4 12 14.01 9 11.01"/>
-           </svg>`;
+    const dot = isError
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-    const background = isError
-        ? 'linear-gradient(135deg, #D32F2F 0%, #F44336 50%, #E57373 100%)'
-        : 'linear-gradient(135deg, #0D47A1 0%, #1976D2 50%, #42A5F5 100%)';
+    notification.innerHTML = `<span class="notification__icon">${dot}</span><span class="notification__text">${message}</span>`;
 
-    const boxShadow = isError
-        ? '0 10px 40px rgba(211, 47, 47, 0.4)'
-        : '0 10px 40px rgba(13, 71, 161, 0.4)';
-
-    notification.innerHTML = `${icon}<span>${message}</span>`;
-
-    // Add styles
     notification.style.cssText = `
         position: fixed;
-        bottom: 32px;
+        bottom: 28px;
         left: 50%;
-        transform: translateX(-50%) translateY(100px);
-        background: ${background};
-        color: white;
-        padding: 16px 28px;
-        border-radius: 50px;
-        display: flex;
+        transform: translateX(-50%) translateY(120%);
+        background: #0a0a0c;
+        color: #fbfbf9;
+        padding: 11px 16px 11px 14px;
+        border-radius: 999px;
+        display: inline-flex;
         align-items: center;
-        gap: 12px;
-        font-weight: 600;
-        box-shadow: ${boxShadow};
+        gap: 10px;
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 13.5px;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+        line-height: 1.2;
+        box-shadow: 0 12px 28px -12px rgba(0,0,0,0.45), 0 4px 10px rgba(0,0,0,0.18);
         z-index: 10000;
-        animation: slideUp 0.4s ease forwards;
-        max-width: 90%;
+        max-width: min(92vw, 420px);
+        opacity: 0;
+        transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 200ms ease;
     `;
 
-    // Add animation keyframes if not exists
-    if (!document.getElementById('notification-styles')) {
-        const style = document.createElement('style');
-        style.id = 'notification-styles';
-        style.textContent = `
-            @keyframes slideUp {
-                to { transform: translateX(-50%) translateY(0); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
+    // Inline icon styles so we don't depend on a CSS file shipping
+    // alongside the JS — the notification is portable across pages.
+    const iconEl = notification.querySelector('.notification__icon');
+    iconEl.style.cssText = `
+        width: 20px; height: 20px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+        flex-shrink: 0;
+        background: ${isError ? 'rgba(248,113,113,0.18)' : 'rgba(255,255,255,0.12)'};
+        color: ${isError ? '#fca5a5' : '#a7f3d0'};
+    `;
 
     document.body.appendChild(notification);
 
+    // Force a reflow so the entrance transition fires from the
+    // off-screen state instead of skipping.
+    // eslint-disable-next-line no-unused-expressions
+    notification.offsetHeight;
+    notification.style.transform = 'translateX(-50%) translateY(0)';
+    notification.style.opacity = '1';
+
     setTimeout(() => {
-        notification.style.animation = 'slideUp 0.4s ease reverse forwards';
-        setTimeout(() => notification.remove(), 400);
-    }, 4000);
+        notification.style.transform = 'translateX(-50%) translateY(120%)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 280);
+    }, 3200);
 }
 
 // ============================================
