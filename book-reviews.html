@@ -134,7 +134,7 @@
          different file and re-fetch — fixes the stale book-hero + rating
          slider that some users were still seeing post-deploy. -->
     <link rel="stylesheet" href="/css/styles.css?v=20260511">
-    <link rel="stylesheet" href="/css/book-reviews.css?v=20260511">
+    <link rel="stylesheet" href="/css/book-reviews.css?v=20260512a">
 </head>
 <body data-page="book-reviews">
     <!-- Google Tag Manager (noscript) -->
@@ -629,6 +629,76 @@
         </div>
     </div>
 
+    <!-- ============================================================
+         AGGREGATE REVIEWS MODAL — opens when a multi-reader book card
+         is clicked. Lists every individual reader review for the book
+         with search-by-name and sort controls. Hidden by default;
+         book-reviews.js toggles .is-open and fills the title/list/etc.
+         ============================================================ -->
+    <div class="br-modal-backdrop br-reviews-modal" id="br-reviews-modal" role="dialog" aria-modal="true" aria-labelledby="br-reviews-modal-title" aria-hidden="true">
+        <div class="br-modal br-modal--reviews" role="document">
+            <button class="br-modal-close" type="button" id="br-reviews-modal-close" aria-label="Close reviews">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+
+            <header class="br-modal-head br-reviews-modal-head">
+                <div class="br-reviews-modal-head-grid">
+                    <div class="br-reviews-modal-cover" aria-hidden="true">
+                        <img id="br-reviews-modal-img" alt="" loading="eager">
+                    </div>
+                    <div class="br-reviews-modal-headline">
+                        <div class="br-modal-eyebrow" id="br-reviews-modal-eyebrow">From the Catalyzers</div>
+                        <h2 class="br-modal-title" id="br-reviews-modal-title">Book reviews</h2>
+                        <p class="br-modal-sub" id="br-reviews-modal-author"></p>
+                        <div class="br-reviews-modal-stats">
+                            <span class="br-reviews-modal-avg" id="br-reviews-modal-avg">—<small>/5</small></span>
+                            <span class="br-reviews-modal-stats-divider" aria-hidden="true"></span>
+                            <span class="br-reviews-modal-readers" id="br-reviews-modal-readers">0 readers</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="br-reviews-modal-toolbar" role="search">
+                    <label class="br-reviews-modal-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="search" id="br-reviews-modal-search-input" placeholder="Search by reviewer name" autocomplete="off" spellcheck="false">
+                        <button type="button" id="br-reviews-modal-search-clear" class="br-reviews-modal-search-clear" aria-label="Clear search" hidden>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </label>
+                    <label class="br-reviews-modal-sort">
+                        <span class="br-reviews-modal-sort-label">Sort</span>
+                        <select id="br-reviews-modal-sort-select">
+                            <option value="rating-desc">Highest rating</option>
+                            <option value="rating-asc">Lowest rating</option>
+                            <option value="date-desc">Newest first</option>
+                            <option value="date-asc">Oldest first</option>
+                        </select>
+                        <svg class="br-reviews-modal-sort-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </label>
+                </div>
+            </header>
+
+            <div class="br-modal-body br-reviews-modal-body">
+                <ul class="br-reviews-modal-list" id="br-reviews-modal-list" role="list"></ul>
+                <div class="br-reviews-modal-empty" id="br-reviews-modal-empty" hidden>
+                    No reviews match that search.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="site-footer"></div>
 
     <!-- Cloudflare Turnstile (anti-bot for the public submission form).
@@ -645,6 +715,6 @@
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/lqip-manifest.js"></script>
     <script defer src="/js/data.js?v=2"></script>
-    <script defer src="/js/book-reviews.js?v=20260511b"></script>
+    <script defer src="/js/book-reviews.js?v=20260512a"></script>
 </body>
 </html>

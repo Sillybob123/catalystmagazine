@@ -637,10 +637,9 @@
     // body below, no outer box) so it sits at the same height/width as
     // its neighbours in the grid. Adds three small bits of unique chrome:
     // a "stack of papers" hint behind the cover, a "N readers" pill in
-    // the kicker row, and an inline expand button that toggles the list
-    // of individual reviews. Single-review groups render through
-    // cardHtml() unchanged.
-    const expandedGroups = new Set();
+    // the kicker row, and a "See all N reviews" button that opens the
+    // reviews modal (search + sort + scroll). Single-review groups
+    // render through cardHtml() unchanged.
     function aggregateCardHtml(group, variant) {
         const lead = group.lead;
         const classes = ['br-card', 'br-card-aggregate'];
@@ -661,32 +660,6 @@
             : '—';
         const readersLabel = `${group.count} ${group.count === 1 ? 'reader' : 'readers'}`;
 
-        const isOpen = expandedGroups.has(group.key);
-
-        // Individual reviews list. Renders ALL N reviews stacked vertically,
-        // each with the reviewer's name, their rating, their one-line summary,
-        // and a "read full review" link to the standalone article page.
-        const reviewsList = group.reviews.map((r) => {
-            const rd = r.rating != null ? r.rating.toFixed(1) : '—';
-            const dateStr = r.date ? formatDate(r.date) : '';
-            const blurb = r.blurb || r.excerpt || '';
-            return `
-                <li class="br-aggregate-review">
-                    <div class="br-aggregate-review-head">
-                        <span class="br-aggregate-review-rating" aria-label="Rated ${rd} out of 5">
-                            <span class="br-aggregate-review-rating-num">${rd}</span><small>/5</small>
-                        </span>
-                        <div class="br-aggregate-review-byline">
-                            <strong>${escapeHtml(r.author || 'A Catalyzer')}</strong>
-                            ${dateStr ? `<span class="br-dot"></span><span>${escapeHtml(dateStr)}</span>` : ''}
-                        </div>
-                    </div>
-                    ${blurb ? `<p class="br-aggregate-review-blurb">${escapeHtml(blurb)}</p>` : ''}
-                    <a class="br-aggregate-review-link" href="${escapeHtml(r.link)}">Read the full review →</a>
-                </li>
-            `;
-        }).join('');
-
         // The wrapper is a <div> (not <a>) because the cover area is a link
         // to the lead review, but the body has its own interactive button +
         // nested links. Nesting <a> inside <a> is invalid HTML.
@@ -695,7 +668,6 @@
                  data-group-key="${escapeHtml(group.key)}"
                  data-community="true"
                  data-aggregate="true"
-                 ${isOpen ? 'data-expanded="true"' : ''}
                  data-genre="${escapeHtml(lead.genre)}">
                 <a class="br-card-media br-card-aggregate-media"
                    href="${escapeHtml(lead.link)}"
@@ -730,17 +702,14 @@
                     <button type="button"
                             class="br-aggregate-toggle"
                             data-group-key="${escapeHtml(group.key)}"
-                            aria-expanded="${isOpen ? 'true' : 'false'}">
+                            aria-haspopup="dialog">
                         <span class="br-aggregate-toggle-label">
-                            ${isOpen ? 'Hide reviews' : `See all ${group.count} reviews`}
+                            See all ${group.count} reviews
                         </span>
-                        <svg class="br-aggregate-toggle-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <polyline points="6 9 12 15 18 9"/>
+                        <svg class="br-aggregate-toggle-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M5 12h14M13 5l7 7-7 7"/>
                         </svg>
                     </button>
-                    <ul class="br-aggregate-reviews" ${isOpen ? '' : 'hidden'}>
-                        ${reviewsList}
-                    </ul>
                 </div>
             </div>
         `;
@@ -1006,40 +975,251 @@
     }
 
     // Delegated click handler for the aggregate-card "See all N reviews"
-    // button. expandedGroups (declared near aggregateCardHtml) keeps state
-    // across re-renders, so filtering / search / load-more don't reset
-    // which groups the user has expanded.
+    // button. Opens the reviews modal (search + sort + scrollable list)
+    // anchored to the clicked book group. The full group data isn't on
+    // the DOM; we re-derive it from communityReviews + the group key.
     function bindCommunityAggregateToggle() {
         if (!communityFeedEl) return;
         communityFeedEl.addEventListener('click', (e) => {
             const btn = e.target.closest('.br-aggregate-toggle');
             if (!btn) return;
+            e.preventDefault();
             const key = btn.dataset.groupKey;
             if (!key) return;
-            const card = btn.closest('.br-card-aggregate');
-            const list = card ? card.querySelector('.br-aggregate-reviews') : null;
-            const label = btn.querySelector('.br-aggregate-toggle-label');
-            const willOpen = !expandedGroups.has(key);
+            const group = findGroupByKey(key);
+            if (!group) return;
+            openReviewsModal(group, btn);
+        });
+    }
 
-            if (willOpen) expandedGroups.add(key);
-            else expandedGroups.delete(key);
+    // Re-derive a group from its key by re-running the same grouping the
+    // feed used. Safer than caching the group on a DOM attribute because
+    // the underlying review list can change (filter/search/load-more
+    // re-renders) between the original card render and the modal open.
+    function findGroupByKey(key) {
+        const groups = groupCommunityByBook(communityReviews);
+        return groups.find((g) => g.key === key) || null;
+    }
 
-            btn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-            if (card) card.dataset.expanded = willOpen ? 'true' : '';
-            if (list) {
-                if (willOpen) list.removeAttribute('hidden');
-                else list.setAttribute('hidden', '');
-            }
-            if (label) {
-                // Recompute the review count from the rendered list so the
-                // label stays accurate even if a future feed re-render swaps
-                // the underlying data while this card was still expanded.
-                const n = list ? list.querySelectorAll('.br-aggregate-review').length : 0;
-                label.textContent = willOpen
-                    ? 'Hide individual reviews'
-                    : `See all ${n} reviews`;
+    // ============================================================
+    // REVIEWS MODAL — opens from an aggregate card.
+    // Shows the book header (cover + title + average + count), a
+    // toolbar (search by reviewer name + sort), and a scrollable list
+    // of every individual reader review for the book. The list re-
+    // renders on every search/sort change; the empty state surfaces
+    // when no name matches the query.
+    // ============================================================
+    let reviewsModalState = null;
+
+    function setupReviewsModal() {
+        const modal = document.getElementById('br-reviews-modal');
+        if (!modal) return;
+        const closeBtn  = document.getElementById('br-reviews-modal-close');
+        const searchEl  = document.getElementById('br-reviews-modal-search-input');
+        const clearBtn  = document.getElementById('br-reviews-modal-search-clear');
+        const sortEl    = document.getElementById('br-reviews-modal-sort-select');
+        const bodyEl    = document.getElementById('br-reviews-modal-list');
+
+        closeBtn?.addEventListener('click', closeReviewsModal);
+        modal.addEventListener('click', (e) => {
+            // Click on the backdrop (but NOT the modal content) dismisses.
+            if (e.target === modal) closeReviewsModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+                closeReviewsModal();
             }
         });
+
+        if (searchEl) {
+            searchEl.addEventListener('input', () => {
+                if (!reviewsModalState) return;
+                reviewsModalState.query = searchEl.value || '';
+                if (clearBtn) clearBtn.hidden = !reviewsModalState.query;
+                renderReviewsModalList();
+            });
+        }
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                if (!searchEl) return;
+                searchEl.value = '';
+                searchEl.dispatchEvent(new Event('input', { bubbles: true }));
+                searchEl.focus();
+            });
+        }
+        if (sortEl) {
+            sortEl.addEventListener('change', () => {
+                if (!reviewsModalState) return;
+                reviewsModalState.sort = sortEl.value;
+                renderReviewsModalList();
+            });
+        }
+        // Stash the list element on the modal for renderReviewsModalList.
+        modal._listEl = bodyEl;
+        modal._emptyEl = document.getElementById('br-reviews-modal-empty');
+    }
+
+    function openReviewsModal(group, returnFocusEl) {
+        const modal = document.getElementById('br-reviews-modal');
+        if (!modal || !group) return;
+
+        reviewsModalState = {
+            group,
+            query: '',
+            sort: 'rating-desc',
+            returnFocusEl: returnFocusEl || null,
+        };
+
+        // Populate the head — cover, eyebrow, title, author, average, count.
+        const lead = group.lead;
+        const imgEl     = document.getElementById('br-reviews-modal-img');
+        const eyebrowEl = document.getElementById('br-reviews-modal-eyebrow');
+        const titleEl   = document.getElementById('br-reviews-modal-title');
+        const authorEl  = document.getElementById('br-reviews-modal-author');
+        const avgEl     = document.getElementById('br-reviews-modal-avg');
+        const readersEl = document.getElementById('br-reviews-modal-readers');
+        const searchEl  = document.getElementById('br-reviews-modal-search-input');
+        const sortEl    = document.getElementById('br-reviews-modal-sort-select');
+        const clearBtn  = document.getElementById('br-reviews-modal-search-clear');
+
+        if (imgEl) {
+            imgEl.src = getCoverImageUrl(lead.image || FALLBACK_IMAGE, 240, 90);
+            imgEl.alt = `Cover of ${lead.bookTitle}`;
+        }
+        if (eyebrowEl) eyebrowEl.textContent = 'From the Catalyzers';
+        if (titleEl)   titleEl.textContent   = lead.bookTitle || 'Book reviews';
+        if (authorEl)  authorEl.textContent  = lead.bookAuthor ? `by ${lead.bookAuthor}` : '';
+
+        const avg = group.avgRating;
+        if (avgEl) {
+            avgEl.innerHTML = avg != null
+                ? `${avg.toFixed(1)}<small>/5</small>`
+                : `—<small>/5</small>`;
+            avgEl.setAttribute('aria-label',
+                avg != null ? `Average rating ${avg.toFixed(1)} out of 5` : 'Unrated');
+        }
+        if (readersEl) {
+            readersEl.textContent = `${group.count} ${group.count === 1 ? 'reader' : 'readers'}`;
+        }
+
+        // Reset toolbar state.
+        if (searchEl) searchEl.value = '';
+        if (sortEl)   sortEl.value   = 'rating-desc';
+        if (clearBtn) clearBtn.hidden = true;
+
+        renderReviewsModalList();
+
+        modal.setAttribute('aria-hidden', 'false');
+        modal.classList.add('is-open');
+        document.documentElement.style.overflow = 'hidden';
+        // Defer focus to after the open transition so screen readers get
+        // the labelled dialog before they jump to the search field.
+        requestAnimationFrame(() => {
+            searchEl?.focus({ preventScroll: true });
+        });
+    }
+
+    function closeReviewsModal() {
+        const modal = document.getElementById('br-reviews-modal');
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.documentElement.style.overflow = '';
+        // Return focus to whatever opened the modal so keyboard users
+        // pick up where they left off.
+        const ret = reviewsModalState?.returnFocusEl;
+        reviewsModalState = null;
+        if (ret && typeof ret.focus === 'function') {
+            ret.focus({ preventScroll: true });
+        }
+    }
+
+    function renderReviewsModalList() {
+        if (!reviewsModalState) return;
+        const modal = document.getElementById('br-reviews-modal');
+        if (!modal) return;
+        const listEl  = modal._listEl;
+        const emptyEl = modal._emptyEl;
+        if (!listEl) return;
+
+        const { group, query, sort } = reviewsModalState;
+        const q = String(query || '').trim().toLowerCase();
+        const filtered = group.reviews.filter((r) => {
+            if (!q) return true;
+            const hay = String(r.author || '').toLowerCase();
+            return hay.includes(q);
+        });
+
+        const sorted = filtered.slice().sort((a, b) => {
+            switch (sort) {
+                case 'rating-asc':
+                    return (numOrInf(a.rating)) - (numOrInf(b.rating));
+                case 'date-desc':
+                    return (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0);
+                case 'date-asc':
+                    return (Date.parse(a.date) || 0) - (Date.parse(b.date) || 0);
+                case 'rating-desc':
+                default:
+                    return (numOrNegInf(b.rating)) - (numOrNegInf(a.rating));
+            }
+        });
+
+        if (!sorted.length) {
+            listEl.innerHTML = '';
+            if (emptyEl) emptyEl.hidden = false;
+            return;
+        }
+        if (emptyEl) emptyEl.hidden = true;
+
+        listEl.innerHTML = sorted.map((r) => reviewModalItemHtml(r, q)).join('');
+    }
+
+    function numOrInf(v)    { return Number.isFinite(v) ? v :  Infinity; }
+    function numOrNegInf(v) { return Number.isFinite(v) ? v : -Infinity; }
+
+    function reviewModalItemHtml(r, query) {
+        const hasRating = typeof r.rating === 'number';
+        const rd = hasRating ? r.rating.toFixed(1) : '—';
+        const dateStr = r.date ? formatDate(r.date) : '';
+        const blurb = r.blurb || r.excerpt || '';
+        const name = r.author || 'A Catalyzer';
+        const nameHtml = query
+            ? highlightMatch(name, query)
+            : escapeHtml(name);
+        return `
+            <li class="br-reviews-modal-item">
+                <div class="br-reviews-modal-item-head">
+                    <span class="br-reviews-modal-item-rating ${hasRating ? '' : 'is-unrated'}" aria-label="${hasRating ? `Rated ${rd} out of 5` : 'Unrated'}">
+                        <span class="br-reviews-modal-item-rating-num">${rd}</span><small>/5</small>
+                    </span>
+                    <div class="br-reviews-modal-item-byline">
+                        <strong>${nameHtml}</strong>
+                        ${dateStr ? `<span class="br-dot"></span><span>${escapeHtml(dateStr)}</span>` : ''}
+                    </div>
+                </div>
+                ${blurb ? `<p class="br-reviews-modal-item-blurb">${escapeHtml(blurb)}</p>` : ''}
+                <a class="br-reviews-modal-item-link" href="${escapeHtml(r.link)}">
+                    Read full review
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12h14M13 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </li>
+        `;
+    }
+
+    // Highlight the first case-insensitive match of `query` within `text`.
+    // Used to make the search hit visible in the reviewer name. Both
+    // pieces are escaped individually so injection is impossible.
+    function highlightMatch(text, query) {
+        const safe = escapeHtml(text);
+        if (!query) return safe;
+        const idx = text.toLowerCase().indexOf(query.toLowerCase());
+        if (idx < 0) return safe;
+        const before = escapeHtml(text.slice(0, idx));
+        const hit    = escapeHtml(text.slice(idx, idx + query.length));
+        const after  = escapeHtml(text.slice(idx + query.length));
+        return `${before}<mark>${hit}</mark>${after}`;
     }
 
     // ---------- Custom dropdown for the Shelf selects ----------
@@ -1871,6 +2051,7 @@
         attachReveals();
         attachScrollSpread();
         setupSubmitModal();
+        setupReviewsModal();
 
         const prime = () => {
             // Seed paint: prefer the shared session cache (built by main.js
