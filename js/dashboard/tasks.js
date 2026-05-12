@@ -290,7 +290,10 @@ function openTaskDetailModal(taskId) {
 
   const footerBtns = [];
 
-  // Admin: approve / reject
+  // Admin: approve / reject. Approval is when the task becomes "real"
+  // for the assignee, so this is also where the assignment email goes
+  // out + the task_reminders mirror is created (the cron then takes over
+  // for the 2-day-before and day-of nudges).
   if (isAdmin && task.status === "pending") {
     const approveBtn = el("button", { class: "btn btn-accent btn-sm" }, "Approve task");
     approveBtn.onclick = async () => {
@@ -301,7 +304,16 @@ function openTaskDetailModal(taskId) {
           updatedAt: new Date().toISOString(),
           activity: arrayUnion({ text: "approved this task", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
         });
-        toast("Task approved!", "success"); m.close();
+        await notifyAssigned({
+          taskId: task.id,
+          title: task.title,
+          description: task.description || "",
+          priority: task.priority || "medium",
+          deadline: task.deadline || null,
+          creatorName: task.creatorName || _profile.name || _ctx.user.email,
+          assignees: buildAssigneePayload(task.assigneeEmails || [], task.assigneeNames || []),
+        });
+        toast("Task approved — assignees notified by email.", "success", 4000); m.close();
       } catch (e) { toast(e.message, "error"); approveBtn.disabled = false; }
     };
     footerBtns.push(approveBtn);
@@ -317,13 +329,16 @@ function openTaskDetailModal(taskId) {
           updatedAt: new Date().toISOString(),
           activity: arrayUnion({ text: "rejected this task", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
         });
+        // Rejected tasks never produced a mirror doc (assignment wasn't
+        // approved), so no notify-deleted call is needed.
         toast("Task rejected.", "info"); m.close();
       } catch (e) { toast(e.message, "error"); rejectBtn.disabled = false; }
     };
     footerBtns.push(rejectBtn);
   }
 
-  // Assignee or admin: mark complete
+  // Assignee or admin: mark complete. Closing the task silences any
+  // outstanding reminder cron jobs by flipping the mirror's status.
   if ((isAssignee || isAdmin) && task.status === "approved") {
     const completeBtn = el("button", { class: "btn btn-accent btn-sm" }, "Mark complete");
     completeBtn.onclick = async () => {
@@ -335,13 +350,14 @@ function openTaskDetailModal(taskId) {
           updatedAt: new Date().toISOString(),
           activity: arrayUnion({ text: "marked this task as complete", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
         });
+        await notifyTaskClosed(task.id, "completed");
         toast("Task completed!", "success"); m.close();
       } catch (e) { toast(e.message, "error"); completeBtn.disabled = false; }
     };
     footerBtns.push(completeBtn);
   }
 
-  // Creator or admin: delete
+  // Creator or admin: delete. Same silencing logic as completion.
   if (isAdmin || isCreator) {
     const delBtn = el("button", { class: "btn btn-ghost btn-xs", style: { color: "var(--danger)", marginRight: "auto" } }, "Delete task");
     delBtn.onclick = async () => {
@@ -349,6 +365,7 @@ function openTaskDetailModal(taskId) {
       if (!ok) return;
       try {
         await deleteDoc(doc(workflowDb, "tasks", task.id));
+        await notifyTaskClosed(task.id, "deleted");
         toast("Task deleted.", "success"); m.close();
       } catch (e) { toast(e.message, "error"); }
     };
@@ -423,15 +440,24 @@ function openTaskCreateModal() {
     </div>
     <div id="tc-err" style="color:var(--danger);font-size:12px;margin-top:4px;"></div>`;
 
-  // Render assignee checkboxes
+  // Render assignee checkboxes. We capture email + name on the input so
+  // the create flow can send them to /api/tasks/notify without a second
+  // user lookup. Users without an email still render (so the assignee
+  // appears in the task), but they get a "no email" hint and won't
+  // receive any reminders.
   const assigneeList = body.querySelector("#tc-assignees");
   for (const u of _allUsers) {
+    const displayName = u.name || u.email || "Unknown";
     const row = el("label", { class: "assignee-check-row" });
+    const noEmailHint = u.email
+      ? ""
+      : `<span class="assignee-role" style="color:var(--danger);">no email — won't get reminders</span>`;
     row.innerHTML = `
-      <input type="checkbox" value="${esc(u.id)}" data-name="${esc(u.name || u.email)}">
-      <div class="kc-avatar" style="background:${stringToColor(u.name || u.email)};width:24px;height:24px;font-size:11px;">${(u.name || u.email || "?")[0].toUpperCase()}</div>
-      <span>${esc(u.name || u.email)}</span>
-      <span class="assignee-role">${esc(u.role || "")}</span>`;
+      <input type="checkbox" value="${esc(u.id)}" data-name="${esc(displayName)}" data-email="${esc(u.email || "")}">
+      <div class="kc-avatar" style="background:${stringToColor(displayName)};width:24px;height:24px;font-size:11px;">${displayName[0].toUpperCase()}</div>
+      <span>${esc(displayName)}</span>
+      <span class="assignee-role">${esc(u.role || "")}</span>
+      ${noEmailHint}`;
     assigneeList.appendChild(row);
   }
 
@@ -451,29 +477,115 @@ function openTaskCreateModal() {
     if (title.length < 2) { errEl.textContent = "Title is required."; return; }
 
     const checked = [...body.querySelectorAll("#tc-assignees input:checked")];
-    const assigneeIds   = checked.map(c => c.value);
-    const assigneeNames = checked.map(c => c.dataset.name);
+    const assigneeIds    = checked.map(c => c.value);
+    const assigneeNames  = checked.map(c => c.dataset.name);
+    const assigneeEmails = checked.map(c => c.dataset.email || "");
+    if (!checked.length) {
+      errEl.textContent = "Pick at least one assignee.";
+      return;
+    }
+
+    // Admin-created tasks skip the "pending" stage. The whole point of
+    // pending → approved was to give admins a veto over writer-proposed
+    // tasks; admins shouldn't have to approve their own work. Going
+    // straight to "approved" also means the assignment email goes out
+    // immediately, with the same 2-day-before / day-of cron reminders.
+    const isAdmin = _role === "admin";
+    const initialStatus = isAdmin ? "approved" : "pending";
+    const creatorName = _profile.name || _ctx.user.email;
+    const nowIso = new Date().toISOString();
 
     saveBtn.disabled = true; saveBtn.textContent = "Creating…";
     try {
-      await addDoc(collection(workflowDb, "tasks"), {
+      const taskRef = await addDoc(collection(workflowDb, "tasks"), {
         title, description: desc, priority,
         deadline: deadline || null,
-        status: "pending",
+        status: initialStatus,
         creatorId: _uid,
-        creatorName: _profile.name || _ctx.user.email,
+        creatorName,
         assigneeId: assigneeIds[0] || null,
         assigneeIds,
         assigneeName: assigneeNames[0] || null,
         assigneeNames,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        activity: [{ text: "created this task", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }],
+        assigneeEmails,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        activity: [{
+          text: isAdmin ? "created and approved this task" : "created this task",
+          authorName: creatorName,
+          authorId: _uid,
+          timestamp: nowIso,
+        }],
       });
-      toast("Task created — pending admin approval.", "success", 4000);
+
+      // Fire the assignment notification (email + mirror doc) only when
+      // the task is actually approved — pending tasks shouldn't ping the
+      // assignee yet because an admin might still reject it. The bot
+      // notification will fire later when an admin clicks "Approve".
+      if (initialStatus === "approved") {
+        await notifyAssigned({
+          taskId: taskRef.id,
+          title, description: desc, priority,
+          deadline: deadline || null,
+          creatorName,
+          assignees: buildAssigneePayload(assigneeEmails, assigneeNames),
+        });
+      }
+
+      toast(
+        initialStatus === "approved"
+          ? "Task created — assignees notified by email."
+          : "Task created — pending admin approval.",
+        "success", 4000
+      );
       m.close();
     } catch (e) { errEl.textContent = e.message; saveBtn.disabled = false; saveBtn.textContent = "Create task"; }
   };
+}
+
+// ─── /api/tasks/notify wrapper ───────────────────────────────────────────────
+//
+// Three actions: assigned (send the welcome email + write the mirror
+// doc), completed (silence reminders), deleted (silence reminders).
+// Always swallow errors with a console warning — task creation /
+// completion / deletion has already succeeded in Firestore by the time
+// this is called, so a failed reminder shouldn't surface to the user as
+// "Task X failed" when it actually didn't.
+
+async function notifyAssigned({ taskId, title, description, priority, deadline, creatorName, assignees }) {
+  return _notify({ action: "assigned", taskId, title, description, priority, deadline, creatorName, assignees });
+}
+
+async function notifyTaskClosed(taskId, action /* "completed" | "deleted" */) {
+  return _notify({ action, taskId });
+}
+
+async function _notify(payload) {
+  try {
+    const res = await _ctx.authedFetch("/api/tasks/notify", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      console.warn("[tasks/notify]", payload.action, "non-OK response:", data);
+    }
+    return data;
+  } catch (err) {
+    console.warn("[tasks/notify]", payload.action, "request failed:", err);
+    return null;
+  }
+}
+
+// Zip emails + names into the [{email, name}] shape the API expects.
+// Empty emails are dropped server-side, but we don't filter here so the
+// payload's array index still matches the assigneeIds array if anyone
+// later wants to cross-reference.
+function buildAssigneePayload(emails, names) {
+  return emails.map((email, i) => ({
+    email: (email || "").trim(),
+    name: (names[i] || "").trim(),
+  }));
 }
 
 function fmtActTime(v) {

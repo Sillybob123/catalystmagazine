@@ -43,6 +43,10 @@ import {
   bundledReminderEmail,
   adminDigestEmail,
 } from "../../_utils/reminder-emails.js";
+import {
+  taskDeadlineSoonEmail,
+  taskDeadlineTodayEmail,
+} from "../../_utils/task-emails.js";
 
 const DEFAULT_ADMIN_RECIPIENTS = [
   "bendoryair@gmail.com",
@@ -112,6 +116,7 @@ export const onRequestPost = async ({ request, env }) => {
       writerReminders: { planned: 0, sent: 0, skipped: 0, errors: [] },
       editorReminders: { planned: 0, sent: 0, skipped: 0, errors: [] },
       bundled:         { planned: 0, sent: 0, errors: [] },
+      taskReminders:   { scanned: 0, planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
       adminDigest:     { sent: false, recipientCount: 0, skipped: null, error: null },
     };
 
@@ -316,6 +321,113 @@ export const onRequestPost = async ({ request, env }) => {
       }
     }
 
+    // ── Task deadline reminders ──────────────────────────────────────────────
+    //
+    // Two firing windows per task: 2 calendar days before the deadline,
+    // and the day-of. Both compared against America/New_York (the
+    // editorial team's timezone) so a deadline of "Friday May 23" reads
+    // the same on a phone in DC and a laptop in Tokyo.
+    //
+    // Source of truth: task_reminders/<taskId> mirror docs in the primary
+    // Firestore. The mirrors are written by /api/tasks/notify when a task
+    // is assigned, and flipped to status=completed/deleted when the task
+    // closes. Cron skips anything not "active" so completed tasks stop
+    // generating noise immediately.
+    //
+    // Dedupe: same `bot_reminder_log` doc as the article reminders; one
+    // key per (taskId, kind) so we never double-fire even if the cron
+    // happens to run twice in the same calendar day.
+    if (mode === "auto" || mode === "tasks") {
+      try {
+        const taskMirrors = await loadTaskReminders(env);
+        result.taskReminders.scanned = taskMirrors.length;
+
+        const today = ymdInTz(now, DIGEST_TIMEZONE);
+        const taskJobs = [];
+        for (const t of taskMirrors) {
+          if (t.status !== "active") continue;
+          if (!t.deadline) continue;
+          const days = daysBetweenYMD(today, t.deadline);
+          // Negative days = deadline is in the past; we only fire 2-day
+          // and day-of, never an overdue email here. (Article reminders
+          // already cover overdue; tasks don't need a third escalation.)
+          if (days === 2) taskJobs.push({ task: t, kind: "task-deadline-2d", daysUntil: 2 });
+          else if (days === 0) taskJobs.push({ task: t, kind: "task-deadline-0d", daysUntil: 0 });
+        }
+        result.taskReminders.planned = taskJobs.reduce(
+          (n, j) => n + (j.task.assignees?.length || 0),
+          0
+        );
+
+        for (const job of taskJobs) {
+          for (const a of job.task.assignees || []) {
+            if (!a.email) continue;
+            // Per-(task, kind, recipient) dedupe key. Including the email
+            // means re-assigning a task to a new person re-arms the
+            // reminder for that person without re-firing for the old one.
+            const key = `task:${job.task.taskId}:${job.kind}:${a.email}`;
+            if (reminderLog[key]) {
+              result.taskReminders.skipped++;
+              continue;
+            }
+
+            const builder = job.kind === "task-deadline-0d"
+              ? taskDeadlineTodayEmail
+              : taskDeadlineSoonEmail;
+            const { subject, html, text } = builder({
+              assigneeName: a.name || "there",
+              task: {
+                title: job.task.title,
+                description: job.task.description,
+                deadline: job.task.deadline,
+                priority: job.task.priority,
+                creatorName: job.task.creatorName,
+              },
+              daysUntil: job.daysUntil,
+              siteUrl,
+            });
+
+            result.taskReminders.items.push({
+              taskId: job.task.taskId,
+              kind: job.kind,
+              recipientEmail: a.email,
+              recipientName: a.name,
+              subject,
+            });
+
+            if (dryRun) continue;
+
+            try {
+              await sendEmail(env, {
+                to: a.email,
+                subject,
+                html,
+                text,
+                replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+              });
+              await recordReminderSent(env, key, {
+                taskId: job.task.taskId,
+                kind: job.kind,
+                recipientEmail: a.email,
+                sentAt: now.toISOString(),
+              });
+              result.taskReminders.sent++;
+            } catch (err) {
+              result.taskReminders.errors.push({
+                taskId: job.task.taskId,
+                recipientEmail: a.email,
+                error: err?.message || String(err),
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Don't let a task-reminders failure tank the whole bot run; the
+        // article reminders are independent and shouldn't be blocked.
+        result.taskReminders.errors.push({ fatal: true, error: err?.message || String(err) });
+      }
+    }
+
     // ── Admin digest ─────────────────────────────────────────────────────────
     //
     // Four ways the digest runs:
@@ -433,6 +545,27 @@ async function loadAllUsers(env) {
     limit: 2000,
   });
   return rows.map((r) => ({ id: r.id, ...r.data }));
+}
+
+// Load every task_reminders mirror doc. Cheap enough to scan in full —
+// completed/deleted entries stay around for audit, but the scan caps at
+// 2000 active+inactive together. Tasks are written by /api/tasks/notify;
+// the cron treats this collection as read-only.
+async function loadTaskReminders(env) {
+  const rows = await firestoreRunQuery(env, {
+    from: [{ collectionId: "task_reminders" }],
+    limit: 2000,
+  });
+  return rows.map((r) => ({
+    taskId: r.id,
+    title:        r.data.title || "(untitled task)",
+    description:  r.data.description || "",
+    deadline:     r.data.deadline || null,        // YYYY-MM-DD or null
+    priority:     r.data.priority || "medium",
+    creatorName:  r.data.creatorName || "",
+    assignees:    Array.isArray(r.data.assignees) ? r.data.assignees : [],
+    status:       r.data.status || "active",
+  }));
 }
 
 // The reminder log lives at `bot_reminder_log/state` as a single doc whose
@@ -668,6 +801,31 @@ function isSaturdayIn(timeZone, now) {
     weekday: "short",
   }).format(now);
   return weekday === "Sat";
+}
+
+// Today (or any moment) as YYYY-MM-DD in the given timezone. The cron
+// runs at 14:00 UTC; in EDT that's 10am, in EST that's 9am — both well
+// past midnight, so this always returns the current calendar day for
+// the editorial team.
+function ymdInTz(date, timeZone) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(date);
+  const get = (t) => parts.find((p) => p.type === t)?.value || "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+// Difference in calendar days between two YYYY-MM-DD strings. Positive
+// means `b` is in the future relative to `a`. Both strings are
+// interpreted as midnight UTC; since they're calendar days the absolute
+// timezone choice doesn't matter — only the difference does.
+function daysBetweenYMD(a, b) {
+  if (!a || !b) return null;
+  const ad = Date.parse(`${a}T00:00:00Z`);
+  const bd = Date.parse(`${b}T00:00:00Z`);
+  if (isNaN(ad) || isNaN(bd)) return null;
+  return Math.round((bd - ad) / 86400000);
 }
 
 // Strip HTML → readable plain-text preview for the admin UI. Not a full parser;
