@@ -23,7 +23,7 @@ export function buildNewsletter({
   intro = "Here is the latest reporting from our team of student writers.",
   articles = [],
   // Optional second-section: 0–2 book reviews. Rendered as a dedicated
-  // "From The Stacks" block at the bottom of the issue, separate from the
+  // "From The Catalyst Reviews" block at the bottom of the issue, separate from the
   // editorial article cards above.
   bookReviews = [],
   siteUrl = "https://www.catalyst-magazine.com",
@@ -198,7 +198,7 @@ function articleCard(a, siteUrl, isFirst) {
     </table>`;
 }
 
-// Render the optional "From The Stacks" book-review section. Returns "" when
+// Render the optional "From The Catalyst Reviews" book-review section. Returns "" when
 // the picker is empty so the caller can guard rendering with a single check.
 //
 // Layout: a labeled section (eyebrow + heading + 1-line deck) followed by
@@ -214,7 +214,7 @@ function renderBookReviewSection(bookReviews, siteUrl) {
            style="margin:24px 0 0 0;border:1px solid ${COLORS.hairline};border-radius:16px;overflow:hidden;background:#fbfaf6;">
       <tr>
         <td style="padding:22px 26px 6px 26px;">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:#7a1f2b;margin-bottom:8px;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">From The Stacks</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:#7a1f2b;margin-bottom:8px;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">From The Catalyst Reviews</div>
           <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:1.25;color:${COLORS.ink};font-weight:700;margin-bottom:6px;">Book reviews this issue</div>
           <p style="margin:0 0 16px 0;font-size:13px;line-height:1.55;color:${COLORS.muted};font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">A short take (or two) from our reading desk on what's worth your weekend.</p>
         </td>
@@ -226,7 +226,7 @@ function renderBookReviewSection(bookReviews, siteUrl) {
       </tr>
       <tr>
         <td style="padding:0 26px 22px 26px;">
-          <a href="${esc(siteUrl)}/book-reviews" style="font-size:13px;color:#7a1f2b;text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">Browse the full Stacks &rarr;</a>
+          <a href="${esc(siteUrl)}/book-reviews" style="font-size:13px;color:#7a1f2b;text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">Browse all reviews &rarr;</a>
         </td>
       </tr>
     </table>`;
@@ -324,12 +324,12 @@ function bookReviewCard(review, siteUrl) {
     </table>`;
 }
 
-// Append a "From The Stacks" plain-text section to the running line array.
+// Append a "From The Catalyst Reviews" plain-text section to the running line array.
 // No-op when bookReviews is empty so callers can call it unconditionally.
 function appendBookReviewsText(lines, bookReviews, siteUrl) {
   if (!Array.isArray(bookReviews) || !bookReviews.length) return;
   lines.push("---");
-  lines.push("FROM THE STACKS — BOOK REVIEWS");
+  lines.push("FROM THE CATALYST REVIEWS — BOOK REVIEWS");
   lines.push("");
   bookReviews.slice(0, 2).forEach((r) => {
     const slug = r.slug || "";
@@ -345,7 +345,7 @@ function appendBookReviewsText(lines, bookReviews, siteUrl) {
     lines.push(`Read: ${href}`);
     lines.push("");
   });
-  lines.push(`Browse the full Stacks: ${siteUrl}/book-reviews`);
+  lines.push(`Browse all reviews: ${siteUrl}/book-reviews`);
   lines.push("");
 }
 
@@ -363,7 +363,7 @@ export function buildInboxNewsletter({
   headline = "New Stories From The Catalyst",
   intro = "",
   articles = [],
-  // 0–2 book reviews; rendered as a "From The Stacks" block under the articles.
+  // 0–2 book reviews; rendered as a "From The Catalyst Reviews" block under the articles.
   bookReviews = [],
   siteUrl = "https://www.catalyst-magazine.com",
   unsubscribeUrl = null,
@@ -382,7 +382,7 @@ export function buildInboxNewsletter({
   const heroArticle = articles[0];
   const supportingArticles = articles.slice(1);
 
-  // Optional "From The Stacks" book-review section — same renderer as the
+  // Optional "From The Catalyst Reviews" book-review section — same renderer as the
   // classic theme so the two issue formats stay visually consistent.
   const bookReviewSection = renderBookReviewSection(bookReviews, siteUrl);
 
@@ -527,7 +527,7 @@ export function buildInboxNewsletter({
           </tr>
 
           ${bookReviewSection ? `
-          <!-- Book reviews block — visually distinct "From The Stacks"
+          <!-- Book reviews block — visually distinct "From The Catalyst Reviews"
                section under the editorial articles. -->
           <tr>
             <td class="wrap-pad" style="padding:8px 36px 16px 36px;">

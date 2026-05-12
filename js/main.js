@@ -1489,17 +1489,62 @@ function renderArticleDetail(article) {
         : `${window.location.origin}/${(article.image || 'NewLogoShape.png').replace(/^\/+/, '')}`;
     const articleDescription = article.excerpt || article.deck || article.description || 'Read this story on The Catalyst Magazine';
 
-    document.getElementById('meta-description')?.setAttribute('content', articleDescription);
-    document.getElementById('meta-og-url')?.setAttribute('content', articleUrl);
-    document.getElementById('meta-og-title')?.setAttribute('content', article.title);
-    document.getElementById('meta-og-description')?.setAttribute('content', articleDescription);
-    document.getElementById('meta-og-image')?.setAttribute('content', articleImage);
-    document.getElementById('meta-og-image-alt')?.setAttribute('content', article.title);
-    document.getElementById('meta-twitter-url')?.setAttribute('content', articleUrl);
-    document.getElementById('meta-twitter-title')?.setAttribute('content', article.title);
-    document.getElementById('meta-twitter-description')?.setAttribute('content', articleDescription);
-    document.getElementById('meta-twitter-image')?.setAttribute('content', articleImage);
-    document.getElementById('meta-twitter-image-alt')?.setAttribute('content', article.title);
+    setMetaContent('meta-description',         articleDescription);
+    setMetaContent('meta-og-url',              articleUrl);
+    setMetaContent('meta-og-title',            article.title);
+    setMetaContent('meta-og-description',      articleDescription);
+    setMetaContent('meta-og-image',            articleImage);
+    setMetaContent('meta-og-image-alt',        article.title);
+    setMetaContent('meta-twitter-url',         articleUrl);
+    setMetaContent('meta-twitter-title',       article.title);
+    setMetaContent('meta-twitter-description', articleDescription);
+    setMetaContent('meta-twitter-image',       articleImage);
+    setMetaContent('meta-twitter-image-alt',   article.title);
+
+    // Canonical + author + keywords + Article JSON-LD — site-wide SEO
+    // baseline so every article page is indexable with full signals
+    // (not just book reviews). Idempotent upserters live above
+    // renderBookReviewDetail.
+    upsertCanonicalLink(articleUrl);
+    upsertNamedMeta('author', article.author || 'The Catalyst Magazine');
+    upsertNamedMeta('robots', 'index, follow, max-image-preview:large, max-snippet:-1');
+    const tagKeywords = Array.isArray(article.tags) ? article.tags.filter(Boolean) : [];
+    const kwSet = [
+        article.title,
+        article.category && `${formatCategory(article.category)} — The Catalyst Magazine`,
+        ...tagKeywords,
+        'The Catalyst Magazine',
+        'science journalism'
+    ].filter(Boolean);
+    upsertNamedMeta('keywords', kwSet.join(', '));
+
+    upsertJsonLd('catalyst-article-jsonld', {
+        '@context': 'https://schema.org',
+        '@type': 'NewsArticle',
+        headline: article.title,
+        description: articleDescription,
+        image: articleImage ? [articleImage] : undefined,
+        url: articleUrl,
+        mainEntityOfPage: articleUrl,
+        datePublished: (() => {
+            if (!article.date) return undefined;
+            const d = new Date(article.date);
+            return isNaN(d) ? undefined : d.toISOString().slice(0, 10);
+        })(),
+        author: { '@type': 'Person', name: article.author || 'The Catalyst' },
+        publisher: {
+            '@type': 'Organization',
+            name: 'The Catalyst Magazine',
+            url: 'https://www.catalyst-magazine.com/',
+            logo: {
+                '@type': 'ImageObject',
+                url: 'https://www.catalyst-magazine.com/NewLogoShape.png'
+            }
+        },
+        inLanguage: 'en-US',
+        articleSection: article.category ? formatCategory(article.category) : undefined,
+        keywords: tagKeywords.length ? tagKeywords.join(', ') : undefined
+    });
 
     // --- Content ----------------------------------------------------------
     const contentHtml = article.blocks?.length
@@ -1582,6 +1627,158 @@ function renderArticleDetail(article) {
 }
 
 // =============================================================
+// SEO helpers — small DOM upserters used by the book-review renderer
+// (and reusable by other detail templates). Each one is idempotent so
+// repeated renders don't pile up duplicate <meta> / <link> tags.
+// =============================================================
+
+// Set the `content` of an existing <meta id="..."> when present.
+// Silently no-ops if the tag isn't in the static shell — keeps the
+// callsite linear without optional-chain boilerplate everywhere.
+function setMetaContent(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('content', String(value || ''));
+}
+
+// Insert or update <link rel="canonical">. Replaces any existing one
+// so an article page that previously rendered (different URL) doesn't
+// leave a stale canonical pointing to the prior story.
+function upsertCanonicalLink(href) {
+    if (!href) return;
+    let link = document.querySelector('link[rel="canonical"]');
+    if (!link) {
+        link = document.createElement('link');
+        link.setAttribute('rel', 'canonical');
+        document.head.appendChild(link);
+    }
+    link.setAttribute('href', href);
+}
+
+// Insert or update <meta name="..."> for non-id-tagged tags
+// (author, keywords, robots). Distinct from <meta property="og:...">
+// which we manage by id in the static shell.
+function upsertNamedMeta(name, content) {
+    if (!name) return;
+    let el = document.head.querySelector(`meta[name="${name}"]`);
+    if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute('name', name);
+        document.head.appendChild(el);
+    }
+    el.setAttribute('content', String(content || ''));
+}
+
+// Insert or update a <script type="application/ld+json"> identified
+// by a stable id. The id prevents duplicate JSON-LD blocks across
+// navigations on the SPA-style article shell.
+function upsertJsonLd(id, payload) {
+    if (!id || !payload) return;
+    let el = document.getElementById(id);
+    if (!el) {
+        el = document.createElement('script');
+        el.type = 'application/ld+json';
+        el.id = id;
+        document.head.appendChild(el);
+    }
+    try {
+        el.textContent = JSON.stringify(payload);
+    } catch {
+        // Bad payload — leave any previous valid JSON in place rather
+        // than wipe it out with malformed content.
+    }
+}
+
+// Build the Schema.org Review object Google reads to render
+// star-rating rich results. Includes:
+//   • itemReviewed: a Book entity with title/author/isbn so the
+//     review attaches to a real cataloged work
+//   • reviewRating: 0.5–5 worst→best (when we have a number)
+//   • author: the reviewer (Person)
+//   • publisher: The Catalyst Magazine (Organization)
+//   • reviewBody: a stripped-text excerpt for crawlers
+function buildBookReviewJsonLd({
+    article, articleUrl, articleImage,
+    bookTitle, bookAuthor, reviewer, rating
+}) {
+    // Pull a plaintext snippet of the actual review prose for reviewBody.
+    // Strip HTML, collapse whitespace, clip to ~600 chars (Google reads
+    // far less in practice, but a fuller body helps for entity context).
+    const rawBody = article.content || article.body || article.reviewText || '';
+    const plainBody = String(rawBody)
+        .replace(/<br\s*\/?>/gi, ' ')
+        .replace(/<\/(p|div|li|h[1-6])>/gi, ' ')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const reviewBody = plainBody.length > 600
+        ? plainBody.slice(0, 600).replace(/\s+\S*$/, '') + '…'
+        : plainBody;
+
+    const itemReviewed = {
+        '@type': 'Book',
+        name: bookTitle || article.title || '',
+    };
+    if (bookAuthor) {
+        itemReviewed.author = { '@type': 'Person', name: bookAuthor };
+    }
+    if (article.isbn) {
+        // Schema.org accepts plain ISBN-10 or ISBN-13.
+        itemReviewed.isbn = String(article.isbn).replace(/[^0-9Xx]/g, '');
+    }
+    if (articleImage) {
+        itemReviewed.image = articleImage;
+    }
+
+    const ld = {
+        '@context': 'https://schema.org',
+        '@type': 'Review',
+        url: articleUrl,
+        mainEntityOfPage: articleUrl,
+        headline: bookTitle ? `${bookTitle} — Book Review` : (article.title || ''),
+        name: bookTitle ? `${bookTitle} — Book Review` : (article.title || ''),
+        itemReviewed,
+        author: { '@type': 'Person', name: reviewer || 'The Catalyst' },
+        publisher: {
+            '@type': 'Organization',
+            name: 'The Catalyst Magazine',
+            url: 'https://www.catalyst-magazine.com/',
+            logo: {
+                '@type': 'ImageObject',
+                url: 'https://www.catalyst-magazine.com/NewLogoShape.png'
+            }
+        },
+        inLanguage: 'en-US',
+        isPartOf: {
+            '@type': 'CollectionPage',
+            name: 'The Catalyst Reviews',
+            url: 'https://www.catalyst-magazine.com/book-reviews'
+        }
+    };
+
+    if (article.date) {
+        const d = new Date(article.date);
+        if (!isNaN(d)) ld.datePublished = d.toISOString().slice(0, 10);
+    }
+    if (typeof rating === 'number' && rating >= 0 && rating <= 5) {
+        ld.reviewRating = {
+            '@type': 'Rating',
+            ratingValue: rating,
+            bestRating: 5,
+            worstRating: 0.5
+        };
+    }
+    if (reviewBody) {
+        ld.reviewBody = reviewBody;
+    }
+    if (articleImage) {
+        ld.image = articleImage;
+    }
+    return ld;
+}
+
+// =============================================================
 // BOOK REVIEW article template — dedicated layout.
 // Different shape from the regular article: tall standalone book cover,
 // big book title + author header, prominent rating spread, body sits in
@@ -1592,26 +1789,99 @@ function renderBookReviewDetail(article, container) {
     // Tag the body so the scoped CSS activates only for this template.
     document.body.classList.add('is-book-review');
 
-    // --- Meta tags ---
-    document.title = `${article.title} | The Catalyst Book Reviews`;
-    // Book reviews normally use /book-review/<slug>, but duplicate reviews of
-    // the same book can share that title slug. In that case the listing modal
-    // links to /book-review/<Firestore document ID>; preserve that exact detail
-    // URL for share/meta output once it resolves.
+    // --- Meta tags + SEO ---
+    // Per-review SEO matters because every review is its own crawlable
+    // URL. We compose:
+    //   • a rich <title> that leads with the book title (the primary query)
+    //   • a description sentence that includes the book, the author, the
+    //     rating, and the reviewer — every signal Google likes for a
+    //     review-style snippet
+    //   • OG / Twitter for social unfurls
+    //   • canonical so duplicate slug routes collapse to one URL
+    //   • a JSON-LD Review with itemReviewed:Book + reviewRating, the
+    //     thing that unlocks star-rating rich results in SERPs
+    // -----------------------------------------------------------------
     const articleUrl = getBookReviewDetailUrl(article);
     const socialImage = getBookReviewCover(article);
     const articleImage = /^https?:\/\//i.test(socialImage || '')
         ? socialImage
         : `${window.location.origin}/${(socialImage || 'NewLogoShape.png').replace(/^\/+/, '')}`;
-    const articleDescription = article.excerpt || article.deck || `A book review by ${article.author || 'The Catalyst'}.`;
-    document.getElementById('meta-description')?.setAttribute('content', articleDescription);
-    document.getElementById('meta-og-url')?.setAttribute('content', articleUrl);
-    document.getElementById('meta-og-title')?.setAttribute('content', article.title);
-    document.getElementById('meta-og-description')?.setAttribute('content', articleDescription);
-    document.getElementById('meta-og-image')?.setAttribute('content', articleImage);
-    document.getElementById('meta-twitter-title')?.setAttribute('content', article.title);
-    document.getElementById('meta-twitter-description')?.setAttribute('content', articleDescription);
-    document.getElementById('meta-twitter-image')?.setAttribute('content', articleImage);
+
+    const bookTitle  = article.bookTitle  || article.title || '';
+    const bookAuthor = article.bookAuthor || '';
+    const reviewer   = article.author || 'The Catalyst';
+    const seoRating  = (typeof article.rating === 'number') ? article.rating : null;
+    const ratingText = seoRating != null ? `${seoRating.toFixed(1)}/5` : '';
+
+    // Page title — leads with the book title (the dominant query term),
+    // followed by "book review" and the brand. Keeps under ~60 chars when
+    // possible by trimming the brand suffix on long titles.
+    const titleLead = `${bookTitle} — Book Review`;
+    const titleFull = `${titleLead} | The Catalyst Reviews`;
+    document.title = (titleFull.length > 70 && titleLead.length > 0)
+        ? `${titleLead} | The Catalyst`
+        : titleFull;
+
+    // Description — pack the book, author, rating, and reviewer into a
+    // single sentence under ~160 chars. Falls through to the original
+    // excerpt/deck if no structured book metadata exists yet.
+    const descPieces = [];
+    if (bookTitle)  descPieces.push(`Review of ${bookTitle}`);
+    if (bookAuthor) descPieces.push(`by ${bookAuthor}`);
+    if (ratingText) descPieces.push(`— rated ${ratingText}`);
+    descPieces.push(`by ${reviewer} for The Catalyst Reviews.`);
+    let structuredDesc = descPieces.join(' ').replace(/\s+/g, ' ').trim();
+    // Append a short flavor clip from the review body / deck if there's
+    // room left, so the snippet has substance beyond the meta line.
+    const flavor = (article.excerpt || article.deck || '').replace(/\s+/g, ' ').trim();
+    if (flavor && structuredDesc.length < 110) {
+        const room = 158 - structuredDesc.length - 1;
+        structuredDesc += ' ' + (flavor.length > room ? flavor.slice(0, Math.max(40, room - 1)).trim() + '…' : flavor);
+    }
+    const articleDescription = (bookTitle || ratingText)
+        ? structuredDesc
+        : (article.excerpt || article.deck || `A book review by ${reviewer} for The Catalyst Reviews.`);
+
+    // Image alt — describes what the OG card actually shows.
+    const imageAlt = bookTitle
+        ? `Cover of ${bookTitle}${bookAuthor ? ` by ${bookAuthor}` : ''}`
+        : `${article.title} — The Catalyst Reviews`;
+
+    setMetaContent('meta-description',         articleDescription);
+    setMetaContent('meta-og-url',              articleUrl);
+    setMetaContent('meta-og-title',            document.title);
+    setMetaContent('meta-og-description',      articleDescription);
+    setMetaContent('meta-og-image',            articleImage);
+    setMetaContent('meta-og-image-alt',        imageAlt);
+    setMetaContent('meta-twitter-url',         articleUrl);
+    setMetaContent('meta-twitter-title',       document.title);
+    setMetaContent('meta-twitter-description', articleDescription);
+    setMetaContent('meta-twitter-image',       articleImage);
+    setMetaContent('meta-twitter-image-alt',   imageAlt);
+
+    // Inject (or update) canonical + author + keywords + JSON-LD —
+    // these live outside the static <head> ids so we manage them here.
+    upsertCanonicalLink(articleUrl);
+    upsertNamedMeta('author',     reviewer);
+    upsertNamedMeta('robots',     'index, follow, max-image-preview:large, max-snippet:-1');
+    const kwParts = [
+        bookTitle && `${bookTitle} review`,
+        bookTitle && `${bookTitle} book review`,
+        bookAuthor && bookTitle && `${bookTitle} by ${bookAuthor}`,
+        article.genre && `${article.genre} book review`,
+        'STEM book review',
+        'science book review',
+        'The Catalyst Reviews',
+        'The Catalyst Magazine'
+    ].filter(Boolean);
+    upsertNamedMeta('keywords', kwParts.join(', '));
+
+    upsertJsonLd('catalyst-review-jsonld',
+        buildBookReviewJsonLd({
+            article, articleUrl, articleImage,
+            bookTitle, bookAuthor, reviewer, rating: seoRating
+        })
+    );
 
     // --- Derived values ---
     // Pull the review body from whichever field carries it. The public
@@ -1674,7 +1944,7 @@ function renderBookReviewDetail(article, container) {
                 <div class="brx-hero-inner">
                     <div class="brx-hero-meta">
                         <span class="brx-kicker">
-                            ${isReaderPick ? 'Reader pick · The Stacks' : 'Catalyst Book Review · The Stacks'}
+                            ${isReaderPick ? 'Reader pick · The Catalyst Reviews' : 'The Catalyst Reviews'}
                         </span>
                         ${genreLabel
                             ? `<span class="brx-genre-chip">${escapeHtmlAttr(genreLabel)}</span>`
@@ -1799,13 +2069,13 @@ function renderBookReviewDetail(article, container) {
                     <header class="brx-shelf-head">
                         <span class="brx-shelf-eyebrow">Next on the shelf</span>
                         <h2 class="brx-shelf-title" id="brx-shelf-title">Other books you might enjoy</h2>
-                        <p class="brx-shelf-deck">Hand-picked from The Stacks based on the genre and feel of this review.</p>
+                        <p class="brx-shelf-deck">Hand-picked from The Catalyst Reviews based on the genre and feel of this review.</p>
                     </header>
                     <div class="brx-shelf-grid" role="list"></div>
                 </section>
 
                 <a class="brx-cta" href="/book-reviews">
-                    <span>Explore more from The Stacks</span>
+                    <span>Explore more Catalyst Reviews</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M5 12h14M13 5l7 7-7 7"/>
                     </svg>

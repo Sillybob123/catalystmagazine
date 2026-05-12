@@ -720,7 +720,7 @@ body[data-page="article"].is-book-review .back-link:hover {
 
 /* ─── Related-books shelf ─────────────────────────────────────
    "Other books you might enjoy" — appears under the coda/share
-   row, above the .brx-cta back-to-Stacks button. Hidden by JS
+   row, above the .brx-cta back-to-reviews button. Hidden by JS
    if there are no other reviews to recommend.
    ============================================================ */
 .brx-shelf {

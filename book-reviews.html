@@ -10,20 +10,23 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="The Stacks — The Catalyst Magazine's monthly STEM book column. Honest reviews from our contributors and readers, across astronomy, biology, chemistry, climate, computer science, mathematics, physics, and science memoir.">
-    <meta name="keywords" content="STEM book reviews, science book recommendations, chemistry books, biology books, physics books, popular science reading, The Catalyst Magazine">
+    <!-- Description sits comfortably under Google's ~160-char snippet cap
+         so it survives without truncation; leads with the brand name +
+         category for clearer SERP framing. -->
+    <meta name="description" content="The Catalyst Reviews: honest STEM book reviews from The Catalyst Magazine. Astronomy, biology, chemistry, climate, computer science, math, physics & memoir.">
+    <meta name="keywords" content="The Catalyst Reviews, STEM book reviews, science book recommendations, best science books, popular science reading, biology books, physics books, chemistry books, climate books, mathematics books, computer science books, science memoir, book reviews, The Catalyst Magazine">
     <meta name="author" content="The Catalyst Magazine">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
     <meta name="theme-color" content="#0e1117">
-    <title>Book Reviews | The Catalyst Magazine</title>
+    <title>The Catalyst Reviews — STEM Book Reviews | The Catalyst Magazine</title>
     <link rel="canonical" href="https://www.catalyst-magazine.com/book-reviews">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="The Catalyst Magazine">
     <meta property="og:url" content="https://www.catalyst-magazine.com/book-reviews">
-    <meta property="og:title" content="Book Reviews | The Catalyst Magazine">
-    <meta property="og:description" content="The Stacks — The Catalyst's monthly STEM book column. Short, honest recommendations from one reader to another.">
+    <meta property="og:title" content="The Catalyst Reviews — STEM Book Reviews">
+    <meta property="og:description" content="The Catalyst Reviews: honest STEM book reviews from The Catalyst Magazine. Short, candid recommendations from one reader to another.">
     <!-- Preview card. 1200×1200 JPEG works across Facebook, LinkedIn,
          Twitter (summary card), iMessage, and Slack unfurls. -->
     <meta property="og:image" content="https://www.catalyst-magazine.com/images/social/book-reviews-preview.jpg">
@@ -31,12 +34,14 @@
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="1200">
-    <meta property="og:image:alt" content="The Catalyst Magazine — Book Reviews">
+    <meta property="og:image:alt" content="The Catalyst Reviews — STEM book reviews from The Catalyst Magazine">
     <!-- Twitter renders square images well with the summary card. The
          large-image card prefers 2:1 so we step back to "summary" here. -->
     <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="The Catalyst Reviews — STEM Book Reviews">
+    <meta name="twitter:description" content="Honest STEM book reviews from The Catalyst Magazine. Short, candid recommendations from one reader to another.">
     <meta name="twitter:image" content="https://www.catalyst-magazine.com/images/social/book-reviews-preview.jpg">
-    <meta name="twitter:image:alt" content="The Catalyst Magazine — Book Reviews">
+    <meta name="twitter:image:alt" content="The Catalyst Reviews — STEM book reviews from The Catalyst Magazine">
 
     <!-- Schema.org structured data — helps Google understand that this is a
          book-review hub (CollectionPage) inside a magazine (Periodical).
@@ -45,9 +50,11 @@
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      "name": "The Stacks — STEM book reviews",
-      "headline": "Books that change how we see the world",
-      "description": "Monthly STEM book recommendations from The Catalyst Magazine's contributors. Short, honest reviews on science, math, computer science, chemistry, climate, and memoir.",
+      "name": "The Catalyst Reviews — STEM book reviews",
+      "alternateName": "Catalyst Book Reviews",
+      "headline": "The Catalyst Reviews — STEM books that change how we see the world",
+      "description": "Honest STEM book reviews from The Catalyst Magazine's contributors and readers. Short, candid recommendations across astronomy, biology, chemistry, climate, computer science, mathematics, physics, and science memoir.",
+      "inLanguage": "en-US",
       "url": "https://www.catalyst-magazine.com/book-reviews",
       "isPartOf": {
         "@type": "Periodical",
@@ -85,7 +92,7 @@
           {
             "@type": "ListItem",
             "position": 2,
-            "name": "Book Reviews",
+            "name": "The Catalyst Reviews",
             "item": "https://www.catalyst-magazine.com/book-reviews"
           }
         ]
@@ -145,7 +152,7 @@
 
     <main>
         <!-- ============================================================
-             HERO — "The Stacks"
+             HERO — "The Catalyst Reviews"
              ============================================================ -->
         <section class="br-hero" id="br-hero" aria-labelledby="br-hero-title">
             <div class="br-orb br-orb-1" aria-hidden="true"></div>
@@ -155,7 +162,7 @@
 
             <div class="br-hero-inner">
                 <div>
-                    <div class="br-hero-eyebrow br-reveal">The Catalyst presents · The Stacks</div>
+                    <div class="br-hero-eyebrow br-reveal">The Catalyst presents · The Catalyst Reviews</div>
                     <h1 class="br-hero-title br-reveal br-d1" id="br-hero-title">
                         Books that <em>change</em><br>
                         how we see<br>
@@ -264,7 +271,7 @@
         <!-- ============================================================
              MARQUEE — running ticker of reviewed titles
              ============================================================ -->
-        <section class="br-marquee" aria-label="Books currently in the stacks">
+        <section class="br-marquee" aria-label="Books currently in The Catalyst Reviews">
             <div class="br-marquee-track" id="br-marquee-track" role="list">
                 <!-- JS-rendered -->
             </div>
@@ -454,16 +461,16 @@
         </section>
 
         <!-- ============================================================
-             ABOUT THE COLUMN — what The Stacks is, in plain language.
+             ABOUT THE COLUMN — what The Catalyst Reviews is, in plain language.
              The studio is gated, so there's no public CTA here; this
              is just context for readers landing on the page.
              ============================================================ -->
         <section class="br-section br-pitch">
             <div class="br-container">
-                <span class="br-section-eyebrow br-reveal" style="color:var(--accent-soft);">About The Stacks</span>
+                <span class="br-section-eyebrow br-reveal" style="color:var(--accent-soft);">About The Catalyst Reviews</span>
                 <h2 class="br-section-title br-reveal br-d1">A monthly book recommendation, <em>from one reader to another.</em></h2>
                 <p class="br-section-lede br-reveal br-d2" style="margin-bottom:0;">
-                    The Stacks is our monthly book column. Every month, a Catalyst
+                    The Catalyst Reviews is our monthly book column. Every month, a Catalyst
                     writer picks a STEM book they actually liked and tells you
                     about it: what the book is, what's good about it, and whether
                     it's worth reading. The reviews are short and pretty casual.
@@ -493,7 +500,7 @@
                 <h2 class="br-modal-title" id="br-modal-title">Recommend a book.</h2>
                 <p class="br-modal-sub">
                     A few sentences on why you loved it, why it matters, and who should read it.
-                    Our editors review every submission and publish the best of them on The Stacks.
+                    Our editors review every submission and publish the best of them on The Catalyst Reviews.
                 </p>
             </header>
 
@@ -622,7 +629,7 @@
                         </svg>
                     </div>
                     <h3>Thank you — your recommendation is in the editors' queue.</h3>
-                    <p>If it's a good fit, you'll see it land on The Stacks under "From the Catalyzers." We'll reach out by email if we need anything else.</p>
+                    <p>If it's a good fit, you'll see it land on The Catalyst Reviews under "From the Catalyzers." We'll reach out by email if we need anything else.</p>
                     <button class="br-btn br-btn-ghost" type="button" id="br-modal-done">Close</button>
                 </div>
             </div>

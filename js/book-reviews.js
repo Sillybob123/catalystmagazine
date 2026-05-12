@@ -1,6 +1,6 @@
 // =====================================================
 // book-reviews.js — Catalyst Magazine
-// "The Stacks" page controller. Fetches the published
+// "The Catalyst Reviews" page controller. Fetches the published
 // stories in Firestore, keeps only category === "book-review",
 // renders the featured spotlight + ticker + grid.
 // Mirrors the resilient load pattern in articles-new.js
@@ -211,6 +211,11 @@
             category: 'book-review',
             community,
             excerpt: (raw.excerpt || raw.deck || raw.dek || '').replace(/\s+/g, ' ').trim(),
+            // Raw review HTML/text from Firestore (body | content | reviewText).
+            // Carried through normalize so the reviews-modal renderer can
+            // build a clean snippet of the actual review prose. Plain string
+            // — HTML stripping happens at render time.
+            reviewBody: typeof raw.reviewBody === 'string' ? raw.reviewBody : '',
             allowExcerptMetaParse: raw.source === 'local',
             tags: raw.tags || []
         };
@@ -317,6 +322,13 @@
                         { fieldPath: 'bookAuthor' },
                         { fieldPath: 'rating' },
                         { fieldPath: 'isbn' },
+                        // Review body — used by the reviews-modal cards to
+                        // show a snippet of the actual review text instead
+                        // of the (book) deck/excerpt. The renderer strips
+                        // HTML and clips to ~3 lines via line-clamp.
+                        { fieldPath: 'body' },
+                        { fieldPath: 'content' },
+                        { fieldPath: 'reviewText' },
                         { fieldPath: 'genre' }
                     ]
                 },
@@ -375,6 +387,11 @@
                 : `${window.location.origin}/${rawImage.replace(/^\/+/, '')}`;
         }
         const slug = str('slug') || titleToSlug(title);
+        // Pick the review body from any of the three legacy field names.
+        // Older approved reviews live under `reviewText`; newer ones use
+        // `body` or `content`. Anything non-empty wins.
+        const reviewBody = str('body') || str('content') || str('reviewText') || '';
+
         return {
             id: storyId,
             title,
@@ -386,6 +403,7 @@
             link: `/book-review/${encodeURIComponent(slug)}`,
             category: (str('category') || '').toLowerCase().replace(/\s+/g, '-'),
             excerpt: str('deck') || str('dek') || str('excerpt') || '',
+            reviewBody,
             communityPick: bool('communityPick'),
             bookAuthor: str('bookAuthor'),
             rating: num('rating'),
@@ -424,7 +442,7 @@
                 <div class="br-featured-empty">
                     <h2 class="br-section-title">A new column, <em>just getting started.</em></h2>
                     <p class="br-section-lede">
-                        The Stacks is The Catalyst's monthly book column — short, honest
+                        The Catalyst Reviews is The Catalyst's monthly book column — short, honest
                         write-ups on STEM books worth your shelf space. The first
                         recommendation lands soon. Check back, or browse the backlog below
                         as it fills in.
@@ -1183,11 +1201,53 @@
     function numOrInf(v)    { return Number.isFinite(v) ? v :  Infinity; }
     function numOrNegInf(v) { return Number.isFinite(v) ? v : -Infinity; }
 
+    // Turn the raw review body (HTML or plain text) into a clean prose
+    // snippet suitable for a 3-line clamp in the reviews-modal card.
+    //   1. Strip tags entirely — no formatting survives, no XSS risk.
+    //   2. Collapse runs of whitespace / decoded entities.
+    //   3. Clip at ~280 chars on a sentence or word boundary, append ellipsis.
+    // Returns '' when the input is empty so the caller can fall back to
+    // the legacy book-summary blurb.
+    function buildReviewSnippet(raw) {
+        if (!raw || typeof raw !== 'string') return '';
+        // Decode a few common entities the editor emits, then strip tags.
+        const decoded = raw
+            .replace(/<br\s*\/?>/gi, ' ')
+            .replace(/<\/(p|div|li|h[1-6])>/gi, ' ')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/gi, ' ')
+            .replace(/&amp;/gi, '&')
+            .replace(/&quot;/gi, '"')
+            .replace(/&#39;|&apos;/gi, "'")
+            .replace(/&lt;/gi, '<')
+            .replace(/&gt;/gi, '>');
+        const text = decoded.replace(/\s+/g, ' ').trim();
+        if (!text) return '';
+        const MAX = 280;
+        if (text.length <= MAX) return text;
+        // Prefer to end on a sentence boundary within the window.
+        const slice = text.slice(0, MAX);
+        const sentence = slice.match(/^.*[.!?](?=\s|$)/);
+        if (sentence && sentence[0].length > MAX * 0.55) {
+            return sentence[0].trim();
+        }
+        // Otherwise back off to the last word boundary.
+        const lastSpace = slice.lastIndexOf(' ');
+        const cut = lastSpace > MAX * 0.6 ? lastSpace : MAX;
+        return slice.slice(0, cut).trim() + '…';
+    }
+
     function reviewModalItemHtml(r, query) {
         const hasRating = typeof r.rating === 'number';
         const rd = hasRating ? r.rating.toFixed(1) : '—';
         const dateStr = r.date ? formatDate(r.date) : '';
-        const blurb = r.blurb || r.excerpt || '';
+        // Prefer a snippet of the actual review prose over the book deck.
+        // The Firestore loader pulls body/content/reviewText into r.reviewBody;
+        // we strip HTML, collapse whitespace, then clip to a sentence-friendly
+        // length so the line-clamp in CSS gets clean material to work with.
+        // Falls back to the legacy book-summary blurb when no body exists.
+        const snippet = buildReviewSnippet(r.reviewBody) || r.blurb || r.excerpt || '';
+        const blurb = snippet;
         const name = r.author || 'A Catalyzer';
         const nameHtml = query
             ? highlightMatch(name, query)
@@ -1198,13 +1258,28 @@
         const reviewLink = r.id
             ? `/book-review/${encodeURIComponent(r.id)}`
             : r.link;
-        const barPct = hasRating ? Math.round((r.rating / 5) * 100) : 0;
+        // Star track: render 5 base stars + 5 fill stars, clip the fill
+        // layer from the right via --br-pct so half-stars render exactly
+        // (e.g. 4.5 → 90%). Matches the technique used by the submission-
+        // form rating slider so the visual language stays consistent.
+        const barPct = hasRating ? (r.rating / 5) * 100 : 0;
+        const STAR = '★';
+        const starsBase = STAR.repeat(5);
+        const starsFill = STAR.repeat(5);
+        const ratingMarkup = hasRating
+            ? `<span class="br-reviews-modal-item-rating" style="--br-pct:${barPct}" aria-label="Rated ${rd} out of 5">
+                    <span class="br-reviews-modal-item-stars" aria-hidden="true">
+                        <span class="br-reviews-modal-item-stars-base">${starsBase}</span>
+                        <span class="br-reviews-modal-item-stars-fill">${starsFill}</span>
+                    </span>
+               </span>`
+            : `<span class="br-reviews-modal-item-rating is-unrated" aria-label="Unrated">
+                    <span class="br-reviews-modal-item-rating-num">Unrated</span>
+               </span>`;
         return `
             <li class="br-reviews-modal-item">
                 <div class="br-reviews-modal-item-head">
-                    <span class="br-reviews-modal-item-rating ${hasRating ? '' : 'is-unrated'}" aria-label="${hasRating ? `Rated ${rd} out of 5` : 'Unrated'}">
-                        <span class="br-reviews-modal-item-rating-num">${rd}</span><small>/5</small>
-                    </span>
+                    ${ratingMarkup}
                     <div class="br-reviews-modal-item-byline">
                         <strong>${nameHtml}</strong>
                         ${dateStr ? `<span class="br-dot"></span><span>${escapeHtml(dateStr)}</span>` : ''}

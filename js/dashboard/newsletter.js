@@ -83,7 +83,7 @@ async function mountBuilder(ctx, container) {
           </div>
 
           <!-- Separate book-reviews picker. Reviews render as their own
-               "From The Stacks" block at the bottom of the email — they
+               "From The Catalyst Reviews" block at the bottom of the email — they
                aren't editorial articles, so they don't belong in the same
                container as the cards above. Capped at 2 to keep the issue
                scannable. -->
@@ -95,7 +95,7 @@ async function mountBuilder(ctx, container) {
                   <button type="button" class="btn btn-ghost btn-xs" id="btn-clear-reviews">Clear</button>
                 </div>
               </div>
-              <div class="hint" style="margin-bottom:10px;">Optional. Pick up to 2 reviews — they'll appear as a "From The Stacks" block at the bottom of the newsletter.</div>
+              <div class="hint" style="margin-bottom:10px;">Optional. Pick up to 2 reviews — they'll appear as a "From The Catalyst Reviews" block at the bottom of the newsletter.</div>
               <div id="review-picker"><div class="loading-state" style="padding:12px;"><div class="spinner"></div>Loading book reviews…</div></div>
             </div>
           </div>

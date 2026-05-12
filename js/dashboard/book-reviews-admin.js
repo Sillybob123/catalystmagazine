@@ -3,7 +3,7 @@
 //
 // Three buckets shown side-by-side:
 //   • Pending  → submissions waiting for admin decision (approve/reject)
-//   • Approved → submissions already published to The Stacks (read-only,
+//   • Approved → submissions already published to The Catalyst Reviews (read-only,
 //                with a "View on site" link)
 //   • Rejected → submissions the admin declined (read-only)
 //
@@ -31,7 +31,7 @@ export async function mount(ctx, container) {
       <div>
         <div class="card-title">Book reviews — community submissions</div>
         <div class="card-subtitle">
-          Reader-submitted reviews for The Stacks. Approve to publish under "From the Catalyzers,"
+          Reader-submitted reviews for The Catalyst Reviews. Approve to publish under "From the Catalyzers,"
           or reject to dismiss. Approved submissions appear on
           <a href="/book-reviews" target="_blank" rel="noopener">/book-reviews</a>.
         </div>
@@ -234,7 +234,7 @@ async function decide(sub, action, row, reload) {
 
     toast(
       action === "approve"
-        ? `Published "${sub.bookTitle}" on The Stacks.`
+        ? `Published "${sub.bookTitle}" on The Catalyst Reviews.`
         : `Rejected "${sub.bookTitle}".`,
       "success"
     );

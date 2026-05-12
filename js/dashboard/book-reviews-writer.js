@@ -75,7 +75,7 @@ async function mountComposer(ctx, container) {
         <div class="card-title">${editingId ? "Edit book review" : "Write a book review"}</div>
         <div class="card-subtitle">
           A short, honest write-up on a STEM book. Saves as a draft; submit for review
-          when you're ready and an editor will publish it to The Stacks.
+          when you're ready and an editor will publish it to The Catalyst Reviews.
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -131,7 +131,7 @@ async function mountComposer(ctx, container) {
               <option value="physics">Physics</option>
               <option value="stem">Other STEM</option>
             </select>
-            <div class="hint">Sorts the review onto the right shelf on The Stacks.</div>
+            <div class="hint">Sorts the review onto the right shelf on The Catalyst Reviews.</div>
           </div>
 
           <div class="brw-field brw-field-wide">

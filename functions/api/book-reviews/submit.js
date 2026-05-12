@@ -273,7 +273,7 @@ function buildAdminEmail({
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:620px;margin:0 auto;padding:24px;">
       <h2 style="margin:0 0 6px;font-size:1.25rem;color:#1d1d1f;">New book review submission</h2>
       <p style="margin:0 0 20px;color:#6e6e73;font-size:0.95rem;">
-        A reader just submitted a book review for The Stacks. Approve or reject it from the admin dashboard.
+        A reader just submitted a book review for The Catalyst Reviews. Approve or reject it from the admin dashboard.
       </p>
       <table style="border-collapse:collapse;width:100%;margin-bottom:8px;">${tableRows}</table>
       <div style="border-top:1px solid #e5e5e7;padding-top:16px;margin-top:20px;">
