@@ -238,7 +238,14 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: clamp(32px, 5vw, 52px) 24px 60px;
+  /* Top padding reserves a safe zone for the floating site header
+     (top: 12px, ~64px tall, bottom edge ~76px) AND the absolutely
+     positioned .back-link (top: 88px, ~36px tall, bottom edge ~124px).
+     Anything inside the surface — including the category chip at the
+     top of the stack — is guaranteed to sit below ~140px from page
+     top regardless of title length, so the header / back-link can
+     never clip the chip. */
+  padding: 140px 24px 60px;
   overflow: hidden;
   color: #fff;
   isolation: isolate;
@@ -844,7 +851,9 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
   .article-body blockquote::before { font-size: 3.5rem; }
   .article-hero {
     min-height: 65vh;
-    padding-top: 28px;
+    /* Mobile safe-zone: header ~64px + back-link bottom edge ~108px,
+       plus 16px comfort gap = 124px. */
+    padding-top: 124px;
     padding-bottom: 44px;
   }
   .article-hero--light-cover .article-hero__surface {
