@@ -28,7 +28,15 @@ async function cleanupLegacyRuntime() {
     }
 }
 
-// Load shared header and footer so every page stays in sync
+// Load shared header and footer so every page stays in sync.
+// Tries the extension-less path first (Cloudflare Pages auto-strips
+// `.html`, so `/header.html` 308-redirects to `/header`; some browser
+// fetch+redirect+caching combos turn that into an HTML page render
+// instead of returning the fragment text), then falls back to the
+// .html form, then to a hard-coded minimal header so the page is
+// never left completely headerless. Defensive: any fetch failure
+// here used to leave <div id="site-header"> empty, which made the
+// whole nav vanish on article pages.
 async function loadFragment(targetId, path) {
     const target = document.getElementById(targetId);
     if (!target) return;
@@ -50,13 +58,48 @@ async function loadFragment(targetId, path) {
         return `${basePath}${path.replace(/^\/+/, '')}`;
     })();
 
-    try {
-        const response = await fetch(resolvedPath, { cache: 'no-cache' });
-        if (!response.ok) throw new Error(`Failed to load ${resolvedPath}: ${response.status}`);
-        const html = await response.text();
-        target.innerHTML = html;
-    } catch (error) {
-        console.error(`[Layout] ${error.message}`);
+    // Build the candidate list: extension-less first (matches Cloudflare's
+    // canonical URL and avoids the 308 redirect), then the original .html.
+    const candidates = [];
+    const extensionless = resolvedPath.replace(/\.html$/i, '');
+    if (extensionless !== resolvedPath) candidates.push(extensionless);
+    candidates.push(resolvedPath);
+
+    for (const url of candidates) {
+        try {
+            const response = await fetch(url, { cache: 'no-cache', redirect: 'follow' });
+            if (!response.ok) continue;
+            const html = await response.text();
+            // Sanity-check: a full HTML document (e.g. the SPA shell after
+            // a misrouted redirect) starts with <!DOCTYPE — that's NOT a
+            // header fragment and we should keep trying.
+            if (/^\s*<!DOCTYPE/i.test(html)) continue;
+            target.innerHTML = html;
+            return;
+        } catch (error) {
+            console.warn(`[Layout] ${url} failed:`, error.message);
+        }
+    }
+
+    // All candidates failed — paint a minimal fallback header so the
+    // page is still navigable. Better a stripped header than no header.
+    console.error(`[Layout] All fragment loads failed for ${path}; using fallback.`);
+    if (targetId === 'site-header') {
+        target.innerHTML = `
+            <header class="header">
+                <div class="container nav-container">
+                    <a href="/" class="logo" aria-label="The Catalyst Magazine — home">
+                        <img src="/WebLogo.png" alt="The Catalyst Magazine" width="240" height="42">
+                    </a>
+                    <nav class="nav-menu" aria-label="Primary">
+                        <a href="/" class="nav-link">Home</a>
+                        <a href="/articles" class="nav-link">Articles</a>
+                        <a href="/book-reviews" class="nav-link">Reviews</a>
+                        <a href="/about" class="nav-link">About</a>
+                        <a href="/collaborate" class="nav-link">Collaborate</a>
+                    </nav>
+                </div>
+            </header>`;
     }
 }
 
