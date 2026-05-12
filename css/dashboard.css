@@ -964,15 +964,22 @@ button { font-family: inherit; cursor: pointer; }
   --compose-ink-muted: #6e6e73;
   --compose-ink-faint: #a1a1a6;
   --compose-line: #e6e6e6;
-  /* Was 1180. Now caps at 1320 so the article canvas breathes on
-     normal-laptop and desktop widths — the dashboard rail leaves
-     ~1500–1700px usable on a 1800px viewport, so 1180 was leaving a
-     visible gap on each side. min(95vw, …) guarantees we still
-     respect the parent .content padding on narrow screens. */
-  max-width: min(95vw, 1320px);
+  /* Use the full available width of the parent .content pane (which
+     already pads 36px on each side from the dashboard sidebar). The
+     previous 1180px / 1320px caps left a visible gap on either side
+     of the canvas on every screen ≥1500px wide. We pin to 100% with
+     a generous outer cap so on truly enormous monitors (≥1900px)
+     line lengths in the body don't blow past readable. */
+  width: 100%;
+  max-width: 1480px;
   margin: -12px auto 40px;
   position: relative;
 }
+/* Pull the .content pane padding in a bit when the composer is mounted
+   so the canvas can span flush to the rail without losing visual
+   breathing room. The :has() match means this only kicks in on the
+   composer page; everywhere else keeps the wider 36px gutter. */
+.content:has(.compose) { padding-left: 24px; padding-right: 24px; }
 
 /* ---------- top command bar ---------- */
 .compose-bar {
@@ -1305,10 +1312,11 @@ button { font-family: inherit; cursor: pointer; }
   position: relative;
 }
 .compose-body {
-  /* Bumped from 880 → 940. Still well within the ~75-char readable
-     line-length sweet spot for a 19px serif (≈ 65-70 chars per line),
-     just less cramped now that the surrounding canvas is wider. */
-  max-width: 940px;
+  /* Bumped from 880 → 1020. Still inside the readable line-length
+     window for a 19.5px serif (~70-75 chars per line — Medium and
+     The Atlantic both run wider than this) and noticeably less
+     cramped now that the surrounding canvas spans the full pane. */
+  max-width: 1020px;
   margin: 0 auto;
   font-family: var(--compose-serif);
   font-size: 19.5px;
