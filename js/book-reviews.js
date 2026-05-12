@@ -660,19 +660,22 @@
             : '—';
         const readersLabel = `${group.count} ${group.count === 1 ? 'reader' : 'readers'}`;
 
-        // The wrapper is a <div> (not <a>) because the cover area is a link
-        // to the lead review, but the body has its own interactive button +
-        // nested links. Nesting <a> inside <a> is invalid HTML.
+        // The entire card is a clickable surface that opens the reviews modal.
+        // The outer element is a <div role="button"> so the cover, title, and
+        // body all trigger the modal on click. No nested <a> tags — those would
+        // conflict with the outer interactive role.
         return `
             <div class="${classes.join(' ')}"
                  data-group-key="${escapeHtml(group.key)}"
                  data-community="true"
                  data-aggregate="true"
-                 data-genre="${escapeHtml(lead.genre)}">
-                <a class="br-card-media br-card-aggregate-media"
-                   href="${escapeHtml(lead.link)}"
-                   aria-label="Open the top review of ${escapeHtml(lead.bookTitle)}"
-                   ${needsIsbnBackfill ? `data-isbn="${escapeHtml(lead.isbn)}"` : ''}>
+                 data-genre="${escapeHtml(lead.genre)}"
+                 role="button"
+                 tabindex="0"
+                 aria-haspopup="dialog"
+                 aria-label="See all reviews for ${escapeHtml(lead.bookTitle)}">
+                <div class="br-card-aggregate-media"
+                     ${needsIsbnBackfill ? `data-isbn="${escapeHtml(lead.isbn)}"` : ''}>
                     <span class="br-card-aggregate-stack" aria-hidden="true">
                         <span></span><span></span>
                     </span>
@@ -682,7 +685,7 @@
                          onload="this.classList.add('loaded')"
                          onerror="${imageOnErrorAttr(raw, imgSrc)}">
                     <span class="br-card-genre">${escapeHtml(GENRE_LABEL[lead.genre] || 'STEM')}</span>
-                </a>
+                </div>
                 <div class="br-card-body">
                     <div class="br-card-kicker">
                         <span class="br-card-rating" aria-label="Average rating ${avg != null ? avg.toFixed(1) : 'unrated'} out of 5 from ${group.count} readers">
@@ -699,17 +702,14 @@
                     </div>
                     <h3 class="br-card-book">${escapeHtml(lead.bookTitle)}</h3>
                     ${lead.bookAuthor ? `<p class="br-card-author">by ${escapeHtml(lead.bookAuthor)}</p>` : ''}
-                    <button type="button"
-                            class="br-aggregate-toggle"
-                            data-group-key="${escapeHtml(group.key)}"
-                            aria-haspopup="dialog">
+                    <span class="br-aggregate-toggle" aria-hidden="true">
                         <span class="br-aggregate-toggle-label">
                             See all ${group.count} reviews
                         </span>
                         <svg class="br-aggregate-toggle-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M5 12h14M13 5l7 7-7 7"/>
                         </svg>
-                    </button>
+                    </span>
                 </div>
             </div>
         `;
@@ -974,21 +974,27 @@
         enhanceShelfSelect(communityGenreEl);
     }
 
-    // Delegated click handler for the aggregate-card "See all N reviews"
-    // button. Opens the reviews modal (search + sort + scrollable list)
-    // anchored to the clicked book group. The full group data isn't on
-    // the DOM; we re-derive it from communityReviews + the group key.
+    // Delegated handler for aggregate cards. Clicking anywhere on the card
+    // (cover, title, body, or the "See all N reviews" label) opens the
+    // reviews modal. The card itself has role="button" + tabindex="0" so
+    // keyboard users can also activate it with Enter/Space.
     function bindCommunityAggregateToggle() {
         if (!communityFeedEl) return;
-        communityFeedEl.addEventListener('click', (e) => {
-            const btn = e.target.closest('.br-aggregate-toggle');
-            if (!btn) return;
+
+        function openFromCard(e) {
+            const card = e.target.closest('.br-card-aggregate');
+            if (!card) return;
             e.preventDefault();
-            const key = btn.dataset.groupKey;
+            const key = card.dataset.groupKey;
             if (!key) return;
             const group = findGroupByKey(key);
             if (!group) return;
-            openReviewsModal(group, btn);
+            openReviewsModal(group, card);
+        }
+
+        communityFeedEl.addEventListener('click', openFromCard);
+        communityFeedEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') openFromCard(e);
         });
     }
 
@@ -1186,6 +1192,12 @@
         const nameHtml = query
             ? highlightMatch(name, query)
             : escapeHtml(name);
+        // Use the Firestore document ID (r.id) when available so each
+        // review gets a unique URL even when two reviews cover the same
+        // book (they would otherwise share the same title-based slug).
+        const reviewLink = r.id
+            ? `/book-review/${encodeURIComponent(r.id)}`
+            : r.link;
         return `
             <li class="br-reviews-modal-item">
                 <div class="br-reviews-modal-item-head">
@@ -1198,7 +1210,7 @@
                     </div>
                 </div>
                 ${blurb ? `<p class="br-reviews-modal-item-blurb">${escapeHtml(blurb)}</p>` : ''}
-                <a class="br-reviews-modal-item-link" href="${escapeHtml(r.link)}">
+                <a class="br-reviews-modal-item-link" href="${escapeHtml(reviewLink)}">
                     Read full review
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M5 12h14M13 5l7 7-7 7"/>
@@ -1397,9 +1409,8 @@
     // CSS doesn't re-trigger the fade-in animation.
     function backfillIsbnCovers(scope) {
         // Plain cards carry data-isbn on the outer .br-card anchor; aggregate
-        // cards (multi-review books) carry it on the inner media link because
-        // the outer element is a <div>. Pick up both shapes so aggregate
-        // covers also get the Open Library / Google Books upgrade.
+        // cards (multi-review books) carry it on the inner media div.
+        // Pick up both shapes so aggregate covers also get the upgrade.
         const targets = scope.querySelectorAll(
             '.br-card[data-isbn]:not([data-isbn-tried]), .br-card-aggregate-media[data-isbn]:not([data-isbn-tried])'
         );

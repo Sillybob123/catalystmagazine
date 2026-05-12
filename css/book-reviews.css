@@ -1595,6 +1595,12 @@ body[data-page="book-reviews"] .header {
 }
 .br-card-aggregate.in-view { opacity: 1; transform: none; }
 .br-card-aggregate:hover { transform: translateY(-6px); }
+.br-card-aggregate[role="button"] { cursor: pointer; }
+.br-card-aggregate[role="button"]:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: 6px;
+}
 .br-card-aggregate.wide { grid-column: span 6; }
 @media (max-width: 960px) {
     .br-card-aggregate, .br-card-aggregate.wide { grid-column: span 6; }
@@ -1678,13 +1684,11 @@ body[data-page="book-reviews"] .header {
 }
 .br-card-aggregate .br-card-pick svg { width: 11px; height: 11px; opacity: .75; }
 
-/* Expand/collapse button — flush, low-key, pushed to the bottom of the
-   card body so heights still line up with neighbouring single-review
-   cards (where .br-card-meta sits in the same place via margin-top:auto). */
+/* "See all N reviews" label — pushed to the bottom of the card body so
+   heights align with neighbouring single-review cards. Styled as a label,
+   not a button (the whole card is the click target now). */
 .br-aggregate-toggle {
-    appearance: none;
     background: transparent;
-    border: 0;
     border-top: 1px solid var(--paper-line);
     color: var(--ink);
     width: 100%;
@@ -1694,21 +1698,15 @@ body[data-page="book-reviews"] .header {
     gap: 10px;
     padding: 14px 0 0;
     margin-top: auto;
-    font: inherit;
     font-size: 12px;
     font-weight: 600;
     letter-spacing: .04em;
     text-transform: uppercase;
-    cursor: pointer;
     transition: color .2s ease;
     min-height: 0;
+    pointer-events: none;
 }
-.br-aggregate-toggle:hover { color: var(--accent); }
-.br-aggregate-toggle:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-    border-radius: 4px;
-}
+.br-card-aggregate:hover .br-aggregate-toggle { color: var(--accent); }
 .br-aggregate-toggle-caret {
     width: 14px;
     height: 14px;
@@ -1716,7 +1714,7 @@ body[data-page="book-reviews"] .header {
     flex: 0 0 auto;
     opacity: .65;
 }
-.br-aggregate-toggle:hover .br-aggregate-toggle-caret {
+.br-card-aggregate:hover .br-aggregate-toggle-caret {
     transform: translateX(3px);
     opacity: 1;
 }
