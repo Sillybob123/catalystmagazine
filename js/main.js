@@ -2803,7 +2803,12 @@ function mountReadingProgress() {
         const { start, end } = getArticleRange();
         const scrolled = window.scrollY || window.pageYOffset || 0;
         const pct = Math.min(100, Math.max(0, ((scrolled - start) / (end - start)) * 100));
-        fill.style.width = pct + '%';
+        // The progress rail is now vertical (left edge of the viewport)
+        // so we drive the fill via height. We also still set width: 100%
+        // for graceful-degradation against any older CSS that expects a
+        // horizontal bar.
+        fill.style.height = pct + '%';
+        fill.style.width = '100%';
         pctEl.textContent = Math.round(pct) + '%';
         // Reveal the pill as soon as the reader starts scrolling the article.
         bar.classList.toggle('is-active', scrolled > 40);

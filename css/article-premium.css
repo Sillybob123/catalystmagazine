@@ -40,51 +40,66 @@ body[data-page="article"] .article-page > .container { max-width: none; padding:
      2. A pill on the right showing % read + estimated minutes remaining.
         The pill animates into view once the reader is actually inside the
         article and fades out when they finish. */
-/* Reading-progress UI — quiet editorial treatment.
-   Previously a teal→cyan glow gradient + blue glowing dot + green
-   "complete" gradient, all of which screamed "AI template." Now:
-     • thin slate-ink fill on a hairline track (no glow, no gradient)
-     • the percentage pill is plain dark-ink, no dot, no glow shadow,
-       no glow on completion — just a subtle accent rule. */
+/* Reading-progress UI — VERTICAL rail on the left edge.
+   Was a horizontal bar across the top that competed with the floating
+   site header. Now it's a thin vertical strip pinned to the left edge
+   of the viewport that fills downward as the reader scrolls.
+
+   Sits BELOW the floating header (top: 96px) so it never intersects
+   the magazine nav. Hidden on mobile (limited horizontal real estate
+   makes a 3px rail feel like a UI element you accidentally hit). */
 .reading-progress {
   position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  z-index: 1100;
+  top: 96px;
+  bottom: 32px;
+  left: 0;
+  width: 3px;
+  height: auto !important;
+  z-index: 40;
   pointer-events: none;
-  width: 100% !important;
   background: transparent !important;
 }
 .reading-progress__track {
   position: relative;
-  height: 3px;
+  width: 3px;
+  height: 100%;
   background: rgba(15, 23, 42, 0.06);
+  border-radius: 0 2px 2px 0;
 }
 .reading-progress__fill {
-  height: 100%;
-  width: 0;
-  background: var(--ink, #0f172a);
-  transition: width 0.12s ease-out;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  background: var(--accent, #7a1f2b);
+  transition: height 0.12s ease-out;
+  border-radius: 0 2px 2px 0;
 }
+
+/* Pill — moved down well below the floating header so it never
+   collides with the nav. Sits in the lower-right corner where most
+   reading-progress indicators live (Medium, Substack). */
 .reading-progress__pill {
   position: fixed;
-  top: 18px;
+  bottom: 22px;
   right: 22px;
+  top: auto;
   display: inline-flex;
   align-items: baseline;
   gap: 8px;
-  padding: 7px 13px;
+  padding: 8px 14px;
   background: rgba(15, 23, 42, 0.92);
   color: #fff;
   border-radius: 999px;
   font: 600 11px/1 "Inter", system-ui, sans-serif;
   letter-spacing: 0.02em;
-  /* Soft neutral shadow, not the brand-colored glow. */
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(6px);
   transition: opacity 220ms ease, transform 220ms ease;
   pointer-events: none;
+  z-index: 50;
 }
 .reading-progress__pct {
   font-weight: 700;
@@ -94,11 +109,10 @@ body[data-page="article"] .article-page > .container { max-width: none; padding:
 }
 .reading-progress__remaining {
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.62);
   font-size: 10.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  /* A thin separator instead of a glowing dot. */
   padding-left: 10px;
   border-left: 1px solid rgba(255, 255, 255, 0.18);
 }
@@ -107,12 +121,24 @@ body[data-page="article"] .article-page > .container { max-width: none; padding:
   opacity: 1;
   transform: translateY(0);
 }
-/* Completed: the pill just dims slightly, no green gradient. */
 .reading-progress.is-complete .reading-progress__pill {
   background: rgba(15, 23, 42, 0.72);
 }
-@media (max-width: 640px) {
-  .reading-progress__pill { top: 14px; right: 14px; padding: 6px 11px; }
+
+/* Mobile: hide only the side rail (the 3px strip feels noisy and is
+   easy to mis-tap on a narrow viewport). The pill stays, repositioned
+   to clear the bottom safe area. We DON'T hide the .reading-progress
+   wrapper itself because the pill is a sibling inside it — the wrapper
+   has no visual surface of its own, so leaving it visible is free. */
+@media (max-width: 720px) {
+  .reading-progress__track {
+    display: none;
+  }
+  .reading-progress__pill {
+    bottom: 16px;
+    right: 14px;
+    padding: 7px 12px;
+  }
   .reading-progress__remaining { display: none; }
 }
 
@@ -196,7 +222,10 @@ body[data-page="article"].is-book-review .back-link {
   position: relative;
   top: auto;
   left: auto;
-  margin: 24px 0 8px 0;
+  /* The .article-page has padding-top: 56px on book-review pages,
+     and the floating header bottom edge is ~76px. We want a clear
+     ~20px gap below the header → 56 + 40 = 96px total. */
+  margin: 40px 0 16px 0;
   color: var(--brx-ink, #0f172a);
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(15, 23, 42, 0.08);
