@@ -1307,7 +1307,14 @@
                 letter-spacing: 0.18em;
             }
 
+            /* Center the stats column on phones — left-aligned numbers
+               looked off-balance once the row stacked vertically and
+               the dividers became horizontal hairlines. Centering reads
+               as a deliberate "by-the-numbers" pull-quote stack. */
             .stats-strip { padding: 56px 24px 64px; }
+            .stat-item { text-align: center; }
+            .stat-num { margin-left: auto; margin-right: auto; }
+            .stat-label { margin-left: auto; margin-right: auto; }
             .why-section { padding-bottom: 80px; }
             .why-grid { grid-template-columns: 1fr; }
             .roles-section-inner { padding: 72px 0; }
