@@ -16,7 +16,7 @@
 //   c) Fall back to serving the bare article.html shell (client JS will
 //      redirect to /articles if nothing is found).
 
-import { findArticleBySlug, listAllArticles, titleToSlug, resolveOgImage, getSiteUrl, getFallbackImage, buildArticleDescription } from "../_utils/article-meta.js";
+import { findArticleBySlug, listAllArticles, titleToSlug, titleToLegacySlug, resolveOgImage, getSiteUrl, getFallbackImage, buildArticleDescription } from "../_utils/article-meta.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
@@ -25,11 +25,17 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   if (!slug) return next();
 
   // Try direct slug field match first (fast — one Firestore query).
-  // Fall back to title-derived slug scan only if needed.
-  let article = await findArticleBySlug(slug.toLowerCase()).catch(() => null);
+  // Fall back to title-derived slug scan only if needed. Match against the
+  // canonical (NFKD-folded) slug AND a legacy form so historic URLs that
+  // dropped non-ASCII letters (e.g. "g-del-…" for "Gödel…") still resolve.
+  const wanted = slug.toLowerCase();
+  let article = await findArticleBySlug(wanted).catch(() => null);
   if (!article) {
     const articles = await listAllArticles().catch(() => []);
-    article = articles.find((a) => titleToSlug(a.title) === slug.toLowerCase()) || null;
+    article =
+      articles.find((a) => titleToSlug(a.title) === wanted) ||
+      articles.find((a) => titleToLegacySlug(a.title) === wanted) ||
+      null;
   }
 
   const siteUrl = getSiteUrl(request, env);

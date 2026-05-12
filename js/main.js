@@ -1226,11 +1226,15 @@ async function resolveArticleForDetailPage({ data, pathSlug, rawId }) {
 
     const wantedSlug = decodeURIComponent(pathSlug).toLowerCase();
 
-    // Exact match in the local cache.
+    // Exact match in the local cache. Also accept the legacy slug form so
+    // historic URLs that pre-date the NFKD diacritic-strip (e.g.
+    // "g-del-escher-bach…" for "Gödel, Escher, Bach…") still resolve to the
+    // article and don't bounce the reader back to /book-reviews.
     let match = data.find(a =>
         String(a.slug || '').toLowerCase() === wantedSlug
         || slugKey(a.link || a.url || '') === wantedSlug
         || titleToSlug(a.title) === wantedSlug
+        || titleToLegacySlug(a.title) === wantedSlug
     );
     if (match) return match;
 
@@ -1797,21 +1801,36 @@ function renderBookReviewDetail(article, container) {
 
     // ── Cover upgrade pass ──
     // The hero <img> has already been set to the best URL we knew about
-    // at render time (the stored coverImage if present, or the fast
-    // Open Library L thumbnail). If a high-res Google Books cover is
-    // available, swap it in once it resolves — the user sees the page
-    // render instantly and the cover only gets sharper, never blurry.
+    // at render time (the fast Open Library L thumbnail, or the uploaded
+    // admin cover if no ISBN). If a high-res Google Books cover resolves,
+    // swap it in — but only after pre-validating that the upgraded URL
+    // actually loads as a real image (>1px). A broken or 1×1 Google
+    // response must NOT replace a working uploaded/fallback cover.
     if (article.isbn) {
         fetchIsbnCover(article.isbn).then((url) => {
             if (!url) return;
             const img = container.querySelector('.brx-cover-img');
             if (!img) return;
-            // Don't downgrade: only swap if we got a different URL than
-            // what's currently shown, and only if it's a Google Books
-            // (high-res) result OR the slot is empty / fallback.
-            if (img.src.indexOf('books.google.com') !== -1) return;
-            img.src = url;
-            container.querySelector('.brx')?.setAttribute('data-has-cover', 'true');
+            if (img.src && img.src.indexOf('books.google.com') !== -1) return;
+
+            // Pre-validate off-DOM. Only swap on a real cover-sized image —
+            // Google Books returns its "no preview available" placeholder
+            // (≈128×177) with a 200 OK when the requested zoom level has no
+            // real scan, so a >1px check isn't enough. A real cover is at
+            // least a few hundred pixels on the short side.
+            const probe = new Image();
+            probe.onload = () => {
+                const w = probe.naturalWidth || 0;
+                const h = probe.naturalHeight || 0;
+                if (w >= 200 && h >= 200) {
+                    img.src = url;
+                    img.classList.remove('failed');
+                    img.classList.add('loaded');
+                    container.querySelector('.brx')?.setAttribute('data-has-cover', 'true');
+                }
+            };
+            probe.onerror = () => {};
+            probe.src = url;
         });
     }
 }
@@ -1920,30 +1939,47 @@ function formatBookReviewGenre(genre) {
 function mountBookReviewCoverFallback(container) {
     const img = container.querySelector('.brx-cover-img');
     if (!img) return;
-    const fallback = img.dataset.fallbackSrc || ARTICLE_FALLBACK_IMAGE;
-    let fallbackApplied = false;
-    const useFallback = () => {
-        if (fallbackApplied) {
-            img.classList.add('failed');
-            return;
+    const uploadedCover = img.dataset.fallbackSrc || ARTICLE_FALLBACK_IMAGE;
+    // Cascade through every cover source we know about, in priority order.
+    // Each entry is tried at most once; on the final placeholder we stop
+    // and mark the image as failed so CSS can show a neutral background.
+    const cascade = [];
+    if (uploadedCover && uploadedCover !== ARTICLE_FALLBACK_IMAGE) {
+        cascade.push(uploadedCover);
+    }
+    cascade.push(ARTICLE_FALLBACK_IMAGE);
+
+    const tried = new Set();
+    const advance = () => {
+        while (cascade.length) {
+            const next = cascade.shift();
+            if (!next || tried.has(next)) continue;
+            tried.add(next);
+            // Same src as what's already on the element means we'd just
+            // re-trigger the same error handler — skip and try the next one.
+            if (next === img.getAttribute('src')) continue;
+            img.src = next;
+            if (next === ARTICLE_FALLBACK_IMAGE) img.classList.add('failed');
+            return true;
         }
-        fallbackApplied = true;
-        img.src = fallback;
-        if (fallback === ARTICLE_FALLBACK_IMAGE) img.classList.add('failed');
+        img.classList.add('failed');
+        return false;
     };
     const markLoadedOrFallback = () => {
         // Open Library's default=false can still yield a tiny placeholder in
         // some edge cases. Treat that as "no ISBN cover" and fall back to the
         // uploaded/admin cover.
         if (img.naturalWidth <= 1 || img.naturalHeight <= 1) {
-            useFallback();
+            advance();
             return;
         }
         img.classList.remove('failed');
         img.classList.add('loaded');
     };
     img.addEventListener('load', markLoadedOrFallback);
-    img.addEventListener('error', useFallback);
+    img.addEventListener('error', advance);
+    // Track the initial src so we don't re-pick it as a fallback step.
+    tried.add(img.getAttribute('src'));
     if (img.complete) markLoadedOrFallback();
 }
 
@@ -3075,6 +3111,19 @@ function titleToSlug(title = '') {
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/[\u2018\u2019’]/g, '')
+        .replace(/&/g, ' and ')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+// Legacy slug form — see titleToLegacySlug() in functions/_utils/article-meta.js.
+// Same shape minus the NFKD diacritic-strip, so non-ASCII letters become "-".
+// Used as a fallback match when resolving slugs from URLs that pre-date the
+// NFKD normalization (e.g. "g-del-escher-bach…" for "Gödel, Escher, Bach…").
+function titleToLegacySlug(title = '') {
+    return String(title)
+        .toLowerCase()
+        .replace(/[‘’’]/g, '')
         .replace(/&/g, ' and ')
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');

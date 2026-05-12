@@ -19,6 +19,7 @@ import {
   findArticleBySlug,
   listAllArticles,
   titleToSlug,
+  titleToLegacySlug,
   resolveOgImage,
   getSiteUrl,
   getFallbackImage,
@@ -32,11 +33,18 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   if (!slug) return next();
 
   // Try direct slug field match first (fast — one Firestore query),
-  // then fall back to title-derived slug scan.
-  let article = await findArticleBySlug(slug.toLowerCase()).catch(() => null);
+  // then fall back to title-derived slug scan. We try both the canonical
+  // (NFKD-folded) slug and a legacy form so URLs from before the
+  // diacritic-stripping landed — e.g. "g-del-escher-bach…" for "Gödel,
+  // Escher, Bach…" — still resolve.
+  const wanted = slug.toLowerCase();
+  let article = await findArticleBySlug(wanted).catch(() => null);
   if (!article) {
     const articles = await listAllArticles().catch(() => []);
-    article = articles.find((a) => titleToSlug(a.title) === slug.toLowerCase()) || null;
+    article =
+      articles.find((a) => titleToSlug(a.title) === wanted) ||
+      articles.find((a) => titleToLegacySlug(a.title) === wanted) ||
+      null;
   }
 
   const siteUrl = getSiteUrl(request, env);

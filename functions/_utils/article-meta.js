@@ -379,6 +379,21 @@ export function titleToSlug(title) {
     .replace(/^-+|-+$/g, "");
 }
 
+// Legacy slug form: some historic slugs were saved before the NFKD
+// normalization landed, so non-ASCII letters (\u00f6, \u00e9, \u00fc \u2026) collapsed into a
+// "-" gap instead of being transliterated to their base letter.
+// Example: "G\u00f6del, Escher, Bach" \u2192 "g-del-escher-bach" instead of
+// "godel-escher-bach". Used as a fallback match key so those URLs keep
+// resolving even though the canonical slug for new posts is the NFKD form.
+export function titleToLegacySlug(title) {
+  return String(title || "")
+    .toLowerCase()
+    .replace(/[\u2018\u2019']/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 // Produce a keyword-rich meta description that always has useful content.
 // Priority: provided excerpt → article deck → first content paragraph →
 // title-based fallback. Always ends with a subtle brand/category tag so
