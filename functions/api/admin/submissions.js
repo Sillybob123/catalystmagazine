@@ -19,13 +19,24 @@ export const onRequestGet = async ({ request, env }) => {
     const auth = await requireRole(request, env, ["admin"]);
     if (auth instanceof Response) return auth;
 
-    const docs = await firestoreRunQuery(env, {
-      from: [{ collectionId: "collaboration_requests" }],
-      // No orderBy in the query — older Firestore docs may be missing
-      // createdAt and would be excluded by an indexed orderBy. Sort
-      // client-side below where we can be tolerant of missing values.
-      limit: 500,
-    });
+    let docs;
+    try {
+      docs = await firestoreRunQuery(env, {
+        from: [{ collectionId: "collaboration_requests" }],
+        // No orderBy in the query — older Firestore docs may be missing
+        // createdAt and would be excluded by an indexed orderBy. Sort
+        // client-side below where we can be tolerant of missing values.
+        limit: 500,
+      });
+    } catch (queryErr) {
+      // Surface the real Firestore error to the client so we can fix
+      // it instead of getting a generic "Internal server error".
+      console.error("[admin/submissions] runQuery failed:", queryErr);
+      return json(
+        { ok: false, error: "Firestore query failed", message: queryErr?.message || String(queryErr) },
+        { status: 500 }
+      );
+    }
 
     const submissions = docs
       .map((d) => ({

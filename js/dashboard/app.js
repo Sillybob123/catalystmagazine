@@ -54,8 +54,8 @@ const ICONS = {
   pen:         `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
   // My articles — stacked pages with a folded corner
   pages:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>`,
-  // Articles in the works — a bullhorn / shared feed
-  feed:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v3a1 1 0 0 0 1 1h2.5l5 4.5V6.5l-5 4.5z"/><path d="M16 8a4 4 0 0 1 0 8"/><path d="M18.5 5a8 8 0 0 1 0 14"/></svg>`,
+  // Articles in the works — circular arrows (work in progress / cycling)
+  feed:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>`,
   // Editorial standards — an open book
   bookOpen:    `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5C5 3 7.5 3 12 4.5V21c-4.5-1.5-7-1.5-10 0z"/><path d="M22 4.5C19 3 16.5 3 12 4.5V21c4.5-1.5 7-1.5 10 0z"/></svg>`,
 
@@ -81,8 +81,10 @@ const ICONS = {
   chart:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
   // Subscriber list — group of people
   users:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-  // Collaboration requests — a handshake
-  handshake:   `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l2 2a1 1 0 0 0 1.41 0l4-4"/><path d="M3 12l4-4 5 5 1-1 5 5"/><path d="M14 12l-2-2-3 3"/><path d="M3 12l3 3 6-6"/></svg>`,
+  // Collaboration requests — a paper plane with a person (someone
+  // reaching out to collaborate). Replaces the previous "handshake"
+  // glyph which read as a tangled mess at 16px.
+  handshake:   `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`,
   // Social media posts — share-arrow
   share:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
 
@@ -299,7 +301,7 @@ const ROUTES = {
     icon: ICONS.inbox,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./submissions.js?v=1"),
+    loader: () => import("./submissions.js?v=2"),
   },
   "#/admin/games": {
     label: "Games",

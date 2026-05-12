@@ -78,14 +78,28 @@ export async function mount(ctx, container) {
     els.body.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading submissions…</div>`;
     try {
       const res = await ctx.authedFetch("/api/admin/submissions");
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      // Read as text first so we can show a useful error if the body isn't
+      // JSON (Cloudflare 5xx pages, redirect HTML, etc.) instead of the
+      // browser's generic "string did not match the expected pattern".
+      const rawText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (parseErr) {
+        const snippet = rawText.slice(0, 180).replace(/\s+/g, " ").trim();
+        throw new Error(`Server returned non-JSON (HTTP ${res.status}). Snippet: ${snippet || "(empty body)"}`);
+      }
+      if (!res.ok || !data.ok) {
+        const detail = data.message || data.error || `HTTP ${res.status}`;
+        throw new Error(detail);
+      }
       submissions = data.submissions || [];
       counts = data.counts || counts;
       renderTabs();
       renderList();
     } catch (err) {
-      els.body.innerHTML = `<div class="error-state">Could not load submissions: ${esc(err.message)}</div>`;
+      console.error("[submissions] load failed:", err);
+      els.body.innerHTML = `<div class="error-state" style="white-space:pre-wrap;">Could not load submissions: ${esc(err.message)}</div>`;
     }
   }
 
@@ -155,10 +169,6 @@ export async function mount(ctx, container) {
         await saveStatus(sub, ev.target.value);
       });
 
-      rowEl.querySelector("[data-mark-replied]")?.addEventListener("click", () => {
-        saveStatus(sub, "replied");
-      });
-
       rowEl.querySelector("[data-archive]")?.addEventListener("click", () => {
         saveStatus(sub, "archived");
       });
@@ -167,6 +177,17 @@ export async function mount(ctx, container) {
         const note = rowEl.querySelector("[data-note]").value;
         await saveNote(sub, note);
       });
+
+      rowEl.querySelector("[data-copy-msg]")?.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        const txt = rowEl.querySelector("[data-msg-body]")?.textContent || "";
+        try {
+          await navigator.clipboard.writeText(txt);
+          toast("Message copied to clipboard.", "success");
+        } catch {
+          toast("Copy failed — select the text manually.", "error");
+        }
+      });
     });
   }
 
@@ -174,86 +195,169 @@ export async function mount(ctx, container) {
     const expanded = expandedId === s.id;
     const pill = STATUS_PILL[s.status] || STATUS_PILL.new;
     const sourceLabel = SOURCE_LABEL[s.source] || s.source || "Other";
-    const portfolio = s.portfolio
+    const isJoinTeam = s.source === "join-team";
+
+    // Source-specific visual tag. Join-team applications get a darker
+    // chip; proposals get a lighter outline. Lets admins triage at a
+    // glance without having to read the source label.
+    const sourceChip = isJoinTeam
+      ? `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--ink);color:#fff;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Join the team</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:transparent;border:1px solid var(--border-strong);color:var(--ink-2);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">Article proposal</span>`;
+
+    const portfolioHtml = s.portfolio
       ? `<a href="${esc(s.portfolio)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;">${esc(s.portfolio)}</a>`
       : "—";
-    const phone = s.phone ? esc(s.phone) : "—";
-    const articleTitle = s.articleTitle ? esc(s.articleTitle) : "—";
 
     // Subject line for the reply mailto. Mirrors the team-notification
     // email subject ([Team Application] / [Article/Proposal Submission])
     // so the threaded reply lands in the same conversation.
-    const subjectLabel = s.source === "join-team"
-      ? "Team Application"
-      : "Article/Proposal Submission";
+    const subjectLabel = isJoinTeam ? "Team Application" : "Article/Proposal Submission";
     const replyMailto =
       `mailto:${encodeURIComponent(s.email)}` +
       `?subject=${encodeURIComponent(`Re: [${subjectLabel}] ${s.name}`)}`;
 
-    // Header row (always visible). The full detail block only renders
-    // when expanded — keeps the long list scannable at rest.
+    // Avatar — first letters of name (or '?' if empty). Single deliberate
+    // identity cue per row so the eye locks on the person, not the data.
+    const initialsStr = (s.name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
+
+    // ── Compact header row (always visible). Restructured from the
+    //    previous compact list into a richer "envelope" style: avatar +
+    //    name + source chip on top, then a 2-line preview of the message
+    //    so admins can decide whether to expand without committing.
+    //    Click anywhere on the header (except links/buttons) to expand.
+    const messagePreview = (s.message || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 180);
     const header = `
-      <div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:14px;align-items:center;padding:14px 18px;cursor:pointer;" data-expand>
+      <div style="padding:18px 22px;cursor:pointer;display:grid;grid-template-columns:48px 1fr auto;gap:16px;align-items:flex-start;" data-expand>
+        <!-- Avatar -->
+        <div style="width:42px;height:42px;border-radius:50%;background:${isJoinTeam ? "var(--ink)" : "var(--surface-2)"};color:${isJoinTeam ? "#fff" : "var(--ink)"};border:1px solid var(--hairline);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;letter-spacing:0.02em;flex-shrink:0;">
+          ${esc(initialsStr)}
+        </div>
+
+        <!-- Identity + preview -->
         <div style="min-width:0;">
-          <div style="font-weight:700;color:var(--ink);font-size:14px;">${esc(s.name || "(no name)")}
-            <span style="font-weight:400;color:var(--muted-light);margin-left:8px;font-size:12px;">${esc(sourceLabel)}</span>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="font-weight:700;color:var(--ink);font-size:15px;">${esc(s.name || "(no name)")}</span>
+            ${sourceChip}
+            <span class="pill ${pill.cls}" style="font-size:10px;">${esc(pill.label)}</span>
+            ${s.reviewerNote ? `<span title="${esc(s.reviewerNote)}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);font-style:italic;">📝 internal note</span>` : ""}
           </div>
-          <div style="color:var(--muted);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            ${esc(s.email)}${s.role ? " · " + esc(s.role) : ""}${articleTitle !== "—" ? " · " + articleTitle : ""}
+          <div style="color:var(--muted);font-size:12px;margin-bottom:8px;display:flex;gap:14px;flex-wrap:wrap;">
+            <span><a href="mailto:${esc(s.email)}" onclick="event.stopPropagation();" style="color:var(--ink-2);text-decoration:none;">${esc(s.email)}</a></span>
+            ${s.phone ? `<span>📞 ${esc(s.phone)}</span>` : ""}
+            ${s.role ? `<span>Role: <strong style="color:var(--ink-2);font-weight:600;">${esc(s.role)}</strong></span>` : ""}
+            ${s.articleTitle ? `<span>Pitch: <em style="color:var(--ink-2);">${esc(s.articleTitle)}</em></span>` : ""}
+          </div>
+          <div style="color:var(--ink-2);font-size:13px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+            ${esc(messagePreview)}${s.message && s.message.length > messagePreview.length ? "…" : ""}
           </div>
         </div>
-        <span class="pill ${pill.cls}" style="font-size:11px;">${esc(pill.label)}</span>
-        <span style="color:var(--muted);font-size:12px;white-space:nowrap;">${s.createdAt ? esc(fmtRelative(s.createdAt)) : "—"}</span>
-        <a href="${esc(replyMailto)}" class="btn btn-ghost btn-xs" onclick="event.stopPropagation();" style="white-space:nowrap;">Reply</a>
-        <span style="color:var(--muted-light);font-size:14px;line-height:1;">${expanded ? "▾" : "▸"}</span>
+
+        <!-- Right rail: time + chevron -->
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+          <span style="color:var(--muted);font-size:12px;white-space:nowrap;">${s.createdAt ? esc(fmtRelative(s.createdAt)) : "—"}</span>
+          <span style="color:var(--muted-light);font-size:18px;line-height:1;">${expanded ? "▾" : "▸"}</span>
+        </div>
       </div>`;
 
     if (!expanded) {
-      return `<div class="sub-row" data-row="${esc(s.id)}" style="border-bottom:1px solid var(--hairline);">${header}</div>`;
+      return `<div class="sub-row" data-row="${esc(s.id)}" style="border-bottom:1px solid var(--hairline);background:${s.status === "new" ? "var(--surface)" : "var(--surface)"};">${header}</div>`;
     }
 
-    // Expanded detail block — every field the public form captured, plus
-    // admin triage controls (status pulldown, note, mark replied, archive).
+    // ── Expanded detail. Everything the submitter typed, in their own
+    //    words, structured as a "submission record" with the long-form
+    //    message at the top (the most important field), the form-field
+    //    answers in a labeled grid below, and the admin triage controls
+    //    pinned at the bottom in their own footer band.
+
+    // Form-field "answers" block — every input the submitter filled in,
+    // shown in the order it appeared on the public form so admins can
+    // reconstruct what the submitter saw.
+    const orderedFields = isJoinTeam
+      ? [
+          { label: "Full name", value: s.name },
+          { label: "Email", value: s.email, type: "email" },
+          { label: "Phone", value: s.phone },
+          { label: "Position / interest", value: s.role },
+          ...(s.selectedRole === "Other" || s.otherRole
+            ? [{ label: "Other role (custom)", value: s.otherRole }]
+            : []),
+          { label: "Portfolio / link", value: s.portfolio, type: "link" },
+        ]
+      : [
+          { label: "Full name", value: s.name },
+          { label: "Email", value: s.email, type: "email" },
+          { label: "Article title / pitch", value: s.articleTitle },
+          { label: "Portfolio / supporting link", value: s.portfolio, type: "link" },
+        ];
+
+    const submitMeta = [
+      { label: "Submission ID", value: s.id, mono: true },
+      { label: "Source", value: sourceLabel },
+      { label: "Submitted", value: s.createdAt ? `${fmtDate(s.createdAt)} · ${fmtRelative(s.createdAt)}` : "—" },
+      ...(s.reviewedAt ? [{ label: "Last reviewed", value: `${fmtDate(s.reviewedAt)} by ${s.reviewedBy || "—"}` }] : []),
+      ...(s.ip ? [{ label: "Submitter IP", value: s.ip, mono: true }] : []),
+    ];
+
     const detail = `
-      <div style="padding:6px 18px 22px 18px;background:var(--surface-2);border-top:1px solid var(--hairline);">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 28px;margin-bottom:18px;">
-          ${field("Email", `<a href="mailto:${esc(s.email)}" style="color:var(--ink);text-decoration:underline;">${esc(s.email)}</a>`)}
-          ${field("Phone", phone)}
-          ${field("Position / interest", s.role ? esc(s.role) : "—")}
-          ${field("Article title", articleTitle)}
-          ${field("Portfolio / link", portfolio)}
-          ${field("Source", esc(sourceLabel))}
-          ${field("Submitted", s.createdAt ? `${esc(fmtDate(s.createdAt))} · ${esc(fmtRelative(s.createdAt))}` : "—")}
-          ${s.reviewedAt ? field("Last reviewed", `${esc(fmtDate(s.reviewedAt))} by ${esc(s.reviewedBy || "—")}`) : ""}
+      <div style="padding:0 22px 0 22px;background:var(--surface-2);border-top:1px solid var(--hairline);">
+
+        <!-- ── Long-form message (the most important field) ────────── -->
+        <div style="background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:20px 22px;margin:18px 0;box-shadow:0 1px 0 rgba(0,0,0,0.02);">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;">${isJoinTeam ? "Why they want to join" : "What they're proposing"}</div>
+            <button type="button" class="btn btn-ghost btn-xs" data-copy-msg style="font-size:11px;">Copy message</button>
+          </div>
+          <div data-msg-body style="white-space:pre-wrap;color:var(--ink);font-size:14.5px;line-height:1.65;font-family:Georgia,'Times New Roman',serif;">${esc(s.message || "(no message provided)")}</div>
         </div>
 
-        <div style="background:var(--surface);border:1px solid var(--hairline);border-radius:10px;padding:16px 18px;margin-bottom:16px;">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Message</div>
-          <div style="white-space:pre-wrap;color:var(--ink);font-size:14px;line-height:1.55;">${esc(s.message || "(no message)")}</div>
+        <!-- ── Form-field answers ────────────────────────────────── -->
+        <div style="background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:18px 22px;margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;margin-bottom:14px;">Form responses</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px 32px;">
+            ${orderedFields.map(renderAnswer).join("")}
+          </div>
         </div>
 
-        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;">
-          <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;">
-            Status
-            <select class="input" data-status style="width:160px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink);">
-              ${["new", "reviewing", "replied", "archived"].map((st) => `
-                <option value="${st}" ${s.status === st ? "selected" : ""}>${(STATUS_PILL[st] || {label:st}).label}</option>
-              `).join("")}
-            </select>
-          </label>
+        <!-- ── Submission metadata ───────────────────────────────── -->
+        <div style="background:transparent;padding:8px 4px 16px;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.16em;color:var(--muted-light);text-transform:uppercase;margin-bottom:10px;">Submission record</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 22px;">
+            ${submitMeta.map((m) => `
+              <div style="display:flex;gap:6px;align-items:baseline;font-size:12px;color:var(--muted);">
+                <span>${esc(m.label)}:</span>
+                <span style="color:var(--ink-2);${m.mono ? "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" : ""}font-weight:500;">${esc(m.value || "—")}</span>
+              </div>`).join("")}
+          </div>
+        </div>
 
-          <label style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:240px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;">
-            Internal note
+        <!-- ── Admin triage footer ───────────────────────────────── -->
+        <div style="background:var(--surface);border:1px solid var(--hairline);border-radius:12px;padding:16px 18px;margin-bottom:20px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;color:var(--muted);text-transform:uppercase;margin-bottom:12px;">Admin triage</div>
+          <div style="display:grid;grid-template-columns:160px 1fr auto;gap:12px;align-items:flex-end;">
+            <label style="display:flex;flex-direction:column;gap:4px;font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--muted-light);text-transform:uppercase;">
+              Status
+              <select class="input" data-status style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink);">
+                ${["new", "reviewing", "replied", "archived"].map((st) => `
+                  <option value="${st}" ${s.status === st ? "selected" : ""}>${(STATUS_PILL[st] || {label:st}).label}</option>
+                `).join("")}
+              </select>
+            </label>
+
+            <label style="display:flex;flex-direction:column;gap:4px;font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--muted-light);text-transform:uppercase;">
+              Internal note (only visible here)
+              <div style="display:flex;gap:6px;">
+                <input class="input" data-note value="${esc(s.reviewerNote || "")}" placeholder="e.g. follow up after midterms" style="flex:1;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink);">
+                <button type="button" class="btn btn-secondary btn-sm" data-save-note>Save note</button>
+              </div>
+            </label>
+
             <div style="display:flex;gap:6px;">
-              <input class="input" data-note value="${esc(s.reviewerNote || "")}" placeholder="Notes for the team — only visible here." style="flex:1;font-weight:500;text-transform:none;letter-spacing:0;color:var(--ink);">
-              <button type="button" class="btn btn-secondary btn-sm" data-save-note>Save</button>
+              <a href="${esc(replyMailto)}" class="btn btn-accent btn-sm">Reply via email</a>
+              <button type="button" class="btn btn-ghost btn-sm" data-archive>Archive</button>
             </div>
-          </label>
-
-          <div style="display:flex;gap:6px;align-self:flex-end;">
-            <a href="${esc(replyMailto)}" class="btn btn-accent btn-sm">Reply via email</a>
-            <button type="button" class="btn btn-secondary btn-sm" data-mark-replied>Mark replied</button>
-            <button type="button" class="btn btn-ghost btn-sm" data-archive>Archive</button>
           </div>
         </div>
       </div>`;
@@ -261,13 +365,26 @@ export async function mount(ctx, container) {
     return `<div class="sub-row" data-row="${esc(s.id)}" style="border-bottom:1px solid var(--hairline);">${header}${detail}</div>`;
   }
 
-  // Per-field renderer used inside the expanded detail block. Centralised
-  // so every label/value pair has the same alignment, casing, and spacing.
-  function field(label, valueHtml) {
+  // Per-field renderer for the "Form responses" grid. Renders the label
+  // exactly as it appeared on the public form, plus the submitted value
+  // in a way that matches its semantic type (mailto link, external
+  // anchor, plain text). Empty values render as a muted em-dash so the
+  // grid doesn't develop holes when an optional field was skipped.
+  function renderAnswer({ label, value, type }) {
+    let rendered;
+    if (!value) {
+      rendered = `<span style="color:var(--muted-light);">— not provided</span>`;
+    } else if (type === "email") {
+      rendered = `<a href="mailto:${esc(value)}" style="color:var(--ink);text-decoration:underline;">${esc(value)}</a>`;
+    } else if (type === "link") {
+      rendered = `<a href="${esc(value)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline;word-break:break-all;">${esc(value)}</a>`;
+    } else {
+      rendered = esc(value);
+    }
     return `
       <div>
-        <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--muted-light);text-transform:uppercase;margin-bottom:4px;">${esc(label)}</div>
-        <div style="font-size:13px;color:var(--ink);word-break:break-word;">${valueHtml}</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--muted-light);text-transform:uppercase;margin-bottom:6px;">${esc(label)}</div>
+        <div style="font-size:14px;color:var(--ink);line-height:1.5;word-break:break-word;">${rendered}</div>
       </div>`;
   }
 
