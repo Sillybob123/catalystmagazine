@@ -1805,109 +1805,187 @@ body[data-page="book-reviews"] .header {
 
 /* =================================================================
    AGGREGATE REVIEWS MODAL — opens when an aggregate card is clicked.
-   Reuses .br-modal-backdrop / .br-modal core, extends with a wider
-   max-width, a sticky head showing the book + average + readers, a
-   toolbar with search-by-name + sort, and a scroll-only list body
-   so the controls stay in view while the user scans the reviews.
+   Full redesign: large close button, book-header with cover art,
+   review cards with visual rating bars, editorial typography.
    ================================================================= */
 .br-modal--reviews {
-    max-width: 720px;
-    /* Cap the modal so the body scrolls, not the page. The sticky head
-       above keeps the search/sort controls anchored as the reader
-       scrolls through reviews. */
-    max-height: min(820px, calc(100vh - 48px));
+    max-width: 680px;
+    max-height: min(860px, calc(100dvh - 40px));
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    border-radius: 20px;
+    box-shadow:
+        0 0 0 1px rgba(14,17,23,.08),
+        0 48px 96px -24px rgba(14,17,23,.5),
+        0 24px 48px -12px rgba(14,17,23,.28);
 }
 
+/* ---- Close button — prominent, labelled, top-right ---- */
+.br-modal--reviews .br-modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: auto;
+    height: 36px;
+    border-radius: 999px;
+    padding: 0 14px 0 10px;
+    background: var(--paper-off);
+    border: 1px solid var(--paper-line);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    gap: 6px;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
+    z-index: 10;
+}
+.br-modal--reviews .br-modal-close:hover {
+    background: var(--paper-line);
+    color: var(--ink);
+    border-color: rgba(14,17,23,.18);
+    box-shadow: 0 2px 8px -2px rgba(14,17,23,.14);
+}
+.br-modal--reviews .br-modal-close:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+.br-modal--reviews .br-modal-close svg {
+    flex: 0 0 auto;
+}
+
+/* ---- Sticky header with book cover + meta ---- */
 .br-reviews-modal-head {
-    padding: 32px 32px 18px;
+    padding: 28px 28px 0;
     position: sticky; top: 0;
     background: var(--paper);
-    border-bottom: 1px solid var(--paper-line);
     z-index: 2;
-    border-radius: 16px 16px 0 0;
+    border-radius: 20px 20px 0 0;
+    /* Subtle fade-out at the bottom edge instead of a hard line */
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1px), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 1px), transparent 100%);
 }
+/* Real separator that sits below the toolbar */
+.br-reviews-modal-head::after {
+    content: '';
+    display: block;
+    height: 1px;
+    background: var(--paper-line);
+    margin: 0 -28px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Book info row */
 .br-reviews-modal-head-grid {
     display: grid;
-    grid-template-columns: 72px 1fr;
-    gap: 18px;
+    grid-template-columns: 80px 1fr;
+    gap: 20px;
     align-items: start;
+    padding-right: 88px; /* clear the close button */
 }
 .br-reviews-modal-cover {
-    width: 72px;
+    width: 80px;
     aspect-ratio: 2 / 3;
-    border-radius: 4px;
+    border-radius: 5px;
     overflow: hidden;
     background: var(--paper-off);
     box-shadow:
-        0 14px 28px -14px rgba(14,17,23,.32),
-        0 0 0 1px rgba(14,17,23,.08);
+        0 12px 32px -10px rgba(14,17,23,.38),
+        0 0 0 1px rgba(14,17,23,.1),
+        inset 0 0 0 1px rgba(255,255,255,.06);
+    position: relative;
+}
+/* Subtle spine-shadow overlay */
+.br-reviews-modal-cover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(14,17,23,.14) 0%, transparent 30%);
+    pointer-events: none;
+    border-radius: inherit;
 }
 .br-reviews-modal-cover img {
     width: 100%; height: 100%;
     object-fit: contain;
     display: block;
 }
+
 .br-reviews-modal-headline {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     min-width: 0;
+    padding-top: 2px;
+}
+.br-reviews-modal-headline .br-modal-eyebrow {
+    font-size: 10px;
+    letter-spacing: .28em;
 }
 .br-reviews-modal-headline .br-modal-title {
-    font-size: 24px;
-    margin-top: 4px;
+    font-size: 22px;
+    line-height: 1.18;
+    margin-top: 2px;
+    margin-bottom: 0;
 }
 .br-reviews-modal-headline .br-modal-sub {
     font-style: italic;
+    font-size: 13.5px;
+    margin-top: 1px;
 }
+
+/* Stats row: avg pill + reader count */
 .br-reviews-modal-stats {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 10px;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
 }
 .br-reviews-modal-avg {
     display: inline-flex;
     align-items: baseline;
-    padding: 5px 12px;
-    background: var(--paper-off);
+    padding: 4px 12px;
+    background: rgba(122,31,43,.09);
     color: var(--accent);
-    border: 1px solid var(--paper-line);
+    border: 1px solid rgba(122,31,43,.22);
     border-radius: 999px;
     font-family: 'Playfair Display', Georgia, serif;
-    font-size: 17px;
+    font-size: 15px;
     font-weight: 700;
     line-height: 1;
+    letter-spacing: -.01em;
 }
 .br-reviews-modal-avg small {
-    font-size: 10px;
-    opacity: .7;
+    font-size: 9.5px;
+    opacity: .65;
     font-weight: 400;
     margin-left: 2px;
+    font-family: inherit;
 }
 .br-reviews-modal-stats-divider {
     width: 3px; height: 3px;
     border-radius: 50%;
-    background: var(--text-subtle);
+    background: var(--paper-line);
+    flex: 0 0 auto;
 }
 .br-reviews-modal-readers {
-    font-size: 12px;
-    letter-spacing: .08em;
+    font-size: 11.5px;
+    letter-spacing: .1em;
     text-transform: uppercase;
     color: var(--text-muted);
     font-weight: 600;
 }
 
-/* Toolbar: search input on the left, sort dropdown on the right.
-   On small screens both stack to one column. */
+/* Toolbar: search + sort. Sits below the book info. */
 .br-reviews-modal-toolbar {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 8px;
+    padding: 16px 0 18px;
 }
 .br-reviews-modal-search,
 .br-reviews-modal-sort {
@@ -1922,15 +2000,18 @@ body[data-page="book-reviews"] .header {
 .br-reviews-modal-search:focus-within,
 .br-reviews-modal-sort:focus-within {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(122,31,43,.12);
+    box-shadow: 0 0 0 3px rgba(122,31,43,.10);
     background: var(--paper);
 }
-.br-reviews-modal-search { padding: 0 12px; min-height: 44px; }
+.br-reviews-modal-search {
+    padding: 0 12px;
+    min-height: 42px;
+}
 .br-reviews-modal-search svg {
-    width: 16px; height: 16px;
+    width: 15px; height: 15px;
     color: var(--text-subtle);
     flex: 0 0 auto;
-    margin-right: 10px;
+    margin-right: 9px;
 }
 .br-reviews-modal-search input {
     flex: 1 1 auto;
@@ -1938,21 +2019,20 @@ body[data-page="book-reviews"] .header {
     border: 0;
     background: transparent;
     font: inherit;
-    font-size: 14px;
+    font-size: 13.5px;
     color: var(--ink);
     padding: 10px 0;
     min-width: 0;
     outline: 0;
 }
 .br-reviews-modal-search input::placeholder { color: var(--text-subtle); }
-/* Suppress the native clear button — we render our own. */
 .br-reviews-modal-search input::-webkit-search-cancel-button { display: none; }
 .br-reviews-modal-search-clear {
     appearance: none;
     background: transparent;
     border: 0;
     padding: 6px;
-    margin-left: 6px;
+    margin-left: 4px;
     color: var(--text-subtle);
     cursor: pointer;
     border-radius: 6px;
@@ -1963,17 +2043,18 @@ body[data-page="book-reviews"] .header {
 .br-reviews-modal-search-clear[hidden] { display: none; }
 
 .br-reviews-modal-sort {
-    padding: 0 36px 0 14px;
-    min-height: 44px;
+    padding: 0 34px 0 12px;
+    min-height: 42px;
     cursor: pointer;
+    white-space: nowrap;
 }
 .br-reviews-modal-sort-label {
-    font-size: 11px;
+    font-size: 10.5px;
     letter-spacing: .14em;
     text-transform: uppercase;
     color: var(--text-subtle);
     font-weight: 600;
-    margin-right: 8px;
+    margin-right: 7px;
 }
 .br-reviews-modal-sort select {
     appearance: none;
@@ -1981,7 +2062,7 @@ body[data-page="book-reviews"] .header {
     background: transparent;
     border: 0;
     font: inherit;
-    font-size: 14px;
+    font-size: 13.5px;
     color: var(--ink);
     padding: 10px 0;
     outline: 0;
@@ -1989,8 +2070,8 @@ body[data-page="book-reviews"] .header {
 }
 .br-reviews-modal-sort-caret {
     position: absolute;
-    right: 12px; top: 50%;
-    width: 14px; height: 14px;
+    right: 10px; top: 50%;
+    width: 13px; height: 13px;
     color: var(--text-subtle);
     transform: translateY(-50%);
     pointer-events: none;
@@ -1998,21 +2079,32 @@ body[data-page="book-reviews"] .header {
 
 @media (max-width: 560px) {
     .br-reviews-modal-toolbar { grid-template-columns: 1fr; }
-    .br-reviews-modal-head { padding: 24px 22px 16px; }
-    .br-reviews-modal-head-grid { grid-template-columns: 60px 1fr; gap: 14px; }
-    .br-reviews-modal-cover { width: 60px; }
-    .br-reviews-modal-headline .br-modal-title { font-size: 21px; }
+    .br-reviews-modal-head { padding: 22px 20px 0; }
+    .br-reviews-modal-head::after { margin: 0 -20px; }
+    .br-reviews-modal-head-grid {
+        grid-template-columns: 64px 1fr;
+        gap: 14px;
+        padding-right: 0;
+    }
+    .br-reviews-modal-cover { width: 64px; }
+    .br-reviews-modal-headline .br-modal-title { font-size: 19px; }
+    .br-modal--reviews .br-modal-close {
+        position: relative;
+        top: auto; right: auto;
+        margin: -6px 0 12px auto;
+        display: flex;
+    }
 }
 
-/* Body — list area that scrolls inside the modal. */
+/* ---- Body — scrollable review list ---- */
 .br-reviews-modal-body {
-    padding: 18px 32px 28px;
+    padding: 0 28px 28px;
     overflow-y: auto;
     flex: 1 1 auto;
     -webkit-overflow-scrolling: touch;
 }
 @media (max-width: 560px) {
-    .br-reviews-modal-body { padding: 14px 22px 22px; }
+    .br-reviews-modal-body { padding: 0 20px 22px; }
 }
 
 .br-reviews-modal-list {
@@ -2021,119 +2113,177 @@ body[data-page="book-reviews"] .header {
     padding: 0;
     display: flex;
     flex-direction: column;
+    gap: 0;
 }
 
+/* Individual review card */
 .br-reviews-modal-item {
-    padding: 18px 0;
-    border-top: 1px solid var(--paper-line);
+    padding: 22px 0;
+    border-bottom: 1px solid var(--paper-line);
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    animation: br-reviews-modal-fadein .26s ease both;
+    gap: 10px;
+    animation: br-reviews-modal-fadein .28s cubic-bezier(.16,1,.3,1) both;
+    transition: background .18s ease;
 }
-.br-reviews-modal-list .br-reviews-modal-item:first-child {
-    border-top: 0;
-    padding-top: 6px;
-}
+.br-reviews-modal-item:last-child { border-bottom: 0; }
+/* Stagger entrance */
+.br-reviews-modal-item:nth-child(1) { animation-delay: .02s; }
+.br-reviews-modal-item:nth-child(2) { animation-delay: .06s; }
+.br-reviews-modal-item:nth-child(3) { animation-delay: .10s; }
+.br-reviews-modal-item:nth-child(4) { animation-delay: .14s; }
+.br-reviews-modal-item:nth-child(n+5) { animation-delay: .18s; }
+
 @keyframes br-reviews-modal-fadein {
-    from { opacity: 0; transform: translateY(4px); }
+    from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
     .br-reviews-modal-item { animation: none; }
 }
 
+/* Header row: rating pill + reviewer byline */
 .br-reviews-modal-item-head {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     flex-wrap: wrap;
 }
+
+/* Rating pill — wine accent, serif number */
 .br-reviews-modal-item-rating {
     display: inline-flex;
     align-items: baseline;
-    padding: 4px 11px;
+    padding: 5px 13px;
     background: rgba(122, 31, 43, 0.08);
-    border: 1px solid rgba(122, 31, 43, 0.18);
-    color: var(--accent-deep);
+    border: 1px solid rgba(122, 31, 43, 0.20);
+    color: var(--accent);
     border-radius: 999px;
     line-height: 1;
+    flex: 0 0 auto;
 }
 .br-reviews-modal-item-rating-num {
     font-family: 'Playfair Display', Georgia, serif;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
+    letter-spacing: -.01em;
+    color: var(--accent-deep);
 }
 .br-reviews-modal-item-rating small {
     font-size: 10px;
     font-weight: 500;
     margin-left: 2px;
-    opacity: .8;
+    opacity: .7;
+    color: var(--accent);
 }
 .br-reviews-modal-item-rating.is-unrated {
     background: var(--paper-off);
     color: var(--text-muted);
     border-color: var(--paper-line);
 }
+.br-reviews-modal-item-rating.is-unrated .br-reviews-modal-item-rating-num {
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 14px;
+}
+
+/* Visual rating bar under the pill */
+.br-reviews-modal-item-bar {
+    height: 3px;
+    border-radius: 999px;
+    background: var(--paper-line);
+    overflow: hidden;
+    margin-top: -4px;
+}
+.br-reviews-modal-item-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+    transition: width .5s cubic-bezier(.16,1,.3,1);
+}
+
+/* Reviewer name + date */
 .br-reviews-modal-item-byline {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     flex-wrap: wrap;
     font-size: 13px;
     color: var(--text-muted);
     min-width: 0;
+    flex: 1 1 auto;
 }
 .br-reviews-modal-item-byline strong {
     color: var(--ink);
     font-weight: 600;
+    font-size: 13.5px;
 }
 .br-reviews-modal-item-byline mark {
-    background: rgba(122, 31, 43, 0.18);
-    color: inherit;
-    padding: 0 2px;
-    border-radius: 2px;
+    background: rgba(122, 31, 43, 0.15);
+    color: var(--accent-deep);
+    padding: 1px 3px;
+    border-radius: 3px;
 }
 .br-reviews-modal-item-byline .br-dot {
     width: 3px; height: 3px;
     border-radius: 50%;
-    background: var(--text-subtle);
+    background: var(--paper-line);
     display: inline-block;
+    flex: 0 0 auto;
 }
+
+/* Review excerpt — clamped to 3 lines */
 .br-reviews-modal-item-blurb {
-    margin: 2px 0 4px;
-    font-size: 14.5px;
-    line-height: 1.6;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.65;
     color: var(--text);
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    opacity: .88;
 }
+
+/* "Read full review" CTA — styled as a subtle button */
 .br-reviews-modal-item-link {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     align-self: flex-start;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: .04em;
+    letter-spacing: .07em;
     text-transform: uppercase;
     color: var(--accent);
     text-decoration: none;
-    padding-bottom: 1px;
-    border-bottom: 1px solid rgba(122,31,43,.3);
-    transition: color .2s ease, border-color .2s ease, gap .2s ease;
+    padding: 7px 14px 7px 12px;
+    border: 1px solid rgba(122,31,43,.25);
+    border-radius: 999px;
+    background: rgba(122,31,43,.05);
+    transition: background .18s ease, color .18s ease, border-color .18s ease, gap .18s ease, box-shadow .18s ease;
+    margin-top: 2px;
 }
 .br-reviews-modal-item-link:hover {
+    background: rgba(122,31,43,.10);
     color: var(--accent-deep);
-    border-bottom-color: var(--accent-deep);
-    gap: 8px;
+    border-color: rgba(122,31,43,.4);
+    gap: 9px;
+    box-shadow: 0 2px 8px -2px rgba(122,31,43,.18);
 }
 .br-reviews-modal-item-link:focus-visible {
     outline: 2px solid var(--accent);
-    outline-offset: 3px;
-    border-radius: 2px;
+    outline-offset: 2px;
+    border-radius: 999px;
+}
+
+/* Empty state inside the list */
+.br-reviews-modal-empty {
+    padding: 40px 0;
+    text-align: center;
+    color: var(--text-subtle);
+    font-size: 14px;
+    font-style: italic;
 }
 
 .br-reviews-modal-empty {

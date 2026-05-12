@@ -1198,6 +1198,7 @@
         const reviewLink = r.id
             ? `/book-review/${encodeURIComponent(r.id)}`
             : r.link;
+        const barPct = hasRating ? Math.round((r.rating / 5) * 100) : 0;
         return `
             <li class="br-reviews-modal-item">
                 <div class="br-reviews-modal-item-head">
@@ -1209,10 +1210,11 @@
                         ${dateStr ? `<span class="br-dot"></span><span>${escapeHtml(dateStr)}</span>` : ''}
                     </div>
                 </div>
+                ${hasRating ? `<div class="br-reviews-modal-item-bar" aria-hidden="true"><div class="br-reviews-modal-item-bar-fill" style="width:${barPct}%"></div></div>` : ''}
                 ${blurb ? `<p class="br-reviews-modal-item-blurb">${escapeHtml(blurb)}</p>` : ''}
                 <a class="br-reviews-modal-item-link" href="${escapeHtml(reviewLink)}">
                     Read full review
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M5 12h14M13 5l7 7-7 7"/>
                     </svg>
                 </a>
