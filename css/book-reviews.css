@@ -1567,121 +1567,154 @@ body[data-page="book-reviews"] .header {
 
 /* =================================================================
    AGGREGATE CARD — community feed
-   Used when 2+ reader reviews share the same book. The card replaces
-   the usual <a> wrapper with a <div> (the cover is still a link to the
-   lead review). A stack-of-papers ::before behind the cover hints
-   visually that there's more than one review inside, and an expand
-   button reveals the individual reviews stacked below.
+   Used when 2+ reader reviews share the same book. Inherits the
+   standard .br-card silhouette so the card sits at the same height
+   and width as its neighbours in the grid (floating cover, body
+   below, no outer box). The only unique chrome:
+     • a stack-of-papers hint behind the cover signalling "more inside"
+     • a small "N readers" pill in the kicker row
+     • an inline expand button that reveals each individual review
    ================================================================= */
 .br-card-aggregate {
-    /* mirror .br-card defaults so layout + grid behavior is identical */
+    /* Match .br-card exactly — same grid span, same flex column,
+       same height behavior. No background/border/shadow on the card
+       wrapper itself; the cover floats and the text sits below. */
+    grid-column: span 4;
     position: relative;
-    display: block;
-    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     color: inherit;
-    background: var(--paper);
-    border: 1px solid var(--paper-line);
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 18px 36px -24px rgba(15,23,42,.22);
-    transition: transform .35s cubic-bezier(.16,1,.3,1),
-                box-shadow .35s ease,
-                border-color .25s ease;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transition: transform .5s cubic-bezier(.16,1,.3,1);
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(20px);
 }
 .br-card-aggregate.in-view { opacity: 1; transform: none; }
-.br-card-aggregate:hover {
-    transform: translateY(-4px);
-    border-color: var(--accent);
-    box-shadow: 0 24px 48px -22px rgba(122,31,43,.28);
-}
+.br-card-aggregate:hover { transform: translateY(-6px); }
 .br-card-aggregate.wide { grid-column: span 6; }
+@media (max-width: 960px) {
+    .br-card-aggregate, .br-card-aggregate.wide { grid-column: span 6; }
+}
+
+/* Cover frame — same proportions, contain-fit, and shadow as .br-card-media.
+   The stack-of-papers hint sits BEHIND this frame (negative z-index siblings)
+   so it peeks out from underneath, like a shelf of stacked books. */
 .br-card-aggregate-media {
     position: relative;
     display: block;
-    aspect-ratio: 3 / 4;
+    aspect-ratio: 2 / 3;
+    border-radius: 4px;
     overflow: hidden;
-    background: var(--paper-off);
+    background:
+        radial-gradient(circle at 50% 30%, rgba(239,233,218,.05), transparent 60%),
+        var(--ink-soft);
+    box-shadow:
+        0 20px 40px -16px rgba(14,17,23,.32),
+        0 0 0 1px rgba(14,17,23,.06);
+    margin-bottom: 24px;
+    z-index: 1;
 }
 .br-card-aggregate.wide .br-card-aggregate-media { aspect-ratio: 4 / 5; }
 .br-card-aggregate-media img {
+    position: absolute; inset: 0;
     width: 100%; height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
     opacity: 0;
-    transition: opacity .4s ease, transform .6s ease;
+    transition: opacity .4s ease, transform .8s cubic-bezier(.16,1,.3,1);
+    image-rendering: -webkit-optimize-contrast;
 }
 .br-card-aggregate-media img.loaded { opacity: 1; }
 .br-card-aggregate:hover .br-card-aggregate-media img { transform: scale(1.04); }
-/* Stacked-papers hint — three offset shadow planes peeking out from
-   behind the cover, signalling "there are more reviews inside". */
+
+/* Stacked-papers hint — two thin rectangles fanned slightly behind the
+   cover, suggesting "there are more reviews inside" without competing
+   with the cover artwork. */
 .br-card-aggregate-stack {
     position: absolute;
-    inset: 6px 0 0 0;
+    inset: 0;
     pointer-events: none;
     z-index: 0;
 }
 .br-card-aggregate-stack span {
     position: absolute;
-    inset: 4px 8px 0 8px;
-    border-radius: 6px 6px 0 0;
-    background: var(--paper-line);
+    inset: 6px -6px 18px -6px;
+    border-radius: 4px;
+    background: var(--paper);
+    border: 1px solid var(--paper-line);
     transform-origin: center bottom;
+    box-shadow: 0 16px 30px -18px rgba(14,17,23,.25);
 }
-.br-card-aggregate-stack span:nth-child(1) { transform: translateY(-6px) rotate(-1.4deg); opacity: .55; }
-.br-card-aggregate-stack span:nth-child(2) { transform: translateY(-10px) rotate(1deg);    opacity: .35; }
-.br-card-aggregate-stack span:nth-child(3) { transform: translateY(-14px) rotate(-.6deg);  opacity: .22; }
+.br-card-aggregate-stack span:nth-child(1) { transform: translate(-10px, 6px) rotate(-2.4deg); opacity: .85; }
+.br-card-aggregate-stack span:nth-child(2) { transform: translate(10px, 4px)  rotate(2deg);     opacity: .7;  }
+.br-card-aggregate-stack span:nth-child(3) { display: none; }
 
+/* Body — same shape as .br-card-body (flex column, fills remaining height) */
 .br-card-aggregate .br-card-body {
-    padding: 20px 22px 22px;
-}
-.br-card-aggregate-note {
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--text-muted);
-    margin: 8px 0 14px;
-}
-.br-card-aggregate-note strong {
-    color: var(--ink);
-    font-weight: 700;
+    padding-right: 8px;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
 }
 
-/* Expand/collapse button */
-.br-aggregate-toggle {
-    appearance: none;
+/* Tiny "N readers" pill in the kicker row — sits next to the rating. */
+.br-card-aggregate .br-card-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
     background: var(--paper-off);
     border: 1px solid var(--paper-line);
+    color: var(--text-muted);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.br-card-aggregate .br-card-pick svg { width: 11px; height: 11px; opacity: .75; }
+
+/* Expand/collapse button — flush, low-key, pushed to the bottom of the
+   card body so heights still line up with neighbouring single-review
+   cards (where .br-card-meta sits in the same place via margin-top:auto). */
+.br-aggregate-toggle {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--paper-line);
     color: var(--ink);
     width: 100%;
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 10px 14px;
-    border-radius: 10px;
+    padding: 14px 0 0;
+    margin-top: auto;
     font: inherit;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: .01em;
+    letter-spacing: .04em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition: background .2s ease, border-color .2s ease, color .2s ease;
-    min-height: 40px;
+    transition: color .2s ease;
+    min-height: 0;
 }
-.br-aggregate-toggle:hover {
-    background: var(--paper);
-    border-color: var(--accent);
-    color: var(--accent);
-}
+.br-aggregate-toggle:hover { color: var(--accent); }
 .br-aggregate-toggle:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 3px;
+    border-radius: 4px;
 }
 .br-aggregate-toggle-caret {
     width: 14px;
     height: 14px;
     transition: transform .25s cubic-bezier(.34, 1.56, .64, 1);
     flex: 0 0 auto;
+    opacity: .65;
 }
 .br-aggregate-toggle[aria-expanded="true"] .br-aggregate-toggle-caret {
     transform: rotate(-180deg);
@@ -1691,7 +1724,7 @@ body[data-page="book-reviews"] .header {
 .br-aggregate-reviews {
     list-style: none;
     padding: 0;
-    margin: 12px 0 0;
+    margin: 16px 0 0;
     display: flex;
     flex-direction: column;
     gap: 14px;

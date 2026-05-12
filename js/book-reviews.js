@@ -217,8 +217,11 @@
         const meta = parseBookMeta(article);
         // For community-approved reviews the admin pipeline already stores
         // structured fields (bookAuthor, rating). Prefer those over the
-        // heuristic dek parser when present.
-        const rating = (typeof raw.rating === 'number' && raw.rating >= 1 && raw.rating <= 5)
+        // heuristic dek parser when present. The submission API accepts
+        // ratings down to 0.5, so anything in [0.5, 5] is a real number
+        // and must NOT fall through to the heuristic extractor (which
+        // defaults to 4.2 and silently rewrites reader scores like 0.5).
+        const rating = (typeof raw.rating === 'number' && raw.rating >= 0.5 && raw.rating <= 5)
             ? raw.rating
             : extractRating(article);
         // Prefer the explicit `genre` field from Firestore (writer dropdown
@@ -615,9 +618,13 @@
     }
 
     // Aggregate card — used when 2+ community reviews share the same
-    // book. Surfaces the lead cover and combined rating (average), with
-    // an expand button that toggles the individual review list below.
-    // Single-review groups render through cardHtml() unchanged.
+    // book. Inherits the standard .br-card silhouette (floating cover,
+    // body below, no outer box) so it sits at the same height/width as
+    // its neighbours in the grid. Adds three small bits of unique chrome:
+    // a "stack of papers" hint behind the cover, a "N readers" pill in
+    // the kicker row, and an inline expand button that toggles the list
+    // of individual reviews. Single-review groups render through
+    // cardHtml() unchanged.
     const expandedGroups = new Set();
     function aggregateCardHtml(group, variant) {
         const lead = group.lead;
@@ -637,7 +644,7 @@
         const ratingDisplay = avg != null
             ? `${avg.toFixed(1)}<small>/5</small>`
             : '—';
-        const reviewerWord = group.count === 1 ? 'reader' : 'readers';
+        const readersLabel = `${group.count} ${group.count === 1 ? 'reader' : 'readers'}`;
 
         const isOpen = expandedGroups.has(group.key);
 
@@ -679,41 +686,38 @@
                    href="${escapeHtml(lead.link)}"
                    aria-label="Open the top review of ${escapeHtml(lead.bookTitle)}"
                    ${needsIsbnBackfill ? `data-isbn="${escapeHtml(lead.isbn)}"` : ''}>
+                    <span class="br-card-aggregate-stack" aria-hidden="true">
+                        <span></span><span></span>
+                    </span>
                     <img src="${escapeHtml(imgSrc)}"
                          alt="Cover of ${escapeHtml(lead.bookTitle)}"
                          loading="lazy" decoding="async"
                          onload="this.classList.add('loaded')"
                          onerror="${imageOnErrorAttr(raw, imgSrc)}">
                     <span class="br-card-genre">${escapeHtml(GENRE_LABEL[lead.genre] || 'STEM')}</span>
-                    <span class="br-card-aggregate-stack" aria-hidden="true">
-                        <span></span><span></span><span></span>
-                    </span>
                 </a>
                 <div class="br-card-body">
                     <div class="br-card-kicker">
-                        <span class="br-card-rating" aria-label="Average rating ${avg != null ? avg.toFixed(1) : 'unrated'} out of 5">
+                        <span class="br-card-rating" aria-label="Average rating ${avg != null ? avg.toFixed(1) : 'unrated'} out of 5 from ${group.count} readers">
                             ${ratingDisplay}
                         </span>
-                        <span class="br-card-pick">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M20 12l-1.42-1.42M12 4V2M5.42 5.42L4 4M2 12h2M4 20l1.42-1.42M22 12h-2M20 4l-1.42 1.42M12 20v2"/>
-                                <circle cx="12" cy="12" r="4"/>
+                        <span class="br-card-pick" aria-label="${readersLabel}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
                             </svg>
-                            ${group.count} ${reviewerWord}
+                            ${readersLabel}
                         </span>
                     </div>
                     <h3 class="br-card-book">${escapeHtml(lead.bookTitle)}</h3>
                     ${lead.bookAuthor ? `<p class="br-card-author">by ${escapeHtml(lead.bookAuthor)}</p>` : ''}
-                    <p class="br-card-aggregate-note">
-                        Reviewed by <strong>${group.count}</strong> Catalyzers. Average
-                        rating <strong>${avg != null ? avg.toFixed(1) : '—'}/5</strong>.
-                    </p>
                     <button type="button"
                             class="br-aggregate-toggle"
                             data-group-key="${escapeHtml(group.key)}"
                             aria-expanded="${isOpen ? 'true' : 'false'}">
                         <span class="br-aggregate-toggle-label">
-                            ${isOpen ? 'Hide individual reviews' : `See all ${group.count} reviews`}
+                            ${isOpen ? 'Hide reviews' : `See all ${group.count} reviews`}
                         </span>
                         <svg class="br-aggregate-toggle-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <polyline points="6 9 12 15 18 9"/>
