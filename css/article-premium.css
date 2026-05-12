@@ -122,11 +122,16 @@ body[data-page="article"] .article-page > .container { max-width: none; padding:
 }
 
 /* --- Back link ------------------------------------------------------------- */
+/* Back-link sits BELOW the floating header pill so the two never
+   overlap. Previously this was position: fixed at top: 22px which
+   collided with the magazine nav (also fixed, top: 12px, ~64px tall).
+   Now it scrolls with the page and lives in the article gutter — the
+   header takes care of "back to magazine" duties at the top, this
+   pill handles the more specific "back to /book-reviews" trip. */
 body[data-page="article"] .back-link {
-  position: fixed;
-  top: 22px;
-  left: 28px;
-  z-index: 50;
+  position: relative;
+  margin: 104px 0 24px 28px;
+  z-index: 5;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -147,6 +152,13 @@ body[data-page="article"] .back-link {
 body[data-page="article"] .back-link:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+@media (max-width: 700px) {
+  body[data-page="article"] .back-link {
+    margin: 88px 0 16px 16px;
+    font-size: 12.5px;
+    padding: 9px 13px;
+  }
 }
 
 /* --- Article detail shell ------------------------------------------------- */
@@ -783,7 +795,6 @@ body[data-page="article"] .back-link:hover {
     max-width: 100%;
   }
   .article-body-wrap { padding: 48px 22px 64px; }
-  body[data-page="article"] .back-link { top: 14px; left: 14px; }
   .article-body .pull-quote { font-size: 1.4rem; margin: 40px 0; }
 }
 @media (max-width: 600px) {
