@@ -964,7 +964,12 @@ button { font-family: inherit; cursor: pointer; }
   --compose-ink-muted: #6e6e73;
   --compose-ink-faint: #a1a1a6;
   --compose-line: #e6e6e6;
-  max-width: 1180px;
+  /* Was 1180. Now caps at 1320 so the article canvas breathes on
+     normal-laptop and desktop widths — the dashboard rail leaves
+     ~1500–1700px usable on a 1800px viewport, so 1180 was leaving a
+     visible gap on each side. min(95vw, …) guarantees we still
+     respect the parent .content padding on narrow screens. */
+  max-width: min(95vw, 1320px);
   margin: -12px auto 40px;
   position: relative;
 }
@@ -978,18 +983,18 @@ button { font-family: inherit; cursor: pointer; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 18px;
-  margin-bottom: 18px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: saturate(180%) blur(12px);
-  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  padding: 12px 22px;
+  margin-bottom: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
   border: 1px solid var(--hairline);
   border-radius: 999px;
   box-shadow: var(--shadow-sm);
   font-family: var(--compose-sans);
 }
 .compose-bar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.compose-bar-right { display: flex; align-items: center; gap: 8px; }
+.compose-bar-right { display: flex; align-items: center; gap: 6px; }
 .compose-eyebrow {
   font-size: 11px;
   letter-spacing: 0.16em;
@@ -1001,65 +1006,86 @@ button { font-family: inherit; cursor: pointer; }
 .compose-status.saving { color: var(--warn); }
 .compose-status.saved { color: var(--good); }
 
-/* ---------- formatting toolbar ---------- */
+/* ---------- formatting toolbar ----------
+   Goal: read like a Google Docs / Notion ribbon, not a chip stuck on
+   the page. Full-width band with subtle group dividers, integrated
+   into the page rather than floating above it. The previous design
+   used `width: max-content` which collapsed it to a small centered
+   pill that felt detached from the wide article canvas underneath. */
 .rt-toolbar {
   position: sticky;
-  top: calc(var(--top-h) + 74px);
+  top: calc(var(--top-h) + 70px);
   z-index: 25;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
-  padding: 6px;
+  gap: 4px;
+  padding: 8px 14px;
   background: var(--compose-paper);
   border: 1px solid var(--hairline);
   border-radius: 14px;
-  box-shadow: var(--shadow-md);
-  width: max-content;
-  max-width: 100%;
-  margin: 0 auto 22px;
+  box-shadow: 0 1px 0 rgba(15,23,42,0.04), 0 12px 28px -16px rgba(15,23,42,0.18);
+  /* Span the full canvas width instead of shrinking to content. */
+  width: 100%;
+  margin: 0 0 18px;
   font-family: var(--compose-sans);
 }
 .rt-group {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 0 6px;
+  padding: 0 10px;
+  /* Single hairline divider with proper visual spacing on either side
+     — the previous 1px right border looked like a glitch at small
+     button counts. */
   border-right: 1px solid var(--hairline-2);
 }
-.rt-group:last-child { border-right: 0; }
+.rt-group:first-child { padding-left: 4px; }
+.rt-group:last-child { border-right: 0; padding-right: 4px; }
 .rt-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: var(--ink-2);
   font-size: 14px;
-  transition: background 0.12s, color 0.12s, transform 0.12s;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
 }
-.rt-btn:hover { background: var(--surface-3); transform: translateY(-1px); }
+.rt-btn:hover { background: var(--surface-3); color: var(--ink); transform: none; }
+.rt-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .rt-btn.active { background: var(--accent-soft); color: var(--accent); }
 .rt-btn.rt-btn-wide {
   width: auto;
   gap: 6px;
-  padding: 0 12px;
+  padding: 0 14px;
+  height: 36px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-soft);
+  /* Subtler treatment than before — was filled accent-soft + accent
+     text, which made these dominate the toolbar. Now ghost-style
+     with an accent hover, so the formatting controls stay visually
+     primary and these stay secondary. */
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--hairline);
 }
 .rt-btn.rt-btn-wide:hover {
   background: var(--accent);
   color: #fff;
+  border-color: var(--accent);
 }
 .rt-select {
-  height: 32px;
-  padding: 0 10px;
+  height: 34px;
+  padding: 0 12px;
   border-radius: 8px;
   border: 1px solid var(--hairline);
   background: var(--compose-paper);
@@ -1068,8 +1094,14 @@ button { font-family: inherit; cursor: pointer; }
   font-weight: 600;
   outline: none;
   cursor: pointer;
+  transition: border-color 0.12s ease;
 }
 .rt-select:hover { border-color: var(--muted-2); }
+.rt-select:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 
 /* ---------- the article canvas (looks like a published piece) ---------- */
 .compose-article {
@@ -1269,22 +1301,29 @@ button { font-family: inherit; cursor: pointer; }
 /* body */
 .compose-body-wrap {
   background: var(--compose-paper);
-  padding: 56px clamp(24px, 4vw, 56px) 80px;
+  padding: 56px clamp(28px, 4.5vw, 72px) 88px;
   position: relative;
 }
 .compose-body {
-  max-width: 880px;
+  /* Bumped from 880 → 940. Still well within the ~75-char readable
+     line-length sweet spot for a 19px serif (≈ 65-70 chars per line),
+     just less cramped now that the surrounding canvas is wider. */
+  max-width: 940px;
   margin: 0 auto;
   font-family: var(--compose-serif);
-  font-size: 20px;
+  font-size: 19.5px;
   line-height: 1.75;
   color: var(--compose-ink-soft);
   letter-spacing: -0.003em;
   outline: none;
-  min-height: 360px;
+  min-height: 420px;
+  /* Caret feedback like a real word processor — soft warm cursor
+     instead of the default hairline. */
+  caret-color: var(--accent);
   position: relative;
   z-index: 1;
 }
+.compose-body:focus { outline: none; }
 .compose-body:empty::before {
   content: attr(data-placeholder);
   color: var(--compose-ink-faint);
@@ -1726,6 +1765,14 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* ---------- responsive ---------- */
+@media (max-width: 980px) {
+  /* Toolbar groups feel cramped on tablet widths — let dividers
+     breathe a little less so all the controls still fit on one row. */
+  .rt-toolbar { padding: 6px 10px; }
+  .rt-group { padding: 0 6px; }
+  .rt-btn { width: 32px; height: 32px; }
+  .rt-btn.rt-btn-wide { padding: 0 10px; height: 32px; font-size: 12px; }
+}
 @media (max-width: 720px) {
   .compose { margin-top: 0; }
   .compose-bar { border-radius: 14px; padding: 10px 14px; }

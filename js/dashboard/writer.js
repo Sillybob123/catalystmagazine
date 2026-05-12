@@ -129,10 +129,10 @@ function mountDraftEditor(ctx, container) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 6v14a2 2 0 0 0 2 2h10"/></svg>
           <span>Paste from Google Doc</span>
         </button>
-        <button class="rt-btn rt-btn-wide" data-action="quiz" title="Add a 3-question knowledge quiz to the end of the article">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span>Add quiz</span>
-        </button>
+        <!-- "Add quiz" entry point removed per editorial direction. The
+             public renderer + the data-action="quiz" handler still exist
+             so older articles with quizzes keep rendering; we just don't
+             surface a way to insert a new one from the composer. -->
       </div>
       <div class="rt-group">
         <button class="rt-btn" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">
