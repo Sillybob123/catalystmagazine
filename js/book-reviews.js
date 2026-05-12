@@ -221,9 +221,20 @@
         // ratings down to 0.5, so anything in [0.5, 5] is a real number
         // and must NOT fall through to the heuristic extractor (which
         // defaults to 4.2 and silently rewrites reader scores like 0.5).
-        const rating = (typeof raw.rating === 'number' && raw.rating >= 0.5 && raw.rating <= 5)
+        //
+        // For community picks, the only trustworthy rating source is
+        // raw.rating — there is no review-body text to mine for an
+        // "X/5" signal. If raw.rating is missing, treat the review as
+        // UNRATED instead of inventing 4.2; otherwise a real 0.5 score
+        // that was previously stored as null (older decide.js bug) ends
+        // up displayed as the heuristic default.
+        const storedRating = (typeof raw.rating === 'number' && raw.rating >= 0.5 && raw.rating <= 5)
             ? raw.rating
-            : extractRating(article);
+            : null;
+        const isCommunity = community;
+        const rating = storedRating != null
+            ? storedRating
+            : (isCommunity ? null : extractRating(article));
         // Prefer the explicit `genre` field from Firestore (writer dropdown
         // / public submission form) over the heuristic keyword detector.
         // The detector is a fallback for legacy reviews that pre-date the
@@ -600,9 +611,13 @@
                 </div>
                 <div class="br-card-body">
                     <div class="br-card-kicker">
-                        <span class="br-card-rating" aria-label="Rated ${review.rating.toFixed(1)} out of 5">
-                            ${review.rating.toFixed(1)}<small>/5</small>
-                        </span>
+                        ${typeof review.rating === 'number'
+                            ? `<span class="br-card-rating" aria-label="Rated ${review.rating.toFixed(1)} out of 5">
+                                    ${review.rating.toFixed(1)}<small>/5</small>
+                               </span>`
+                            : `<span class="br-card-rating br-card-rating-unrated" aria-label="Unrated">
+                                    —<small>/5</small>
+                               </span>`}
                         ${pickBadge}
                     </div>
                     <h3 class="br-card-book">${escapeHtml(review.bookTitle)}</h3>

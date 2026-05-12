@@ -140,7 +140,11 @@ export const onRequestPost = async ({ request, env }) => {
       dek,
       content: reviewBodyHtml,
       body: reviewBodyHtml,
-      rating: (typeof sub.rating === "number" && sub.rating >= 1 && sub.rating <= 5) ? sub.rating : null,
+      // submit.js accepts ratings down to 0.5, so the approved story must
+      // preserve the same lower bound. Gating on `>= 1` here silently
+      // rewrites a reader's 0.5 to null, which then renders as the public
+      // renderer's heuristic default (4.2) — i.e. completely wrong.
+      rating: (typeof sub.rating === "number" && sub.rating >= 0.5 && sub.rating <= 5) ? sub.rating : null,
       isbn: String(sub.isbn || "").slice(0, 32),
       bookAuthor: String(sub.bookAuthor || "").slice(0, 200),
       genre,
