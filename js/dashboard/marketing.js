@@ -119,75 +119,238 @@ function renderGrowthChart(wrapper, series) {
     return;
   }
 
-  // SVG geometry. Use a viewBox so it scales — actual pixel size is set
-  // by CSS on the wrapper. Width is generous so x-axis labels never overlap.
-  const W = 760, H = 260;
-  const pad = { top: 16, right: 14, bottom: 38, left: 36 };
-  const plotW = W - pad.left - pad.right;
-  const plotH = H - pad.top - pad.bottom;
-
-  // Y axis: ceil the max to a "nice" round number so gridlines land on integers.
-  const yMax = niceMax(peakCount);
-  const yTicks = niceTicks(yMax, 4);
-
-  const n = series.length;
-  const gap = 4;
-  const barW = Math.max(2, (plotW - gap * (n - 1)) / n);
-
-  const x = (i) => pad.left + i * (barW + gap);
-  const y = (v) => pad.top + plotH - (v / (yMax || 1)) * plotH;
-
-  // 7-day rolling average — gives a smooth trend line over the noisy bars.
   const rolling = series.map((_, i) => {
     const lo = Math.max(0, i - 6);
     const slice = counts.slice(lo, i + 1);
     return slice.reduce((a, b) => a + b, 0) / slice.length;
   });
+  const cumulative = counts.reduce((acc, count, i) => {
+    acc.push((acc[i - 1] || 0) + count);
+    return acc;
+  }, []);
+  const rows = series.map((d, i) => {
+    const date = dateOnly(d.date);
+    const count = d.count || 0;
+    const prev = i > 0 ? counts[i - 1] : null;
+    return {
+      date: d.date,
+      count,
+      rolling: rolling[i] || 0,
+      cumulative: cumulative[i] || count,
+      change: prev == null ? null : count - prev,
+      weekday: DOW[date.getDay()],
+      isPeak: count === peakCount && count > 0 && i === peakIdx,
+    };
+  });
+
+  // SVG geometry. Use a viewBox so it scales with the card but keeps exact
+  // coordinates for hit targets, tooltip positioning, and keyboard focus.
+  const W = 860, H = 300;
+  const pad = { top: 18, right: 20, bottom: 46, left: 44 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+
+  const n = series.length;
+  const step = plotW / n;
+  const barW = Math.max(5, Math.min(20, step * 0.58));
+  const xCenter = (i) => pad.left + step * i + step / 2;
+  const x = (i) => xCenter(i) - barW / 2;
+  const baseline = pad.top + plotH;
+  const yMax = niceMax(Math.max(peakCount, ...rolling));
+  const yTicks = niceTicks(yMax, 4);
+  const y = (v) => pad.top + plotH - (v / (yMax || 1)) * plotH;
 
   const linePath = rolling.map((v, i) => {
-    const cx = x(i) + barW / 2;
+    const cx = xCenter(i);
     const cy = y(v);
     return `${i === 0 ? "M" : "L"} ${cx.toFixed(1)} ${cy.toFixed(1)}`;
   }).join(" ");
+  const areaPath = linePath
+    ? `${linePath} L ${xCenter(n - 1).toFixed(1)} ${baseline.toFixed(1)} L ${xCenter(0).toFixed(1)} ${baseline.toFixed(1)} Z`
+    : "";
 
   // Date labels — show every ~5th day so the axis doesn't crowd.
   const labelStep = Math.max(1, Math.ceil(n / 6));
 
   const gridLines = yTicks.map((t) => {
     const gy = y(t);
-    return `<line x1="${pad.left}" y1="${gy.toFixed(1)}" x2="${(W - pad.right).toFixed(1)}" y2="${gy.toFixed(1)}" stroke="var(--surface-3)" stroke-width="1"/>` +
-      `<text x="${pad.left - 8}" y="${(gy + 3).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="Inter,system-ui,sans-serif">${t}</text>`;
+    return `<line class="growth-grid-line" x1="${pad.left}" y1="${gy.toFixed(1)}" x2="${(W - pad.right).toFixed(1)}" y2="${gy.toFixed(1)}"/>` +
+      `<text class="growth-axis-label" x="${pad.left - 10}" y="${(gy + 3).toFixed(1)}" text-anchor="end">${t}</text>`;
   }).join("");
 
-  const bars = series.map((d, i) => {
-    const v = d.count || 0;
+  const bars = rows.map((d, i) => {
+    const v = d.count;
     const bx = x(i);
     const by = y(v);
-    const bh = Math.max(v > 0 ? 2 : 0, pad.top + plotH - by);
-    const isPeak = v === peakCount && v > 0 && i === peakIdx;
-    return `<rect class="growth-bar${isPeak ? " growth-bar-peak" : ""}" x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="2" data-date="${esc(d.date)}" data-count="${v}"><title>${esc(fmtChartDate(d.date))}: ${v} signup${v === 1 ? "" : "s"}</title></rect>`;
+    const bh = Math.max(v > 0 ? 3 : 0, baseline - by);
+    return `<rect class="growth-bar${d.isPeak ? " growth-bar-peak" : ""}" data-index="${i}" x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4"/>`;
+  }).join("");
+
+  const hitZones = rows.map((d, i) => {
+    const hx = pad.left + step * i;
+    return `<rect class="growth-hit" tabindex="0" role="button" aria-label="${esc(fmtFullChartDate(d.date))}: ${d.count} signup${d.count === 1 ? "" : "s"}" data-index="${i}" x="${hx.toFixed(1)}" y="${pad.top}" width="${step.toFixed(1)}" height="${plotH}"/>`;
+  }).join("");
+
+  const avgDots = rows.map((d, i) => {
+    if (i % 3 !== 0 && i !== n - 1 && !d.isPeak) return "";
+    return `<circle class="growth-line-dot" cx="${xCenter(i).toFixed(1)}" cy="${y(d.rolling).toFixed(1)}" r="2.2"/>`;
   }).join("");
 
   const xLabels = series.map((d, i) => {
     if (i % labelStep !== 0 && i !== n - 1) return "";
-    const cx = x(i) + barW / 2;
-    return `<text x="${cx.toFixed(1)}" y="${(H - pad.bottom + 16).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Inter,system-ui,sans-serif">${esc(shortDate(d.date))}</text>`;
+    return `<text class="growth-axis-label" x="${xCenter(i).toFixed(1)}" y="${(H - pad.bottom + 22).toFixed(1)}" text-anchor="middle">${esc(shortDate(d.date))}</text>`;
   }).join("");
 
-  // 7-day trend line legend label sits below the chart so the line itself
-  // doesn't need a key floating inside the plot area.
   chartEl.innerHTML = `
-    <div class="growth-chart-legend">
-      <span class="growth-legend-item"><span class="growth-legend-swatch growth-legend-swatch-bar"></span>Daily signups</span>
-      <span class="growth-legend-item"><span class="growth-legend-swatch growth-legend-swatch-line"></span>7-day rolling avg</span>
-      <span class="growth-legend-item" style="margin-left:auto;">${total} total over ${n} days</span>
+    <div class="growth-chart-toolbar">
+      <div class="growth-chart-legend">
+        <span class="growth-legend-item"><span class="growth-legend-swatch growth-legend-swatch-bar"></span>Daily signups</span>
+        <span class="growth-legend-item"><span class="growth-legend-swatch growth-legend-swatch-line"></span>7-day rolling avg</span>
+      </div>
+      <div class="growth-total-pill">${fmtWhole(total)} total over ${n} days</div>
     </div>
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="30-day signup growth chart">
-      <g>${gridLines}</g>
-      <g>${bars}</g>
-      <path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/>
-      <g>${xLabels}</g>
-    </svg>`;
+    <div class="growth-chart-stage">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Interactive 30-day signup growth chart">
+        <defs>
+          <linearGradient id="growth-area-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.14"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <g>${gridLines}</g>
+        <g>${bars}</g>
+        ${areaPath ? `<path class="growth-area" d="${areaPath}"/>` : ""}
+        <path class="growth-line" d="${linePath}"/>
+        <g>${avgDots}</g>
+        <line class="growth-crosshair" x1="0" x2="0" y1="${pad.top}" y2="${baseline}" hidden/>
+        <circle class="growth-selected-dot" r="4.5" hidden/>
+        <g>${xLabels}</g>
+        <g>${hitZones}</g>
+      </svg>
+      <div class="growth-tooltip" hidden></div>
+    </div>
+    <div class="growth-day-panel" id="growth-day-panel"></div>`;
+
+  const stage = chartEl.querySelector(".growth-chart-stage");
+  const tooltip = chartEl.querySelector(".growth-tooltip");
+  const panel = chartEl.querySelector("#growth-day-panel");
+  const crosshair = chartEl.querySelector(".growth-crosshair");
+  const selectedDot = chartEl.querySelector(".growth-selected-dot");
+  const barEls = Array.from(chartEl.querySelectorAll(".growth-bar"));
+  const hitEls = Array.from(chartEl.querySelectorAll(".growth-hit"));
+  let lockedIdx = peakIdx >= 0 ? peakIdx : n - 1;
+
+  const showDay = (idx, showTooltip = false) => {
+    const d = rows[idx];
+    if (!d) return;
+    const cx = xCenter(idx);
+    const barY = y(d.count);
+    const lineY = y(d.rolling);
+    barEls.forEach((bar) => bar.classList.toggle("is-selected", Number(bar.dataset.index) === idx));
+    hitEls.forEach((hit) => hit.classList.toggle("is-selected", Number(hit.dataset.index) === idx));
+    crosshair?.removeAttribute("hidden");
+    selectedDot?.removeAttribute("hidden");
+    if (crosshair) {
+      crosshair.setAttribute("x1", cx.toFixed(1));
+      crosshair.setAttribute("x2", cx.toFixed(1));
+    }
+    if (selectedDot) {
+      selectedDot.setAttribute("cx", cx.toFixed(1));
+      selectedDot.setAttribute("cy", lineY.toFixed(1));
+    }
+    if (panel) {
+      panel.innerHTML = growthDayPanelHtml(d, avg, peakCount);
+    }
+    if (showTooltip && tooltip && stage) {
+      tooltip.innerHTML = growthTooltipHtml(d, avg, peakCount);
+      const stageBox = stage.getBoundingClientRect();
+      const svgBox = stage.querySelector("svg").getBoundingClientRect();
+      const sx = svgBox.width / W;
+      const sy = svgBox.height / H;
+      const left = (svgBox.left - stageBox.left) + cx * sx;
+      const top = (svgBox.top - stageBox.top) + Math.min(barY, lineY) * sy;
+      tooltip.style.left = `${Math.max(12, Math.min(stageBox.width - 230, left + 12))}px`;
+      tooltip.style.top = `${Math.max(12, top - 18)}px`;
+      tooltip.hidden = false;
+    }
+  };
+
+  hitEls.forEach((hit) => {
+    const idx = Number(hit.dataset.index);
+    hit.addEventListener("mouseenter", () => showDay(idx, true));
+    hit.addEventListener("mousemove", () => showDay(idx, true));
+    hit.addEventListener("focus", () => showDay(idx, true));
+    hit.addEventListener("click", () => {
+      lockedIdx = idx;
+      showDay(idx, true);
+    });
+    hit.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        lockedIdx = idx;
+        showDay(idx, true);
+      }
+    });
+    hit.addEventListener("mouseleave", () => {
+      if (tooltip) tooltip.hidden = true;
+      showDay(lockedIdx, false);
+    });
+    hit.addEventListener("blur", () => {
+      if (tooltip) tooltip.hidden = true;
+      showDay(lockedIdx, false);
+    });
+  });
+  showDay(lockedIdx, false);
+}
+
+function growthTooltipHtml(d, avg, peakCount) {
+  return `
+    <div class="growth-tooltip-title">${esc(fmtFullChartDate(d.date))}</div>
+    <div class="growth-tooltip-grid">
+      <span><strong>${fmtWhole(d.count)}</strong>Signups</span>
+      <span><strong>${d.rolling.toFixed(1)}</strong>7-day avg</span>
+      <span><strong>${fmtChange(d.change)}</strong>vs. prior day</span>
+      <span><strong>${fmtWhole(d.cumulative)}</strong>Cumulative</span>
+    </div>
+    <div class="growth-tooltip-note">${esc(dayInsight(d, avg, peakCount))}</div>`;
+}
+
+function growthDayPanelHtml(d, avg, peakCount) {
+  return `
+    <div>
+      <div class="growth-day-kicker">Selected day</div>
+      <div class="growth-day-title">${esc(fmtFullChartDate(d.date))}</div>
+      <div class="growth-day-note">${esc(dayInsight(d, avg, peakCount))}</div>
+    </div>
+    <div class="growth-day-grid">
+      <span><strong>${fmtWhole(d.count)}</strong>Signups</span>
+      <span><strong>${d.rolling.toFixed(1)}</strong>7-day avg</span>
+      <span><strong>${fmtChange(d.change)}</strong>vs. prior day</span>
+      <span><strong>${fmtWhole(d.cumulative)}</strong>Running total</span>
+    </div>`;
+}
+
+function dayInsight(d, avg, peakCount) {
+  if (d.isPeak) return `Peak day: ${fmtWhole(d.count)} signup${d.count === 1 ? "" : "s"}, ${compareToAvg(d.count, avg)}.`;
+  if (d.count === 0) return `No new signups recorded on this ${d.weekday}.`;
+  return `${fmtWhole(d.count)} signup${d.count === 1 ? "" : "s"} on ${d.weekday}, ${compareToAvg(d.count, avg)}.`;
+}
+
+function compareToAvg(count, avg) {
+  if (!avg) return "with no 30-day average yet";
+  const diff = count - avg;
+  if (Math.abs(diff) < 0.05) return "right at the 30-day average";
+  return `${Math.abs(diff).toFixed(1)} ${diff > 0 ? "above" : "below"} the 30-day average`;
+}
+
+function fmtWhole(value) {
+  return Math.round(Number(value) || 0).toLocaleString();
+}
+
+function fmtChange(value) {
+  if (value == null) return "—";
+  if (value === 0) return "0";
+  return `${value > 0 ? "+" : ""}${fmtWhole(value)}`;
 }
 
 function dateOnly(yyyyMmDd) {
@@ -205,6 +368,11 @@ function shortDate(yyyyMmDd) {
 function fmtChartDate(yyyyMmDd) {
   const d = dateOnly(yyyyMmDd);
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+function fmtFullChartDate(yyyyMmDd) {
+  const d = dateOnly(yyyyMmDd);
+  return d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric", year: "numeric" });
 }
 
 // Round a max value up to a "nice" axis cap so gridlines fall on whole numbers.
