@@ -1568,8 +1568,8 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
         const place = [r.city, r.region].filter(Boolean).join(", ") || countryName(r.country);
         const country = countryName(r.country).replace(/^[^\w]+ /, "");
         const label = r.city && r.city !== "Unknown city" ? shortMapLabel(r.city) : (r.country || "");
-        const radius = 5 + Math.sqrt(views / maxClicks) * 17;
-        const pulse = 10 + Math.sqrt(views / maxImpr) * 28;
+        const radius = 4 + Math.sqrt(views / maxClicks) * 12;
+        const pulse = 8 + Math.sqrt(views / maxImpr) * 20;
         return {
           ...r,
           code: r.country || "",
