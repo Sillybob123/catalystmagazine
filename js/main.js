@@ -3920,7 +3920,7 @@ const teamMembers = [
         name: "Yair Ben-Dor",
         role: "Co-Founder, Editor-in-Chief, Website Developer",
         bio: "Yair is a recent summa cum laude graduate from George Washington University with a B.S. in Cellular and Molecular Biology and a minor in Chemistry. A DMV local, Yair is passionate about using STEM as a unifying force to make research accessible and collaborative across D.C. institutions and universities. His interests lie in how STEM provides an evidence-based framework for understanding the world, turning scientific curiosity into real-world impact. He is currently applying to medical schools with the aim of becoming a physician.",
-        image: "/YairCatalyst.png",
+        image: "/YairCatalyst.webp",
         linkedin: "",
         email: ""
     },
@@ -3928,7 +3928,7 @@ const teamMembers = [
         name: "Aidan Schurr",
         role: "Co-Founder, Editor-in-Chief",
         bio: "Aidan is a third year at George Washington University pursuing a B.S. in Biomedical Engineering and Pre-Med Studies. As an engineer interested in medicine, Aidan finds his interests spanning every letter in STEM, with experience in a diverse set of research labs, from clinical Alzheimer's care to machine learning development. For Aidan, The Catalyst represents the best aspects of DC: cross-disciplinary, impact driven, and far reaching. Beyond campus, he has worked alongside policymakers, lawyers, and scientists, to utilize science communication in driving global change.",
-        image: "/AidanCatalyst1.png",
+        image: "/AidanCatalyst1.webp",
         linkedin: "",
         email: ""
     },
@@ -3936,7 +3936,7 @@ const teamMembers = [
         name: "Lori Preci",
         role: "Managing Editor, Writer",
         bio: "Lori is pursuing a masters in biotechnology at Johns Hopkins University, and is also a recent George Washington University graduate with a dual degree in Cellular and Molecular Biology and Chemistry. Her interest in STEM emerged in her sophomore year at GWU as a Biochemistry Lab research assistant, where she witnessed interdisciplinary collaboration happening behind the scenes without any public recognition. Lori views The Catalyst as a bridge between the disconnect in scientific fields, and has the goal of making research more accessible and sparking curiosity in STEM.",
-        image: "/LoriCatalyst.png",
+        image: "/LoriCatalyst.webp",
         linkedin: "",
         email: ""
     },
@@ -3944,7 +3944,7 @@ const teamMembers = [
         name: "Naama Ben-Dor",
         role: "Senior Writer, Editor, Media Specialist",
         bio: "Naama is a senior at Georgetown University majoring in Neurobiology with minors in Chemistry and Jewish Civilization. As the creative spark behind The Catalyst Magazine, she handles digital content and outreach, all while writing some of the magazine's most unexpected and entertaining pieces. Naama is drawn to science to understand not only how the world works but why, and deeply values the relatable nature of science journalism as a mechanism to learn about STEM.",
-        image: "/NaamaCatalyst.png",
+        image: "/NaamaCatalyst.webp",
         linkedin: "",
         email: ""
     },
@@ -3952,7 +3952,7 @@ const teamMembers = [
         name: "Le Nguyen",
         role: "Writer",
         bio: "Le is a recent George Washington University graduate with a degree in Neuroscience, a minor in Creative Writing, and summa cum laude honors. With extensive research experience spanning neurodevelopment, cardiology, and pulmonary medicine at institutions including GWU School of Medicine, Johns Hopkins, and Minneapolis Heart Institute, Le brings a unique blend of scientific rigor and narrative skill to The Catalyst. Currently in his gap year working as an IR Medical Assistant at Beth Israel Deaconess Medical Center, Le is passionate about the intersections of medicine, research, and health equity as he prepares to pursue medical school.",
-        image: "/Le.png",
+        image: "/Le.webp",
         linkedin: "",
         email: ""
     },
@@ -3960,7 +3960,7 @@ const teamMembers = [
         name: "Ginger Taurek",
         role: "Writer",
         bio: "Ginger is a third-year student at George Washington University School of Business studying Entrepreneurship and Innovation with a minor in Sustainability. Her interests in STEM and journalism come from a passion for wildlife conservation, global sustainability, and measures to implement climate resilience and sustainable development on a global scale. Deeply interested in storytelling and science communication, Ginger strives to connect science and policy with public awareness.",
-        image: "/Ginger.png",
+        image: "/Ginger.webp",
         linkedin: "",
         email: ""
     },
@@ -3968,7 +3968,7 @@ const teamMembers = [
         name: "Aidan Brown",
         role: "Writer",
         bio: "Aidan is a senior at George Washington University pursuing a B.S./M.S. in Biology, with a concentration in Ecology, Evolution, and Environment and a minor in Geographic Information Systems. His academic interests lie at the intersection of environmental science and data analysis, with experience researching coastal ecology and tree mortality using machine learning and remote sensing. Aidan is passionate about using data to ask and answer meaningful questions about the natural world.",
-        image: "/Brown.png",
+        image: "/Brown.webp",
         linkedin: "",
         email: ""
     },
@@ -3976,7 +3976,7 @@ const teamMembers = [
         name: "Alexis Tamm",
         role: "Writer",
         bio: "Alexis is a senior at Georgetown University majoring in English with minors in Psychology and Spanish. As an avid reader and writer, she is passionate about journalism and is particularly interested in bridging the gap between academic research and the general public through clear, accessible storytelling, with aims to pursue journalism professionally.",
-        image: "/Alexis.png",
+        image: "/Alexis.webp",
         linkedin: "",
         email: ""
     },
@@ -3984,7 +3984,7 @@ const teamMembers = [
         name: "Layla Abdoulaye",
         role: "Writer",
         bio: "Layla is a sophomore studying Physics at Howard University, with aspirations to earn a Ph.D. after graduation. Drawn to physics due to its complexity and power to explain how the world works, Layla is especially passionate about astronomy and quantum physics. Her academic interests specifically narrow on quantum materials and systems, where she hopes to contribute to cutting-edge research at the intersection of theory and discovery.",
-        image: "/Layla.png",
+        image: "/Layla.webp",
         linkedin: "",
         email: ""
     },
@@ -3992,7 +3992,7 @@ const teamMembers = [
         name: "Sydney Reiser",
         role: "Writer",
         bio: "Sydney is a first-year Chemistry PhD student at Johns Hopkins University, having recently graduated summa cum laude from George Washington University with a B.S. in Chemistry. With a background in synthetic chemistry research and experience as a Physics Learning Assistant, she brings a strong analytical and pedagogical perspective to The Catalyst, aiming to make complex chemical concepts accessible and engaging for a wider audience.",
-        image: "/Sydney.png",
+        image: "/Sydney.webp",
         linkedin: "",
         email: ""
     },
@@ -4000,7 +4000,7 @@ const teamMembers = [
         name: "Izzy Lubinsky",
         role: "Writer",
         bio: "Izzy is a George Washington University Presidential Scholar pursuing a double major in Biology and Environmental Science, with concentrations in Ecology, Evolution, and Environment and Ecological Management. At The Catalyst, she utilizes her background as an Anatomy Laboratory Technician and a meta-analysis ecological researcher to make complex biological topics accessible to a wider audience. Her interest in STEM is driven by a passion for urban ecology and climate resilience, often exploring how green infrastructure can bridge the gap between academic research and community well-being in D.C.",
-        image: "/Izzy.png",
+        image: "/Izzy.webp",
         linkedin: "",
         email: ""
     },
@@ -4008,7 +4008,7 @@ const teamMembers = [
         name: "Azza Uwhubetine",
         role: "Writer",
         bio: "Azza is a junior at George Washington University pursuing a degree in English with a minor in Astronomy. At The Catalyst, she hopes to merge her love for science, particularly physics, with the journalistic and publishing world. Azza has previously held positions at various publishing organizations, gaining experience in editorial writing and storytelling, and also runs a non-profit dedicated to supporting children in West African communities.",
-        image: "/Azza.png",
+        image: "/Azza.webp",
         linkedin: "",
         email: ""
     },
@@ -4016,7 +4016,7 @@ const teamMembers = [
         name: "Skye Schurr",
         role: "Writer, Media Specialist",
         bio: "Skye is a senior at Rutgers University pursuing a B.S. in Public Health, with a minor in Business Administration and a certificate in Health Policy. Over the past two summers, she has worked in Washington, D.C., contributing to research on reproductive and maternal health and authoring policy memoranda on AI in healthcare. Skye sees The Catalyst as a vehicle to increase health and civic literacy, empowering readers to understand the systems that shape their lives.",
-        image: "/Skye.png",
+        image: "/Skye.webp",
         linkedin: "",
         email: ""
     },
@@ -4024,7 +4024,7 @@ const teamMembers = [
         name: "Rachel Lee",
         role: "Photographer, Media Specialist",
         bio: "Rachel is a junior at George Washington University majoring in Communications and Business. Originally entering GWU as a pre-med student, Rachel comes from a strong STEM and biology-focused background, but her interests have shifted toward the communications field. She is passionate about making STEM topics more accessible through creative media and visual storytelling.",
-        image: "/RachelLee.png",
+        image: "/RachelLee.webp",
         linkedin: "",
         email: ""
     },
@@ -4032,7 +4032,7 @@ const teamMembers = [
         name: "Josh Shapo",
         role: "Writer",
         bio: "Josh is an electrical engineering student at the George Washington University graduating in the spring of 2027. He is involved in science advocacy and engineering policy, particularly within the space and aviation sectors. In his capacity as the Chair of IEEE-GWU and the IEEE Region 2 Student Representative, he strives to make academic and industrial STEM opportunities more accessible to students. He is currently conducting machine learning-based Heliophysics to denoise satellite magnetometry signals and aid scientific understanding of solar storms.",
-        image: "/JoshShapo.png",
+        image: "/JoshShapo.webp",
         linkedin: "",
         email: ""
     },
@@ -4040,7 +4040,7 @@ const teamMembers = [
         name: "Catherine May May Hubbard",
         role: "Writer",
         bio: "May May is a recent graduate from George Washington University with a B.S. in Chemistry and minor in Music. With a background in microbiology and infectious disease research, she fell in love with experimentation and piecing together the story that the research told. Teaching is a large part of her journey in education, and in college, she has had the opportunity to share her love for science as an Undergraduate Teaching Assistant for several biology laboratory courses. At The Catalyst, she hopes to use her writing to expand access to scientific knowledge and promote STEM education within the larger DMV community.",
-        image: "/maymay.png",
+        image: "/maymay.webp",
         linkedin: "",
         email: ""
     },
@@ -4048,23 +4048,23 @@ const teamMembers = [
         name: "LaMyla Hill",
         role: "Writer",
         bio: "LaMyla is a rising Junior at Howard University, majoring in physics, with a concentration in astrophysics, and a minor in math. She is also a part of the College of Arts and Sciences Honors program and is a proud member of the Society of Physics Students. Ever since elementary school, LaMyla's dream career was to be a physicist, and she has been following this thread of fascination until now. After completing her bachelor's degree, she intends to enroll in graduate school to become an astrophysics researcher.",
-        image: "/LaMayla.png",
+        image: "/LaMayla.webp",
         linkedin: "",
         email: ""
     },
     {
-        name: "Sienna",
+        name: "Sienna Halstead",
         role: "Writer",
         bio: "Sienna is a neuroscience student with a minor in Mind and Brain Studies in the Philosophy Department at George Washington University. She is passionate about science communication and connecting people with educational resources that inspire curiosity, as that is how her own love of science, philosophy, and anthropology was cultivated. Her academic interests primarily focus on understanding the biology of consciousness and the complex interactions between health, culture, and the environment. Her current research at George Washington University's Department of Neuroscience focuses on the development of next-generation therapeutics through drug repurposing to address antimicrobial resistance in parasitic hookworms.",
-        image: "/Sienna.png",
+        image: "/Sienna.webp",
         linkedin: "",
         email: ""
     },
     {
-        name: "Cameron",
+        name: "Cameron Fields",
         role: "Writer",
         bio: "Cameron is a recent graduate from Johns Hopkins University with a B.A. in Public Health Studies and a minor in Psychology. She will be beginning her Master's of Science in Public Health at the Johns Hopkins Bloomberg School of Public Health in maternal, fetal, and perinatal health. Through her research experiences in prenatal care, harm reduction, and HIV, Cameron has become passionate about interacting with community members to ensure they have resources and education about various health topics. Cameron is drawn to the community-based side of medicine and hopes to continue to share and expand on this passion through her writing with the Catalyst, research, and in the future professionally as a physician.",
-        image: "/cameron.png",
+        image: "/cameron.webp",
         linkedin: "",
         email: ""
     }
@@ -4075,7 +4075,7 @@ const alumniMembers = [
         name: "Stephanie Solomon",
         role: "Former Editor",
         bio: "Stephanie is a Georgetown University junior studying History, Spanish, and World Affairs, with a strong background in journalism, policy research, and editorial work. At The Catalyst Magazine, she ensured every piece met high standards for accuracy and clarity, drawing on her experience in investigative writing, political communications, and media strategy. Her sharp editorial eye kept the magazine grounded in both integrity and impact, and she plans to translate these analytical writing skills into the legal field.",
-        image: "/Steph.png",
+        image: "/Steph.webp",
         linkedin: "",
         email: ""
     },
@@ -4083,7 +4083,7 @@ const alumniMembers = [
         name: "Alex Carter",
         role: "Former Writer",
         bio: "Alex is a PhD student at Princeton University studying developmental biology, in addition to a recent George Washington University graduate with a B.S. in Cellular and Molecular Biology. His work at the GWU Martin Lab explored the genetic basis of evolution and adaptation, and finds the field of biology specifically interesting due to its answers to some of the world's most challenging and relevant questions. Alex excelled at making complex genetics approachable and engaging for a broad audience.",
-        image: "/CarterCatalyst.png",
+        image: "/CarterCatalyst.webp",
         linkedin: "",
         email: ""
     }
