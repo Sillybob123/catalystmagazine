@@ -263,15 +263,21 @@ function renderGrowthChart(wrapper, series) {
     }
     if (showTooltip && tooltip && stage) {
       tooltip.innerHTML = growthTooltipHtml(d, avg, peakCount);
+      tooltip.hidden = false;
+      tooltip.style.visibility = "hidden";
       const stageBox = stage.getBoundingClientRect();
       const svgBox = stage.querySelector("svg").getBoundingClientRect();
       const sx = svgBox.width / W;
       const sy = svgBox.height / H;
       const left = (svgBox.left - stageBox.left) + cx * sx;
-      const top = (svgBox.top - stageBox.top) + Math.min(barY, lineY) * sy;
-      tooltip.style.left = `${Math.max(12, Math.min(stageBox.width - 230, left + 12))}px`;
-      tooltip.style.top = `${Math.max(12, top - 18)}px`;
-      tooltip.hidden = false;
+      const pointTop = (svgBox.top - stageBox.top) + Math.min(barY, lineY) * sy;
+      const tooltipWidth = 220;
+      const tooltipHeight = tooltip.offsetHeight || 130;
+      const aboveTop = pointTop - tooltipHeight - 18;
+      const belowTop = pointTop + 18;
+      tooltip.style.left = `${Math.max(12, Math.min(stageBox.width - tooltipWidth - 12, left - tooltipWidth / 2))}px`;
+      tooltip.style.top = `${aboveTop >= 12 ? aboveTop : Math.min(stageBox.height - tooltipHeight - 12, belowTop)}px`;
+      tooltip.style.visibility = "";
     }
   };
 

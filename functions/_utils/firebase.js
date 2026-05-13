@@ -317,7 +317,7 @@ export async function firestoreCommit(env, writes) {
 }
 
 export function firestoreDocumentName(env, path) {
-  return `${firestoreBase(env)}/${path}`;
+  return `projects/${getProjectId(env)}/databases/(default)/documents/${path}`;
 }
 
 // Convert plain JS -> Firestore typed fields

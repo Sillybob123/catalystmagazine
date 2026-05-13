@@ -548,12 +548,21 @@ async function gscQuery(ctx, type, range, opts = {}) {
 }
 
 async function geoVisitQuery(ctx, range) {
-  const { startDate, endDate } = resolveRange(range);
+  const { startDate, endDate } = resolveVisitRange(range);
   const params = new URLSearchParams({ startDate, endDate, limit: "150" });
   const res = await ctx.authedFetch(`/api/analytics/geo?${params.toString()}`);
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return { rows: data.rows || [] };
+}
+
+function resolveVisitRange(range) {
+  if (range?.startDate && range?.endDate) return range;
+  const days = range?.days || 28;
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - (days - 1));
+  return { startDate: isoDate(start), endDate: isoDate(end) };
 }
 
 async function loadAll(ctx, wrapper, state) {
