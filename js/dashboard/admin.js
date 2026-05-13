@@ -386,6 +386,7 @@ async function loadUsers(mount, ctx, reload) {
         </td>
         <td>
           <div style="display:flex;flex-direction:column;gap:5px;">
+            <button class="btn btn-secondary btn-xs" data-action="extra-access" data-id="${esc(d.id)}" style="white-space:nowrap;" title="Grant access to specific dashboard pages">Extra access${Array.isArray(u.extraAccess) && u.extraAccess.length ? ` <span style="opacity:.7;">(${u.extraAccess.length})</span>` : ""}</button>
             <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}" style="white-space:nowrap;">Edit bot</button>
             <button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid ? "disabled" : ""} style="color:var(--danger);white-space:nowrap;">Delete</button>
           </div>
@@ -415,6 +416,15 @@ async function loadUsers(mount, ctx, reload) {
         return;
       }
 
+      const accessBtn = e.target.closest('[data-action="extra-access"]');
+      if (accessBtn) {
+        const uid = accessBtn.dataset.id;
+        const userDoc = snap.docs.find((docSnap) => docSnap.id === uid);
+        if (!userDoc) return;
+        openExtraAccessModal(ctx, { id: uid, ...userDoc.data() }, reload);
+        return;
+      }
+
       const btn = e.target.closest('[data-action="delete"]');
       if (!btn || btn.disabled) return;
       const uid = btn.dataset.id;
@@ -441,6 +451,109 @@ function roleLabel(r) {
     marketing: "Marketing",
     reader: "Reader",
   }[r] || r;
+}
+
+// Grantable routes — what an admin can hand out to individual users via
+// the Extra-access modal. Each entry's `baseRoles` is the set of roles
+// that already see it via the normal role map, so the modal can show
+// which routes a given user is actually missing.
+//
+// Keep this in sync with ROUTES in app.js. If a new route is added there
+// that should be admin-grantable, add it here too.
+const GRANTABLE_ROUTES = [
+  // Editorial / pipeline
+  { group: "Editorial pipeline", hash: "#/admin/articles",     label: "All articles & approvals",   baseRoles: ["admin"] },
+  { group: "Editorial pipeline", hash: "#/admin/submissions",  label: "Submissions inbox",          baseRoles: ["admin"] },
+  { group: "Editorial pipeline", hash: "#/admin/book-reviews", label: "Book reviews queue",         baseRoles: ["admin", "editor"] },
+  { group: "Editorial pipeline", hash: "#/editor/queue",       label: "Editor queue",               baseRoles: ["admin", "editor"] },
+
+  // Marketing
+  { group: "Marketing",          hash: "#/marketing/analytics",     label: "Subscribers & growth",        baseRoles: ["admin", "marketing", "newsletter_builder"] },
+  { group: "Marketing",          hash: "#/marketing/subscribers",   label: "Subscriber list",             baseRoles: ["admin", "marketing"] },
+  { group: "Marketing",          hash: "#/marketing/collabs",       label: "Collaboration requests",      baseRoles: ["admin", "marketing"] },
+  { group: "Marketing",          hash: "#/marketing/social",        label: "Social media posts",          baseRoles: ["admin", "marketing"] },
+  { group: "Marketing",          hash: "#/marketing/searchability", label: "Searchability (Search Console)", baseRoles: ["admin", "marketing"] },
+
+  // Newsletter
+  { group: "Newsletter",         hash: "#/newsletter/build",   label: "Newsletter builder",         baseRoles: ["admin", "newsletter_builder"] },
+  { group: "Newsletter",         hash: "#/newsletter/history", label: "Campaign history",           baseRoles: ["admin", "newsletter_builder", "marketing"] },
+
+  // Admin tools (only super-rare grants — admin can extend if they truly want)
+  { group: "Admin tools",        hash: "#/admin/users",        label: "Users & roles",              baseRoles: ["admin"] },
+  { group: "Admin tools",        hash: "#/admin/images",       label: "Image library",              baseRoles: ["admin"] },
+  { group: "Admin tools",        hash: "#/admin/games",        label: "Games",                      baseRoles: ["admin"] },
+];
+
+// Routes a user with this role ALREADY sees via the regular role map.
+// Used to gray-out checkboxes that would be redundant.
+function routeAlreadyVisible(route, userRole) {
+  const effective = userRole === "editor" ? ["editor", "writer"] : [userRole];
+  if (userRole === "admin") return true;
+  return route.baseRoles.some((r) => effective.includes(r));
+}
+
+function openExtraAccessModal(ctx, user, onSaved) {
+  const grantedSet = new Set(Array.isArray(user.extraAccess) ? user.extraAccess : []);
+  const userRole = user.role || "reader";
+
+  // Group routes by section for the modal layout
+  const byGroup = new Map();
+  for (const r of GRANTABLE_ROUTES) {
+    if (!byGroup.has(r.group)) byGroup.set(r.group, []);
+    byGroup.get(r.group).push(r);
+  }
+
+  const groupsHtml = Array.from(byGroup.entries()).map(([groupName, routes]) => `
+    <div class="extra-access-group">
+      <div class="extra-access-group-title">${esc(groupName)}</div>
+      ${routes.map((r) => {
+        const already = routeAlreadyVisible(r, userRole);
+        const checked = grantedSet.has(r.hash);
+        return `
+          <label class="extra-access-row ${already ? "is-already" : ""}">
+            <input type="checkbox" data-hash="${esc(r.hash)}" ${checked ? "checked" : ""} ${already ? "disabled" : ""}>
+            <span class="extra-access-label">
+              ${esc(r.label)}
+              ${already ? `<span class="extra-access-already">already visible via ${esc(roleLabel(userRole))} role</span>` : ""}
+            </span>
+          </label>`;
+      }).join("")}
+    </div>`).join("");
+
+  const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
+  const saveBtn   = el("button", { class: "btn btn-accent" },   "Save");
+
+  const modal = openModal({
+    title: `Extra page access — ${user.name || user.email}`,
+    bodyHtml: `
+      <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px;">
+        Give <strong>${esc(user.name || user.email)}</strong> access to specific dashboard pages beyond their <strong>${esc(roleLabel(userRole))}</strong> role.
+        Pages already visible via their role are disabled below.
+      </div>
+      <div class="extra-access-list" id="extra-access-list">
+        ${groupsHtml}
+      </div>`,
+    footer: [cancelBtn, saveBtn],
+  });
+
+  cancelBtn.addEventListener("click", () => modal.close());
+  saveBtn.addEventListener("click", async () => {
+    const newAccess = Array.from(modal.bodyEl.querySelectorAll('input[type="checkbox"]'))
+      .filter((cb) => cb.checked && !cb.disabled)
+      .map((cb) => cb.dataset.hash);
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+    try {
+      await updateDoc(doc(db, "users", user.id), { extraAccess: newAccess });
+      ctx.toast("Extra access updated. The user will see new pages after they refresh.", "success");
+      modal.close();
+      onSaved?.();
+    } catch (err) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save";
+      ctx.toast("Save failed: " + err.message, "error");
+    }
+  });
 }
 
 const BOT_REMINDER_TIMEZONE = "America/New_York";

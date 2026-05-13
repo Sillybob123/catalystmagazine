@@ -469,21 +469,37 @@ function initPresencePing() {
   setInterval(pingOnce, 5 * 60 * 1000); // every 5 min
 }
 
+// Per-user extra-access overrides — admins can grant a user access to
+// specific routes (by hash) that their role wouldn't normally see, via
+// the Users & roles admin UI. Stored as `users/{uid}.extraAccess: string[]`.
+//
+// When admin is previewing another role, extraAccess is intentionally
+// ignored so the sidebar reflects the previewed role's *base* permissions.
+function getExtraAccess() {
+  if (state.previewRole) return [];
+  const list = state.profile?.extraAccess;
+  return Array.isArray(list) ? list : [];
+}
+
+// Returns true if the active user can see/visit a given route.
+// Checks: wildcard, role match, admin override, and per-user extraAccess.
+function isRouteAllowed(hash, route) {
+  const active = getActiveRole();
+  const effectiveRoles = active === "editor" ? [active, "writer"] : [active];
+  if (route.roles.includes("*")) return true;
+  if (effectiveRoles.some((r) => route.roles.includes(r))) return true;
+  if (active === "admin") return true;
+  if (getExtraAccess().includes(hash)) return true;
+  return false;
+}
+
 // ---------- sidebar ----------
 function renderSidebar() {
   const nav = document.getElementById("nav");
-  const active = getActiveRole();
-  // editors inherit writer permissions
-  const effectiveRoles = active === "editor"
-    ? [active, "writer"]
-    : [active];
-  // When previewing, admin access is suppressed so the sidebar reflects what
-  // the previewed role would actually see.
-  const userIsAllowed = (roles) => roles.includes("*") || effectiveRoles.some(r => roles.includes(r)) || active === "admin";
 
   const byGroup = new Map();
   for (const [hash, route] of Object.entries(ROUTES)) {
-    if (!userIsAllowed(route.roles)) continue;
+    if (!isRouteAllowed(hash, route)) continue;
     if (route.hidden) continue;
     const g = route.group || "main";
     if (!byGroup.has(g)) byGroup.set(g, []);
@@ -542,10 +558,7 @@ async function handleRoute() {
   let route = ROUTES[hashPath];
 
   if (!route) { location.hash = "#/overview"; return; }
-  const active = getActiveRole();
-  const effectiveRoles = active === "editor" ? [active, "writer"] : [active];
-  const allowed = route.roles.includes("*") || effectiveRoles.some(r => route.roles.includes(r)) || active === "admin";
-  if (!allowed) {
+  if (!isRouteAllowed(hashPath, route)) {
     toast("You don't have access to that page.", "error");
     location.hash = "#/overview";
     return;

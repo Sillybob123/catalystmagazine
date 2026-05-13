@@ -35,6 +35,56 @@ const SEARCH_TYPES = [
 // know Catalyst). Everything else is "discovery" traffic.
 const BRAND_TERMS = ["catalyst magazine", "catalyst-magazine", "catalystmagazine", "the catalyst"];
 
+// Plain-English glossary — every technical term shown on this page has an
+// entry here. tip(key, label) wraps the label in a hover/tap-able dotted
+// underline. Keys are lowercased and stripped of punctuation for lookups.
+const GLOSSARY = {
+  "clicks":           "How many times someone clicked one of your pages from a Google search result.",
+  "impressions":      "How many times one of your pages appeared in someone's Google search results — whether or not they clicked.",
+  "ctr":              "Click-through rate: clicks divided by impressions, shown as a percentage. Higher means more people who saw you actually clicked.",
+  "click-through rate": "Clicks divided by impressions, shown as a percentage. Higher means more people who saw you actually clicked.",
+  "avg. position":    "The average ranking spot your pages appeared in across all queries. Position 1 = top of results. Lower is better.",
+  "avg position":     "The average ranking spot your pages appeared in across all queries. Position 1 = top of results. Lower is better.",
+  "position":         "The average ranking spot a page appeared in for this query in Google search results. 1 = top of page. Lower numbers are better.",
+  "query":            "The exact words someone typed into Google when they saw or clicked one of your pages.",
+  "queries":          "The exact phrases people searched on Google that led to your pages being shown.",
+  "page":             "A specific article or page on catalyst-magazine.com.",
+  "pages":            "Specific articles or pages on catalyst-magazine.com.",
+  "performance":      "Your overall search numbers — clicks, impressions, CTR and position.",
+  "rising":           "Queries where you got more clicks this period than the previous one — your content is gaining momentum here.",
+  "falling":          "Queries where you got fewer clicks this period than the previous one — content may need refreshing or has lost visibility.",
+  "queries gaining clicks": "Search terms where you got more clicks than in the previous period — content is gaining traction.",
+  "queries losing clicks":  "Search terms where you got fewer clicks than in the previous period — worth investigating.",
+  "quick wins":       "Queries you already rank decently for and that get lots of impressions, but few people actually click. Tweaking titles and meta descriptions usually fixes this.",
+  "high impressions, low ctr": "Queries Google already shows you for, but where the CTR is below industry average. Easy wins.",
+  "opportunities":    "Queries where a small change to titles or meta descriptions could earn meaningful extra clicks.",
+  "potential clicks": "Estimated extra clicks you'd get if your CTR for this query matched the industry average for its position.",
+  "expected ctr":     "The CTR an average site gets at this ranking position. If yours is much lower, that's the opportunity.",
+  "brand":            "People who searched specifically for \"Catalyst Magazine\" — they already know you.",
+  "discovery":        "People who searched for a topic and found Catalyst — first-time discovery of your brand.",
+  "brand vs discovery":      "Brand = people searching \"Catalyst Magazine\" by name. Discovery = topic searches that lead them to you for the first time.",
+  "brand vs. discovery":     "Brand = people searching \"Catalyst Magazine\" by name. Discovery = topic searches that lead them to you for the first time.",
+  "search appearance": "How Google chose to show your page in results — as a regular link, a news card, an AMP page, etc.",
+  "source":           "Which Google surface the data is from: standard Web search, Image, News, or Discover feed.",
+  "google search console": "Google's free tool for tracking how your site performs in their search results.",
+  "performance over time":  "How your clicks and impressions change day by day over the chosen period.",
+  "what's happening right now": "Plain-English takeaways comparing your current period to the previous one of the same length.",
+};
+
+function tipKey(s) {
+  return String(s || "").toLowerCase().replace(/[.,:]/g, "").trim();
+}
+
+// Wraps a label in a tooltip span if there's a matching glossary entry.
+// Use this for ANY technical term shown on this page.
+function tip(label, opts = {}) {
+  const explicit = opts.term ? tipKey(opts.term) : null;
+  const key = explicit || tipKey(label);
+  const def = GLOSSARY[key];
+  if (!def) return esc(label);
+  return `<span class="sc-tip" tabindex="0" data-tip="${esc(def)}" aria-label="${esc(label)}: ${esc(def)}">${esc(label)}</span>`;
+}
+
 export async function mount(ctx, container) {
   container.innerHTML = "";
 
@@ -46,7 +96,7 @@ export async function mount(ctx, container) {
         <div class="sc-hero-title-block">
           <div class="sc-hero-eyebrow">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Google Search Console
+            ${tip("Google Search Console")}
           </div>
           <h1 class="sc-hero-title" id="sc-hero-title">Searchability</h1>
           <p class="sc-hero-sub">How readers find Catalyst on Google — performance, opportunities, and trends.</p>
@@ -59,10 +109,39 @@ export async function mount(ctx, container) {
               ${RANGES.map((r, i) =>
                 `<button type="button" class="sc-range-btn ${i === 1 ? "is-active" : ""}" data-days="${r.days}" role="tab" aria-selected="${i === 1}">${esc(r.label)}</button>`
               ).join("")}
+              <button type="button" class="sc-range-btn sc-range-custom-btn" id="sc-range-custom-btn" aria-haspopup="dialog" aria-expanded="false">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span>Custom</span>
+              </button>
+            </div>
+            <div class="sc-custom-popover" id="sc-custom-popover" role="dialog" aria-label="Custom date range" hidden>
+              <div class="sc-custom-popover-title">Pick a custom range</div>
+              <div class="sc-custom-fields">
+                <label>Start
+                  <input type="date" id="sc-custom-start">
+                </label>
+                <label>End
+                  <input type="date" id="sc-custom-end">
+                </label>
+              </div>
+              <div class="sc-custom-presets">
+                <button type="button" class="sc-preset-chip" data-preset="yesterday">Yesterday</button>
+                <button type="button" class="sc-preset-chip" data-preset="last5">Last 5 days</button>
+                <button type="button" class="sc-preset-chip" data-preset="last14">Last 14 days</button>
+                <button type="button" class="sc-preset-chip" data-preset="thismonth">This month</button>
+                <button type="button" class="sc-preset-chip" data-preset="lastmonth">Last month</button>
+              </div>
+              <div class="sc-custom-footer">
+                <span class="sc-custom-note" id="sc-custom-note">GSC allows up to 16 months back.</span>
+                <div style="display:flex;gap:8px;">
+                  <button type="button" class="sc-ghost-btn" id="sc-custom-cancel">Cancel</button>
+                  <button type="button" class="sc-apply-btn" id="sc-custom-apply">Apply</button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="sc-control-group">
-            <label class="sc-control-label" for="sc-search-type">Source</label>
+            <label class="sc-control-label" for="sc-search-type">${tip("Source")}</label>
             <div class="sc-select-wrap">
               <select class="sc-select" id="sc-search-type" aria-label="Search type">
                 ${SEARCH_TYPES.map((t) => `<option value="${esc(t.value)}">${esc(t.label)}</option>`).join("")}
@@ -98,7 +177,7 @@ export async function mount(ctx, container) {
     <section class="sc-section">
       <div class="sc-section-head">
         <div>
-          <h2 class="sc-section-title">What's happening right now</h2>
+          <h2 class="sc-section-title">${tip("What's happening right now")}</h2>
           <p class="sc-section-sub">Auto-generated takeaways from your current period vs. the previous one.</p>
         </div>
       </div>
@@ -110,15 +189,15 @@ export async function mount(ctx, container) {
     <section class="sc-card sc-trend-card">
       <div class="sc-card-head">
         <div>
-          <h2 class="sc-card-title">Performance over time</h2>
+          <h2 class="sc-card-title">${tip("Performance over time")}</h2>
           <p class="sc-card-sub">Daily trend across the selected period. Use the toggle to focus on one metric.</p>
         </div>
         <div class="sc-chart-toggle" id="sc-chart-toggle" role="group" aria-label="Chart metric">
           <button type="button" class="sc-chart-toggle-btn is-active" data-metric="both">Both</button>
           <button type="button" class="sc-chart-toggle-btn" data-metric="clicks">Clicks</button>
           <button type="button" class="sc-chart-toggle-btn" data-metric="impressions">Impressions</button>
-          <button type="button" class="sc-chart-toggle-btn" data-metric="ctr">CTR</button>
-          <button type="button" class="sc-chart-toggle-btn" data-metric="position">Position</button>
+          <button type="button" class="sc-chart-toggle-btn" data-metric="ctr" title="Click-through rate — clicks ÷ impressions">CTR</button>
+          <button type="button" class="sc-chart-toggle-btn" data-metric="position" title="Average ranking spot — 1 is best">Position</button>
         </div>
       </div>
       <div class="sc-card-body">
@@ -134,8 +213,8 @@ export async function mount(ctx, container) {
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
             Highest-value action
           </div>
-          <h2 class="sc-card-title">Quick wins — high impressions, low CTR</h2>
-          <p class="sc-card-sub">Queries Google is already showing you for, but few people click. Improve titles and meta descriptions to capture this traffic.</p>
+          <h2 class="sc-card-title">${tip("Quick wins", { term: "quick wins" })} — ${tip("high impressions, low CTR")}</h2>
+          <p class="sc-card-sub">${tip("Queries")} Google is already showing you for, but few people click. Improve titles and meta descriptions to capture this traffic.</p>
         </div>
         <button type="button" class="sc-ghost-btn sc-csv-btn" data-csv="opportunities">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -154,7 +233,7 @@ export async function mount(ctx, container) {
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
               Rising
             </div>
-            <h2 class="sc-card-title">Queries gaining clicks</h2>
+            <h2 class="sc-card-title">${tip("Queries gaining clicks")}</h2>
             <p class="sc-card-sub">Biggest gains vs. the previous period.</p>
           </div>
         </div>
@@ -167,7 +246,7 @@ export async function mount(ctx, container) {
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
               Falling
             </div>
-            <h2 class="sc-card-title">Queries losing clicks</h2>
+            <h2 class="sc-card-title">${tip("Queries losing clicks")}</h2>
             <p class="sc-card-sub">Worth investigating — content may need a refresh.</p>
           </div>
         </div>
@@ -180,7 +259,7 @@ export async function mount(ctx, container) {
       <section class="sc-card">
         <div class="sc-card-head">
           <div>
-            <h2 class="sc-card-title">Top queries</h2>
+            <h2 class="sc-card-title">Top ${tip("queries")}</h2>
             <p class="sc-card-sub">The search terms driving the most traffic.</p>
           </div>
           <button type="button" class="sc-ghost-btn sc-csv-btn" data-csv="queries">
@@ -193,7 +272,7 @@ export async function mount(ctx, container) {
       <section class="sc-card">
         <div class="sc-card-head">
           <div>
-            <h2 class="sc-card-title">Top pages</h2>
+            <h2 class="sc-card-title">Top ${tip("pages")}</h2>
             <p class="sc-card-sub">Which articles earn the most search traffic.</p>
           </div>
           <button type="button" class="sc-ghost-btn sc-csv-btn" data-csv="pages">
@@ -217,8 +296,8 @@ export async function mount(ctx, container) {
       <section class="sc-card">
         <div class="sc-card-head">
           <div>
-            <h3 class="sc-card-title">Brand vs. discovery traffic</h3>
-            <p class="sc-card-sub"><strong>Brand</strong>: people searching "Catalyst Magazine" by name. <strong>Discovery</strong>: topic searches that lead them to you for the first time.</p>
+            <h3 class="sc-card-title">${tip("Brand vs. discovery")} traffic</h3>
+            <p class="sc-card-sub"><strong>${tip("Brand")}</strong>: people searching "Catalyst Magazine" by name. <strong>${tip("Discovery")}</strong>: topic searches that lead them to you for the first time.</p>
           </div>
         </div>
         <div class="sc-card-body" id="sc-brand-split"><div class="loading-state"><div class="spinner"></div></div></div>
@@ -242,7 +321,7 @@ export async function mount(ctx, container) {
       <section class="sc-card" id="sc-appearance-card" style="display:none;">
         <div class="sc-card-head">
           <div>
-            <h3 class="sc-card-title">Search appearance</h3>
+            <h3 class="sc-card-title">${tip("Search appearance")}</h3>
             <p class="sc-card-sub">How Google chooses to show your pages — rich results, article cards, etc.</p>
           </div>
         </div>
@@ -260,24 +339,113 @@ export async function mount(ctx, container) {
 
   container.appendChild(wrapper);
 
-  // State held in closures
+  // State held in closures.
+  // range is either { kind: "preset", days } or { kind: "custom", startDate, endDate }
   const state = {
-    days: 28,
+    range: { kind: "preset", days: 28 },
     searchType: "web",
     chartMetric: "both",
     lastData: {},
   };
 
-  // Range picker
-  wrapper.querySelector("#sc-range-picker").addEventListener("click", (e) => {
-    const btn = e.target.closest(".sc-range-btn");
-    if (!btn) return;
-    state.days = Number(btn.dataset.days);
-    wrapper.querySelectorAll(".sc-range-btn").forEach((b) => {
-      b.classList.toggle("is-active", b === btn);
-      b.setAttribute("aria-selected", b === btn ? "true" : "false");
+  // Preset range buttons
+  const rangePicker = wrapper.querySelector("#sc-range-picker");
+  const customBtn   = wrapper.querySelector("#sc-range-custom-btn");
+  const customPop   = wrapper.querySelector("#sc-custom-popover");
+  const customStart = wrapper.querySelector("#sc-custom-start");
+  const customEnd   = wrapper.querySelector("#sc-custom-end");
+  const customNote  = wrapper.querySelector("#sc-custom-note");
+
+  function setActiveRangeButton(target) {
+    rangePicker.querySelectorAll(".sc-range-btn").forEach((b) => {
+      b.classList.toggle("is-active", b === target);
+      if (b.getAttribute("role") === "tab") {
+        b.setAttribute("aria-selected", b === target ? "true" : "false");
+      }
     });
+  }
+
+  rangePicker.addEventListener("click", (e) => {
+    const btn = e.target.closest(".sc-range-btn:not(.sc-range-custom-btn)");
+    if (!btn) return;
+    state.range = { kind: "preset", days: Number(btn.dataset.days) };
+    setActiveRangeButton(btn);
+    closeCustomPopover();
     loadAll(ctx, wrapper, state);
+  });
+
+  // Custom range popover
+  function openCustomPopover() {
+    // Seed the date inputs with today / today-7d as a sensible default
+    const today = new Date();
+    today.setDate(today.getDate() - 2); // respect GSC lag
+    const seven = new Date(today);
+    seven.setDate(seven.getDate() - 6);
+    if (!customStart.value) customStart.value = isoDate(seven);
+    if (!customEnd.value)   customEnd.value   = isoDate(today);
+    const maxDate = isoDate(today);
+    const minDate = isoDate(new Date(today.getTime() - 16 * 30 * 24 * 60 * 60 * 1000)); // ~16 months
+    customStart.max = maxDate; customStart.min = minDate;
+    customEnd.max = maxDate;   customEnd.min = minDate;
+    customPop.hidden = false;
+    customBtn.setAttribute("aria-expanded", "true");
+    updateCustomNote();
+  }
+  function closeCustomPopover() {
+    customPop.hidden = true;
+    customBtn.setAttribute("aria-expanded", "false");
+  }
+  function updateCustomNote() {
+    const s = customStart.value, e = customEnd.value;
+    if (!s || !e) { customNote.textContent = "Pick a start and end date."; return; }
+    if (s > e) { customNote.textContent = "Start date must be before end date."; customNote.style.color = "var(--sc-bad, #b91c1c)"; return; }
+    const days = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
+    customNote.style.color = "";
+    customNote.textContent = `${days} day${days === 1 ? "" : "s"} selected`;
+  }
+
+  customBtn.addEventListener("click", () => {
+    if (customPop.hidden) openCustomPopover(); else closeCustomPopover();
+  });
+  customStart.addEventListener("change", updateCustomNote);
+  customEnd.addEventListener("change", updateCustomNote);
+
+  // Quick presets inside the custom popover
+  customPop.querySelectorAll(".sc-preset-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const today = new Date();
+      today.setDate(today.getDate() - 2);
+      const set = (start, end) => { customStart.value = isoDate(start); customEnd.value = isoDate(end); updateCustomNote(); };
+      const kind = chip.dataset.preset;
+      if (kind === "yesterday") { set(today, today); }
+      else if (kind === "last5") { const s = new Date(today); s.setDate(s.getDate() - 4); set(s, today); }
+      else if (kind === "last14") { const s = new Date(today); s.setDate(s.getDate() - 13); set(s, today); }
+      else if (kind === "thismonth") {
+        const s = new Date(today.getFullYear(), today.getMonth(), 1);
+        set(s, today);
+      } else if (kind === "lastmonth") {
+        const s = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const e = new Date(today.getFullYear(), today.getMonth(), 0);
+        set(s, e);
+      }
+    });
+  });
+
+  wrapper.querySelector("#sc-custom-cancel").addEventListener("click", closeCustomPopover);
+  wrapper.querySelector("#sc-custom-apply").addEventListener("click", () => {
+    const s = customStart.value, e = customEnd.value;
+    if (!s || !e || s > e) { customNote.style.color = "var(--sc-bad, #b91c1c)"; customNote.textContent = "Please pick a valid range first."; return; }
+    state.range = { kind: "custom", startDate: s, endDate: e };
+    setActiveRangeButton(customBtn);
+    closeCustomPopover();
+    loadAll(ctx, wrapper, state);
+  });
+
+  // Click outside closes the popover
+  document.addEventListener("click", (e) => {
+    if (customPop.hidden) return;
+    if (customPop.contains(e.target) || customBtn.contains(e.target)) return;
+    closeCustomPopover();
   });
 
   // Search type
@@ -313,20 +481,25 @@ export async function mount(ctx, container) {
 
 // ── Data loading ─────────────────────────────────────────────────────────────
 
-function dateRange(days) {
+// Resolve any range descriptor to an absolute start/end pair.
+function resolveRange(range) {
+  if (range.kind === "custom") {
+    return { startDate: range.startDate, endDate: range.endDate };
+  }
+  const days = range.days || 28;
   const end = new Date();
   end.setDate(end.getDate() - 2); // GSC lags ~2 days
   const start = new Date(end);
   start.setDate(start.getDate() - (days - 1));
-  return {
-    startDate: isoDate(start),
-    endDate:   isoDate(end),
-  };
+  return { startDate: isoDate(start), endDate: isoDate(end) };
 }
 
-function priorRange(days) {
-  const cur = dateRange(days);
+// Compute the equal-length prior comparison window for a given range.
+function priorRange(range) {
+  const cur = resolveRange(range);
   const curStart = new Date(cur.startDate);
+  const curEnd   = new Date(cur.endDate);
+  const days = Math.round((curEnd - curStart) / 86400000) + 1;
   const prevEnd = new Date(curStart);
   prevEnd.setDate(prevEnd.getDate() - 1);
   const prevStart = new Date(prevEnd);
@@ -337,11 +510,14 @@ function priorRange(days) {
   };
 }
 
-function isoDate(d) { return d.toISOString().slice(0, 10); }
+function isoDate(d) {
+  const dd = d instanceof Date ? d : new Date(d);
+  return dd.toISOString().slice(0, 10);
+}
 
-async function gscQuery(ctx, type, days, opts = {}) {
-  const { startDate, endDate } = dateRange(days);
-  const cmp = opts.compare ? priorRange(days) : {};
+async function gscQuery(ctx, type, range, opts = {}) {
+  const { startDate, endDate } = resolveRange(range);
+  const cmp = opts.compare ? priorRange(range) : {};
   const body = {
     startDate, endDate,
     type,
@@ -360,11 +536,11 @@ async function gscQuery(ctx, type, days, opts = {}) {
 }
 
 async function loadAll(ctx, wrapper, state) {
-  const { days, searchType } = state;
+  const { range, searchType } = state;
 
   // Update period labels in the note
-  const cur = dateRange(days);
-  const prev = priorRange(days);
+  const cur = resolveRange(range);
+  const prev = priorRange(range);
   wrapper.querySelector("#sc-period-current").textContent = `${humanDate(cur.startDate)} – ${humanDate(cur.endDate)}`;
   wrapper.querySelector("#sc-period-prev").textContent = `${humanDate(prev.compareStartDate)} – ${humanDate(prev.compareEndDate)}`;
 
@@ -389,18 +565,18 @@ async function loadAll(ctx, wrapper, state) {
   const optsCmp = { ...opts, compare: true };
 
   const [overview, dates, queries, pages, countries, devices, appearance] = await Promise.allSettled([
-    gscQuery(ctx, "overview",  days, { ...optsCmp }),
-    gscQuery(ctx, "dates",     days, { ...opts, rowLimit: 365 }),
-    gscQuery(ctx, "queries",   days, { ...optsCmp, rowLimit: 100 }),
-    gscQuery(ctx, "pages",     days, { ...optsCmp, rowLimit: 50 }),
-    gscQuery(ctx, "countries", days, { ...opts, rowLimit: 15 }),
-    gscQuery(ctx, "devices",   days, { ...opts, rowLimit: 5  }),
-    gscQuery(ctx, "searchAppearance", days, { ...opts, rowLimit: 15 }),
+    gscQuery(ctx, "overview",  range, { ...optsCmp }),
+    gscQuery(ctx, "dates",     range, { ...opts, rowLimit: 365 }),
+    gscQuery(ctx, "queries",   range, { ...optsCmp, rowLimit: 100 }),
+    gscQuery(ctx, "pages",     range, { ...optsCmp, rowLimit: 50 }),
+    gscQuery(ctx, "countries", range, { ...opts, rowLimit: 15 }),
+    gscQuery(ctx, "devices",   range, { ...opts, rowLimit: 5  }),
+    gscQuery(ctx, "searchAppearance", range, { ...opts, rowLimit: 15 }),
   ]);
 
   // Stash everything for CSV export + chart toggle
   state.lastData = {
-    overview, dates, queries, pages, countries, devices, appearance, days, searchType,
+    overview, dates, queries, pages, countries, devices, appearance, range, searchType,
   };
 
   // ── KPIs ──
@@ -471,7 +647,7 @@ function kpiTile(label, key, hint, iconKey) {
   return `
     <div class="sc-kpi" title="${esc(hint)}">
       <div class="sc-kpi-head">
-        <div class="sc-kpi-label">${esc(label)}</div>
+        <div class="sc-kpi-label">${tip(label)}</div>
         <span class="sc-kpi-icon">${kpiIcon(iconKey)}</span>
       </div>
       <div class="sc-kpi-value-row">
@@ -729,7 +905,15 @@ function truncate(s, n) {
 function renderTrendChart(wrapper, rows, metric = "both") {
   const chartEl = wrapper.querySelector("#sc-trend-chart");
   if (!rows.length) {
-    chartEl.innerHTML = `<div class="empty-state">No data for this period.</div>`;
+    chartEl.innerHTML = renderTrendEmptyState();
+    // Wire the "Try 1 year" button to switch to that preset
+    const tryBtn = chartEl.querySelector('[data-action="try-year"]');
+    if (tryBtn) {
+      tryBtn.addEventListener("click", () => {
+        const yearBtn = wrapper.querySelector('.sc-range-btn[data-days="365"]');
+        if (yearBtn) yearBtn.click();
+      });
+    }
     return;
   }
 
@@ -913,12 +1097,12 @@ function renderOpportunities(wrapper, result) {
     <table class="table sc-table">
       <thead>
         <tr>
-          <th>Query</th>
-          <th style="text-align:right;">Impressions</th>
-          <th style="text-align:right;">Position</th>
-          <th style="text-align:right;">Current CTR</th>
-          <th style="text-align:right;">Expected CTR</th>
-          <th style="text-align:right;">Potential clicks</th>
+          <th>${tip("Query")}</th>
+          <th class="num">${tip("Impressions")}</th>
+          <th class="num">${tip("Position")}</th>
+          <th class="num">Current ${tip("CTR")}</th>
+          <th class="num">${tip("Expected CTR")}</th>
+          <th class="num">${tip("Potential clicks")}</th>
         </tr>
       </thead>
       <tbody>
@@ -1000,10 +1184,10 @@ function rfTable(rows, dir) {
     <table class="table sc-table">
       <thead>
         <tr>
-          <th>Query</th>
-          <th style="text-align:right;">Prev</th>
-          <th style="text-align:right;">Now</th>
-          <th style="text-align:right;">Change</th>
+          <th>${tip("Query")}</th>
+          <th class="num" title="Clicks in the previous comparison period">Prev</th>
+          <th class="num" title="Clicks in the current period">Now</th>
+          <th class="num">Change</th>
         </tr>
       </thead>
       <tbody>
@@ -1124,12 +1308,12 @@ function renderRankedTable(wrapper, selector, result, dimKey, opts = {}) {
     <table class="table sc-table">
       <thead>
         <tr>
-          <th>${dimKey === "query" ? "Query" : isPage ? "Page" : isCountry ? "Country" : isDevice ? "Device" : "Appearance"}</th>
-          <th class="num">Clicks</th>
-          ${showDelta ? `<th class="num">Δ</th>` : ""}
-          <th class="num">Impr.</th>
-          <th class="num">CTR</th>
-          <th class="num">Pos.</th>
+          <th>${dimKey === "query" ? tip("Query") : isPage ? tip("Page") : isCountry ? "Country" : isDevice ? "Device" : tip("Appearance", { term: "search appearance" })}</th>
+          <th class="num">${tip("Clicks")}</th>
+          ${showDelta ? `<th class="num" title="Change in clicks vs. the previous period">Δ</th>` : ""}
+          <th class="num">${tip("Impr.", { term: "impressions" })}</th>
+          <th class="num">${tip("CTR")}</th>
+          <th class="num">${tip("Pos.", { term: "position" })}</th>
         </tr>
       </thead>
       <tbody>
@@ -1284,4 +1468,22 @@ function niceMax(v) {
 function niceTicks(max, count) {
   const step = max / count;
   return Array.from({ length: count + 1 }, (_, i) => Math.round(step * i));
+}
+
+// Empty state for the trend chart — explains *why* and offers a one-click fix.
+function renderTrendEmptyState() {
+  return `
+    <div class="sc-empty">
+      <div class="sc-empty-icon" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/><circle cx="7" cy="14" r="1"/><circle cx="11" cy="10" r="1"/><circle cx="15" cy="14" r="1"/><circle cx="20" cy="9" r="1"/></svg>
+      </div>
+      <div class="sc-empty-title">No clicks or impressions for this range</div>
+      <div class="sc-empty-body">
+        Either Google hasn't reported activity for these dates yet (GSC data lags ~2 days), or this period genuinely had no traffic.
+        A wider range usually has data — most sites do over a year.
+      </div>
+      <div class="sc-empty-actions">
+        <button type="button" class="sc-apply-btn" data-action="try-year">Try the 1-year range</button>
+      </div>
+    </div>`;
 }
