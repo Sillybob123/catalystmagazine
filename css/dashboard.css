@@ -6394,3 +6394,171 @@ button { font-family: inherit; cursor: pointer; }
 @media (max-width: 900px) {
   body:has(.sidebar.open) { overflow: hidden; }
 }
+
+/* ==========================================================================
+   MOBILE PASS — view-specific fixes (round 2)
+   These target individual dashboard views that ship their own injected
+   styles or use inline grid-template-columns. !important is used where
+   necessary to override inline styles that the JS hard-codes for desktop.
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  /* ----- Kanban board (Catalyst in the Capital / My Assignments / Op-Eds)
+     The board is a flex row of fixed-width 272px columns inside a horizontal
+     scroller. On phones we let it stack vertically, full-width, scrolling
+     the page instead of a sub-region. */
+  .kb-scroll {
+    overflow-x: visible !important;
+    padding-bottom: 8px;
+  }
+  .kb-board {
+    flex-direction: column !important;
+    flex-wrap: wrap;
+    gap: 12px !important;
+  }
+  .kb-col {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0;
+  }
+  .kb-col-body { min-height: 60px; }
+  .kb-header {
+    padding: 14px 16px !important;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .kb-header-actions { justify-content: flex-start; }
+
+  /* ----- Activity page (admin) — KPIs and per-person cards. */
+  .act-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .act-people { grid-template-columns: 1fr !important; }
+  .act-person { padding: 12px 14px !important; }
+  .act-person-stats { grid-template-columns: repeat(2, 1fr) !important; gap: 8px 4px !important; padding: 8px 0 !important; }
+  .act-stat-num { font-size: 16px; }
+  .act-risk-row { flex-direction: column; align-items: flex-start !important; gap: 8px !important; }
+}
+
+@media (max-width: 640px) {
+  /* ----- Kanban — extra trim on phone widths. */
+  .kb-header-title { font-size: 16px !important; }
+  .kb-header-sub { font-size: 12px !important; }
+  .kb-col-head { padding: 10px 12px !important; }
+  .kb-col-body { padding: 8px !important; }
+  .kb-card { padding: 10px 12px !important; }
+
+  /* ----- Newsletter Builder — the picker + preview is rendered with
+     inline `grid-template-columns: 1fr 1fr`. Stack on phones so the
+     iframe preview gets full width instead of a 150px strip. */
+  .card-body > .grid[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+  .newsletter-frame { height: 50dvh; min-height: 360px; }
+
+  /* ----- Article games — the "Game type" radio picker is inline 2-up. */
+  #kind-picker[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ----- Submissions inbox — collapsed-row layout uses inline 48px / 1fr / auto.
+     Stack the meta block under the title so the actions don't get cropped. */
+  .card-body div[data-expand][style*="grid-template-columns"] {
+    grid-template-columns: 48px 1fr !important;
+    grid-row-gap: 8px;
+  }
+  .card-body div[data-expand][style*="grid-template-columns"] > :last-child {
+    grid-column: 1 / -1;
+  }
+  /* The expanded detail grids inside a submission. */
+  .card-body div[style*="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))"],
+  .card-body div[style*="grid-template-columns: repeat(auto-fit,minmax(240px,1fr))"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ----- Sponsors / marketing — the create grid (1fr 420px) needs to stack. */
+  .sp-create-grid {
+    grid-template-columns: 1fr !important;
+  }
+  /* Sponsor suggestions auto-fill cards already responsive — just trim padding
+     so they don't crowd. */
+
+  /* ----- Searchability page — its trend table forces min-width:560px which
+     creates horizontal scroll on phones. Let it scroll within its card
+     rather than the page; already declared, just reinforce. */
+  .sc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  .sc-table { min-width: 0 !important; }
+  .sc-table thead { display: none; }
+  .sc-table, .sc-table tbody, .sc-table tr, .sc-table td {
+    display: block; width: 100%;
+  }
+  .sc-table tr {
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--surface);
+    margin-bottom: 8px;
+    padding: 4px 4px;
+  }
+  .sc-table td {
+    padding: 9px 12px !important;
+    border-bottom: 1px solid var(--hairline-2) !important;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+    font-size: 13px !important;
+  }
+  .sc-table td:last-child { border-bottom: none !important; }
+  .sc-dim-cell { max-width: none !important; text-align: right; }
+
+  /* ----- Subscriber list — same story: long horizontal table. The list uses
+     the generic `.table` class, which the round-1 mobile rules already
+     convert to stacked cards. Belt-and-braces: kill the inline min-width
+     wrappers that some admin tables apply. */
+  .table[style*="min-width"] { min-width: 0 !important; }
+  /* Some lists wrap themselves in an overflow-x scroller; trim it on phones
+     so the content can use full width instead of scrolling sideways. */
+  div[style*="overflowX"][style*="auto"],
+  div[style*="overflow-x"][style*="auto"] {
+    overflow-x: visible !important;
+  }
+
+  /* ----- Editorial standards page — the table-of-contents pills overflow
+     the content area at narrow widths. Allow the inner scroller; keep min
+     width sensible. */
+  .standards-toc-link { min-width: 180px !important; }
+  .standards-toc-list { padding: 4px 4px 8px !important; }
+  .standards-section { padding: 18px 14px 22px !important; }
+  .standards-section-title { font-size: 18px !important; }
+  .standards-section-intro { font-size: 14px !important; }
+
+  /* ----- Generic catch-all for inline `display:grid;grid-template-columns:1fr 1fr` ----
+     A handful of inline two-column layouts across newsletter, admin, marketing,
+     and admin-import. Match the inline style attribute and force single column. */
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"],
+  [style*="grid-template-columns:1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Two-column grids with px constraints (e.g. `120px 1fr`, `280px 1fr`,
+     `160px 1fr auto`, `minmax(0,1fr) 420px`) also stack on phones. */
+  [style*="grid-template-columns:280px 1fr"],
+  [style*="grid-template-columns: 280px 1fr"],
+  [style*="grid-template-columns:160px 1fr"],
+  [style*="grid-template-columns: 160px 1fr"],
+  [style*="grid-template-columns:120px 1fr"],
+  [style*="grid-template-columns: 120px 1fr"],
+  [style*="grid-template-columns:minmax(0,1fr) 420px"],
+  [style*="grid-template-columns: minmax(0,1fr) 420px"],
+  [style*="grid-template-columns:minmax(0, 1fr) minmax(0, 1fr)"],
+  [style*="grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ----- Welcome / hero card — the big title + buttons row should stack. */
+  .card-body[style*="justify-content:space-between"] {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+}
+
