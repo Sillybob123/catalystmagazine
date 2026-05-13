@@ -1541,62 +1541,35 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
   const el = wrapper.querySelector("#sc-geo-map");
   if (!el) return;
   const cityRows = visitsResult?.status === "fulfilled" ? (visitsResult.value.rows || []) : [];
-  const useCities = cityRows.length > 0;
-  if (!useCities && result.status !== "fulfilled") {
+  const hasCountryRows = result.status === "fulfilled" && (result.value.rows || []).length > 0;
+  const W = 920, H = 430;
+  const defaultUsZoom = 4;
+  const countryRows = hasCountryRows ? (result.value.rows || []) : [];
+  const usCityRows = cityRows.filter((r) =>
+    ["US", "USA"].includes(String(r.country || "").toUpperCase()) &&
+    typeof r.latitude === "number" &&
+    typeof r.longitude === "number"
+  );
+  const hasUsCities = usCityRows.length > 0;
+  if (!hasCountryRows && !hasUsCities && result.status !== "fulfilled") {
     el.innerHTML = `<div class="error-state">${esc(result.reason?.message || "Error loading geography")}</div>`;
     return;
   }
-  const rows = useCities ? cityRows : (result.value.rows || []);
-  if (!rows.length) {
+  if (!hasCountryRows && !hasUsCities) {
     el.innerHTML = `<div class="empty-state">No city or country geography data for this period yet.</div>`;
     return;
   }
 
-  const W = 920, H = 430;
-  const tileZoom = 2;
-  const tileCount = 2 ** tileZoom;
-  const tileW = W / tileCount;
-  const tileH = H / tileCount;
-  const maxClicks = Math.max(1, ...rows.map((r) => useCities ? (r.views || 0) : (r.clicks || 0)));
-  const maxImpr = Math.max(1, ...rows.map((r) => useCities ? (r.views || 0) : (r.impressions || 0)));
-  const knownRows = rows
+  const maxCountryClicks = Math.max(1, ...countryRows.map((r) => r.clicks || 0));
+  const maxCountryImpr = Math.max(1, ...countryRows.map((r) => r.impressions || 0));
+  const countryMarkers = countryRows
     .map((r, i) => {
-      if (useCities) {
-        if (typeof r.latitude !== "number" || typeof r.longitude !== "number") return null;
-        const p = projectCountry(r.longitude, r.latitude, W, H);
-        const views = r.views || 0;
-        const place = [r.city, r.region].filter(Boolean).join(", ") || countryName(r.country);
-        const country = countryName(r.country).replace(/^[^\w]+ /, "");
-        const label = r.city && r.city !== "Unknown city" ? shortMapLabel(r.city) : (r.country || "");
-        const radius = 4 + Math.sqrt(views / maxClicks) * 12;
-        const pulse = 8 + Math.sqrt(views / maxImpr) * 20;
-        return {
-          ...r,
-          code: r.country || "",
-          meta: { name: place, lat: r.latitude, lon: r.longitude },
-          x: p.x,
-          y: p.y,
-          radius,
-          pulse,
-          label: i < 8 ? label : "",
-          panelTitle: place,
-          primaryLabel: "Views",
-          primaryValue: fmtNum(views),
-          secondaryLabel: "Country",
-          secondaryValue: country || "—",
-          thirdLabel: "Days",
-          thirdValue: fmtNum(r.days || 1),
-          fourthLabel: "Timezone",
-          fourthValue: r.timezone || "—",
-          description: "City markers come from first-party Cloudflare edge geolocation and are aggregated by day without storing IP addresses, cookies, or visitor IDs.",
-        };
-      }
       const code = String(r.keys?.[0] || "").toUpperCase();
       const meta = COUNTRY_META[code];
       if (!meta) return null;
       const p = projectCountry(meta.lon, meta.lat, W, H);
-      const radius = 5 + Math.sqrt((r.clicks || 0) / maxClicks) * 17;
-      const pulse = 10 + Math.sqrt((r.impressions || 0) / maxImpr) * 28;
+      const radius = 5 + Math.sqrt((r.clicks || 0) / maxCountryClicks) * 17;
+      const pulse = 10 + Math.sqrt((r.impressions || 0) / maxCountryImpr) * 28;
       return {
         ...r,
         code,
@@ -1619,51 +1592,71 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
       };
     })
     .filter(Boolean)
-    .sort((a, b) => useCities ? ((b.views || 0) - (a.views || 0)) : ((b.clicks || 0) - (a.clicks || 0)))
-    .slice(0, useCities ? 30 : 15);
+    .sort((a, b) => (b.clicks || 0) - (a.clicks || 0))
+    .slice(0, 15);
 
-  if (!knownRows.length) {
+  const maxCityViews = Math.max(1, ...usCityRows.map((r) => r.views || 0));
+  const initialCityCenter = usCityRows.length ? weightedCityCenter(usCityRows) : US_MAP_CENTER;
+  const cityMarkers = usCityRows
+    .map((r, i) => {
+      const views = r.views || 0;
+      const p = projectRegional(r.longitude, r.latitude, W, H, defaultUsZoom, initialCityCenter);
+      const place = [r.city, r.region].filter(Boolean).join(", ") || "United States";
+      const label = r.city && r.city !== "Unknown city" ? shortMapLabel(r.city) : "US";
+      const radius = 4 + Math.sqrt(views / maxCityViews) * 12;
+      const pulse = 8 + Math.sqrt(views / maxCityViews) * 20;
+      return {
+        ...r,
+        code: "US",
+        meta: { name: place, lat: r.latitude, lon: r.longitude },
+        x: p.x,
+        y: p.y,
+        radius,
+        pulse,
+        label: i < 16 ? label : "",
+        panelTitle: place,
+        primaryLabel: "Views",
+        primaryValue: fmtNum(views),
+        secondaryLabel: "State",
+        secondaryValue: r.region || r.regionCode || "—",
+        thirdLabel: "Days",
+        thirdValue: fmtNum(r.days || 1),
+        fourthLabel: "Timezone",
+        fourthValue: r.timezone || "—",
+        description: "U.S. city markers come from first-party Cloudflare edge geolocation, aggregated by day without storing IP addresses, cookies, or visitor IDs.",
+      };
+    })
+    .sort((a, b) => (b.views || 0) - (a.views || 0))
+    .slice(0, 60);
+
+  if (!countryMarkers.length && !cityMarkers.length) {
     el.innerHTML = `<div class="empty-state">Geography rows are present, but no map coordinates are available for this period.</div>`;
     return;
   }
 
-  const top = knownRows[0];
-  const markerHtml = knownRows.slice().reverse().map((r) => {
-    const labelSide = r.meta.labelSide === "left" ? "left" : "right";
-    const labelX = labelSide === "left"
-      ? r.x - r.radius - 7 + (r.meta.labelDx || 0)
-      : r.x + r.radius + 7 + (r.meta.labelDx || 0);
-    const labelY = r.y + 4 + (r.meta.labelDy || 0);
-    return `
-    <g class="sc-map-marker" tabindex="0" role="button"
-      aria-label="${esc(r.meta.name)}: ${esc(r.primaryValue)} ${esc(r.primaryLabel.toLowerCase())}"
-      data-country="${esc(r.meta.name)}"
-      data-code="${esc(r.code)}"
-      data-primary-label="${esc(r.primaryLabel)}"
-      data-primary-value="${esc(r.primaryValue)}"
-      data-secondary-label="${esc(r.secondaryLabel)}"
-      data-secondary-value="${esc(r.secondaryValue)}"
-      data-third-label="${esc(r.thirdLabel)}"
-      data-third-value="${esc(r.thirdValue)}"
-      data-fourth-label="${esc(r.fourthLabel)}"
-      data-fourth-value="${esc(r.fourthValue)}">
-      <circle class="sc-map-pulse" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.pulse.toFixed(1)}"/>
-      <circle class="sc-map-dot${r === top ? " is-top" : ""}" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.radius.toFixed(1)}"/>
-      ${r.label ? `<text class="sc-map-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${labelSide === "left" ? "end" : "start"}">${esc(r.label)}</text>` : ""}
-    </g>`;
-  }).join("");
-  const tileHtml = Array.from({ length: tileCount }, (_, y) =>
-    Array.from({ length: tileCount }, (__, x) => `
-      <image href="https://tile.openstreetmap.org/${tileZoom}/${x}/${y}.png"
-        x="${(x * tileW).toFixed(1)}" y="${(y * tileH).toFixed(1)}"
-        width="${tileW.toFixed(1)}" height="${tileH.toFixed(1)}"
-        preserveAspectRatio="none"/>`).join("")
-  ).join("");
+  const defaultMode = cityMarkers.length ? "city" : "country";
+  const topCountry = countryMarkers[0];
+  const topCity = cityMarkers[0];
+  const countryTileHtml = renderWorldTiles(W, H);
+  const cityTileHtml = renderRegionalTiles(W, H, defaultUsZoom, initialCityCenter);
+  const countryMarkerHtml = buildMapMarkers(countryMarkers, topCountry);
+  const cityMarkerHtml = buildMapMarkers(cityMarkers, topCity, { city: true });
 
   el.innerHTML = `
-    <div class="sc-map-layout">
+    <div class="sc-map-controls" role="group" aria-label="Map view controls">
+      <div class="sc-map-mode-toggle" role="group" aria-label="Geography view">
+        <button type="button" class="sc-map-mode-btn" data-map-mode="country" aria-pressed="${defaultMode === "country"}"${countryMarkers.length ? "" : " disabled"}>Country view</button>
+        <button type="button" class="sc-map-mode-btn" data-map-mode="city" aria-pressed="${defaultMode === "city"}"${cityMarkers.length ? "" : " disabled"}>U.S. city view</button>
+      </div>
+      <div class="sc-map-zoom-controls" ${defaultMode === "city" ? "" : "hidden"}>
+        <button type="button" class="sc-map-zoom-btn" data-map-zoom="-1" aria-label="Zoom out">−</button>
+        <span class="sc-map-zoom-label" data-map-zoom-label>Zoom ${defaultUsZoom}</span>
+        <button type="button" class="sc-map-zoom-btn" data-map-zoom="1" aria-label="Zoom in">+</button>
+      </div>
+    </div>
+    <div class="sc-map-layout" data-map-mode="${defaultMode}" data-city-zoom="${defaultUsZoom}" data-city-center-lon="${initialCityCenter.lon}" data-city-center-lat="${initialCityCenter.lat}">
       <div class="sc-map-wrap">
-        <svg class="sc-map-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${useCities ? "City map of site visits" : "Country map of Google Search Console traffic"}">
+        <svg class="sc-map-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Reader geography map">
           <defs>
             <radialGradient id="sc-map-sea" cx="50%" cy="45%" r="70%">
               <stop offset="0%" stop-color="#f8fafc"/>
@@ -1679,33 +1672,174 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
             </linearGradient>
           </defs>
           <rect class="sc-map-ocean" x="0" y="0" width="${W}" height="${H}" rx="18"/>
-          <g class="sc-map-tile-layer" clip-path="url(#sc-map-clip)">${tileHtml}</g>
+          <g class="sc-map-tile-layer" clip-path="url(#sc-map-clip)" data-country-tiles="${esc(countryTileHtml)}" data-city-tiles="${esc(cityTileHtml)}">${defaultMode === "city" ? cityTileHtml : countryTileHtml}</g>
           <rect class="sc-map-vignette" x="0" y="0" width="${W}" height="${H}" rx="18"/>
-          ${markerHtml}
+          <g class="sc-map-country-layer" ${defaultMode === "city" ? "hidden" : ""}>${countryMarkerHtml}</g>
+          <g class="sc-map-city-layer" ${defaultMode === "city" ? "" : "hidden"}>${cityMarkerHtml}</g>
         </svg>
         <div class="sc-map-tooltip" hidden></div>
         <div class="sc-map-attribution">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a></div>
       </div>
       <aside class="sc-map-panel">
-        <div class="sc-map-panel-kicker">Top ${useCities ? "city" : "country"}</div>
-        <div class="sc-map-panel-title">${esc(top.panelTitle || top.meta.name)}</div>
-        <div class="sc-map-panel-grid">
-          <span><strong>${esc(top.primaryValue)}</strong>${esc(top.primaryLabel)}</span>
-          <span><strong>${esc(top.secondaryValue)}</strong>${esc(top.secondaryLabel)}</span>
-          <span><strong>${esc(top.thirdValue)}</strong>${esc(top.thirdLabel)}</span>
-          <span><strong>${esc(top.fourthValue)}</strong>${esc(top.fourthLabel)}</span>
-        </div>
-        <p>${esc(top.description)}</p>
+        ${topCountry ? mapPanelHtml(topCountry, "Top country", defaultMode === "country" ? "" : "hidden", "country") : ""}
+        ${topCity ? mapPanelHtml(topCity, "Top U.S. city", defaultMode === "city" ? "" : "hidden", "city") : ""}
+        ${!topCity ? `<div class="sc-map-panel-block" data-map-panel="city" hidden>
+          <div class="sc-map-panel-kicker">U.S. city view</div>
+          <div class="sc-map-panel-title">No city data yet</div>
+          <p>City data starts appearing after new public site visits are recorded by the first-party Cloudflare analytics endpoint.</p>
+        </div>` : ""}
       </aside>
     </div>`;
 
-  wireGeoMap(el);
+  wireGeoMap(el, { W, H });
 }
 
-function wireGeoMap(root) {
+function buildMapMarkers(rows, top, { city = false } = {}) {
+  return rows.slice().reverse().map((r) => {
+    const labelSide = r.meta.labelSide === "left" ? "left" : "right";
+    const labelX = labelSide === "left"
+      ? r.x - r.radius - 7 + (r.meta.labelDx || 0)
+      : r.x + r.radius + 7 + (r.meta.labelDx || 0);
+    const labelY = r.y + 4 + (r.meta.labelDy || 0);
+    return `
+    <g class="sc-map-marker${city ? " sc-map-city-marker" : ""}" tabindex="0" role="button"
+      aria-label="${esc(r.meta.name)}: ${esc(r.primaryValue)} ${esc(r.primaryLabel.toLowerCase())}"
+      data-lat="${r.meta.lat}"
+      data-lon="${r.meta.lon}"
+      data-radius="${r.radius.toFixed(2)}"
+      data-pulse="${r.pulse.toFixed(2)}"
+      data-label="${esc(r.label || "")}"
+      data-panel-title="${esc(r.panelTitle || r.meta.name)}"
+      data-description="${esc(r.description || "")}"
+      data-country="${esc(r.meta.name)}"
+      data-code="${esc(r.code)}"
+      data-primary-label="${esc(r.primaryLabel)}"
+      data-primary-value="${esc(r.primaryValue)}"
+      data-secondary-label="${esc(r.secondaryLabel)}"
+      data-secondary-value="${esc(r.secondaryValue)}"
+      data-third-label="${esc(r.thirdLabel)}"
+      data-third-value="${esc(r.thirdValue)}"
+      data-fourth-label="${esc(r.fourthLabel)}"
+      data-fourth-value="${esc(r.fourthValue)}">
+      <circle class="sc-map-pulse" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.pulse.toFixed(1)}"/>
+      <circle class="sc-map-dot${r === top ? " is-top" : ""}" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.radius.toFixed(1)}"/>
+      ${r.label ? `<text class="sc-map-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${labelSide === "left" ? "end" : "start"}">${esc(r.label)}</text>` : ""}
+    </g>`;
+  }).join("");
+}
+
+function renderWorldTiles(W, H) {
+  const tileZoom = 2;
+  const tileCount = 2 ** tileZoom;
+  const tileW = W / tileCount;
+  const tileH = H / tileCount;
+  return Array.from({ length: tileCount }, (_, y) =>
+    Array.from({ length: tileCount }, (__, x) => `
+      <image href="https://tile.openstreetmap.org/${tileZoom}/${x}/${y}.png"
+        x="${(x * tileW).toFixed(1)}" y="${(y * tileH).toFixed(1)}"
+        width="${tileW.toFixed(1)}" height="${tileH.toFixed(1)}"
+        preserveAspectRatio="none"/>`).join("")
+  ).join("");
+}
+
+function renderRegionalTiles(W, H, zoom, center) {
+  const tileSize = 256;
+  const scale = 2 ** zoom * tileSize;
+  const c = mercatorPixel(center.lon, center.lat, zoom);
+  const left = c.x - W / 2;
+  const top = c.y - H / 2;
+  const minX = Math.floor(left / tileSize);
+  const maxX = Math.floor((left + W) / tileSize);
+  const minY = Math.floor(top / tileSize);
+  const maxY = Math.floor((top + H) / tileSize);
+  const tileMax = 2 ** zoom;
+  const images = [];
+  for (let ty = minY; ty <= maxY; ty++) {
+    if (ty < 0 || ty >= tileMax) continue;
+    for (let tx = minX; tx <= maxX; tx++) {
+      const wrappedX = ((tx % tileMax) + tileMax) % tileMax;
+      images.push(`<image href="https://tile.openstreetmap.org/${zoom}/${wrappedX}/${ty}.png"
+        x="${(tx * tileSize - left).toFixed(1)}" y="${(ty * tileSize - top).toFixed(1)}"
+        width="${tileSize}" height="${tileSize}" preserveAspectRatio="none"/>`);
+    }
+  }
+  return images.join("");
+}
+
+function mapPanelHtml(row, kicker, hidden, panelKey) {
+  return `<div class="sc-map-panel-block" data-map-panel="${panelKey}" ${hidden}>
+    <div class="sc-map-panel-kicker">${esc(kicker)}</div>
+    <div class="sc-map-panel-title">${esc(row.panelTitle || row.meta.name)}</div>
+    <div class="sc-map-panel-grid">
+      <span><strong>${esc(row.primaryValue)}</strong>${esc(row.primaryLabel)}</span>
+      <span><strong>${esc(row.secondaryValue)}</strong>${esc(row.secondaryLabel)}</span>
+      <span><strong>${esc(row.thirdValue)}</strong>${esc(row.thirdLabel)}</span>
+      <span><strong>${esc(row.fourthValue)}</strong>${esc(row.fourthLabel)}</span>
+    </div>
+    <p>${esc(row.description)}</p>
+  </div>`;
+}
+
+function wireGeoMap(root, dims = { W: 920, H: 430 }) {
   const wrap = root.querySelector(".sc-map-wrap");
   const tipEl = root.querySelector(".sc-map-tooltip");
+  const layout = root.querySelector(".sc-map-layout");
+  const tileLayer = root.querySelector(".sc-map-tile-layer");
+  const countryLayer = root.querySelector(".sc-map-country-layer");
+  const cityLayer = root.querySelector(".sc-map-city-layer");
+  const zoomControls = root.querySelector(".sc-map-zoom-controls");
+  const zoomLabel = root.querySelector("[data-map-zoom-label]");
   if (!wrap || !tipEl) return;
+  const setMode = (mode) => {
+    if (!layout || !tileLayer) return;
+    const next = mode === "city" ? "city" : "country";
+    layout.dataset.mapMode = next;
+    tileLayer.innerHTML = next === "city" ? (tileLayer.dataset.cityTiles || "") : (tileLayer.dataset.countryTiles || "");
+    if (countryLayer) {
+      countryLayer.hidden = next === "city";
+      countryLayer.style.display = next === "city" ? "none" : "";
+    }
+    if (cityLayer) {
+      cityLayer.hidden = next !== "city";
+      cityLayer.style.display = next !== "city" ? "none" : "";
+    }
+    if (zoomControls) zoomControls.hidden = next !== "city";
+    root.querySelectorAll(".sc-map-mode-btn").forEach((btn) => {
+      btn.setAttribute("aria-pressed", String(btn.dataset.mapMode === next));
+    });
+    root.querySelectorAll("[data-map-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.mapPanel !== next;
+    });
+    tipEl.hidden = true;
+  };
+  const refreshCityMap = () => {
+    if (!layout || !tileLayer) return;
+    const zoom = Number(layout.dataset.cityZoom || 4);
+    const center = {
+      lon: Number(layout.dataset.cityCenterLon || US_MAP_CENTER.lon),
+      lat: Number(layout.dataset.cityCenterLat || US_MAP_CENTER.lat),
+    };
+    const tileHtml = renderRegionalTiles(dims.W, dims.H, zoom, center);
+    tileLayer.dataset.cityTiles = tileHtml;
+    if (layout.dataset.mapMode === "city") tileLayer.innerHTML = tileHtml;
+    if (zoomLabel) zoomLabel.textContent = `Zoom ${zoom}`;
+    root.querySelectorAll(".sc-map-city-marker").forEach((marker) => {
+      const lon = Number(marker.dataset.lon);
+      const lat = Number(marker.dataset.lat);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
+      const p = projectRegional(lon, lat, dims.W, dims.H, zoom, center);
+      const radius = Number(marker.dataset.radius || 8);
+      const label = marker.querySelector(".sc-map-label");
+      marker.querySelector(".sc-map-pulse")?.setAttribute("cx", p.x.toFixed(1));
+      marker.querySelector(".sc-map-pulse")?.setAttribute("cy", p.y.toFixed(1));
+      marker.querySelector(".sc-map-dot")?.setAttribute("cx", p.x.toFixed(1));
+      marker.querySelector(".sc-map-dot")?.setAttribute("cy", p.y.toFixed(1));
+      if (label) {
+        label.setAttribute("x", (p.x + radius + 7).toFixed(1));
+        label.setAttribute("y", (p.y + 4).toFixed(1));
+      }
+    });
+  };
   const show = (marker) => {
     const dot = marker.querySelector(".sc-map-dot");
     if (!dot) return;
@@ -1723,13 +1857,58 @@ function wireGeoMap(root) {
     tipEl.style.top = `${Math.max(12, dotBox.top - box.top - 12)}px`;
     tipEl.hidden = false;
   };
+  const updatePanelFromMarker = (marker) => {
+    if (!layout) return;
+    const panel = root.querySelector(`[data-map-panel="${layout.dataset.mapMode}"]`);
+    if (!panel) return;
+    const title = panel.querySelector(".sc-map-panel-title");
+    const grid = panel.querySelector(".sc-map-panel-grid");
+    const note = panel.querySelector("p");
+    if (title) title.textContent = marker.dataset.panelTitle || marker.dataset.country || "";
+    if (grid) {
+      grid.innerHTML = `
+        <span><strong>${esc(marker.dataset.primaryValue || "0")}</strong>${esc(marker.dataset.primaryLabel || "Views")}</span>
+        <span><strong>${esc(marker.dataset.secondaryValue || "—")}</strong>${esc(marker.dataset.secondaryLabel || "Country")}</span>
+        <span><strong>${esc(marker.dataset.thirdValue || "—")}</strong>${esc(marker.dataset.thirdLabel || "Days")}</span>
+        <span><strong>${esc(marker.dataset.fourthValue || "—")}</strong>${esc(marker.dataset.fourthLabel || "Timezone")}</span>`;
+    }
+    if (note && marker.dataset.description) note.textContent = marker.dataset.description;
+  };
+  root.querySelectorAll(".sc-map-mode-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!btn.disabled) setMode(btn.dataset.mapMode);
+    });
+  });
+  root.querySelectorAll(".sc-map-zoom-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (!layout) return;
+      const delta = Number(btn.dataset.mapZoom || 0);
+      const current = Number(layout.dataset.cityZoom || 4);
+      layout.dataset.cityZoom = String(Math.max(3, Math.min(8, current + delta)));
+      refreshCityMap();
+      tipEl.hidden = true;
+    });
+  });
   root.querySelectorAll(".sc-map-marker").forEach((marker) => {
     marker.addEventListener("mouseenter", () => show(marker));
     marker.addEventListener("focus", () => show(marker));
-    marker.addEventListener("click", () => show(marker));
+    marker.addEventListener("click", () => {
+      if (marker.classList.contains("sc-map-city-marker") && layout) {
+        layout.dataset.cityCenterLon = marker.dataset.lon || layout.dataset.cityCenterLon;
+        layout.dataset.cityCenterLat = marker.dataset.lat || layout.dataset.cityCenterLat;
+        layout.dataset.cityZoom = String(Math.max(6, Number(layout.dataset.cityZoom || 4)));
+        refreshCityMap();
+      }
+      updatePanelFromMarker(marker);
+      show(marker);
+    });
     marker.addEventListener("mouseleave", () => { tipEl.hidden = true; });
   });
+  setMode(layout?.dataset.mapMode || "country");
+  refreshCityMap();
 }
+
+const US_MAP_CENTER = { lon: -98.6, lat: 39.8 };
 
 function projectCountry(lon, lat, width, height) {
   const x = ((lon + 180) / 360) * width;
@@ -1737,6 +1916,40 @@ function projectCountry(lon, lat, width, height) {
   const latRad = boundedLat * Math.PI / 180;
   const y = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * height;
   return { x, y };
+}
+
+function projectRegional(lon, lat, width, height, zoom, center) {
+  const point = mercatorPixel(lon, lat, zoom);
+  const c = mercatorPixel(center.lon, center.lat, zoom);
+  return {
+    x: width / 2 + point.x - c.x,
+    y: height / 2 + point.y - c.y,
+  };
+}
+
+function mercatorPixel(lon, lat, zoom) {
+  const tileSize = 256;
+  const scale = 2 ** zoom * tileSize;
+  const boundedLat = Math.max(-85.05112878, Math.min(85.05112878, lat));
+  const latRad = boundedLat * Math.PI / 180;
+  return {
+    x: ((lon + 180) / 360) * scale,
+    y: (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * scale,
+  };
+}
+
+function weightedCityCenter(rows) {
+  let total = 0;
+  let lon = 0;
+  let lat = 0;
+  rows.forEach((r) => {
+    const weight = Math.max(1, Number(r.views || 0));
+    lon += Number(r.longitude) * weight;
+    lat += Number(r.latitude) * weight;
+    total += weight;
+  });
+  if (!total) return US_MAP_CENTER;
+  return { lon: lon / total, lat: lat / total };
 }
 
 function shortMapLabel(label) {

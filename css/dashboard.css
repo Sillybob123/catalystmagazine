@@ -5466,6 +5466,55 @@ button { font-family: inherit; cursor: pointer; }
 .sc-map-card .sc-card-body {
   padding: 18px 20px 20px;
 }
+.sc-map-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.sc-map-mode-toggle,
+.sc-map-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--sc-border);
+  border-radius: 10px;
+  background: #fff;
+  padding: 3px;
+}
+.sc-map-mode-btn,
+.sc-map-zoom-btn {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  padding: 7px 10px;
+}
+.sc-map-mode-btn[aria-pressed="true"],
+.sc-map-zoom-btn:hover {
+  background: rgba(15, 118, 110, 0.10);
+  color: var(--accent);
+}
+.sc-map-mode-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.sc-map-zoom-btn {
+  min-width: 30px;
+  font-size: 16px;
+  line-height: 1;
+}
+.sc-map-zoom-label {
+  min-width: 58px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 750;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 .sc-map-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
@@ -5490,6 +5539,14 @@ button { font-family: inherit; cursor: pointer; }
 }
 .sc-map-tile-layer image {
   opacity: 0.86;
+  pointer-events: none;
+}
+.sc-map-tile-layer {
+  pointer-events: none;
+}
+.sc-map-country-layer[hidden],
+.sc-map-city-layer[hidden] {
+  display: none;
 }
 .sc-map-vignette {
   fill: url(#sc-map-vignette);
@@ -5601,6 +5658,9 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 14px;
   background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
   padding: 18px;
+}
+.sc-map-panel-block[hidden] {
+  display: none;
 }
 .sc-map-panel-kicker {
   font-size: 10.5px;
@@ -5715,6 +5775,9 @@ button { font-family: inherit; cursor: pointer; }
   .sc-chart-note { width: 100%; margin-left: 0; }
   .sc-chart-tooltip { display: none; }
   .sc-map-card .sc-card-body { padding: 12px; }
+  .sc-map-controls { flex-direction: column; align-items: stretch; }
+  .sc-map-mode-toggle,
+  .sc-map-zoom-controls { width: 100%; justify-content: center; }
   .sc-map-layout { grid-template-columns: 1fr; }
   .sc-map-svg { min-height: 260px; }
   .sc-map-panel { padding: 14px; }
