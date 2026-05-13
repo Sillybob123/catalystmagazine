@@ -5321,6 +5321,7 @@ button { font-family: inherit; cursor: pointer; }
   stroke: rgba(15, 118, 110, 0.18);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 .sc-map-dot {
   fill: rgba(15, 118, 110, 0.86);

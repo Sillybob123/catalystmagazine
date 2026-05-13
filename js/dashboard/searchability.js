@@ -321,8 +321,8 @@ export async function mount(ctx, container) {
       <section class="sc-card sc-map-card">
         <div class="sc-card-head">
           <div>
-            <h3 class="sc-card-title">Search geography map</h3>
-            <p class="sc-card-sub">Country-level Google Search Console data. Hover or tap a marker to see clicks, impressions, CTR, and average position.</p>
+            <h3 class="sc-card-title">Reader geography map</h3>
+            <p class="sc-card-sub">City-level site visits when available, with Search Console country data as a fallback. Hover or tap a marker for details.</p>
           </div>
         </div>
         <div class="sc-card-body" id="sc-geo-map"><div class="loading-state"><div class="spinner"></div></div></div>
@@ -547,6 +547,15 @@ async function gscQuery(ctx, type, range, opts = {}) {
   return { rows: data.rows || [], compareRows: data.compareRows || null };
 }
 
+async function geoVisitQuery(ctx, range) {
+  const { startDate, endDate } = resolveRange(range);
+  const params = new URLSearchParams({ startDate, endDate, limit: "150" });
+  const res = await ctx.authedFetch(`/api/analytics/geo?${params.toString()}`);
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return { rows: data.rows || [] };
+}
+
 async function loadAll(ctx, wrapper, state) {
   const { range, searchType } = state;
 
@@ -576,7 +585,7 @@ async function loadAll(ctx, wrapper, state) {
   const opts = { searchType };
   const optsCmp = { ...opts, compare: true };
 
-  const [overview, dates, queries, pages, countries, devices, appearance] = await Promise.allSettled([
+  const [overview, dates, queries, pages, countries, devices, appearance, geoVisits] = await Promise.allSettled([
     gscQuery(ctx, "overview",  range, { ...optsCmp }),
     gscQuery(ctx, "dates",     range, { ...opts, rowLimit: 365 }),
     gscQuery(ctx, "queries",   range, { ...optsCmp, rowLimit: 100 }),
@@ -584,11 +593,12 @@ async function loadAll(ctx, wrapper, state) {
     gscQuery(ctx, "countries", range, { ...opts, rowLimit: 15 }),
     gscQuery(ctx, "devices",   range, { ...opts, rowLimit: 5  }),
     gscQuery(ctx, "searchAppearance", range, { ...opts, rowLimit: 15 }),
+    geoVisitQuery(ctx, range),
   ]);
 
   // Stash everything for CSV export + chart toggle
   state.lastData = {
-    overview, dates, queries, pages, countries, devices, appearance, range, searchType,
+    overview, dates, queries, pages, countries, devices, appearance, geoVisits, range, searchType,
   };
 
   // ── KPIs ──
@@ -661,7 +671,7 @@ async function loadAll(ctx, wrapper, state) {
   renderRankedTable(wrapper, "#sc-pages",     pages,     "page",    { topN: 15 });
   renderRankedTable(wrapper, "#sc-countries", countries, "country", { topN: 10 });
   renderRankedTable(wrapper, "#sc-devices",   devices,   "device",  { topN: 5  });
-  renderGeoMap(wrapper, countries);
+  renderGeoMap(wrapper, countries, geoVisits);
 
   // ── Search appearance (optional — only show if rows exist) ──
   if (appearance.status === "fulfilled" && appearance.value.rows.length) {
@@ -1518,16 +1528,18 @@ function renderBrandSplit(wrapper, queriesResult, overviewResult) {
 
 // ── Geographic map ──────────────────────────────────────────────────────────
 
-function renderGeoMap(wrapper, result) {
+function renderGeoMap(wrapper, result, visitsResult = null) {
   const el = wrapper.querySelector("#sc-geo-map");
   if (!el) return;
-  if (result.status !== "fulfilled") {
+  const cityRows = visitsResult?.status === "fulfilled" ? (visitsResult.value.rows || []) : [];
+  const useCities = cityRows.length > 0;
+  if (!useCities && result.status !== "fulfilled") {
     el.innerHTML = `<div class="error-state">${esc(result.reason?.message || "Error loading geography")}</div>`;
     return;
   }
-  const rows = result.value.rows || [];
+  const rows = useCities ? cityRows : (result.value.rows || []);
   if (!rows.length) {
-    el.innerHTML = `<div class="empty-state">No country data for this period.</div>`;
+    el.innerHTML = `<div class="empty-state">No city or country geography data for this period yet.</div>`;
     return;
   }
 
@@ -1536,28 +1548,78 @@ function renderGeoMap(wrapper, result) {
   const tileCount = 2 ** tileZoom;
   const tileW = W / tileCount;
   const tileH = H / tileCount;
-  const maxClicks = Math.max(1, ...rows.map((r) => r.clicks || 0));
-  const maxImpr = Math.max(1, ...rows.map((r) => r.impressions || 0));
+  const maxClicks = Math.max(1, ...rows.map((r) => useCities ? (r.views || 0) : (r.clicks || 0)));
+  const maxImpr = Math.max(1, ...rows.map((r) => useCities ? (r.views || 0) : (r.impressions || 0)));
   const knownRows = rows
-    .map((r) => {
+    .map((r, i) => {
+      if (useCities) {
+        if (typeof r.latitude !== "number" || typeof r.longitude !== "number") return null;
+        const p = projectCountry(r.longitude, r.latitude, W, H);
+        const views = r.views || 0;
+        const place = [r.city, r.region].filter(Boolean).join(", ") || countryName(r.country);
+        const country = countryName(r.country).replace(/^[^\w]+ /, "");
+        const label = r.city && r.city !== "Unknown city" ? shortMapLabel(r.city) : (r.country || "");
+        const radius = 5 + Math.sqrt(views / maxClicks) * 17;
+        const pulse = 10 + Math.sqrt(views / maxImpr) * 28;
+        return {
+          ...r,
+          code: r.country || "",
+          meta: { name: place, lat: r.latitude, lon: r.longitude },
+          x: p.x,
+          y: p.y,
+          radius,
+          pulse,
+          label: i < 8 ? label : "",
+          panelTitle: place,
+          primaryLabel: "Views",
+          primaryValue: fmtNum(views),
+          secondaryLabel: "Country",
+          secondaryValue: country || "—",
+          thirdLabel: "Days",
+          thirdValue: fmtNum(r.days || 1),
+          fourthLabel: "Timezone",
+          fourthValue: r.timezone || "—",
+          description: "City markers come from first-party Cloudflare edge geolocation and are aggregated by day without storing IP addresses, cookies, or visitor IDs.",
+        };
+      }
       const code = String(r.keys?.[0] || "").toUpperCase();
       const meta = COUNTRY_META[code];
       if (!meta) return null;
       const p = projectCountry(meta.lon, meta.lat, W, H);
       const radius = 5 + Math.sqrt((r.clicks || 0) / maxClicks) * 17;
       const pulse = 10 + Math.sqrt((r.impressions || 0) / maxImpr) * 28;
-      return { ...r, code, meta, x: p.x, y: p.y, radius, pulse };
+      return {
+        ...r,
+        code,
+        meta,
+        x: p.x,
+        y: p.y,
+        radius,
+        pulse,
+        label: code,
+        panelTitle: meta.name,
+        primaryLabel: "Clicks",
+        primaryValue: fmtNum(r.clicks || 0),
+        secondaryLabel: "Impressions",
+        secondaryValue: fmtNum(r.impressions || 0),
+        thirdLabel: "CTR",
+        thirdValue: r.ctr != null ? `${(r.ctr * 100).toFixed(1)}%` : "—",
+        fourthLabel: "Position",
+        fourthValue: r.position != null ? r.position.toFixed(1) : "—",
+        description: "Search Console provides country-level geography only. City-level site visit data will appear here after the first-party tracker has collected visits.",
+      };
     })
     .filter(Boolean)
-    .sort((a, b) => (b.clicks || 0) - (a.clicks || 0));
+    .sort((a, b) => useCities ? ((b.views || 0) - (a.views || 0)) : ((b.clicks || 0) - (a.clicks || 0)))
+    .slice(0, useCities ? 30 : 15);
 
   if (!knownRows.length) {
-    el.innerHTML = `<div class="empty-state">Country codes are present, but no map coordinates are available for this period.</div>`;
+    el.innerHTML = `<div class="empty-state">Geography rows are present, but no map coordinates are available for this period.</div>`;
     return;
   }
 
   const top = knownRows[0];
-  const markerHtml = knownRows.map((r, i) => {
+  const markerHtml = knownRows.slice().reverse().map((r) => {
     const labelSide = r.meta.labelSide === "left" ? "left" : "right";
     const labelX = labelSide === "left"
       ? r.x - r.radius - 7 + (r.meta.labelDx || 0)
@@ -1565,16 +1627,20 @@ function renderGeoMap(wrapper, result) {
     const labelY = r.y + 4 + (r.meta.labelDy || 0);
     return `
     <g class="sc-map-marker" tabindex="0" role="button"
-      aria-label="${esc(r.meta.name)}: ${fmtNum(r.clicks || 0)} clicks, ${fmtNum(r.impressions || 0)} impressions"
+      aria-label="${esc(r.meta.name)}: ${esc(r.primaryValue)} ${esc(r.primaryLabel.toLowerCase())}"
       data-country="${esc(r.meta.name)}"
       data-code="${esc(r.code)}"
-      data-clicks="${fmtNum(r.clicks || 0)}"
-      data-impressions="${fmtNum(r.impressions || 0)}"
-      data-ctr="${r.ctr != null ? `${(r.ctr * 100).toFixed(1)}%` : "—"}"
-      data-position="${r.position != null ? r.position.toFixed(1) : "—"}">
+      data-primary-label="${esc(r.primaryLabel)}"
+      data-primary-value="${esc(r.primaryValue)}"
+      data-secondary-label="${esc(r.secondaryLabel)}"
+      data-secondary-value="${esc(r.secondaryValue)}"
+      data-third-label="${esc(r.thirdLabel)}"
+      data-third-value="${esc(r.thirdValue)}"
+      data-fourth-label="${esc(r.fourthLabel)}"
+      data-fourth-value="${esc(r.fourthValue)}">
       <circle class="sc-map-pulse" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.pulse.toFixed(1)}"/>
-      <circle class="sc-map-dot${i === 0 ? " is-top" : ""}" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.radius.toFixed(1)}"/>
-      <text class="sc-map-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${labelSide === "left" ? "end" : "start"}">${esc(r.code)}</text>
+      <circle class="sc-map-dot${r === top ? " is-top" : ""}" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.radius.toFixed(1)}"/>
+      ${r.label ? `<text class="sc-map-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${labelSide === "left" ? "end" : "start"}">${esc(r.label)}</text>` : ""}
     </g>`;
   }).join("");
   const tileHtml = Array.from({ length: tileCount }, (_, y) =>
@@ -1588,7 +1654,7 @@ function renderGeoMap(wrapper, result) {
   el.innerHTML = `
     <div class="sc-map-layout">
       <div class="sc-map-wrap">
-        <svg class="sc-map-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Country map of Google Search Console traffic">
+        <svg class="sc-map-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${useCities ? "City map of site visits" : "Country map of Google Search Console traffic"}">
           <defs>
             <radialGradient id="sc-map-sea" cx="50%" cy="45%" r="70%">
               <stop offset="0%" stop-color="#f8fafc"/>
@@ -1612,15 +1678,15 @@ function renderGeoMap(wrapper, result) {
         <div class="sc-map-attribution">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a></div>
       </div>
       <aside class="sc-map-panel">
-        <div class="sc-map-panel-kicker">Top country</div>
-        <div class="sc-map-panel-title">${esc(top.meta.name)}</div>
+        <div class="sc-map-panel-kicker">Top ${useCities ? "city" : "country"}</div>
+        <div class="sc-map-panel-title">${esc(top.panelTitle || top.meta.name)}</div>
         <div class="sc-map-panel-grid">
-          <span><strong>${fmtNum(top.clicks || 0)}</strong>Clicks</span>
-          <span><strong>${fmtNum(top.impressions || 0)}</strong>Impressions</span>
-          <span><strong>${top.ctr != null ? `${(top.ctr * 100).toFixed(1)}%` : "—"}</strong>CTR</span>
-          <span><strong>${top.position != null ? top.position.toFixed(1) : "—"}</strong>Position</span>
+          <span><strong>${esc(top.primaryValue)}</strong>${esc(top.primaryLabel)}</span>
+          <span><strong>${esc(top.secondaryValue)}</strong>${esc(top.secondaryLabel)}</span>
+          <span><strong>${esc(top.thirdValue)}</strong>${esc(top.thirdLabel)}</span>
+          <span><strong>${esc(top.fourthValue)}</strong>${esc(top.fourthLabel)}</span>
         </div>
-        <p>Markers are sized by clicks; the soft halo reflects impressions. City-level search location is not available in Google Search Console.</p>
+        <p>${esc(top.description)}</p>
       </aside>
     </div>`;
 
@@ -1639,10 +1705,10 @@ function wireGeoMap(root) {
     tipEl.innerHTML = `
       <div class="sc-map-tooltip-title">${esc(marker.dataset.country || marker.dataset.code || "Country")}</div>
       <div class="sc-map-tooltip-grid">
-        <span><strong>${esc(marker.dataset.clicks || "0")}</strong>Clicks</span>
-        <span><strong>${esc(marker.dataset.impressions || "0")}</strong>Impr.</span>
-        <span><strong>${esc(marker.dataset.ctr || "—")}</strong>CTR</span>
-        <span><strong>${esc(marker.dataset.position || "—")}</strong>Pos.</span>
+        <span><strong>${esc(marker.dataset.primaryValue || "0")}</strong>${esc(marker.dataset.primaryLabel || "Views")}</span>
+        <span><strong>${esc(marker.dataset.secondaryValue || "—")}</strong>${esc(marker.dataset.secondaryLabel || "Country")}</span>
+        <span><strong>${esc(marker.dataset.thirdValue || "—")}</strong>${esc(marker.dataset.thirdLabel || "Days")}</span>
+        <span><strong>${esc(marker.dataset.fourthValue || "—")}</strong>${esc(marker.dataset.fourthLabel || "Timezone")}</span>
       </div>`;
     tipEl.style.left = `${Math.max(12, Math.min(box.width - 210, dotBox.left - box.left + 18))}px`;
     tipEl.style.top = `${Math.max(12, dotBox.top - box.top - 12)}px`;
@@ -1662,6 +1728,11 @@ function projectCountry(lon, lat, width, height) {
   const latRad = boundedLat * Math.PI / 180;
   const y = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * height;
   return { x, y };
+}
+
+function shortMapLabel(label) {
+  const text = String(label || "").trim();
+  return text.length > 16 ? `${text.slice(0, 15)}…` : text;
 }
 
 // ── Generic ranked table (used for queries / pages / countries / devices) ────

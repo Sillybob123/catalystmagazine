@@ -299,6 +299,27 @@ export async function firestoreRunQuery(env, structuredQuery) {
     }));
 }
 
+export async function firestoreCommit(env, writes) {
+  const token = await getServiceAccountAccessToken(env);
+  const res = await fetch(`${firestoreBase(env)}:commit`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ writes }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Firestore commit failed ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+export function firestoreDocumentName(env, path) {
+  return `${firestoreBase(env)}/${path}`;
+}
+
 // Convert plain JS -> Firestore typed fields
 function toFirestoreFields(obj) {
   const out = {};

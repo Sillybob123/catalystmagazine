@@ -352,6 +352,7 @@ async function initApp() {
 
     // Page-specific initialization
     const page = document.body.dataset.page || detectPage();
+    recordGeoVisit(page);
 
     // Render instant skeletons so containers are visible immediately
     renderInitialSkeletons(page);
@@ -391,6 +392,35 @@ function detectPage() {
     if (path.includes('collaborate')) return 'collaborate';
     if (path.includes('about')) return 'about';
     return 'home';
+}
+
+function recordGeoVisit(page) {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1' || host === '') return;
+    if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/scheduler')) return;
+
+    const payload = JSON.stringify({
+        path: window.location.pathname,
+        page,
+        title: document.title,
+        referrer: document.referrer ? new URL(document.referrer, window.location.href).hostname : '',
+    });
+
+    try {
+        if (navigator.sendBeacon) {
+            const blob = new Blob([payload], { type: 'application/json' });
+            if (navigator.sendBeacon('/api/analytics/visit', blob)) return;
+        }
+    } catch {}
+
+    try {
+        fetch('/api/analytics/visit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload,
+            keepalive: true,
+        }).catch(() => {});
+    } catch {}
 }
 
 // ============================================
