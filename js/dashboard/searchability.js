@@ -40,160 +40,221 @@ export async function mount(ctx, container) {
 
   const wrapper = el("div", { class: "sc-page" });
   wrapper.innerHTML = `
-    <div class="sc-header">
-      <div>
-        <div class="card-title" style="font-size:22px;">Searchability</div>
-        <div class="card-subtitle">Google Search Console — how readers find Catalyst on Google, where the wins are, and what to fix.</div>
-      </div>
-      <div class="sc-toolbar">
-        <div class="sc-range-picker" id="sc-range-picker" role="tablist" aria-label="Date range">
-          ${RANGES.map((r, i) =>
-            `<button class="sc-range-btn ${i === 1 ? "is-active" : ""}" data-days="${r.days}" role="tab" aria-selected="${i === 1}">${esc(r.label)}</button>`
-          ).join("")}
+    <!-- ─── HERO: page title + filters + KPI strip in one premium card ─── -->
+    <section class="sc-hero" aria-labelledby="sc-hero-title">
+      <div class="sc-hero-top">
+        <div class="sc-hero-title-block">
+          <div class="sc-hero-eyebrow">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Google Search Console
+          </div>
+          <h1 class="sc-hero-title" id="sc-hero-title">Searchability</h1>
+          <p class="sc-hero-sub">How readers find Catalyst on Google — performance, opportunities, and trends.</p>
         </div>
-        <select class="input sc-search-type" id="sc-search-type" aria-label="Search type">
-          ${SEARCH_TYPES.map((t) => `<option value="${esc(t.value)}">${esc(t.label)} search</option>`).join("")}
-        </select>
-        <button class="btn btn-ghost btn-sm" id="sc-refresh" title="Refresh data">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><polyline points="1 20 1 14 7 14"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
-          Refresh
-        </button>
+
+        <div class="sc-controls" role="toolbar" aria-label="Filters">
+          <div class="sc-control-group">
+            <label class="sc-control-label" for="sc-range-picker">Range</label>
+            <div class="sc-range-picker" id="sc-range-picker" role="tablist" aria-label="Date range">
+              ${RANGES.map((r, i) =>
+                `<button type="button" class="sc-range-btn ${i === 1 ? "is-active" : ""}" data-days="${r.days}" role="tab" aria-selected="${i === 1}">${esc(r.label)}</button>`
+              ).join("")}
+            </div>
+          </div>
+          <div class="sc-control-group">
+            <label class="sc-control-label" for="sc-search-type">Source</label>
+            <div class="sc-select-wrap">
+              <select class="sc-select" id="sc-search-type" aria-label="Search type">
+                ${SEARCH_TYPES.map((t) => `<option value="${esc(t.value)}">${esc(t.label)}</option>`).join("")}
+              </select>
+              <svg class="sc-select-caret" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <button type="button" class="sc-refresh-btn" id="sc-refresh" aria-label="Refresh data" title="Refresh data">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><polyline points="1 20 1 14 7 14"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div class="sc-note" id="sc-note">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span id="sc-note-text">Comparing <strong id="sc-period-current">…</strong> vs. <strong id="sc-period-prev">…</strong>. GSC data lags ~2 days — today's traffic appears in 48&ndash;72 hours.</span>
-    </div>
+      <div class="sc-period-bar" id="sc-period-bar">
+        <span class="sc-period-pulse" aria-hidden="true"></span>
+        <span class="sc-period-label">
+          <strong id="sc-period-current">…</strong>
+          <span class="sc-period-sep">vs.</span>
+          <span class="sc-period-prev" id="sc-period-prev">…</span>
+        </span>
+        <span class="sc-period-note">GSC data lags ~2 days</span>
+      </div>
 
-    <!-- KPI tiles with sparklines + deltas -->
-    <div class="sc-kpi-grid">
-      ${kpiTile("Clicks",       "clicks", "Total search result clicks",                  "click")}
-      ${kpiTile("Impressions",  "impr",   "Times your pages appeared in search",         "eye")}
-      ${kpiTile("Click-through rate", "ctr", "Clicks ÷ impressions",                     "ctr")}
-      ${kpiTile("Avg. position","pos",    "Average rank in results (1 = top)",           "rank")}
-    </div>
+      <div class="sc-kpi-grid">
+        ${kpiTile("Clicks",       "clicks", "Total search result clicks",                  "click")}
+        ${kpiTile("Impressions",  "impr",   "Times your pages appeared in search",         "eye")}
+        ${kpiTile("Click-through rate", "ctr", "Clicks ÷ impressions",                     "ctr")}
+        ${kpiTile("Avg. position","pos",    "Average rank in results (1 = top)",           "rank")}
+      </div>
+    </section>
 
-    <!-- Auto-generated insights -->
-    <div class="sc-insights" id="sc-insights">
-      <div class="loading-state"><div class="spinner"></div>Analyzing…</div>
-    </div>
-
-    <!-- Main trend chart -->
-    <div class="card sc-trend-card">
-      <div class="card-header">
+    <!-- ─── Action layer: insights + trend chart ─── -->
+    <section class="sc-section">
+      <div class="sc-section-head">
         <div>
-          <div class="card-title">Clicks &amp; impressions over time</div>
-          <div class="card-subtitle" id="sc-chart-sub">Daily trend. Hover bars to see exact figures.</div>
+          <h2 class="sc-section-title">What's happening right now</h2>
+          <p class="sc-section-sub">Auto-generated takeaways from your current period vs. the previous one.</p>
+        </div>
+      </div>
+      <div class="sc-insights" id="sc-insights">
+        <div class="sc-insights-loading"><div class="spinner"></div>Analyzing your search data…</div>
+      </div>
+    </section>
+
+    <section class="sc-card sc-trend-card">
+      <div class="sc-card-head">
+        <div>
+          <h2 class="sc-card-title">Performance over time</h2>
+          <p class="sc-card-sub">Daily trend across the selected period. Use the toggle to focus on one metric.</p>
         </div>
         <div class="sc-chart-toggle" id="sc-chart-toggle" role="group" aria-label="Chart metric">
-          <button class="sc-chart-toggle-btn is-active" data-metric="both">Both</button>
-          <button class="sc-chart-toggle-btn" data-metric="clicks">Clicks</button>
-          <button class="sc-chart-toggle-btn" data-metric="impressions">Impressions</button>
-          <button class="sc-chart-toggle-btn" data-metric="ctr">CTR</button>
-          <button class="sc-chart-toggle-btn" data-metric="position">Position</button>
+          <button type="button" class="sc-chart-toggle-btn is-active" data-metric="both">Both</button>
+          <button type="button" class="sc-chart-toggle-btn" data-metric="clicks">Clicks</button>
+          <button type="button" class="sc-chart-toggle-btn" data-metric="impressions">Impressions</button>
+          <button type="button" class="sc-chart-toggle-btn" data-metric="ctr">CTR</button>
+          <button type="button" class="sc-chart-toggle-btn" data-metric="position">Position</button>
         </div>
       </div>
-      <div class="card-body">
+      <div class="sc-card-body">
         <div id="sc-trend-chart"><div class="loading-state"><div class="spinner"></div>Loading chart…</div></div>
       </div>
-    </div>
+    </section>
 
-    <!-- Opportunities -->
-    <div class="card">
-      <div class="card-header">
+    <!-- ─── Opportunities — the single most actionable section ─── -->
+    <section class="sc-card sc-card-highlight">
+      <div class="sc-card-head">
         <div>
-          <div class="card-title">Opportunities — high-impression, low-CTR queries</div>
-          <div class="card-subtitle">These queries already rank decently and get seen often, but few people click. Improving titles &amp; meta descriptions could earn quick traffic.</div>
+          <div class="sc-pill sc-pill-accent">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+            Highest-value action
+          </div>
+          <h2 class="sc-card-title">Quick wins — high impressions, low CTR</h2>
+          <p class="sc-card-sub">Queries Google is already showing you for, but few people click. Improve titles and meta descriptions to capture this traffic.</p>
         </div>
-        <button class="btn btn-ghost btn-sm sc-csv-btn" data-csv="opportunities">Export CSV</button>
+        <button type="button" class="sc-ghost-btn sc-csv-btn" data-csv="opportunities">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
       </div>
-      <div class="card-body" id="sc-opportunities"><div class="loading-state"><div class="spinner"></div></div></div>
-    </div>
+      <div class="sc-card-body" id="sc-opportunities"><div class="loading-state"><div class="spinner"></div>Calculating opportunities…</div></div>
+    </section>
 
-    <!-- Rising + Falling queries -->
-    <div class="grid grid-2 sc-row">
-      <div class="card">
-        <div class="card-header">
+    <!-- ─── What's moving — rising + falling side by side ─── -->
+    <div class="sc-grid-2">
+      <section class="sc-card">
+        <div class="sc-card-head">
           <div>
-            <div class="card-title">🚀 Rising queries</div>
-            <div class="card-subtitle">Queries gaining the most clicks vs. previous period.</div>
+            <div class="sc-pill sc-pill-up">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              Rising
+            </div>
+            <h2 class="sc-card-title">Queries gaining clicks</h2>
+            <p class="sc-card-sub">Biggest gains vs. the previous period.</p>
           </div>
         </div>
-        <div class="card-body" id="sc-rising"><div class="loading-state"><div class="spinner"></div></div></div>
-      </div>
-      <div class="card">
-        <div class="card-header">
+        <div class="sc-card-body" id="sc-rising"><div class="loading-state"><div class="spinner"></div></div></div>
+      </section>
+      <section class="sc-card">
+        <div class="sc-card-head">
           <div>
-            <div class="card-title">📉 Falling queries</div>
-            <div class="card-subtitle">Queries losing the most clicks — worth a look.</div>
+            <div class="sc-pill sc-pill-down">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+              Falling
+            </div>
+            <h2 class="sc-card-title">Queries losing clicks</h2>
+            <p class="sc-card-sub">Worth investigating — content may need a refresh.</p>
           </div>
         </div>
-        <div class="card-body" id="sc-falling"><div class="loading-state"><div class="spinner"></div></div></div>
-      </div>
+        <div class="sc-card-body" id="sc-falling"><div class="loading-state"><div class="spinner"></div></div></div>
+      </section>
     </div>
 
-    <!-- Brand vs Discovery -->
-    <div class="card">
-      <div class="card-header">
+    <!-- ─── Top performers ─── -->
+    <div class="sc-grid-2">
+      <section class="sc-card">
+        <div class="sc-card-head">
+          <div>
+            <h2 class="sc-card-title">Top queries</h2>
+            <p class="sc-card-sub">The search terms driving the most traffic.</p>
+          </div>
+          <button type="button" class="sc-ghost-btn sc-csv-btn" data-csv="queries">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV
+          </button>
+        </div>
+        <div class="sc-card-body" id="sc-queries"><div class="loading-state"><div class="spinner"></div></div></div>
+      </section>
+      <section class="sc-card">
+        <div class="sc-card-head">
+          <div>
+            <h2 class="sc-card-title">Top pages</h2>
+            <p class="sc-card-sub">Which articles earn the most search traffic.</p>
+          </div>
+          <button type="button" class="sc-ghost-btn sc-csv-btn" data-csv="pages">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV
+          </button>
+        </div>
+        <div class="sc-card-body" id="sc-pages"><div class="loading-state"><div class="spinner"></div></div></div>
+      </section>
+    </div>
+
+    <!-- ─── Audience layer (lower priority — context, not action) ─── -->
+    <section class="sc-section sc-audience-section">
+      <div class="sc-section-head">
         <div>
-          <div class="card-title">Brand vs. discovery traffic</div>
-          <div class="card-subtitle">"Brand" = people searching "Catalyst Magazine". "Discovery" = topic searches that lead them to you.</div>
+          <h2 class="sc-section-title">Audience</h2>
+          <p class="sc-section-sub">Who's finding you and how they're searching.</p>
         </div>
       </div>
-      <div class="card-body" id="sc-brand-split"><div class="loading-state"><div class="spinner"></div></div></div>
-    </div>
 
-    <!-- Queries + Pages side by side -->
-    <div class="grid grid-2 sc-row">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Top queries</div>
-          <button class="btn btn-ghost btn-sm sc-csv-btn" data-csv="queries">Export CSV</button>
+      <section class="sc-card">
+        <div class="sc-card-head">
+          <div>
+            <h3 class="sc-card-title">Brand vs. discovery traffic</h3>
+            <p class="sc-card-sub"><strong>Brand</strong>: people searching "Catalyst Magazine" by name. <strong>Discovery</strong>: topic searches that lead them to you for the first time.</p>
+          </div>
         </div>
-        <div class="card-body" id="sc-queries"><div class="loading-state"><div class="spinner"></div></div></div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Top pages</div>
-          <button class="btn btn-ghost btn-sm sc-csv-btn" data-csv="pages">Export CSV</button>
-        </div>
-        <div class="card-body" id="sc-pages"><div class="loading-state"><div class="spinner"></div></div></div>
-      </div>
-    </div>
+        <div class="sc-card-body" id="sc-brand-split"><div class="loading-state"><div class="spinner"></div></div></div>
+      </section>
 
-    <!-- Countries + Devices -->
-    <div class="grid grid-2 sc-row">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Where your readers search from</div>
-        </div>
-        <div class="card-body" id="sc-countries"><div class="loading-state"><div class="spinner"></div></div></div>
+      <div class="sc-grid-2">
+        <section class="sc-card">
+          <div class="sc-card-head">
+            <h3 class="sc-card-title">Where readers search from</h3>
+          </div>
+          <div class="sc-card-body" id="sc-countries"><div class="loading-state"><div class="spinner"></div></div></div>
+        </section>
+        <section class="sc-card">
+          <div class="sc-card-head">
+            <h3 class="sc-card-title">Device mix</h3>
+          </div>
+          <div class="sc-card-body" id="sc-devices"><div class="loading-state"><div class="spinner"></div></div></div>
+        </section>
       </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">Device mix</div>
-        </div>
-        <div class="card-body" id="sc-devices"><div class="loading-state"><div class="spinner"></div></div></div>
-      </div>
-    </div>
 
-    <!-- Search appearance (rich results) -->
-    <div class="card" id="sc-appearance-card" style="display:none;">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Search appearance</div>
-          <div class="card-subtitle">How Google shows your pages — rich results, article cards, etc.</div>
+      <section class="sc-card" id="sc-appearance-card" style="display:none;">
+        <div class="sc-card-head">
+          <div>
+            <h3 class="sc-card-title">Search appearance</h3>
+            <p class="sc-card-sub">How Google chooses to show your pages — rich results, article cards, etc.</p>
+          </div>
         </div>
-      </div>
-      <div class="card-body" id="sc-appearance"></div>
-    </div>
+        <div class="sc-card-body" id="sc-appearance"></div>
+      </section>
+    </section>
 
-    <!-- Footer with link to GSC -->
+    <!-- ─── Footer: link to GSC ─── -->
     <div class="sc-footer">
-      <a href="https://search.google.com/search-console?resource_id=sc-domain%3Acatalyst-magazine.com" target="_blank" rel="noopener">
+      <a class="sc-footer-link" href="https://search.google.com/search-console?resource_id=sc-domain%3Acatalyst-magazine.com" target="_blank" rel="noopener">
         Open in Google Search Console
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>
     </div>`;
 
@@ -308,12 +369,17 @@ async function loadAll(ctx, wrapper, state) {
   wrapper.querySelector("#sc-period-prev").textContent = `${humanDate(prev.compareStartDate)} – ${humanDate(prev.compareEndDate)}`;
 
   // Reset panels to loading
-  ["sc-trend-chart", "sc-insights", "sc-opportunities", "sc-rising", "sc-falling",
+  ["sc-trend-chart", "sc-opportunities", "sc-rising", "sc-falling",
    "sc-brand-split", "sc-queries", "sc-pages", "sc-countries", "sc-devices",
    "sc-appearance"].forEach((id) => {
     const el = wrapper.querySelector(`#${id}`);
     if (el) el.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading…</div>`;
   });
+  // Insights uses a grid-friendly loading block that spans the row
+  const insightsEl = wrapper.querySelector("#sc-insights");
+  if (insightsEl) {
+    insightsEl.innerHTML = `<div class="sc-insights-loading"><div class="spinner"></div>Analyzing your search data…</div>`;
+  }
   wrapper.querySelectorAll(".sc-kpi-delta").forEach((n) => { n.textContent = ""; n.className = "sc-kpi-delta"; });
   wrapper.querySelectorAll(".sc-kpi-value").forEach((n) => { n.textContent = "…"; });
   wrapper.querySelectorAll(".sc-kpi-spark").forEach((n) => { n.innerHTML = ""; });
