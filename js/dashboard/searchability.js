@@ -1736,23 +1736,24 @@ function buildMapMarkers(rows, top, { city = false } = {}) {
 
 function renderRegionalTiles(W, H, zoom, center) {
   const tileSize = 256;
-  const scale = 2 ** zoom * tileSize;
+  const tileZoom = Math.max(0, Math.min(19, Math.round(zoom)));
+  const zoomScale = 2 ** (zoom - tileZoom);
   const c = mercatorPixel(center.lon, center.lat, zoom);
   const left = c.x - W / 2;
   const top = c.y - H / 2;
-  const minX = Math.floor(left / tileSize);
-  const maxX = Math.floor((left + W) / tileSize);
-  const minY = Math.floor(top / tileSize);
-  const maxY = Math.floor((top + H) / tileSize);
-  const tileMax = 2 ** zoom;
+  const minX = Math.floor((left / zoomScale) / tileSize);
+  const maxX = Math.floor(((left + W) / zoomScale) / tileSize);
+  const minY = Math.floor((top / zoomScale) / tileSize);
+  const maxY = Math.floor(((top + H) / zoomScale) / tileSize);
+  const tileMax = 2 ** tileZoom;
   const images = [];
   for (let ty = minY; ty <= maxY; ty++) {
     if (ty < 0 || ty >= tileMax) continue;
     for (let tx = minX; tx <= maxX; tx++) {
       const wrappedX = ((tx % tileMax) + tileMax) % tileMax;
-      images.push(`<image href="https://tile.openstreetmap.org/${zoom}/${wrappedX}/${ty}.png"
-        x="${(tx * tileSize - left).toFixed(1)}" y="${(ty * tileSize - top).toFixed(1)}"
-        width="${tileSize}" height="${tileSize}" preserveAspectRatio="none"/>`);
+      images.push(`<image href="https://tile.openstreetmap.org/${tileZoom}/${wrappedX}/${ty}.png"
+        x="${(tx * tileSize * zoomScale - left).toFixed(1)}" y="${(ty * tileSize * zoomScale - top).toFixed(1)}"
+        width="${(tileSize * zoomScale).toFixed(1)}" height="${(tileSize * zoomScale).toFixed(1)}" preserveAspectRatio="none"/>`);
     }
   }
   return images.join("");
@@ -1827,7 +1828,7 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
     const tileHtml = renderRegionalTiles(dims.W, dims.H, zoom, center);
     tileLayer.dataset[`${mode}Tiles`] = tileHtml;
     tileLayer.innerHTML = tileHtml;
-    if (zoomLabel) zoomLabel.textContent = `Zoom ${zoom}`;
+    if (zoomLabel) zoomLabel.textContent = `Zoom ${formatMapZoom(zoom)}`;
     const selector = mode === "city" ? ".sc-map-city-marker" : ".sc-map-country-layer .sc-map-marker";
     root.querySelectorAll(selector).forEach((marker) => {
       const lon = Number(marker.dataset.lon);
@@ -1893,7 +1894,7 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
   root.querySelectorAll(".sc-map-zoom-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       if (!layout) return;
-      const delta = Number(btn.dataset.mapZoom || 0);
+      const delta = Number(btn.dataset.mapZoom || 0) * 0.75;
       const { mode, zoom, center } = getMapState();
       const bounds = mode === "city" ? [3, 9] : [1, 5];
       setMapState(mode, Math.max(bounds[0], Math.min(bounds[1], zoom + delta)), center);
@@ -1931,7 +1932,8 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
   };
   wrap.addEventListener("wheel", (event) => {
     event.preventDefault();
-    zoomAt(event.clientX, event.clientY, event.deltaY < 0 ? 1 : -1);
+    const delta = Math.max(-0.35, Math.min(0.35, -event.deltaY * 0.002));
+    if (Math.abs(delta) >= 0.01) zoomAt(event.clientX, event.clientY, delta);
   }, { passive: false });
   wrap.addEventListener("pointerdown", (event) => {
     if (event.target.closest?.(".sc-map-marker, .sc-map-controls, .sc-map-attribution")) return;
@@ -2055,6 +2057,11 @@ function scaledMapSize(value, maxValue, min, growth, meaningfulMax) {
   const scaleMax = Math.max(1, maxValue || 0, meaningfulMax || 1);
   const ratio = Math.max(0, Math.min(1, value / scaleMax));
   return min + Math.sqrt(ratio) * growth;
+}
+
+function formatMapZoom(zoom) {
+  const rounded = Math.round(zoom);
+  return Math.abs(zoom - rounded) < 0.05 ? String(rounded) : zoom.toFixed(1);
 }
 
 // ── Generic ranked table (used for queries / pages / countries / devices) ────
