@@ -324,6 +324,69 @@ function bookReviewCard(review, siteUrl) {
     </table>`;
 }
 
+// Inbox-template version of the book-review section. Matches the visual
+// register of buildInboxNewsletter — no outer card, no colored fills,
+// no nested bordered review cards. Just a hairline-divided list of titles
+// with text links, identical to how supportingBlock() renders text articles.
+// This keeps the block from triggering the "multi-card promo" pattern Gmail
+// Promotions classifies on.
+function renderBookReviewSectionInbox(bookReviews, siteUrl) {
+  if (!Array.isArray(bookReviews) || !bookReviews.length) return "";
+  const sans = "Arial,Helvetica,sans-serif";
+  const serif = "Georgia,'Times New Roman',serif";
+  const rows = bookReviews.slice(0, 2).map((r, i) => {
+    const slug = r.slug || "";
+    const href = slug
+      ? `${siteUrl}/book-review/${encodeURIComponent(slug)}`
+      : `${siteUrl}/book-reviews`;
+    const title = r.title || "Untitled";
+    const bookAuthor = r.bookAuthor || "";
+    const reviewer = r.author || r.authorName || "";
+    const rating =
+      typeof r.rating === "number" && r.rating >= 0 && r.rating <= 5
+        ? r.rating.toFixed(1)
+        : null;
+    const blurb = (r.excerpt || r.deck || r.dek || "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const blurbShort = blurb.length > 220 ? blurb.slice(0, 219).trimEnd() + "…" : blurb;
+    const metaBits = [];
+    if (bookAuthor) metaBits.push(`by ${esc(bookAuthor)}`);
+    if (rating) metaBits.push(`<span style="color:#1d1d1f;">&#9733; ${esc(rating)}</span>`);
+    if (reviewer) metaBits.push(`reviewed by ${esc(reviewer)}`);
+    const meta = metaBits.join(" &middot; ");
+    return `
+      ${i > 0 ? `<tr><td style="padding:14px 0 0 0;"><div style="height:1px;background:#e8e8ed;font-size:1px;line-height:1px;">&nbsp;</div></td></tr>` : ""}
+      <tr>
+        <td style="padding:${i === 0 ? "0" : "14px"} 0 0 0;">
+          <p style="margin:0 0 4px 0;font-size:16px;font-weight:700;line-height:1.3;color:#1d1d1f;font-family:${serif};">
+            <a href="${esc(href)}" style="color:#1d1d1f;text-decoration:none;">${esc(title)}</a>
+          </p>
+          ${meta ? `<p style="margin:0 0 6px 0;font-size:12px;color:#6e6e73;font-family:${sans};font-style:italic;">${meta}</p>` : ""}
+          ${blurbShort ? `<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#424245;font-family:${serif};">${esc(blurbShort)}</p>` : ""}
+          <a href="${esc(href)}" style="font-size:13px;color:#1d1d1f;font-family:${sans};text-decoration:underline;font-weight:600;">Read the review &rarr;</a>
+        </td>
+      </tr>`;
+  }).join("");
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="padding:6px 0 14px 0;">
+          <div style="height:1px;background:#e8e8ed;font-size:1px;line-height:1px;margin:0 0 18px 0;">&nbsp;</div>
+          <p style="margin:0 0 4px 0;font-size:11px;font-weight:700;letter-spacing:0.18em;color:#6e6e73;text-transform:uppercase;font-family:${sans};">From The Catalyst Reviews</p>
+          <p style="margin:0 0 14px 0;font-size:14px;line-height:1.55;color:#424245;font-family:${serif};">A short take or two from our reading desk — what's worth your weekend.</p>
+        </td>
+      </tr>
+      ${rows}
+      <tr>
+        <td style="padding:14px 0 0 0;">
+          <a href="${esc(siteUrl)}/book-reviews" style="font-size:13px;color:#1d1d1f;font-family:${sans};text-decoration:underline;font-weight:600;">Browse all reviews &rarr;</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
 // Append a "From The Catalyst Reviews" plain-text section to the running line array.
 // No-op when bookReviews is empty so callers can call it unconditionally.
 function appendBookReviewsText(lines, bookReviews, siteUrl) {
@@ -382,9 +445,12 @@ export function buildInboxNewsletter({
   const heroArticle = articles[0];
   const supportingArticles = articles.slice(1);
 
-  // Optional "From The Catalyst Reviews" book-review section — same renderer as the
-  // classic theme so the two issue formats stay visually consistent.
-  const bookReviewSection = renderBookReviewSection(bookReviews, siteUrl);
+  // Optional "From The Catalyst Reviews" section — uses an inbox-safe
+  // renderer (no nested cards, no colored fills, hairline separators only)
+  // so the block matches the rest of this template's "single column of text
+  // links" pattern. Stacked containers/buttons are the exact signal Gmail's
+  // Promotions classifier keys on, so the inbox theme avoids them entirely.
+  const bookReviewSection = renderBookReviewSectionInbox(bookReviews, siteUrl);
 
   function heroBlock(a) {
     if (!a) return "";

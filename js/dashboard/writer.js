@@ -3237,9 +3237,20 @@ function renderArticleRows(mount, snap, allowEdit) {
     mount.innerHTML = `<div class="empty-state">Nothing here yet.</div>`;
     return;
   }
-  mount.innerHTML = "";
+  // Book reviews live in the same `stories` collection but are tracked
+  // separately under #/book-reviews — keep them out of the article views.
+  const rows = [];
   snap.forEach((d) => {
     const a = d.data();
+    if (a.category === "book-review") return;
+    rows.push({ id: d.id, data: a });
+  });
+  if (!rows.length) {
+    mount.innerHTML = `<div class="empty-state">Nothing here yet.</div>`;
+    return;
+  }
+  mount.innerHTML = "";
+  rows.forEach(({ id, data: a }) => {
     const row = el("div", { class: "article-row" });
     row.innerHTML = `
       <div>
@@ -3251,11 +3262,11 @@ function renderArticleRows(mount, snap, allowEdit) {
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         ${a.status === "approved"
-          ? `<a class="btn btn-accent btn-xs" href="#/final-review?id=${esc(d.id)}" title="Review how the article will look and publish it">Review &amp; publish</a>` : ""}
-        ${allowEdit ? `<a class="btn btn-secondary btn-xs" href="#/writer/draft?edit=${esc(d.id)}">Open</a>` : ""}
+          ? `<a class="btn btn-accent btn-xs" href="#/final-review?id=${esc(id)}" title="Review how the article will look and publish it">Review &amp; publish</a>` : ""}
+        ${allowEdit ? `<a class="btn btn-secondary btn-xs" href="#/writer/draft?edit=${esc(id)}">Open</a>` : ""}
         ${a.status === "published" && a.url
           ? `<a class="btn btn-ghost btn-xs" href="${esc(a.url)}" target="_blank" rel="noopener">View</a>` : ""}
-        ${allowEdit ? `<button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(d.id)}" style="color:var(--danger);">Delete</button>` : ""}
+        ${allowEdit ? `<button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(id)}" style="color:var(--danger);">Delete</button>` : ""}
       </div>`;
     mount.appendChild(row);
   });

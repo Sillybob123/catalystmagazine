@@ -26,11 +26,17 @@ async function mountAnalytics(ctx, container) {
       <div class="card-header">
         <div>
           <div class="card-title">30-day signup growth</div>
-          <div class="card-subtitle">Daily new subscriber counts over the last month.</div>
+          <div class="card-subtitle">Daily new subscribers, peak days, and trend over the last month.</div>
         </div>
       </div>
       <div class="card-body">
-        <div class="sparkline" id="sparkline"></div>
+        <div class="growth-summary" id="growth-summary">
+          <div class="growth-stat"><div class="growth-stat-label">Avg / day</div><div class="growth-stat-value" data-g="avg">…</div></div>
+          <div class="growth-stat"><div class="growth-stat-label">Peak day</div><div class="growth-stat-value" data-g="peak">…</div><div class="growth-stat-sub" data-g="peakDate">&nbsp;</div></div>
+          <div class="growth-stat"><div class="growth-stat-label">Active days</div><div class="growth-stat-value" data-g="activeDays">…</div><div class="growth-stat-sub">of 30</div></div>
+          <div class="growth-stat"><div class="growth-stat-label">Busiest weekday</div><div class="growth-stat-value" data-g="bestDow">…</div><div class="growth-stat-sub" data-g="bestDowAvg">&nbsp;</div></div>
+        </div>
+        <div class="growth-chart" id="growth-chart"></div>
       </div>
     </div>
 
@@ -53,15 +59,174 @@ async function mountAnalytics(ctx, container) {
     set("unsub", data.stats.unsubscribed);
     set("collabs", data.stats.collaborations);
 
-    const spark = wrapper.querySelector("#sparkline");
-    const maxCount = Math.max(1, ...data.series.map((d) => d.count));
-    spark.innerHTML = data.series.map((d) => {
-      const h = Math.round((d.count / maxCount) * 100);
-      return `<div class="sparkline-bar" title="${esc(d.date)}: ${d.count}" style="height:${Math.max(4, h)}%;"></div>`;
-    }).join("");
+    renderGrowthChart(wrapper, data.series || []);
   } catch (err) {
     wrapper.innerHTML = `<div class="error-state">Could not load stats: ${esc(err.message)}</div>`;
   }
+}
+
+// Render the 30-day signup growth chart + summary stats.
+// `series` is `[{date: 'YYYY-MM-DD', count: N}]` ordered oldest → newest.
+//
+// Why a hand-rolled SVG instead of Chart.js: the dashboard already ships
+// zero third-party JS for charts, and a 30-bar daily view doesn't need a
+// runtime. SVG also gives crisp text + perfect retina rendering and lets
+// the bars hook into existing CSS tokens.
+function renderGrowthChart(wrapper, series) {
+  const sumEl = wrapper.querySelector("#growth-summary");
+  const chartEl = wrapper.querySelector("#growth-chart");
+  if (!chartEl) return;
+
+  const counts = series.map((d) => d.count || 0);
+  const total = counts.reduce((a, b) => a + b, 0);
+  const avg = series.length ? total / series.length : 0;
+  const peakCount = counts.length ? Math.max(...counts) : 0;
+  const peakIdx = counts.indexOf(peakCount);
+  const peakDate = peakCount > 0 && peakIdx >= 0 ? series[peakIdx].date : null;
+  const activeDays = counts.filter((c) => c > 0).length;
+
+  // Weekday averages — which day of week pulls in the most signups.
+  const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dowTotals = [0, 0, 0, 0, 0, 0, 0];
+  const dowCounts = [0, 0, 0, 0, 0, 0, 0];
+  series.forEach((d) => {
+    const dow = dateOnly(d.date).getDay();
+    dowTotals[dow] += d.count || 0;
+    dowCounts[dow] += 1;
+  });
+  const dowAvgs = dowTotals.map((t, i) => (dowCounts[i] ? t / dowCounts[i] : 0));
+  const bestDowIdx = dowAvgs.indexOf(Math.max(...dowAvgs));
+  const bestDow = dowAvgs[bestDowIdx] > 0 ? DOW[bestDowIdx] : "—";
+  const bestDowAvg = dowAvgs[bestDowIdx] > 0
+    ? `${dowAvgs[bestDowIdx].toFixed(1)} / day avg`
+    : "no signups yet";
+
+  if (sumEl) {
+    const setG = (k, v) => {
+      const n = sumEl.querySelector(`[data-g="${k}"]`);
+      if (n) n.textContent = v;
+    };
+    setG("avg", avg.toFixed(1));
+    setG("peak", peakCount);
+    setG("peakDate", peakDate ? fmtChartDate(peakDate) : "no signups");
+    setG("activeDays", activeDays);
+    setG("bestDow", bestDow);
+    setG("bestDowAvg", bestDowAvg);
+  }
+
+  if (!series.length) {
+    chartEl.innerHTML = `<div class="empty-state" style="padding:20px;">No signup data yet.</div>`;
+    return;
+  }
+
+  // SVG geometry. Use a viewBox so it scales — actual pixel size is set
+  // by CSS on the wrapper. Width is generous so x-axis labels never overlap.
+  const W = 760, H = 260;
+  const pad = { top: 16, right: 14, bottom: 38, left: 36 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+
+  // Y axis: ceil the max to a "nice" round number so gridlines land on integers.
+  const yMax = niceMax(peakCount);
+  const yTicks = niceTicks(yMax, 4);
+
+  const n = series.length;
+  const gap = 4;
+  const barW = Math.max(2, (plotW - gap * (n - 1)) / n);
+
+  const x = (i) => pad.left + i * (barW + gap);
+  const y = (v) => pad.top + plotH - (v / (yMax || 1)) * plotH;
+
+  // 7-day rolling average — gives a smooth trend line over the noisy bars.
+  const rolling = series.map((_, i) => {
+    const lo = Math.max(0, i - 6);
+    const slice = counts.slice(lo, i + 1);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
+
+  const linePath = rolling.map((v, i) => {
+    const cx = x(i) + barW / 2;
+    const cy = y(v);
+    return `${i === 0 ? "M" : "L"} ${cx.toFixed(1)} ${cy.toFixed(1)}`;
+  }).join(" ");
+
+  // Date labels — show every ~5th day so the axis doesn't crowd.
+  const labelStep = Math.max(1, Math.ceil(n / 6));
+
+  const gridLines = yTicks.map((t) => {
+    const gy = y(t);
+    return `<line x1="${pad.left}" y1="${gy.toFixed(1)}" x2="${(W - pad.right).toFixed(1)}" y2="${gy.toFixed(1)}" stroke="var(--surface-3)" stroke-width="1"/>` +
+      `<text x="${pad.left - 8}" y="${(gy + 3).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--muted)" font-family="Inter,system-ui,sans-serif">${t}</text>`;
+  }).join("");
+
+  const bars = series.map((d, i) => {
+    const v = d.count || 0;
+    const bx = x(i);
+    const by = y(v);
+    const bh = Math.max(v > 0 ? 2 : 0, pad.top + plotH - by);
+    const isPeak = v === peakCount && v > 0 && i === peakIdx;
+    return `<rect class="growth-bar${isPeak ? " growth-bar-peak" : ""}" x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="2" data-date="${esc(d.date)}" data-count="${v}"><title>${esc(fmtChartDate(d.date))}: ${v} signup${v === 1 ? "" : "s"}</title></rect>`;
+  }).join("");
+
+  const xLabels = series.map((d, i) => {
+    if (i % labelStep !== 0 && i !== n - 1) return "";
+    const cx = x(i) + barW / 2;
+    return `<text x="${cx.toFixed(1)}" y="${(H - pad.bottom + 16).toFixed(1)}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Inter,system-ui,sans-serif">${esc(shortDate(d.date))}</text>`;
+  }).join("");
+
+  // 7-day trend line legend label sits below the chart so the line itself
+  // doesn't need a key floating inside the plot area.
+  chartEl.innerHTML = `
+    <div class="growth-chart-legend">
+      <span class="growth-legend-item"><span class="growth-legend-swatch growth-legend-swatch-bar"></span>Daily signups</span>
+      <span class="growth-legend-item"><span class="growth-legend-swatch growth-legend-swatch-line"></span>7-day rolling avg</span>
+      <span class="growth-legend-item" style="margin-left:auto;">${total} total over ${n} days</span>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="30-day signup growth chart">
+      <g>${gridLines}</g>
+      <g>${bars}</g>
+      <path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/>
+      <g>${xLabels}</g>
+    </svg>`;
+}
+
+function dateOnly(yyyyMmDd) {
+  // Parse the YYYY-MM-DD date in local time so weekday math doesn't
+  // shift across the UTC boundary for late-night signups.
+  const [y, m, d] = (yyyyMmDd || "").split("-").map(Number);
+  return new Date(y || 1970, (m || 1) - 1, d || 1);
+}
+
+function shortDate(yyyyMmDd) {
+  const d = dateOnly(yyyyMmDd);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function fmtChartDate(yyyyMmDd) {
+  const d = dateOnly(yyyyMmDd);
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+}
+
+// Round a max value up to a "nice" axis cap so gridlines fall on whole numbers.
+function niceMax(v) {
+  if (!v || v <= 0) return 4;
+  if (v <= 4) return 4;
+  if (v <= 10) return Math.ceil(v / 2) * 2;
+  const pow = Math.pow(10, Math.floor(Math.log10(v)));
+  const norm = v / pow;
+  let nice;
+  if (norm <= 1) nice = 1;
+  else if (norm <= 2) nice = 2;
+  else if (norm <= 5) nice = 5;
+  else nice = 10;
+  return nice * pow;
+}
+
+function niceTicks(max, count) {
+  const step = max / count;
+  const ticks = [];
+  for (let i = 0; i <= count; i++) ticks.push(Math.round(step * i));
+  return ticks;
 }
 
 async function mountSubscriberList(ctx, container) {
