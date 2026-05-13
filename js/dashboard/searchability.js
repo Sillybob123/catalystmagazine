@@ -1543,6 +1543,7 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
   const cityRows = visitsResult?.status === "fulfilled" ? (visitsResult.value.rows || []) : [];
   const hasCountryRows = result.status === "fulfilled" && (result.value.rows || []).length > 0;
   const W = 920, H = 430;
+  const defaultCountryZoom = 2;
   const defaultUsZoom = 4;
   const countryRows = hasCountryRows ? (result.value.rows || []) : [];
   const usCityRows = cityRows.filter((r) =>
@@ -1567,9 +1568,9 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
       const code = String(r.keys?.[0] || "").toUpperCase();
       const meta = COUNTRY_META[code];
       if (!meta) return null;
-      const p = projectCountry(meta.lon, meta.lat, W, H);
-      const radius = 5 + Math.sqrt((r.clicks || 0) / maxCountryClicks) * 17;
-      const pulse = 10 + Math.sqrt((r.impressions || 0) / maxCountryImpr) * 28;
+      const p = projectRegional(meta.lon, meta.lat, W, H, defaultCountryZoom, WORLD_MAP_CENTER);
+      const radius = scaledMapSize(r.clicks || 0, maxCountryClicks, 2.5, 9.5, 150);
+      const pulse = scaledMapSize(r.impressions || 0, maxCountryImpr, 5, 16, 6000);
       return {
         ...r,
         code,
@@ -1578,7 +1579,7 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
         y: p.y,
         radius,
         pulse,
-        label: code,
+        label: i < 15 ? code : "",
         panelTitle: meta.name,
         primaryLabel: "Clicks",
         primaryValue: fmtNum(r.clicks || 0),
@@ -1588,7 +1589,7 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
         thirdValue: r.ctr != null ? `${(r.ctr * 100).toFixed(1)}%` : "—",
         fourthLabel: "Position",
         fourthValue: r.position != null ? r.position.toFixed(1) : "—",
-        description: "Search Console provides country-level geography only. City-level site visit data will appear here after the first-party tracker has collected visits.",
+        description: "Country markers use Google Search Console geography. Drag to move around the map, scroll to zoom, or switch to U.S. city view for first-party city visit data.",
       };
     })
     .filter(Boolean)
@@ -1603,8 +1604,8 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
       const p = projectRegional(r.longitude, r.latitude, W, H, defaultUsZoom, initialCityCenter);
       const place = [r.city, r.region].filter(Boolean).join(", ") || "United States";
       const label = r.city && r.city !== "Unknown city" ? shortMapLabel(r.city) : "US";
-      const radius = 4 + Math.sqrt(views / maxCityViews) * 12;
-      const pulse = 8 + Math.sqrt(views / maxCityViews) * 20;
+      const radius = scaledMapSize(views, maxCityViews, 2.2, 8.8, 80);
+      const pulse = scaledMapSize(views, maxCityViews, 4.5, 13.5, 80);
       return {
         ...r,
         code: "US",
@@ -1623,7 +1624,7 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
         thirdValue: fmtNum(r.days || 1),
         fourthLabel: "Timezone",
         fourthValue: r.timezone || "—",
-        description: "U.S. city markers come from first-party Cloudflare edge geolocation, aggregated by day without storing IP addresses, cookies, or visitor IDs.",
+        description: "U.S. city markers come from first-party Cloudflare edge geolocation, aggregated by day without storing IP addresses, cookies, or visitor IDs. Drag the map, scroll to zoom, or click a city to focus it.",
       };
     })
     .sort((a, b) => (b.views || 0) - (a.views || 0))
@@ -1637,7 +1638,7 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
   const defaultMode = cityMarkers.length ? "city" : "country";
   const topCountry = countryMarkers[0];
   const topCity = cityMarkers[0];
-  const countryTileHtml = renderWorldTiles(W, H);
+  const countryTileHtml = renderRegionalTiles(W, H, defaultCountryZoom, WORLD_MAP_CENTER);
   const cityTileHtml = renderRegionalTiles(W, H, defaultUsZoom, initialCityCenter);
   const countryMarkerHtml = buildMapMarkers(countryMarkers, topCountry);
   const cityMarkerHtml = buildMapMarkers(cityMarkers, topCity, { city: true });
@@ -1648,13 +1649,15 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
         <button type="button" class="sc-map-mode-btn" data-map-mode="country" aria-pressed="${defaultMode === "country"}"${countryMarkers.length ? "" : " disabled"}>Country view</button>
         <button type="button" class="sc-map-mode-btn" data-map-mode="city" aria-pressed="${defaultMode === "city"}"${cityMarkers.length ? "" : " disabled"}>U.S. city view</button>
       </div>
-      <div class="sc-map-zoom-controls" ${defaultMode === "city" ? "" : "hidden"}>
+      <div class="sc-map-zoom-controls">
         <button type="button" class="sc-map-zoom-btn" data-map-zoom="-1" aria-label="Zoom out">−</button>
-        <span class="sc-map-zoom-label" data-map-zoom-label>Zoom ${defaultUsZoom}</span>
+        <span class="sc-map-zoom-label" data-map-zoom-label>Zoom ${defaultMode === "city" ? defaultUsZoom : defaultCountryZoom}</span>
         <button type="button" class="sc-map-zoom-btn" data-map-zoom="1" aria-label="Zoom in">+</button>
       </div>
     </div>
-    <div class="sc-map-layout" data-map-mode="${defaultMode}" data-city-zoom="${defaultUsZoom}" data-city-center-lon="${initialCityCenter.lon}" data-city-center-lat="${initialCityCenter.lat}">
+    <div class="sc-map-layout" data-map-mode="${defaultMode}"
+      data-country-zoom="${defaultCountryZoom}" data-country-center-lon="${WORLD_MAP_CENTER.lon}" data-country-center-lat="${WORLD_MAP_CENTER.lat}"
+      data-city-zoom="${defaultUsZoom}" data-city-center-lon="${initialCityCenter.lon}" data-city-center-lat="${initialCityCenter.lat}">
       <div class="sc-map-wrap">
         <svg class="sc-map-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Reader geography map">
           <defs>
@@ -1709,6 +1712,9 @@ function buildMapMarkers(rows, top, { city = false } = {}) {
       data-radius="${r.radius.toFixed(2)}"
       data-pulse="${r.pulse.toFixed(2)}"
       data-label="${esc(r.label || "")}"
+      data-label-side="${esc(labelSide)}"
+      data-label-dx="${Number(r.meta.labelDx || 0).toFixed(1)}"
+      data-label-dy="${Number(r.meta.labelDy || 0).toFixed(1)}"
       data-panel-title="${esc(r.panelTitle || r.meta.name)}"
       data-description="${esc(r.description || "")}"
       data-country="${esc(r.meta.name)}"
@@ -1726,20 +1732,6 @@ function buildMapMarkers(rows, top, { city = false } = {}) {
       ${r.label ? `<text class="sc-map-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${labelSide === "left" ? "end" : "start"}">${esc(r.label)}</text>` : ""}
     </g>`;
   }).join("");
-}
-
-function renderWorldTiles(W, H) {
-  const tileZoom = 2;
-  const tileCount = 2 ** tileZoom;
-  const tileW = W / tileCount;
-  const tileH = H / tileCount;
-  return Array.from({ length: tileCount }, (_, y) =>
-    Array.from({ length: tileCount }, (__, x) => `
-      <image href="https://tile.openstreetmap.org/${tileZoom}/${x}/${y}.png"
-        x="${(x * tileW).toFixed(1)}" y="${(y * tileH).toFixed(1)}"
-        width="${tileW.toFixed(1)}" height="${tileH.toFixed(1)}"
-        preserveAspectRatio="none"/>`).join("")
-  ).join("");
 }
 
 function renderRegionalTiles(W, H, zoom, center) {
@@ -1796,47 +1788,66 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
     layout.dataset.mapMode = next;
     tileLayer.innerHTML = next === "city" ? (tileLayer.dataset.cityTiles || "") : (tileLayer.dataset.countryTiles || "");
     if (countryLayer) {
-      countryLayer.hidden = next === "city";
-      countryLayer.style.display = next === "city" ? "none" : "";
+      if (next === "city") countryLayer.setAttribute("hidden", "");
+      else countryLayer.removeAttribute("hidden");
     }
     if (cityLayer) {
-      cityLayer.hidden = next !== "city";
-      cityLayer.style.display = next !== "city" ? "none" : "";
+      if (next !== "city") cityLayer.setAttribute("hidden", "");
+      else cityLayer.removeAttribute("hidden");
     }
-    if (zoomControls) zoomControls.hidden = next !== "city";
     root.querySelectorAll(".sc-map-mode-btn").forEach((btn) => {
       btn.setAttribute("aria-pressed", String(btn.dataset.mapMode === next));
     });
     root.querySelectorAll("[data-map-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.mapPanel !== next;
     });
+    refreshActiveMap();
     tipEl.hidden = true;
   };
-  const refreshCityMap = () => {
-    if (!layout || !tileLayer) return;
-    const zoom = Number(layout.dataset.cityZoom || 4);
-    const center = {
-      lon: Number(layout.dataset.cityCenterLon || US_MAP_CENTER.lon),
-      lat: Number(layout.dataset.cityCenterLat || US_MAP_CENTER.lat),
+  const getMapState = (mode = layout?.dataset.mapMode || "country") => {
+    const fallback = mode === "city" ? US_MAP_CENTER : WORLD_MAP_CENTER;
+    return {
+      mode,
+      zoom: Number(layout?.dataset[`${mode}Zoom`] || (mode === "city" ? 4 : 2)),
+      center: {
+        lon: Number(layout?.dataset[`${mode}CenterLon`] || fallback.lon),
+        lat: Number(layout?.dataset[`${mode}CenterLat`] || fallback.lat),
+      },
     };
+  };
+  const setMapState = (mode, zoom, center) => {
+    if (!layout) return;
+    layout.dataset[`${mode}Zoom`] = String(zoom);
+    layout.dataset[`${mode}CenterLon`] = String(center.lon);
+    layout.dataset[`${mode}CenterLat`] = String(center.lat);
+  };
+  const refreshActiveMap = () => {
+    if (!layout || !tileLayer) return;
+    const { mode, zoom, center } = getMapState();
     const tileHtml = renderRegionalTiles(dims.W, dims.H, zoom, center);
-    tileLayer.dataset.cityTiles = tileHtml;
-    if (layout.dataset.mapMode === "city") tileLayer.innerHTML = tileHtml;
+    tileLayer.dataset[`${mode}Tiles`] = tileHtml;
+    tileLayer.innerHTML = tileHtml;
     if (zoomLabel) zoomLabel.textContent = `Zoom ${zoom}`;
-    root.querySelectorAll(".sc-map-city-marker").forEach((marker) => {
+    const selector = mode === "city" ? ".sc-map-city-marker" : ".sc-map-country-layer .sc-map-marker";
+    root.querySelectorAll(selector).forEach((marker) => {
       const lon = Number(marker.dataset.lon);
       const lat = Number(marker.dataset.lat);
       if (!Number.isFinite(lon) || !Number.isFinite(lat)) return;
       const p = projectRegional(lon, lat, dims.W, dims.H, zoom, center);
       const radius = Number(marker.dataset.radius || 8);
+      const labelSide = marker.dataset.labelSide === "left" ? "left" : "right";
+      const labelDx = Number(marker.dataset.labelDx || 0);
+      const labelDy = Number(marker.dataset.labelDy || 0);
       const label = marker.querySelector(".sc-map-label");
       marker.querySelector(".sc-map-pulse")?.setAttribute("cx", p.x.toFixed(1));
       marker.querySelector(".sc-map-pulse")?.setAttribute("cy", p.y.toFixed(1));
       marker.querySelector(".sc-map-dot")?.setAttribute("cx", p.x.toFixed(1));
       marker.querySelector(".sc-map-dot")?.setAttribute("cy", p.y.toFixed(1));
       if (label) {
-        label.setAttribute("x", (p.x + radius + 7).toFixed(1));
-        label.setAttribute("y", (p.y + 4).toFixed(1));
+        const labelX = labelSide === "left" ? p.x - radius - 7 + labelDx : p.x + radius + 7 + labelDx;
+        label.setAttribute("x", labelX.toFixed(1));
+        label.setAttribute("y", (p.y + 4 + labelDy).toFixed(1));
+        label.setAttribute("text-anchor", labelSide === "left" ? "end" : "start");
       }
     });
   };
@@ -1883,21 +1894,91 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
     btn.addEventListener("click", () => {
       if (!layout) return;
       const delta = Number(btn.dataset.mapZoom || 0);
-      const current = Number(layout.dataset.cityZoom || 4);
-      layout.dataset.cityZoom = String(Math.max(3, Math.min(8, current + delta)));
-      refreshCityMap();
+      const { mode, zoom, center } = getMapState();
+      const bounds = mode === "city" ? [3, 9] : [1, 5];
+      setMapState(mode, Math.max(bounds[0], Math.min(bounds[1], zoom + delta)), center);
+      refreshActiveMap();
       tipEl.hidden = true;
     });
   });
+  let dragState = null;
+  const zoomBounds = (mode) => mode === "city" ? [3, 9] : [1, 5];
+  const zoomAt = (clientX, clientY, delta) => {
+    if (!layout) return;
+    const state = getMapState();
+    const bounds = zoomBounds(state.mode);
+    const nextZoom = Math.max(bounds[0], Math.min(bounds[1], state.zoom + delta));
+    if (nextZoom === state.zoom) return;
+    const svg = root.querySelector(".sc-map-svg");
+    const box = svg?.getBoundingClientRect();
+    if (!box) return;
+    const localX = Math.max(0, Math.min(dims.W, ((clientX - box.left) / box.width) * dims.W));
+    const localY = Math.max(0, Math.min(dims.H, ((clientY - box.top) / box.height) * dims.H));
+    const oldCenterPx = mercatorPixel(state.center.lon, state.center.lat, state.zoom);
+    const underPointerPx = {
+      x: oldCenterPx.x + localX - dims.W / 2,
+      y: oldCenterPx.y + localY - dims.H / 2,
+    };
+    const underPointerGeo = mercatorLonLat(underPointerPx.x, underPointerPx.y, state.zoom);
+    const newPointerPx = mercatorPixel(underPointerGeo.lon, underPointerGeo.lat, nextZoom);
+    const nextCenterPx = {
+      x: newPointerPx.x - localX + dims.W / 2,
+      y: newPointerPx.y - localY + dims.H / 2,
+    };
+    setMapState(state.mode, nextZoom, mercatorLonLat(nextCenterPx.x, nextCenterPx.y, nextZoom));
+    refreshActiveMap();
+    tipEl.hidden = true;
+  };
+  wrap.addEventListener("wheel", (event) => {
+    event.preventDefault();
+    zoomAt(event.clientX, event.clientY, event.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
+  wrap.addEventListener("pointerdown", (event) => {
+    if (event.target.closest?.(".sc-map-marker, .sc-map-controls, .sc-map-attribution")) return;
+    const state = getMapState();
+    dragState = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      startCenterPx: mercatorPixel(state.center.lon, state.center.lat, state.zoom),
+      zoom: state.zoom,
+      mode: state.mode,
+    };
+    wrap.classList.add("is-dragging");
+    wrap.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  wrap.addEventListener("pointermove", (event) => {
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+    const dx = event.clientX - dragState.x;
+    const dy = event.clientY - dragState.y;
+    const nextCenter = mercatorLonLat(dragState.startCenterPx.x - dx, dragState.startCenterPx.y - dy, dragState.zoom);
+    setMapState(dragState.mode, dragState.zoom, nextCenter);
+    refreshActiveMap();
+    tipEl.hidden = true;
+  });
+  const endDrag = (event) => {
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+    dragState = null;
+    wrap.classList.remove("is-dragging");
+  };
+  wrap.addEventListener("pointerup", endDrag);
+  wrap.addEventListener("pointercancel", endDrag);
   root.querySelectorAll(".sc-map-marker").forEach((marker) => {
     marker.addEventListener("mouseenter", () => show(marker));
     marker.addEventListener("focus", () => show(marker));
     marker.addEventListener("click", () => {
-      if (marker.classList.contains("sc-map-city-marker") && layout) {
-        layout.dataset.cityCenterLon = marker.dataset.lon || layout.dataset.cityCenterLon;
-        layout.dataset.cityCenterLat = marker.dataset.lat || layout.dataset.cityCenterLat;
-        layout.dataset.cityZoom = String(Math.max(6, Number(layout.dataset.cityZoom || 4)));
-        refreshCityMap();
+      if (layout) {
+        const mode = marker.classList.contains("sc-map-city-marker") ? "city" : "country";
+        const { zoom } = getMapState(mode);
+        const lon = Number(marker.dataset.lon);
+        const lat = Number(marker.dataset.lat);
+        if (Number.isFinite(lon) && Number.isFinite(lat)) {
+          const targetZoom = mode === "city" ? Math.max(6, zoom) : Math.max(3, zoom);
+          setMapState(mode, targetZoom, { lon, lat });
+          if (layout.dataset.mapMode !== mode) setMode(mode);
+          else refreshActiveMap();
+        }
       }
       updatePanelFromMarker(marker);
       show(marker);
@@ -1905,10 +1986,11 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
     marker.addEventListener("mouseleave", () => { tipEl.hidden = true; });
   });
   setMode(layout?.dataset.mapMode || "country");
-  refreshCityMap();
+  refreshActiveMap();
 }
 
 const US_MAP_CENTER = { lon: -98.6, lat: 39.8 };
+const WORLD_MAP_CENTER = { lon: 0, lat: 20 };
 
 function projectCountry(lon, lat, width, height) {
   const x = ((lon + 180) / 360) * width;
@@ -1938,6 +2020,18 @@ function mercatorPixel(lon, lat, zoom) {
   };
 }
 
+function mercatorLonLat(x, y, zoom) {
+  const tileSize = 256;
+  const scale = 2 ** zoom * tileSize;
+  const lon = ((x / scale) * 360) - 180;
+  const n = Math.PI - (2 * Math.PI * y) / scale;
+  const lat = (180 / Math.PI) * Math.atan(Math.sinh(n));
+  return {
+    lon: ((((lon + 180) % 360) + 360) % 360) - 180,
+    lat: Math.max(-85.05112878, Math.min(85.05112878, lat)),
+  };
+}
+
 function weightedCityCenter(rows) {
   let total = 0;
   let lon = 0;
@@ -1955,6 +2049,12 @@ function weightedCityCenter(rows) {
 function shortMapLabel(label) {
   const text = String(label || "").trim();
   return text.length > 16 ? `${text.slice(0, 15)}…` : text;
+}
+
+function scaledMapSize(value, maxValue, min, growth, meaningfulMax) {
+  const scaleMax = Math.max(1, maxValue || 0, meaningfulMax || 1);
+  const ratio = Math.max(0, Math.min(1, value / scaleMax));
+  return min + Math.sqrt(ratio) * growth;
 }
 
 // ── Generic ranked table (used for queries / pages / countries / devices) ────

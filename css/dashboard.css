@@ -5528,11 +5528,18 @@ button { font-family: inherit; cursor: pointer; }
   border-radius: 14px;
   background: #edf4f8;
   overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.sc-map-wrap.is-dragging {
+  cursor: grabbing;
 }
 .sc-map-svg {
   display: block;
   width: 100%;
   min-height: 330px;
+  cursor: inherit;
 }
 .sc-map-ocean {
   fill: url(#sc-map-sea);
