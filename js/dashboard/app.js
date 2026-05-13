@@ -940,6 +940,17 @@ function attachGlobalHandlers() {
     sidebar.classList.remove("open");
     scrim.classList.remove("open");
   });
+  // Close the drawer on mobile when the writer picks a nav link, otherwise
+  // the new view appears underneath the open drawer and they have to tap
+  // the scrim to see it.
+  sidebar.addEventListener("click", (e) => {
+    const link = e.target.closest(".nav-link");
+    if (!link) return;
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      sidebar.classList.remove("open");
+      scrim.classList.remove("open");
+    }
+  });
 
   // User chip dropdown (open on click, close on outside click or Escape).
   const chip = document.getElementById("user-chip");

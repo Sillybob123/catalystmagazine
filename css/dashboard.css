@@ -6134,3 +6134,263 @@ button { font-family: inherit; cursor: pointer; }
   max-width: 46ch;
 }
 .sc-empty-actions { margin-top: 6px; }
+
+/* ==========================================================================
+   MOBILE PASS — keep desktop untouched.
+   One consolidated block so all phone tuning lives in one place.
+   Breakpoints:
+     ≤900px  — tablet / large phone landscape (drawer kicks in here)
+     ≤640px  — phone portrait (the bulk of the work)
+   Goals: no horizontal scroll, 44px+ tap targets, modals & forms full-bleed,
+   tables/lists/composer reflow cleanly, sidebar drawer is reliable.
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  /* Belt-and-braces: never allow the page itself to scroll sideways. */
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .app-shell { min-height: 100dvh; }
+
+  /* Tighter topbar so the title + chip fit at narrow widths.
+     The two children flex-grow/shrink so nothing ever wraps to a
+     second row, and the title truncates with an ellipsis if needed. */
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+  .topbar > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .page-title {
+    font-size: 14px;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    flex: 1 1 auto;
+  }
+  .page-title .crumbs { display: none; }
+  .page-title-text,
+  #page-title-text {
+    display: inline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Top-bar action row shrinks gracefully and stays on one line. */
+  .topbar-actions {
+    gap: 6px;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+  }
+  .topbar-actions .btn-ghost { padding: 6px 8px; }
+
+  /* User chip — strip the name/role on small widths, keep just the avatar. */
+  .user-chip { padding: 3px 8px 3px 3px; gap: 6px; flex-shrink: 0; }
+  .user-meta { display: none; }
+  .user-chip-caret { display: none; }
+
+  /* User menu can't be 280px wide on a 360px phone. */
+  .user-menu { min-width: 0; width: min(280px, calc(100vw - 24px)); right: 0; }
+
+  /* Hamburger gets a 44×44 touch target. */
+  .hamburger { padding: 10px 12px; margin-right: 8px; }
+
+  /* Sidebar drawer — already declared at 900px, here we just polish. */
+  .sidebar { width: 84%; max-width: 320px; }
+  .sidebar-footer { padding: 14px 16px env(safe-area-inset-bottom, 14px); }
+
+  /* Content gutter dialed down so cards/tables get every pixel. */
+  .content { padding: 16px 14px 48px; }
+  .content:has(.compose) { padding-left: 12px; padding-right: 12px; }
+
+  /* Anywhere fixed widths sneak in, neutralize them. */
+  table, .table, .compose, .compose-article, .modal, .newsletter-frame iframe {
+    max-width: 100%;
+  }
+  img, video, canvas, iframe { max-width: 100%; height: auto; }
+}
+
+@media (max-width: 640px) {
+  /* ---------- topbar at phone widths ----------
+     Collapse the "Public site" button to icon-only so the topbar fits
+     on a single row even at 360px. The link is still there, just shows
+     only its SVG icon — the title attribute carries the label for a11y. */
+  .topbar-actions .btn-ghost {
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+    font-size: 0;            /* hides "Public site" text node */
+  }
+  .topbar-actions .btn-ghost svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* ---------- core typography & spacing ---------- */
+  .content { padding: 14px 12px 44px; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 18px; }
+  h3 { font-size: 16px; }
+
+  /* ---------- stat / card grids ---------- */
+  .stat { padding: 14px 16px; }
+  .stat-value { font-size: 24px; }
+
+  /* ---------- buttons: 44px touch targets on phones ---------- */
+  .btn { padding: 11px 16px; font-size: 14px; min-height: 40px; }
+  .btn-sm { padding: 9px 12px; font-size: 13px; min-height: 36px; }
+  .btn-xs { padding: 8px 10px; font-size: 12px; min-height: 32px; }
+
+  /* ---------- forms: bigger tap targets, no 16px-zoom bug on iOS ---------- */
+  .input, .textarea, .select {
+    font-size: 16px;          /* prevents iOS Safari auto-zoom on focus */
+    padding: 11px 12px;
+  }
+  .field { margin-bottom: 14px; }
+
+  /* ---------- tables: turn rows into stacked cards ---------- */
+  /* Wrap any wide table in an overflow scroller as a fallback. */
+  .table-wrap, .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Stacked layout for the generic .table — each <td> becomes a row
+     with the column label rendered via data-label (set in JS) or, if
+     missing, falls back to a single column without a label. */
+  .table { font-size: 13px; }
+  .table thead { display: none; }
+  .table, .table tbody, .table tr, .table td {
+    display: block; width: 100%;
+  }
+  .table tr {
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    margin-bottom: 10px;
+    padding: 6px 4px;
+  }
+  .table td {
+    border-bottom: 1px solid var(--hairline-2);
+    padding: 10px 12px;
+    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  }
+  .table td:last-child { border-bottom: none; }
+  .table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex: 0 0 auto;
+  }
+
+  /* ---------- article list rows ---------- */
+  .article-row { grid-template-columns: 1fr; gap: 8px; padding: 12px 14px; }
+
+  /* The admin article rows already stack at 860px, here we just shrink
+     padding so they don't feel cramped on a 360px screen. */
+  .ar-row { padding: 12px 14px; gap: 8px; }
+  .ar-actions { width: 100%; gap: 6px; flex-wrap: wrap; }
+  .ar-actions .btn { flex: 1 1 auto; min-height: 36px; }
+  .ar-editor-select { max-width: 100%; width: 100%; }
+  .ar-status-editor { width: 100%; gap: 6px; }
+
+  /* ---------- pipeline grid ---------- */
+  .pipeline-grid { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
+  .pipeline-tabs { padding: 0 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+  .pipeline-tab { white-space: nowrap; padding: 11px 12px; font-size: 12.5px; }
+
+  /* ---------- staff directory cards ---------- */
+  .staff-grid { grid-template-columns: 1fr; }
+
+  /* ---------- modals: phone-friendly full-bleed sheet ---------- */
+  .modal-backdrop {
+    display: flex;
+    align-items: flex-end;          /* slide-up sheet feels native on phones */
+    padding: 0;
+  }
+  .modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  .modal-header { padding: 14px 16px; }
+  .modal-title { font-size: 16px; }
+  .modal-body { padding: 16px; }
+  .modal-footer { padding: 12px 16px env(safe-area-inset-bottom, 12px); flex-wrap: wrap; }
+  .modal-footer .btn { flex: 1 1 auto; justify-content: center; }
+
+  /* ---------- toasts ---------- */
+  .toast-stack { left: 12px; right: 12px; bottom: 12px; }
+  .toast { min-width: 0; width: 100%; }
+
+  /* ---------- newsletter preview frame ---------- */
+  .newsletter-frame { height: 60dvh; }
+  .newsletter-frame[data-size="desktop"] iframe { min-width: 0; width: 100%; }
+
+  /* ---------- compose / editor ---------- */
+  /* The command bar gets too tight at phone widths in a pill — let it
+     wrap to two rows instead of overflowing horizontally. */
+  .compose-bar {
+    border-radius: 14px;
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  .compose-bar-left, .compose-bar-right { flex-wrap: wrap; gap: 8px; }
+  .compose-bar-right { width: 100%; justify-content: flex-start; }
+  .compose-eyebrow { font-size: 10px; letter-spacing: 0.12em; }
+
+  /* Formatting toolbar: allow horizontal scroll within the toolbar
+     rather than the page, so B/I/U etc. stay reachable. */
+  .rt-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 8px;
+    gap: 2px;
+    border-radius: 12px;
+    top: calc(var(--top-h) + 4px);
+  }
+  .rt-toolbar::-webkit-scrollbar { height: 0; }
+  .rt-group { padding: 0 4px; flex: 0 0 auto; }
+  .rt-btn { width: 36px; height: 36px; flex: 0 0 auto; }
+  .rt-btn.rt-btn-wide { padding: 0 10px; height: 36px; font-size: 12.5px; }
+  .rt-select { height: 34px; font-size: 13px; }
+
+  /* Article canvas — tighter so it doesn't push the page sideways. */
+  .compose { margin-top: 0; max-width: 100%; }
+  .compose-article { border-radius: 14px; }
+  .compose-hero { min-height: 280px; padding: 22px 16px; }
+  .compose-hero-title { font-size: clamp(1.6rem, 7vw, 2.2rem); }
+  .compose-hero-deck { font-size: 1rem; }
+  .compose-hero-category { padding: 4px 10px; margin-bottom: 14px; }
+  .compose-hero-meta { font-size: 12px; gap: 8px; }
+  .compose-body-wrap { padding: 30px 16px 44px; }
+  .compose-body { font-size: 17px; line-height: 1.7; min-height: 320px; }
+  .compose-body-ghost { left: 16px; right: 16px; top: 30px; bottom: 44px; }
+  .compose-body blockquote,
+  .compose-body figure.rt-pullquote {
+    margin: 28px 0;
+    padding: 18px 14px;
+    font-size: 1.2rem;
+  }
+
+  /* ---------- generic safety net for any flex/grid that still overflows ---------- */
+  .content > * { min-width: 0; }
+  .grid, .grid-2, .grid-3, .grid-4 { gap: 12px; }
+}
+
+/* Drawer is open — lock body scroll behind it so the page underneath
+   doesn't drift while the user picks a nav link. */
+@media (max-width: 900px) {
+  body:has(.sidebar.open) { overflow: hidden; }
+}
