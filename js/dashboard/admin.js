@@ -364,27 +364,30 @@ async function loadUsers(mount, ctx, reload) {
       const reminderStatus = getBotReminderExemptionState(u);
       const extraEmails = Array.isArray(u.extraEmails) ? u.extraEmails.filter(Boolean) : [];
       const tr = el("tr", {});
+      // data-label is read by the mobile stylesheet to render a label
+      // next to each cell when the table collapses into stacked cards
+      // on phones. Without it, the cards look like an unlabeled blob.
       tr.innerHTML = `
-        <td style="font-weight:600;color:var(--ink);">${esc(u.name || "—")}</td>
-        <td style="max-width:0;overflow:hidden;">
+        <td data-label="User" style="font-weight:600;color:var(--ink);">${esc(u.name || "—")}</td>
+        <td data-label="Email" style="max-width:0;overflow:hidden;">
           <div title="${escAttr(u.email || "")}" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email || "")}</div>
           ${extraEmails.map(e => `<div title="${escAttr(e)}" style="margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:var(--muted);background:var(--surface-2,#f8fafc);border:1px solid var(--hairline,#e2e8f0);border-radius:4px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">${esc(e)}</div>`).join("")}
         </td>
-        <td>
+        <td data-label="Role">
           <select class="select" style="font-size:12px;padding:5px 6px;width:100%;" data-action="role" data-id="${esc(d.id)}">
             ${["admin","editor","writer","newsletter_builder","marketing","reader"].map(r =>
               `<option value="${r}" ${u.role === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}
           </select>
         </td>
-        <td><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}" style="font-size:11px;">${esc(u.status || "active")}</span></td>
-        <td>${renderBotReminderStatus(reminderStatus)}</td>
-        <td style="font-size:12px;color:var(--muted);white-space:nowrap;">${u.createdAt ? fmtDate(u.createdAt) : "—"}</td>
-        <td style="white-space:nowrap;">
+        <td data-label="Status"><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}" style="font-size:11px;">${esc(u.status || "active")}</span></td>
+        <td data-label="Bot reminders">${renderBotReminderStatus(reminderStatus)}</td>
+        <td data-label="Created" style="font-size:12px;color:var(--muted);white-space:nowrap;">${u.createdAt ? fmtDate(u.createdAt) : "—"}</td>
+        <td data-label="Last seen" style="white-space:nowrap;">
           ${last
             ? `<div style="font-size:12px;color:var(--ink-2);">${fmtRelative(last)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(last)}</div>`
             : `<span style="color:var(--muted);">—</span>`}
         </td>
-        <td>
+        <td data-label="Actions">
           <div style="display:flex;flex-direction:column;gap:5px;">
             <button class="btn btn-secondary btn-xs" data-action="extra-access" data-id="${esc(d.id)}" style="white-space:nowrap;" title="Grant access to specific dashboard pages">Extra access${Array.isArray(u.extraAccess) && u.extraAccess.length ? ` <span style="opacity:.7;">(${u.extraAccess.length})</span>` : ""}</button>
             <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}" style="white-space:nowrap;">Edit bot</button>

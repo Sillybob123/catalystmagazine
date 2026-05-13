@@ -6278,17 +6278,21 @@ button { font-family: inherit; cursor: pointer; }
   .table td {
     border-bottom: 1px solid var(--hairline-2);
     padding: 10px 12px;
-    display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
   }
   .table td:last-child { border-bottom: none; }
   .table td[data-label]::before {
     content: attr(data-label);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
     flex: 0 0 auto;
+    line-height: 1.2;
   }
 
   /* ---------- article list rows ---------- */
@@ -6655,5 +6659,65 @@ button { font-family: inherit; cursor: pointer; }
     flex-direction: column;
     align-items: flex-start !important;
   }
+
+  /* ----- Card header: title block + right-side controls (search input,
+     filter select, refresh button) stack on phones so the controls don't
+     overflow off-screen. Affects Article games, Submissions inbox,
+     Users & roles, Newsletter builder, etc. */
+  .card-header {
+    flex-direction: column;
+    align-items: stretch !important;
+    padding: 14px 16px !important;
+    gap: 10px !important;
+  }
+  /* The right-side controls row goes full-width and wraps. Inputs/selects
+     inside it lose their hard-coded desktop widths. */
+  .card-header > div[style*="display:flex"],
+  .card-header > div[style*="display: flex"] {
+    flex-wrap: wrap !important;
+    width: 100%;
+  }
+  .card-header .input,
+  .card-header .select,
+  .card-header input[type="search"],
+  .card-header input[type="text"] {
+    min-width: 0 !important;
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  .card-header .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* ----- Users & roles table — when stacked into cards by the round-1
+     mobile rule, the actions cell renders as flex-direction:column with
+     three full-width buttons. Make them flow horizontally + wrap so the
+     row doesn't take so much vertical space. */
+  .table td > div[style*="flex-direction:column"],
+  .table td > div[style*="flex-direction: column"] {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .table td > div[style*="flex-direction:column"] .btn,
+  .table td > div[style*="flex-direction: column"] .btn {
+    flex: 1 1 auto;
+  }
+  /* Stretch the role select inside the table-card layout. */
+  .table td .select { width: 100% !important; }
+
+  /* ----- Searchability — tighten the controls toolbar so labels and
+     the range pills fit cleanly on a 360px screen. The desktop layout
+     is fine; the existing 760px rule stacks them but the visual
+     hierarchy needs tightening on phone widths. */
+  .sc-control-label {
+    font-size: 10px !important;
+    letter-spacing: 0.12em;
+    margin-bottom: 4px !important;
+  }
+  .sc-controls { gap: 10px !important; }
+  .sc-range-picker { gap: 4px !important; }
+  .sc-range-btn { font-size: 12px !important; padding: 0 6px !important; }
 }
 
