@@ -6430,6 +6430,11 @@ button { font-family: inherit; cursor: pointer; }
   }
   .kb-header-actions { justify-content: flex-start; }
 
+  /* ----- Editorial standards — at tablet widths the TOC is already
+     stacked above the content via the existing 1180px rule. Just make
+     the pill strip behave: content-sized chips, no enforced min-width. */
+  .standards-toc-link { min-width: 0 !important; flex: 0 0 auto !important; }
+
   /* ----- Activity page (admin) — KPIs and per-person cards. */
   .act-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .act-people { grid-template-columns: 1fr !important; }
@@ -6522,14 +6527,104 @@ button { font-family: inherit; cursor: pointer; }
     overflow-x: visible !important;
   }
 
-  /* ----- Editorial standards page — the table-of-contents pills overflow
-     the content area at narrow widths. Allow the inner scroller; keep min
-     width sensible. */
-  .standards-toc-link { min-width: 180px !important; }
-  .standards-toc-list { padding: 4px 4px 8px !important; }
-  .standards-section { padding: 18px 14px 22px !important; }
-  .standards-section-title { font-size: 18px !important; }
-  .standards-section-intro { font-size: 14px !important; }
+  /* ----- Editorial standards page — phone overhaul.
+     The desktop layout is a big two-column page with a sticky TOC and
+     huge section hero cards. On phones the TOC was rendering as one
+     enormous vertical stack of full-width pills (each one bigger than
+     the screen), and each section card had 36px padding + a 68px
+     number circle + 49px headline. Compress everything down. */
+  .standards-content { gap: 14px !important; }
+
+  /* Section card: tight padding, smaller number, smaller hero title. */
+  .standards-section {
+    padding: 18px 14px 22px !important;
+    border-radius: 18px !important;
+  }
+  .standards-section-header {
+    gap: 12px !important;
+    margin-bottom: 14px !important;
+    align-items: center !important;
+  }
+  .standards-section-number {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+    font-size: 16px !important;
+  }
+  .standards-section-label { font-size: 10px !important; margin-bottom: 4px !important; }
+  .standards-section-title {
+    font-size: 20px !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.02em !important;
+  }
+  .standards-section-intro {
+    font-size: 14.5px !important;
+    line-height: 1.6 !important;
+    margin-top: 8px !important;
+  }
+  .standards-body-flow { gap: 12px !important; }
+  .standards-body-flow p,
+  .standards-body-flow li {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+  }
+  .standards-subhead { font-size: 10px !important; }
+
+  /* TOC: turn the giant vertical pill column into a tiny horizontal
+     numbered chip strip. Each chip is just the section number — the
+     long titles get hidden so the strip actually fits in a row. */
+  .standards-toc { position: static !important; }
+  .standards-toc-card {
+    padding: 10px !important;
+    border-radius: 16px !important;
+  }
+  .standards-toc-eyebrow { margin-bottom: 8px !important; font-size: 10px !important; }
+  .standards-toc-list {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: none !important;
+    padding: 2px 2px 6px !important;
+  }
+  .standards-toc-list::-webkit-scrollbar { height: 0; }
+  .standards-toc-link {
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    padding: 8px 10px !important;
+    gap: 6px !important;
+    border-radius: 12px !important;
+    background: var(--surface-2) !important;
+    border: 1px solid var(--hairline) !important;
+  }
+  .standards-toc-link.active {
+    background: var(--accent-soft) !important;
+    border-color: var(--accent) !important;
+  }
+  .standards-toc-number {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 8px !important;
+    font-size: 11px !important;
+  }
+  /* Hide the verbose label/title — the number alone is the chip. */
+  .standards-toc-text { display: none !important; }
+
+  /* Compare grids and pair rows are already 1-col at this width via
+     the existing standards rules — just trim padding so they fit. */
+  .standards-feature-grid,
+  .standards-compare-grid,
+  .standards-pair-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .standards-feature-card,
+  .standards-pair-cell {
+    padding: 14px !important;
+  }
 
   /* ----- Generic catch-all for inline `display:grid;grid-template-columns:1fr 1fr` ----
      A handful of inline two-column layouts across newsletter, admin, marketing,
