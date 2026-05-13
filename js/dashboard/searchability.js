@@ -1624,7 +1624,8 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
         thirdValue: fmtNum(r.days || 1),
         fourthLabel: "Timezone",
         fourthValue: r.timezone || "—",
-        description: "U.S. city markers come from first-party Cloudflare edge geolocation, aggregated by day without storing IP addresses, cookies, or visitor IDs. Drag the map, scroll to zoom, or click a city to focus it.",
+        description: cityVisitSummary(r),
+        visitHistory: normalizeVisitHistory(r),
       };
     })
     .sort((a, b) => (b.views || 0) - (a.views || 0))
@@ -1717,6 +1718,7 @@ function buildMapMarkers(rows, top, { city = false } = {}) {
       data-label-dy="${Number(r.meta.labelDy || 0).toFixed(1)}"
       data-panel-title="${esc(r.panelTitle || r.meta.name)}"
       data-description="${esc(r.description || "")}"
+      data-visit-history="${esc(JSON.stringify(r.visitHistory || []))}"
       data-country="${esc(r.meta.name)}"
       data-code="${esc(r.code)}"
       data-primary-label="${esc(r.primaryLabel)}"
@@ -1769,7 +1771,8 @@ function mapPanelHtml(row, kicker, hidden, panelKey) {
       <span><strong>${esc(row.thirdValue)}</strong>${esc(row.thirdLabel)}</span>
       <span><strong>${esc(row.fourthValue)}</strong>${esc(row.fourthLabel)}</span>
     </div>
-    <p>${esc(row.description)}</p>
+    <p class="sc-map-panel-note">${esc(row.description)}</p>
+    <div class="sc-map-visit-history">${visitHistoryHtml(row.visitHistory || [])}</div>
   </div>`;
 }
 
@@ -1875,7 +1878,8 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
     if (!panel) return;
     const title = panel.querySelector(".sc-map-panel-title");
     const grid = panel.querySelector(".sc-map-panel-grid");
-    const note = panel.querySelector("p");
+    const note = panel.querySelector(".sc-map-panel-note");
+    const history = panel.querySelector(".sc-map-visit-history");
     if (title) title.textContent = marker.dataset.panelTitle || marker.dataset.country || "";
     if (grid) {
       grid.innerHTML = `
@@ -1885,6 +1889,7 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
         <span><strong>${esc(marker.dataset.fourthValue || "—")}</strong>${esc(marker.dataset.fourthLabel || "Timezone")}</span>`;
     }
     if (note && marker.dataset.description) note.textContent = marker.dataset.description;
+    if (history) history.innerHTML = visitHistoryHtml(parseVisitHistory(marker.dataset.visitHistory));
   };
   root.querySelectorAll(".sc-map-mode-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -2046,6 +2051,73 @@ function weightedCityCenter(rows) {
   });
   if (!total) return US_MAP_CENTER;
   return { lon: lon / total, lat: lat / total };
+}
+
+function normalizeVisitHistory(row) {
+  const days = Array.isArray(row.recentDays) ? row.recentDays : [];
+  return days
+    .map((day) => ({
+      date: String(day.date || "").slice(0, 10),
+      views: Number(day.views || 0),
+      updatedAt: String(day.updatedAt || ""),
+      lastPath: String(day.lastPath || row.lastPath || ""),
+    }))
+    .filter((day) => day.date && day.views > 0)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+    .slice(0, 7);
+}
+
+function cityVisitSummary(row) {
+  const history = normalizeVisitHistory(row);
+  const last = history[0];
+  if (!last) {
+    return `${fmtNum(row.views || 0)} visit${Number(row.views || 0) === 1 ? "" : "s"} recorded from this city.`;
+  }
+  const latest = last.updatedAt ? formatVisitDateTime(last.updatedAt) : humanDate(last.date);
+  const path = last.lastPath ? ` Last page: ${pagePath(last.lastPath)}.` : "";
+  return `Last visit from this city: ${latest}.${path}`;
+}
+
+function parseVisitHistory(raw) {
+  try {
+    const parsed = JSON.parse(raw || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function visitHistoryHtml(history) {
+  if (!history.length) return "";
+  return `<div class="sc-map-history-title">Recent visits</div>
+    <div class="sc-map-history-list">
+      ${history.slice(0, 5).map((day) => `
+        <div class="sc-map-history-row">
+          <div>
+            <strong>${esc(humanDate(day.date) || day.date)}</strong>
+            ${day.updatedAt ? `<span>${esc(formatVisitTime(day.updatedAt))}</span>` : ""}
+            ${day.lastPath ? `<em title="${esc(day.lastPath)}">${esc(pagePath(day.lastPath))}</em>` : ""}
+          </div>
+          <b>${fmtNum(day.views)} ${Number(day.views) === 1 ? "view" : "views"}</b>
+        </div>`).join("")}
+    </div>`;
+}
+
+function formatVisitDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value || "");
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatVisitTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `last seen ${date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 }
 
 function shortMapLabel(label) {

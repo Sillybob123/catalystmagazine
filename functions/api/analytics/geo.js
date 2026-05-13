@@ -51,17 +51,39 @@ export const onRequestGet = async ({ request, env }) => {
         views: 0,
         days: 0,
         lastPath: d.lastPath || "",
+        lastSeenAt: "",
+        firstSeenDate: "",
+        recentDays: [],
       };
       current.views += Number(d.views || 0);
       current.days += 1;
       if (d.lastPath) current.lastPath = d.lastPath;
       if (typeof d.latitude === "number") current.latitude = d.latitude;
       if (typeof d.longitude === "number") current.longitude = d.longitude;
+      const day = {
+        date: d.date || "",
+        views: Number(d.views || 0),
+        lastPath: d.lastPath || "",
+        updatedAt: d.updatedAt || "",
+      };
+      if (day.date) current.recentDays.push(day);
+      if (day.updatedAt && (!current.lastSeenAt || day.updatedAt > current.lastSeenAt)) {
+        current.lastSeenAt = day.updatedAt;
+      }
+      if (day.date && (!current.firstSeenDate || day.date < current.firstSeenDate)) {
+        current.firstSeenDate = day.date;
+      }
       byPlace.set(key, current);
     }
 
     const rows = Array.from(byPlace.values())
       .filter((r) => r.country && r.latitude != null && r.longitude != null)
+      .map((r) => ({
+        ...r,
+        recentDays: r.recentDays
+          .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+          .slice(0, 7),
+      }))
       .sort((a, b) => b.views - a.views)
       .slice(0, limit);
 
