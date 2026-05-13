@@ -465,7 +465,9 @@ export async function mount(ctx, container) {
     wrapper.querySelectorAll(".sc-chart-toggle-btn").forEach((b) => {
       b.classList.toggle("is-active", b === btn);
     });
-    if (state.lastData.dates) renderTrendChart(wrapper, state.lastData.dates, state.chartMetric);
+    if (state.lastData.dates?.status === "fulfilled") {
+      renderTrendChart(wrapper, state.lastData.dates.value.rows, state.chartMetric);
+    }
   });
 
   // CSV exporter
@@ -584,23 +586,41 @@ async function loadAll(ctx, wrapper, state) {
     const cur  = overview.value.rows[0]  || {};
     const prev = overview.value.compareRows?.[0] || null;
 
-    setKpi(wrapper, "clicks", fmtNum(cur.clicks || 0), prev?.clicks);
-    setKpi(wrapper, "impr",   fmtNum(cur.impressions || 0), prev?.impressions);
+    setKpi(wrapper, "clicks", fmtNum(cur.clicks || 0), prev?.clicks, { current: cur.clicks || 0 });
+    setKpi(wrapper, "impr",   fmtNum(cur.impressions || 0), prev?.impressions, { current: cur.impressions || 0 });
 
     const curCtr  = cur.ctr  != null ? cur.ctr  * 100 : null;
     const prevCtr = prev?.ctr != null ? prev.ctr * 100 : null;
-    setKpi(wrapper, "ctr", curCtr != null ? `${curCtr.toFixed(1)}%` : "—", prevCtr, { suffix: "pp", absoluteDelta: true });
+    setKpi(wrapper, "ctr", curCtr != null ? `${curCtr.toFixed(1)}%` : "—", prevCtr, { suffix: "pp", absoluteDelta: true, current: curCtr });
 
     const curPos = cur.position;
     const prevPos = prev?.position;
-    setKpi(wrapper, "pos", curPos != null ? curPos.toFixed(1) : "—", prevPos, { inverse: true });
+    setKpi(wrapper, "pos", curPos != null ? curPos.toFixed(1) : "—", prevPos, { inverse: true, current: curPos });
 
     // Sparklines on each KPI from the dates series
     if (dates.status === "fulfilled" && dates.value.rows.length) {
-      renderKpiSparkline(wrapper, "clicks", dates.value.rows.map((r) => r.clicks || 0));
-      renderKpiSparkline(wrapper, "impr",   dates.value.rows.map((r) => r.impressions || 0));
-      renderKpiSparkline(wrapper, "ctr",    dates.value.rows.map((r) => (r.ctr || 0) * 100));
-      renderKpiSparkline(wrapper, "pos",    dates.value.rows.map((r) => r.position || 0), { inverse: true });
+      const dateRows = dates.value.rows;
+      renderKpiSparkline(wrapper, "clicks", dateRows.map((r) => r.clicks || 0), {
+        dateLabels: dateRows.map((r) => r.keys?.[0] || ""),
+        label: "Clicks",
+        formatValue: (v) => `${fmtNum(v)} click${Math.round(v) === 1 ? "" : "s"}`,
+      });
+      renderKpiSparkline(wrapper, "impr", dateRows.map((r) => r.impressions || 0), {
+        dateLabels: dateRows.map((r) => r.keys?.[0] || ""),
+        label: "Impressions",
+        formatValue: (v) => `${fmtNum(v)} impr.`,
+      });
+      renderKpiSparkline(wrapper, "ctr", dateRows.map((r) => (r.ctr || 0) * 100), {
+        dateLabels: dateRows.map((r) => r.keys?.[0] || ""),
+        label: "CTR",
+        formatValue: (v) => `${v.toFixed(1)}% CTR`,
+      });
+      renderKpiSparkline(wrapper, "pos", dateRows.map((r) => r.position || 0), {
+        inverse: true,
+        dateLabels: dateRows.map((r) => r.keys?.[0] || ""),
+        label: "Avg. position",
+        formatValue: (v) => v ? `pos. ${v.toFixed(1)}` : "—",
+      });
     }
   } else {
     ["clicks", "impr", "ctr", "pos"].forEach((k) => setKpi(wrapper, k, "—"));
@@ -682,7 +702,9 @@ function setKpi(wrapper, key, value, prev, opts = {}) {
   if (prev == null || prev === undefined) { d.textContent = ""; return; }
 
   // Extract numeric current value for delta math
-  const curNum = parseFloat(String(value).replace(/[^0-9.\-]/g, ""));
+  const curNum = opts.current != null
+    ? Number(opts.current)
+    : parseFloat(String(value).replace(/[^0-9.\-]/g, ""));
   if (!Number.isFinite(curNum)) { d.textContent = ""; return; }
   const prevNum = Number(prev);
   if (!Number.isFinite(prevNum) || prevNum === 0) {
@@ -716,22 +738,71 @@ function renderKpiSparkline(wrapper, key, series, opts = {}) {
   if (!el || !series.length) return;
   const max = Math.max(...series) || 1;
   const min = Math.min(...series);
-  const W = 120, H = 28;
-  const stepX = W / Math.max(series.length - 1, 1);
+  const W = 220, H = 54;
+  const pad = { top: 8, right: 8, bottom: 10, left: 8 };
+  const chartW = W - pad.left - pad.right;
+  const chartH = H - pad.top - pad.bottom;
+  const stepX = chartW / Math.max(series.length - 1, 1);
   const range = max - min || 1;
-  const points = series.map((v, i) => {
-    const x = i * stepX;
-    const y = H - ((v - min) / range) * H;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(" ");
+  const coords = series.map((v, i) => {
+    const x = pad.left + i * stepX;
+    const ratio = (v - min) / range;
+    const y = pad.top + (opts.inverse ? ratio * chartH : chartH - ratio * chartH);
+    return { x, y };
+  });
+  const points = coords.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const lastRatio = (series[series.length - 1] - min) / range;
+  const lastY = pad.top + (opts.inverse ? lastRatio * chartH : chartH - lastRatio * chartH);
+  const lastX = coords[coords.length - 1]?.x || W - pad.right;
   const lastV = series[series.length - 1];
   const isUp  = lastV >= series[0];
   const goodUp = !opts.inverse;
-  const color = (isUp === goodUp) ? "var(--accent)" : "#dc2626";
+  const tone = (isUp === goodUp) ? "good" : "bad";
+  const midY = pad.top + chartH / 2;
+  const fillPoints = `${pad.left},${H - pad.bottom} ${points} ${W - pad.right},${H - pad.bottom}`;
+  const label = opts.label || "Value";
+  const dateLabels = opts.dateLabels || [];
+  const formatValue = opts.formatValue || ((v) => fmtNum(v));
+  const hitPoints = coords.map((p, i) => {
+    const date = dateLabels[i] || "";
+    const value = formatValue(series[i] || 0);
+    const aria = `${label}, ${humanDate(date) || shortDate(date)}: ${value}`;
+    return `<circle class="sc-kpi-spark-hit" tabindex="0" role="button" aria-label="${esc(aria)}" data-index="${i}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="7"/>`;
+  }).join("");
   el.innerHTML = `
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:28px;">
-      <polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/>
-    </svg>`;
+    <svg class="sc-kpi-spark-svg is-${tone}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="${esc(label)} daily mini chart">
+      <line class="sc-kpi-spark-guide" x1="${pad.left}" y1="${midY.toFixed(1)}" x2="${W - pad.right}" y2="${midY.toFixed(1)}"/>
+      <polygon class="sc-kpi-spark-fill" points="${fillPoints}"/>
+      <polyline class="sc-kpi-spark-line" points="${points}"/>
+      <circle class="sc-kpi-spark-end" cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2.4"/>
+      <circle class="sc-kpi-spark-selected" r="3.2" opacity="0"/>
+      ${hitPoints}
+    </svg>
+    <div class="sc-kpi-spark-pop" hidden></div>`;
+
+  const pop = el.querySelector(".sc-kpi-spark-pop");
+  const selected = el.querySelector(".sc-kpi-spark-selected");
+  const showPoint = (index) => {
+    const p = coords[index];
+    if (!p || !pop || !selected) return;
+    const date = dateLabels[index] || "";
+    const value = formatValue(series[index] || 0);
+    selected.setAttribute("cx", p.x.toFixed(1));
+    selected.setAttribute("cy", p.y.toFixed(1));
+    selected.setAttribute("opacity", "1");
+    pop.innerHTML = `<strong>${esc(shortDate(date))}</strong><span>${esc(value)}</span>`;
+    pop.style.left = `${Math.max(10, Math.min(90, (p.x / W) * 100))}%`;
+    pop.hidden = false;
+  };
+
+  el.querySelectorAll(".sc-kpi-spark-hit").forEach((dot) => {
+    dot.addEventListener("click", () => showPoint(Number(dot.dataset.index)));
+    dot.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      showPoint(Number(dot.dataset.index));
+    });
+  });
 }
 
 function fmtNum(n) {
@@ -877,15 +948,16 @@ function renderInsights(wrapper, data) {
 }
 
 function insightIcon(name) {
+  const base = (inner) => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
   const ICONS = {
-    "trending-up":   `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
-    "trending-down": `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>`,
-    "ctr":           `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>`,
-    "rank":          `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6-6 6 6"/><path d="M12 3v18"/></svg>`,
-    "spark":         `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-    "lightbulb":     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.9.8 1 2 1 3.3h6c0-1.3.1-2.5 1-3.3A7 7 0 0 0 12 2z"/></svg>`,
-    "page":          `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
-    "device":        `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18"/></svg>`,
+    "trending-up":   base(`<path d="M4 15.5 9 10.5l4 4L20 7.5"/><path d="M16 7.5h4v4"/>`),
+    "trending-down": base(`<path d="M4 8.5 9 13.5l4-4 7 7"/><path d="M16 16.5h4v-4"/>`),
+    "ctr":           base(`<path d="M7 17 17 7"/><circle cx="7.5" cy="7.5" r="1.8"/><circle cx="16.5" cy="16.5" r="1.8"/>`),
+    "rank":          base(`<path d="M12 19V5"/><path d="m7 10 5-5 5 5"/>`),
+    "spark":         base(`<path d="M13 3 5 13h7l-1 8 8-11h-7l1-7Z"/>`),
+    "lightbulb":     base(`<path d="M9 18h6"/><path d="M10 21h4"/><path d="M8.5 14.5a6 6 0 1 1 7 0c-.7.6-.9 1.3-.9 2H9.4c0-.7-.2-1.4-.9-2Z"/>`),
+    "page":          base(`<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h5"/><path d="M10 13h6"/><path d="M10 17h4"/>`),
+    "device":        base(`<rect x="8" y="3" width="8" height="18" rx="2"/><path d="M11.5 18h1"/>`),
   };
   return ICONS[name] || ICONS["spark"];
 }
@@ -923,8 +995,8 @@ function renderTrendChart(wrapper, rows, metric = "both") {
   const ctrArr   = rows.map((r) => (r.ctr || 0) * 100);
   const posArr   = rows.map((r) => r.position || 0);
 
-  const W = 900, H = 280;
-  const pad = { top: 16, right: 50, bottom: 42, left: 50 };
+  const W = 920, H = 320;
+  const pad = { top: 22, right: 58, bottom: 46, left: 58 };
   const plotW = W - pad.left - pad.right;
   const plotH = H - pad.top - pad.bottom;
   const n = rows.length;
@@ -937,36 +1009,51 @@ function renderTrendChart(wrapper, rows, metric = "both") {
   const showCtr    = metric === "ctr";
   const showPos    = metric === "position";
 
-  let leftMax, rightMax, leftLabel, rightLabel;
+  let leftDomain = { min: 0, max: 1 };
+  let rightMax = 1;
+  let leftLabel = "";
+  let rightLabel = "";
+  let leftFormat = fmtNum;
+  let positionMode = false;
+
   if (showClicks && showImpr) {
-    leftMax  = niceMax(Math.max(1, ...clicks));
+    leftDomain = { min: 0, max: niceMax(Math.max(1, ...clicks)) };
     rightMax = niceMax(Math.max(1, ...imprArr));
     leftLabel = "Clicks"; rightLabel = "Impressions";
   } else if (showClicks) {
-    leftMax = niceMax(Math.max(1, ...clicks));
+    leftDomain = { min: 0, max: niceMax(Math.max(1, ...clicks)) };
     leftLabel = "Clicks";
   } else if (showImpr) {
-    leftMax = niceMax(Math.max(1, ...imprArr));
+    leftDomain = { min: 0, max: niceMax(Math.max(1, ...imprArr)) };
     leftLabel = "Impressions";
   } else if (showCtr) {
-    leftMax = niceMax(Math.max(1, ...ctrArr));
+    leftDomain = { min: 0, max: niceMax(Math.max(1, ...ctrArr)) };
     leftLabel = "CTR (%)";
+    leftFormat = (v) => `${fmtPctTick(v)}%`;
   } else if (showPos) {
-    leftMax = Math.ceil(Math.max(1, ...posArr));
+    const nonZeroPos = posArr.filter((v) => v > 0);
+    const pMin = Math.max(1, Math.floor(Math.min(...nonZeroPos, 1)));
+    const pMax = Math.ceil(Math.max(...nonZeroPos, 2));
+    const room = Math.max(1, Math.ceil((pMax - pMin) * 0.18));
+    leftDomain = { min: Math.max(1, pMin - room), max: pMax + room };
     leftLabel = "Position";
+    leftFormat = (v) => v.toFixed(v < 10 ? 1 : 0);
+    positionMode = true;
   }
 
-  const ycLeft  = (v) => pad.top + plotH - (v / leftMax) * plotH;
+  const spanLeft = leftDomain.max - leftDomain.min || 1;
+  const ycLeft  = (v) => {
+    const clamped = Math.max(leftDomain.min, Math.min(leftDomain.max, v));
+    if (positionMode) return pad.top + ((clamped - leftDomain.min) / spanLeft) * plotH;
+    return pad.top + plotH - ((clamped - leftDomain.min) / spanLeft) * plotH;
+  };
   const ycRight = (v) => pad.top + plotH - (v / rightMax) * plotH;
-  // Position chart is inverted (1 = top, large numbers worse)
-  const ycPos   = (v) => pad.top + (v / leftMax) * plotH;
 
-  // Gridlines off leftMax
-  const leftTicks = niceTicks(leftMax, 4);
+  const leftTicks = positionMode ? rangeTicks(leftDomain.min, leftDomain.max, 4) : niceTicks(leftDomain.max, 4);
   const gridLines = leftTicks.map((t) => {
     const gy = ycLeft(t);
-    return `<line x1="${pad.left}" y1="${gy.toFixed(1)}" x2="${(W - pad.right).toFixed(1)}" y2="${gy.toFixed(1)}" stroke="var(--surface-3)" stroke-width="1"/>
-    <text x="${pad.left - 8}" y="${(gy + 3).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="Inter,system-ui,sans-serif">${showCtr ? `${t}%` : fmtNum(t)}</text>`;
+    return `<line class="sc-chart-gridline" x1="${pad.left}" y1="${gy.toFixed(1)}" x2="${(W - pad.right).toFixed(1)}" y2="${gy.toFixed(1)}"/>
+    <text class="sc-chart-axis-text" x="${pad.left - 10}" y="${(gy + 3).toFixed(1)}" text-anchor="end">${leftFormat(t)}</text>`;
   }).join("");
 
   let rightAxis = "";
@@ -974,7 +1061,7 @@ function renderTrendChart(wrapper, rows, metric = "both") {
     const rightTicks = niceTicks(rightMax, 4);
     rightAxis = rightTicks.map((t) => {
       const gy = ycRight(t);
-      return `<text x="${(W - pad.right + 8).toFixed(1)}" y="${(gy + 3).toFixed(1)}" text-anchor="start" font-size="11" fill="var(--muted-2)" font-family="Inter,system-ui,sans-serif">${fmtNum(t)}</text>`;
+      return `<text class="sc-chart-axis-text sc-chart-axis-text-right" x="${(W - pad.right + 10).toFixed(1)}" y="${(gy + 3).toFixed(1)}" text-anchor="start">${fmtNum(t)}</text>`;
     }).join("");
   }
 
@@ -982,78 +1069,219 @@ function renderTrendChart(wrapper, rows, metric = "both") {
   const step = Math.max(1, Math.ceil(n / 8));
   const xLabels = dates.map((d, i) => {
     if (i % step !== 0 && i !== n - 1) return "";
-    return `<text x="${xc(i).toFixed(1)}" y="${(H - pad.bottom + 18).toFixed(1)}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="Inter,system-ui,sans-serif">${esc(shortDate(d))}</text>`;
+    return `<text class="sc-chart-axis-text" x="${xc(i).toFixed(1)}" y="${(H - pad.bottom + 20).toFixed(1)}" text-anchor="middle">${esc(shortDate(d))}</text>`;
   }).join("");
 
   // Build paths
   let paths = "";
   let dots = "";
   let legend = [];
+  let hoverDots = "";
+  const hoverSeries = [];
+  const addHoverSeries = (id, label, color, yFn, valueFn, formatFn) => {
+    hoverSeries.push({ id, label, color, yFn, valueFn, formatFn });
+    hoverDots += `<circle class="sc-chart-hover-dot" data-series="${id}" r="4.2" fill="${color}" stroke="var(--surface)" stroke-width="2" opacity="0"/>`;
+  };
 
   if (showImpr && showClicks) {
-    // Impressions: dashed line (right axis), no fill
-    const imprPath = linePath(rows, (_, i) => xc(i), (r) => ycRight(r.impressions || 0));
-    paths += `<path d="${imprPath}" fill="none" stroke="var(--muted-2)" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.85"/>`;
-    legend.push({ label: "Impressions", color: "var(--muted-2)", dashed: true });
+    const imprPath = smoothLinePath(rows, (_, i) => xc(i), (r) => ycRight(r.impressions || 0));
+    paths += `<path class="sc-chart-line sc-chart-line-impressions is-dashed" d="${imprPath}"/>`;
+    addHoverSeries("impressions", "Impressions", "var(--chart-impressions)", (r) => ycRight(r.impressions || 0), (r) => r.impressions || 0, fmtNum);
+    legend.push({ label: "Impressions", color: "var(--chart-impressions)", dashed: true });
   } else if (showImpr) {
-    const imprPath = linePath(rows, (_, i) => xc(i), (r) => ycLeft(r.impressions || 0));
-    const imprFill = imprPath + ` L ${xc(n-1).toFixed(1)} ${(pad.top+plotH).toFixed(1)} L ${pad.left.toFixed(1)} ${(pad.top+plotH).toFixed(1)} Z`;
-    paths += `<path d="${imprFill}" fill="url(#sc-fill)"/>
-              <path d="${imprPath}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    legend.push({ label: "Impressions", color: "var(--accent)" });
+    const imprPath = smoothLinePath(rows, (_, i) => xc(i), (r) => ycLeft(r.impressions || 0));
+    const imprFill = areaPath(rows, (_, i) => xc(i), (r) => ycLeft(r.impressions || 0), pad.top + plotH);
+    paths += `<path class="sc-chart-area sc-chart-area-impressions" d="${imprFill}"/>
+              <path class="sc-chart-line sc-chart-line-impressions" d="${imprPath}"/>`;
+    addHoverSeries("impressions", "Impressions", "var(--chart-impressions)", (r) => ycLeft(r.impressions || 0), (r) => r.impressions || 0, fmtNum);
+    legend.push({ label: "Impressions", color: "var(--chart-impressions)" });
   }
 
   if (showClicks) {
-    const clickPath = linePath(rows, (_, i) => xc(i), (r) => ycLeft(r.clicks || 0));
-    const clickFill = clickPath + ` L ${xc(n-1).toFixed(1)} ${(pad.top+plotH).toFixed(1)} L ${pad.left.toFixed(1)} ${(pad.top+plotH).toFixed(1)} Z`;
-    paths += `<path d="${clickFill}" fill="url(#sc-fill)"/>
-              <path d="${clickPath}" fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round"/>`;
-    dots += rows.map((r, i) =>
-      `<circle cx="${xc(i).toFixed(1)}" cy="${ycLeft(r.clicks || 0).toFixed(1)}" r="2.5" fill="var(--accent)"><title>${esc(shortDate(dates[i]))}: ${r.clicks || 0} clicks${showImpr ? ` · ${r.impressions || 0} impressions` : ""}</title></circle>`
-    ).join("");
-    legend.push({ label: "Clicks", color: "var(--accent)" });
+    const clickPath = smoothLinePath(rows, (_, i) => xc(i), (r) => ycLeft(r.clicks || 0));
+    const clickFill = areaPath(rows, (_, i) => xc(i), (r) => ycLeft(r.clicks || 0), pad.top + plotH);
+    paths += `<path class="sc-chart-area sc-chart-area-clicks" d="${clickFill}"/>
+              <path class="sc-chart-line sc-chart-line-clicks" d="${clickPath}"/>`;
+    dots += chartPointDots(rows, (_, i) => xc(i), (r) => ycLeft(r.clicks || 0), "var(--chart-clicks)", n);
+    addHoverSeries("clicks", "Clicks", "var(--chart-clicks)", (r) => ycLeft(r.clicks || 0), (r) => r.clicks || 0, fmtNum);
+    legend.push({ label: "Clicks", color: "var(--chart-clicks)" });
   }
 
   if (showCtr) {
-    const ctrPath = linePath(rows, (_, i) => xc(i), (r) => ycLeft((r.ctr || 0) * 100));
-    paths += `<path d="${ctrPath}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>`;
-    dots += rows.map((r, i) =>
-      `<circle cx="${xc(i).toFixed(1)}" cy="${ycLeft((r.ctr || 0) * 100).toFixed(1)}" r="2.5" fill="var(--accent)"><title>${esc(shortDate(dates[i]))}: ${((r.ctr || 0) * 100).toFixed(2)}% CTR</title></circle>`
-    ).join("");
-    legend.push({ label: "CTR", color: "var(--accent)" });
+    const ctrPath = smoothLinePath(rows, (_, i) => xc(i), (r) => ycLeft((r.ctr || 0) * 100));
+    const ctrFill = areaPath(rows, (_, i) => xc(i), (r) => ycLeft((r.ctr || 0) * 100), pad.top + plotH);
+    paths += `<path class="sc-chart-area sc-chart-area-ctr" d="${ctrFill}"/>
+              <path class="sc-chart-line sc-chart-line-ctr" d="${ctrPath}"/>`;
+    dots += chartPointDots(rows, (_, i) => xc(i), (r) => ycLeft((r.ctr || 0) * 100), "var(--chart-ctr)", n);
+    addHoverSeries("ctr", "CTR", "var(--chart-ctr)", (r) => ycLeft((r.ctr || 0) * 100), (r) => (r.ctr || 0) * 100, (v) => `${v.toFixed(2)}%`);
+    legend.push({ label: "CTR", color: "var(--chart-ctr)" });
   }
 
   if (showPos) {
-    const posPath = linePath(rows, (_, i) => xc(i), (r) => ycPos(r.position || 0));
-    paths += `<path d="${posPath}" fill="none" stroke="var(--accent)" stroke-width="2"/>`;
-    dots += rows.map((r, i) =>
-      `<circle cx="${xc(i).toFixed(1)}" cy="${ycPos(r.position || 0).toFixed(1)}" r="2.5" fill="var(--accent)"><title>${esc(shortDate(dates[i]))}: position ${(r.position || 0).toFixed(1)}</title></circle>`
-    ).join("");
-    legend.push({ label: "Avg position", color: "var(--accent)" });
+    const posPath = smoothLinePath(rows, (_, i) => xc(i), (r) => ycLeft(r.position || leftDomain.max));
+    paths += `<path class="sc-chart-line sc-chart-line-position" d="${posPath}"/>`;
+    dots += chartPointDots(rows, (_, i) => xc(i), (r) => ycLeft(r.position || leftDomain.max), "var(--chart-position)", n);
+    addHoverSeries("position", "Avg. position", "var(--chart-position)", (r) => ycLeft(r.position || leftDomain.max), (r) => r.position || 0, (v) => v.toFixed(1));
+    legend.push({ label: "Avg. position", color: "var(--chart-position)" });
   }
 
-  const legendHtml = `<div class="sc-chart-legend">
-    ${legend.map((l) => `<span class="sc-legend-item"><span class="sc-legend-line" style="background:${l.color};${l.dashed ? "border-top:2px dashed " + l.color + ";background:transparent;" : ""}"></span>${l.label}</span>`).join("")}
+  const totalClicks = clicks.reduce((a, b) => a + b, 0);
+  const totalImpr = imprArr.reduce((a, b) => a + b, 0);
+  const avgCtr = totalImpr ? (totalClicks / totalImpr) * 100 : 0;
+  const weightedPos = totalImpr
+    ? rows.reduce((sum, r) => sum + ((r.position || 0) * (r.impressions || 0)), 0) / totalImpr
+    : avg(posArr);
+  const bestClickDay = rows.reduce((best, r, i) => ((r.clicks || 0) > (best.row.clicks || 0) ? { row: r, i } : best), { row: rows[0], i: 0 });
+  const statHtml = `<div class="sc-chart-stat-row">
+    <span class="sc-chart-stat"><strong>${fmtNum(totalClicks)}</strong><span>Clicks</span></span>
+    <span class="sc-chart-stat"><strong>${fmtNum(totalImpr)}</strong><span>Impressions</span></span>
+    <span class="sc-chart-stat"><strong>${avgCtr.toFixed(1)}%</strong><span>Avg CTR</span></span>
+    <span class="sc-chart-stat"><strong>${weightedPos ? weightedPos.toFixed(1) : "—"}</strong><span>Avg pos.</span></span>
+    <span class="sc-chart-stat sc-chart-stat-wide"><strong>${esc(shortDate(dates[bestClickDay.i]))}</strong><span>Best click day</span></span>
   </div>`;
 
-  chartEl.innerHTML = legendHtml + `
-    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Trend chart">
+  const legendHtml = `<div class="sc-chart-legend">
+    ${legend.map((l) => `<span class="sc-legend-item"><span class="sc-legend-line${l.dashed ? " is-dashed" : ""}" style="--legend-color:${l.color};"></span>${l.label}</span>`).join("")}
+    ${positionMode ? `<span class="sc-chart-note">Lower position is better</span>` : ""}
+  </div>`;
+
+  chartEl.innerHTML = statHtml + `
+    <div class="sc-chart-frame">
+      ${legendHtml}
+      <svg class="sc-trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Trend chart"
+        data-left="${pad.left}" data-right="${W - pad.right}" data-top="${pad.top}" data-bottom="${pad.top + plotH}" data-count="${n}">
       <defs>
         <linearGradient id="sc-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22"/>
-          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+          <stop offset="0%" stop-color="currentColor" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
         </linearGradient>
       </defs>
+      <line class="sc-chart-axis" x1="${pad.left}" y1="${(pad.top + plotH).toFixed(1)}" x2="${(W - pad.right).toFixed(1)}" y2="${(pad.top + plotH).toFixed(1)}"/>
+      <text class="sc-chart-axis-label" x="${pad.left}" y="12">${esc(leftLabel)}</text>
+      ${rightLabel ? `<text class="sc-chart-axis-label sc-chart-axis-label-right" x="${(W - pad.right).toFixed(1)}" y="12" text-anchor="end">${esc(rightLabel)}</text>` : ""}
       <g>${gridLines}</g>
       <g>${rightAxis}</g>
       ${paths}
       <g>${dots}</g>
+      <line class="sc-chart-crosshair" data-crosshair x1="${pad.left}" x2="${pad.left}" y1="${pad.top}" y2="${pad.top + plotH}" opacity="0"/>
+      <g data-hover-dots>${hoverDots}</g>
+      <rect class="sc-chart-hitbox" x="${pad.left}" y="${pad.top}" width="${plotW}" height="${plotH}" fill="transparent"/>
       <g>${xLabels}</g>
-    </svg>`;
+    </svg>
+    <div class="sc-chart-tooltip" role="status" aria-live="polite"></div>
+    </div>`;
+
+  wireTrendChartHover(chartEl, rows, dates, hoverSeries, { W, pad, plotW, plotH });
 }
 
 function linePath(rows, xFn, yFn) {
   return rows.map((r, i) => `${i === 0 ? "M" : "L"} ${xFn(r, i).toFixed(1)} ${yFn(r, i).toFixed(1)}`).join(" ");
+}
+
+function smoothLinePath(rows, xFn, yFn) {
+  if (!rows.length) return "";
+  if (rows.length < 3) return linePath(rows, xFn, yFn);
+  const pts = rows.map((r, i) => ({ x: xFn(r, i), y: yFn(r, i) }));
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+function areaPath(rows, xFn, yFn, baseline) {
+  if (!rows.length) return "";
+  const top = smoothLinePath(rows, xFn, yFn);
+  const lastX = xFn(rows[rows.length - 1], rows.length - 1);
+  const firstX = xFn(rows[0], 0);
+  return `${top} L ${lastX.toFixed(1)} ${baseline.toFixed(1)} L ${firstX.toFixed(1)} ${baseline.toFixed(1)} Z`;
+}
+
+function chartPointDots(rows, xFn, yFn, color, n) {
+  if (n > 45) return "";
+  return rows.map((r, i) =>
+    `<circle class="sc-chart-point" cx="${xFn(r, i).toFixed(1)}" cy="${yFn(r, i).toFixed(1)}" r="${n > 24 ? 1.8 : 2.3}" fill="${color}"/>`
+  ).join("");
+}
+
+function wireTrendChartHover(chartEl, rows, dates, series, dims) {
+  const frame = chartEl.querySelector(".sc-chart-frame");
+  const svg = chartEl.querySelector(".sc-trend-svg");
+  const tooltip = chartEl.querySelector(".sc-chart-tooltip");
+  const crosshair = chartEl.querySelector("[data-crosshair]");
+  const hoverDots = Array.from(chartEl.querySelectorAll(".sc-chart-hover-dot"));
+  if (!frame || !svg || !tooltip || !crosshair || !series.length) return;
+
+  const hide = () => {
+    tooltip.classList.remove("is-visible");
+    crosshair.setAttribute("opacity", "0");
+    hoverDots.forEach((dot) => dot.setAttribute("opacity", "0"));
+  };
+
+  const showIndex = (index, clientX) => {
+    const row = rows[index];
+    const x = dims.pad.left + (index / Math.max(rows.length - 1, 1)) * dims.plotW;
+    crosshair.setAttribute("x1", x.toFixed(1));
+    crosshair.setAttribute("x2", x.toFixed(1));
+    crosshair.setAttribute("opacity", "1");
+
+    for (const dot of hoverDots) {
+      const cfg = series.find((s) => s.id === dot.dataset.series);
+      if (!cfg) continue;
+      dot.setAttribute("cx", x.toFixed(1));
+      dot.setAttribute("cy", cfg.yFn(row).toFixed(1));
+      dot.setAttribute("opacity", "1");
+    }
+
+    const allRows = [
+      ...series.map((s) => ({
+        color: s.color,
+        label: s.label,
+        value: s.formatFn(s.valueFn(row)),
+      })),
+      { color: "var(--chart-clicks)", label: "Clicks", value: fmtNum(row.clicks || 0) },
+      { color: "var(--chart-impressions)", label: "Impressions", value: fmtNum(row.impressions || 0) },
+      { color: "var(--chart-ctr)", label: "CTR", value: `${((row.ctr || 0) * 100).toFixed(2)}%` },
+      { color: "var(--chart-position)", label: "Avg. position", value: row.position ? row.position.toFixed(1) : "—" },
+    ];
+    const seen = new Set();
+    tooltip.innerHTML = `
+      <div class="sc-tooltip-date">${esc(humanDate(dates[index]))}</div>
+      ${allRows.filter((item) => {
+        if (seen.has(item.label)) return false;
+        seen.add(item.label);
+        return true;
+      }).map((item) => `
+        <div class="sc-tooltip-row">
+          <span><i style="background:${item.color}"></i>${esc(item.label)}</span>
+          <strong>${esc(item.value)}</strong>
+        </div>`).join("")}`;
+
+    const frameRect = frame.getBoundingClientRect();
+    const tipWidth = tooltip.offsetWidth || 190;
+    const left = Math.max(8, Math.min(frameRect.width - tipWidth - 8, clientX - frameRect.left + 14));
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = "58px";
+    tooltip.classList.add("is-visible");
+  };
+
+  svg.addEventListener("pointermove", (e) => {
+    const rect = svg.getBoundingClientRect();
+    const viewX = ((e.clientX - rect.left) / rect.width) * dims.W;
+    const ratio = (Math.max(dims.pad.left, Math.min(dims.pad.left + dims.plotW, viewX)) - dims.pad.left) / dims.plotW;
+    const index = Math.max(0, Math.min(rows.length - 1, Math.round(ratio * (rows.length - 1))));
+    showIndex(index, e.clientX);
+  });
+  svg.addEventListener("pointerleave", hide);
+  svg.addEventListener("focusout", hide);
 }
 
 // ── Opportunities (high impressions, low CTR) ────────────────────────────────
@@ -1468,6 +1696,22 @@ function niceMax(v) {
 function niceTicks(max, count) {
   const step = max / count;
   return Array.from({ length: count + 1 }, (_, i) => Math.round(step * i));
+}
+
+function rangeTicks(min, max, count) {
+  const span = max - min || 1;
+  return Array.from({ length: count + 1 }, (_, i) => min + (span / count) * i);
+}
+
+function fmtPctTick(v) {
+  if (v >= 10 || Number.isInteger(v)) return v.toFixed(0);
+  return v.toFixed(1);
+}
+
+function avg(arr) {
+  const nums = arr.filter((v) => Number.isFinite(v) && v > 0);
+  if (!nums.length) return 0;
+  return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
 // Empty state for the trend chart — explains *why* and offers a one-click fix.
