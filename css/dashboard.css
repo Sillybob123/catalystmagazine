@@ -6761,11 +6761,17 @@ button { font-family: inherit; cursor: pointer; }
   .table td .select { width: 100% !important; }
 
   /* ----- Searchability — the gap between the title block and the
-     controls was the .sc-hero-top gap (24px) compounded with the
-     period-bar margin-top (22px). Tighten both on phones, plus the
-     control-group internals. */
+     controls was caused by .sc-hero-title-block having `flex: 1 1 320px`,
+     which means flex-basis: 320px. In a row layout this is harmless (it's
+     the basis width); but on mobile .sc-hero-top becomes a column flex
+     container, and flex-basis becomes the basis HEIGHT — so the title
+     block tried to be 320px tall, leaving a huge empty gap before the
+     controls. Reset flex-basis to auto on phones. */
   .sc-hero-top { gap: 12px !important; }
-  .sc-hero-title-block { padding-bottom: 0 !important; }
+  .sc-hero-title-block {
+    flex: 0 0 auto !important;
+    padding-bottom: 0 !important;
+  }
   .sc-hero-sub { margin-bottom: 0 !important; }
   .sc-period-bar { margin-top: 12px !important; }
   .sc-control-label {
