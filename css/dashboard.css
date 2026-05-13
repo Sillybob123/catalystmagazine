@@ -6531,104 +6531,157 @@ button { font-family: inherit; cursor: pointer; }
     overflow-x: visible !important;
   }
 
-  /* ----- Editorial standards page — phone overhaul.
-     The desktop layout is a big two-column page with a sticky TOC and
-     huge section hero cards. On phones the TOC was rendering as one
-     enormous vertical stack of full-width pills (each one bigger than
-     the screen), and each section card had 36px padding + a 68px
-     number circle + 49px headline. Compress everything down. */
-  .standards-content { gap: 14px !important; }
+  /* ----- Editorial standards page — full mobile redesign.
+     The desktop is a two-column doc with a heavy sticky TOC. On phones
+     we strip it to a clean readable scroll-through: no TOC card, no
+     fancy hero gradients, just numbered sections one after another in
+     a calm, magazine-readable rhythm. */
 
-  /* Section card: tight padding, smaller number, smaller hero title. */
-  .standards-section {
-    padding: 18px 14px 22px !important;
-    border-radius: 18px !important;
+  /* Layout: collapse to single column. */
+  .standards-page {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
+  .standards-page::before { display: none !important; }
+  .standards-layout {
+    display: block !important;
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide the desktop TOC entirely on phones — sequential scroll IS the
+     mobile reading pattern. The numbered eyebrow on each section keeps
+     orientation. */
+  .standards-toc { display: none !important; }
+
+  .standards-content {
+    grid-column: 1 !important;
+    width: 100% !important;
+    gap: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Section: a clean magazine page divided by a hairline rule.
+     No card chrome, no shadows, no gradient — just typography. */
+  .standards-section {
+    padding: 32px 4px 36px !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 1px solid var(--hairline) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+  .standards-section:first-child { padding-top: 16px !important; }
+  .standards-section:last-child { border-bottom: none !important; }
+  .standards-section::before { display: none !important; }
+  .standards-section.is-active {
+    transform: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+    border-bottom-color: var(--hairline) !important;
+  }
+
+  /* Section header: small numbered eyebrow above the title.
+     The big circular number is replaced with an inline "01 · Foundation"
+     marker that reads like a magazine chapter heading. */
   .standards-section-header {
-    gap: 12px !important;
-    margin-bottom: 14px !important;
-    align-items: center !important;
+    display: block !important;
+    margin-bottom: 16px !important;
   }
   .standards-section-number {
-    width: 44px !important;
-    height: 44px !important;
-    border-radius: 14px !important;
-    font-size: 16px !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    background: none !important;
+    color: var(--standards-accent, #0f766e) !important;
+    box-shadow: none !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.18em !important;
+    border-radius: 0 !important;
+    margin-right: 10px !important;
+    vertical-align: baseline;
   }
-  .standards-section-label { font-size: 10px !important; margin-bottom: 4px !important; }
+  .standards-section-number::after {
+    content: " ·";
+    color: var(--muted-2);
+    font-weight: 600;
+    margin-left: 2px;
+  }
+  .standards-section-headcopy {
+    display: inline;
+  }
+  .standards-section-label {
+    display: inline-block !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.16em !important;
+    color: var(--muted) !important;
+    text-transform: uppercase !important;
+    margin-bottom: 12px !important;
+  }
   .standards-section-title {
-    font-size: 20px !important;
+    display: block !important;
+    font-size: 26px !important;
+    font-weight: 700 !important;
     line-height: 1.15 !important;
     letter-spacing: -0.02em !important;
+    margin: 8px 0 0 !important;
+    color: var(--standards-ink, #0f172a) !important;
   }
   .standards-section-intro {
-    font-size: 14.5px !important;
+    margin: 14px 0 0 !important;
+    font-size: 16px !important;
     line-height: 1.6 !important;
-    margin-top: 8px !important;
+    color: var(--standards-ink-soft, #475569) !important;
   }
-  .standards-body-flow { gap: 12px !important; }
+
+  /* Body flow: comfortable serif reading rhythm. */
+  .standards-body-flow {
+    margin-top: 20px !important;
+    gap: 14px !important;
+  }
   .standards-body-flow p,
   .standards-body-flow li {
-    font-size: 15px !important;
-    line-height: 1.65 !important;
+    font-size: 16px !important;
+    line-height: 1.7 !important;
+    max-width: none !important;
   }
-  .standards-subhead { font-size: 10px !important; }
-
-  /* TOC: turn the giant vertical pill column into a tiny horizontal
-     numbered chip strip. Each chip is just the section number — the
-     long titles get hidden so the strip actually fits in a row. */
-  .standards-toc { position: static !important; }
-  .standards-toc-card {
-    padding: 10px !important;
-    border-radius: 16px !important;
+  .standards-body-flow ul,
+  .standards-body-flow ol {
+    padding-left: 22px !important;
+    margin: 0 !important;
   }
-  .standards-toc-eyebrow { margin-bottom: 8px !important; font-size: 10px !important; }
-  .standards-toc-list {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    gap: 6px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    -webkit-overflow-scrolling: touch;
-    max-height: none !important;
-    padding: 2px 2px 6px !important;
-  }
-  .standards-toc-list::-webkit-scrollbar { height: 0; }
-  .standards-toc-link {
-    min-width: 0 !important;
-    flex: 0 0 auto !important;
-    width: auto !important;
-    padding: 8px 10px !important;
-    gap: 6px !important;
-    border-radius: 12px !important;
-    background: var(--surface-2) !important;
-    border: 1px solid var(--hairline) !important;
-  }
-  .standards-toc-link.active {
-    background: var(--accent-soft) !important;
-    border-color: var(--accent) !important;
-  }
-  .standards-toc-number {
-    width: 26px !important;
-    height: 26px !important;
-    border-radius: 8px !important;
+  .standards-body-flow li + li { margin-top: 6px !important; }
+  .standards-subhead {
     font-size: 11px !important;
+    margin-top: 18px !important;
+    margin-bottom: 4px !important;
   }
-  /* Hide the verbose label/title — the number alone is the chip. */
-  .standards-toc-text { display: none !important; }
 
-  /* Compare grids and pair rows are already 1-col at this width via
-     the existing standards rules — just trim padding so they fit. */
+  /* Inner content blocks: tight padding, full width. */
   .standards-feature-grid,
   .standards-compare-grid,
+  .standards-compare-grid--tight,
   .standards-pair-row {
     grid-template-columns: 1fr !important;
-    gap: 10px !important;
+    gap: 12px !important;
+    margin-top: 16px !important;
   }
   .standards-feature-card,
   .standards-pair-cell {
-    padding: 14px !important;
+    padding: 16px !important;
+    border-radius: 14px !important;
   }
+
+  /* Content wrapper inside the dashboard already has 12px gutters from
+     the round-1 rule — that gives the standards page the right edge
+     padding without needing its own. */
 
   /* ----- Generic catch-all for inline `display:grid;grid-template-columns:1fr 1fr` ----
      A handful of inline two-column layouts across newsletter, admin, marketing,
@@ -6707,16 +6760,21 @@ button { font-family: inherit; cursor: pointer; }
   /* Stretch the role select inside the table-card layout. */
   .table td .select { width: 100% !important; }
 
-  /* ----- Searchability — tighten the controls toolbar so labels and
-     the range pills fit cleanly on a 360px screen. The desktop layout
-     is fine; the existing 760px rule stacks them but the visual
-     hierarchy needs tightening on phone widths. */
+  /* ----- Searchability — the gap between the title block and the
+     controls was the .sc-hero-top gap (24px) compounded with the
+     period-bar margin-top (22px). Tighten both on phones, plus the
+     control-group internals. */
+  .sc-hero-top { gap: 12px !important; }
+  .sc-hero-title-block { padding-bottom: 0 !important; }
+  .sc-hero-sub { margin-bottom: 0 !important; }
+  .sc-period-bar { margin-top: 12px !important; }
   .sc-control-label {
     font-size: 10px !important;
     letter-spacing: 0.12em;
     margin-bottom: 4px !important;
   }
   .sc-controls { gap: 10px !important; }
+  .sc-control-group { gap: 4px !important; }
   .sc-range-picker { gap: 4px !important; }
   .sc-range-btn { font-size: 12px !important; padding: 0 6px !important; }
 }
