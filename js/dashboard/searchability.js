@@ -318,6 +318,16 @@ export async function mount(ctx, container) {
         </section>
       </div>
 
+      <section class="sc-card sc-map-card">
+        <div class="sc-card-head">
+          <div>
+            <h3 class="sc-card-title">Search geography map</h3>
+            <p class="sc-card-sub">Country-level Google Search Console data. Hover or tap a marker to see clicks, impressions, CTR, and average position.</p>
+          </div>
+        </div>
+        <div class="sc-card-body" id="sc-geo-map"><div class="loading-state"><div class="spinner"></div></div></div>
+      </section>
+
       <section class="sc-card" id="sc-appearance-card" style="display:none;">
         <div class="sc-card-head">
           <div>
@@ -549,7 +559,7 @@ async function loadAll(ctx, wrapper, state) {
   // Reset panels to loading
   ["sc-trend-chart", "sc-opportunities", "sc-rising", "sc-falling",
    "sc-brand-split", "sc-queries", "sc-pages", "sc-countries", "sc-devices",
-   "sc-appearance"].forEach((id) => {
+   "sc-geo-map", "sc-appearance"].forEach((id) => {
     const el = wrapper.querySelector(`#${id}`);
     if (el) el.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading…</div>`;
   });
@@ -651,6 +661,7 @@ async function loadAll(ctx, wrapper, state) {
   renderRankedTable(wrapper, "#sc-pages",     pages,     "page",    { topN: 15 });
   renderRankedTable(wrapper, "#sc-countries", countries, "country", { topN: 10 });
   renderRankedTable(wrapper, "#sc-devices",   devices,   "device",  { topN: 5  });
+  renderGeoMap(wrapper, countries);
 
   // ── Search appearance (optional — only show if rows exist) ──
   if (appearance.status === "fulfilled" && appearance.value.rows.length) {
@@ -1505,6 +1516,154 @@ function renderBrandSplit(wrapper, queriesResult, overviewResult) {
     </div>`;
 }
 
+// ── Geographic map ──────────────────────────────────────────────────────────
+
+function renderGeoMap(wrapper, result) {
+  const el = wrapper.querySelector("#sc-geo-map");
+  if (!el) return;
+  if (result.status !== "fulfilled") {
+    el.innerHTML = `<div class="error-state">${esc(result.reason?.message || "Error loading geography")}</div>`;
+    return;
+  }
+  const rows = result.value.rows || [];
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-state">No country data for this period.</div>`;
+    return;
+  }
+
+  const W = 920, H = 430;
+  const tileZoom = 2;
+  const tileCount = 2 ** tileZoom;
+  const tileW = W / tileCount;
+  const tileH = H / tileCount;
+  const maxClicks = Math.max(1, ...rows.map((r) => r.clicks || 0));
+  const maxImpr = Math.max(1, ...rows.map((r) => r.impressions || 0));
+  const knownRows = rows
+    .map((r) => {
+      const code = String(r.keys?.[0] || "").toUpperCase();
+      const meta = COUNTRY_META[code];
+      if (!meta) return null;
+      const p = projectCountry(meta.lon, meta.lat, W, H);
+      const radius = 5 + Math.sqrt((r.clicks || 0) / maxClicks) * 17;
+      const pulse = 10 + Math.sqrt((r.impressions || 0) / maxImpr) * 28;
+      return { ...r, code, meta, x: p.x, y: p.y, radius, pulse };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (b.clicks || 0) - (a.clicks || 0));
+
+  if (!knownRows.length) {
+    el.innerHTML = `<div class="empty-state">Country codes are present, but no map coordinates are available for this period.</div>`;
+    return;
+  }
+
+  const top = knownRows[0];
+  const markerHtml = knownRows.map((r, i) => {
+    const labelSide = r.meta.labelSide === "left" ? "left" : "right";
+    const labelX = labelSide === "left"
+      ? r.x - r.radius - 7 + (r.meta.labelDx || 0)
+      : r.x + r.radius + 7 + (r.meta.labelDx || 0);
+    const labelY = r.y + 4 + (r.meta.labelDy || 0);
+    return `
+    <g class="sc-map-marker" tabindex="0" role="button"
+      aria-label="${esc(r.meta.name)}: ${fmtNum(r.clicks || 0)} clicks, ${fmtNum(r.impressions || 0)} impressions"
+      data-country="${esc(r.meta.name)}"
+      data-code="${esc(r.code)}"
+      data-clicks="${fmtNum(r.clicks || 0)}"
+      data-impressions="${fmtNum(r.impressions || 0)}"
+      data-ctr="${r.ctr != null ? `${(r.ctr * 100).toFixed(1)}%` : "—"}"
+      data-position="${r.position != null ? r.position.toFixed(1) : "—"}">
+      <circle class="sc-map-pulse" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.pulse.toFixed(1)}"/>
+      <circle class="sc-map-dot${i === 0 ? " is-top" : ""}" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.radius.toFixed(1)}"/>
+      <text class="sc-map-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${labelSide === "left" ? "end" : "start"}">${esc(r.code)}</text>
+    </g>`;
+  }).join("");
+  const tileHtml = Array.from({ length: tileCount }, (_, y) =>
+    Array.from({ length: tileCount }, (__, x) => `
+      <image href="https://tile.openstreetmap.org/${tileZoom}/${x}/${y}.png"
+        x="${(x * tileW).toFixed(1)}" y="${(y * tileH).toFixed(1)}"
+        width="${tileW.toFixed(1)}" height="${tileH.toFixed(1)}"
+        preserveAspectRatio="none"/>`).join("")
+  ).join("");
+
+  el.innerHTML = `
+    <div class="sc-map-layout">
+      <div class="sc-map-wrap">
+        <svg class="sc-map-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Country map of Google Search Console traffic">
+          <defs>
+            <radialGradient id="sc-map-sea" cx="50%" cy="45%" r="70%">
+              <stop offset="0%" stop-color="#f8fafc"/>
+              <stop offset="100%" stop-color="#eef3f8"/>
+            </radialGradient>
+            <clipPath id="sc-map-clip">
+              <rect x="0" y="0" width="${W}" height="${H}" rx="18"/>
+            </clipPath>
+            <linearGradient id="sc-map-vignette" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
+              <stop offset="55%" stop-color="#ffffff" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#0f172a" stop-opacity="0.05"/>
+            </linearGradient>
+          </defs>
+          <rect class="sc-map-ocean" x="0" y="0" width="${W}" height="${H}" rx="18"/>
+          <g class="sc-map-tile-layer" clip-path="url(#sc-map-clip)">${tileHtml}</g>
+          <rect class="sc-map-vignette" x="0" y="0" width="${W}" height="${H}" rx="18"/>
+          ${markerHtml}
+        </svg>
+        <div class="sc-map-tooltip" hidden></div>
+        <div class="sc-map-attribution">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a></div>
+      </div>
+      <aside class="sc-map-panel">
+        <div class="sc-map-panel-kicker">Top country</div>
+        <div class="sc-map-panel-title">${esc(top.meta.name)}</div>
+        <div class="sc-map-panel-grid">
+          <span><strong>${fmtNum(top.clicks || 0)}</strong>Clicks</span>
+          <span><strong>${fmtNum(top.impressions || 0)}</strong>Impressions</span>
+          <span><strong>${top.ctr != null ? `${(top.ctr * 100).toFixed(1)}%` : "—"}</strong>CTR</span>
+          <span><strong>${top.position != null ? top.position.toFixed(1) : "—"}</strong>Position</span>
+        </div>
+        <p>Markers are sized by clicks; the soft halo reflects impressions. City-level search location is not available in Google Search Console.</p>
+      </aside>
+    </div>`;
+
+  wireGeoMap(el);
+}
+
+function wireGeoMap(root) {
+  const wrap = root.querySelector(".sc-map-wrap");
+  const tipEl = root.querySelector(".sc-map-tooltip");
+  if (!wrap || !tipEl) return;
+  const show = (marker) => {
+    const dot = marker.querySelector(".sc-map-dot");
+    if (!dot) return;
+    const box = wrap.getBoundingClientRect();
+    const dotBox = dot.getBoundingClientRect();
+    tipEl.innerHTML = `
+      <div class="sc-map-tooltip-title">${esc(marker.dataset.country || marker.dataset.code || "Country")}</div>
+      <div class="sc-map-tooltip-grid">
+        <span><strong>${esc(marker.dataset.clicks || "0")}</strong>Clicks</span>
+        <span><strong>${esc(marker.dataset.impressions || "0")}</strong>Impr.</span>
+        <span><strong>${esc(marker.dataset.ctr || "—")}</strong>CTR</span>
+        <span><strong>${esc(marker.dataset.position || "—")}</strong>Pos.</span>
+      </div>`;
+    tipEl.style.left = `${Math.max(12, Math.min(box.width - 210, dotBox.left - box.left + 18))}px`;
+    tipEl.style.top = `${Math.max(12, dotBox.top - box.top - 12)}px`;
+    tipEl.hidden = false;
+  };
+  root.querySelectorAll(".sc-map-marker").forEach((marker) => {
+    marker.addEventListener("mouseenter", () => show(marker));
+    marker.addEventListener("focus", () => show(marker));
+    marker.addEventListener("click", () => show(marker));
+    marker.addEventListener("mouseleave", () => { tipEl.hidden = true; });
+  });
+}
+
+function projectCountry(lon, lat, width, height) {
+  const x = ((lon + 180) / 360) * width;
+  const boundedLat = Math.max(-85.05112878, Math.min(85.05112878, lat));
+  const latRad = boundedLat * Math.PI / 180;
+  const y = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * height;
+  return { x, y };
+}
+
 // ── Generic ranked table (used for queries / pages / countries / devices) ────
 
 function renderRankedTable(wrapper, selector, result, dimKey, opts = {}) {
@@ -1534,6 +1693,14 @@ function renderRankedTable(wrapper, selector, result, dimKey, opts = {}) {
 
   el.innerHTML = `
     <table class="table sc-table">
+      <colgroup>
+        <col class="sc-col-dim">
+        <col class="sc-col-clicks">
+        ${showDelta ? `<col class="sc-col-delta">` : ""}
+        <col class="sc-col-impr">
+        <col class="sc-col-ctr">
+        <col class="sc-col-pos">
+      </colgroup>
       <thead>
         <tr>
           <th>${dimKey === "query" ? tip("Query") : isPage ? tip("Page") : isCountry ? "Country" : isDevice ? "Device" : tip("Appearance", { term: "search appearance" })}</th>
@@ -1673,6 +1840,56 @@ const COUNTRY_NAMES = {
   TWN: "🇹🇼 Taiwan", THA: "🇹🇭 Thailand", VNM: "🇻🇳 Vietnam", MYS: "🇲🇾 Malaysia",
   ARE: "🇦🇪 United Arab Emirates", SAU: "🇸🇦 Saudi Arabia", ISR: "🇮🇱 Israel", TUR: "🇹🇷 Turkey",
   ARG: "🇦🇷 Argentina", CHL: "🇨🇱 Chile", COL: "🇨🇴 Colombia", PER: "🇵🇪 Peru",
+};
+
+const COUNTRY_META = {
+  USA: { name: "United States", lat: 39.8, lon: -98.6 },
+  GBR: { name: "United Kingdom", lat: 55.4, lon: -3.4 },
+  CAN: { name: "Canada", lat: 56.1, lon: -106.3 },
+  AUS: { name: "Australia", lat: -25.3, lon: 133.8 },
+  IND: { name: "India", lat: 20.6, lon: 78.9 },
+  DEU: { name: "Germany", lat: 51.2, lon: 10.5 },
+  FRA: { name: "France", lat: 46.2, lon: 2.2 },
+  ITA: { name: "Italy", lat: 41.9, lon: 12.6, labelSide: "left", labelDy: 14 },
+  ESP: { name: "Spain", lat: 40.5, lon: -3.7 },
+  NLD: { name: "Netherlands", lat: 52.1, lon: 5.3 },
+  BRA: { name: "Brazil", lat: -14.2, lon: -51.9 },
+  MEX: { name: "Mexico", lat: 23.6, lon: -102.5 },
+  JPN: { name: "Japan", lat: 36.2, lon: 138.3 },
+  KOR: { name: "South Korea", lat: 35.9, lon: 127.8 },
+  CHN: { name: "China", lat: 35.9, lon: 104.2 },
+  IDN: { name: "Indonesia", lat: -0.8, lon: 113.9 },
+  PHL: { name: "Philippines", lat: 12.9, lon: 122.8 },
+  PAK: { name: "Pakistan", lat: 30.4, lon: 69.3 },
+  BGD: { name: "Bangladesh", lat: 23.7, lon: 90.4 },
+  NGA: { name: "Nigeria", lat: 9.1, lon: 8.7 },
+  ZAF: { name: "South Africa", lat: -30.6, lon: 22.9 },
+  EGY: { name: "Egypt", lat: 26.8, lon: 30.8 },
+  KEN: { name: "Kenya", lat: -0.0, lon: 37.9 },
+  RUS: { name: "Russia", lat: 61.5, lon: 105.3 },
+  POL: { name: "Poland", lat: 51.9, lon: 19.1 },
+  SWE: { name: "Sweden", lat: 60.1, lon: 18.6, labelDx: 2, labelDy: -6 },
+  NOR: { name: "Norway", lat: 60.5, lon: 8.5 },
+  DNK: { name: "Denmark", lat: 56.3, lon: 9.5 },
+  IRL: { name: "Ireland", lat: 53.4, lon: -8.2 },
+  NZL: { name: "New Zealand", lat: -40.9, lon: 174.9 },
+  SGP: { name: "Singapore", lat: 1.4, lon: 103.8 },
+  HKG: { name: "Hong Kong", lat: 22.3, lon: 114.2 },
+  TWN: { name: "Taiwan", lat: 23.7, lon: 121.0 },
+  THA: { name: "Thailand", lat: 15.9, lon: 101.0 },
+  VNM: { name: "Vietnam", lat: 14.1, lon: 108.3 },
+  MYS: { name: "Malaysia", lat: 4.2, lon: 101.9 },
+  ARE: { name: "United Arab Emirates", lat: 24.0, lon: 54.0 },
+  SAU: { name: "Saudi Arabia", lat: 23.9, lon: 45.1 },
+  ISR: { name: "Israel", lat: 31.0, lon: 35.0, labelDx: 2, labelDy: 10 },
+  TUR: { name: "Turkey", lat: 39.0, lon: 35.2 },
+  ARG: { name: "Argentina", lat: -38.4, lon: -63.6 },
+  CHL: { name: "Chile", lat: -35.7, lon: -71.5 },
+  COL: { name: "Colombia", lat: 4.6, lon: -74.1 },
+  PER: { name: "Peru", lat: -9.2, lon: -75.0 },
+  AUT: { name: "Austria", lat: 47.5, lon: 14.6, labelDx: 4, labelDy: -6 },
+  BEL: { name: "Belgium", lat: 50.5, lon: 4.5, labelDx: 4, labelDy: -12 },
+  HRV: { name: "Croatia", lat: 45.1, lon: 15.2, labelDx: 6, labelDy: 8 },
 };
 function countryName(code) {
   if (!code) return "—";
