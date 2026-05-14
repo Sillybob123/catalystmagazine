@@ -76,8 +76,12 @@ export const onRequestGet = async ({ request, env }) => {
       byPlace.set(key, current);
     }
 
+    // We only require `country` here. The map view filters on lat/lon
+    // itself; the States & cities table does not, so dropping rows
+    // without coordinates from the API would hide them from the table
+    // for no good reason.
     const rows = Array.from(byPlace.values())
-      .filter((r) => r.country && r.latitude != null && r.longitude != null)
+      .filter((r) => r.country)
       .map((r) => ({
         ...r,
         recentDays: r.recentDays

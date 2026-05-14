@@ -2284,10 +2284,12 @@ function cityPanelInsightsHtml(insights) {
     : insights.lastSeenAt
       ? esc(formatVisitDateTime(insights.lastSeenAt))
       : "—";
+  // Window span — use the compact "MMM d" form (no year) so the
+  // narrow stat tile doesn't wrap onto two lines.
   const span = insights.firstSeenDate && insights.lastSeenDate && insights.firstSeenDate !== insights.lastSeenDate
-    ? `${esc(humanDate(insights.firstSeenDate))} → ${esc(humanDate(insights.lastSeenDate))}`
+    ? `${esc(shortDate(insights.firstSeenDate))} – ${esc(shortDate(insights.lastSeenDate))}`
     : insights.firstSeenDate
-      ? esc(humanDate(insights.firstSeenDate))
+      ? esc(shortDate(insights.firstSeenDate))
       : "—";
   const topPageLine = insights.topPath
     ? `<a href="${esc(insights.topPath)}" target="_blank" rel="noopener" title="${esc(insights.topPath)}">${esc(pagePath(insights.topPath))}</a> · ${fmtNum(insights.topPathViews)} view${insights.topPathViews === 1 ? "" : "s"}`
@@ -2311,7 +2313,7 @@ function cityPanelInsightsHtml(insights) {
         <div class="sc-city-stat-label">Last seen</div>
         <div class="sc-city-stat-value">${localTimeLine}</div>
       </div>
-      <div class="sc-city-stat">
+      <div class="sc-city-stat sc-city-stat-compact">
         <div class="sc-city-stat-label">Window</div>
         <div class="sc-city-stat-value">${span}</div>
       </div>

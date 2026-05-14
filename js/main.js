@@ -399,6 +399,24 @@ function recordGeoVisit(page) {
     if (host === 'localhost' || host === '127.0.0.1' || host === '') return;
     if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/scheduler')) return;
 
+    // Dedupe rapid revisits to the SAME path within 60s — back/forward
+    // mashing or a stuck refresh shouldn't inflate view counts. The
+    // server has no way to know it's the same person (we deliberately
+    // store no visitor identity), so this guard lives client-side only.
+    // sessionStorage scopes to one tab; that's the right granularity.
+    try {
+        const key = '__catalyst_lastVisit';
+        const now = Date.now();
+        const raw = sessionStorage.getItem(key);
+        if (raw) {
+            const last = JSON.parse(raw);
+            if (last && last.path === window.location.pathname && (now - Number(last.t)) < 60000) {
+                return;
+            }
+        }
+        sessionStorage.setItem(key, JSON.stringify({ path: window.location.pathname, t: now }));
+    } catch {}
+
     const payload = JSON.stringify({
         path: window.location.pathname,
         page,

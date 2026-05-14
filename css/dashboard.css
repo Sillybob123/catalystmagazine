@@ -5976,6 +5976,12 @@ button { font-family: inherit; cursor: pointer; }
   border-top: 1px solid rgba(148, 163, 184, 0.18);
 }
 .sc-city-stat-wide { grid-column: 1 / -1; }
+.sc-city-stat-compact .sc-city-stat-value {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
 .sc-city-stat-label {
   font-size: 9px;
   font-weight: 800;
