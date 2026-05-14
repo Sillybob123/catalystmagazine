@@ -1681,6 +1681,7 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
       const label = r.city && r.city !== "Unknown city" ? shortMapLabel(r.city) : "US";
       const radius = scaledMapSize(views, maxCityViews, 2.2, 8.8, 80);
       const pulse = scaledMapSize(views, maxCityViews, 4.5, 13.5, 80);
+      const insights = computeCityInsights(r, usCityRows);
       return {
         ...r,
         code: "US",
@@ -1698,9 +1699,11 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
         thirdLabel: "Days",
         thirdValue: fmtNum(r.days || 1),
         fourthLabel: "Timezone",
-        fourthValue: r.timezone || "—",
+        fourthValue: r.timezone ? prettyTimezone(r.timezone) : "—",
         description: cityVisitSummary(r),
         visitHistory: normalizeVisitHistory(r),
+        insights,
+        trending: insights.trending,
       };
     })
     .sort((a, b) => (b.views || 0) - (a.views || 0))
@@ -1803,7 +1806,9 @@ function buildMapMarkers(rows, top, { city = false } = {}) {
       data-third-label="${esc(r.thirdLabel)}"
       data-third-value="${esc(r.thirdValue)}"
       data-fourth-label="${esc(r.fourthLabel)}"
-      data-fourth-value="${esc(r.fourthValue)}">
+      data-fourth-value="${esc(r.fourthValue)}"
+      data-insights="${esc(JSON.stringify(r.insights || null))}"
+      data-trending="${r.trending ? "1" : "0"}">
       <circle class="sc-map-pulse" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.pulse.toFixed(1)}"/>
       <circle class="sc-map-dot${r === top ? " is-top" : ""}" cx="${r.x.toFixed(1)}" cy="${r.y.toFixed(1)}" r="${r.radius.toFixed(1)}"/>
       ${r.label ? `<text class="sc-map-label" x="${labelX.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="${labelSide === "left" ? "end" : "start"}">${esc(r.label)}</text>` : ""}
@@ -1837,8 +1842,16 @@ function renderRegionalTiles(W, H, zoom, center) {
 }
 
 function mapPanelHtml(row, kicker, hidden, panelKey) {
-  return `<div class="sc-map-panel-block" data-map-panel="${panelKey}" ${hidden}>
-    <div class="sc-map-panel-kicker">${esc(kicker)}</div>
+  const isCity = panelKey === "city";
+  const trendingBadge = isCity && row.trending
+    ? `<span class="sc-city-badge sc-city-badge-trending" title="More views in the recent half of the window than earlier">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Trending
+      </span>`
+    : "";
+
+  return `<div class="sc-map-panel-block${isCity ? " sc-map-panel-city" : ""}" data-map-panel="${panelKey}" ${hidden}>
+    <div class="sc-map-panel-kicker">${esc(kicker)}${trendingBadge}</div>
     <div class="sc-map-panel-title">${esc(row.panelTitle || row.meta.name)}</div>
     <div class="sc-map-panel-grid">
       <span><strong>${esc(row.primaryValue)}</strong>${esc(row.primaryLabel)}</span>
@@ -1846,7 +1859,7 @@ function mapPanelHtml(row, kicker, hidden, panelKey) {
       <span><strong>${esc(row.thirdValue)}</strong>${esc(row.thirdLabel)}</span>
       <span><strong>${esc(row.fourthValue)}</strong>${esc(row.fourthLabel)}</span>
     </div>
-    <p class="sc-map-panel-note">${esc(row.description)}</p>
+    ${isCity ? cityPanelInsightsHtml(row.insights) : `<p class="sc-map-panel-note">${esc(row.description)}</p>`}
     <div class="sc-map-visit-history">${visitHistoryHtml(row.visitHistory || [])}</div>
   </div>`;
 }
@@ -1951,10 +1964,14 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
     if (!layout) return;
     const panel = root.querySelector(`[data-map-panel="${layout.dataset.mapMode}"]`);
     if (!panel) return;
+    const isCity = panel.dataset.mapPanel === "city";
     const title = panel.querySelector(".sc-map-panel-title");
     const grid = panel.querySelector(".sc-map-panel-grid");
     const note = panel.querySelector(".sc-map-panel-note");
+    const insightsBox = panel.querySelector(".sc-city-insights");
     const history = panel.querySelector(".sc-map-visit-history");
+    const kicker = panel.querySelector(".sc-map-panel-kicker");
+
     if (title) title.textContent = marker.dataset.panelTitle || marker.dataset.country || "";
     if (grid) {
       grid.innerHTML = `
@@ -1963,7 +1980,29 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
         <span><strong>${esc(marker.dataset.thirdValue || "—")}</strong>${esc(marker.dataset.thirdLabel || "Days")}</span>
         <span><strong>${esc(marker.dataset.fourthValue || "—")}</strong>${esc(marker.dataset.fourthLabel || "Timezone")}</span>`;
     }
-    if (note && marker.dataset.description) note.textContent = marker.dataset.description;
+    if (isCity) {
+      let insights = null;
+      try { insights = JSON.parse(marker.dataset.insights || "null"); } catch { insights = null; }
+      const html = cityPanelInsightsHtml(insights);
+      if (insightsBox && html) {
+        insightsBox.outerHTML = html;
+      } else if (note && html) {
+        note.outerHTML = html;
+      }
+      // Trending pill — swap in/out based on the marker's dataset flag
+      if (kicker) {
+        const existing = kicker.querySelector(".sc-city-badge-trending");
+        const isTrending = marker.dataset.trending === "1";
+        if (isTrending && !existing) {
+          kicker.insertAdjacentHTML("beforeend",
+            `<span class="sc-city-badge sc-city-badge-trending"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Trending</span>`);
+        } else if (!isTrending && existing) {
+          existing.remove();
+        }
+      }
+    } else {
+      if (note && marker.dataset.description) note.textContent = marker.dataset.description;
+    }
     if (history) history.innerHTML = visitHistoryHtml(parseVisitHistory(marker.dataset.visitHistory));
   };
   root.querySelectorAll(".sc-map-mode-btn").forEach((btn) => {
@@ -2153,6 +2192,136 @@ function cityVisitSummary(row) {
   return `Last visit from this city: ${latest}.${path}`;
 }
 
+// Derive richer insights for the Top U.S. city panel. Returns a shape
+// that can be JSON-serialized onto the marker dataset and rendered by
+// cityPanelInsightsHtml() so panel updates on marker click stay cheap.
+function computeCityInsights(row, allCityRows) {
+  const history = normalizeVisitHistory(row);
+  const totalViews = Number(row.views || 0);
+  const totalUsViews = allCityRows.reduce((sum, r) => sum + Number(r.views || 0), 0) || 1;
+  const sharePct = totalUsViews ? Math.round((totalViews / totalUsViews) * 100) : 0;
+
+  // Peak day = the single day with the most views (also gives us the
+  // "burst" angle in the panel header).
+  let peak = null;
+  for (const d of history) {
+    if (!peak || d.views > peak.views) peak = d;
+  }
+
+  // Trending: more views in the most-recent half of the history than
+  // in the older half. We use the row.days range when possible.
+  let trending = false;
+  if (history.length >= 2) {
+    const sorted = history.slice().sort((a, b) => a.date.localeCompare(b.date));
+    const mid = Math.floor(sorted.length / 2);
+    const olderViews = sorted.slice(0, mid).reduce((s, d) => s + d.views, 0);
+    const recentViews = sorted.slice(mid).reduce((s, d) => s + d.views, 0);
+    trending = recentViews > olderViews && recentViews >= 3;
+  }
+
+  // Most-read page from this city = path with the highest total views
+  // across all recorded days (fallback to row.lastPath).
+  const byPath = new Map();
+  for (const d of history) {
+    if (!d.lastPath) continue;
+    byPath.set(d.lastPath, (byPath.get(d.lastPath) || 0) + d.views);
+  }
+  let topPath = "";
+  let topPathViews = 0;
+  for (const [p, v] of byPath.entries()) {
+    if (v > topPathViews) { topPath = p; topPathViews = v; }
+  }
+  if (!topPath && row.lastPath) topPath = row.lastPath;
+
+  // First seen / last seen — use the data we have.
+  const sortedAsc = history.slice().sort((a, b) => a.date.localeCompare(b.date));
+  const firstSeen = sortedAsc[0]?.date || row.firstSeenDate || "";
+  const lastSeen = sortedAsc[sortedAsc.length - 1]?.date || "";
+  const lastSeenAt = row.lastSeenAt || sortedAsc[sortedAsc.length - 1]?.updatedAt || "";
+
+  return {
+    sharePct,
+    trending,
+    peakDate: peak?.date || "",
+    peakViews: peak?.views || 0,
+    topPath,
+    topPathViews,
+    firstSeenDate: firstSeen,
+    lastSeenDate: lastSeen,
+    lastSeenAt,
+    timezone: row.timezone || "",
+    state: row.region || row.regionCode || "",
+  };
+}
+
+// Build the rich-panel HTML body — used both on first render and after
+// marker clicks (via updatePanelFromMarker). Reads from the parsed
+// insights object so we can stash it as JSON on each marker dataset.
+function cityPanelInsightsHtml(insights) {
+  if (!insights) return "";
+  const peakLine = insights.peakDate
+    ? `<strong>${esc(humanDate(insights.peakDate))}</strong> · ${fmtNum(insights.peakViews)} view${insights.peakViews === 1 ? "" : "s"}`
+    : "—";
+  const localTimeLine = insights.lastSeenAt && insights.timezone
+    ? `${esc(formatVisitTimeInZone(insights.lastSeenAt, insights.timezone))} <span class="sc-city-stat-sub">${esc(prettyTimezone(insights.timezone))}</span>`
+    : insights.lastSeenAt
+      ? esc(formatVisitDateTime(insights.lastSeenAt))
+      : "—";
+  const span = insights.firstSeenDate && insights.lastSeenDate && insights.firstSeenDate !== insights.lastSeenDate
+    ? `${esc(humanDate(insights.firstSeenDate))} → ${esc(humanDate(insights.lastSeenDate))}`
+    : insights.firstSeenDate
+      ? esc(humanDate(insights.firstSeenDate))
+      : "—";
+  const topPageLine = insights.topPath
+    ? `<a href="${esc(insights.topPath)}" target="_blank" rel="noopener" title="${esc(insights.topPath)}">${esc(pagePath(insights.topPath))}</a> · ${fmtNum(insights.topPathViews)} view${insights.topPathViews === 1 ? "" : "s"}`
+    : "—";
+
+  return `
+    <div class="sc-city-insights">
+      <div class="sc-city-stat">
+        <div class="sc-city-stat-label">Share of U.S. visits</div>
+        <div class="sc-city-stat-value">${insights.sharePct}%</div>
+      </div>
+      <div class="sc-city-stat">
+        <div class="sc-city-stat-label">Peak day</div>
+        <div class="sc-city-stat-value">${peakLine}</div>
+      </div>
+      <div class="sc-city-stat sc-city-stat-wide">
+        <div class="sc-city-stat-label">Most-read page</div>
+        <div class="sc-city-stat-value">${topPageLine}</div>
+      </div>
+      <div class="sc-city-stat">
+        <div class="sc-city-stat-label">Last seen</div>
+        <div class="sc-city-stat-value">${localTimeLine}</div>
+      </div>
+      <div class="sc-city-stat">
+        <div class="sc-city-stat-label">Window</div>
+        <div class="sc-city-stat-value">${span}</div>
+      </div>
+    </div>`;
+}
+
+function formatVisitTimeInZone(iso, timezone) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  try {
+    return date.toLocaleString(undefined, {
+      timeZone: timezone,
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return formatVisitDateTime(iso);
+  }
+}
+
+function prettyTimezone(tz) {
+  if (!tz) return "";
+  return String(tz).replace(/^.*\//, "").replace(/_/g, " ");
+}
+
 function parseVisitHistory(raw) {
   try {
     const parsed = JSON.parse(raw || "[]");
@@ -2304,17 +2473,22 @@ function renderPlacesPanel(wrapper, state) {
     const secondary = mode === "state"
       ? `${r.cityCount} ${r.cityCount === 1 ? "city" : "cities"}`
       : (r.state || r.stateCode || "");
+    // Two-line cell: the bar lives in its own row beneath the
+    // place/state stack so the long-place + nowrap rules from
+    // .sc-dim-label don't clip the second line into a pill.
     return `<tr>
-      <td class="sc-dim-cell">
-        <div class="sc-bar-wrap">
-          <div class="sc-bar" style="width:${pct}%"></div>
-          <span class="sc-dim-label" title="${esc(place)}">
-            <span class="sc-places-place">${esc(place)}</span>
-            ${secondary ? `<span class="sc-places-sub">${esc(secondary)}</span>` : ""}
-          </span>
+      <td class="sc-places-cell">
+        <div class="sc-places-stack">
+          <div class="sc-places-text">
+            <span class="sc-places-place" title="${esc(place)}">${esc(place)}</span>
+            ${secondary ? `<span class="sc-places-sub" title="${esc(secondary)}">${esc(secondary)}</span>` : ""}
+          </div>
+          <div class="sc-places-bar-track" aria-hidden="true">
+            <div class="sc-places-bar-fill" style="width:${pct}%"></div>
+          </div>
         </div>
       </td>
-      <td class="muted">${esc(countryName(r.country))}</td>
+      <td class="sc-places-country muted">${esc(countryName(r.country))}</td>
       <td class="num strong">${fmtNum(r.views)}</td>
       <td class="num muted">${fmtNum(r.days)}</td>
     </tr>`;
@@ -2327,10 +2501,10 @@ function renderPlacesPanel(wrapper, state) {
     </div>
     <table class="table sc-table sc-places-table">
       <colgroup>
-        <col class="sc-col-dim">
-        <col>
-        <col class="sc-col-clicks">
-        <col class="sc-col-pos">
+        <col class="sc-places-col-place">
+        <col class="sc-places-col-country">
+        <col class="sc-places-col-views">
+        <col class="sc-places-col-days">
       </colgroup>
       <thead>
         <tr>
