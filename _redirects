@@ -50,26 +50,45 @@
 /admin/dashboard         /admin                    301
 /admin/studio            /admin                    301
 
-# ------ Legacy Wix URLs — return 410 Gone ------------------
-# Site no longer runs on Wix (cutover 2026-04-23). 410 tells Google
-# these pages are permanently removed and accelerates deindexing
-# vs. the default 404. Cached entries in GSC still point here.
-/copy-of-home            /404                       410
-/copy-of-*               /404                       410
-/collaborateold          /404                       410
-/articles/search         /404                       410
-/articles/search/*       /404                       410
-/subscribe/              /404                       410
-/subscribe/*             /404                       410
-/_api/*                  /404                       410
-/_partials/*             /404                       410
-/_files/*                /404                       410
-/post/*                  /404                       410
+# ------ Legacy Wix /post/<slug> -> /article/<slug> ----------
+# Wix served articles at /post/<slug>; we serve them at /article/<slug>
+# with the same slug. Splat ($1 / :splat) preserves the slug so link
+# equity transfers per-article instead of dumping everyone on /articles.
+/post/*                  /article/:splat            301
 
-# Wix-era CCPA "Do Not Sell" stub. Search Console flagged it as
-# "Excluded by 'noindex' tag" from an old crawl; we have no such page
-# now — return 410 so Google fully drops it instead of leaving the
-# noindex'd ghost in the index.
-/donotsell               /404                       410
-/donotsell/              /404                       410
-/donotsell/*             /404                       410
+# ------ Legacy Wix URLs — 301 to nearest live equivalent ----
+# Site no longer runs on Wix (cutover 2026-04-23). We previously used
+# 410 Gone, but Cloudflare Pages `_redirects` only supports the status
+# codes 200/301/302/303/307/308/404 — 410 is silently ignored and the
+# request falls through to a plain 404 (no redirect emitted). That left
+# Google stuck on stale Wix URLs:
+#   - /subscribe, /termsofuse: cataloged as "Not found (404)"
+#   - /copy-of-home, /collaborateold, /articles/search, /subscribe/:
+#     cataloged as "Crawled - currently not indexed"
+#   - /post/<slug>: cataloged as "Indexed, though blocked by robots.txt"
+# 301s give Google an explicit destination, which transfers signal and
+# deindexes the old URL faster than 404/410.
+#
+# /post/<slug> is the Wix article URL pattern. The Catalyst slug for the
+# same article matches, so /post/<slug> -> /article/<slug>. If a slug
+# does not resolve, functions/article/[slug].js falls back to /articles.
+/copy-of-home            /                          301
+/copy-of-*               /                          301
+/collaborateold          /collaborate               301
+/articles/search         /articles                  301
+/articles/search/*       /articles                  301
+/subscribe               /                          301
+/subscribe/              /                          301
+/subscribe/*             /                          301
+/termsofuse              /terms                     301
+/termsofuse/             /terms                     301
+/termsofuse/*            /terms                     301
+/_api/*                  /                          301
+/_partials/*             /                          301
+/_files/*                /                          301
+
+# Wix-era CCPA "Do Not Sell" stub. GSC flagged it as "Excluded by
+# 'noindex' tag" from an old crawl; we have no such page now.
+/donotsell               /privacy                   301
+/donotsell/              /privacy                   301
+/donotsell/*             /privacy                   301

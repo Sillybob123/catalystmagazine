@@ -6,16 +6,15 @@ Disallow: /admin/
 Disallow: /functions/
 Disallow: /api/
 
-# Legacy Wix paths — site no longer runs on Wix.
-# These return 410 Gone, but disallowing also tells Google to stop crawling them.
-Disallow: /_api/
-Disallow: /_partials/
-Disallow: /_files/
-Disallow: /post/
-Disallow: /copy-of-
-Disallow: /collaborateold
-Disallow: /articles/search
-Disallow: /subscribe/
+# Legacy Wix paths — site no longer runs on Wix (cutover 2026-04-23).
+# We previously Disallowed these so Google would stop crawling them.
+# That backfired: Google had /post/<slug> URLs in the index from the
+# Wix era, and a Disallow prevented it from seeing the 301 redirect to
+# /article/<slug> — so the URLs sat in GSC as "Indexed, though blocked
+# by robots.txt" indefinitely. They are now allowed so Google can crawl,
+# follow the 301 to the new URL, and update the index. See _redirects
+# for the redirect rules. Do NOT re-add these Disallow lines without
+# also confirming there's no redirect that needs to be discoverable.
 
 # Block tracking-parameter URL variants from being treated as separate pages
 Disallow: /*?utm_
