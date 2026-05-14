@@ -306,9 +306,31 @@ export async function mount(ctx, container) {
       <div class="sc-grid-2">
         <section class="sc-card">
           <div class="sc-card-head">
-            <h3 class="sc-card-title">Where readers search from</h3>
+            <div>
+              <h3 class="sc-card-title">Where readers search from</h3>
+              <p class="sc-card-sub">Country breakdown from Google Search Console, plus first-party state &amp; city visits.</p>
+            </div>
+            <div class="sc-geo-tabs" role="tablist" aria-label="Geography view">
+              <button type="button" class="sc-geo-tab is-active" data-geo-tab="countries" role="tab" aria-selected="true">Countries</button>
+              <button type="button" class="sc-geo-tab" data-geo-tab="places" role="tab" aria-selected="false">States &amp; cities</button>
+            </div>
           </div>
-          <div class="sc-card-body" id="sc-countries"><div class="loading-state"><div class="spinner"></div></div></div>
+          <div class="sc-card-body sc-geo-panels">
+            <div class="sc-geo-panel is-active" data-geo-panel="countries" id="sc-countries"><div class="loading-state"><div class="spinner"></div></div></div>
+            <div class="sc-geo-panel" data-geo-panel="places" hidden>
+              <div class="sc-places-toolbar">
+                <label class="sc-places-search">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input type="search" id="sc-places-search" placeholder="Search city, state, or country…" autocomplete="off" aria-label="Filter states and cities">
+                </label>
+                <div class="sc-places-mode" role="group" aria-label="Group by">
+                  <button type="button" class="sc-places-mode-btn is-active" data-places-mode="city" aria-pressed="true">By city</button>
+                  <button type="button" class="sc-places-mode-btn" data-places-mode="state" aria-pressed="false">By state</button>
+                </div>
+              </div>
+              <div id="sc-places-body"><div class="loading-state"><div class="spinner"></div></div></div>
+            </div>
+          </div>
         </section>
         <section class="sc-card">
           <div class="sc-card-head">
@@ -488,6 +510,48 @@ export async function mount(ctx, container) {
     exportCsv(which, state.lastData);
   });
 
+  // Geo tab switching (Countries ↔ States & cities) inside "Where readers search from"
+  state.placesQuery = "";
+  state.placesMode = "city";
+  wrapper.addEventListener("click", (e) => {
+    const tab = e.target.closest(".sc-geo-tab");
+    if (!tab) return;
+    const panelKey = tab.dataset.geoTab;
+    wrapper.querySelectorAll(".sc-geo-tab").forEach((b) => {
+      const on = b === tab;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    wrapper.querySelectorAll(".sc-geo-panel").forEach((p) => {
+      const on = p.dataset.geoPanel === panelKey;
+      p.classList.toggle("is-active", on);
+      p.hidden = !on;
+    });
+    if (panelKey === "places") renderPlacesPanel(wrapper, state);
+  });
+
+  // Group-by toggle (city / state) inside the places panel
+  wrapper.addEventListener("click", (e) => {
+    const btn = e.target.closest(".sc-places-mode-btn");
+    if (!btn) return;
+    state.placesMode = btn.dataset.placesMode;
+    wrapper.querySelectorAll(".sc-places-mode-btn").forEach((b) => {
+      const on = b === btn;
+      b.classList.toggle("is-active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    renderPlacesPanel(wrapper, state);
+  });
+
+  // Live filter as the user types in the places search box
+  const placesSearchInput = wrapper.querySelector("#sc-places-search");
+  if (placesSearchInput) {
+    placesSearchInput.addEventListener("input", (e) => {
+      state.placesQuery = e.target.value || "";
+      renderPlacesPanel(wrapper, state);
+    });
+  }
+
   loadAll(ctx, wrapper, state);
 }
 
@@ -548,21 +612,20 @@ async function gscQuery(ctx, type, range, opts = {}) {
 }
 
 async function geoVisitQuery(ctx, range) {
-  const { startDate, endDate } = resolveVisitRange(range);
-  const params = new URLSearchParams({ startDate, endDate, limit: "150" });
+  // Use the SAME date window as the GSC queries so the map, the country
+  // table, and the states/cities table all describe the same period.
+  // First-party visit data does not have the ~2-day Google lag, but
+  // matching the window avoids "map shows readers from before my range"
+  // confusion when the user picks a short custom window.
+  const { startDate, endDate } = resolveRange(range);
+  // Pull a generous slice — site_geo_daily docs are keyed per
+  // date×country×region×city, so a 90-day window with ~20 cities/day
+  // can approach a few hundred. The API caps results at 500.
+  const params = new URLSearchParams({ startDate, endDate, limit: "500" });
   const res = await ctx.authedFetch(`/api/analytics/geo?${params.toString()}`);
   const data = await res.json();
   if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return { rows: data.rows || [] };
-}
-
-function resolveVisitRange(range) {
-  if (range?.startDate && range?.endDate) return range;
-  const days = range?.days || 28;
-  const end = new Date();
-  const start = new Date(end);
-  start.setDate(start.getDate() - (days - 1));
-  return { startDate: isoDate(start), endDate: isoDate(end) };
 }
 
 async function loadAll(ctx, wrapper, state) {
@@ -681,6 +744,7 @@ async function loadAll(ctx, wrapper, state) {
   renderRankedTable(wrapper, "#sc-countries", countries, "country", { topN: 10 });
   renderRankedTable(wrapper, "#sc-devices",   devices,   "device",  { topN: 5  });
   renderGeoMap(wrapper, countries, geoVisits);
+  renderPlacesPanel(wrapper, state);
 
   // ── Search appearance (optional — only show if rows exist) ──
   if (appearance.status === "fulfilled" && appearance.value.rows.length) {
@@ -2134,6 +2198,141 @@ function scaledMapSize(value, maxValue, min, growth, meaningfulMax) {
 function formatMapZoom(zoom) {
   const rounded = Math.round(zoom);
   return Math.abs(zoom - rounded) < 0.05 ? String(rounded) : zoom.toFixed(1);
+}
+
+// ── States & cities panel (first-party site_geo_daily aggregates) ────────────
+//
+// Reads the cached geoVisits result from state.lastData and renders a
+// searchable table inside the "Where readers search from" card's
+// "States & cities" tab. Two group-by modes:
+//   - "city":  one row per city × state × country
+//   - "state": rows collapsed to country + state (a state can have many
+//              cities, so we sum views across them)
+//
+// The searchbar matches city, state, region code, and country name.
+function renderPlacesPanel(wrapper, state) {
+  const panel = wrapper.querySelector('[data-geo-panel="places"]');
+  if (!panel || panel.hidden) return; // tab not active — skip work, will re-run on activation
+  const body = panel.querySelector("#sc-places-body");
+  if (!body) return;
+
+  const visits = state.lastData?.geoVisits;
+  if (!visits || visits.status === "pending") {
+    body.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading places…</div>`;
+    return;
+  }
+  if (visits.status !== "fulfilled") {
+    body.innerHTML = `<div class="error-state">${esc(visits.reason?.message || "Could not load places.")}</div>`;
+    return;
+  }
+
+  const rows = visits.value?.rows || [];
+  if (!rows.length) {
+    body.innerHTML = `<div class="empty-state">No first-party visit data for this period yet. City and state breakdowns appear after readers visit the site within the selected window.</div>`;
+    return;
+  }
+
+  const mode = state.placesMode === "state" ? "state" : "city";
+  const query = String(state.placesQuery || "").trim().toLowerCase();
+
+  // Bucket the raw rows. In state mode we collapse cities into their state.
+  const buckets = new Map();
+  for (const r of rows) {
+    const country = (r.country || "").toUpperCase();
+    const state2 = r.region || r.regionCode || "";
+    const city = r.city && r.city !== "Unknown city" ? r.city : "";
+    const key = mode === "state"
+      ? `${country}|${state2}`
+      : `${country}|${state2}|${city}`;
+    const cur = buckets.get(key) || {
+      country,
+      state: state2,
+      stateCode: r.regionCode || "",
+      city,
+      views: 0,
+      days: 0,
+      cityCount: new Set(),
+      lastSeenAt: "",
+      lastPath: "",
+      timezone: r.timezone || "",
+    };
+    cur.views += Number(r.views || 0);
+    cur.days += Number(r.days || 0);
+    if (city) cur.cityCount.add(city);
+    if (r.timezone && !cur.timezone) cur.timezone = r.timezone;
+    if (r.lastPath && !cur.lastPath) cur.lastPath = r.lastPath;
+    if (r.lastSeenAt && r.lastSeenAt > cur.lastSeenAt) cur.lastSeenAt = r.lastSeenAt;
+    buckets.set(key, cur);
+  }
+
+  let display = Array.from(buckets.values())
+    .map((b) => ({ ...b, cityCount: b.cityCount.size }))
+    .sort((a, b) => b.views - a.views);
+
+  if (query) {
+    display = display.filter((b) => {
+      const haystack = [
+        b.city, b.state, b.stateCode, b.country, countryName(b.country),
+      ].join(" ").toLowerCase();
+      return haystack.includes(query);
+    });
+  }
+
+  const totalViews = display.reduce((sum, r) => sum + r.views, 0);
+  if (!display.length) {
+    body.innerHTML = `<div class="empty-state">No ${mode === "state" ? "states" : "cities"} match "${esc(query)}". Try a different search.</div>`;
+    return;
+  }
+
+  const maxViews = Math.max(1, ...display.map((r) => r.views));
+  const rowsHtml = display.slice(0, 100).map((r) => {
+    const pct = Math.round((r.views / maxViews) * 100);
+    const place = mode === "state"
+      ? (r.state || r.stateCode || "—")
+      : (r.city || r.state || "—");
+    const secondary = mode === "state"
+      ? `${r.cityCount} ${r.cityCount === 1 ? "city" : "cities"}`
+      : (r.state || r.stateCode || "");
+    return `<tr>
+      <td class="sc-dim-cell">
+        <div class="sc-bar-wrap">
+          <div class="sc-bar" style="width:${pct}%"></div>
+          <span class="sc-dim-label" title="${esc(place)}">
+            <span class="sc-places-place">${esc(place)}</span>
+            ${secondary ? `<span class="sc-places-sub">${esc(secondary)}</span>` : ""}
+          </span>
+        </div>
+      </td>
+      <td class="muted">${esc(countryName(r.country))}</td>
+      <td class="num strong">${fmtNum(r.views)}</td>
+      <td class="num muted">${fmtNum(r.days)}</td>
+    </tr>`;
+  }).join("");
+
+  body.innerHTML = `
+    <div class="sc-places-summary">
+      <strong>${fmtNum(display.length)}</strong> ${mode === "state" ? (display.length === 1 ? "state" : "states") : (display.length === 1 ? "city" : "cities")}
+      · <strong>${fmtNum(totalViews)}</strong> view${totalViews === 1 ? "" : "s"} in this window${query ? ` matching "${esc(query)}"` : ""}
+    </div>
+    <table class="table sc-table sc-places-table">
+      <colgroup>
+        <col class="sc-col-dim">
+        <col>
+        <col class="sc-col-clicks">
+        <col class="sc-col-pos">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>${mode === "state" ? "State / region" : "City"}</th>
+          <th>Country</th>
+          <th class="num">Views</th>
+          <th class="num" title="Distinct days this place appeared in the window">Days</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    ${display.length > 100 ? `<div class="sc-places-foot">Showing top 100 of ${fmtNum(display.length)}. Refine the search to narrow the list.</div>` : ""}
+  `;
 }
 
 // ── Generic ranked table (used for queries / pages / countries / devices) ────

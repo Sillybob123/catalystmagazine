@@ -5334,6 +5334,139 @@ button { font-family: inherit; cursor: pointer; }
 .sc-table td.num.muted  { color: var(--muted); }
 .sc-table td.num.strong { font-weight: 600; color: var(--ink); }
 
+/* ───── Geography tabs inside "Where readers search from" ───── */
+.sc-geo-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--sc-border);
+  border-radius: 9px;
+}
+.sc-geo-tab {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.sc-geo-tab:hover { color: var(--ink); }
+.sc-geo-tab.is-active {
+  background: #fff;
+  color: var(--accent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.sc-geo-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sc-geo-panel { min-width: 0; }
+.sc-geo-panel[hidden] { display: none !important; }
+
+.sc-places-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0 12px;
+}
+.sc-places-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 220px;
+  min-width: 200px;
+  background: var(--surface-2);
+  border: 1px solid var(--sc-border);
+  border-radius: 9px;
+  padding: 0 10px;
+  height: 34px;
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+.sc-places-search:focus-within {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.10);
+}
+.sc-places-search svg {
+  color: var(--muted-2);
+  flex: 0 0 auto;
+  margin-right: 8px;
+}
+.sc-places-search input {
+  border: 0;
+  background: transparent;
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  min-height: 32px;
+  padding: 0;
+}
+.sc-places-search input:focus { outline: none; }
+.sc-places-search input::placeholder { color: var(--muted-2); }
+
+.sc-places-mode {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--sc-border);
+  border-radius: 9px;
+}
+.sc-places-mode-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.sc-places-mode-btn.is-active {
+  background: #fff;
+  color: var(--accent);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+.sc-places-mode-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sc-places-summary {
+  font-size: 11.5px;
+  color: var(--muted);
+  padding: 0 0 8px;
+}
+.sc-places-summary strong { color: var(--ink); font-weight: 650; }
+
+.sc-places-table .sc-places-place {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sc-places-table .sc-places-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--muted-2);
+  margin-top: 1px;
+}
+
+.sc-places-foot {
+  font-size: 11px;
+  color: var(--muted-2);
+  text-align: center;
+  padding: 8px 0 2px;
+}
+
 .sc-dim-cell {
   width: auto;
   max-width: none;
