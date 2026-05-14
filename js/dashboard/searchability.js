@@ -612,12 +612,23 @@ async function gscQuery(ctx, type, range, opts = {}) {
 }
 
 async function geoVisitQuery(ctx, range) {
-  // Use the SAME date window as the GSC queries so the map, the country
-  // table, and the states/cities table all describe the same period.
-  // First-party visit data does not have the ~2-day Google lag, but
-  // matching the window avoids "map shows readers from before my range"
-  // confusion when the user picks a short custom window.
-  const { startDate, endDate } = resolveRange(range);
+  // Align the start date with the GSC window so the map and the country
+  // table describe the same period — but EXTEND the end date through
+  // today. GSC lags Google's pipeline by ~2 days, so resolveRange() ends
+  // at today-2. First-party site_geo_daily docs, on the other hand, are
+  // written live with `date = today`, so using GSC's end date would
+  // silently drop the last 2 days of city visits — the most recent and
+  // most interesting ones — and the U.S. city view appears "broken".
+  const gsc = resolveRange(range);
+  let startDate = gsc.startDate;
+  const today = isoDate(new Date());
+  let endDate = today > gsc.endDate ? today : gsc.endDate;
+  // For custom ranges the user picked specific dates — honor the end
+  // they chose; don't push it forward past their intent.
+  if (range.kind === "custom") {
+    startDate = range.startDate;
+    endDate = range.endDate;
+  }
   // Pull a generous slice — site_geo_daily docs are keyed per
   // date×country×region×city, so a 90-day window with ~20 cities/day
   // can approach a few hundred. The API caps results at 500.
