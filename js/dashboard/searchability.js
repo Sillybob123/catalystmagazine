@@ -673,7 +673,7 @@ async function loadAll(ctx, wrapper, state) {
     gscQuery(ctx, "dates",     range, { ...opts, rowLimit: 365 }),
     gscQuery(ctx, "queries",   range, { ...optsCmp, rowLimit: 100 }),
     gscQuery(ctx, "pages",     range, { ...optsCmp, rowLimit: 50 }),
-    gscQuery(ctx, "countries", range, { ...opts, rowLimit: 15 }),
+    gscQuery(ctx, "countries", range, { ...optsCmp, rowLimit: 15 }),
     gscQuery(ctx, "devices",   range, { ...opts, rowLimit: 5  }),
     gscQuery(ctx, "searchAppearance", range, { ...opts, rowLimit: 15 }),
     geoVisitQuery(ctx, range),
@@ -1638,6 +1638,11 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
 
   const maxCountryClicks = Math.max(1, ...countryRows.map((r) => r.clicks || 0));
   const maxCountryImpr = Math.max(1, ...countryRows.map((r) => r.impressions || 0));
+  const compareRowsAll = (result.status === "fulfilled" && result.value.compareRows) || [];
+  const compareByCode = new Map(compareRowsAll.map((r) => [String(r.keys?.[0] || "").toUpperCase(), r]));
+  const totalCountryClicks = countryRows.reduce((sum, r) => sum + (r.clicks || 0), 0);
+  const totalCountryImpr   = countryRows.reduce((sum, r) => sum + (r.impressions || 0), 0);
+  const siteCtr = totalCountryImpr > 0 ? totalCountryClicks / totalCountryImpr : null;
   const countryMarkers = countryRows
     .map((r, i) => {
       const code = String(r.keys?.[0] || "").toUpperCase();
@@ -1646,6 +1651,13 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
       const p = projectRegional(meta.lon, meta.lat, W, H, defaultCountryZoom, WORLD_MAP_CENTER);
       const radius = scaledMapSize(r.clicks || 0, maxCountryClicks, 2.5, 9.5, 150);
       const pulse = scaledMapSize(r.impressions || 0, maxCountryImpr, 5, 16, 6000);
+      const insights = computeCountryInsights(r, code, {
+        compareRow: compareByCode.get(code) || null,
+        totalClicks: totalCountryClicks,
+        totalImpressions: totalCountryImpr,
+        siteCtr,
+        cityRows,
+      });
       return {
         ...r,
         code,
@@ -1665,6 +1677,8 @@ function renderGeoMap(wrapper, result, visitsResult = null) {
         fourthLabel: "Position",
         fourthValue: r.position != null ? r.position.toFixed(1) : "—",
         description: "Country markers use Google Search Console geography. Drag to move around the map, scroll to zoom, or switch to U.S. city view for first-party city visit data.",
+        insights,
+        trending: insights.trending,
       };
     })
     .filter(Boolean)
@@ -1843,14 +1857,18 @@ function renderRegionalTiles(W, H, zoom, center) {
 
 function mapPanelHtml(row, kicker, hidden, panelKey) {
   const isCity = panelKey === "city";
-  const trendingBadge = isCity && row.trending
-    ? `<span class="sc-city-badge sc-city-badge-trending" title="More views in the recent half of the window than earlier">
+  const trendingBadge = row.trending
+    ? `<span class="sc-city-badge sc-city-badge-trending" title="${isCity ? "More views in the recent half of the window than earlier" : "More clicks this period than the previous one"}">
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
         Trending
       </span>`
     : "";
 
-  return `<div class="sc-map-panel-block${isCity ? " sc-map-panel-city" : ""}" data-map-panel="${panelKey}" ${hidden}>
+  const insightsHtml = isCity
+    ? cityPanelInsightsHtml(row.insights)
+    : countryPanelInsightsHtml(row.insights);
+
+  return `<div class="sc-map-panel-block sc-map-panel-${panelKey}" data-map-panel="${panelKey}" ${hidden}>
     <div class="sc-map-panel-kicker">${esc(kicker)}${trendingBadge}</div>
     <div class="sc-map-panel-title">${esc(row.panelTitle || row.meta.name)}</div>
     <div class="sc-map-panel-grid">
@@ -1859,8 +1877,8 @@ function mapPanelHtml(row, kicker, hidden, panelKey) {
       <span><strong>${esc(row.thirdValue)}</strong>${esc(row.thirdLabel)}</span>
       <span><strong>${esc(row.fourthValue)}</strong>${esc(row.fourthLabel)}</span>
     </div>
-    ${isCity ? cityPanelInsightsHtml(row.insights) : `<p class="sc-map-panel-note">${esc(row.description)}</p>`}
-    <div class="sc-map-visit-history">${visitHistoryHtml(row.visitHistory || [])}</div>
+    ${insightsHtml}
+    ${row.visitHistory && row.visitHistory.length ? `<div class="sc-map-visit-history">${visitHistoryHtml(row.visitHistory)}</div>` : ""}
   </div>`;
 }
 
@@ -1967,7 +1985,6 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
     const isCity = panel.dataset.mapPanel === "city";
     const title = panel.querySelector(".sc-map-panel-title");
     const grid = panel.querySelector(".sc-map-panel-grid");
-    const note = panel.querySelector(".sc-map-panel-note");
     const insightsBox = panel.querySelector(".sc-city-insights");
     const history = panel.querySelector(".sc-map-visit-history");
     const kicker = panel.querySelector(".sc-map-panel-kicker");
@@ -1980,29 +1997,29 @@ function wireGeoMap(root, dims = { W: 920, H: 430 }) {
         <span><strong>${esc(marker.dataset.thirdValue || "—")}</strong>${esc(marker.dataset.thirdLabel || "Days")}</span>
         <span><strong>${esc(marker.dataset.fourthValue || "—")}</strong>${esc(marker.dataset.fourthLabel || "Timezone")}</span>`;
     }
-    if (isCity) {
-      let insights = null;
-      try { insights = JSON.parse(marker.dataset.insights || "null"); } catch { insights = null; }
-      const html = cityPanelInsightsHtml(insights);
-      if (insightsBox && html) {
-        insightsBox.outerHTML = html;
-      } else if (note && html) {
-        note.outerHTML = html;
-      }
-      // Trending pill — swap in/out based on the marker's dataset flag
-      if (kicker) {
-        const existing = kicker.querySelector(".sc-city-badge-trending");
-        const isTrending = marker.dataset.trending === "1";
-        if (isTrending && !existing) {
-          kicker.insertAdjacentHTML("beforeend",
-            `<span class="sc-city-badge sc-city-badge-trending"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Trending</span>`);
-        } else if (!isTrending && existing) {
-          existing.remove();
-        }
-      }
-    } else {
-      if (note && marker.dataset.description) note.textContent = marker.dataset.description;
+
+    // Re-render the insights block for both city and country panels.
+    let insights = null;
+    try { insights = JSON.parse(marker.dataset.insights || "null"); } catch { insights = null; }
+    const html = isCity ? cityPanelInsightsHtml(insights) : countryPanelInsightsHtml(insights);
+    if (insightsBox) {
+      insightsBox.outerHTML = html || "";
+    } else if (html) {
+      grid?.insertAdjacentHTML("afterend", html);
     }
+
+    // Trending pill — applies to both modes now
+    if (kicker) {
+      const existing = kicker.querySelector(".sc-city-badge-trending");
+      const isTrending = marker.dataset.trending === "1";
+      if (isTrending && !existing) {
+        kicker.insertAdjacentHTML("beforeend",
+          `<span class="sc-city-badge sc-city-badge-trending"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Trending</span>`);
+      } else if (!isTrending && existing) {
+        existing.remove();
+      }
+    }
+
     if (history) history.innerHTML = visitHistoryHtml(parseVisitHistory(marker.dataset.visitHistory));
   };
   root.querySelectorAll(".sc-map-mode-btn").forEach((btn) => {
@@ -2297,6 +2314,116 @@ function cityPanelInsightsHtml(insights) {
       <div class="sc-city-stat">
         <div class="sc-city-stat-label">Window</div>
         <div class="sc-city-stat-value">${span}</div>
+      </div>
+    </div>`;
+}
+
+// Derive panel insights for a country marker. Same shape contract as
+// computeCityInsights: returns a JSON-serializable object that gets
+// stashed on the marker dataset and re-rendered on click.
+function computeCountryInsights(row, code, opts) {
+  const { compareRow, totalClicks, totalImpressions, siteCtr, cityRows } = opts;
+  const clicks = Number(row.clicks || 0);
+  const impressions = Number(row.impressions || 0);
+  const ctr = row.ctr != null ? Number(row.ctr) : null;
+
+  const shareClicks = totalClicks > 0 ? Math.round((clicks / totalClicks) * 100) : 0;
+  const shareImpr   = totalImpressions > 0 ? Math.round((impressions / totalImpressions) * 100) : 0;
+
+  // Period-over-period delta (compare = previous equal-length window).
+  let deltaClicks = null;
+  let deltaPct = null;
+  if (compareRow) {
+    const prev = Number(compareRow.clicks || 0);
+    deltaClicks = clicks - prev;
+    if (prev > 0) deltaPct = Math.round(((clicks - prev) / prev) * 100);
+    else if (clicks > 0) deltaPct = 100;
+  }
+  const trending = deltaClicks != null && deltaClicks > 0 && clicks >= 3;
+
+  // CTR comparison vs site overall (rough "intent" signal). Positive
+  // means this market converts impressions to clicks at above-average
+  // rates — usually because the queries skew brand or topical.
+  let ctrDelta = null;
+  if (ctr != null && siteCtr != null && siteCtr > 0) {
+    ctrDelta = ctr - siteCtr; // in fractional units (e.g. 0.025 = +2.5pp)
+  }
+
+  // Top first-party city for this country (from site_geo_daily). For
+  // most non-US countries we won't have anything; that's expected.
+  let topCity = "";
+  let topCityViews = 0;
+  for (const c of cityRows || []) {
+    if (String(c.country || "").toUpperCase() !== code) continue;
+    const v = Number(c.views || 0);
+    if (v > topCityViews) {
+      topCity = c.city && c.city !== "Unknown city" ? c.city : "";
+      topCityViews = v;
+    }
+  }
+
+  return {
+    shareClicks,
+    shareImpr,
+    deltaClicks,
+    deltaPct,
+    trending,
+    ctrDelta,
+    siteCtrPct: siteCtr != null ? +(siteCtr * 100).toFixed(2) : null,
+    avgPosition: row.position != null ? +Number(row.position).toFixed(1) : null,
+    topCity,
+    topCityViews,
+  };
+}
+
+function countryPanelInsightsHtml(insights) {
+  if (!insights) return "";
+
+  // Δ clicks chip
+  let deltaCell = "—";
+  if (insights.deltaClicks != null && insights.deltaClicks !== 0) {
+    const dir = insights.deltaClicks > 0 ? "up" : "down";
+    const sign = insights.deltaClicks > 0 ? "+" : "";
+    const pctText = insights.deltaPct != null ? ` <span class="sc-city-stat-sub">${sign}${insights.deltaPct}% vs prev</span>` : "";
+    deltaCell = `<span class="sc-delta-chip is-${dir}">${sign}${fmtNum(insights.deltaClicks)} clicks</span>${pctText}`;
+  } else if (insights.deltaClicks === 0) {
+    deltaCell = `<span class="sc-delta-chip is-flat">no change</span>`;
+  }
+
+  // CTR vs site
+  let ctrCell = "—";
+  if (insights.ctrDelta != null) {
+    const pp = insights.ctrDelta * 100;
+    const dir = pp > 0.05 ? "up" : pp < -0.05 ? "down" : "flat";
+    const sign = pp > 0 ? "+" : "";
+    ctrCell = `<span class="sc-delta-chip is-${dir}">${sign}${pp.toFixed(1)}pp</span> <span class="sc-city-stat-sub">site avg ${insights.siteCtrPct != null ? insights.siteCtrPct.toFixed(1) + "%" : "—"}</span>`;
+  }
+
+  const topCity = insights.topCity
+    ? `${esc(insights.topCity)} <span class="sc-city-stat-sub">${fmtNum(insights.topCityViews)} view${insights.topCityViews === 1 ? "" : "s"}</span>`
+    : `<span class="sc-city-stat-sub">No first-party city data yet</span>`;
+
+  return `
+    <div class="sc-city-insights">
+      <div class="sc-city-stat">
+        <div class="sc-city-stat-label">Share of clicks</div>
+        <div class="sc-city-stat-value">${insights.shareClicks}%</div>
+      </div>
+      <div class="sc-city-stat">
+        <div class="sc-city-stat-label">Share of impressions</div>
+        <div class="sc-city-stat-value">${insights.shareImpr}%</div>
+      </div>
+      <div class="sc-city-stat sc-city-stat-wide">
+        <div class="sc-city-stat-label">Period change</div>
+        <div class="sc-city-stat-value">${deltaCell}</div>
+      </div>
+      <div class="sc-city-stat sc-city-stat-wide">
+        <div class="sc-city-stat-label">CTR vs site</div>
+        <div class="sc-city-stat-value">${ctrCell}</div>
+      </div>
+      <div class="sc-city-stat sc-city-stat-wide">
+        <div class="sc-city-stat-label">Top city (first-party)</div>
+        <div class="sc-city-stat-value">${topCity}</div>
       </div>
     </div>`;
 }
