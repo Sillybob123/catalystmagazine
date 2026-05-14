@@ -5700,7 +5700,10 @@ button { font-family: inherit; cursor: pointer; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
   gap: 18px;
-  align-items: stretch;
+  /* `start` (not `stretch`) so the SVG keeps its native aspect ratio
+     instead of leaving an empty gray gap under the map when the right-
+     hand info panel grows taller — e.g. the rich Top U.S. city card. */
+  align-items: start;
 }
 .sc-map-wrap {
   position: relative;
