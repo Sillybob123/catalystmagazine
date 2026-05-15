@@ -1127,3 +1127,56 @@ body.has-doodle-expanded {
     padding: 0;
   }
 }
+
+/* ==========================================================================
+   End-of-article ad slot.
+   Lives between the article body and the "More Articles" section. Designed
+   to feel like a quiet section divider, NOT a billboard:
+   - matches the body column max-width (720px) so it doesn't push wider than
+     the article it sits under
+   - tiny lowercase "Advertisement" label in the muted text color (legal
+     requirement + reader courtesy)
+   - generous vertical breathing room above and below
+   - hides itself if AdSense fails to fill the slot, so we never leave an
+     empty box on the page
+   ========================================================================== */
+body[data-page="article"] .article-ad-wrap {
+  max-width: 720px;
+  margin: 56px auto 64px;
+  padding: 0 24px;
+  text-align: center;
+}
+body[data-page="article"] .article-ad-label {
+  font-family: var(--sans, "Inter", system-ui, sans-serif);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint, #94a3b8);
+  margin-bottom: 12px;
+}
+body[data-page="article"] .article-ad-unit {
+  display: block;
+  min-height: 0;
+  margin: 0 auto;
+}
+/* Hide the entire wrap when AdSense reports the slot couldn't fill — avoids
+   the awkward empty-frame look when ad inventory is low. */
+body[data-page="article"] .article-ad-unit[data-ad-status="unfilled"] {
+  display: none !important;
+}
+body[data-page="article"] .article-ad-wrap:has(.article-ad-unit[data-ad-status="unfilled"]) {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  body[data-page="article"] .article-ad-wrap {
+    margin: 40px auto 48px;
+    padding: 0 16px;
+  }
+  body[data-page="article"] .article-ad-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    margin-bottom: 10px;
+  }
+}

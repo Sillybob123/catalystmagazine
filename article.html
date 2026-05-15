@@ -11,6 +11,11 @@
 
     <!-- Google AdSense site verification -->
     <meta name="google-adsense-account" content="ca-pub-2354303171488552">
+    <!-- AdSense loader — only on article pages, where the single end-of-article
+         slot lives. Keeping it off other pages avoids the wide blast radius from
+         the earlier broken-script attempt and matches the "ads only at the end
+         of articles" placement decision. -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2354303171488552" crossorigin="anonymous"></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,7 +66,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
     <link rel="preload" href="/css/styles.css" as="style">
     <link rel="stylesheet" href="/css/styles.css">
-    <link rel="stylesheet" href="/css/article-premium.css?v=20260512-pill-stack">
+    <link rel="stylesheet" href="/css/article-premium.css?v=20260513-ad-slot">
     <!-- Book-review-only styles. Scoped to body[data-page="article"].is-book-review
          which JS toggles when category === 'book-review'. -->
     <link rel="stylesheet" href="/css/book-review-article.css?v=5">
@@ -99,6 +104,26 @@
                 <div class="article-detail" id="article-detail">
                     <!-- Article content will be rendered by JavaScript -->
                 </div>
+
+                <!-- Single end-of-article ad slot. Mounted only after the
+                     reader has finished the body, so it never breaks reading
+                     flow. Hidden if the slot is empty (article-ad.js sets
+                     [data-ad-status="unfilled"] and the CSS hides that). -->
+                <aside class="article-ad-wrap" aria-label="Advertisement">
+                    <div class="article-ad-label">Advertisement</div>
+                    <ins class="adsbygoogle article-ad-unit"
+                         style="display:block"
+                         data-ad-client="ca-pub-2354303171488552"
+                         data-ad-slot="REPLACE_WITH_SLOT_ID"
+                         data-ad-format="auto"
+                         data-full-width-responsive="true"></ins>
+                    <script>
+                      // Defer the push until the unit is in the DOM. AdSense
+                      // tolerates this even when the loader script hasn't
+                      // finished — it queues until ready.
+                      (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </aside>
 
                 <!-- Related Articles Section -->
                 <div class="related-articles-wrap">
