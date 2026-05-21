@@ -19,10 +19,51 @@ const GSC_BASE = "https://searchconsole.googleapis.com/webmasters/v3";
 let cachedToken = null;
 let tokenExpiresAt = 0;
 
+// Custom error class so the top-level handler can map specific failure modes
+// to user-friendly messages and stable HTTP status codes. Each kind below is
+// surfaced verbatim in the Searchability dashboard banner so an admin sees
+// "your refresh token expired — re-authorize at /admin/setup/gsc" instead of
+// a generic "500 Internal Server Error".
+class GSCAuthError extends Error {
+  constructor(kind, message, { httpStatus = 503, fix } = {}) {
+    super(message);
+    this.name = "GSCAuthError";
+    this.kind = kind;          // "missing_secret" | "malformed_secret" | "refresh_failed" | "refresh_token_expired"
+    this.httpStatus = httpStatus;
+    this.fix = fix;            // one-line, plain-English remediation step
+  }
+}
+
 async function getAccessToken(env) {
   if (cachedToken && Date.now() < tokenExpiresAt - 60_000) return cachedToken;
 
-  const creds = JSON.parse(env.GSC_OAUTH);
+  if (!env.GSC_OAUTH) {
+    throw new GSCAuthError(
+      "missing_secret",
+      "Google Search Console is not configured for this environment.",
+      { fix: "Set the GSC_OAUTH secret in Cloudflare Pages → Settings → Environment variables." }
+    );
+  }
+
+  let creds;
+  try {
+    creds = JSON.parse(env.GSC_OAUTH);
+  } catch {
+    throw new GSCAuthError(
+      "malformed_secret",
+      "GSC_OAUTH secret is not valid JSON.",
+      { fix: "In Cloudflare Pages → Settings → Environment variables, replace GSC_OAUTH with the full JSON blob from the OAuth client (client_id, client_secret, refresh_token, token_uri)." }
+    );
+  }
+
+  if (!creds.client_id || !creds.client_secret || !creds.refresh_token) {
+    throw new GSCAuthError(
+      "malformed_secret",
+      "GSC_OAUTH secret is missing one of: client_id, client_secret, refresh_token.",
+      { fix: "Regenerate the OAuth credentials JSON and re-set the GSC_OAUTH secret in Cloudflare Pages." }
+    );
+  }
+
   const body = new URLSearchParams({
     client_id: creds.client_id,
     client_secret: creds.client_secret,
@@ -37,8 +78,36 @@ async function getAccessToken(env) {
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Token refresh failed (${res.status}): ${err}`);
+    const errText = await res.text();
+    // Google's most common refresh-token failure modes — surfaced separately
+    // so the dashboard can tell admins "go re-grant access" vs "the secret
+    // is wrong". The OAuth client being in Testing publishing status is the
+    // #1 cause: Google expires those refresh tokens after 7 days, which is
+    // why the page "stops working" without anyone touching it.
+    const isInvalidGrant =
+      res.status === 400 &&
+      /invalid_grant|expired|revoked/i.test(errText);
+
+    if (isInvalidGrant) {
+      throw new GSCAuthError(
+        "refresh_token_expired",
+        "The Google Search Console refresh token expired or was revoked.",
+        {
+          httpStatus: 503,
+          fix:
+            "Re-grant access: in Google Cloud Console, set the OAuth client's publishing status to \"In production\" (Testing-mode tokens expire every 7 days). Then run the OAuth flow once to mint a new refresh_token and update the GSC_OAUTH secret in Cloudflare Pages.",
+        }
+      );
+    }
+
+    throw new GSCAuthError(
+      "refresh_failed",
+      `Google rejected the token refresh (HTTP ${res.status}).`,
+      {
+        httpStatus: 502,
+        fix: `Underlying error: ${errText.slice(0, 200)}`,
+      }
+    );
   }
 
   const data = await res.json();
@@ -91,10 +160,6 @@ export const onRequestPost = async ({ request, env }) => {
     const auth = await requireRole(request, env, ["admin", "marketing"]);
     if (auth instanceof Response) return auth;
 
-    if (!env.GSC_OAUTH) {
-      return json({ ok: false, error: "GSC_OAUTH secret not configured." }, { status: 503 });
-    }
-
     let body;
     try { body = await request.json(); }
     catch { return badRequest("Invalid JSON body"); }
@@ -143,8 +208,26 @@ export const onRequestPost = async ({ request, env }) => {
       compareRows: compare?.rows || null,
     });
   } catch (err) {
+    // Auth / config failures from getAccessToken — return the structured
+    // payload so the dashboard can render a useful banner instead of just
+    // showing a spinner forever or a generic "500".
+    if (err instanceof GSCAuthError) {
+      return json({
+        ok: false,
+        error: err.message,
+        kind: err.kind,
+        fix: err.fix,
+      }, { status: err.httpStatus });
+    }
+    // GSC API errors (token validated, but Google rejected the query) —
+    // typically 401/403 if the token's scopes were revoked.
     if (err.status === 401 || err.status === 403) {
-      return json({ ok: false, error: err.message }, { status: err.status });
+      return json({
+        ok: false,
+        error: err.message,
+        kind: "gsc_api_forbidden",
+        fix: "The OAuth token no longer has read access to this Search Console property. Re-grant the 'Search Console (Read-only)' scope and update GSC_OAUTH.",
+      }, { status: err.status });
     }
     return serverError(err);
   }

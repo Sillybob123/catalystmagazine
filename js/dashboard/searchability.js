@@ -606,9 +606,62 @@ async function gscQuery(ctx, type, range, opts = {}) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = await res.json();
-  if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  const data = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` }));
+  if (!res.ok || !data.ok) {
+    // Forward the structured fields (kind, fix) from the server so the
+    // top-level banner can render an actionable message instead of the
+    // current "Could not load chart: unknown" wall.
+    const err = new Error(data.error || `HTTP ${res.status}`);
+    err.kind = data.kind || null;
+    err.fix = data.fix || null;
+    err.httpStatus = res.status;
+    throw err;
+  }
   return { rows: data.rows || [], compareRows: data.compareRows || null };
+}
+
+// Render a single actionable banner at the top of the Searchability page
+// when the Google Search Console connection is broken. Idempotent — passing
+// `null` removes the banner. Stays out of the way when everything works.
+function renderAuthBanner(wrapper, err) {
+  let banner = wrapper.querySelector(".sc-auth-banner");
+  if (!err) {
+    if (banner) banner.remove();
+    return;
+  }
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.className = "sc-auth-banner";
+    banner.style.cssText = [
+      "margin: 0 0 16px",
+      "padding: 14px 16px",
+      "border: 1px solid #fca5a5",
+      "background: #fef2f2",
+      "border-radius: 12px",
+      "color: #7f1d1d",
+      "font-size: 13.5px",
+      "line-height: 1.55",
+      "display: flex",
+      "flex-direction: column",
+      "gap: 6px",
+    ].join(";");
+    const hero = wrapper.querySelector(".sc-hero");
+    if (hero) hero.parentNode.insertBefore(banner, hero);
+    else wrapper.prepend(banner);
+  }
+  const titleByKind = {
+    missing_secret:           "Search Console is not connected.",
+    malformed_secret:         "Search Console credentials are malformed.",
+    refresh_token_expired:    "Search Console connection expired.",
+    refresh_failed:           "Couldn't refresh the Search Console token.",
+    gsc_api_forbidden:        "Search Console denied access.",
+  };
+  const title = titleByKind[err.kind] || "Search Console error.";
+  banner.innerHTML = `
+    <div style="font-weight: 700; font-size: 14px;">${esc(title)}</div>
+    <div>${esc(err.message || "")}</div>
+    ${err.fix ? `<div style="margin-top: 4px; color: #991b1b; font-size: 12.5px;"><strong>Fix:</strong> ${esc(err.fix)}</div>` : ""}
+  `;
 }
 
 async function geoVisitQuery(ctx, range) {
@@ -683,6 +736,21 @@ async function loadAll(ctx, wrapper, state) {
   state.lastData = {
     overview, dates, queries, pages, countries, devices, appearance, geoVisits, range, searchType,
   };
+
+  // ── Top-of-page error banner ──
+  // If every GSC call failed (which happens when the OAuth refresh token
+  // expired, or the secret was deleted), render a single actionable banner
+  // at the top of the page instead of letting the spinners hang and the
+  // KPIs silently show "—". The banner uses the `fix` field that the
+  // server attaches to GSCAuthError responses.
+  const gscResults = [overview, dates, queries, pages, countries, devices, appearance];
+  const allFailed = gscResults.every((r) => r.status === "rejected");
+  const firstAuthError = gscResults.map((r) => r.reason).find(
+    (e) => e && (e.kind === "missing_secret" || e.kind === "malformed_secret" ||
+                 e.kind === "refresh_token_expired" || e.kind === "refresh_failed" ||
+                 e.kind === "gsc_api_forbidden")
+  );
+  renderAuthBanner(wrapper, allFailed && firstAuthError ? firstAuthError : null);
 
   // ── KPIs ──
   if (overview.status === "fulfilled") {
