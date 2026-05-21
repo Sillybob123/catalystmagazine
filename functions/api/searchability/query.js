@@ -105,7 +105,7 @@ async function getAccessToken(env) {
       `Google rejected the token refresh (HTTP ${res.status}).`,
       {
         httpStatus: 502,
-        fix: `Underlying error: ${errText.slice(0, 200)}`,
+        fix: "Check that the GSC_OAUTH secret in Cloudflare Pages is correct and the OAuth client credentials haven't been rotated or deleted in Google Cloud Console.",
       }
     );
   }
@@ -224,11 +224,13 @@ export const onRequestPost = async ({ request, env }) => {
     if (err.status === 401 || err.status === 403) {
       return json({
         ok: false,
-        error: err.message,
+        error: "Search Console access denied.",
         kind: "gsc_api_forbidden",
         fix: "The OAuth token no longer has read access to this Search Console property. Re-grant the 'Search Console (Read-only)' scope and update GSC_OAUTH.",
       }, { status: err.status });
     }
-    return serverError(err);
+    // Don't leak internal error messages — log server-side only.
+    console.error("searchability/query error:", err);
+    return json({ ok: false, error: "Internal server error" }, { status: 500 });
   }
 };
