@@ -2,7 +2,15 @@
 // THE CATALYST MAGAZINE - MAIN JAVASCRIPT
 // ============================================
 
+// Diagnostic marker: confirms main.js parsed and executed at all. If this line
+// doesn't appear in the console, the script never ran (HTML parse issue,
+// CSP block, MIME mismatch, etc.). Temporary — added 2026-05-22 to chase
+// the "articles don't render" bug.
+console.log('[catalyst] main.js loaded @', new Date().toISOString(), 'pathname=', window.location.pathname);
+window.__catalystMainLoaded = true;
+
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[catalyst] DOMContentLoaded fired. loadArticles=', typeof loadArticles, 'initApp=', typeof initApp, 'layoutReady=', !!window.layoutReady);
     // Don't block the Firestore fetch on the header/footer fragment requests.
     // They're independent; kicking off loadArticles() in parallel means the
     // hero can render as soon as the data resolves.
@@ -19,7 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
         : Promise.resolve();
 
     layoutPromise.finally(() => {
-        initApp();
+        console.log('[catalyst] layoutPromise settled, calling initApp()');
+        try {
+            initApp();
+        } catch (err) {
+            console.error('[catalyst] initApp threw synchronously:', err);
+        }
     });
 });
 
@@ -341,6 +354,8 @@ const deepClone = (val) => {
 };
 
 async function initApp() {
+    console.log('[catalyst] initApp() entered');
+    try {
     setupNavigation();
     // setupNewsletterModal is now called by layout.js after header injection,
     // so skip it here to avoid double-binding.
@@ -352,15 +367,18 @@ async function initApp() {
 
     // Page-specific initialization
     const page = document.body.dataset.page || detectPage();
+    console.log('[catalyst] initApp page=', page, 'body.dataset.page=', document.body.dataset.page);
     recordGeoVisit(page);
 
     // Render instant skeletons so containers are visible immediately
     renderInitialSkeletons(page);
 
     if (page === 'home' || page === 'articles' || page === 'article') {
+        console.log('[catalyst] awaiting articles (cached promise:', !!window.__articlesPromise, ')');
         // Reuse the load kicked off at DOMContentLoaded so Firestore runs in
         // parallel with the header/footer fetch instead of serially after it.
         const allArticles = await (window.__articlesPromise || loadArticles());
+        console.log('[catalyst] articles loaded:', allArticles.length, 'first title:', allArticles[0]?.title);
         // Book reviews route to /book-reviews. Hide them from home + articles
         // feeds, but keep them in the full set so /article/<slug> still resolves
         // when a reader follows a direct link to a book review.
@@ -379,9 +397,13 @@ async function initApp() {
     } else if (page === 'articles') {
         initArticlesPage(articleData);
     } else if (page === 'article') {
+        console.log('[catalyst] calling initArticleDetailPage with', articleData.length, 'articles');
         initArticleDetailPage(articleData);
     } else if (page === 'about') {
         initAboutPage();
+    }
+    } catch (err) {
+        console.error('[catalyst] initApp threw:', err, err?.stack);
     }
 }
 
@@ -1184,7 +1206,9 @@ function showNotification(message, type = 'success') {
 // ARTICLE DETAIL PAGE
 // ============================================
 async function initArticleDetailPage(data) {
+    console.log('[catalyst] initArticleDetailPage entered. data.length=', data?.length, 'isArray=', Array.isArray(data));
     if (!Array.isArray(data)) {
+        console.warn('[catalyst] data not array — redirecting to /articles');
         window.location.href = '/articles';
         return;
     }
@@ -1196,10 +1220,13 @@ async function initArticleDetailPage(data) {
     const urlParams = new URLSearchParams(window.location.search);
     const rawId = urlParams.get('id');
     const isBookReviewUrl = window.location.pathname.startsWith('/book-review/');
+    console.log('[catalyst] pathSlug=', pathSlug, 'rawId=', rawId, 'isBookReviewUrl=', isBookReviewUrl);
 
     let article = await resolveArticleForDetailPage({ data, pathSlug, rawId });
+    console.log('[catalyst] resolved article:', article ? { id: article.id, title: article.title, slug: article.slug } : null);
 
     if (!article) {
+        console.warn('[catalyst] article not resolved — redirecting to', isBookReviewUrl ? '/book-reviews' : '/articles');
         // Last-resort: book-review URLs always have a sibling /book-reviews
         // index, so route there instead of /articles. Otherwise fall back
         // to the normal articles index.
@@ -3127,14 +3154,21 @@ async function loadFromFirestore() {
         }
     };
 
+    console.log('[catalyst] loadFromFirestore: POSTing to', endpoint);
     const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
-    if (!res.ok) throw new Error(`Firestore ${res.status}`);
+    console.log('[catalyst] loadFromFirestore: response status=', res.status, 'ok=', res.ok);
+    if (!res.ok) {
+        const errText = await res.text().catch(() => '(no body)');
+        console.error('[catalyst] loadFromFirestore failed body:', errText.slice(0, 500));
+        throw new Error(`Firestore ${res.status}`);
+    }
 
     const rows = await res.json();
+    console.log('[catalyst] loadFromFirestore: raw rows length=', Array.isArray(rows) ? rows.length : 'NOT-ARRAY', 'sample:', JSON.stringify(rows).slice(0, 200));
     if (!Array.isArray(rows)) return [];
 
     const articles = rows
