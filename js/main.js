@@ -1243,7 +1243,9 @@ async function initArticleDetailPage(data) {
 
     // Fetch the full Firestore document to get the article body (body/content),
     // which is excluded from the listing query projection to keep it fast.
+    console.log('[catalyst] fetching full body for article.id=', article.id);
     fetchFullArticleBody(article.id).then(full => {
+        console.log('[catalyst] fetchFullArticleBody resolved. full=', full ? { id: full.id, hasContent: !!full.content, blocks: full.blocks?.length || 0, title: full.title } : null);
         if (full) {
             if (full.content) article.content = full.content;
             if (full.blocks && full.blocks.length) article.blocks = full.blocks;
@@ -1258,10 +1260,29 @@ async function initArticleDetailPage(data) {
             if (full.rating != null) article.rating       = full.rating;
             if (full.communityPick !== undefined) article.communityPick = full.communityPick;
         }
-        renderArticleDetail(article);
-    }).catch(() => renderArticleDetail(article));
+        console.log('[catalyst] calling renderArticleDetail (after full-body fetch)');
+        try {
+            renderArticleDetail(article);
+            console.log('[catalyst] renderArticleDetail returned cleanly');
+        } catch (err) {
+            console.error('[catalyst] renderArticleDetail THREW:', err, err?.stack);
+        }
+    }).catch((err) => {
+        console.warn('[catalyst] fetchFullArticleBody failed:', err?.message);
+        try {
+            renderArticleDetail(article);
+            console.log('[catalyst] renderArticleDetail returned cleanly (after fetch fail)');
+        } catch (e) {
+            console.error('[catalyst] renderArticleDetail THREW (after fetch fail):', e, e?.stack);
+        }
+    });
 
-    renderRelatedArticles(article, data);
+    try {
+        renderRelatedArticles(article, data);
+        console.log('[catalyst] renderRelatedArticles returned cleanly');
+    } catch (err) {
+        console.error('[catalyst] renderRelatedArticles THREW:', err, err?.stack);
+    }
 }
 
 // =============================================================
