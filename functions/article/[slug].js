@@ -35,6 +35,15 @@ export const onRequestGet = async ({ request, env, params, next }) => {
     article =
       articles.find((a) => titleToSlug(a.title) === wanted) ||
       articles.find((a) => titleToLegacySlug(a.title) === wanted) ||
+      // Prefix fallback: handles truncated slugs that Slack/Twitter clip at
+      // ~100 chars (e.g. "from-simple-questions-…-innovato" missing the
+      // trailing "-s-journey"). Only kicks in for long-ish URL slugs to
+      // avoid matching short slugs to a longer article's prefix. Requires
+      // the URL slug to be at least 40 chars to keep this conservative.
+      (wanted.length >= 40 ? articles.find((a) => {
+        const full = titleToSlug(a.title);
+        return full && full.length > wanted.length && full.startsWith(wanted);
+      }) : null) ||
       null;
   }
 
@@ -64,7 +73,28 @@ export const onRequestGet = async ({ request, env, params, next }) => {
 
   if (!article) return origin_response;
 
-  const canonical = `${siteUrl}/article/${encodeURIComponent(slug)}`;
+  // Canonical = the article's own slug (from the DB), NOT the URL slug Google
+  // crawled. If a bot fetches a truncated/mangled URL like
+  // /article/from-simple-questions-to-...-innovato, we must declare the FULL
+  // slug as canonical — otherwise Google sees the truncated URL claim itself
+  // as canonical and reports "Duplicate, Google chose different canonical
+  // than user." Falls back to the URL slug only if we somehow have no title.
+  const canonicalSlug = article.slug || titleToSlug(article.title) || slug;
+  const canonical = `${siteUrl}/article/${encodeURIComponent(canonicalSlug)}`;
+
+  // If the URL slug doesn't match the canonical, 301 to the canonical URL.
+  // This handles truncated slugs (Slack/Twitter cut at ~100 chars), legacy
+  // slug variants, and any other non-canonical form so all link equity
+  // converges on one URL per article.
+  if (canonicalSlug && canonicalSlug !== slug) {
+    return new Response(null, {
+      status: 301,
+      headers: {
+        Location: canonical,
+        "Cache-Control": "public, max-age=300, s-maxage=600",
+      },
+    });
+  }
   const title = `${article.title} | ${SITE_NAME}`;
   const description = buildArticleDescription(article, 160);
   const image = resolveOgImage(article.image, siteUrl) || getFallbackImage(siteUrl);

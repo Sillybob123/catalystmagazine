@@ -92,3 +92,19 @@
 /donotsell               /privacy                   301
 /donotsell/              /privacy                   301
 /donotsell/*             /privacy                   301
+
+# More Wix-era URLs flagged as 404 in GSC (2026-05). Each maps to the nearest
+# live equivalent so Google can transfer signal and deindex the old URL.
+/privacypolicy           /privacy                   301
+/privacypolicy/          /privacy                   301
+/privacypolicy/*         /privacy                   301
+/writingcontest          /collaborate               301
+/writingcontest/         /collaborate               301
+/writingcontest/*        /collaborate               301
+
+# Old Wix article URLs were "/article/posts/games/articleN.html" — the
+# numbered articles now live at /article/<slug>. Mapping per-number requires
+# a lookup table we don't have, so send them to /articles as the cleanest
+# signal. Google picks up the new canonical from the listing.
+/article/posts/games/*   /articles                  301
+/article/posts/*         /articles                  301
