@@ -34,6 +34,7 @@ import {
   computeEditorReminders,
   computeAdminDigest,
   computeAdminTasks,
+  computeAdminTaskReminders,
   groupRemindersByRecipient,
   lastActivityDate,
 } from "../../_utils/bot-logic.js";
@@ -42,6 +43,7 @@ import {
   editorReminderEmail,
   bundledReminderEmail,
   adminDigestEmail,
+  adminTaskReminderEmail,
 } from "../../_utils/reminder-emails.js";
 import {
   taskDeadlineSoonEmail,
@@ -116,6 +118,7 @@ export const onRequestPost = async ({ request, env }) => {
       writerReminders: { planned: 0, sent: 0, skipped: 0, errors: [] },
       editorReminders: { planned: 0, sent: 0, skipped: 0, errors: [] },
       bundled:         { planned: 0, sent: 0, errors: [] },
+      adminTaskReminders: { planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
       taskReminders:   { scanned: 0, planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
       adminDigest:     { sent: false, recipientCount: 0, skipped: null, error: null },
     };
@@ -314,6 +317,79 @@ export const onRequestPost = async ({ request, env }) => {
           } catch (err) {
             result.bundled.errors.push({
               recipientEmail: b.recipient.email,
+              error: err?.message || String(err),
+            });
+          }
+        }
+      }
+    }
+
+    // ── Admin-task reminders ─────────────────────────────────────────────────
+    //
+    // Daily nudges to admins about unresolved admin actions (proposal review,
+    // editor assignment, deadline-change requests). First nudge at 3 days,
+    // repeats every 3 days while the flag is still set. Cooldown key:
+    // `admin-task:${projectId}:${flagKind}` in bot_reminder_log — same doc
+    // the writer/editor reminders use, just a different namespace.
+    if (mode === "auto" || mode === "admin-tasks") {
+      const adminOut = computeAdminTaskReminders({ projects, users, reminderLog, now });
+      result.adminTaskReminders.planned = adminOut.reminders.length;
+      result.adminTaskReminders.skippedCount = adminOut.skipped.length;
+      result.adminTaskReminders.skipped = adminOut.skipped;
+
+      const adminRecipients = Array.isArray(body.adminEmails) && body.adminEmails.length
+        ? body.adminEmails
+        : DEFAULT_ADMIN_RECIPIENTS;
+
+      const builtAdminTasks = adminOut.reminders.map((r) => {
+        const { subject, html } = adminTaskReminderEmail({ task: r.task, siteUrl });
+        return { ...r, subject, html };
+      });
+
+      result.adminTaskReminders.items = builtAdminTasks.map((r) => ({
+        projectId: r.projectId,
+        projectTitle: r.task.title,
+        kind: r.kind,
+        ageDays: r.task.ageDays,
+        subject: r.subject,
+        preview: htmlToPlainPreview(r.html, 600),
+      }));
+
+      if (!dryRun) {
+        for (const r of builtAdminTasks) {
+          try {
+            await sendEmail(env, {
+              to: adminRecipients,
+              subject: r.subject,
+              html: r.html,
+              replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+            });
+            await recordReminderSent(env, r.key, {
+              projectId: r.projectId,
+              kind: r.kind,
+              recipientEmail: adminRecipients.join(","),
+              sentAt: now.toISOString(),
+            });
+            await recordEmailLogEntry(env, {
+              sentAt: now.toISOString(),
+              recipientEmail: adminRecipients.join(","),
+              recipientName: null,
+              role: "admin",
+              kind: `admin-task-${r.kind}`,
+              projectId: r.projectId,
+              projectTitle: r.task.title,
+              subject: r.subject,
+              bodyText: htmlToPlainPreview(r.html, 2500),
+              reason: `Admin task "${r.kind}" has been pending ${r.task.ageDays ?? "?"}d.`,
+              daysInactive: null,
+              daysUntilDeadline: null,
+              projectActivityAtSend: null,
+            });
+            result.adminTaskReminders.sent++;
+          } catch (err) {
+            result.adminTaskReminders.errors.push({
+              projectId: r.projectId,
+              kind: r.kind,
               error: err?.message || String(err),
             });
           }

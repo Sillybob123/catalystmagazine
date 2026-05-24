@@ -1039,6 +1039,111 @@ export function computeAdminTasks({ projects, users, now }) {
   return tasks;
 }
 
+// ─── Admin-task reminders (daily nudges to admins) ───────────────────────────
+//
+// Standalone reminders the daily cron sends to admins about unresolved admin
+// actions. Three flag kinds, all reusing the existing computeAdminTasks
+// detection:
+//
+//   proposal-pending          → admins haven't approved/rejected a proposal
+//   needs-editor              → writer finished but no editor assigned
+//   deadline-request-pending  → admins haven't decided on a deadline-change
+//
+// First nudge at 3 days; repeats every 3 days while the flag is still set.
+// One email per (project, flag) per cycle.
+
+const ADMIN_TASK_FIRST_NUDGE_DAYS = 3;
+const ADMIN_TASK_REPEAT_DAYS      = 3;
+
+export function computeAdminTaskReminders({ projects, users, reminderLog = {}, now }) {
+  const out = [];
+  const skipped = [];
+
+  for (const project of projects) {
+    if (isProjectComplete(project)) continue;
+    const writer = writerFor(project, users);
+    const writerName = writer?.name || project.authorName || "Unknown";
+    const flags = collectAdminFlags(project, now);
+
+    for (const flag of flags) {
+      const key = `admin-task:${project.id}:${flag.kind}`;
+      const ageDays = flag.ageDays;
+
+      if (ageDays == null || ageDays < ADMIN_TASK_FIRST_NUDGE_DAYS) {
+        skipped.push({ key, projectId: project.id, kind: flag.kind, reason: "too-fresh", ageDays });
+        continue;
+      }
+
+      const last = reminderLog[key];
+      const lastDate = last ? toDate(last) : null;
+      if (lastDate) {
+        const sinceLast = daysBetween(now, lastDate);
+        if (sinceLast < ADMIN_TASK_REPEAT_DAYS) {
+          skipped.push({ key, projectId: project.id, kind: flag.kind, reason: "cooldown", daysSinceLast: sinceLast });
+          continue;
+        }
+      }
+
+      out.push({
+        key,
+        projectId: project.id,
+        kind: flag.kind,
+        task: {
+          projectId: project.id,
+          title: project.title || "(untitled story)",
+          writerName,
+          flag,
+          ageDays,
+        },
+      });
+    }
+  }
+
+  // Oldest pain first.
+  out.sort((a, b) => (b.task.ageDays || 0) - (a.task.ageDays || 0));
+  return { reminders: out, skipped };
+}
+
+// Detect every admin-task flag on a single project + how old each one is.
+// Mirrors computeAdminTasks but returns ageDays per flag so the cron can
+// gate by age and the email can show "waited Nd."
+function collectAdminFlags(project, now) {
+  const flags = [];
+  const tl = project.timeline || {};
+
+  if (project.proposalStatus === "pending") {
+    const created = toDate(project.createdAt);
+    flags.push({
+      kind: "proposal-pending",
+      ageDays: created ? daysBetween(now, created) : null,
+    });
+  }
+
+  if (tl["Article Writing Complete"] && !project.editorId) {
+    // No explicit "writing-complete-at" timestamp on the project doc; the
+    // closest proxy is updatedAt, which gets bumped when the timeline step is
+    // toggled. If admins assign an editor or the writer touches anything else
+    // afterward, updatedAt moves and this reminder gets a fresh clock — that's
+    // fine since the flag itself goes away the moment editorId is set.
+    const stamp = toDate(project.updatedAt) || toDate(project.lastActivity);
+    flags.push({
+      kind: "needs-editor",
+      ageDays: stamp ? daysBetween(now, stamp) : null,
+    });
+  }
+
+  const dlReq = project.deadlineRequest || project.deadlineChangeRequest;
+  if (dlReq && dlReq.status === "pending") {
+    const requested = toDate(dlReq.requestedAt);
+    flags.push({
+      kind: "deadline-request-pending",
+      ageDays: requested ? daysBetween(now, requested) : null,
+    });
+  }
+
+  return flags;
+}
+
 // ─── Per-recipient bundling (daily cap) ──────────────────────────────────────
 //
 // Takes the raw reminder list (writers + editors) and groups by recipient

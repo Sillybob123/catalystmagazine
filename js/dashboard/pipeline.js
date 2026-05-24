@@ -1012,6 +1012,23 @@ function openDetailModal(projectId) {
       try {
         await updateDoc(doc(workflowDb, "projects", project.id), updates);
         toast(checked ? "Step marked complete." : "Step unchecked.", "success");
+        // Ping admins on every timeline toggle (server coalesces bursts).
+        try {
+          await _ctx.authedFetch("/api/notify/event", {
+            method: "POST",
+            body: JSON.stringify({
+              type: "activity-update",
+              projectId: project.id,
+              activity: {
+                text: `${checked ? "completed" : "uncompleted"}: ${step}`,
+                kind: "timeline-toggle",
+                actorName: _profile.name || _ctx.user.email,
+              },
+            }),
+          });
+        } catch (notifyErr) {
+          console.warn("activity-update notify failed (non-blocking):", notifyErr);
+        }
         // Editor just finished reviewing → email the writer that their
         // edits are ready and they have a week to work through them.
         // Best-effort: never block the user flow on a flaky email send.
@@ -1193,6 +1210,22 @@ function openDetailModal(projectId) {
       feed.insertBefore(row, feed.firstChild);
       commentInput.value = "";
       toast("Comment posted.", "success");
+      try {
+        await _ctx.authedFetch("/api/notify/event", {
+          method: "POST",
+          body: JSON.stringify({
+            type: "activity-update",
+            projectId: project.id,
+            activity: {
+              text: `commented: "${text.slice(0, 200)}"`,
+              kind: "comment",
+              actorName: _profile.name || _ctx.user.email,
+            },
+          }),
+        });
+      } catch (notifyErr) {
+        console.warn("activity-update notify failed (non-blocking):", notifyErr);
+      }
     } catch (e) { toast(e.message, "error"); }
     btn.disabled = false;
   };

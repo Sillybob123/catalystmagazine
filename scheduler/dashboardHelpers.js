@@ -536,6 +536,15 @@ async function handleTaskCompletion(projectId, taskName, isCompleted, db, userNa
         if (isCompleted && taskName === 'Article Writing Complete') {
             notifyEditorialEvent('writing-complete', projectId);
         }
+
+        // Real-time activity ping to admins (server coalesces bursts).
+        notifyEditorialEvent('activity-update', projectId, {
+            activity: {
+                text: `${isCompleted ? 'completed' : 'uncompleted'}: ${taskName}`,
+                kind: 'timeline-toggle',
+                actorName: userName,
+            },
+        });
     } catch (error) {
         console.error('[TASK COMPLETION ERROR] Failed to update task:', error);
         console.error('[TASK COMPLETION ERROR] Error code:', error.code);

@@ -727,6 +727,193 @@ export function adminWritingCompleteEmail({ project, author, siteUrl }) {
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
+// Sent to admins after a writer or editor makes activity on a project — a
+// timeline step toggle, draft submit, etc. Coalesces multiple activities that
+// happened in a short window (server-side 45s cooldown queue) into one email,
+// and shows on-track / behind status computed from project.deadlines.
+//
+// `activities`: ordered array of { text, actorName, timestamp, kind }
+// `health`: { state: "on-track"|"behind"|"unknown", note: string }
+export function adminActivityUpdateEmail({ project, actor, activities, health, siteUrl }) {
+  const projectTitle = project.title || "(untitled story)";
+  const actorName = actor?.name || actor?.email || "Someone";
+  const actorRole = actor?.role || project.actorRole || "team member";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/all`;
+
+  const tone = health?.state === "behind" ? "overdue" : health?.state === "on-track" ? "info" : "alert";
+  const statusLabel =
+    health?.state === "behind" ? "Behind schedule" :
+    health?.state === "on-track" ? "On track" :
+    "No deadline set";
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Actor", value: `${actorName} (${actorRole})` },
+      { label: "Status", value: health?.note ? `${statusLabel} — ${health.note}` : statusLabel },
+      project.deadlines?.publication || project.deadline
+        ? { label: "Publication", value: fmtDate(project.deadlines?.publication || project.deadline) }
+        : null,
+    ].filter(Boolean),
+    tone,
+  });
+
+  const itemsHtml = (activities || []).map((a) => {
+    const when = a.timestamp ? fmtTime(a.timestamp) : "";
+    return `
+      <li style="margin:0 0 8px 0;padding:0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+        <span style="color:${COLORS.ink};font-weight:600;">${escapeHtml(a.text || "(activity)")}</span>
+        ${when ? `<span style="color:${COLORS.muted};font-size:12px;"> — ${escapeHtml(when)}</span>` : ""}
+      </li>
+    `;
+  }).join("");
+
+  const headline = activities.length === 1
+    ? `${actorName} just updated "${truncate(projectTitle, 50)}"`
+    : `${actorName} made ${activities.length} updates on "${truncate(projectTitle, 50)}"`;
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi team,
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(headline)}
+    </p>
+
+    ${statusBlock}
+
+    <div style="margin:0 0 18px 0;border:1px solid ${COLORS.hairline};border-radius:6px;padding:14px 16px;background:#fafafa;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:10px;">What changed</div>
+      <ul style="margin:0;padding-left:18px;">${itemsHtml}</ul>
+    </div>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the tracker</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = activities.length === 1
+    ? `Update on "${truncate(projectTitle, 45)}" — ${statusLabel}`
+    : `${activities.length} updates on "${truncate(projectTitle, 40)}" — ${statusLabel}`;
+  const preheader = `${actorName}: ${truncate(activities.map(a => a.text).join(" · "), 110)}`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+function fmtTime(ts) {
+  const d = ts instanceof Date ? ts : new Date(ts);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+// Daily nudge to admins about a single unresolved admin task. One email per
+// task per cycle — sent every 3 days (3, 6, 9, 12...) until the underlying
+// state changes (e.g. proposal approved, editor assigned, deadline request
+// resolved). Per-flag copy tells admins what specifically they need to do.
+//
+// `task`: { projectId, title, writerName, flag: { kind, days? }, ageDays }
+export function adminTaskReminderEmail({ task, siteUrl }) {
+  const projectTitle = task.title || "(untitled story)";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/all`;
+  const writerName = task.writerName || "Unknown writer";
+  const ageDays = task.ageDays;
+  const flag = task.flag || {};
+
+  const copy = adminTaskCopy(flag.kind);
+  const ageNote = ageDays != null
+    ? `This has been waiting ${ageDays} day${ageDays === 1 ? "" : "s"}.`
+    : "This has been waiting a few days.";
+
+  const tone = ageDays != null && ageDays >= 7 ? "overdue" : "alert";
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "Writer", value: writerName },
+      { label: "Waiting on", value: copy.shortLabel },
+      ageDays != null ? { label: "Age", value: `${ageDays} day${ageDays === 1 ? "" : "s"}` } : null,
+    ].filter(Boolean),
+    tone,
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi team,
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(copy.headline)}
+    </p>
+
+    ${statusBlock}
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      ${escapeHtml(copy.bodyLine)} ${escapeHtml(ageNote)}
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">${escapeHtml(copy.cta)}</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = ageDays != null
+    ? `${copy.subjectPrefix} (${ageDays}d): "${truncate(projectTitle, 45)}"`
+    : `${copy.subjectPrefix}: "${truncate(projectTitle, 45)}"`;
+  const preheader = `${copy.shortLabel} — ${writerName} · ${projectTitle}`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+function adminTaskCopy(kind) {
+  if (kind === "proposal-pending") {
+    return {
+      headline: "A proposal is still waiting for review.",
+      shortLabel: "Proposal review",
+      bodyLine: "The writer can't move on until you approve or reject the proposal.",
+      cta: "Review proposal",
+      subjectPrefix: "Reminder — proposal needs review",
+    };
+  }
+  if (kind === "needs-editor") {
+    return {
+      headline: "A finished draft is still waiting on an editor.",
+      shortLabel: "Assign editor",
+      bodyLine: "The writer marked their article complete but no editor is assigned, so the review clock hasn't started.",
+      cta: "Assign an editor",
+      subjectPrefix: "Reminder — draft needs an editor",
+    };
+  }
+  if (kind === "deadline-request-pending") {
+    return {
+      headline: "A deadline-change request is still open.",
+      shortLabel: "Deadline request",
+      bodyLine: "The writer asked for one or more deadline changes and needs an approve/reject decision so they know where they stand.",
+      cta: "Review request",
+      subjectPrefix: "Reminder — deadline change pending",
+    };
+  }
+  return {
+    headline: "An admin action is overdue.",
+    shortLabel: kind || "Action needed",
+    bodyLine: "The project needs an admin to take action before the writer can continue.",
+    cta: "Open the tracker",
+    subjectPrefix: "Reminder — admin action needed",
+  };
+}
+
 // Sent to the editor the moment they're assigned to a story.
 export function editorAssignedEmail({ project, editor, author, siteUrl }) {
   const firstName = (editor.name || editor.email || "there").split(/\s+/)[0];

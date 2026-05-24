@@ -20,7 +20,7 @@
 // away, and editors only get assigned once per project.
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
-import { firestoreGet, firestoreCreate } from "../../_utils/firebase.js";
+import { firestoreGet, firestoreCreate, firestoreUpdate } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import {
@@ -31,7 +31,13 @@ import {
   adminDeadlineChangeRequestedEmail,
   writerDeadlineChangeResolvedEmail,
   writerReviewCompleteEmail,
+  adminActivityUpdateEmail,
 } from "../../_utils/reminder-emails.js";
+
+// activity-update cooldown: rapid-fire ticks within this window get coalesced
+// into one email. Picked short enough that admins still see updates in near
+// real-time, long enough to absorb "check 4 boxes in a row" bursts.
+const ACTIVITY_COOLDOWN_MS = 45 * 1000;
 
 const DEFAULT_ADMIN_RECIPIENTS = [
   "bendoryair@gmail.com",
@@ -50,6 +56,9 @@ const VALID_TYPES = new Set([
   "deadline-change-requested",
   // Admin approved or rejected the request → email the writer.
   "deadline-change-resolved",
+  // Any writer/editor activity worth a real-time admin ping (timeline tick,
+  // draft submit, checklist confirmation). Coalesced server-side.
+  "activity-update",
 ]);
 
 export const onRequestPost = async ({ request, env }) => {
@@ -88,6 +97,16 @@ export const onRequestPost = async ({ request, env }) => {
     const projectDoc = await firestoreGet(env, `projects/${projectId}`);
     if (!projectDoc) return badRequest("Project not found");
     const project = unwrapProject(projectDoc, projectId);
+
+    // activity-update has its own queue-based coalescing (45s cooldown). It
+    // doesn't use bot_event_notify_log at all — each activity has its own
+    // timestamp, and a single email can ship multiple queued activities.
+    if (type === "activity-update") {
+      const result = await handleActivityUpdate({
+        env, project, projectId, auth, body, siteUrl,
+      });
+      return json({ ok: true, type, projectId, ...result });
+    }
 
     // Dedup-key strategy:
     //   * editor-assigned varies per editor so reassignment doesn't get swallowed.
@@ -318,6 +337,176 @@ async function sendToAdmins(env, { subject, html }) {
     errors.push(err?.message || String(err));
   }
   return { recipients, errors };
+}
+
+// ─── activity-update: queue + cooldown ───────────────────────────────────────
+//
+// Queue model: bot_activity_pending/{projectId} holds the list of pending
+// activities + lastSentAt. Every event call:
+//   1. Reads the queue.
+//   2. Appends the incoming activity.
+//   3. If (now - lastSentAt) >= 45s OR no lastSentAt yet → ship everything.
+//   4. Otherwise persist the queue and return { deferred: true }.
+//
+// Stranded queue risk: if a writer does one burst and never touches the
+// project again, items 2..N sit in pending. The next activity event on this
+// project (could be hours later) will flush them. Admins still see the first
+// event in the burst. We accept this in exchange for not running a separate
+// cron worker.
+
+async function handleActivityUpdate({ env, project, projectId, auth, body, siteUrl }) {
+  const activity = body.activity || {};
+  const text = String(activity.text || "").trim();
+  if (!text) {
+    return { recipients: [], errors: ["Missing activity.text"], deferred: false };
+  }
+
+  const incoming = {
+    text,
+    kind: String(activity.kind || "update").slice(0, 40),
+    actorName: String(activity.actorName || auth.email || "Someone").slice(0, 120),
+    actorRole: String(auth.role || "team member"),
+    actorId: auth.uid || null,
+    actorEmail: auth.email || null,
+    timestamp: new Date().toISOString(),
+  };
+
+  const queuePath = `bot_activity_pending/${projectId}`;
+  const existing = await firestoreGet(env, queuePath);
+  const queue = existing ? unwrapPendingDoc(existing) : { activities: [], lastSentAt: null };
+
+  queue.activities.push(incoming);
+
+  const now = Date.now();
+  const lastSentMs = queue.lastSentAt ? Date.parse(queue.lastSentAt) : 0;
+  const cooledDown = !lastSentMs || (now - lastSentMs) >= ACTIVITY_COOLDOWN_MS;
+
+  if (!cooledDown) {
+    // Persist the queue and bail — next event after cooldown will flush.
+    await firestoreUpsertPending(env, projectId, queue);
+    return {
+      recipients: [],
+      errors: [],
+      deferred: true,
+      queueDepth: queue.activities.length,
+      nextEligibleInMs: ACTIVITY_COOLDOWN_MS - (now - lastSentMs),
+    };
+  }
+
+  // Cooldown elapsed — ship the whole queue.
+  const author = await loadUserByIdOrEmail(env, project.authorId, project.authorEmail);
+  const actorForEmail = {
+    name: incoming.actorName,
+    email: incoming.actorEmail,
+    role: incoming.actorRole,
+  };
+  const health = computeProjectHealth(project, new Date(now));
+
+  const { subject, html } = adminActivityUpdateEmail({
+    project,
+    actor: actorForEmail,
+    activities: queue.activities,
+    health,
+    siteUrl,
+  });
+
+  const sendResult = await sendToAdmins(env, { subject, html });
+
+  // Clear queue + stamp lastSentAt regardless of send errors so we don't
+  // retry-spam admins with the same items.
+  await firestoreUpsertPending(env, projectId, {
+    activities: [],
+    lastSentAt: new Date(now).toISOString(),
+  });
+
+  return {
+    recipients: sendResult.recipients,
+    errors: sendResult.errors,
+    deferred: false,
+    sentCount: queue.activities.length,
+  };
+}
+
+async function firestoreUpsertPending(env, projectId, queue) {
+  const path = `bot_activity_pending/${projectId}`;
+  const payload = {
+    activities: queue.activities,
+    lastSentAt: queue.lastSentAt,
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    await firestoreUpdate(env, path, payload, { mergeFields: true });
+  } catch (err) {
+    if (err?.status === 404) {
+      await firestoreCreate(env, "bot_activity_pending", payload, projectId);
+    } else {
+      throw err;
+    }
+  }
+}
+
+function unwrapPendingDoc(doc) {
+  const fields = doc.fields || {};
+  const out = {};
+  for (const [k, v] of Object.entries(fields)) out[k] = unwrap(v);
+  return {
+    activities: Array.isArray(out.activities) ? out.activities : [],
+    lastSentAt: out.lastSentAt || null,
+  };
+}
+
+// Compute on-track / behind state from project.deadlines vs today. Picks the
+// earliest unmet deadline among the canonical milestone keys; if today is past
+// that date and the matching timeline step isn't checked, we flag "behind".
+function computeProjectHealth(project, now) {
+  const deadlines = project.deadlines || {};
+  const timeline = project.timeline || {};
+
+  // Mapping deadline key → timeline step it gates. If the step is checked,
+  // that deadline is considered satisfied and we don't penalize for it.
+  const checkpoints = [
+    { key: "contact", step: "Contact Professor" },
+    { key: "interview", step: "Interview Scheduled" },
+    { key: "draft", step: "Article Writing Complete" },
+    { key: "review", step: "Review Complete" },
+    { key: "edits", step: "Edits Addressed" },
+    { key: "publication", step: "Published" },
+  ];
+
+  let nearestOverdue = null;
+  let nearestUpcoming = null;
+
+  for (const c of checkpoints) {
+    const dateStr = deadlines[c.key];
+    if (!dateStr) continue;
+    const dueMs = Date.parse(dateStr);
+    if (isNaN(dueMs)) continue;
+    if (timeline[c.step] === true) continue; // already completed → satisfied
+
+    const daysFromNow = Math.round((dueMs - now.getTime()) / 86400000);
+    if (daysFromNow < 0) {
+      if (!nearestOverdue || daysFromNow < nearestOverdue.daysFromNow) {
+        nearestOverdue = { ...c, daysFromNow };
+      }
+    } else if (!nearestUpcoming || daysFromNow < nearestUpcoming.daysFromNow) {
+      nearestUpcoming = { ...c, daysFromNow };
+    }
+  }
+
+  if (nearestOverdue) {
+    const days = Math.abs(nearestOverdue.daysFromNow);
+    return {
+      state: "behind",
+      note: `${days} day${days === 1 ? "" : "s"} past ${nearestOverdue.step} deadline`,
+    };
+  }
+  if (nearestUpcoming) {
+    return {
+      state: "on-track",
+      note: `next: ${nearestUpcoming.step} in ${nearestUpcoming.daysFromNow} day${nearestUpcoming.daysFromNow === 1 ? "" : "s"}`,
+    };
+  }
+  return { state: "unknown", note: "" };
 }
 
 // ─── Firestore unwrap helpers ────────────────────────────────────────────────
