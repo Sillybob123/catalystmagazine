@@ -405,19 +405,53 @@ function mountDraftEditor(ctx, container) {
   wrap.querySelector("#format-guide-btn").addEventListener("click", openFormatGuide);
   wrap.querySelector("#preview-btn").addEventListener("click", () => openArticlePreview(wrap, ctx));
   wrap.querySelector("#save-draft-btn").addEventListener("click", () => saveStory(ctx, wrap, "draft", editingId));
-  wrap.querySelector("#submit-btn").addEventListener("click", async () => {
-    // Submitting for review is the moment we remind writers that the draft
-    // should already have been peer-reviewed in the shared Catalyst Google
-    // Drive. Admins bypass — they often import/publish pieces that skipped
-    // the workflow on purpose.
-    if (ctx.role !== "admin") {
-      const driveConfirmed = await openDriveReviewGate();
-      if (!driveConfirmed) {
-        toast("Submission paused — finish the Google Drive review first.", "info");
-        return;
-      }
-    }
-    saveStory(ctx, wrap, "pending", editingId);
+  wrap.querySelector("#submit-btn").addEventListener("click", () => saveStory(ctx, wrap, "pending", editingId));
+
+  // First-edit gate: when the writer starts typing in any compose field
+  // (title, deck, body), open the Drive-review explainer. Fires once per
+  // page mount so the reminder lands before they invest writing time, but
+  // doesn't keep popping up while they work. Admins skip.
+  if (ctx.role !== "admin") {
+    wireDriveReviewGateOnFirstEdit(wrap);
+  }
+}
+
+// Watches the compose fields for the writer's first edit signal (typing,
+// pasting, etc.) and opens the Drive-review explainer once. After it shows
+// (regardless of accept/cancel) the listeners detach so the writer is never
+// interrupted again in the same session.
+function wireDriveReviewGateOnFirstEdit(wrap) {
+  const fields = [
+    wrap.querySelector("#f-title"),
+    wrap.querySelector("#f-dek"),
+    wrap.querySelector("#f-body"),
+  ].filter(Boolean);
+  if (!fields.length) return;
+
+  let fired = false;
+  const trigger = async (ev) => {
+    if (fired) return;
+    // Ignore programmatic / non-user events. `beforeinput` covers typing,
+    // pasting, and IME composition; `keydown` covers keyboard input that
+    // doesn't generate a `beforeinput` (rare, but belt-and-suspenders).
+    if (ev && ev.type === "keydown" && (ev.metaKey || ev.ctrlKey || ev.altKey)) return;
+    fired = true;
+    cleanup();
+    await openDriveReviewGate();
+    // No matter what they choose, don't block — the modal is informational
+    // at this stage; the real submit-time validation lives in saveStory.
+  };
+  const cleanup = () => {
+    fields.forEach((f) => {
+      f.removeEventListener("beforeinput", trigger);
+      f.removeEventListener("keydown", trigger);
+      f.removeEventListener("paste", trigger);
+    });
+  };
+  fields.forEach((f) => {
+    f.addEventListener("beforeinput", trigger);
+    f.addEventListener("keydown", trigger);
+    f.addEventListener("paste", trigger);
   });
 }
 
@@ -2962,15 +2996,15 @@ async function loadDraft(id, wrap, ctx) {
 }
 
 /**
- * Pre-flight modal shown when a writer clicks "Submit for review" on the
- * Submit-a-draft page. Explains the off-platform workflow that has to
- * happen first: the writer drops the draft into their folder in the
- * shared Catalyst Google Drive and gets it reviewed by a peer editor
- * there. Only after that peer review is done should the draft be sent
- * to admins on the editorial dashboard.
+ * Drive-review explainer shown the first time a writer starts typing in
+ * any compose field on the Submit-a-draft page. Explains the off-platform
+ * workflow that needs to happen before this dashboard submission: the
+ * writer drops the draft into their folder in the shared Catalyst Google
+ * Drive and gets it reviewed by a peer editor there. Once that peer
+ * review is done, they paste/type the final version into the dashboard
+ * here and use "Submit for review" to send it to admins.
  *
- * Resolves with `true` when the writer confirms the Drive review is done,
- * `false` if they cancel.
+ * Informational only — does not block the writer either way.
  */
 function openDriveReviewGate() {
   return new Promise((resolve) => {
@@ -2978,16 +3012,19 @@ function openDriveReviewGate() {
     const body = el("div", { style: { fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" } });
     body.innerHTML = `
       <p style="margin:0 0 14px;font-size:14px;line-height:1.55;color:#1f2937;">
-        Before submitting your draft to the editorial dashboard, your story should already be in our
-        <strong>shared Catalyst Google Drive</strong> and reviewed by a peer editor there.
+        Quick heads-up before you start writing here. Your story should
+        first live in the <strong>shared Catalyst Google Drive</strong> and
+        be reviewed by a peer editor there. Only after that peer review
+        should you bring the final version into this editorial dashboard
+        for admins to do the final pass.
       </p>
 
       <div class="drive-gate-steps">
         <div class="drive-gate-step">
           <div class="drive-gate-step-num">1</div>
           <div class="drive-gate-step-body">
-            <div class="drive-gate-step-title">Drop your draft in your folder</div>
-            <div class="drive-gate-step-text">Place the document inside <em>your folder</em> in the shared Catalyst Google Drive. If you don't have a folder yet, ask Aidan or Yair.</div>
+            <div class="drive-gate-step-title">Draft it in Google Drive first</div>
+            <div class="drive-gate-step-text">Write your story inside <em>your folder</em> in the shared Catalyst Google Drive. If you don't have a folder yet, ask Aidan or Yair.</div>
           </div>
         </div>
         <div class="drive-gate-step">
@@ -3000,30 +3037,30 @@ function openDriveReviewGate() {
         <div class="drive-gate-step">
           <div class="drive-gate-step-num">3</div>
           <div class="drive-gate-step-body">
-            <div class="drive-gate-step-title">Only then come back here</div>
-            <div class="drive-gate-step-text">Once the Drive review is complete, confirm below and submit the draft to admins for the final pass.</div>
+            <div class="drive-gate-step-title">Then bring the final version here</div>
+            <div class="drive-gate-step-text">Paste the polished draft into this editor and hit "Submit for review" so admins can do the final pass.</div>
           </div>
         </div>
       </div>
 
       <label class="drive-gate-confirm">
         <input type="checkbox" id="drive-gate-cb">
-        <span>My story has already been reviewed on Google Drive</span>
+        <span>Got it — my story is already reviewed on Google Drive</span>
       </label>
     `;
 
-    const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
-    const continueBtn = el("button", { class: "btn btn-accent" }, "Submit the draft on the editorial dashboard");
+    const skipBtn = el("button", { class: "btn btn-secondary" }, "I'll do that first");
+    const continueBtn = el("button", { class: "btn btn-accent" }, "Continue writing here");
     continueBtn.disabled = true;
 
-    const m = openModal({ title: "Before you submit the draft", body, footer: [cancelBtn, continueBtn] });
+    const m = openModal({ title: "Before you start writing", body, footer: [skipBtn, continueBtn] });
 
     const cb = body.querySelector("#drive-gate-cb");
     cb.addEventListener("change", () => {
       continueBtn.disabled = !cb.checked;
     });
 
-    cancelBtn.onclick = () => { m.close(); resolve(false); };
+    skipBtn.onclick = () => { m.close(); resolve(false); };
     continueBtn.onclick = () => { m.close(); resolve(true); };
   });
 }
