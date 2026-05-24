@@ -103,10 +103,10 @@ const EDITOR_CHECKLIST = [
 const STEP_CHECKLISTS = {
   "Article Writing Complete": {
     modalTitle: "Writer Self-Review Checklist",
-    intro: "Your peer review on Google Drive is done — this final pass is for you. Confirm every item below before the draft goes to admins on the editorial dashboard.",
+    intro: "Before marking your draft as complete, confirm you have completed every item below. Use this checklist to ensure your draft meets all Catalyst writing standards before your editor reviews it.",
     items: WRITER_CHECKLIST,
     storageKey: "writerChecklist",
-    confirmLabel: "Submit draft to admins",
+    confirmLabel: "Mark draft complete",
   },
   "Review Complete": {
     modalTitle: "Editor Review Checklist",
@@ -170,115 +170,6 @@ function openChecklistModal(cfg) {
       resolve(payload);
     };
   });
-}
-
-/**
- * Pre-step shown to writers BEFORE the "Article Writing Complete" self-review
- * checklist. Explains the off-platform workflow that has to happen first:
- * the writer drops the draft into their Google Drive folder in the shared
- * Catalyst drive and gets it reviewed by a peer editor there. Only after
- * that peer review is done should the writer come back to the dashboard
- * and "submit the draft" to admins.
- *
- * Resolves with `true` when the writer confirms the Drive review is done,
- * `false` if they cancel.
- */
-function openWriterDriveReviewGate() {
-  return new Promise((resolve) => {
-    ensureDriveGateStyles();
-    const body = el("div", { style: { fontFamily: "'Inter',-apple-system,BlinkMacSystemFont,sans-serif" } });
-    body.innerHTML = `
-      <p style="margin:0 0 14px;font-size:14px;line-height:1.55;color:#1f2937;">
-        Before submitting your draft to the editorial dashboard, your story should already be in our
-        <strong>shared Catalyst Google Drive</strong> and reviewed by a peer editor there.
-      </p>
-
-      <div class="drive-gate-steps">
-        <div class="drive-gate-step">
-          <div class="drive-gate-step-num">1</div>
-          <div class="drive-gate-step-body">
-            <div class="drive-gate-step-title">Drop your draft in your folder</div>
-            <div class="drive-gate-step-text">Place the document inside <em>your folder</em> in the shared Catalyst Google Drive. If you don't have a folder yet, ask Aidan or Yair.</div>
-          </div>
-        </div>
-        <div class="drive-gate-step">
-          <div class="drive-gate-step-num">2</div>
-          <div class="drive-gate-step-body">
-            <div class="drive-gate-step-title">Get it reviewed by a peer editor</div>
-            <div class="drive-gate-step-text">Share it with one of our peer editors and work through their comments in Google Docs. Resolve every thread before moving on.</div>
-          </div>
-        </div>
-        <div class="drive-gate-step">
-          <div class="drive-gate-step-num">3</div>
-          <div class="drive-gate-step-body">
-            <div class="drive-gate-step-title">Only then come back here</div>
-            <div class="drive-gate-step-text">Once the Drive review is complete, confirm below and continue to the editorial-dashboard submission so admins can do the final pass.</div>
-          </div>
-        </div>
-      </div>
-
-      <label class="drive-gate-confirm">
-        <input type="checkbox" id="drive-gate-cb">
-        <span>My story has already been reviewed on Google Drive</span>
-      </label>
-    `;
-
-    const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
-    const continueBtn = el("button", { class: "btn btn-accent" }, "Continue to submission");
-    continueBtn.disabled = true;
-
-    const m = openModal({ title: "Before you submit the draft", body, footer: [cancelBtn, continueBtn] });
-
-    const cb = body.querySelector("#drive-gate-cb");
-    cb.addEventListener("change", () => {
-      continueBtn.disabled = !cb.checked;
-    });
-
-    cancelBtn.onclick = () => { m.close(); resolve(false); };
-    continueBtn.onclick = () => { m.close(); resolve(true); };
-  });
-}
-
-function ensureDriveGateStyles() {
-  if (document.getElementById("drive-gate-styles")) return;
-  const s = document.createElement("style");
-  s.id = "drive-gate-styles";
-  s.textContent = `
-    .drive-gate-steps {
-      display:flex; flex-direction:column; gap:10px;
-      margin:0 0 16px 0;
-    }
-    .drive-gate-step {
-      display:flex; gap:12px; align-items:flex-start;
-      padding:12px 14px; background:#f8fafc; border:1px solid #e5e7eb;
-      border-radius:10px;
-    }
-    .drive-gate-step-num {
-      flex-shrink:0; width:24px; height:24px; border-radius:50%;
-      background:#0f172a; color:#fff;
-      display:flex; align-items:center; justify-content:center;
-      font-size:12px; font-weight:700;
-    }
-    .drive-gate-step-body { flex:1; min-width:0; }
-    .drive-gate-step-title {
-      font-size:13.5px; font-weight:600; color:#0f172a;
-      margin-bottom:3px; line-height:1.4;
-    }
-    .drive-gate-step-text {
-      font-size:13px; color:#475569; line-height:1.5;
-    }
-    .drive-gate-confirm {
-      display:flex; align-items:flex-start; gap:10px;
-      padding:12px 14px; background:#fefce8; border:1px solid #fde047;
-      border-radius:10px; cursor:pointer; user-select:none;
-      font-size:13.5px; font-weight:600; color:#713f12; line-height:1.45;
-    }
-    .drive-gate-confirm input[type=checkbox] {
-      margin-top:2px; width:16px; height:16px; flex-shrink:0;
-      accent-color:#0f766e; cursor:pointer;
-    }
-  `;
-  document.head.appendChild(s);
 }
 
 function ensureChecklistStyles() {
@@ -1035,19 +926,6 @@ function openDetailModal(projectId) {
       const gate = checked ? STEP_CHECKLISTS[step] : null;
       if (gate) {
         cb.checked = false; // keep UI honest until the user actually confirms
-
-        // Writers submitting "Article Writing Complete" first see an
-        // explainer of the off-platform Drive review workflow. Editors and
-        // admins skip it — they're typically just correcting state, not
-        // submitting work.
-        if (step === "Article Writing Complete" && isAuthor && !isAdmin && !isEditor) {
-          const driveConfirmed = await openWriterDriveReviewGate();
-          if (!driveConfirmed) {
-            toast("Step left unchecked — finish the Google Drive review first.", "info");
-            return;
-          }
-        }
-
         checklistPayload = await openChecklistModal(gate);
         if (!checklistPayload) {
           toast("Checklist not completed — step left unchecked.", "info");
