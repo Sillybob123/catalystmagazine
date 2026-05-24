@@ -279,9 +279,16 @@
         }
       }
 
-      /* Once the card is in view, lock the hero copy out of pointer
-         events so it doesn't interfere with clicks on the article. */
-      body[data-page="home"].cards-revealed .hero-content {
+      /* Once the hero copy is mostly faded (--p ~> 0.85), lock it out of
+         pointer events so it can't intercept clicks on the article cards
+         that have lifted forward in 3D. We previously gated this on
+         .cards-revealed, but that flipped the moment the cards' edge
+         entered the viewport — while the hero CTAs ("Read Latest Stories",
+         "Our Mission") were still ~visible and looked clickable. Users
+         saw an apparently-live button stop responding mid-scroll.
+         The .hero-content-faded class is added by the scroll-progress
+         driver below once --p >= 0.85; until then, buttons stay alive. */
+      body[data-page="home"].hero-content-faded .hero-content {
         pointer-events: none;
       }
 
@@ -1668,6 +1675,15 @@
               // exit punches early and finishes before the cards arrive.
               var p = Math.min(Math.max(window.scrollY / (h * 0.55), 0), 1);
               body.style.setProperty('--p', p.toFixed(3));
+              // Once the hero copy is essentially invisible (opacity hits 0
+              // around p≈0.7 on desktop and p≈0.65 on mobile, per the CSS
+              // above), let the cards behind it catch clicks. Until then
+              // the buttons stay live.
+              if (p >= 0.85) {
+                body.classList.add('hero-content-faded');
+              } else {
+                body.classList.remove('hero-content-faded');
+              }
               ticking = false;
             };
             var onScrollP = function () {
