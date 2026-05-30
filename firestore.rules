@@ -190,6 +190,13 @@ service cloud.firestore {
       allow write: if isRealUser() && request.auth.uid == uid;
     }
 
+    // ---------- admin task preferences (snooze / clear of dashboard tasks) ----------
+    // Each admin owns a single doc keyed by their uid holding an `overrides`
+    // map. Purely personal UI state — only the owning admin can read or write it.
+    match /taskPrefs/{uid} {
+      allow read, write: if isAdmin() && request.auth.uid == uid;
+    }
+
     // ---------- workflow projects ----------
     // Author-match fallback: a project may have been seeded/migrated with an
     // authorId that no longer equals the user's current Firebase UID. Match by
