@@ -38,16 +38,19 @@ import { computeAdminDigest, computeAdminTasks } from "../../_utils/bot-logic.js
 // "(Update) N/M" prefix, so we budget the body to leave room for that.
 const SMS_SEGMENT_LIMIT = 155;     // hard per-text character ceiling
 const SEGMENT_PREFIX_BUDGET = 16;  // room for "(Update) 10/10\n"
-// Overall safety cap on the assembled message before splitting (avoid a
-// runaway text storm).
-const MAX_SMS_CHARS = 1000;
-// How many of each kind of line to include before summarizing the rest.
-// Kept tight so the whole update is typically 2-3 texts, not 4+.
-const MAX_TASK_LINES = 3;
-const MAX_CHECK_LINES = 3;
+// Overall safety cap on the assembled message before splitting. Generous so
+// the full to-do/check-in list is spelled out; only an extreme backlog would
+// ever hit it (and then it just trims the tail rather than dropping silently).
+const MAX_SMS_CHARS = 2400;
+// List EVERYTHING the founders need to do / everyone to check on. We keep a
+// high ceiling only as a runaway guard (e.g. 25+ items); in practice every
+// item is shown.
+const MAX_TASK_LINES = 25;
+const MAX_CHECK_LINES = 25;
 // Pause between segment sends so the carrier delivers them in order (1->2->3)
-// and doesn't rate-limit/drop a burst. 5s is plenty for vtext ordering.
-const SEGMENT_SEND_GAP_MS = 5000;
+// and doesn't rate-limit/drop a burst. ~3.5s keeps ordering reliable while
+// staying quick even when the full list spans several texts.
+const SEGMENT_SEND_GAP_MS = 3500;
 
 export const onRequestPost = async ({ request, env }) => {
   try {
