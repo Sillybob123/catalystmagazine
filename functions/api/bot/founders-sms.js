@@ -39,11 +39,15 @@ import { computeAdminDigest, computeAdminTasks } from "../../_utils/bot-logic.js
 const SMS_SEGMENT_LIMIT = 155;     // hard per-text character ceiling
 const SEGMENT_PREFIX_BUDGET = 16;  // room for "(Update) 10/10\n"
 // Overall safety cap on the assembled message before splitting (avoid a
-// runaway 30-part text storm).
+// runaway text storm).
 const MAX_SMS_CHARS = 1000;
 // How many of each kind of line to include before summarizing the rest.
-const MAX_TASK_LINES = 4;
-const MAX_CHECK_LINES = 4;
+// Kept tight so the whole update is typically 2-3 texts, not 4+.
+const MAX_TASK_LINES = 3;
+const MAX_CHECK_LINES = 3;
+// Pause between segment sends so the carrier delivers them in order (1->2->3)
+// and doesn't rate-limit/drop a burst. 5s is plenty for vtext ordering.
+const SEGMENT_SEND_GAP_MS = 5000;
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -115,20 +119,34 @@ export const onRequestPost = async ({ request, env }) => {
     // as one group conversation. We use the @vtext.com SMS gateway (set in
     // FOUNDERS_SMS_TO) because it delivers reliably; the numbered segments keep
     // any single text under the gateway's ~160-char truncation limit.
+    //
+    // Two things matter for how the texts land on the phone:
+    //   1. ORDER — gateways deliver a burst of messages in arbitrary order, so
+    //      1/4..4/4 arrive scrambled. We pause between segments so each lands
+    //      (and is timestamped) before the next is sent.
+    //   2. DROPS — carriers rate-limit bursts and silently drop some. The same
+    //      pacing makes drops far less likely.
+    //   3. SUBJECT — vtext prepends the email subject to the body. Our body
+    //      already starts with "(Update) N/M", so we send an EMPTY subject to
+    //      avoid the doubled "(Update) (Update)" you saw.
     const errors = [];
     let sentCount = 0;
     for (let i = 0; i < segments.length; i++) {
       try {
         await sendEmail(env, {
           to: recipients,            // array → one message, both founders on it
-          // vtext puts the subject inline ahead of the body, so keep it tiny.
-          subject: "(Update)",
+          subject: " ",              // empty-ish: the label lives in the body
           text: segments[i],
           html: `<pre style="font:inherit;white-space:pre-wrap;margin:0;">${escapeHtml(segments[i])}</pre>`,
         });
         sentCount++;
       } catch (err) {
         errors.push({ segment: i + 1, error: err?.message || String(err) });
+      }
+      // Pace between texts so they arrive in order and aren't rate-limited.
+      // Skip the wait after the last one.
+      if (i < segments.length - 1) {
+        await new Promise((r) => setTimeout(r, SEGMENT_SEND_GAP_MS));
       }
     }
     result.sent = sentCount > 0;
