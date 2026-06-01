@@ -31,6 +31,9 @@ import {
   buildAdminTasks,
   createTaskRowRenderer,
   ensureTaskStyles,
+  extractRecentComments,
+  fmtRelative,
+  fmtDateShort,
 } from "./task-engine.js";
 
 export async function mount(ctx, container) {
@@ -70,6 +73,28 @@ export async function mount(ctx, container) {
   const tasksCountEl = head.querySelector("#tasks-count");
   const summaryEl    = head.querySelector("#tasks-summary");
 
+  // ── Recent comments ──────────────────────────────────────────────────────────
+  // What writers/editors have been posting on their proposals — easy to miss
+  // otherwise. Lets the admin follow the conversation in one place.
+  const commentsCard = el("div", { class: "card", style: { marginTop: "16px" } });
+  commentsCard.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="card-title">
+          <span class="admin-tasks-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          Recent comments
+        </div>
+        <div class="card-subtitle">The latest notes writers and editors left on their proposals — newest first.</div>
+      </div>
+    </div>
+    <div class="card-body" id="tasks-comments-body">
+      <div class="loading-state"><div class="spinner"></div>Loading comments&hellip;</div>
+    </div>`;
+  container.appendChild(commentsCard);
+  const commentsBody = commentsCard.querySelector("#tasks-comments-body");
+
   // ── State ────────────────────────────────────────────────────────────────────
   const state = {
     projects: [],
@@ -105,10 +130,12 @@ export async function mount(ctx, container) {
     (snap) => {
       state.projects = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       renderTasks();
+      renderComments();
     },
     (err) => {
       console.error("[tasks] projects snapshot error", err);
       tasksBody.innerHTML = `<div class="error-state">Failed to load projects: ${esc(err.message)}</div>`;
+      commentsBody.innerHTML = `<div class="error-state">Failed to load comments: ${esc(err.message)}</div>`;
     },
   );
 
@@ -209,7 +236,45 @@ export async function mount(ctx, container) {
     }
   }
 
+  function renderComments() {
+    const comments = extractRecentComments(state.projects, 15);
+    commentsBody.innerHTML = "";
+
+    if (!comments.length) {
+      commentsBody.appendChild(el("div", { class: "empty-state", html:
+        "No comments yet. When a writer or editor posts a note on their proposal, it'll show up here." }));
+      return;
+    }
+
+    const list = el("div", { class: "tasks-comments-list" });
+    for (const c of comments) {
+      const initial = (c.authorName || "?").trim()[0]?.toUpperCase() || "?";
+      const row = el("div", { class: "tasks-comment" });
+      row.innerHTML = `
+        <div class="tasks-comment-avatar" style="background:${avatarColor(c.authorName)}">${esc(initial)}</div>
+        <div class="tasks-comment-main">
+          <div class="tasks-comment-head">
+            <span class="tasks-comment-name">${esc(c.authorName)}</span>
+            <span class="tasks-comment-on">commented on</span>
+            <a class="tasks-comment-proj" href="${esc(c.href)}">${esc(c.projectTitle)}</a>
+            <span class="tasks-comment-when" title="${esc(fmtRelative(c.timestamp))}">${esc(fmtDateShort(c.timestamp))}</span>
+          </div>
+          <div class="tasks-comment-body">${esc(c.body)}</div>
+        </div>`;
+      list.appendChild(row);
+    }
+    commentsBody.appendChild(list);
+  }
+
   return () => { unsubProjects(); unsubUsers(); unsubPrefs(); };
+}
+
+// Stable per-name avatar color (mirrors the Activity page's stringToColor).
+function avatarColor(str) {
+  if (!str) return "#64748b";
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
+  return `hsl(${Math.abs(h) % 360}, 55%, 46%)`;
 }
 
 function ensureTasksPageStyles() {
@@ -244,8 +309,39 @@ function ensureTasksPageStyles() {
     .tasks-group-high { color:#b45309; }
     .tasks-group-high .tasks-group-count { background:#fef3c7; color:#92400e; }
 
+    /* Recent comments */
+    .tasks-comments-list { display:flex; flex-direction:column; }
+    .tasks-comment {
+      display:flex; gap:12px; padding:13px 2px;
+      border-top:1px solid #eef2f6;
+    }
+    .tasks-comment:first-child { border-top:none; }
+    .tasks-comment-avatar {
+      flex-shrink:0; width:34px; height:34px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:13px; font-weight:700;
+    }
+    .tasks-comment-main { flex:1; min-width:0; }
+    .tasks-comment-head {
+      display:flex; align-items:baseline; gap:6px; flex-wrap:wrap;
+      font-size:13px; line-height:1.4;
+    }
+    .tasks-comment-name { font-weight:700; color:#0b1220; }
+    .tasks-comment-on { color:#94a3b8; }
+    .tasks-comment-proj {
+      font-weight:600; color:#0f766e; text-decoration:none;
+      max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .tasks-comment-proj:hover { text-decoration:underline; }
+    .tasks-comment-when { margin-left:auto; flex-shrink:0; font-size:11.5px; color:#94a3b8; }
+    .tasks-comment-body {
+      margin-top:4px; font-size:13.5px; color:#334155; line-height:1.55;
+      white-space:pre-wrap; word-break:break-word;
+    }
+
     @media (max-width:680px) {
       .tasks-kpis { grid-template-columns:repeat(2,1fr); }
+      .tasks-comment-when { margin-left:0; width:100%; }
     }
   `;
   document.head.appendChild(s);

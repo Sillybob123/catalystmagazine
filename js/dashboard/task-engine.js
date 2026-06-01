@@ -84,6 +84,53 @@ function pipelineHref(project) {
   return `#/pipeline/${project.type === "Op-Ed" ? "opeds" : "interviews"}`;
 }
 
+// Absolute date label like "May 18" / "May 18, 2024" (older years get the year),
+// matching how comment timestamps read in the feed.
+export function fmtDateShort(v) {
+  const ms = toMs(v);
+  if (!ms) return "";
+  const d = new Date(ms);
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString(undefined, sameYear
+    ? { month: "short", day: "numeric" }
+    : { month: "short", day: "numeric", year: "numeric" });
+}
+
+/**
+ * Pull the most recent comments people left on their proposals/projects, so an
+ * admin can follow them in one place. Reads the embedded `project.activity[]`
+ * array (the same source the Activity feed uses) and keeps only comment-type
+ * entries, extracting the plain comment body.
+ *
+ * @returns array of { id, projectId, projectTitle, projectType, href,
+ *                      authorName, body, timestamp } newest-first.
+ */
+export function extractRecentComments(projects, limit = 12) {
+  const out = [];
+  for (const project of projects || []) {
+    const acts = Array.isArray(project.activity) ? project.activity : [];
+    for (let i = 0; i < acts.length; i++) {
+      const a = acts[i];
+      const raw = String(a?.text || "");
+      // Match `commented: "…"` (quotes optional). Anything else isn't a comment.
+      const m = raw.match(/^commented:\s*"?([\s\S]*?)"?\s*$/i);
+      if (!m || !m[1].trim()) continue;
+      out.push({
+        id: `${project.id}:${a.timestamp || i}`,
+        projectId: project.id,
+        projectTitle: project.title || "Untitled",
+        projectType: project.type || "",
+        href: pipelineHref(project),
+        authorName: a.authorName || "Someone",
+        body: m[1].trim(),
+        timestamp: a.timestamp || project.updatedAt || project.createdAt || null,
+      });
+    }
+  }
+  out.sort((a, b) => toMs(b.timestamp) - toMs(a.timestamp));
+  return out.slice(0, limit);
+}
+
 function idleLabel(idleDays) {
   if (idleDays === null) return "No activity yet";
   if (idleDays >= IDLE_STALE_DAYS) return `Idle ${idleDays}d`;
