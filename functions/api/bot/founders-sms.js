@@ -32,10 +32,15 @@ import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { computeAdminDigest, computeAdminTasks } from "../../_utils/bot-logic.js";
 
-// Sent over the MMS gateway (e.g. @vzwpix.com), which comfortably handles
-// ~1500 chars — far past the ~160-char SMS gateway limit that truncated the
-// first send. We still cap defensively so the text can't run away.
-const MAX_SMS_CHARS = 1200;
+// Sent over the SMS gateway (@vtext.com), which delivers reliably but truncates
+// a single message at ~160 chars. So we build the full update, then split it
+// into numbered segments that each fit one text. Each segment carries a
+// "(Update) N/M" prefix, so we budget the body to leave room for that.
+const SMS_SEGMENT_LIMIT = 155;     // hard per-text character ceiling
+const SEGMENT_PREFIX_BUDGET = 16;  // room for "(Update) 10/10\n"
+// Overall safety cap on the assembled message before splitting (avoid a
+// runaway 30-part text storm).
+const MAX_SMS_CHARS = 1000;
 // How many of each kind of line to include before summarizing the rest.
 const MAX_TASK_LINES = 4;
 const MAX_CHECK_LINES = 4;
@@ -79,6 +84,8 @@ export const onRequestPost = async ({ request, env }) => {
     const adminTasks = computeAdminTasks({ projects, users, now });
 
     const message = buildFoundersSms({ rows, adminTasks });
+    // Split the full update into numbered texts that each fit one SMS.
+    const segments = splitIntoSmsSegments(message);
 
     const result = {
       ok: true,
@@ -86,7 +93,9 @@ export const onRequestPost = async ({ request, env }) => {
       sentAt: now.toISOString(),
       recipientCount: recipients.length,
       charCount: message.length,
-      message,                 // returned so the admin UI / test can preview it
+      segmentCount: segments.length,
+      message,                 // full text, returned so the UI/test can preview
+      segments,                // exactly what each text will say
       sent: false,
       error: null,
     };
@@ -101,27 +110,30 @@ export const onRequestPost = async ({ request, env }) => {
       return json(result);
     }
 
-    // ── Send ONE group message to all recipients together ────────────────────
-    // Putting every gateway address in a single email's `to` is what makes the
-    // carriers thread it as one group conversation between the founders (rather
-    // than separate 1:1 texts). For this to be a real group thread the numbers
-    // should use the MMS gateway (e.g. @vzwpix.com), not the SMS gateway
-    // (@vtext.com) — MMS supports group threads and longer messages, so it also
-    // dodges the ~160-char truncation we hit on SMS.
-    try {
-      await sendEmail(env, {
-        to: recipients,                 // array → one message, all founders on it
-        subject: "(Update)",
-        text: message,
-        // A minimal HTML part keeps Resend happy; carriers use the text.
-        html: `<pre style="font:inherit;white-space:pre-wrap;margin:0;">${escapeHtml(message)}</pre>`,
-      });
-      result.sent = true;
-      result.sentCount = recipients.length;
-    } catch (err) {
-      result.sent = false;
-      result.error = err?.message || String(err);
+    // ── Send each segment as ONE group text to both founders ──────────────────
+    // Putting both gateway addresses in a single email's `to` is what threads it
+    // as one group conversation. We use the @vtext.com SMS gateway (set in
+    // FOUNDERS_SMS_TO) because it delivers reliably; the numbered segments keep
+    // any single text under the gateway's ~160-char truncation limit.
+    const errors = [];
+    let sentCount = 0;
+    for (let i = 0; i < segments.length; i++) {
+      try {
+        await sendEmail(env, {
+          to: recipients,            // array → one message, both founders on it
+          // vtext puts the subject inline ahead of the body, so keep it tiny.
+          subject: "(Update)",
+          text: segments[i],
+          html: `<pre style="font:inherit;white-space:pre-wrap;margin:0;">${escapeHtml(segments[i])}</pre>`,
+        });
+        sentCount++;
+      } catch (err) {
+        errors.push({ segment: i + 1, error: err?.message || String(err) });
+      }
     }
+    result.sent = sentCount > 0;
+    result.segmentsSent = sentCount;
+    if (errors.length) result.errors = errors;
     return json(result);
   } catch (err) {
     return serverError(err);
@@ -237,6 +249,46 @@ function quote(s) {
 function clamp(text) {
   if (text.length <= MAX_SMS_CHARS) return text;
   return text.slice(0, MAX_SMS_CHARS - 1).trimEnd() + "…";
+}
+
+// Split the full update into numbered SMS-sized chunks, each prefixed
+// "(Update) N/M". Splits on line boundaries where possible; hard-wraps any
+// single line that's longer than a segment on its own. Returns ["…", "…"].
+function splitIntoSmsSegments(message) {
+  const bodyLimit = SMS_SEGMENT_LIMIT - SEGMENT_PREFIX_BUDGET;
+
+  // First, break the message into pieces no longer than bodyLimit, preferring
+  // line breaks. A line that's still too long gets hard-sliced.
+  const lines = String(message || "").split("\n");
+  const chunks = [];
+  let cur = "";
+  const flush = () => { if (cur.length) { chunks.push(cur); cur = ""; } };
+
+  for (let line of lines) {
+    // Hard-wrap an over-long single line.
+    while (line.length > bodyLimit) {
+      flush();
+      chunks.push(line.slice(0, bodyLimit));
+      line = line.slice(bodyLimit);
+    }
+    const candidate = cur ? `${cur}\n${line}` : line;
+    if (candidate.length > bodyLimit) {
+      flush();
+      cur = line;
+    } else {
+      cur = candidate;
+    }
+  }
+  flush();
+
+  if (!chunks.length) return [];
+
+  // Prefix each with its segment number. When there's only one chunk we still
+  // label it "(Update)" so the founders always see the tag.
+  const total = chunks.length;
+  return chunks.map((c, i) =>
+    total === 1 ? `(Update)\n${c}` : `(Update) ${i + 1}/${total}\n${c}`
+  );
 }
 
 function escapeHtml(s) {
