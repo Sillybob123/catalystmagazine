@@ -295,6 +295,15 @@ const ROUTES = {
     loader: () => import("./searchability.js"),
     mountKey: "searchability",
   },
+  // Tasks — the admin's to-do / review / approve queue. Full-page sibling of
+  // the "Your tasks" panel on Activity; both share task-engine.js.
+  "#/admin/tasks": {
+    label: "Tasks",
+    icon: ICONS.check,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./tasks-admin.js"),
+  },
   "#/admin/articles": {
     label: "All articles & approvals",
     icon: ICONS.shieldCheck,
