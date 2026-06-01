@@ -1,0 +1,29 @@
+name = "catalyst-founders-sms"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+# Every other day at 13:00 UTC (~9am America/New_York in EDT) so it lands as a
+# "Good Morning" text. Cron day-of-month step (*/2) fires on the 1st, 3rd, 5th…
+# which is every 2 days within a month (one month boundary may give a 1- or
+# 3-day gap — acceptable for a heads-up digest).
+[triggers]
+crons = ["0 13 */2 * *"]
+
+[vars]
+FOUNDERS_SMS_ENDPOINT = "https://www.catalyst-magazine.com/api/bot/founders-sms"
+
+# Secrets — set these, do NOT commit them:
+#
+#   # shared secret that authorizes this Worker to call the endpoint
+#   npx wrangler secret put FOUNDERS_SMS_SECRET
+#
+# The SAME FOUNDERS_SMS_SECRET value must also be set on the Cloudflare Pages
+# project (Settings → Environment variables) so the endpoint accepts the call.
+#
+# The founders' phone gateway addresses live ONLY on the Pages project, never
+# on this Worker and never in git:
+#
+#   # in the Pages project env (Settings → Environment variables), add:
+#   FOUNDERS_SMS_TO = "2405150910@vtext.com,2019700096@vtext.com"
+#
+# (Set it as an encrypted/secret var so the numbers aren't exposed.)
