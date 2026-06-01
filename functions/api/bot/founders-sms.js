@@ -32,9 +32,10 @@ import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { computeAdminDigest, computeAdminTasks } from "../../_utils/bot-logic.js";
 
-// Carriers reject/garble very long texts and split them into multiple billed
-// segments. Keep the whole body comfortably inside a few segments.
-const MAX_SMS_CHARS = 600;
+// Sent over the MMS gateway (e.g. @vzwpix.com), which comfortably handles
+// ~1500 chars — far past the ~160-char SMS gateway limit that truncated the
+// first send. We still cap defensively so the text can't run away.
+const MAX_SMS_CHARS = 1200;
 // How many of each kind of line to include before summarizing the rest.
 const MAX_TASK_LINES = 4;
 const MAX_CHECK_LINES = 4;
@@ -100,29 +101,27 @@ export const onRequestPost = async ({ request, env }) => {
       return json(result);
     }
 
-    // ── Send (one message per recipient so a bad address can't block others) ──
-    const errors = [];
-    let sentCount = 0;
-    for (const to of recipients) {
-      try {
-        await sendEmail(env, {
-          // Carriers use the SUBJECT and BODY differently; some prepend the
-          // subject. Keep the subject empty-ish and put everything in the body.
-          to,
-          subject: "Catalyst",
-          text: message,
-          // A minimal HTML part keeps Resend happy; carriers use the text.
-          html: `<pre style="font:inherit;white-space:pre-wrap;margin:0;">${escapeHtml(message)}</pre>`,
-        });
-        sentCount++;
-      } catch (err) {
-        errors.push({ to, error: err?.message || String(err) });
-      }
+    // ── Send ONE group message to all recipients together ────────────────────
+    // Putting every gateway address in a single email's `to` is what makes the
+    // carriers thread it as one group conversation between the founders (rather
+    // than separate 1:1 texts). For this to be a real group thread the numbers
+    // should use the MMS gateway (e.g. @vzwpix.com), not the SMS gateway
+    // (@vtext.com) — MMS supports group threads and longer messages, so it also
+    // dodges the ~160-char truncation we hit on SMS.
+    try {
+      await sendEmail(env, {
+        to: recipients,                 // array → one message, all founders on it
+        subject: "(Update)",
+        text: message,
+        // A minimal HTML part keeps Resend happy; carriers use the text.
+        html: `<pre style="font:inherit;white-space:pre-wrap;margin:0;">${escapeHtml(message)}</pre>`,
+      });
+      result.sent = true;
+      result.sentCount = recipients.length;
+    } catch (err) {
+      result.sent = false;
+      result.error = err?.message || String(err);
     }
-
-    result.sent = sentCount > 0;
-    result.sentCount = sentCount;
-    if (errors.length) result.errors = errors;
     return json(result);
   } catch (err) {
     return serverError(err);
@@ -171,24 +170,23 @@ function buildFoundersSms({ rows, adminTasks }) {
     }
   }
 
-  // Assemble with sensible truncation so the text stays short.
+  // Assemble compactly. No blank separator lines (they just eat into the
+  // gateway's character budget) — section labels alone keep it scannable.
   const todo = summarizeList(taskLines, MAX_TASK_LINES, "more to review");
   const check = summarizeList(checkLines, MAX_CHECK_LINES, "more to check on");
 
   if (!todo.length && !check.length) {
-    lines.push("All clear — nothing needs you right now. Nice work! 🎉");
+    lines.push("All clear — nothing needs you right now. Nice work!");
     return clamp(lines.join("\n"));
   }
 
   if (todo.length) {
-    lines.push("");
     lines.push("Needs you:");
-    for (const l of todo) lines.push(`• ${l}`);
+    for (const l of todo) lines.push(`- ${l}`);
   }
   if (check.length) {
-    lines.push("");
     lines.push("Check in with:");
-    for (const l of check) lines.push(`• ${l}`);
+    for (const l of check) lines.push(`- ${l}`);
   }
 
   return clamp(lines.join("\n"));
@@ -232,7 +230,7 @@ function firstName(name) {
 // Short double-quoted title, trimmed so one long headline can't blow the budget.
 function quote(s) {
   let t = String(s || "").trim();
-  if (t.length > 42) t = t.slice(0, 40).trimEnd() + "…";
+  if (t.length > 36) t = t.slice(0, 34).trimEnd() + "…";
   return `"${t}"`;
 }
 
