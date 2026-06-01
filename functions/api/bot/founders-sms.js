@@ -36,7 +36,10 @@ import { computeAdminDigest, computeAdminTasks } from "../../_utils/bot-logic.js
 // a single message at ~160 chars. So we build the full update, then split it
 // into numbered segments that each fit one text. Each segment carries a
 // "(Update) N/M" prefix, so we budget the body to leave room for that.
-const SMS_SEGMENT_LIMIT = 155;     // hard per-text character ceiling
+// Kept conservatively below the ~160-char SMS ceiling: vtext also counts some
+// envelope overhead toward the limit, which was clipping a segment's tail
+// ("…qu") even when our body was under 155. 132 leaves comfortable headroom.
+const SMS_SEGMENT_LIMIT = 132;     // hard per-text character ceiling
 const SEGMENT_PREFIX_BUDGET = 16;  // room for "(Update) 10/10\n"
 // Overall safety cap on the assembled message before splitting. Generous so
 // the full to-do/check-in list is spelled out; only an extreme backlog would
