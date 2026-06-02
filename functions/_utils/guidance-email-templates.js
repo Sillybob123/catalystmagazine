@@ -86,6 +86,72 @@ const base = {
       },
     ],
   },
+  transfer_from_gdoc: {
+    title: "Moving Your Edited Story From Google Docs Into the Dashboard",
+    audience: "Writers whose story has been edited in Google Docs",
+    subject: "Next step: move your edited story into the Catalyst dashboard",
+    intro: "Now that an editor has gone through your story in Google Docs, the next step is to move the finished piece into the Catalyst dashboard so it can be prepared for publication. This is quick — the dashboard can pull your text and images straight from the Google Doc — but a few details only you can set, so please read this all the way through before you start.",
+    sections: [
+      {
+        heading: "Step 1 — Open the draft submission page",
+        bullets: [
+          "Sign in to the dashboard at catalyst-magazine.com/admin/login.",
+          "In the left sidebar, click Submit a draft.",
+          "This opens the article editor, where you'll rebuild the finished story from your Google Doc.",
+        ],
+      },
+      {
+        heading: "Step 2 — Paste from your Google Doc",
+        bullets: [
+          "In the editor toolbar, click the Paste from Google Doc button.",
+          "Open your Google Doc, select everything (⌘A or Ctrl+A), copy it (⌘C or Ctrl+C), then paste it into the box that appears (⌘V or Ctrl+V).",
+          "This carries over your text, headings, bold and italics, links, lists, quotes, and your images all at once — so you don't have to rebuild anything by hand.",
+          "If an image doesn't come through, export the Google Doc as a .docx file and upload that instead, or re-add the image using the image button in the toolbar.",
+        ],
+      },
+      {
+        heading: "Step 3 — Set the title and the excerpt",
+        bullets: [
+          "Set the title (the headline at the top of the editor) to the final headline for your story.",
+          "Write the excerpt — the one-sentence deck that sits under the headline. It should pull the reader in, not just summarize. This is required before you can submit.",
+          "Read both out loud once. The title and excerpt are the first things a reader sees, so they need to be clear and accurate.",
+        ],
+      },
+      {
+        heading: "Step 4 — Confirm the article type",
+        bullets: [
+          "Make sure the story is filed under the correct type: an interview or reporting piece belongs under Catalyst in the Capital, and an opinion piece belongs under Op-Eds.",
+          "If the type looks wrong, reply to this email or message an admin so we can move it to the right place — the type controls where the story is tracked and how it's published.",
+        ],
+      },
+      {
+        heading: "Step 5 — Add a caption to every image",
+        bullets: [
+          "Click each image to open its settings, then add a caption that explains what the image shows.",
+          "To credit the source, add ' — Credit' after the caption text (for example: A late-night session in the lab — Photo, Catalyst Magazine).",
+          "Every image should have a caption before you submit. An uncaptioned image looks unfinished and can be confusing to readers.",
+          "You'll also need a cover image set for the story — add one if it didn't come across from the doc.",
+        ],
+      },
+      {
+        heading: "Step 6 — Check that your section headers show up",
+        bullets: [
+          "Scroll through the whole piece from top to bottom.",
+          "Confirm each section header appears as an actual heading (large and bold), not as plain body text. Sometimes a heading pastes in as normal text.",
+          "If a header looks like regular text, select that line and apply the heading style from the toolbar.",
+          "Also check that quotes, lists, and links survived the paste and look right.",
+        ],
+      },
+      {
+        heading: "Step 7 — Submit for review",
+        bullets: [
+          "When the title, excerpt, type, cover image, captions, and headers are all correct, you're ready.",
+          "The dashboard will not let you submit until you have a title, a cover image, an excerpt, and body text — so if it blocks you, it will tell you exactly what's missing.",
+          "Complete the short pre-submission checklist honestly, then submit. That's it — thank you for getting your story over the finish line!",
+        ],
+      },
+    ],
+  },
   proposal: {
     title: "Creating a Strong Proposal",
     audience: "Writers and editors",
