@@ -26,11 +26,9 @@ import { el, esc, confirmDialog, statusPill } from "./ui.js";
 // `.article-body`. Instead we fetch it once, rescope every selector under
 // `.final-review-article`, and inject as a <style> tag (see ensureFinalReviewShim).
 //
-// styles.css is the public-site shell sheet; it's safe to load globally on
-// the dashboard because the admin already sits next to it in production.
-const PUBLIC_STYLESHEETS = [
-  "/css/styles.css",
-];
+// styles.css (the public-site shell sheet) is injected by ensurePublicStylesheets()
+// below — fetched and rescoped under .final-review-article, NOT loaded globally,
+// so its bare .btn / heading / body rules can't override the dashboard chrome.
 
 const ARTICLE_FALLBACK_IMAGE = "/NewsletterHeader1.png";
 
@@ -223,18 +221,38 @@ function getHashParam(name) {
   return new URLSearchParams(q).get(name);
 }
 
-// Idempotently inject the public site's article stylesheets so the preview
-// renders with the real hero / typography / colors. The dashboard shell
-// normally only loads dashboard.css.
+// Inject the public site's shell stylesheet (styles.css) so the preview
+// renders with the real typography / colors. The dashboard shell normally
+// only loads dashboard.css.
+//
+// IMPORTANT: styles.css is NOT loaded as a global <link> — it defines bare
+// `.btn`, `.filter-btn`, heading, and `body` rules that would override the
+// dashboard's own chrome (making buttons massive/bold and text heavy). We
+// fetch it once and rescope every selector under `.final-review-article`
+// (same machinery as the article-premium shim) so it can only touch the
+// preview surface, never the surrounding dashboard.
+let publicStylesPromise = null;
 function ensurePublicStylesheets() {
-  for (const href of PUBLIC_STYLESHEETS) {
-    if (document.querySelector(`link[data-final-review-css="${href}"]`)) continue;
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = href;
-    link.setAttribute("data-final-review-css", href);
-    document.head.appendChild(link);
-  }
+  if (document.getElementById("final-review-shell-style")) return publicStylesPromise;
+  if (publicStylesPromise) return publicStylesPromise;
+  publicStylesPromise = (async () => {
+    try {
+      const res = await fetch("/css/styles.css", { cache: "force-cache" });
+      if (!res.ok) return;
+      const css = await res.text();
+      // rescopeArticlePremium() is generic: it force-prefixes every selector
+      // with `.final-review-article`, so it works for any stylesheet we want
+      // confined to the preview subtree.
+      const rescoped = rescopeArticlePremium(css);
+      const style = document.createElement("style");
+      style.id = "final-review-shell-style";
+      style.textContent = rescoped;
+      document.head.appendChild(style);
+    } catch {
+      // Non-fatal — the preview still renders via the article-premium shim.
+    }
+  })();
+  return publicStylesPromise;
 }
 
 // article-premium.css scopes everything under body[data-page="article"]. The
