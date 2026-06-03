@@ -2405,6 +2405,13 @@ button { font-family: inherit; cursor: pointer; }
   min-height: 18px;
 }
 
+/* Highlight a field that needs attention — e.g. the image alt-text input when
+   a writer tries to insert an image without describing it. */
+.input--needs-attention {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14) !important;
+}
+
 /* =============================================================
    Cover-image upload (writer settings drawer)
    ============================================================= */

@@ -23,6 +23,14 @@ import { convertToWebp } from "../image-utils.js";
 // Writer self-review checklist. Every item must be checked before a draft
 // can be submitted for editor review — mirrors the editor-side checklist
 // so writers catch structural issues on their own pass first.
+// Canonical topic tags shown as chips in the composer. Must match
+// STORY_TOPICS (js/dashboard/admin.js), HOME_TOPIC_ORDER (js/main.js), and
+// TOPIC_ORDER (js/articles-new.js) so the writer's choices line up with the
+// front-end filter pills. Stored on stories/{id}.tags.
+const WRITER_TOPICS = ["AI", "Health", "Medicine", "Biology", "Chemistry",
+  "Public Health", "Physics", "Environment", "Space", "Neuroscience",
+  "Technology", "Policy"];
+
 const WRITER_CHECKLIST = [
   { id: "lead",       text: "I've written a lead that earns the reader's attention — specific, not a summary." },
   { id: "angle",      text: "The piece has a clear, concrete angle, not just a broad topic." },
@@ -283,6 +291,16 @@ function mountDraftEditor(ctx, container) {
             <a href="#/book-reviews/write" style="color:#0f172a;font-weight:600;">Write a book review</a> page —
             it has the right fields for ISBN, rating, and the book metadata.
           </p>
+        </div>
+        <div class="field">
+          <label class="label">Topics</label>
+          <div id="f-topics" class="f-topic-chips" style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${WRITER_TOPICS.map(t =>
+              `<button type="button" class="f-topic-chip" data-topic="${t}" aria-pressed="false"
+                style="padding:6px 14px;border-radius:999px;border:1px solid var(--hairline,#e6e6e6);background:#fff;color:var(--ink-2,#475569);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease;">${t}</button>`
+            ).join("")}
+          </div>
+          <div class="hint" style="margin-top:8px;">What subjects does this piece cover? Pick all that apply — these power the topic filters on the home page and Articles index (e.g. a reader looking for AI or Biology stories will find yours).</div>
         </div>
         <div class="field">
           <label class="label">Cover image</label>
@@ -2381,8 +2399,9 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
       </div>
 
       <div class="field">
-        <label class="label">${isImage ? "Alt text (for accessibility)" : "Caption / description"}</label>
-        <input class="input" id="m-alt" placeholder="${isImage ? "Describe what's in the image" : "What's happening in this video"}" value="${escapeAttr(initialAlt)}" />
+        <label class="label">${isImage ? "Alt text (describe the image) <span style=\"color:var(--danger,#dc2626);\">*</span>" : "Caption / description"}</label>
+        <input class="input" id="m-alt" placeholder="${isImage ? "e.g. 'A researcher pipettes a blue sample into a microplate in a lab'" : "What's happening in this video"}" value="${escapeAttr(initialAlt)}" />
+        ${isImage ? `<div class="hint" style="margin-top:6px;">Required. Describe what the image shows in one clear sentence — write it for a reader who can't see it. This is read aloud by screen readers <strong>and</strong> helps this article rank in Google Image search (better SEO for your story).</div>` : ""}
       </div>
       <div class="field">
         <label class="label">Caption (optional)</label>
@@ -2448,6 +2467,14 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
     resolvedUrl = null;
     pendingFile = null;
     updateInsertState();
+  });
+
+  // Clear the "needs alt text" warning once the writer starts describing it.
+  altInput.addEventListener("input", () => {
+    if (altInput.value.trim()) {
+      altInput.classList.remove("input--needs-attention");
+      if (errorEl.textContent.startsWith("Please add alt text")) errorEl.textContent = "";
+    }
   });
 
   const libraryBtn = modal.querySelector("#m-browse-library");
@@ -2518,6 +2545,19 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
     const url = resolvedUrl || urlInput.value.trim();
     if (!url) return;
     const alt = altInput.value.trim();
+
+    // Require alt text on images. It's read aloud by screen readers and is a
+    // real Google Image-search ranking signal, so we don't let a story ship an
+    // undescribed image. Prompt the writer and focus the field instead of
+    // silently inserting an empty alt="".
+    if (isImage && !alt) {
+      errorEl.innerHTML = "Please add alt text — describe what the image shows so it's accessible and helps your article's SEO.";
+      altInput.focus();
+      altInput.classList.add("input--needs-attention");
+      altInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     const caption = capInput.value.trim();
     const size = isImage
       ? (modal.querySelector('input[name="m-size"]:checked')?.value || "standard")
@@ -2892,6 +2932,29 @@ function wireSettingsDrawer(wrap) {
   wrap.querySelector("#toggle-settings").addEventListener("click", open);
   wrap.querySelector("#close-settings").addEventListener("click", close);
   scrim.addEventListener("click", close);
+
+  // Topic chips — toggle on/off (and the inline styling) on click. Selected
+  // topics are read back from the .is-on chips at save time (saveStory).
+  wrap.querySelectorAll(".f-topic-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const on = chip.classList.toggle("is-on");
+      chip.setAttribute("aria-pressed", on ? "true" : "false");
+      chip.style.background = on ? "var(--ink,#0f172a)" : "#fff";
+      chip.style.color = on ? "#fff" : "var(--ink-2,#475569)";
+      chip.style.borderColor = on ? "var(--ink,#0f172a)" : "var(--hairline,#e6e6e6)";
+    });
+  });
+}
+
+// Reflect the chip's on/off visual state. Shared by the load path (when a
+// draft is reopened) and could be reused elsewhere. Kept tiny + inline-style
+// based so it doesn't depend on dashboard.css carrying a .is-on rule.
+function setTopicChipState(chip, on) {
+  chip.classList.toggle("is-on", on);
+  chip.setAttribute("aria-pressed", on ? "true" : "false");
+  chip.style.background = on ? "var(--ink,#0f172a)" : "#fff";
+  chip.style.color = on ? "#fff" : "var(--ink-2,#475569)";
+  chip.style.borderColor = on ? "var(--ink,#0f172a)" : "var(--hairline,#e6e6e6)";
 }
 
 // ===== Cover-image upload ===================================================
@@ -2956,6 +3019,11 @@ async function loadDraft(id, wrap, ctx) {
     }
     wrap.querySelector("#f-title").textContent = d.title || "";
     wrap.querySelector("#f-category").value = d.category || "Feature";
+    // Restore the saved topic chips so reopening a draft keeps its tags.
+    const savedTags = Array.isArray(d.tags) ? d.tags : [];
+    wrap.querySelectorAll(".f-topic-chip").forEach((chip) => {
+      setTopicChipState(chip, savedTags.includes(chip.dataset.topic));
+    });
     wrap.querySelector("#f-cover").value = d.coverImage || "";
     const lightCoverCb = wrap.querySelector("#f-cover-light");
     if (lightCoverCb) {
@@ -3110,6 +3178,9 @@ function ensureDriveGateStyles() {
 async function saveStory(ctx, wrap, desiredStatus, editingId) {
   const title = (wrap.querySelector("#f-title").textContent || "").trim();
   const category = wrap.querySelector("#f-category").value;
+  const tags = Array.from(wrap.querySelectorAll(".f-topic-chip.is-on"))
+    .map((c) => c.dataset.topic)
+    .filter(Boolean);
   const coverImage = wrap.querySelector("#f-cover").value.trim();
   const lightCover = !!wrap.querySelector("#f-cover-light")?.checked;
   const dek = (wrap.querySelector("#f-dek").textContent || "").trim();
@@ -3179,6 +3250,23 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
       ctx.toast("Can't submit yet — missing " + missing.join(", ") + ".", "error");
       return;
     }
+    // Every image in the body needs alt text (accessibility + image SEO). The
+    // insert dialog already requires it, but pasted images can slip through —
+    // catch them here and point the writer at the offending image to describe it.
+    const imgsMissingAlt = Array.from(bodyEl.querySelectorAll("img"))
+      .filter((img) => !(img.getAttribute("alt") || "").trim());
+    if (imgsMissingAlt.length) {
+      const n = imgsMissingAlt.length;
+      msg.textContent = `Before submitting, add alt text to ${n} image${n === 1 ? "" : "s"} — click the image, then describe what it shows. It helps accessibility and your article's SEO.`;
+      ctx.toast(`${n} image${n === 1 ? " needs" : "s need"} alt text before you can submit.`, "error");
+      // Scroll the first undescribed image into view and flash it.
+      const first = imgsMissingAlt[0];
+      const fig = first.closest("figure") || first;
+      fig.scrollIntoView({ behavior: "smooth", block: "center" });
+      fig.classList.add("flash-attention");
+      setTimeout(() => fig.classList.remove("flash-attention"), 1600);
+      return;
+    }
     // Admins bypass the checklist — they're expected to be self-editing and
     // often import or publish pieces that never went through a writer's review.
     if (!checklistDone && ctx.role !== "admin") {
@@ -3196,7 +3284,7 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
   }
 
   const payload = {
-    title, category, coverImage, lightCover, dek, body,
+    title, category, tags, coverImage, lightCover, dek, body,
     slug: slugify(title),
     writerChecklist,
     status: desiredStatus,

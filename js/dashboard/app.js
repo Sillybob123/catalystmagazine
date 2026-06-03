@@ -176,7 +176,7 @@ const ROUTES = {
     icon: ICONS.pen,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js"),
+    loader: () => import("./writer.js?v=topics-alt"),
     mountKey: "draft",
   },
   "#/writer/mine": {
@@ -184,7 +184,7 @@ const ROUTES = {
     icon: ICONS.pages,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js"),
+    loader: () => import("./writer.js?v=topics-alt"),
     mountKey: "mine",
   },
   "#/writer/feed": {
@@ -192,7 +192,7 @@ const ROUTES = {
     icon: ICONS.feed,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js"),
+    loader: () => import("./writer.js?v=topics-alt"),
     mountKey: "feed",
   },
   "#/writer/guidelines": {
@@ -309,7 +309,7 @@ const ROUTES = {
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=bookreview-tabs"),
+    loader: () => import("./admin.js?v=topics-alt"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -334,7 +334,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=bookreview-tabs"),
+    loader: () => import("./admin.js?v=topics-alt"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -342,7 +342,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=bookreview-tabs"),
+    loader: () => import("./admin.js?v=topics-alt"),
     mountKey: "images",
   },
   "#/admin/advanced": {
