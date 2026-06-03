@@ -33,6 +33,23 @@ service cloud.firestore {
     function hasRole(r) { return isRealUser() && myRole() == r; }
     function hasAnyRole(list) { return isRealUser() && myRole() in list; }
 
+    // Per-user extra-access grants. Admins can grant a user access to specific
+    // dashboard routes (by hash, e.g. '#/admin/submissions') beyond their base
+    // role, via the "Extra access" modal in Users & roles. Stored as
+    // users/{uid}.extraAccess: string[]. The UI gates the sidebar on this list;
+    // these helpers let the security rules honor the same grants so a granted
+    // page can actually read the collections it needs. Mirrors isRouteAllowed()
+    // in js/dashboard/app.js and the server-side grant check in
+    // functions/_utils/auth.js — keep all three in sync.
+    function myExtraAccess() {
+      return isRealUser() && ('extraAccess' in myUserDoc().data)
+        ? myUserDoc().data.extraAccess : [];
+    }
+    function hasGrant(hash) { return isRealUser() && (hash in myExtraAccess()); }
+    function hasAnyGrant(list) {
+      return isRealUser() && myExtraAccess().hasAny(list);
+    }
+
     function isAdmin()             { return hasRole('admin'); }
     function isEditor()            { return hasAnyRole(['admin', 'editor']); }
     function isWriter()            { return hasAnyRole(['admin', 'editor', 'writer']); }
@@ -44,16 +61,24 @@ service cloud.firestore {
     // Anonymous tokens are explicitly excluded — only real (email/password)
     // accounts can have a /users doc, which is what gates every staff role.
     match /users/{uid} {
-      allow read: if isRealUser() && (request.auth.uid == uid || isAdmin() || isEditor());
+      // Self, admins, and editors always. Other staff (writer / newsletter /
+      // marketing) can read the directory too: the always-on pipeline panels
+      // and the staff/editor pickers (loadUsers / loadEditors / loadStaff)
+      // need to resolve teammate names and roles.
+      allow read: if isRealUser() && (request.auth.uid == uid || isStaff());
       // Users can create their own doc on first login.
       // Only safe bootstrap roles allowed — no self-assigning admin/editor.
       allow create: if isRealUser()
         && request.auth.uid == uid
         && request.resource.data.role in ['reader', 'writer'];
-      // Users can update safe fields on their own doc (but not role).
+      // Users can update safe fields on their own doc, but NOT privilege
+      // fields. `role` and `extraAccess` are both admin-only — since the
+      // security rules now honor extraAccess grants, letting a user write
+      // their own extraAccess would be a self-escalation path.
       allow update: if isRealUser()
         && request.auth.uid == uid
-        && !('role' in request.resource.data.diff(resource.data).affectedKeys());
+        && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['role', 'extraAccess']);
       // Admins can do anything to any user.
       allow read, write: if isAdmin();
     }
@@ -87,6 +112,13 @@ service cloud.firestore {
 
       // Editors / admins can update, assign, approve, publish, delete.
       allow update, delete: if isEditor();
+
+      // Games grant: a non-editor explicitly granted the Games page may
+      // attach/clear a story's brain-teaser game, but ONLY the `game` field —
+      // they can't touch headline, body, status, or any other content. Keeps
+      // the grant scoped to exactly what the Games dashboard writes.
+      allow update: if hasGrant('#/admin/games')
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['game']);
 
       // ----- nested collections on a story -----
       match /comments/{commentId} {
@@ -173,7 +205,10 @@ service cloud.firestore {
     // submissions contain submitter PII (email, IP, user-agent).
     match /bookReviewSubmissions/{subId} {
       allow create: if false;                  // server-only (service acct bypasses)
-      allow read, update, delete: if isAdmin();
+      // Admins always; a non-admin explicitly granted the Book reviews queue
+      // route may read (but not mutate) the reader-submission queue.
+      allow read: if isAdmin() || hasGrant('#/admin/book-reviews');
+      allow update, delete: if isAdmin();
     }
 
     // ---------- analytics events (page views, signups, etc.) ----------
@@ -212,7 +247,10 @@ service cloud.firestore {
             && resource.data.authorName.lower() == myUserDoc().data.email.lower());
     }
     match /projects/{projectId} {
-      allow read: if isWriter();
+      // The workflow board (Catalyst in the Capital / Op-Eds / My Assignments)
+      // is shown to every staff role in the dashboard, so every staff member
+      // may read projects. Write paths below stay author/editor/admin-gated.
+      allow read: if isStaff();
       // Writers can only create proposals under their own uid.
       allow create: if isWriter()
         && request.resource.data.authorId == request.auth.uid;
@@ -229,7 +267,10 @@ service cloud.firestore {
 
     // ---------- workflow tasks ----------
     match /tasks/{taskId} {
-      allow read: if isWriter();
+      // Tasks panel is shown to every staff role; reads are staff-wide.
+      // Create/update stay with editorial roles (writer+) so marketing can
+      // view the board without authoring tasks; delete is editor/admin.
+      allow read: if isStaff();
       allow create: if isWriter();
       allow update: if isWriter();
       allow delete: if isEditor();
@@ -237,7 +278,7 @@ service cloud.firestore {
 
     // ---------- workflow settings (meetings, overrides) ----------
     match /settings/{docId} {
-      allow read: if isWriter();
+      allow read: if isStaff();
       allow write: if isAdmin();
     }
 

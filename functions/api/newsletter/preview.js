@@ -17,7 +17,9 @@ import { buildArticlePath } from "../../_utils/article-meta.js";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const auth = await requireRole(request, env, ["admin", "newsletter_builder", "editor"]);
+    // Preview is read-only rendering. A user granted the Newsletter builder
+    // page may preview; sending/cancelling stays newsletter_builder/admin-only.
+    const auth = await requireRole(request, env, ["admin", "newsletter_builder", "editor"], ["#/newsletter/builder"]);
     if (auth instanceof Response) return auth;
 
     let body = {};

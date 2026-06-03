@@ -478,7 +478,7 @@ const GRANTABLE_ROUTES = [
   { group: "Marketing",          hash: "#/marketing/searchability", label: "Searchability (Search Console)", baseRoles: ["admin", "marketing"] },
 
   // Newsletter
-  { group: "Newsletter",         hash: "#/newsletter/build",   label: "Newsletter builder",         baseRoles: ["admin", "newsletter_builder"] },
+  { group: "Newsletter",         hash: "#/newsletter/builder", label: "Newsletter builder",         baseRoles: ["admin", "newsletter_builder"] },
   { group: "Newsletter",         hash: "#/newsletter/history", label: "Campaign history",           baseRoles: ["admin", "newsletter_builder", "marketing"] },
 
   // Admin tools (only super-rare grants — admin can extend if they truly want)

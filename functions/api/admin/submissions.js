@@ -16,7 +16,7 @@ const ALLOWED_STATUSES = new Set(["new", "reviewing", "replied", "archived"]);
 
 export const onRequestGet = async ({ request, env }) => {
   try {
-    const auth = await requireRole(request, env, ["admin"]);
+    const auth = await requireRole(request, env, ["admin"], ["#/admin/submissions"]);
     if (auth instanceof Response) return auth;
 
     let docs;
@@ -82,7 +82,7 @@ export const onRequestGet = async ({ request, env }) => {
 
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const auth = await requireRole(request, env, ["admin"]);
+    const auth = await requireRole(request, env, ["admin"], ["#/admin/submissions"]);
     if (auth instanceof Response) return auth;
 
     let body;
