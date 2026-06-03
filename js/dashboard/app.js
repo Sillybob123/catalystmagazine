@@ -369,7 +369,7 @@ const ROUTES = {
     icon: ICONS.check,
     roles: ["admin", "editor", "writer"],
     hidden: true,
-    loader: () => import("./final-review.js"),
+    loader: () => import("./final-review.js?v=scope-fix"),
   },
 };
 
