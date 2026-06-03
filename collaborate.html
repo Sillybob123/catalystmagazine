@@ -967,7 +967,11 @@
         }
 
         /* Buttons */
-        .btn {
+        /* Scoped to `main` so these page-button styles never reach the shared
+           header's Subscribe button (.nav-cta .btn). The header must stay
+           pixel-identical across every page — see the global .btn in
+           css/styles.css, which is the single source of truth for the nav CTA. */
+        main .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -985,12 +989,12 @@
             width: 100%;
             letter-spacing: -0.005em;
         }
-        .btn svg {
+        main .btn svg {
             width: 16px; height: 16px;
             transition: transform 0.3s var(--ease-emphasized);
         }
-        .btn:hover svg { transform: translateX(4px); }
-        .btn::after {
+        main .btn:hover svg { transform: translateX(4px); }
+        main .btn::after {
             content: '';
             position: absolute;
             inset: 0;
@@ -999,7 +1003,7 @@
             transition: transform 0.7s var(--ease-emphasized);
             pointer-events: none;
         }
-        .btn:hover::after { transform: translateX(110%); }
+        main .btn:hover::after { transform: translateX(110%); }
         .btn-indigo {
             background: var(--slate);
             color: #fff;
@@ -1145,7 +1149,7 @@
         /* ── Focus-visible outlines ────────────────── */
         .hero-cta-primary:focus-visible,
         .hero-cta-secondary:focus-visible,
-        .btn:focus-visible {
+        main .btn:focus-visible {
             outline: 2px solid var(--slate);
             outline-offset: 3px;
         }
@@ -1192,11 +1196,11 @@
             .action-card,
             .hero-cta-primary,
             .hero-cta-secondary,
-            .btn {
+            main .btn {
                 transition: none;
             }
             .hero-cta-primary::after,
-            .btn::after { display: none; }
+            main .btn::after { display: none; }
         }
 
         /* ── Responsive ────────────────────────────── */

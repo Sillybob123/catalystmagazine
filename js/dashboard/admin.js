@@ -141,6 +141,13 @@ function formatStoryCategory(category = "") {
   return labels[key] || (category || "Feature").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Canonical topic tags — must match HOME_TOPIC_ORDER (js/main.js) and TOPIC_ORDER
+// (js/articles-new.js) and scripts/backfill-tags.js so the front-end filter pills
+// line up with what admins set here. Topics are stored on stories/{id}.tags.
+const STORY_TOPICS = ["AI", "Health", "Medicine", "Biology", "Chemistry",
+  "Public Health", "Physics", "Environment", "Space", "Neuroscience",
+  "Technology", "Policy"];
+
 function renderRow(a, editors, ctx, reload) {
   const tr = el("div", { class: "ar-row" });
   const categoryLabel = esc(formatStoryCategory(a.category));
@@ -959,6 +966,18 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     </div>
 
     <div class="field">
+      <label class="label">Topics</label>
+      <div id="sd-topics" class="sd-topic-chips" style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${STORY_TOPICS.map(t => {
+          const on = Array.isArray(story.tags) && story.tags.includes(t);
+          return `<button type="button" class="sd-topic-chip${on ? " is-on" : ""}" data-topic="${escAttr(t)}" aria-pressed="${on ? "true" : "false"}"
+            style="padding:6px 14px;border-radius:999px;border:1px solid ${on ? "var(--ink,#0f172a)" : "var(--line,#e6e6e6)"};background:${on ? "var(--ink,#0f172a)" : "#fff"};color:${on ? "#fff" : "var(--ink-2,#475569)"};font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease;">${esc(t)}</button>`;
+        }).join("")}
+      </div>
+      <div class="hint">Topic tags drive the subject filters on the home page and Articles index. Click to add or remove. ${isBookReview ? "(Book reviews are normally filtered by genre, not topics.)" : ""}</div>
+    </div>
+
+    <div class="field">
       <label class="label">Cover image</label>
       <div class="cover-picker">
         <button type="button" class="btn btn-secondary btn-sm" id="sd-cover-upload-btn">Upload from computer</button>
@@ -1028,6 +1047,18 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
   body.querySelector("#sd-add-author").addEventListener("click", () => {
     authors.push({ name: "" });
     renderAuthorRows();
+  });
+
+  // Topic chips — toggle the on/off state (and its inline styling) on click.
+  // Selected topics are read back from the .is-on chips at save time.
+  body.querySelectorAll(".sd-topic-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const on = chip.classList.toggle("is-on");
+      chip.setAttribute("aria-pressed", on ? "true" : "false");
+      chip.style.background = on ? "var(--ink,#0f172a)" : "#fff";
+      chip.style.color = on ? "#fff" : "var(--ink-2,#475569)";
+      chip.style.borderColor = on ? "var(--ink,#0f172a)" : "var(--line,#e6e6e6)";
+    });
   });
 
   // For book reviews, the visible field is #sd-book-title; the hidden
@@ -1189,6 +1220,9 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       authors: cleanAuthors,
       authorName: cleanAuthors.map((a) => a.name).join(", "),
       authorId: cleanAuthors[0]?.id || story.authorId || null,
+      tags: Array.from(body.querySelectorAll(".sd-topic-chip.is-on"))
+        .map((c) => c.dataset.topic)
+        .filter(Boolean),
       updatedAt: new Date().toISOString(),
       editedByAdminId: ctx.user.uid,
       editedByAdminName: ctx.profile.name || ctx.user.email,

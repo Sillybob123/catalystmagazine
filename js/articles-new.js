@@ -32,8 +32,15 @@
     let visibleArticles = [];
     let rendered = 0;
     let currentCategory = 'all';
+    let currentTopic = 'all';
     let currentQuery = '';
     let spotlightId = null;
+
+    // Canonical topic-tag order. Pills only appear for tags that actually exist
+    // on the loaded stories, but this controls the order they render in.
+    const TOPIC_ORDER = ['AI', 'Health', 'Medicine', 'Biology', 'Chemistry',
+        'Public Health', 'Physics', 'Environment', 'Space', 'Neuroscience',
+        'Technology', 'Policy'];
 
     // The cover spotlight should reflect the magazine's editorial focus, so
     // skip op-eds/editorials when choosing it. Falls back to the first
@@ -129,6 +136,7 @@
             image: raw.image || raw.coverImage || FALLBACK_IMAGE,
             link,
             category: cat === 'op-ed' ? 'editorial' : cat,
+            tags: Array.isArray(raw.tags) ? raw.tags.filter(Boolean) : [],
             excerpt: (raw.excerpt || raw.deck || raw.dek || '').replace(/\s+/g, ' ').trim()
         };
     }
@@ -150,7 +158,7 @@
     // ---------- Firestore ----------
     async function loadFirestoreArticles() {
         // Reuse the same session cache key main.js uses so we don't re-fetch.
-        const CACHE_KEY = 'catalyst_fs_cache_v5';
+        const CACHE_KEY = 'catalyst_fs_cache_v6';
         try {
             const cached = sessionStorage.getItem(CACHE_KEY);
             if (cached) return JSON.parse(cached).map(fsToNormalized).filter(Boolean);
@@ -184,6 +192,7 @@
                         { fieldPath: 'dek' },
                         { fieldPath: 'category' },
                         { fieldPath: 'slug' },
+                        { fieldPath: 'tags' },
                         // Book-review fields so the shared session cache
                         // (also read by /book-reviews) carries them.
                         { fieldPath: 'communityPick' },
@@ -216,6 +225,7 @@
         const storyId = name.split('/').pop();
         const f = doc.fields || {};
         const str = k => f[k]?.stringValue ?? '';
+        const arr = k => (f[k]?.arrayValue?.values || []).map(v => v.stringValue).filter(Boolean);
 
         const publishedRaw = f.publishedAt?.timestampValue
             || f.publishedAt?.stringValue
@@ -251,6 +261,7 @@
             image,
             link: `/article/${encodeURIComponent(slug)}`,
             category: (str('category') || 'feature').toLowerCase(),
+            tags: arr('tags'),
             excerpt: str('deck') || str('dek') || str('excerpt') || ''
         };
     }
@@ -406,14 +417,16 @@
         // The cover spotlight article appears above the feed — exclude it
         // from the feed when we're in the default "all, no search" view so it
         // isn't shown twice. For any filtered view, include everything.
-        const skipSpotlight = currentCategory === 'all' && !q;
+        const skipSpotlight = currentCategory === 'all' && currentTopic === 'all' && !q;
         return allArticles.filter(a => {
             if (skipSpotlight && a.id === spotlightId) return false;
             if (currentCategory !== 'all' && a.category !== currentCategory) return false;
+            if (currentTopic !== 'all' && !(Array.isArray(a.tags) && a.tags.includes(currentTopic))) return false;
             if (!q) return true;
             return (a.title && a.title.toLowerCase().includes(q))
                 || (a.author && a.author.toLowerCase().includes(q))
-                || (a.excerpt && a.excerpt.toLowerCase().includes(q));
+                || (a.excerpt && a.excerpt.toLowerCase().includes(q))
+                || (Array.isArray(a.tags) && a.tags.join(' ').toLowerCase().includes(q));
         });
     }
 
@@ -488,6 +501,49 @@
         });
         movePillIndicator();
         renderFeed(true);
+    }
+
+    // ---------- Topic (tag) pills ----------
+    const topicGroup = document.getElementById('an-topic-group');
+
+    function setTopic(topic) {
+        currentTopic = topic;
+        if (topicGroup) {
+            topicGroup.querySelectorAll('.an-topic-pill').forEach(p => {
+                const is = p.dataset.topic === topic;
+                p.classList.toggle('active', is);
+                p.setAttribute('aria-pressed', is ? 'true' : 'false');
+            });
+        }
+        renderFeed(true);
+    }
+
+    // Build the topic pills from the tags that actually exist on the loaded
+    // stories, in canonical order. Hidden entirely if no story is tagged yet.
+    function renderTopicPills() {
+        if (!topicGroup) return;
+        const present = new Set();
+        for (const a of allArticles) {
+            if (Array.isArray(a.tags)) a.tags.forEach(t => present.add(t));
+        }
+        const ordered = TOPIC_ORDER.filter(t => present.has(t));
+        // Any tag not in the canonical order (future-proof) appended alphabetically.
+        const extras = Array.from(present).filter(t => !TOPIC_ORDER.includes(t)).sort();
+        const topics = ordered.concat(extras);
+
+        if (!topics.length) { topicGroup.hidden = true; return; }
+        topicGroup.hidden = false;
+
+        const btn = (topic, label) =>
+            `<button class="an-topic-pill${topic === currentTopic ? ' active' : ''}" data-topic="${escapeHtml(topic)}" aria-pressed="${topic === currentTopic ? 'true' : 'false'}">${escapeHtml(label)}</button>`;
+
+        topicGroup.innerHTML = `<span class="an-topic-label">Topics</span>`
+            + btn('all', 'All')
+            + topics.map(t => btn(t, t)).join('');
+
+        topicGroup.querySelectorAll('.an-topic-pill').forEach(p => {
+            p.addEventListener('click', () => setTopic(p.dataset.topic));
+        });
     }
 
     // ---------- Skeletons ----------
@@ -611,6 +667,7 @@
                     const spot = pickSpotlight(allArticles);
                     spotlightId = spot ? spot.id : null;
                     renderSpotlight(spot);
+                    renderTopicPills();
                     renderFeed(true);
                 }
                 // Always paint the hero from the (now-fresh) newest article.
@@ -632,6 +689,7 @@
         const spot = pickSpotlight(allArticles);
         spotlightId = spot ? spot.id : null;
         renderSpotlight(spot);
+        renderTopicPills();
         renderFeed(true);
         // Position indicator after layout settles
         requestAnimationFrame(movePillIndicator);

@@ -1450,7 +1450,7 @@
             <div class="container">
                 <div class="section-header">
                     <span class="eyebrow">Featured Stories</span>
-                    <h2 class="section-title">Latest from <em>The Catalyst.</em></h2>
+                    <h2 class="section-title">Featured Stories from <em>The Catalyst.</em></h2>
                     <p class="section-subtitle">Exploring groundbreaking research and the brilliant minds driving innovation in D.C. and beyond.</p>
                 </div>
 
@@ -1486,16 +1486,22 @@
         <section class="section">
             <div class="container">
                 <div class="section-header">
-                    <span class="eyebrow">The Archive</span>
-                    <h2 class="section-title">Latest <em>stories.</em></h2>
-                    <p class="section-subtitle">Explore profiles, features, and interviews from our contributors.</p>
+                    <span class="eyebrow">From the Archive</span>
+                    <h2 class="section-title">Browse <em>older stories.</em></h2>
+                    <p class="section-subtitle">Dig through profiles, features, and interviews from our contributors' back catalog.</p>
                 </div>
 
                 <!-- Category Pills -->
-                <div class="category-filters" style="margin-bottom: 40px;">
+                <div class="category-filters" style="margin-bottom: 24px;">
                     <a href="/articles" class="filter-btn active">All Articles</a>
                     <a href="/articles?category=editorial" class="filter-btn">Editorials</a>
                     <a href="brain-teaser" class="filter-btn">Brain Teaser</a>
+                </div>
+
+                <!-- Topic / tag pills — rendered by main.js from the tags on the
+                     loaded stories. Filters the grid below by subject. -->
+                <div class="topic-filters" id="home-topic-filters" role="group" aria-label="Filter stories by topic" hidden>
+                    <!-- Topic pills injected by JS -->
                 </div>
 
                 <!-- Articles Grid -->

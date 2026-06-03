@@ -14,19 +14,19 @@ body[data-page="book-reviews"] {
     --ink:          #0e1117;     /* slate-tinted near-black */
     --ink-deep:     #06080c;
     --ink-soft:     #181d28;
-    --ink-line:     rgba(247,244,237,0.10);
-    --paper:        #f7f4ed;     /* warm cream */
-    --paper-off:    #efe9da;
-    --paper-line:   #e2dccb;
+    --ink-line:     rgba(248,250,252,0.10);
+    --paper:        #f8fafc;     /* cool off-white — matches the home-page base */
+    --paper-off:    #eef1f5;
+    --paper-line:   #e5e7eb;
     --text:         #1a1d24;
     --text-muted:   #4a4f5c;
     --text-subtle:  #7a808d;
-    --accent:       #7a1f2b;     /* bookmark wine — the committed accent */
-    --accent-soft:  #c4525e;
-    --accent-deep:  #4a0f17;
-    --on-dark-text: #efe9da;
-    --on-dark-muted:rgba(239,233,218,0.62);
-    --on-dark-sub:  rgba(239,233,218,0.35);
+    --accent:       #41566e;     /* muted slate-blue — soft like the home-page background washes, not a bright blue */
+    --accent-soft:  #8a98ab;
+    --accent-deep:  #2a384a;
+    --on-dark-text: #eef1f5;
+    --on-dark-muted:rgba(238,241,245,0.62);
+    --on-dark-sub:  rgba(238,241,245,0.35);
 
     background: var(--paper);
     color: var(--text);
@@ -34,9 +34,9 @@ body[data-page="book-reviews"] {
     overflow-x: hidden;
 }
 
-/* The shared site header sits on cream here; nudge its contrast pieces. */
+/* The shared site header sits on cool off-white here; nudge its contrast pieces. */
 body[data-page="book-reviews"] .header {
-    background: rgba(247,244,237,0.85);
+    background: rgba(248,250,252,0.85);
     backdrop-filter: saturate(140%) blur(10px);
     -webkit-backdrop-filter: saturate(140%) blur(10px);
     border-bottom: 1px solid var(--paper-line);
@@ -94,12 +94,12 @@ body[data-page="book-reviews"] .header {
     animation: br-drift 22s ease-in-out infinite alternate;
 }
 .br-orb-1 { width: 520px; height: 520px; top: -120px;  left: -120px;
-            background: radial-gradient(circle, rgba(122,31,43,.65), transparent 70%); }
+            background: radial-gradient(circle, rgba(65,86,110,.65), transparent 70%); }
 .br-orb-2 { width: 460px; height: 460px; bottom: -140px; right: -100px;
-            background: radial-gradient(circle, rgba(196,82,94,.45), transparent 70%);
+            background: radial-gradient(circle, rgba(138,152,171,.45), transparent 70%);
             animation-duration: 28s; animation-direction: alternate-reverse; }
 .br-orb-3 { width: 340px; height: 340px; top: 38%;  right: 22%;
-            background: radial-gradient(circle, rgba(239,233,218,.18), transparent 70%);
+            background: radial-gradient(circle, rgba(238,241,245,.18), transparent 70%);
             animation-duration: 34s; }
 @keyframes br-drift {
     0%   { transform: translate(0,0) scale(1); }
@@ -110,9 +110,9 @@ body[data-page="book-reviews"] .header {
 .br-hero-grain {
     position: absolute; inset: 0;
     background-image:
-        radial-gradient(circle at 20% 30%, rgba(239,233,218,.04) 0, transparent 1px),
-        radial-gradient(circle at 70% 65%, rgba(239,233,218,.05) 0, transparent 1.5px),
-        radial-gradient(circle at 45% 80%, rgba(239,233,218,.03) 0, transparent 1px);
+        radial-gradient(circle at 20% 30%, rgba(238,241,245,.04) 0, transparent 1px),
+        radial-gradient(circle at 70% 65%, rgba(238,241,245,.05) 0, transparent 1.5px),
+        radial-gradient(circle at 45% 80%, rgba(238,241,245,.03) 0, transparent 1px);
     background-size: 6px 6px, 9px 9px, 11px 11px;
     opacity: .8;
     z-index: 1;
@@ -250,8 +250,8 @@ body[data-page="book-reviews"] .header {
 .br-hero-stack::before {
     z-index: -2;
     background:
-        linear-gradient(90deg, rgb(239 233 218 / .08) 1px, transparent 1px),
-        linear-gradient(0deg, rgb(239 233 218 / .06) 1px, transparent 1px);
+        linear-gradient(90deg, rgb(238 241 245 / .08) 1px, transparent 1px),
+        linear-gradient(0deg, rgb(238 241 245 / .06) 1px, transparent 1px);
     background-size: 42px 42px;
     opacity: calc(.08 + var(--br-glow) * .2);
     transform: translateZ(-120px) rotate(var(--br-orbit)) scale(calc(.92 + var(--br-spread) * .08));
@@ -265,8 +265,8 @@ body[data-page="book-reviews"] .header {
         conic-gradient(
             from var(--br-orbit),
             transparent 0deg,
-            rgb(239 233 218 / .16) 38deg,
-            rgb(196 82 94 / .2) 74deg,
+            rgb(238 241 245 / .16) 38deg,
+            rgb(138 152 171 / .2) 74deg,
             transparent 118deg,
             transparent 360deg
         );
@@ -285,7 +285,7 @@ body[data-page="book-reviews"] .header {
     border-radius: 4px;
     box-shadow:
         0 30px 60px -20px rgba(0,0,0,.55),
-        0 0 0 1px rgba(239,233,218,.06) inset;
+        0 0 0 1px rgba(238,241,245,.06) inset;
     overflow: hidden;
     /* Outer transform: spread + scale driven by scroll progress.
        Inner ::before/::after stay aligned because we wrap the
@@ -317,8 +317,8 @@ body[data-page="book-reviews"] .header {
 .br-hero-stack[data-spread="1"] .br-stack-book {
     box-shadow:
         0 60px 120px -20px rgba(0,0,0,.7),
-        0 24px 48px -26px rgba(196,82,94,.65),
-        0 0 0 1px rgba(239,233,218,.10) inset;
+        0 24px 48px -26px rgba(138,152,171,.65),
+        0 0 0 1px rgba(238,241,245,.10) inset;
 }
 .br-stack-book::before {
     /* spine highlight + gloss sweep + scanline. Sits ABOVE the cover image
@@ -330,7 +330,7 @@ body[data-page="book-reviews"] .header {
     background:
         linear-gradient(90deg, rgba(0,0,0,.42) 0 10px, rgba(255,255,255,.06) 11px, transparent 36px),
         linear-gradient(115deg, transparent 0 34%, rgba(255,255,255,.14) 46%, transparent 58%),
-        repeating-linear-gradient(0deg, transparent 0 11px, rgb(239 233 218 / .035) 12px, transparent 13px);
+        repeating-linear-gradient(0deg, transparent 0 11px, rgb(238 241 245 / .035) 12px, transparent 13px);
     background-size: auto, 220% 100%, auto;
     background-position: 0 0, var(--br-scan-x) 0, 0 0;
     opacity: calc(.55 + var(--br-glow) * .3);
@@ -397,11 +397,11 @@ body[data-page="book-reviews"] .header {
     --rs: -10deg; --rx: 7deg; --ry: -18deg; --sc: .32;
 }
 .br-stack-book-2 {
-    /* Front of the stack — lower-center, cream cover leads the eye. */
+    /* Front of the stack — lower-center, cool slate-grey cover leads the eye. */
     width: 62%;
     top: 22%;
     left: 18%;
-    background: linear-gradient(155deg, #ece4d2 0%, #d8cdb3 55%, #b6a98a 100%);
+    background: linear-gradient(155deg, #e7eaef 0%, #cdd3dc 55%, #aab2c0 100%);
     --r: -2deg;
     --tx: 30px; --ty: 130px; --tz: 110px;
     --rs: -6deg; --rx: 12deg; --ry: 7deg; --sc: .36;
@@ -538,8 +538,8 @@ body[data-page="book-reviews"] .header {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(122,31,43,.08);
-    border: 1px solid rgba(122,31,43,.18);
+    background: rgba(65,86,110,.08);
+    border: 1px solid rgba(65,86,110,.18);
     color: var(--accent);
     font-size: 11px;
     font-weight: 600;
@@ -647,7 +647,7 @@ body[data-page="book-reviews"] .header {
 .br-featured-cta:hover {
     background: var(--accent);
     transform: translateY(-2px);
-    box-shadow: 0 16px 32px -12px rgba(122,31,43,.5);
+    box-shadow: 0 16px 32px -12px rgba(65,86,110,.5);
 }
 .br-featured-cta svg { transition: transform .25s ease; }
 .br-featured-cta:hover svg { transform: translateX(4px); }
@@ -714,7 +714,7 @@ body[data-page="book-reviews"] .header {
 .br-rail-wrap {
     position: relative;
     z-index: 80;
-    background: rgba(247,244,237,.92);
+    background: rgba(248,250,252,.92);
     backdrop-filter: saturate(140%) blur(10px);
     -webkit-backdrop-filter: saturate(140%) blur(10px);
     border-bottom: 1px solid var(--paper-line);
@@ -781,7 +781,7 @@ body[data-page="book-reviews"] .header {
     border-radius: 4px;
     overflow: hidden;
     background:
-        radial-gradient(circle at 50% 30%, rgba(239,233,218,.05), transparent 60%),
+        radial-gradient(circle at 50% 30%, rgba(238,241,245,.05), transparent 60%),
         var(--ink-soft);
     box-shadow:
         0 20px 40px -16px rgba(14,17,23,.32),
@@ -1013,7 +1013,7 @@ body[data-page="book-reviews"] .header {
     background: var(--accent-soft);
     color: var(--ink);
     transform: translateY(-2px);
-    box-shadow: 0 18px 36px -12px rgba(196,82,94,.45);
+    box-shadow: 0 18px 36px -12px rgba(138,152,171,.45);
 }
 .br-pitch-cta:focus-visible {
     outline: 2px solid var(--accent-soft);
@@ -1136,7 +1136,7 @@ body[data-page="book-reviews"] .header {
     box-shadow:
         inset 0 0 0 6px var(--paper-off),
         inset 0 0 0 7px var(--accent),
-        0 12px 24px -16px rgba(122,31,43,.45);
+        0 12px 24px -16px rgba(65,86,110,.45);
     isolation: isolate;
 }
 .br-community-stamp::before {
@@ -1222,7 +1222,7 @@ body[data-page="book-reviews"] .header {
 .br-submit-cta:hover {
     background: var(--accent-deep);
     transform: translateY(-2px);
-    box-shadow: 0 18px 36px -12px rgba(122,31,43,.45);
+    box-shadow: 0 18px 36px -12px rgba(65,86,110,.45);
 }
 .br-submit-cta:focus-visible {
     outline: 2px solid var(--accent);
@@ -1340,7 +1340,7 @@ body[data-page="book-reviews"] .header {
 }
 .br-community-search:focus-within {
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+    box-shadow: 0 0 0 4px rgba(65,86,110,.12);
     background: #fff;
 }
 .br-community-search > svg {
@@ -1414,7 +1414,7 @@ body[data-page="book-reviews"] .header {
 .br-community-filter[data-open="true"] {
     z-index: 220;
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+    box-shadow: 0 0 0 4px rgba(65,86,110,.12);
     background: #fff;
 }
 .br-community-filter-label {
@@ -1525,7 +1525,7 @@ body[data-page="book-reviews"] .header {
 .br-shelf-option[aria-selected="true"] {
     color: var(--accent);
     font-weight: 600;
-    background: rgba(122,31,43,.06);
+    background: rgba(65,86,110,.06);
 }
 .br-shelf-option-check {
     width: 16px;
@@ -1616,7 +1616,7 @@ body[data-page="book-reviews"] .header {
     border-radius: 4px;
     overflow: hidden;
     background:
-        radial-gradient(circle at 50% 30%, rgba(239,233,218,.05), transparent 60%),
+        radial-gradient(circle at 50% 30%, rgba(238,241,245,.05), transparent 60%),
         var(--ink-soft);
     box-shadow:
         0 20px 40px -16px rgba(14,17,23,.32),
@@ -1744,8 +1744,8 @@ body[data-page="book-reviews"] .header {
     display: inline-flex;
     align-items: baseline;
     padding: 4px 10px;
-    background: rgba(122, 31, 43, 0.08);
-    border: 1px solid rgba(122, 31, 43, 0.18);
+    background: rgba(65,86,110, 0.08);
+    border: 1px solid rgba(65,86,110, 0.18);
     color: var(--accent-deep);
     border-radius: 999px;
     font-weight: 700;
@@ -1794,7 +1794,7 @@ body[data-page="book-reviews"] .header {
     font-weight: 600;
     color: var(--accent);
     text-decoration: none;
-    border-bottom: 1px solid rgba(122,31,43,.3);
+    border-bottom: 1px solid rgba(65,86,110,.3);
     padding-bottom: 1px;
     transition: border-color .2s, color .2s;
 }
@@ -1949,9 +1949,9 @@ body[data-page="book-reviews"] .header {
     display: inline-flex;
     align-items: baseline;
     padding: 4px 12px;
-    background: rgba(122,31,43,.09);
+    background: rgba(65,86,110,.09);
     color: var(--accent);
-    border: 1px solid rgba(122,31,43,.22);
+    border: 1px solid rgba(65,86,110,.22);
     border-radius: 999px;
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 15px;
@@ -2000,7 +2000,7 @@ body[data-page="book-reviews"] .header {
 .br-reviews-modal-search:focus-within,
 .br-reviews-modal-sort:focus-within {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(122,31,43,.10);
+    box-shadow: 0 0 0 3px rgba(65,86,110,.10);
     background: var(--paper);
 }
 .br-reviews-modal-search {
@@ -2127,7 +2127,7 @@ body[data-page="book-reviews"] .header {
 .br-reviews-modal-item {
     position: relative;
     padding: 22px 24px 20px;
-    background: linear-gradient(180deg, #fdfaf2 0%, #f7f4ed 100%);
+    background: linear-gradient(180deg, #fcfdfe 0%, #f8fafc 100%);
     border: 1px solid var(--paper-line);
     border-radius: 16px;
     display: grid;
@@ -2164,12 +2164,12 @@ body[data-page="book-reviews"] .header {
 }
 .br-reviews-modal-item:hover {
     transform: translateY(-1px);
-    border-color: rgba(122,31,43,.22);
+    border-color: rgba(65,86,110,.22);
     box-shadow:
         0 1px 0 rgba(14,17,23,.03),
         0 6px 18px -10px rgba(14,17,23,.18),
-        0 12px 32px -16px rgba(122,31,43,.12);
-    background: linear-gradient(180deg, #fefcf6 0%, #f9f5ec 100%);
+        0 12px 32px -16px rgba(65,86,110,.12);
+    background: linear-gradient(180deg, #fdfefe 0%, #f9fafc 100%);
 }
 .br-reviews-modal-item:hover::before {
     opacity: 1;
@@ -2219,7 +2219,7 @@ body[data-page="book-reviews"] .header {
     font-weight: 500;
 }
 .br-reviews-modal-item-byline mark {
-    background: rgba(122,31,43,.12);
+    background: rgba(65,86,110,.12);
     color: var(--accent-deep);
     padding: 1px 4px;
     border-radius: 3px;
@@ -2500,7 +2500,7 @@ body[data-page="book-reviews"] .header {
     outline: none;
     background: var(--paper);
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+    box-shadow: 0 0 0 4px rgba(65,86,110,.12);
 }
 .br-form-field .hint {
     font-size: 12px;
@@ -2535,7 +2535,7 @@ body[data-page="book-reviews"] .header {
 .br-rating-slider:focus-within {
     background: var(--paper);
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(122,31,43,.12);
+    box-shadow: 0 0 0 4px rgba(65,86,110,.12);
 }
 /* Star track — a thin row of stars that fills with accent color from
    left as the value rises. Positioned UNDER the slider thumb so the
@@ -2659,7 +2659,7 @@ body[data-page="book-reviews"] .header {
     border-radius: 50%;
     background: var(--paper);
     border: 2px solid var(--accent);
-    box-shadow: 0 3px 8px -2px rgba(122, 31, 43, .55);
+    box-shadow: 0 3px 8px -2px rgba(65,86,110, .55);
     cursor: grab;
     /* Center the 18px thumb on the 4px track: (4 - 18) / 2 = -7. */
     margin-top: -7px;
@@ -2675,7 +2675,7 @@ body[data-page="book-reviews"] .header {
     border-radius: 50%;
     background: var(--paper);
     border: 2px solid var(--accent);
-    box-shadow: 0 3px 8px -2px rgba(122, 31, 43, .55);
+    box-shadow: 0 3px 8px -2px rgba(65,86,110, .55);
     cursor: grab;
 }
 /* Firefox renders a tiny progress fill from 0 → thumb by default; the
@@ -2685,10 +2685,10 @@ body[data-page="book-reviews"] .header {
     background: transparent;
 }
 .br-rating-slider-input:focus-visible::-webkit-slider-thumb {
-    box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
+    box-shadow: 0 0 0 4px rgba(65,86,110, .22);
 }
 .br-rating-slider-input:focus-visible::-moz-range-thumb {
-    box-shadow: 0 0 0 4px rgba(122, 31, 43, .22);
+    box-shadow: 0 0 0 4px rgba(65,86,110, .22);
 }
 .br-rating-slider-input:active::-webkit-slider-thumb { cursor: grabbing; transform: scale(1.1); }
 .br-rating-slider-input:active::-moz-range-thumb     { cursor: grabbing; transform: scale(1.1); }
@@ -2736,8 +2736,8 @@ body[data-page="book-reviews"] .header {
     .br-rating-slider-input::-webkit-slider-thumb { transition: none; }
 }
 .br-form-error {
-    background: rgba(122,31,43,.08);
-    border: 1px solid rgba(122,31,43,.22);
+    background: rgba(65,86,110,.08);
+    border: 1px solid rgba(65,86,110,.22);
     color: var(--accent-deep);
     padding: 12px 14px;
     border-radius: 10px;

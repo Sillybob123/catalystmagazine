@@ -117,10 +117,88 @@ window.layoutReady = Promise.all([
 ]).then(() => {
     setupNewsletterModal();
     setupMobileNav();
+    setupNavFitGuard();
     setupWelcomePopup();
 }).catch(error => {
     console.error('[Layout] Error loading shared fragments', error);
 });
+
+// Runtime nav-fit guard. The CSS media query that swaps the desktop nav for the
+// mobile hamburger uses a fixed pixel breakpoint, but the real width the desktop
+// nav needs depends on the rendered font — Poppins loads async from Google Fonts
+// and renders wider than the system fallback, so on a real browser the nav can
+// overflow the bar (Subscribe button escaping) at widths the breakpoint thinks
+// are fine. This measures the ACTUAL layout and forces mobile mode whenever the
+// desktop nav doesn't fit, independent of font/browser/breakpoint. If it fits,
+// it goes mobile, period — that's the guarantee the pixel breakpoint can't make.
+function setupNavFitGuard() {
+    const header = document.querySelector('.header');
+    const navContainer = header && header.querySelector('.nav-container');
+    const brand = navContainer && navContainer.querySelector('.brand');
+    const navMenu = navContainer && navContainer.querySelector('.nav-menu');
+    const cta = navContainer && navContainer.querySelector('.nav-cta');
+    if (!header || !navContainer || !brand || !navMenu || !cta) return;
+
+    const measure = () => {
+        // Clear our forced class first so we read the TRUE desktop layout
+        // (otherwise we'd be measuring the mobile layout we just imposed).
+        document.body.classList.remove('nav-force-mobile');
+
+        // Force a reflow so the geometry below reflects the un-forced layout.
+        void header.offsetWidth;
+
+        // If the CSS media query is already in mobile mode (narrow viewport),
+        // the menu-toggle is visible — let the media query own it, stay off.
+        const toggle = header.querySelector('.menu-toggle');
+        if (toggle && getComputedStyle(toggle).display !== 'none') return;
+
+        // Desktop mode. Sum the real rendered widths of the three nav columns
+        // (brand + the nav links + the CTA) plus the flex gaps. We measure each
+        // link's own width rather than nav-menu.scrollWidth, because a flex row
+        // doesn't report overflow via scrollWidth. This reflects the ACTUAL
+        // font in the user's browser, so a wide Poppins render is caught.
+        const cs = getComputedStyle(header);
+        const padL = parseFloat(cs.paddingLeft) || 0;
+        const padR = parseFloat(cs.paddingRight) || 0;
+        const innerWidth = header.clientWidth - padL - padR;
+
+        const ncs = getComputedStyle(navContainer);
+        const containerGap = parseFloat(ncs.columnGap || ncs.gap) || 24;
+
+        // nav links natural width = sum of each link's own rendered width + the
+        // gaps. Measuring the <a> elements (not the <li>) reflects the real text
+        // box under whatever font actually rendered, so a wide Poppins is caught.
+        const links = Array.from(navMenu.querySelectorAll('.nav-link'));
+        const menuGap = parseFloat(getComputedStyle(navMenu).columnGap || getComputedStyle(navMenu).gap) || 0;
+        const menuWidth = links.reduce((sum, a) => sum + a.getBoundingClientRect().width, 0)
+            + Math.max(0, links.length - 1) * menuGap;
+
+        const natural = brand.getBoundingClientRect().width
+            + menuWidth
+            + cta.getBoundingClientRect().width
+            + containerGap * 2;
+
+        // Safety buffer: the bar's rounded ends curve in ~33px each side, so
+        // demand a bit more than that so the CTA never touches the corner.
+        const SAFETY = 36;
+        const fits = natural + SAFETY <= innerWidth;
+
+        document.body.classList.toggle('nav-force-mobile', !fits);
+    };
+
+    // Measure now, after the next frame, after fonts load, and on resize —
+    // each of these can change the rendered nav width.
+    const run = () => requestAnimationFrame(measure);
+    run();
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(run);
+        // Poppins specifically — load() resolves when that face is ready.
+        try { document.fonts.load('600 16px Poppins').then(run).catch(() => {}); } catch (_) {}
+    }
+    window.addEventListener('load', run);
+    let t;
+    window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(measure, 80); });
+}
 
 // Mobile hamburger menu. Lives here so every page works — previously this
 // handler was only bound in main.js, which pages like /articles

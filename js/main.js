@@ -765,16 +765,78 @@ function initFeaturedStoriesGrid(data = []) {
     registerFadeIn(grid);
 }
 
+// Canonical topic-tag order for the home archive pills. Only tags that actually
+// appear on the loaded stories get a pill; this controls their order.
+const HOME_TOPIC_ORDER = ['AI', 'Health', 'Medicine', 'Biology', 'Chemistry',
+    'Public Health', 'Physics', 'Environment', 'Space', 'Neuroscience',
+    'Technology', 'Policy'];
+let homeArticleData = [];
+let homeCurrentTopic = 'all';
+
 function initHomeArticles(data) {
     const grid = document.getElementById('home-articles-grid');
     if (!grid || !Array.isArray(data)) return;
 
-    // Skip the first 8 (already shown above), show next 12 articles
-    const homeArticles = data.slice(8, 20);
+    homeArticleData = data;
+    renderHomeTopicPills(data);
+    renderHomeArticleGrid();
+}
 
-    grid.innerHTML = homeArticles.map(article => createArticleCard(article)).join('');
+// Render the home archive grid for the currently-selected topic. When no topic
+// is selected we keep the original behaviour (skip the first 8 shown above,
+// show the next 12). When a topic is active we show every matching story from
+// the full set so the filter feels complete.
+function renderHomeArticleGrid() {
+    const grid = document.getElementById('home-articles-grid');
+    if (!grid) return;
+
+    let list;
+    if (homeCurrentTopic === 'all') {
+        list = homeArticleData.slice(8, 20);
+    } else {
+        list = homeArticleData.filter(a =>
+            Array.isArray(a.tags) && a.tags.includes(homeCurrentTopic)).slice(0, 12);
+    }
+
+    if (!list.length) {
+        grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:32px 0;">No stories tagged “${homeCurrentTopic}” yet.</p>`;
+        return;
+    }
+
+    grid.innerHTML = list.map(article => createArticleCard(article)).join('');
     registerFadeIn(grid);
     registerProgressiveImages(grid);
+}
+
+function renderHomeTopicPills(data) {
+    const wrap = document.getElementById('home-topic-filters');
+    if (!wrap) return;
+
+    const present = new Set();
+    for (const a of data) if (Array.isArray(a.tags)) a.tags.forEach(t => present.add(t));
+    const ordered = HOME_TOPIC_ORDER.filter(t => present.has(t));
+    const extras = Array.from(present).filter(t => !HOME_TOPIC_ORDER.includes(t)).sort();
+    const topics = ordered.concat(extras);
+
+    if (!topics.length) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    const pill = (topic, label) =>
+        `<button type="button" class="topic-pill${topic === homeCurrentTopic ? ' active' : ''}" data-topic="${escapeHtmlAttr(topic)}" aria-pressed="${topic === homeCurrentTopic ? 'true' : 'false'}">${escapeHtmlAttr(label)}</button>`;
+
+    wrap.innerHTML = pill('all', 'All Topics') + topics.map(t => pill(t, t)).join('');
+
+    wrap.querySelectorAll('.topic-pill').forEach(p => {
+        p.addEventListener('click', () => {
+            homeCurrentTopic = p.dataset.topic;
+            wrap.querySelectorAll('.topic-pill').forEach(b => {
+                const is = b.dataset.topic === homeCurrentTopic;
+                b.classList.toggle('active', is);
+                b.setAttribute('aria-pressed', is ? 'true' : 'false');
+            });
+            renderHomeArticleGrid();
+        });
+    });
 }
 
 // ============================================
@@ -1709,6 +1771,8 @@ function renderArticleDetail(article) {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 </button>
             </div>
+
+            ${articleNewsletterNudge()}
         </div>
     `;
 
@@ -1716,10 +1780,42 @@ function renderArticleDetail(article) {
     registerProgressiveImages(container);
     hydrateQuizzes(container);
     mountArticleGame(container, article);
+    // Wire the just-injected end-of-article newsletter form so it posts to
+    // /api/subscribe (newsletter-handler.js binds any form[data-newsletter-form]).
+    if (typeof window.initNewsletterForms === 'function') {
+        window.initNewsletterForms();
+    }
     if (typeof window.applyGlossary === 'function') {
         const body = container.querySelector('.article-body');
         if (body) window.applyGlossary(body);
     }
+}
+
+// Small end-of-article newsletter prompt. Sits after the share row so readers
+// who finished the piece get a gentle, low-friction nudge to subscribe. Posts
+// inline to /api/subscribe via the shared newsletter handler — no extra click,
+// no modal. Already-subscribed readers get a friendly "you're on the list" reply.
+function articleNewsletterNudge() {
+    return `
+        <aside class="article-newsletter" aria-labelledby="article-nl-title">
+            <div class="article-newsletter__glow" aria-hidden="true"></div>
+            <div class="article-newsletter__inner">
+                <p class="article-newsletter__eyebrow">Enjoyed this story?</p>
+                <h3 class="article-newsletter__title" id="article-nl-title">Are you signed up for our newsletter yet?</h3>
+                <p class="article-newsletter__copy">Get our strongest stories, D.C. STEM spotlights, and interviews — straight to your inbox. No spam, ever.</p>
+                <form class="article-newsletter__form" data-newsletter-form="article-footer" novalidate>
+                    <label class="sr-only" for="article-nl-email">Email address</label>
+                    <input type="email" id="article-nl-email" name="EMAIL" class="article-newsletter__input" placeholder="you@example.com" required autocomplete="email" inputmode="email">
+                    <button type="submit" class="article-newsletter__btn">
+                        Subscribe
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </button>
+                    <div class="newsletter-response article-newsletter__response" aria-live="polite"></div>
+                </form>
+                <p class="article-newsletter__fineprint">Read by students at GW, Georgetown, Howard, American &amp; UMD. Unsubscribe anytime.</p>
+            </div>
+        </aside>
+    `;
 }
 
 // =============================================================
@@ -2170,6 +2266,8 @@ function renderBookReviewDetail(article, container) {
                     <div class="brx-shelf-grid" role="list"></div>
                 </section>
 
+                ${articleNewsletterNudge()}
+
                 <a class="brx-cta" href="/book-reviews">
                     <span>Explore more Catalyst Reviews</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -2183,6 +2281,10 @@ function renderBookReviewDetail(article, container) {
     mountBookReviewCoverFallback(container);
     mountReadingProgress();
     renderRelatedBookReviews(article, container);
+    // Wire the just-injected newsletter form (same handler as the article one).
+    if (typeof window.initNewsletterForms === 'function') {
+        window.initNewsletterForms();
+    }
 
     // ── Cover upgrade pass ──
     // The hero <img> has already been set to the best URL we knew about
@@ -3118,7 +3220,7 @@ async function loadFromFirestore() {
     // bookAuthor, rating, isbn) to the shared query projection. Old v4
     // caches don't carry those fields, which is why fresh book reviews
     // weren't appearing on /book-reviews after publish.
-    const CACHE_KEY = 'catalyst_fs_cache_v5';
+    const CACHE_KEY = 'catalyst_fs_cache_v6';
     try {
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) return JSON.parse(cached);

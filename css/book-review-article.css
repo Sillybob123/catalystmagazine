@@ -16,8 +16,8 @@ body[data-page="article"].is-book-review {
     --brx-text:       #1a1d24;
     --brx-text-muted: #4a4f5c;
     --brx-text-sub:   #7a808d;
-    --brx-accent:     #7a1f2b;
-    --brx-accent-soft:#c4525e;
+    --brx-accent:     #41566e;
+    --brx-accent-soft:#8a98ab;
     --brx-on-dark:    #efe9da;
 
     background: var(--brx-paper);
@@ -256,7 +256,7 @@ body[data-page="article"].is-book-review .back-link:hover {
     /* Warm paper tone behind the cover so the moment between load
        states reads as a book on a shelf rather than a blank rectangle. */
     background:
-        radial-gradient(circle at 50% 30%, rgba(239,233,218,.08), transparent 60%),
+        radial-gradient(circle at 50% 30%, rgba(238,241,245,.08), transparent 60%),
         var(--brx-ink-soft);
     box-shadow:
         0 50px 60px -30px rgba(14,17,23,.45),
@@ -288,7 +288,7 @@ body[data-page="article"].is-book-review .back-link:hover {
     object-fit: contain;
     padding: 30%;
     background:
-        radial-gradient(circle at 50% 40%, rgba(239,233,218,.04), transparent 60%),
+        radial-gradient(circle at 50% 40%, rgba(238,241,245,.04), transparent 60%),
         var(--brx-ink-soft);
 }
 .brx-cover::after {
@@ -347,7 +347,7 @@ body[data-page="article"].is-book-review .back-link:hover {
     border-radius: 50%;
     background: conic-gradient(var(--brx-accent) calc(var(--score, 0) * 1%), var(--brx-paper-line) 0);
     flex: 0 0 auto;
-    box-shadow: 0 8px 22px -10px rgba(122,31,43,.35);
+    box-shadow: 0 8px 22px -10px rgba(65,86,110,.35);
 }
 .brx-rating-dial::before {
     content: '';
@@ -600,7 +600,7 @@ body[data-page="article"].is-book-review .back-link:hover {
 }
 .brx-body a {
     color: var(--brx-accent);
-    border-bottom: 1px solid rgba(122,31,43,0.3);
+    border-bottom: 1px solid rgba(65,86,110,0.3);
     text-decoration: none;
     transition: border-color .2s;
 }
@@ -709,7 +709,7 @@ body[data-page="article"].is-book-review .back-link:hover {
 .brx-cta:hover {
     background: var(--brx-accent);
     transform: translateY(-2px);
-    box-shadow: 0 18px 36px -12px rgba(122,31,43,.45);
+    box-shadow: 0 18px 36px -12px rgba(65,86,110,.45);
 }
 .brx-cta:focus-visible {
     outline: 2px solid var(--brx-accent);
@@ -793,7 +793,7 @@ body[data-page="article"].is-book-review .back-link:hover {
 }
 .brx-shelf-card:hover {
     transform: translateY(-4px);
-    border-color: rgba(122,31,43,.32);
+    border-color: rgba(65,86,110,.32);
     box-shadow: 0 22px 44px -22px rgba(14,17,23,.18);
 }
 .brx-shelf-card:focus-visible {
@@ -833,7 +833,7 @@ body[data-page="article"].is-book-review .back-link:hover {
     letter-spacing: .14em;
     text-transform: uppercase;
     color: var(--brx-accent);
-    background: rgba(122,31,43,.08);
+    background: rgba(65,86,110,.08);
     padding: 4px 9px;
     border-radius: 999px;
     margin-bottom: 6px;

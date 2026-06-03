@@ -11,7 +11,7 @@
 
     const FALLBACK_IMAGE = '/NewsletterHeader1.png';
     const PAGE_SIZE      = 9;
-    const CACHE_KEY      = 'catalyst_fs_cache_v5'; // shared with articles-new.js / main.js
+    const CACHE_KEY      = 'catalyst_fs_cache_v6'; // shared with articles-new.js / main.js
 
     // ---------- DOM refs ----------
     const featuredEl   = document.getElementById('br-featured');
