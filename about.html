@@ -745,6 +745,68 @@
             margin-top: 4px;
         }
 
+        /* ── ROSTER GROUPS ── E-Board / Staff / Fellowship sections inside the
+              dark team band. Each group gets a labeled header, then one or more
+              grids of member cards. The #team-grid container is no longer a grid
+              itself — the grids live inside each group. */
+        body[data-page="about"] .team-roster {
+            display: flex;
+            flex-direction: column;
+            gap: 72px;
+        }
+        body[data-page="about"] .team-group {
+            scroll-margin-top: 90px;
+        }
+        body[data-page="about"] .team-group-header {
+            margin: 0 0 8px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid rgba(255,255,255,0.14);
+        }
+        body[data-page="about"] .team-group-title {
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            color: var(--paper);
+            margin: 0;
+            line-height: 1.1;
+        }
+        body[data-page="about"] .team-group-blurb {
+            color: rgba(255,255,255,0.62);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 10px 0 0;
+            max-width: 620px;
+        }
+        /* Sub-cluster label (e.g. "Editing" / "Social Media" within Staff) */
+        body[data-page="about"] .team-cluster-label {
+            font-size: 0.66rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.55);
+            margin: 36px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        body[data-page="about"] .team-cluster-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.12);
+        }
+        /* The grid inside each group: the global .team-grid adds margin-top:48px,
+           which is too much directly under a group header — tighten it. */
+        body[data-page="about"] .team-group .team-grid {
+            margin-top: 28px;
+        }
+        body[data-page="about"] .team-group .team-cluster-label + .team-grid {
+            margin-top: 18px;
+        }
+        @media (max-width: 900px) {
+            body[data-page="about"] .team-roster { gap: 52px; }
+        }
+
         /* ── COMMITMENT cards inherit the about-card refinements above ── */
 
         /* ── TEAM MEMBER CARDS ── crisp white containers, dark text inside,
@@ -1043,20 +1105,8 @@
                     <p class="section-subtitle">Students from across the D.C. area united by a commitment to rigorous, accessible science journalism</p>
                 </div>
 
-                <!-- Team Stats -->
-                <div class="team-stats">
-                    <div class="team-stat">
-                        <span class="team-stat-number">19</span>
-                        <span class="team-stat-label">Team Members</span>
-                    </div>
-                    <div class="team-stat">
-                        <span class="team-stat-number">5</span>
-                        <span class="team-stat-label">Universities</span>
-                    </div>
-                </div>
-
-                <div class="team-grid" id="team-grid">
-                    <!-- Team members will be loaded here by JavaScript -->
+                <div class="team-roster" id="team-grid">
+                    <!-- Team groups (E-Board, Staff, Fellows) loaded here by JavaScript -->
                 </div>
 
                 <div style="text-align: center; margin-top: 48px;">
@@ -1069,7 +1119,6 @@
         <section class="section" id="alumni">
             <div class="container">
                 <div class="section-header">
-                    <span class="eyebrow">Alumni</span>
                     <h2 class="section-title">Alumni</h2>
                     <p class="section-subtitle">Former team members who helped build The Catalyst</p>
                 </div>
