@@ -446,6 +446,12 @@ img {
   width: calc(100% - 64px);
   max-width: 1400px;
   z-index: 1000;
+  /* Pin the shared nav to the brand font. The header markup is identical on
+     every page, but some pages (articles, book-reviews, article) set a different
+     body font (Inter) on <body>, which the header would otherwise inherit —
+     making the nav's letter widths/heights differ between pages. Declaring the
+     font here keeps the header visually identical everywhere it appears. */
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
   /* Horizontal padding MUST exceed the pill's corner radius (the bar is fully
      rounded, ~33px effective radius at this height). With less, the logo and
      the Subscribe button sit *under* the rounded corner and get visually
