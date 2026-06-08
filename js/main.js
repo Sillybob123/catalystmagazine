@@ -4311,7 +4311,7 @@ const rosterGroups = [
         title: "Graduate Fellowship",
         blurb: "Graduate fellows bringing advanced research perspectives to the magazine.",
         clusters: [
-            { members: ["Aidan Brown", "Lori Preci", "Skye Schurr", "Cameron Fields", "Catherine May May Hubbard", "Le Nguyen"] }
+            { members: ["Aidan Brown", "Belinda", "Lori Preci", "Skye Schurr", "Cameron Fields", "Catherine May May Hubbard", "Le Nguyen"] }
         ]
     }
 ];
