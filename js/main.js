@@ -4142,8 +4142,16 @@ const teamMembers = [
     {
         name: "Alexis Tamm",
         role: "Writer",
-        bio: "Alexis is a recent Georgetown University graduate with a major in English and minors in Psychology and Spanish. As an avid reader and writer, she is passionate about journalism and is particularly interested in bridging the gap between academic research and the general public through clear, accessible storytelling, with aims to pursue journalism professionally.",
+        bio: "Alexis is a recent Georgetown University graduate with a degree in English, a minor in Spanish, and magna cum laude honors. As an avid reader and writer, she is passionate about science communication and is particularly interested in bridging the gap between academic research and the general public through clear, accessible storytelling. Her writing has been published in multiple outlets, and she is always excited to apply her journalistic skillset to The Catalyst in exploring new developments in STEM and sharing them with a broader audience.",
         image: "/Alexis.webp",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Belinda",
+        role: "Writer",
+        bio: "Belinda is a recent graduate of Georgetown University, where she majored in biology and minored in journalism. She has an interest in science writing and journalism, and she is passionate about making science more accessible to a lay audience. Her interest in science communication was shaped through her work as an intern at NASA's Goddard Space Flight Center, where she contributed to projects bridging technical advancements and public understanding. Belinda is fascinated by all areas of science, and she hopes to continue exploring and sharing about science in her future career.",
+        image: "/Belinda.webp",
         linkedin: "",
         email: ""
     },
@@ -4160,14 +4168,6 @@ const teamMembers = [
         role: "Writer",
         bio: "Izzy is a George Washington University Presidential Scholar pursuing a double major in Biology and Environmental Science, with concentrations in Ecology, Evolution, and Environment and Ecological Management. At The Catalyst, she utilizes her background as an Anatomy Laboratory Technician and a meta-analysis ecological researcher to make complex biological topics accessible to a wider audience. Her interest in STEM is driven by a passion for urban ecology and climate resilience, often exploring how green infrastructure can bridge the gap between academic research and community well-being in D.C.",
         image: "/Izzy.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
-        name: "Azza Uwhubetine",
-        role: "Writer",
-        bio: "Azza is a senior at George Washington University pursuing a degree in English with a minor in Astronomy. At The Catalyst, she hopes to merge her love for science, particularly physics, with the journalistic and publishing world. Azza has previously held positions at various publishing organizations, gaining experience in editorial writing and storytelling, and also runs a non-profit dedicated to supporting children in West African communities.",
-        image: "/Azza.webp",
         linkedin: "",
         email: ""
     },
@@ -4247,6 +4247,14 @@ const alumniMembers = [
         email: ""
     },
     {
+        name: "Azza Uwhubetine",
+        role: "Writer",
+        bio: "Azza studied English with a minor in Astronomy at George Washington University. At The Catalyst, she merged her love for science, particularly physics, with the journalistic and publishing world. Azza has held positions at various publishing organizations, gaining experience in editorial writing and storytelling, and also runs a non-profit dedicated to supporting children in West African communities.",
+        image: "/Azza.webp",
+        linkedin: "",
+        email: ""
+    },
+    {
         name: "Stephanie Solomon",
         role: "Former Editor",
         bio: "Stephanie is a Georgetown University junior studying History, Spanish, and World Affairs, with a strong background in journalism, policy research, and editorial work. At The Catalyst Magazine, she ensured every piece met high standards for accuracy and clarity, drawing on her experience in investigative writing, political communications, and media strategy. Her sharp editorial eye kept the magazine grounded in both integrity and impact, and she plans to translate these analytical writing skills into the legal field.",
@@ -4286,7 +4294,7 @@ const rosterGroups = [
         id: "staff",
         title: "Staff",
         clusters: [
-            { subtitle: "Editing", members: ["Alexis Tamm", "Le Nguyen", "Aidan Schurr", "Lori Preci"] },
+            { subtitle: "Editing", members: ["Belinda", "Alexis Tamm", "Le Nguyen", "Aidan Schurr", "Lori Preci"] },
             { subtitle: "Social Media", members: ["Skye Schurr", "Cameron Fields"] }
         ]
     },
@@ -4295,7 +4303,7 @@ const rosterGroups = [
         title: "Undergraduate Fellowship",
         blurb: "Undergraduate writers reporting across the D.C. STEM landscape.",
         clusters: [
-            { members: ["Sienna Halstead", "Izzy Lubinsky", "Ginger Taurek", "LaMyla Hill", "Layla Abdoulaye", "Josh Shapo", "Azza Uwhubetine"] }
+            { members: ["Sienna Halstead", "Izzy Lubinsky", "Ginger Taurek", "LaMyla Hill", "Layla Abdoulaye", "Josh Shapo"] }
         ]
     },
     {
