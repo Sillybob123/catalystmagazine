@@ -4116,6 +4116,14 @@ const teamMembers = [
         email: ""
     },
     {
+        name: "Dani",
+        role: "Executive Board",
+        bio: "Dani is a senior at Cornell University pursuing a B.A. in Information Science with a concentration in UX and a minor in Business. She is passionate about digital storytelling, user-centered design, and the ways emerging technologies can help people discover and engage with new ideas. Her interests lie at the intersection of technology, communication, and artificial intelligence, particularly how thoughtful design can make complex information more accessible and engaging. At The Catalyst, Dani is excited to help grow the publication's reach, strengthen its online community, and connect more readers with the stories shaping the future of STEM.",
+        image: "/Dani.webp",
+        linkedin: "",
+        email: ""
+    },
+    {
         name: "Le Nguyen",
         role: "Writer",
         bio: "Le is a recent George Washington University graduate with a degree in Neuroscience, a minor in Creative Writing, and summa cum laude honors. With extensive research experience spanning neurodevelopment, cardiology, and pulmonary medicine at institutions including GWU School of Medicine, Johns Hopkins, and Minneapolis Heart Institute, Le brings a unique blend of scientific rigor and narrative skill to The Catalyst. Currently in his gap year working as an IR Medical Assistant at Beth Israel Deaconess Medical Center, Le is passionate about the intersections of medicine, research, and health equity as he prepares to pursue medical school.",
@@ -4287,7 +4295,7 @@ const rosterGroups = [
         id: "eboard",
         title: "Executive Board",
         clusters: [
-            { members: ["Aidan Schurr", "Yair Ben-Dor", "Lori Preci"] }
+            { members: ["Aidan Schurr", "Yair Ben-Dor", "Lori Preci", "Dani"] }
         ]
     },
     {
