@@ -4116,8 +4116,8 @@ const teamMembers = [
         email: ""
     },
     {
-        name: "Dani",
-        role: "Executive Board",
+        name: "Dani Molloy",
+        role: "Head UX Designer, Social Media Management",
         bio: "Dani is a senior at Cornell University pursuing a B.A. in Information Science with a concentration in UX and a minor in Business. She is passionate about digital storytelling, user-centered design, and the ways emerging technologies can help people discover and engage with new ideas. Her interests lie at the intersection of technology, communication, and artificial intelligence, particularly how thoughtful design can make complex information more accessible and engaging. At The Catalyst, Dani is excited to help grow the publication's reach, strengthen its online community, and connect more readers with the stories shaping the future of STEM.",
         image: "/Dani.webp",
         linkedin: "",
@@ -4156,7 +4156,7 @@ const teamMembers = [
         email: ""
     },
     {
-        name: "Belinda",
+        name: "Belinda Li",
         role: "Writer",
         bio: "Belinda is a recent graduate of Georgetown University, where she majored in biology and minored in journalism. She has an interest in science writing and journalism, and she is passionate about making science more accessible to a lay audience. Her interest in science communication was shaped through her work as an intern at NASA's Goddard Space Flight Center, where she contributed to projects bridging technical advancements and public understanding. Belinda is fascinated by all areas of science, and she hopes to continue exploring and sharing about science in her future career.",
         image: "/Belinda.webp",
@@ -4295,14 +4295,14 @@ const rosterGroups = [
         id: "eboard",
         title: "Executive Board",
         clusters: [
-            { members: ["Aidan Schurr", "Yair Ben-Dor", "Lori Preci", "Dani"] }
+            { members: ["Aidan Schurr", "Yair Ben-Dor", "Lori Preci", "Dani Molloy"] }
         ]
     },
     {
         id: "staff",
         title: "Staff",
         clusters: [
-            { subtitle: "Editing", members: ["Belinda", "Alexis Tamm", "Le Nguyen", "Aidan Schurr", "Lori Preci"] },
+            { subtitle: "Editing", members: ["Belinda Li", "Alexis Tamm", "Le Nguyen", "Aidan Schurr", "Lori Preci"] },
             { subtitle: "Social Media", members: ["Skye Schurr", "Cameron Fields"] }
         ]
     },
@@ -4319,7 +4319,7 @@ const rosterGroups = [
         title: "Graduate Fellowship",
         blurb: "Graduate fellows bringing advanced research perspectives to the magazine.",
         clusters: [
-            { members: ["Aidan Brown", "Belinda", "Lori Preci", "Skye Schurr", "Cameron Fields", "Catherine May May Hubbard", "Le Nguyen"] }
+            { members: ["Aidan Brown", "Belinda Li", "Lori Preci", "Skye Schurr", "Cameron Fields", "Catherine May May Hubbard", "Le Nguyen"] }
         ]
     }
 ];

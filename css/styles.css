@@ -2452,8 +2452,8 @@ img {
    card looks the same size. */
 .team-member-card[data-member="josh-shapo"] .team-member-image,
 .team-member-card[data-member="cameron"] .team-member-image,
-.team-member-card[data-member="belinda"] .team-member-image,
-.team-member-card[data-member="dani"] .team-member-image {
+.team-member-card[data-member="belinda-li"] .team-member-image,
+.team-member-card[data-member="dani-molloy"] .team-member-image {
   transform: scale(1.12);
 }
 
