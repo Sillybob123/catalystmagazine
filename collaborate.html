@@ -989,11 +989,18 @@
             width: 100%;
             letter-spacing: -0.005em;
         }
-        main .btn svg {
+        /* The collab modals live OUTSIDE <main>, so a `main .btn svg` rule
+           alone leaves their button arrows unconstrained — an SVG with a
+           viewBox but no width/height then expands to fill the button (the
+           "giant arrow" bug). Scope the sizing to both contexts. */
+        main .btn svg,
+        .collab-modal-backdrop .btn svg {
             width: 16px; height: 16px;
+            flex-shrink: 0;
             transition: transform 0.3s var(--ease-emphasized);
         }
-        main .btn:hover svg { transform: translateX(4px); }
+        main .btn:hover svg,
+        .collab-modal-backdrop .btn:hover svg { transform: translateX(4px); }
         main .btn::after {
             content: '';
             position: absolute;
@@ -1656,7 +1663,7 @@
                     </div>
                     <button type="submit" class="btn btn-indigo">
                         Submit proposal
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </button>
                     <p class="collab-form-status" data-status></p>
                 </form>
@@ -1717,7 +1724,7 @@
                     </div>
                     <button type="submit" class="btn btn-indigo">
                         Submit application
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </button>
                     <p class="collab-form-status" data-status></p>
                 </form>
