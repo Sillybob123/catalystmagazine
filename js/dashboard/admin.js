@@ -257,6 +257,16 @@ function renderRow(a, editors, ctx, reload) {
         // book reviews, which read the same cache key) shows up on the
         // next /book-reviews or /articles load without a hard refresh.
         try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+        // Congratulate the author by email (CC admins). Best-effort and
+        // idempotent server-side — never block or fail the publish on it.
+        try {
+          await ctx.authedFetch("/api/notify/published", {
+            method: "POST",
+            body: JSON.stringify({ storyId: a.id }),
+          });
+        } catch (notifyErr) {
+          console.warn("published notify failed (non-blocking):", notifyErr);
+        }
         ctx.toast("Published.", "success");
         reload();
       } catch (err) { ctx.toast("Publish failed: " + err.message, "error"); }
@@ -1264,6 +1274,20 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       // pick up the edit on their very next load instead of waiting for
       // the per-tab sessionStorage cache to expire.
       try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+      // If this save is what flips the story to "published" (it wasn't before),
+      // congratulate the author by email (CC admins). Best-effort + idempotent
+      // server-side — never block the save on it. Editing an already-published
+      // story won't re-trigger because the prior status was already published.
+      if (status === "published" && story.status !== "published") {
+        try {
+          await ctx.authedFetch("/api/notify/published", {
+            method: "POST",
+            body: JSON.stringify({ storyId }),
+          });
+        } catch (notifyErr) {
+          console.warn("published notify failed (non-blocking):", notifyErr);
+        }
+      }
       ctx.toast("Story updated.", "success");
       m.close();
       onDone && onDone();

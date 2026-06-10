@@ -55,7 +55,18 @@ async function resolveAuthorEmail(env, authorId) {
 // Best-effort: email the author that their story is approved + published, with
 // a link to the live article, CC'ing the admins. Never throws — a mail failure
 // must not fail the publish. Returns a small status object for the response.
-async function sendAuthorPublishedEmail(env, { authorId, authorName, title, articleUrl, category, siteUrl }) {
+//
+// Shares the bot_event_notify_log/{storyId}_published dedup key with
+// /api/notify/published (which the dashboard calls), so a story can never
+// trigger two congratulations emails even if both paths fire for it.
+async function sendAuthorPublishedEmail(env, { storyId, authorId, authorName, title, articleUrl, category, siteUrl }) {
+  // Idempotency: one congratulations email per published story, ever.
+  const logPath = `bot_event_notify_log/${storyId}_published`;
+  const existing = await firestoreGet(env, logPath);
+  if (existing) {
+    return { sent: false, deduped: true };
+  }
+
   const authorEmail = await resolveAuthorEmail(env, authorId);
   if (!authorEmail) {
     return { sent: false, skipped: true, reason: "no author email on record" };
@@ -82,6 +93,16 @@ async function sendAuthorPublishedEmail(env, { authorId, authorName, title, arti
     html,
     replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
   });
+
+  // Log AFTER a successful send so a transient failure can be retried.
+  await firestoreCreate(env, "bot_event_notify_log", {
+    storyId,
+    type: "published",
+    sent: true,
+    to: authorEmail,
+    cc: cc.join(", "),
+    createdAt: new Date().toISOString(),
+  }, `${storyId}_published`).catch(() => {});
 
   return { sent: true, to: authorEmail, cc };
 }
@@ -324,6 +345,7 @@ export const onRequestPost = async ({ request, env }) => {
     // Best-effort: a mail failure must never fail the publish, so this is
     // wrapped exactly like the SEO and social side-effects above.
     const authorEmailResult = await sendAuthorPublishedEmail(env, {
+      storyId,
       authorId: storyFields.authorId?.stringValue || "",
       authorName:
         storyFields.authorName?.stringValue ||

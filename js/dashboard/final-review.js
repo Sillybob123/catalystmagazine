@@ -166,6 +166,16 @@ export async function mount(ctx, container) {
       // pick up the freshly-published story on the next load instead of
       // serving the previous session-cache snapshot.
       try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+      // Congratulate the author by email (CC admins). Best-effort and
+      // idempotent server-side — never block or fail the publish on it.
+      try {
+        await ctx.authedFetch("/api/notify/published", {
+          method: "POST",
+          body: JSON.stringify({ storyId }),
+        });
+      } catch (notifyErr) {
+        console.warn("published notify failed (non-blocking):", notifyErr);
+      }
       ctx.toast("Published. It's live on the site.", "success");
       publishBtn.textContent = "Published";
     } catch (err) {
