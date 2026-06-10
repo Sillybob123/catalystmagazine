@@ -4117,7 +4117,7 @@ const teamMembers = [
     },
     {
         name: "Dani Molloy",
-        role: "Head UX Designer, Social Media Management",
+        role: "Digital Strategy Lead",
         bio: "Dani is a senior at Cornell University pursuing a B.A. in Information Science with a concentration in UX and a minor in Business. She is passionate about digital storytelling, user-centered design, and the ways emerging technologies can help people discover and engage with new ideas. Her interests lie at the intersection of technology, communication, and artificial intelligence, particularly how thoughtful design can make complex information more accessible and engaging. At The Catalyst, Dani is excited to help grow the publication's reach, strengthen its online community, and connect more readers with the stories shaping the future of STEM.",
         image: "/Dani.webp",
         linkedin: "",
