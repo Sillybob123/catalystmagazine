@@ -680,6 +680,62 @@ export function proposalApprovedEmail({ project, author, siteUrl }) {
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
+// Sent to the author the moment an admin/editor publishes their story. CC'd to
+// the admins (handled by the caller) so the team has a record of every send.
+// `articleUrl` is the full public link to the live article.
+export function articlePublishedEmail({ title, authorName, articleUrl, category, siteUrl }) {
+  const firstName = String(authorName || "there").trim().split(/\s+/)[0] || "there";
+  const storyTitle = title || "(untitled story)";
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: storyTitle },
+      { label: "Category", value: category || "Feature" },
+      { label: "Status", value: "Approved & published — it's live" },
+    ],
+    tone: "info",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      Congratulations — your story has been approved and published!
+    </p>
+
+    ${statusBlock}
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      Your piece is now live on The Catalyst Magazine for the world to read. Thank you for
+      all the work you put into it — we're proud to have it on the site.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(articleUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Read your published article</a>
+    </div>
+
+    <p style="margin:18px 0 0 0;font-size:13px;line-height:1.6;color:${COLORS.muted};">
+      Direct link: <a href="${escapeAttr(articleUrl)}" style="color:${COLORS.inkSoft};">${escapeHtml(articleUrl)}</a>
+    </p>
+
+    <p style="margin:22px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      Share it widely — and if you spot anything that needs a fix, just reply to this email
+      and we'll take care of it.
+    </p>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Congratulations again,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">Aidan and Yair</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = `Published: "${truncate(storyTitle, 45)}" is now live 🎉`;
+  const preheader = "Congratulations! Your story has been approved and published — read it here.";
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
 // Sent to admins the moment a writer marks "Article Writing Complete" — admins
 // need to assign an editor.
 export function adminWritingCompleteEmail({ project, author, siteUrl }) {

@@ -27,9 +27,64 @@ import {
   getProjectId,
 } from "../_utils/firebase.js";
 import { titleToSlug, buildArticlePath, buildArticleUrl } from "../_utils/article-meta.js";
-import { sendBulkEmail } from "../_utils/resend.js";
+import { sendBulkEmail, sendEmail } from "../_utils/resend.js";
 import { buildNewsletter } from "../_utils/newsletter-template.js";
+import { articlePublishedEmail } from "../_utils/reminder-emails.js";
 import { notifyArticlePublished } from "../_utils/seo-notify.js";
+
+// Admins CC'd on the author's "your story is published" congratulations email.
+// Mirrors the list used by the editorial notification system (notify/event.js).
+const ADMIN_CC_RECIPIENTS = [
+  "bendoryair@gmail.com",
+  "stemcatalystmagazine@gmail.com",
+  "aidan.schurr@gwmail.gwu.edu",
+];
+
+// Resolve the primary author's email from the story's authorId. Stories store
+// a single authorId plus a (possibly comma-joined) authorName; co-authors are
+// not separately addressable, so we email the primary author only. Returns
+// null when there's no authorId or the user record carries no email — the
+// caller then skips the send entirely.
+async function resolveAuthorEmail(env, authorId) {
+  if (!authorId) return null;
+  const userDoc = await firestoreGet(env, `users/${authorId}`);
+  const email = userDoc?.fields?.email?.stringValue || "";
+  return email.trim() || null;
+}
+
+// Best-effort: email the author that their story is approved + published, with
+// a link to the live article, CC'ing the admins. Never throws — a mail failure
+// must not fail the publish. Returns a small status object for the response.
+async function sendAuthorPublishedEmail(env, { authorId, authorName, title, articleUrl, category, siteUrl }) {
+  const authorEmail = await resolveAuthorEmail(env, authorId);
+  if (!authorEmail) {
+    return { sent: false, skipped: true, reason: "no author email on record" };
+  }
+
+  const { subject, html } = articlePublishedEmail({
+    title,
+    authorName,
+    articleUrl,
+    category,
+    siteUrl,
+  });
+
+  // CC the admins, but drop the author from the CC list if they happen to be an
+  // admin too (no point CC'ing the same address we're sending To:).
+  const cc = ADMIN_CC_RECIPIENTS.filter(
+    (addr) => addr.toLowerCase() !== authorEmail.toLowerCase()
+  );
+
+  await sendEmail(env, {
+    to: authorEmail,
+    cc,
+    subject,
+    html,
+    replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+  });
+
+  return { sent: true, to: authorEmail, cc };
+}
 
 // Return a square-cropped version of the cover image for Instagram.
 // Wix CDN images support path-based transforms; everything else is returned as-is.
@@ -265,6 +320,21 @@ export const onRequestPost = async ({ request, env }) => {
       publisherName: userDoc.fields?.displayName?.stringValue || userDoc.fields?.name?.stringValue || "The Catalyst",
     }).catch((e) => ({ error: String(e?.message || e) }));
 
+    // --- Congratulate the author (email author, CC admins) ------------------
+    // Best-effort: a mail failure must never fail the publish, so this is
+    // wrapped exactly like the SEO and social side-effects above.
+    const authorEmailResult = await sendAuthorPublishedEmail(env, {
+      authorId: storyFields.authorId?.stringValue || "",
+      authorName:
+        storyFields.authorName?.stringValue ||
+        storyFields.author?.stringValue ||
+        "there",
+      title,
+      articleUrl: buildArticleUrl({ title, slug, category: publishedCategory }, publishedSiteUrl),
+      category: publishedCategory,
+      siteUrl: publishedSiteUrl,
+    }).catch((e) => ({ sent: false, error: String(e?.message || e) }));
+
     return json({
       ok: true,
       storyId,
@@ -273,6 +343,7 @@ export const onRequestPost = async ({ request, env }) => {
       newsletter: newsletterResult,
       seo: seoResult,
       social: socialResult,
+      authorEmail: authorEmailResult,
     });
   } catch (err) {
     return serverError(err);
