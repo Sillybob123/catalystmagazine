@@ -59,15 +59,18 @@ export async function mount(ctx, container) {
   const isAdmin = ctx.role === "admin";
   const card = el("div", { class: "card", style: { marginTop: "20px" } });
   card.innerHTML = `
-    <div class="card-header" style="flex-wrap:wrap;gap:12px;">
-      <div>
+    <div class="card-header" style="flex-wrap:wrap;gap:12px;align-items:flex-start;">
+      <div style="min-width:240px;flex:1;">
         <div class="card-title">Team directory</div>
         <div class="card-subtitle">Everyone on staff — who they are, what they do, and how to reach them. Contact info is visible to staff only.</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input id="dir-search" type="search" placeholder="Search by name, role, email, or phone…" autocomplete="off"
-               style="padding:9px 14px;border:1px solid var(--hairline,#e5e7eb);border-radius:999px;font-size:13px;font-family:inherit;min-width:min(280px,100%);">
-        ${isAdmin ? `<button type="button" class="btn btn-secondary btn-sm" id="dir-add">+ Add person</button>` : ""}
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex-shrink:0;">
+        <input id="dir-search" type="search" placeholder="Search the team…" autocomplete="off" aria-label="Search by name, role, email, or phone"
+               style="padding:9px 16px;border:1px solid var(--hairline,#e5e7eb);border-radius:999px;font-size:13px;font-family:inherit;width:clamp(160px,28vw,260px);min-height:38px;background:var(--surface-2,#f8fafc);">
+        ${isAdmin ? `
+          <button type="button" class="btn btn-secondary btn-sm" id="dir-add" style="white-space:nowrap;flex-shrink:0;min-height:38px;display:inline-flex;align-items:center;gap:6px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add person
+          </button>` : ""}
       </div>
     </div>
     <div class="card-body" id="dir-body"><div class="loading-state"><div class="spinner"></div>Loading&hellip;</div></div>`;

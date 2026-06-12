@@ -185,7 +185,7 @@ const ROUTES = {
   // Directory — the whole team with roles + emails, plus private messaging
   // (each chat message is also emailed to the recipient via /api/notify/dm).
   "#/directory": {
-    label: "Directory",
+    label: "Directory/Team Messages",
     icon: ICONS.addressBook,
     roles: ["*"],
     group: "main",
