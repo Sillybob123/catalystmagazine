@@ -137,9 +137,11 @@ function ensureTrackerStyles() {
                            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .ct-owners > summary::-webkit-details-marker { display:none; }
     .ct-owners[open] > summary { border-color:#0f172a; }
-    .ct-owners-panel { position:absolute; z-index:30; top:calc(100% + 4px); left:0; min-width:200px;
-                       max-height:220px; overflow:auto; background:#fff; border:1px solid #e2e8f0;
-                       border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.16); padding:6px; }
+    /* position:fixed (set on open) escapes the table's scroll clipping —
+       the panel always floats on top, never cropped by the card edge. */
+    .ct-owners-panel { position:fixed; z-index:9999; min-width:200px;
+                       max-height:240px; overflow:auto; background:#fff; border:1px solid #e2e8f0;
+                       border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.2); padding:6px; }
     .ct-owners-panel label { display:flex; align-items:center; gap:8px; padding:6px 8px;
                              border-radius:7px; font-size:12.5px; color:#0f172a; cursor:pointer; }
     .ct-owners-panel label:hover { background:#f1f5f9; }
@@ -193,8 +195,17 @@ function isDoneStatus(s) {
 }
 
 // Sort priority for the owner picker — social team first, then everyone
-// else. Any staff member can own a post (admins included).
+// else with Planner access.
 const TEAM_ROLE_PRIORITY = { social_media: 0, marketing: 1, admin: 2 };
+
+// Owner pool = people who can actually see the Planner: the roles that get
+// it by default, plus anyone granted it via Extra access.
+const PLANNER_ROLES = ["admin", "marketing", "social_media"];
+function hasPlannerAccess(u) {
+  if (PLANNER_ROLES.includes(u.role)) return true;
+  const grants = Array.isArray(u.extraAccess) ? u.extraAccess : [];
+  return grants.includes("#/planner") || grants.includes("#/planner/assign");
+}
 
 function canAssign(ctx) {
   if (ctx.role === "admin") return true;
@@ -604,6 +615,42 @@ function trackerEditorRow(ctx, state, reload, rerender, existing, prefill) {
 
   const get = (k) => tr.querySelector(`[data-in="${k}"]`);
 
+  // Anchor the owners panel just under its chip with fixed positioning, so
+  // the table's overflow container can't clip it. Flips above the chip when
+  // there's no room below; closes if the page scrolls underneath it.
+  const ownersDetails = tr.querySelector(".ct-owners");
+  const ownersPanel = ownersDetails.querySelector(".ct-owners-panel");
+  const placePanel = () => {
+    const r = ownersDetails.querySelector("summary").getBoundingClientRect();
+    const panelH = Math.min(240, ownersPanel.scrollHeight || 240);
+    const below = window.innerHeight - r.bottom;
+    ownersPanel.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - 216))}px`;
+    ownersPanel.style.minWidth = `${Math.max(200, r.width)}px`;
+    ownersPanel.style.top = below >= panelH + 12 || below >= r.top
+      ? `${r.bottom + 4}px`
+      : `${Math.max(8, r.top - panelH - 4)}px`;
+  };
+  ownersDetails.addEventListener("toggle", () => { if (ownersDetails.open) placePanel(); });
+  const closeOnScroll = (e) => {
+    // Self-cleanup once this editor row has been re-rendered away.
+    if (!document.contains(ownersDetails)) {
+      window.removeEventListener("scroll", closeOnScroll, true);
+      return;
+    }
+    // Scrolling the checkbox list itself shouldn't dismiss it.
+    if (e.target instanceof Node && ownersPanel.contains(e.target)) return;
+    if (ownersDetails.open) ownersDetails.open = false;
+  };
+  window.addEventListener("scroll", closeOnScroll, { capture: true, passive: true });
+  const closeOnOutsideClick = (e) => {
+    if (!document.contains(ownersDetails)) {
+      document.removeEventListener("click", closeOnOutsideClick);
+      return;
+    }
+    if (ownersDetails.open && !e.target.closest(".ct-owners")) ownersDetails.open = false;
+  };
+  document.addEventListener("click", closeOnOutsideClick);
+
   // Keep the owners summary chip in sync with the checkboxes.
   const checkedOwners = () => [...tr.querySelectorAll("[data-owner]:checked")]
     .map((cb) => team.find((u) => u.id === cb.dataset.owner))
@@ -701,11 +748,11 @@ async function persistTrackerRow(ctx, payload, existing) {
   return id;
 }
 
-// Assignable people: every staff member, with the viewer pinned first
-// ("you") so putting your own name on a row is always one click.
+// Assignable people: everyone with Planner access, with the viewer pinned
+// first ("you") so putting your own name on a row is always one click.
 function trackerTeam(ctx, state) {
   const myUid = ctx.user.uid;
-  let team = (state.team || []).filter((u) => u.id !== undefined && u.id !== myUid);
+  let team = (state.team || []).filter((u) => u.id !== undefined && u.id !== myUid && hasPlannerAccess(u));
   team.sort((a, b) => {
     const pa = TEAM_ROLE_PRIORITY[a.role] ?? 9;
     const pb = TEAM_ROLE_PRIORITY[b.role] ?? 9;
