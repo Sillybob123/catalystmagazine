@@ -378,6 +378,16 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ---------- manual directory entries ----------
+    // People admins added to the Directory tab who don't have a dashboard
+    // account (advisors, interns, alumni). Staff can look them up; only
+    // admins manage them. Never readable publicly — phone numbers and
+    // emails in here are private contact info.
+    match /directory_contacts/{contactId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isAdmin();
+    }
+
     // ---------- direct messages (Directory tab chat) ----------
     // One doc per pair of teammates (doc id = sorted uids joined with '__').
     // Only the two participants can read or append to their thread — private

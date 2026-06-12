@@ -1,7 +1,15 @@
-// Team directory — everyone on staff with their role + email, searchable,
-// plus private messaging: click "Message" to open a 1:1 chat thread that
-// lives in Firestore (dm_threads) and emails the recipient a copy of each
-// message (POST /api/notify/dm) so nothing gets missed.
+// Team directory — everyone on staff with their role, email, and phone,
+// searchable, plus private messaging: click "Message" to open a 1:1 chat
+// thread that lives in Firestore (dm_threads) and emails the recipient a
+// copy of each message (POST /api/notify/dm) so nothing gets missed.
+//
+// Privacy: phone numbers live on users/{uid}.phone and in directory_contacts,
+// both of which are staff-read-only in firestore.rules — nothing here is
+// reachable from the public site or by anonymous visitors.
+//
+// Admins can also add people who don't have dashboard accounts yet (interns,
+// advisors, alumni) as manual entries in directory_contacts, and edit any
+// card's phone number inline.
 
 import { db } from "../firebase-config.js";
 import {
@@ -12,10 +20,12 @@ import {
   limit,
   doc,
   setDoc,
+  deleteDoc,
+  addDoc,
   onSnapshot,
   arrayUnion,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { el, esc, fmtRelative, openModal } from "./ui.js";
+import { el, esc, fmtRelative, openModal, confirmDialog } from "./ui.js";
 
 const ROLE_META = {
   admin:              { label: "Administrator",      group: "Leadership",  order: 1, color: "#7c3aed" },
@@ -46,34 +56,43 @@ export async function mount(ctx, container) {
   container.appendChild(convos);
 
   // Directory grid
+  const isAdmin = ctx.role === "admin";
   const card = el("div", { class: "card", style: { marginTop: "20px" } });
   card.innerHTML = `
     <div class="card-header" style="flex-wrap:wrap;gap:12px;">
       <div>
         <div class="card-title">Team directory</div>
-        <div class="card-subtitle">Everyone on staff — who they are, what they do, and how to reach them</div>
+        <div class="card-subtitle">Everyone on staff — who they are, what they do, and how to reach them. Contact info is visible to staff only.</div>
       </div>
-      <input id="dir-search" type="search" placeholder="Search by name, role, or email…" autocomplete="off"
-             style="padding:9px 14px;border:1px solid var(--hairline,#e5e7eb);border-radius:999px;font-size:13px;font-family:inherit;min-width:min(280px,100%);">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="dir-search" type="search" placeholder="Search by name, role, email, or phone…" autocomplete="off"
+               style="padding:9px 14px;border:1px solid var(--hairline,#e5e7eb);border-radius:999px;font-size:13px;font-family:inherit;min-width:min(280px,100%);">
+        ${isAdmin ? `<button type="button" class="btn btn-secondary btn-sm" id="dir-add">+ Add person</button>` : ""}
+      </div>
     </div>
     <div class="card-body" id="dir-body"><div class="loading-state"><div class="spinner"></div>Loading&hellip;</div></div>`;
   container.appendChild(card);
 
   const state = { people: [], threads: [], unsubThread: null };
 
-  try {
-    state.people = await loadPeople();
-  } catch (err) {
-    console.warn("[directory] load failed", err);
-    card.querySelector("#dir-body").innerHTML =
-      `<div class="error-state">Could not load the team. ${esc(err?.message || "")}</div>`;
-    return;
-  }
+  const renderGrid = () => renderDirectory(card.querySelector("#dir-body"), ctx, state, card.querySelector("#dir-search").value);
+  const reload = async () => {
+    try {
+      state.people = await loadPeople();
+      renderGrid();
+    } catch (err) {
+      console.warn("[directory] load failed", err);
+      card.querySelector("#dir-body").innerHTML =
+        `<div class="error-state">Could not load the team. ${esc(err?.message || "")}</div>`;
+    }
+  };
+  state.reload = reload;
 
-  const searchEl = card.querySelector("#dir-search");
-  const renderGrid = () => renderDirectory(card.querySelector("#dir-body"), ctx, state, searchEl.value);
-  searchEl.addEventListener("input", renderGrid);
-  renderGrid();
+  card.querySelector("#dir-search").addEventListener("input", renderGrid);
+  if (isAdmin) {
+    card.querySelector("#dir-add").addEventListener("click", () => openContactEditor(ctx, state, null));
+  }
+  await reload();
 
   loadConversations(convos.querySelector("#dir-convos"), ctx, state);
 
@@ -86,7 +105,11 @@ export async function mount(ctx, container) {
 }
 
 async function loadPeople() {
-  const snap = await getDocs(query(collection(db, "users"), limit(200)));
+  const [snap, contactsSnap] = await Promise.all([
+    getDocs(query(collection(db, "users"), limit(200))),
+    // Manual entries admins added for people without dashboard accounts.
+    getDocs(query(collection(db, "directory_contacts"), limit(200))).catch(() => null),
+  ]);
 
   // Dedupe — a person can have two user docs (a reader doc from a newsletter
   // signup plus a staff doc); keep the doc with the highest-priority role.
@@ -96,17 +119,35 @@ async function loadPeople() {
     if ((u.status || "active") === "inactive") return;
     raw.push({ ...u, id: d.id, role: u.role || "reader" });
   });
+  if (contactsSnap) {
+    contactsSnap.forEach((d) => {
+      const c = d.data();
+      // Manual contacts lose to a real user doc with the same email in the
+      // dedupe below (order 98 > any real role) — so when someone admins
+      // added by hand later gets an account, the account card wins.
+      raw.push({ ...c, id: d.id, role: c.role || "writer", manual: true });
+    });
+  }
 
   const byKey = new Map();
+  const orderOf = (p) => (p.manual ? 98 : (ROLE_META[p.role]?.order ?? 99));
   for (const p of raw) {
     const key = identityKey(p);
     const existing = byKey.get(key);
     if (!existing) { byKey.set(key, p); continue; }
-    const ao = ROLE_META[p.role]?.order ?? 99;
-    const bo = ROLE_META[existing.role]?.order ?? 99;
-    if (ao < bo) byKey.set(key, { ...existing, ...p, id: p.id, role: p.role });
+    const ao = orderOf(p);
+    const bo = orderOf(existing);
+    if (ao < bo) byKey.set(key, { ...existing, ...p, id: p.id, role: p.role, manual: p.manual });
     else if (ao === bo) {
-      byKey.set(key, { ...existing, name: existing.name || p.name, email: existing.email || p.email });
+      byKey.set(key, {
+        ...existing,
+        name: existing.name || p.name,
+        email: existing.email || p.email,
+        phone: existing.phone || p.phone,
+      });
+    } else if (!existing.phone && p.phone) {
+      // The losing doc may still carry the only phone number on file.
+      byKey.set(key, { ...existing, phone: p.phone });
     }
   }
 
@@ -124,10 +165,13 @@ async function loadPeople() {
 
 function renderDirectory(mountEl, ctx, state, search = "") {
   const q = search.trim().toLowerCase();
+  const qDigits = q.replace(/\D/g, "");
   const matches = state.people.filter((p) => {
     if (!q) return true;
     const meta = ROLE_META[p.role] || ROLE_META.reader;
-    return [p.name, p.email, meta.label].some((s) => String(s || "").toLowerCase().includes(q));
+    if ([p.name, p.email, p.title, meta.label].some((s) => String(s || "").toLowerCase().includes(q))) return true;
+    if (qDigits && String(p.phone || "").replace(/\D/g, "").includes(qDigits)) return true;
+    return false;
   });
 
   if (!matches.length) {
@@ -157,29 +201,183 @@ function renderDirectory(mountEl, ctx, state, search = "") {
 
     for (const p of list) {
       const meta = ROLE_META[p.role] || ROLE_META.reader;
+      const roleLabel = p.manual && p.title ? p.title : meta.label;
       const name = p.name || p.email || "Unknown";
       const isSelf = p.id === ctx.user.uid;
+      const isAdmin = ctx.role === "admin";
+      const phone = String(p.phone || "").trim();
       const card = el("div", { class: "staff-card" });
       card.innerHTML = `
         <div class="staff-avatar" style="background:${meta.color};">${esc(getInitials(name))}</div>
         <div class="staff-info" style="min-width:0;">
           <div class="staff-name">${esc(name)}${isSelf ? ` <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">You</span>` : ""}</div>
-          <div class="staff-role" style="color:${meta.color};">${esc(meta.label)}</div>
+          <div class="staff-role" style="color:${meta.color};">${esc(roleLabel)}</div>
           ${p.email ? `<div class="staff-email"><a href="mailto:${esc(p.email)}" style="color:inherit;text-decoration:none;">${esc(p.email)}</a></div>` : ""}
-          ${isSelf ? "" : `
-            <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          ${phone ? `<div class="staff-email"><a href="tel:${esc(phone.replace(/[^\d+]/g, ""))}" style="color:inherit;text-decoration:none;">${esc(fmtPhone(phone))}</a></div>` : ""}
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+            ${isSelf || p.manual ? "" : `
               <button type="button" class="btn btn-secondary btn-xs" data-dm="${esc(p.id)}">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Message
-              </button>
-              ${p.email ? `<a class="btn btn-ghost btn-xs" href="mailto:${esc(p.email)}">Email</a>` : ""}
-            </div>`}
+              </button>`}
+            ${!isSelf && p.email ? `<a class="btn btn-ghost btn-xs" href="mailto:${esc(p.email)}">Email</a>` : ""}
+            ${isAdmin && p.manual ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-contact>Edit</button>` : ""}
+            ${isAdmin && !p.manual ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-phone>${phone ? "Edit phone" : "Add phone"}</button>` : ""}
+          </div>
         </div>`;
       const dmBtn = card.querySelector("[data-dm]");
       if (dmBtn) dmBtn.addEventListener("click", () => openChat(ctx, state, p));
+      card.querySelector("[data-edit-contact]")?.addEventListener("click", () => openContactEditor(ctx, state, p));
+      card.querySelector("[data-edit-phone]")?.addEventListener("click", () => openPhoneEditor(ctx, state, p));
       grid.appendChild(card);
     }
     mountEl.appendChild(section);
   }
+}
+
+// ─── admin: edit a teammate's phone ─────────────────────────────────────────
+
+function openPhoneEditor(ctx, state, person) {
+  const form = el("form", { style: "display:grid;gap:12px;min-width:min(380px,80vw);" });
+  form.innerHTML = `
+    <div style="font-size:13px;color:var(--muted);line-height:1.5;">
+      Phone for <strong style="color:var(--ink);">${esc(person.name || person.email || "this person")}</strong>.
+      Visible to signed-in staff only — never on the public site.
+    </div>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">Phone number</span>
+      <input id="pe-phone" type="tel" value="${esc(person.phone || "")}" placeholder="+1 (555) 123-4567" autocomplete="off"
+             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+    </label>
+    <div id="pe-msg" style="font-size:12.5px;color:var(--danger,#b91c1c);min-height:16px;"></div>`;
+
+  const cancelBtn = el("button", { type: "button", class: "btn btn-secondary" }, "Cancel");
+  const saveBtn = el("button", { type: "button", class: "btn btn-primary" }, "Save");
+  const modal = openModal({ title: "Edit phone number", body: form, footer: [cancelBtn, saveBtn] });
+  if (!modal) return;
+  cancelBtn.addEventListener("click", () => modal.close());
+
+  const save = async () => {
+    const phone = form.querySelector("#pe-phone").value.trim();
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+    try {
+      await setDoc(doc(db, "users", person.id), { phone }, { merge: true });
+      modal.close();
+      ctx.toast(phone ? "Phone number saved." : "Phone number removed.", "success");
+      state.reload?.();
+    } catch (err) {
+      form.querySelector("#pe-msg").textContent = err?.message || "Could not save.";
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save";
+    }
+  };
+  saveBtn.addEventListener("click", save);
+  form.addEventListener("submit", (e) => { e.preventDefault(); save(); });
+  setTimeout(() => form.querySelector("#pe-phone").focus(), 0);
+}
+
+// ─── admin: add / edit a manual directory entry ─────────────────────────────
+// For people who should be findable (interns, advisors, board) but don't have
+// a dashboard account. Stored in directory_contacts (staff-read, admin-write).
+
+function openContactEditor(ctx, state, contact) {
+  const isEdit = !!contact;
+  const form = el("form", { style: "display:grid;gap:12px;min-width:min(420px,84vw);" });
+  form.innerHTML = `
+    <div style="font-size:13px;color:var(--muted);line-height:1.5;">
+      ${isEdit ? "Edit this directory entry." : "Add someone to the directory who doesn't have a dashboard account."}
+      Contact info is visible to signed-in staff only.
+    </div>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">Full name *</span>
+      <input id="ce-name" required value="${esc(contact?.name || "")}" autocomplete="off"
+             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+    </label>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">Title / what they do</span>
+      <input id="ce-title" value="${esc(contact?.title || "")}" placeholder="e.g. Faculty advisor" autocomplete="off"
+             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+    </label>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">Section</span>
+      <select id="ce-role" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;background:#fff;">
+        <option value="admin">Leadership</option>
+        <option value="writer">Editorial</option>
+        <option value="marketing">Publishing</option>
+        <option value="reader">Community</option>
+      </select>
+    </label>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">Email</span>
+      <input id="ce-email" type="email" value="${esc(contact?.email || "")}" autocomplete="off"
+             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+    </label>
+    <label style="display:grid;gap:4px;">
+      <span style="font-weight:600;font-size:13px;">Phone</span>
+      <input id="ce-phone" type="tel" value="${esc(contact?.phone || "")}" placeholder="+1 (555) 123-4567" autocomplete="off"
+             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+    </label>
+    <div id="ce-msg" style="font-size:12.5px;color:var(--danger,#b91c1c);min-height:16px;"></div>`;
+  form.querySelector("#ce-role").value = contact?.role || "writer";
+
+  const cancelBtn = el("button", { type: "button", class: "btn btn-secondary" }, "Cancel");
+  const saveBtn = el("button", { type: "button", class: "btn btn-primary" }, isEdit ? "Save changes" : "Add to directory");
+  const footer = [cancelBtn, saveBtn];
+  let deleteBtn = null;
+  if (isEdit) {
+    deleteBtn = el("button", { type: "button", class: "btn btn-ghost", style: "color:var(--danger,#b91c1c);margin-right:auto;" }, "Remove");
+    footer.unshift(deleteBtn);
+  }
+  const modal = openModal({ title: isEdit ? "Edit directory entry" : "Add a person", body: form, footer });
+  if (!modal) return;
+  cancelBtn.addEventListener("click", () => modal.close());
+
+  const save = async () => {
+    const data = {
+      name: form.querySelector("#ce-name").value.trim(),
+      title: form.querySelector("#ce-title").value.trim(),
+      role: form.querySelector("#ce-role").value,
+      email: form.querySelector("#ce-email").value.trim(),
+      phone: form.querySelector("#ce-phone").value.trim(),
+      updatedAt: new Date().toISOString(),
+      updatedById: ctx.user.uid,
+    };
+    if (!data.name) {
+      form.querySelector("#ce-msg").textContent = "Name is required.";
+      return;
+    }
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+    try {
+      if (isEdit) {
+        await setDoc(doc(db, "directory_contacts", contact.id), data, { merge: true });
+      } else {
+        await addDoc(collection(db, "directory_contacts"), { ...data, createdAt: new Date().toISOString() });
+      }
+      modal.close();
+      ctx.toast(isEdit ? "Directory entry updated." : `${data.name} added to the directory.`, "success");
+      state.reload?.();
+    } catch (err) {
+      form.querySelector("#ce-msg").textContent = err?.message || "Could not save.";
+      saveBtn.disabled = false;
+      saveBtn.textContent = isEdit ? "Save changes" : "Add to directory";
+    }
+  };
+  saveBtn.addEventListener("click", save);
+  form.addEventListener("submit", (e) => { e.preventDefault(); save(); });
+  deleteBtn?.addEventListener("click", async () => {
+    const ok = await confirmDialog(`Remove ${contact.name || "this person"} from the directory?`, { confirmText: "Remove", danger: true });
+    if (!ok) return;
+    try {
+      await deleteDoc(doc(db, "directory_contacts", contact.id));
+      modal.close();
+      ctx.toast("Removed from the directory.", "success");
+      state.reload?.();
+    } catch (err) {
+      form.querySelector("#ce-msg").textContent = err?.message || "Could not remove.";
+    }
+  });
+  setTimeout(() => form.querySelector("#ce-name").focus(), 0);
 }
 
 // ─── Conversations list ──────────────────────────────────────────────────────
@@ -401,6 +599,15 @@ function identityKey(person) {
   const name = String(person.name || "").trim().toLowerCase().replace(/\s+/g, " ");
   if (name) return `name:${name}`;
   return `id:${person.id}`;
+}
+
+// Normalize US numbers to "+1 (AAA) BBB-CCCC" for a consistent column; leave
+// anything that isn't a plain 10/11-digit US number exactly as entered.
+function fmtPhone(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  const ten = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  if (ten.length !== 10) return String(raw || "").trim();
+  return `+1 (${ten.slice(0, 3)}) ${ten.slice(3, 6)}-${ten.slice(6)}`;
 }
 
 function getInitials(nameOrEmail) {
