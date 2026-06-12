@@ -30,26 +30,29 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, confirmDialog } from "./ui.js";
 
-const STAFF_ROLES = ["admin", "editor", "writer", "marketing", "newsletter_builder"];
+const STAFF_ROLES = ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"];
 const READY_LEAD_DAYS = 7; // articles must be done this many days before publish
 
 const ONE_DAY = 86400000;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// Personal deadline fields, in workflow order.
+// Personal deadline fields, in workflow order. `step` is the pipeline
+// timeline checkbox that marks the deadline satisfied — checked steps drop
+// off the calendar so it only shows what's still to do.
 const MY_DEADLINE_FIELDS = [
-  { key: "contact",   label: "Contact professor" },
-  { key: "interview", label: "Conduct interview" },
-  { key: "draft",     label: "Write draft" },
-  { key: "review",    label: "Editor review" },
-  { key: "edits",     label: "Review edits" },
+  { key: "contact",   label: "Contact professor", step: "Contact Professor" },
+  { key: "interview", label: "Conduct interview", step: "Interview Scheduled" },
+  { key: "draft",     label: "Write draft",       step: "Article Writing Complete" },
+  { key: "review",    label: "Editor review",     step: "Review Complete" },
+  { key: "edits",     label: "Review edits",      step: "Edits Addressed" },
 ];
 
 const KIND_META = {
-  publish:   { label: "Scheduled publication", color: "#0f766e", bg: "#ccfbf1", dot: "#0f766e" },
-  interview: { label: "Interview",             color: "#1d4ed8", bg: "#dbeafe", dot: "#3b82f6" },
-  mine:      { label: "My deadline",           color: "#5b21b6", bg: "#ede9fe", dot: "#7c3aed" },
-  task:      { label: "Task",                  color: "#5b21b6", bg: "#ede9fe", dot: "#7c3aed" },
+  publish:    { label: "Scheduled publication", color: "#0f766e", bg: "#ccfbf1", dot: "#0f766e" },
+  interview:  { label: "Interview",             color: "#1d4ed8", bg: "#dbeafe", dot: "#3b82f6" },
+  mine:       { label: "My deadline",           color: "#5b21b6", bg: "#ede9fe", dot: "#7c3aed" },
+  task:       { label: "Task",                  color: "#5b21b6", bg: "#ede9fe", dot: "#7c3aed" },
+  assignment: { label: "Social post due",       color: "#9d174d", bg: "#fce7f3", dot: "#db2777" },
 };
 
 // Task color palette — the creator picks one; it renders the same on every
@@ -229,7 +232,7 @@ function nudgeFor(p) {
 // ─── Event extraction ─────────────────────────────────────────────────────────
 
 // Build { "YYYY-MM-DD": [event, …] } for everything visible to this viewer.
-function buildEvents(projects, tasks, uid, filterMine) {
+function buildEvents(projects, tasks, assignments, uid, filterMine) {
   const map = new Map();
   const push = (iso, ev) => {
     if (!iso || !parseISO(iso)) return;
@@ -247,11 +250,22 @@ function buildEvents(projects, tasks, uid, filterMine) {
     const pub = pubDate(p);
     if (pub) push(pub, { ...base, kind: "publish" });
     const iv = interviewDate(p);
-    if (iv && !p.timeline?.["Interview Complete"]) push(iv, { ...base, kind: "interview" });
+    const showInterview = iv && !p.timeline?.["Interview Complete"];
+    if (showInterview) push(iv, { ...base, kind: "interview" });
 
+    // Every still-open deadline of the viewer's own projects — not just the
+    // next one — so their personal planner shows everything they've got.
     if (mine && !done) {
-      const next = nextMyDeadline(p);
-      if (next) push(next.date, { ...base, kind: "mine", deadlineLabel: next.label });
+      const tl = p.timeline || {};
+      const dl = p.deadlines || {};
+      for (const f of MY_DEADLINE_FIELDS) {
+        const v = dl[f.key];
+        if (!v || !parseISO(v)) continue;
+        if (f.step && tl[f.step] === true) continue; // step already checked off
+        // The interview chip above already covers this date — don't double up.
+        if (f.key === "interview" && showInterview && v === iv) continue;
+        push(v, { ...base, kind: "mine", deadlineLabel: f.label });
+      }
     }
   }
 
@@ -262,7 +276,16 @@ function buildEvents(projects, tasks, uid, filterMine) {
     push(t.date, { kind: "task", task: t, mine: true, done: t.status === "done" });
   }
 
-  const order = { publish: 0, interview: 1, task: 2, mine: 3 };
+  // Social post assignments — on the assignee's calendar (it's their
+  // deadline) and the assigner's (so they can track what they handed out).
+  for (const a of assignments || []) {
+    if (a.status === "done") continue;
+    const isAssignee = a.assigneeId === uid;
+    if (!isAssignee && a.createdById !== uid) continue;
+    push(a.deadline, { kind: "assignment", assignment: a, mine: isAssignee, done: false });
+  }
+
+  const order = { publish: 0, interview: 1, task: 2, assignment: 3, mine: 4 };
   for (const list of map.values()) {
     list.sort((a, b) => (order[a.kind] - order[b.kind]) || ((b.mine ? 1 : 0) - (a.mine ? 1 : 0)));
   }
@@ -436,11 +459,12 @@ export function renderScheduleCalendar(container, ctx) {
     authedFetch: ctx.authedFetch,
   };
 
-  const isSocialRole = ctx.role === "marketing" || ctx.role === "newsletter_builder";
+  const isSocialRole = ctx.role === "marketing" || ctx.role === "newsletter_builder" || ctx.role === "social_media";
 
   const state = {
     projects: [],
     tasks: [],
+    assignments: [],
     month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     filterMine: false,
     loaded: false,
@@ -496,6 +520,15 @@ export function renderScheduleCalendar(container, ctx) {
     console.warn("[calendar] tasks unavailable:", err?.message);
     state.tasksAvailable = false;
   }));
+
+  // Social post assignments — additive, same graceful-degradation as tasks.
+  // Assigned posts land on the assignee's (and assigner's) calendar live.
+  _unsubs.push(onSnapshot(collection(workflowDb, "social_assignments"), (snap) => {
+    state.assignments = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (state.loaded) render();
+  }, (err) => {
+    console.warn("[calendar] assignments unavailable:", err?.message);
+  }));
 }
 
 // ─── Toolbar / legend ─────────────────────────────────────────────────────────
@@ -540,6 +573,7 @@ function renderLegend() {
     <span><i style="background:#b91c1c"></i>Falling behind</span>
     <span><i style="background:${KIND_META.interview.dot}"></i>Interview</span>
     <span><i style="background:${KIND_META.mine.dot}"></i>My deadline</span>
+    <span><i style="background:${KIND_META.assignment.dot}"></i>Social post due</span>
     <span><i style="background:${TASK_COLORS[1].dot}"></i>Tasks (your color)</span>`;
   return lg;
 }
@@ -547,7 +581,7 @@ function renderLegend() {
 // ─── Calendar grid ────────────────────────────────────────────────────────────
 
 function renderGrid(state, uid, rerender) {
-  const events = buildEvents(state.projects, state.tasks, uid, state.filterMine);
+  const events = buildEvents(state.projects, state.tasks, state.assignments, uid, state.filterMine);
   const wrap = el("div", {});
 
   const head = el("div", { class: "sc-grid-head" });
@@ -638,6 +672,10 @@ function renderChip(ev) {
     text = `${prefix}${ev.project.title || "(untitled)"}`;
   } else if (ev.kind === "interview") {
     text = `Interview: ${ev.project.title || "(untitled)"}`;
+  } else if (ev.kind === "assignment") {
+    const a = ev.assignment;
+    const who = ev.mine ? "" : ` — ${String(a.assigneeName || "").split(/\s+/)[0] || "assignee"}`;
+    text = `Post due: ${a.articleTitle || "(untitled)"}${who}`;
   } else {
     text = `${ev.deadlineLabel}: ${ev.project.title || "(untitled)"}`;
   }
@@ -659,6 +697,7 @@ function openDayModal(iso, events, rerender) {
 
   for (const ev of events) {
     if (ev.kind === "task") body.appendChild(renderTaskDetail(ev.task, iso, rerender));
+    else if (ev.kind === "assignment") body.appendChild(renderAssignmentDetail(ev));
     else body.appendChild(renderProjectDetail(ev));
   }
 
@@ -687,6 +726,49 @@ function renderProjectDetail(ev) {
       ${pub ? `<br>Scheduled publication: <strong>${esc(fmtNice(pub))}</strong> (finished a week before, so social can prep)` : ""}
     </div>
     <div class="sc-bar" style="margin-top:8px;"><div class="sc-bar-fill" style="width:${progressPct(p)}%"></div></div>`;
+  return box;
+}
+
+// Day-modal card for a social post assignment. The assignee (or an admin /
+// the assigner) can mark it done right here; the live snapshot updates the
+// grid behind the modal.
+function renderAssignmentDetail(ev) {
+  const a = ev.assignment;
+  const m = KIND_META.assignment;
+  const canDone = a.assigneeId === _ctx.uid || a.createdById === _ctx.uid || _ctx.role === "admin";
+
+  const box = el("div", { style: { border: "1px solid var(--hairline,#e5e7eb)", borderLeft: `4px solid ${m.dot}`, borderRadius: "10px", padding: "12px 14px", marginBottom: "10px" } });
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+      <span class="sc-badge" style="background:${m.bg};color:${m.color};">${esc(m.label)}</span>
+      ${ev.mine ? `<span class="sc-badge" style="background:#ede9fe;color:#5b21b6;">Yours</span>` : ""}
+      ${a.platform && a.platform !== "any" ? `<span class="sc-badge" style="background:var(--surface-2,#f1f5f9);color:var(--ink-2,#334155);">${esc(a.platform)}</span>` : ""}
+    </div>
+    <div style="font-weight:700;font-size:14px;color:var(--ink,#0b1220);">Post for &ldquo;${esc(a.articleTitle || "(untitled)")}&rdquo;</div>
+    <div style="font-size:12.5px;color:var(--muted,#64748b);margin-top:3px;line-height:1.5;">
+      ${esc(a.assigneeName || "Unassigned")} · assigned by ${esc(a.createdByName || "—")}
+      ${a.notes ? `<br>&ldquo;${esc(a.notes)}&rdquo;` : ""}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <a class="btn btn-secondary btn-xs" href="#/planner">Open Planner</a>
+      ${canDone ? `<button class="btn btn-accent btn-xs" data-act="done">Mark done</button>` : ""}
+    </div>`;
+
+  box.querySelector('[data-act="done"]')?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      await updateDoc(doc(workflowDb, "social_assignments", a.id), {
+        status: "done",
+        doneAt: new Date().toISOString(),
+      });
+      btn.textContent = "Done ✓";
+      toast("Assignment marked done.", "success");
+    } catch (err) {
+      btn.disabled = false;
+      toast("Could not update: " + err.message, "error");
+    }
+  });
   return box;
 }
 
@@ -997,6 +1079,31 @@ function renderRunway(state, uid) {
   const wrap = el("div", { class: "sc-runway" });
   const today = toISO(todayStart());
   const horizon = toISO(addDays(todayStart(), 30));
+
+  // The viewer's own open post assignments, most urgent first — the calendar
+  // chips show the dates; this is the at-a-glance to-do list version.
+  const myAssignments = (state.assignments || [])
+    .filter((a) => a.status !== "done" && a.assigneeId === uid)
+    .sort((a, b) => String(a.deadline || "9999").localeCompare(String(b.deadline || "9999")));
+  if (myAssignments.length) {
+    wrap.appendChild(el("div", { class: "sc-strip-title" }, `Your post assignments (${myAssignments.length})`));
+    myAssignments.slice(0, 6).forEach((a) => {
+      const d = a.deadline ? daysFromToday(a.deadline) : null;
+      const urgent = d !== null && d <= 0;
+      const when = !a.deadline ? "no deadline"
+        : d === 0 ? "due today"
+        : d < 0 ? `overdue by ${Math.abs(d)}d`
+        : `due ${fmtNice(a.deadline)} (in ${d}d)`;
+      const row = el("div", { class: "sc-runway-row" });
+      row.innerHTML = `
+        <div class="sc-runway-main">
+          <div class="sc-runway-title">Post for &ldquo;${esc(a.articleTitle || "(untitled)")}&rdquo;${a.platform && a.platform !== "any" ? ` <span class="sc-badge" style="background:var(--surface-2,#f1f5f9);color:var(--ink-2,#334155);">${esc(a.platform)}</span>` : ""}</div>
+          <div class="sc-runway-meta">assigned by ${esc(a.createdByName || "—")} · <span style="${urgent ? "color:#b91c1c;font-weight:700;" : ""}">${esc(when)}</span></div>
+        </div>
+        <span class="sc-badge" style="background:${KIND_META.assignment.bg};color:${KIND_META.assignment.color};flex-shrink:0;">Social post</span>`;
+      wrap.appendChild(row);
+    });
+  }
 
   const upcoming = state.projects
     .filter((p) => {
