@@ -72,8 +72,74 @@ const CONTENT_TYPES = [
 function typeChip(label) {
   if (!label) return "";
   const t = CONTENT_TYPES.find((c) => c.label === label) || CONTENT_TYPES[CONTENT_TYPES.length - 1];
-  return `<span style="background:${t.bg};color:${t.ink};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;">${esc(label)}</span>`;
+  return `<span class="ct-chip" style="background:${t.bg};color:${t.ink};">${esc(label)}</span>`;
 }
+
+// One-time stylesheet for the tracker — spreadsheet bones, Apple manners:
+// quiet hairlines, a dark masthead, soft hover, tabular numerals.
+function ensureTrackerStyles() {
+  if (document.getElementById("ct-styles")) return;
+  const s = document.createElement("style");
+  s.id = "ct-styles";
+  s.textContent = `
+    .ct-wrap { border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; background:#fff;
+               box-shadow:0 1px 2px rgba(15,23,42,.05), 0 8px 24px -20px rgba(15,23,42,.25); }
+    .ct-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    table.ct { width:100%; border-collapse:separate; border-spacing:0; min-width:880px; font-size:13.5px; }
+    .ct thead th { background:#0f172a; color:#e2e8f0; text-align:left; padding:11px 14px;
+                   font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+                   white-space:nowrap; }
+    .ct thead th svg { width:13px; height:13px; vertical-align:-2px; margin-right:7px; opacity:.55; }
+    .ct tbody td { padding:12px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle;
+                   color:#334155; }
+    .ct tbody tr:last-child td { border-bottom:0; }
+    .ct tbody tr { transition:background .15s ease; }
+    .ct tbody tr:hover { background:#f8fafc; }
+    .ct tbody tr.ct-mine { background:#f0f6ff; }
+    .ct tbody tr.ct-mine:hover { background:#e8f1ff; }
+    .ct tbody tr.ct-pub td { color:#94a3b8; }
+    .ct-chip { display:inline-block; padding:3px 11px; border-radius:999px; font-size:11px;
+               font-weight:700; white-space:nowrap; letter-spacing:.01em; }
+    .ct-topic { font-weight:600; color:#0f172a; letter-spacing:-.01em; }
+    .ct-owner { display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
+    .ct-owner i { width:20px; height:20px; border-radius:50%; flex-shrink:0; font-style:normal;
+                  display:inline-flex; align-items:center; justify-content:center;
+                  font-size:9.5px; font-weight:700; color:#fff; }
+    .ct-date { font-variant-numeric:tabular-nums; white-space:nowrap; font-size:12.5px; color:#64748b; }
+    .ct-date.urgent { color:#b91c1c; font-weight:700; }
+    .ct-status { appearance:none; -webkit-appearance:none; border-radius:999px; font-size:11px;
+                 font-weight:700; padding:4px 22px 4px 11px; cursor:pointer; line-height:1.2;
+                 background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%2364748b'/%3E%3C/svg%3E");
+                 background-repeat:no-repeat; background-position:right 9px center; }
+    .ct-notes { display:block; max-width:180px; overflow:hidden; text-overflow:ellipsis;
+                white-space:nowrap; font-size:12px; color:#94a3b8; }
+    .ct-act { opacity:0; transition:opacity .15s ease; white-space:nowrap; }
+    .ct tbody tr:hover .ct-act, .ct tbody tr:focus-within .ct-act { opacity:1; }
+    .ct-seg { display:inline-flex; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:999px;
+              padding:3px; gap:2px; }
+    .ct-seg button { border:0; background:transparent; color:#64748b; font:inherit; font-size:12px;
+                     font-weight:600; padding:5px 14px; border-radius:999px; cursor:pointer;
+                     transition:background .15s ease, color .15s ease; }
+    .ct-seg button:focus-visible { outline:2px solid #0f172a; outline-offset:1px; }
+    .ct-seg button.active { background:#fff; color:#0f172a; box-shadow:0 1px 3px rgba(15,23,42,.12); }
+    @media (prefers-reduced-motion: reduce) {
+      .ct tbody tr, .ct-act, .ct-seg button { transition:none; }
+      .ct-act { opacity:1; }
+    }
+    @media (max-width: 720px) { .ct-act { opacity:1; } }
+  `;
+  document.head.appendChild(s);
+}
+
+// Tiny header glyphs (Tt / tag / person / calendar / doc), mirroring the
+// spreadsheet the team is used to. Stroke icons, never emoji.
+const CT_ICONS = {
+  text: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7V5h16v2M12 5v14M9 19h6"/></svg>`,
+  tag:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4L12 22 2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/></svg>`,
+  user: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+  cal:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  globe:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20z"/></svg>`,
+};
 
 // Tracker statuses. Legacy docs used open/done — normalize on read.
 const STATUSES = [
@@ -301,17 +367,20 @@ function renderAssignments(ctx, mountEl, state, reload) {
       return String(a.deadline || "9999").localeCompare(String(b.deadline || "9999"));
     });
 
+  ensureTrackerStyles();
   mountEl.innerHTML = "";
 
-  // Active / All filter pills.
+  // Active / All — a quiet segmented control, not two shouting buttons.
   const publishedCount = state.assignments.filter((a) => normStatus(a.status) === "published").length;
-  const filterBar = el("div", { style: "display:flex;gap:6px;margin-bottom:10px;align-items:center;" });
-  const mkPill = (label, all) => el("button", {
-    class: `btn btn-xs ${showPublished === all ? "btn-primary" : "btn-secondary"}`,
+  const filterBar = el("div", { style: "display:flex;gap:6px;margin-bottom:12px;align-items:center;" });
+  const seg = el("div", { class: "ct-seg", role: "group", "aria-label": "Filter tracker" });
+  const mkSeg = (label, all) => el("button", {
+    class: showPublished === all ? "active" : "",
     onclick: () => { state.trackerShowPublished = all; renderAssignments(ctx, mountEl, state, reload); },
   }, label);
-  filterBar.appendChild(mkPill("Active", false));
-  filterBar.appendChild(mkPill(`All (incl. ${publishedCount} published)`, true));
+  seg.appendChild(mkSeg("Active", false));
+  seg.appendChild(mkSeg(`All · ${publishedCount} published`, true));
+  filterBar.appendChild(seg);
   mountEl.appendChild(filterBar);
 
   if (!rows.length) {
@@ -322,10 +391,20 @@ function renderAssignments(ctx, mountEl, state, reload) {
     return;
   }
 
-  const scroll = el("div", { style: "overflow-x:auto;" });
-  const table = el("table", { style: "width:100%;border-collapse:collapse;font-size:13px;min-width:820px;" });
-  const th = (label) => `<th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--hairline,#e5e7eb);white-space:nowrap;">${label}</th>`;
-  table.innerHTML = `<thead><tr>${th("Platform")}${th("Type")}${th("Topic")}${th("Owner")}${th("Status")}${th("Post date")}${th("Notes")}${th("")}</tr></thead>`;
+  const wrap = el("div", { class: "ct-wrap" });
+  const scroll = el("div", { class: "ct-scroll" });
+  const table = el("table", { class: "ct" });
+  const th = (icon, label) => `<th>${icon || ""}${label}</th>`;
+  table.innerHTML = `<thead><tr>
+    ${th(CT_ICONS.globe, "Platform")}
+    ${th(CT_ICONS.tag, "Type")}
+    ${th(CT_ICONS.text, "Topic")}
+    ${th(CT_ICONS.user, "Owner")}
+    ${th(CT_ICONS.tag, "Status")}
+    ${th(CT_ICONS.cal, "Post date")}
+    ${th(CT_ICONS.text, "Notes")}
+    <th></th>
+  </tr></thead>`;
   const tbody = el("tbody", {});
 
   for (const a of rows) {
@@ -334,24 +413,22 @@ function renderAssignments(ctx, mountEl, state, reload) {
     const isPub = a._status === "published";
     const due = parseDay(a.deadline);
     const dueText = dueLabel(due, isPub);
-    const td = "padding:9px 10px;border-bottom:1px solid var(--hairline,#f1f5f9);vertical-align:middle;";
 
-    const tr = el("tr", { style: mine && !isPub ? "background:var(--surface-2,#f8fafc);" : "" });
+    const tr = el("tr", { class: `${mine && !isPub ? "ct-mine" : ""}${isPub ? " ct-pub" : ""}`.trim() });
     tr.innerHTML = `
-      <td style="${td}white-space:nowrap;color:var(--ink-2);">${esc(platformLabel(a.platform))}</td>
-      <td style="${td}">${typeChip(a.type) || `<span style="color:var(--muted);">—</span>`}</td>
-      <td style="${td}min-width:200px;">
-        <span style="font-weight:600;color:var(--ink);${isPub ? "opacity:.6;" : ""}">${esc(a.articleTitle || "(untitled)")}</span>
-        ${a.link ? ` <a href="${esc(a.link)}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--accent);">open&nbsp;asset</a>` : ""}
-        ${mine && !isPub ? ` <span class="pill pill-pending" style="font-size:10px;">yours</span>` : ""}
+      <td style="white-space:nowrap;">${esc(platformLabel(a.platform))}</td>
+      <td>${typeChip(a.type) || `<span style="color:#cbd5e1;">—</span>`}</td>
+      <td style="min-width:220px;">
+        <span class="ct-topic" style="${isPub ? "opacity:.55;" : ""}">${esc(a.articleTitle || "(untitled)")}</span>
+        ${a.link ? ` <a href="${esc(a.link)}" target="_blank" rel="noopener" style="font-size:11.5px;color:#2563eb;text-decoration:none;">asset&nbsp;&rarr;</a>` : ""}
       </td>
-      <td style="${td}white-space:nowrap;color:var(--ink-2);">${esc(a.assigneeName || "—")}</td>
-      <td style="${td}"></td>
-      <td style="${td}white-space:nowrap;font-size:12px;${dueText.urgent && !isPub ? "color:var(--danger,#b91c1c);font-weight:700;" : "color:var(--muted);"}">${esc(dueText.text)}</td>
-      <td style="${td}max-width:180px;"><span title="${esc(a.notes || "")}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted);">${esc(a.notes || "")}</span></td>
-      <td style="${td}white-space:nowrap;text-align:right;">
+      <td><span class="ct-owner"><i style="background:${avatarColor(a.assigneeName)};">${esc((a.assigneeName || "?")[0].toUpperCase())}</i>${esc(a.assigneeName || "—")}${mine && !isPub ? ` <span class="ct-chip" style="background:#fef3c7;color:#92400e;">you</span>` : ""}</span></td>
+      <td></td>
+      <td class="ct-date${dueText.urgent && !isPub ? " urgent" : ""}">${esc(dueText.text)}</td>
+      <td><span class="ct-notes" title="${esc(a.notes || "")}">${esc(a.notes || "")}</span></td>
+      <td class="ct-act" style="text-align:right;">
         ${canTouch ? `<button class="btn btn-ghost btn-xs" data-act="edit">Edit</button>` : ""}
-        ${(lead || a.createdById === myUid) ? `<button class="btn btn-ghost btn-xs" data-act="remove" style="color:var(--danger,#b91c1c);">Remove</button>` : ""}
+        ${(lead || a.createdById === myUid) ? `<button class="btn btn-ghost btn-xs" data-act="remove" style="color:#b91c1c;">Remove</button>` : ""}
       </td>`;
 
     // Inline status select — the fastest path from "drafting" to "published".
@@ -359,8 +436,9 @@ function renderAssignments(ctx, mountEl, state, reload) {
     const meta = STATUSES.find((s) => s.id === a._status) || STATUSES[0];
     if (canTouch) {
       const sel = el("select", {
-        class: "select",
-        style: `font-size:11.5px;font-weight:700;padding:3px 6px;border-radius:999px;border:1px solid ${meta.ink}33;background:${meta.bg};color:${meta.ink};max-width:120px;`,
+        class: "ct-status",
+        "aria-label": "Status",
+        style: `border:1px solid ${meta.ink}26;background-color:${meta.bg};color:${meta.ink};`,
       });
       sel.innerHTML = STATUSES.map((s) => `<option value="${s.id}" ${s.id === a._status ? "selected" : ""}>${s.label}</option>`).join("");
       sel.addEventListener("change", async () => {
@@ -377,7 +455,7 @@ function renderAssignments(ctx, mountEl, state, reload) {
       });
       statusCell.appendChild(sel);
     } else {
-      statusCell.innerHTML = `<span style="background:${meta.bg};color:${meta.ink};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;">${esc(meta.label)}</span>`;
+      statusCell.innerHTML = `<span class="ct-chip" style="background:${meta.bg};color:${meta.ink};">${esc(meta.label)}</span>`;
     }
 
     tr.querySelector('[data-act="edit"]')?.addEventListener("click", () =>
@@ -395,7 +473,8 @@ function renderAssignments(ctx, mountEl, state, reload) {
 
   table.appendChild(tbody);
   scroll.appendChild(table);
-  mountEl.appendChild(scroll);
+  wrap.appendChild(scroll);
+  mountEl.appendChild(wrap);
 }
 
 function platformLabel(p) {

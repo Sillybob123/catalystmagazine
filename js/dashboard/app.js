@@ -18,6 +18,8 @@ import {
   doc,
   getDoc,
   setDoc,
+  collection,
+  getDocs,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -116,6 +118,8 @@ const state = {
   profile: null,       // Firestore users/{uid} doc data (includes role)
   role: null,          // Real role from Firestore (never changes during session)
   previewRole: null,   // Admin-only: role being previewed; null when not previewing
+  previewUser: null,   // Admin-only: a specific teammate being previewed
+                       //   { uid, name, email, role, extraAccess, profile }
   currentRoute: null,
   currentModule: null,
   moduleCleanup: null,
@@ -127,8 +131,10 @@ const state = {
 // check request.auth), so permissions are unaffected.
 const PREVIEW_ROLES = ["writer", "editor", "newsletter_builder", "marketing", "social_media"];
 const PREVIEW_KEY = "catalyst.dashboard.previewRole";
+const PREVIEW_USER_KEY = "catalyst.dashboard.previewUser";
 
 function getActiveRole() {
+  if (state.previewUser) return state.previewUser.role || "reader";
   return state.previewRole || state.role;
 }
 
@@ -427,12 +433,19 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // Restore any previous preview role chosen this session (admin only).
+  // Restore any previous preview (role or person) chosen this session (admin only).
   if (state.role === "admin") {
     const saved = sessionStorage.getItem(PREVIEW_KEY);
     if (saved && PREVIEW_ROLES.includes(saved)) {
       state.previewRole = saved;
     }
+    try {
+      const savedUser = JSON.parse(sessionStorage.getItem(PREVIEW_USER_KEY) || "null");
+      if (savedUser && savedUser.uid && savedUser.role) {
+        state.previewUser = savedUser;
+        state.previewRole = null;
+      }
+    } catch {}
   }
 
   initPresencePing();
@@ -496,7 +509,13 @@ function initPresencePing() {
 //
 // When admin is previewing another role, extraAccess is intentionally
 // ignored so the sidebar reflects the previewed role's *base* permissions.
+// When previewing a specific person, THEIR grants apply — the whole point
+// is to see exactly what that teammate sees.
 function getExtraAccess() {
+  if (state.previewUser) {
+    const list = state.previewUser.extraAccess;
+    return Array.isArray(list) ? list : [];
+  }
   if (state.previewRole) return [];
   const list = state.profile?.extraAccess;
   return Array.isArray(list) ? list : [];
@@ -550,9 +569,11 @@ function renderSidebar() {
   // Ensure a default route exists
   if (!location.hash) location.hash = "#/overview";
 
-  const footerRoleLine = state.previewRole
-    ? `<div><span style="color:var(--muted);">Previewing as</span> ${ROLE_LABELS[state.previewRole] || state.previewRole}</div>`
-    : `<div>${ROLE_LABELS[state.role] || state.role}</div>`;
+  const footerRoleLine = state.previewUser
+    ? `<div><span style="color:var(--muted);">Previewing</span> ${state.previewUser.name || state.previewUser.email}</div>`
+    : state.previewRole
+      ? `<div><span style="color:var(--muted);">Previewing as</span> ${ROLE_LABELS[state.previewRole] || state.previewRole}</div>`
+      : `<div>${ROLE_LABELS[state.role] || state.role}</div>`;
   document.getElementById("footer-user-info").innerHTML =
     `<div style="font-weight:600;color:var(--ink-2);">${state.profile.name || state.profile.email}</div>` +
     footerRoleLine;
@@ -562,7 +583,10 @@ function paintUserChip() {
   document.getElementById("user-avatar").textContent = initials(state.profile.name, state.profile.email);
   document.getElementById("user-name").textContent = state.profile.name || state.profile.email;
   const roleEl = document.getElementById("user-role");
-  if (state.previewRole) {
+  if (state.previewUser) {
+    roleEl.textContent = `Viewing ${state.previewUser.name || state.previewUser.email}`;
+    roleEl.style.color = "#b45309";
+  } else if (state.previewRole) {
     roleEl.textContent = `Viewing as ${ROLE_LABELS[state.previewRole] || state.previewRole}`;
     roleEl.style.color = "#b45309";
   } else {
@@ -614,19 +638,31 @@ async function handleRoute() {
 }
 
 // Prepend a preview banner to the mounted content when the admin is previewing
-// as another role. Called after each module mount.
+// as another role or a specific teammate. Called after each module mount.
 function injectPreviewBanner(content) {
-  if (!state.previewRole) return;
-  const label = ROLE_LABELS[state.previewRole] || state.previewRole;
+  if (!state.previewRole && !state.previewUser) return;
   const banner = el("div", { class: "preview-banner", role: "status" });
-  banner.innerHTML = `
-    <span class="preview-banner-dot" aria-hidden="true"></span>
-    <span class="preview-banner-text">
-      Previewing as <strong>${label}</strong> &middot; your admin permissions are unchanged
-    </span>
-    <button type="button" class="preview-banner-exit">Exit preview</button>
-  `;
-  banner.querySelector(".preview-banner-exit").addEventListener("click", () => setPreviewRole(null));
+  if (state.previewUser) {
+    const who = state.previewUser.name || state.previewUser.email;
+    const roleLabel = ROLE_LABELS[state.previewUser.role] || state.previewUser.role || "";
+    banner.innerHTML = `
+      <span class="preview-banner-dot" aria-hidden="true"></span>
+      <span class="preview-banner-text">
+        Previewing <strong>${who}</strong>'s dashboard (${roleLabel}) &middot; their pages, grants, and data &middot; saving/posting is blocked while previewing
+      </span>
+      <button type="button" class="preview-banner-exit">Exit preview</button>
+    `;
+  } else {
+    const label = ROLE_LABELS[state.previewRole] || state.previewRole;
+    banner.innerHTML = `
+      <span class="preview-banner-dot" aria-hidden="true"></span>
+      <span class="preview-banner-text">
+        Previewing as <strong>${label}</strong> &middot; your admin permissions are unchanged
+      </span>
+      <button type="button" class="preview-banner-exit">Exit preview</button>
+    `;
+  }
+  banner.querySelector(".preview-banner-exit").addEventListener("click", () => exitAllPreviews());
   content.prepend(banner);
 }
 
@@ -652,12 +688,24 @@ function resolveApiUrl(url) {
 }
 
 function makeContext(route) {
+  // When previewing a specific teammate, hand modules THEIR identity (uid,
+  // profile) so "My articles", calendars, and assignment lists show their
+  // data — staff-wide read rules make that possible. Writes still run on the
+  // admin's auth token, so anything self-attributed is rejected by Firestore
+  // rules rather than forged.
+  const pu = state.previewUser;
+  const ctxUser = pu
+    ? { uid: pu.uid, email: pu.email || "", displayName: pu.name || "" }
+    : state.user;
+  const ctxProfile = pu
+    ? (pu.profile || { name: pu.name, email: pu.email, role: pu.role, extraAccess: pu.extraAccess })
+    : state.profile;
   return {
-    user: state.user,
-    profile: state.profile,
+    user: ctxUser,
+    profile: ctxProfile,
     role: getActiveRole(),
     realRole: state.role,
-    isPreviewing: !!state.previewRole,
+    isPreviewing: !!state.previewRole || !!state.previewUser,
     mountKey: route.mountKey || null,
     toast,
     // Helper to build authorized fetch requests to our own /api endpoints.
@@ -686,7 +734,11 @@ function makeContext(route) {
 function setPreviewRole(nextRole) {
   if (state.role !== "admin") return;
   if (nextRole && !PREVIEW_ROLES.includes(nextRole)) return;
-  if (nextRole === state.previewRole) { closeUserMenu(); return; }
+  if (nextRole === state.previewRole && !state.previewUser) { closeUserMenu(); return; }
+
+  // Role preview and person preview are mutually exclusive.
+  state.previewUser = null;
+  sessionStorage.removeItem(PREVIEW_USER_KEY);
 
   state.previewRole = nextRole;
   if (nextRole) {
@@ -713,6 +765,115 @@ function setPreviewRole(nextRole) {
   } else {
     toast("Back to your admin view.", "info");
   }
+}
+
+// Preview a specific teammate — their role, their extra-access grants, their
+// data. Pass null to exit.
+function setPreviewUser(next) {
+  if (state.role !== "admin") return;
+  if (next && next.uid === state.user.uid) {
+    toast("That's you — no preview needed.", "info");
+    return;
+  }
+  state.previewRole = null;
+  sessionStorage.removeItem(PREVIEW_KEY);
+  state.previewUser = next;
+  if (next) {
+    sessionStorage.setItem(PREVIEW_USER_KEY, JSON.stringify(next));
+  } else {
+    sessionStorage.removeItem(PREVIEW_USER_KEY);
+  }
+
+  paintUserChip();
+  renderSidebar();
+  closeUserMenu();
+
+  if (location.hash === "#/overview") {
+    handleRoute();
+  } else {
+    location.hash = "#/overview";
+  }
+
+  if (next) {
+    toast(`Previewing ${next.name || next.email}'s dashboard.`, "info");
+  } else {
+    toast("Back to your admin view.", "info");
+  }
+}
+
+function exitAllPreviews() {
+  if (state.previewUser) setPreviewUser(null);
+  else setPreviewRole(null);
+}
+
+// Searchable teammate list → click to preview. Loads the users directory
+// once per open; admins can read every user doc.
+async function openPersonPicker() {
+  closeUserMenu();
+  const body = el("div", { style: "display:flex;flex-direction:column;gap:10px;min-width:min(420px,80vw);" });
+  body.innerHTML = `
+    <input id="pp-search" placeholder="Search by name or email…" autocomplete="off"
+           style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
+    <div id="pp-list" style="max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:2px;">
+      <div class="loading-state"><div class="spinner"></div>Loading team…</div>
+    </div>`;
+  const modal = openModal({ title: "Preview a teammate's dashboard", body });
+  if (!modal) return;
+
+  let people = [];
+  try {
+    const snap = await getDocs(collection(db, "users"));
+    people = snap.docs
+      .map((d) => ({ uid: d.id, ...d.data() }))
+      .filter((u) => u.uid !== state.user.uid && u.role && u.role !== "reader")
+      .sort((a, b) => String(a.name || a.email || "").localeCompare(String(b.name || b.email || "")));
+  } catch (err) {
+    body.querySelector("#pp-list").innerHTML = `<div class="error-state">Could not load users: ${err.message}</div>`;
+    return;
+  }
+
+  const listEl = body.querySelector("#pp-list");
+  const searchEl = body.querySelector("#pp-search");
+  const renderList = () => {
+    const q = searchEl.value.trim().toLowerCase();
+    const matches = people.filter((u) =>
+      !q || String(u.name || "").toLowerCase().includes(q) || String(u.email || "").toLowerCase().includes(q));
+    listEl.innerHTML = "";
+    if (!matches.length) {
+      listEl.innerHTML = `<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px;">No one matches "${searchEl.value.trim()}".</div>`;
+      return;
+    }
+    for (const u of matches) {
+      const row = el("button", {
+        type: "button",
+        style: "display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 10px;border:0;background:transparent;border-radius:8px;cursor:pointer;font:inherit;",
+        onmouseenter: (e) => { e.currentTarget.style.background = "var(--surface-2,#f1f5f9)"; },
+        onmouseleave: (e) => { e.currentTarget.style.background = "transparent"; },
+      });
+      row.innerHTML = `
+        <span style="width:30px;height:30px;border-radius:50%;background:var(--accent,#0f172a);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${initials(u.name, u.email)}</span>
+        <span style="min-width:0;flex:1;">
+          <span style="display:block;font-weight:600;font-size:13.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.name || u.email || "(no name)"}</span>
+          <span style="display:block;font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email || ""}</span>
+        </span>
+        <span style="font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap;">${ROLE_LABELS[u.role] || u.role}${Array.isArray(u.extraAccess) && u.extraAccess.length ? ` · +${u.extraAccess.length}` : ""}</span>`;
+      row.addEventListener("click", () => {
+        modal.close();
+        setPreviewUser({
+          uid: u.uid,
+          name: u.name || "",
+          email: u.email || "",
+          role: u.role,
+          extraAccess: Array.isArray(u.extraAccess) ? u.extraAccess : [],
+          profile: u,
+        });
+      });
+      listEl.appendChild(row);
+    }
+  };
+  searchEl.addEventListener("input", renderList);
+  renderList();
+  setTimeout(() => searchEl.focus(), 0);
 }
 
 function renderUserMenu() {
@@ -760,7 +921,14 @@ function renderUserMenu() {
       <div class="user-menu-section-label">View dashboard as</div>
       ${roleItem("admin", "You")}
       ${PREVIEW_ROLES.map((r) => roleItem(r)).join("")}
-      ${state.previewRole ? `
+      <div class="user-menu-divider"></div>
+      <button type="button" class="user-menu-item" data-action="preview-person" ${state.previewUser ? 'aria-current="true"' : ""}>
+        <span class="user-menu-item-dot"></span>
+        <span class="user-menu-item-label">${state.previewUser
+          ? `Previewing: ${state.previewUser.name || state.previewUser.email}`
+          : "Preview a specific person…"}</span>
+      </button>
+      ${state.previewRole || state.previewUser ? `
         <div class="user-menu-divider"></div>
         <button type="button" class="user-menu-item user-menu-exit" data-action="exit-preview">
           <span class="user-menu-item-dot" style="background:currentColor;"></span>
@@ -1001,7 +1169,11 @@ function attachGlobalHandlers() {
       return;
     }
     if (action === "exit-preview") {
-      setPreviewRole(null);
+      exitAllPreviews();
+      return;
+    }
+    if (action === "preview-person") {
+      openPersonPicker();
       return;
     }
     if (action === "preview") {
@@ -1009,7 +1181,7 @@ function attachGlobalHandlers() {
       // Clicking "admin" while not previewing is a no-op; clicking it while
       // previewing exits the preview.
       if (role === "admin") {
-        setPreviewRole(null);
+        exitAllPreviews();
       } else {
         setPreviewRole(role);
       }
