@@ -17,7 +17,7 @@ import { requireRole } from "../../_utils/auth.js";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const auth = await requireRole(request, env, ["admin", "newsletter_builder"]);
+    const auth = await requireRole(request, env, ["admin", "newsletter_builder"], ["#/newsletter/builder"]);
     if (auth instanceof Response) return auth;
 
     let body;

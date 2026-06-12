@@ -7,7 +7,7 @@ import { requireRole } from "../../_utils/auth.js";
 
 export const onRequestGet = async ({ request, env }) => {
   try {
-    const auth = await requireRole(request, env, ["admin", "marketing", "newsletter_builder", "social_media"]);
+    const auth = await requireRole(request, env, ["admin", "marketing", "newsletter_builder", "social_media"], ["#/marketing/analytics"]);
     if (auth instanceof Response) return auth;
 
     // Pull all subscribers (we cap at 5k to be safe — replace with paging if we grow past that).

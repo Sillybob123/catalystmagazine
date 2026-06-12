@@ -62,6 +62,18 @@ service cloud.firestore {
     function isMarketingOS()       { return hasAnyRole(['admin', 'marketing', 'social_media']); }
     function isStaff()             { return hasAnyRole(['admin', 'editor', 'writer', 'newsletter_builder', 'marketing', 'social_media']); }
 
+    // Grant-aware capability helpers. An admin can hand the writing composer
+    // or the editing queue to ANY role via Extra access (Users & roles), so
+    // these wrap the base-role checks with the matching route grants. Keep
+    // the hash lists in sync with GRANTABLE_ROUTES (js/dashboard/admin.js).
+    function canWriteStories() {
+      return isWriter()
+        || hasAnyGrant(['#/writer/draft', '#/writer/mine', '#/book-reviews/write', '#/book-reviews/mine']);
+    }
+    function canEditStories() {
+      return isEditor() || hasAnyGrant(['#/editor/queue', '#/admin/articles']);
+    }
+
     // ---------- users ----------
     // Anonymous tokens are explicitly excluded — only real (email/password)
     // accounts can have a /users doc, which is what gates every staff role.
@@ -93,30 +105,33 @@ service cloud.firestore {
       allow read: if resource.data.status == 'published';
       allow read: if isStaff();
 
-      allow create: if isWriter()
+      allow create: if canWriteStories()
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.status in ['draft', 'pending'];
 
       // Author can update their own draft.
-      allow update: if isWriter()
+      allow update: if canWriteStories()
         && resource.data.authorId == request.auth.uid
         && request.resource.data.status in ['draft', 'pending'];
 
       // Final-review publish: once an admin has approved the piece, the author
       // can flip status from 'approved' to 'published' from the final-review
       // page. No other transitions out of 'approved' are permitted for writers.
-      allow update: if isWriter()
+      allow update: if canWriteStories()
         && resource.data.authorId == request.auth.uid
         && resource.data.status == 'approved'
         && request.resource.data.status == 'published';
 
       // Author can delete their own draft/pending piece (before it ships).
-      allow delete: if isWriter()
+      allow delete: if canWriteStories()
         && resource.data.authorId == request.auth.uid
         && resource.data.status in ['draft', 'pending'];
 
-      // Editors / admins can update, assign, approve, publish, delete.
-      allow update, delete: if isEditor();
+      // Editors / admins (or users granted the editor queue / All articles
+      // page) can update, assign, approve, publish. Deleting other people's
+      // stories stays with real editors/admins.
+      allow update: if canEditStories();
+      allow delete: if isEditor();
 
       // Games grant: a non-editor explicitly granted the Games page may
       // attach/clear a story's brain-teaser game, but ONLY the `game` field —
@@ -128,16 +143,16 @@ service cloud.firestore {
       // ----- nested collections on a story -----
       match /comments/{commentId} {
         allow read: if isStaff();
-        allow create: if isEditor()
+        allow create: if canEditStories()
           && request.resource.data.authorId == request.auth.uid;
-        allow update, delete: if isEditor()
+        allow update, delete: if canEditStories()
           && resource.data.authorId == request.auth.uid;
         allow delete: if isAdmin();
       }
 
       match /checklist/{itemId} {
         allow read: if isStaff();
-        allow write: if isEditor();
+        allow write: if canEditStories();
       }
 
       // ----- editor suggestions (track-changes style) -----
@@ -146,12 +161,12 @@ service cloud.firestore {
       // The author can accept/reject (= delete). Editors can also delete their own.
       match /suggestions/{suggestionId} {
         allow read: if isStaff();
-        allow create: if isEditor()
+        allow create: if canEditStories()
           && request.resource.data.authorId == request.auth.uid;
-        allow update: if isEditor()
+        allow update: if canEditStories()
           && resource.data.authorId == request.auth.uid;
-        allow delete: if isEditor()
-          || (isWriter() && get(/databases/$(database)/documents/stories/$(storyId)).data.authorId == request.auth.uid);
+        allow delete: if canEditStories()
+          || (canWriteStories() && get(/databases/$(database)/documents/stories/$(storyId)).data.authorId == request.auth.uid);
       }
     }
 
@@ -166,7 +181,8 @@ service cloud.firestore {
     // Canonical write path is POST /api/subscribe (server-side, service account).
     // Anonymous create allowed as a fallback; reads are staff-only.
     match /subscribers/{emailKey} {
-      allow read: if isMarketingOS() || isNewsletterBuilder() || isEditor();
+      allow read: if isMarketingOS() || isNewsletterBuilder() || isEditor()
+        || hasAnyGrant(['#/marketing/subscribers', '#/marketing/analytics', '#/newsletter/builder']);
       allow create: if
         request.resource.data.email is string
         && request.resource.data.email.matches('.+@.+\\..+')
@@ -176,8 +192,9 @@ service cloud.firestore {
 
     // ---------- newsletter campaigns ----------
     match /newsletter_campaigns/{campaignId} {
-      allow read: if isNewsletterBuilder() || isMarketing();
-      allow create, update: if isNewsletterBuilder()
+      allow read: if isNewsletterBuilder() || isMarketing()
+        || hasAnyGrant(['#/newsletter/builder', '#/newsletter/history']);
+      allow create, update: if (isNewsletterBuilder() || hasGrant('#/newsletter/builder'))
         && request.resource.data.createdBy == request.auth.uid;
       allow delete: if isAdmin();
     }
@@ -196,7 +213,7 @@ service cloud.firestore {
       allow create: if
         request.resource.data.email is string
         && request.resource.data.email.matches('.+@.+\\..+');
-      allow read: if isMarketing() || isAdmin();
+      allow read: if isMarketing() || hasGrant('#/marketing/collabs');
       allow update, delete: if isAdmin();
     }
 
@@ -219,14 +236,14 @@ service cloud.firestore {
     // ---------- analytics events (page views, signups, etc.) ----------
     match /analytics_events/{eventId} {
       allow create: if true; // anonymous logging permitted
-      allow read: if isMarketingOS();
+      allow read: if isMarketingOS() || hasGrant('#/marketing/analytics');
       allow update, delete: if isAdmin();
     }
 
     // ---------- user presence / last-seen ----------
     match /user_presence/{uid} {
       // Real (non-anonymous) users update their own presence on login.
-      allow read: if isEditor() || isAdmin();
+      allow read: if isEditor() || hasGrant('#/admin/activity');
       allow write: if isRealUser() && request.auth.uid == uid;
     }
 
@@ -256,8 +273,9 @@ service cloud.firestore {
       // is shown to every staff role in the dashboard, so every staff member
       // may read projects. Write paths below stay author/editor/admin-gated.
       allow read: if isStaff();
-      // Writers can only create proposals under their own uid.
-      allow create: if isWriter()
+      // Writers (incl. users granted the writing pages) can only create
+      // proposals under their own uid.
+      allow create: if canWriteStories()
         && request.resource.data.authorId == request.auth.uid;
       // Authors can update their own project.
       // Assigned editors (editorId matches) can update their assigned project.

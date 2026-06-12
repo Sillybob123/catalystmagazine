@@ -482,11 +482,20 @@ function roleLabel(r) {
 // Keep this in sync with ROUTES in app.js. If a new route is added there
 // that should be admin-grantable, add it here too.
 const GRANTABLE_ROUTES = [
+  // Writing — lets any role (e.g. social media) submit and manage drafts.
+  { group: "Writing",            hash: "#/writer/draft",       label: "Submit a draft",             baseRoles: ["admin", "editor", "writer"] },
+  { group: "Writing",            hash: "#/writer/mine",        label: "My articles",                baseRoles: ["admin", "editor", "writer"] },
+  { group: "Writing",            hash: "#/writer/feed",        label: "Articles in the works",      baseRoles: ["admin", "editor", "writer"] },
+  { group: "Writing",            hash: "#/writer/guidelines",  label: "Editorial standards",        baseRoles: ["admin", "editor", "writer"] },
+  { group: "Writing",            hash: "#/book-reviews/write", label: "Write a book review",        baseRoles: ["admin", "editor", "writer"] },
+  { group: "Writing",            hash: "#/book-reviews/mine",  label: "My book reviews",            baseRoles: ["admin", "editor", "writer"] },
+
   // Editorial / pipeline
   { group: "Editorial pipeline", hash: "#/admin/articles",     label: "All articles & approvals",   baseRoles: ["admin"] },
   { group: "Editorial pipeline", hash: "#/admin/submissions",  label: "Submissions inbox",          baseRoles: ["admin"] },
   { group: "Editorial pipeline", hash: "#/admin/book-reviews", label: "Book reviews queue",         baseRoles: ["admin", "editor"] },
   { group: "Editorial pipeline", hash: "#/editor/queue",       label: "Editor queue",               baseRoles: ["admin", "editor"] },
+  { group: "Editorial pipeline", hash: "#/admin/tasks",        label: "Tasks (admin queue)",        baseRoles: ["admin"] },
 
   // Marketing
   { group: "Marketing",          hash: "#/planner",                 label: "Planner (upcoming stories)",  baseRoles: ["admin", "marketing", "social_media"] },
@@ -507,6 +516,8 @@ const GRANTABLE_ROUTES = [
   { group: "Admin tools",        hash: "#/admin/users",        label: "Users & roles",              baseRoles: ["admin"] },
   { group: "Admin tools",        hash: "#/admin/images",       label: "Image library",              baseRoles: ["admin"] },
   { group: "Admin tools",        hash: "#/admin/games",        label: "Games",                      baseRoles: ["admin"] },
+  { group: "Admin tools",        hash: "#/admin/activity",     label: "Activity",                   baseRoles: ["admin"] },
+  { group: "Admin tools",        hash: "#/admin/advanced",     label: "Advanced tools",             baseRoles: ["admin"] },
 ];
 
 // Routes a user with this role ALREADY sees via the regular role map.

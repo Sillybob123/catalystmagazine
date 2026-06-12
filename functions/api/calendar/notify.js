@@ -27,6 +27,7 @@ export const onRequestPost = async ({ request, env }) => {
       "writer",
       "marketing",
       "newsletter_builder",
+      "social_media",
     ]);
     if (auth instanceof Response) return auth;
 

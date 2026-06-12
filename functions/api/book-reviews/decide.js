@@ -30,7 +30,7 @@ const ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
 export const onRequestPost = async ({ request, env }) => {
   try {
     // ─── auth gate ───────────────────────────────────────────────────────
-    const caller = await requireRole(request, env, ["admin"]);
+    const caller = await requireRole(request, env, ["admin"], ["#/admin/book-reviews"]);
     if (caller instanceof Response) return caller;
 
     // ─── content-type + body-size guard ──────────────────────────────────
