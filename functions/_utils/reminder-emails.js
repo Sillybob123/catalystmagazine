@@ -1582,7 +1582,13 @@ export function socialPublishedEmail({ title, authorName, articleUrl, category, 
 // lead) assigns them a social post for a specific article with a deadline.
 export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
   const articleTitle = assignment.articleTitle || "(untitled article)";
-  const firstName = String(assignment.assigneeName || "there").trim().split(/\s+/)[0] || "there";
+  const owners = Array.isArray(assignment.assignees) && assignment.assignees.length
+    ? assignment.assignees
+    : [{ name: assignment.assigneeName }];
+  const firstName = owners.length > 1
+    ? "team"
+    : (String(owners[0]?.name || "there").trim().split(/\s+/)[0] || "there");
+  const ownerNames = owners.map((o) => o?.name || o?.email).filter(Boolean).join(", ");
   const plannerUrl = `${siteUrl}/admin/#/planner`;
 
   const statusBlock = buildStatusBlock({
@@ -1593,6 +1599,7 @@ export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
         ? { label: "Platform", value: assignment.platform }
         : { label: "Platform", value: "Your call (any)" },
       { label: "Due", value: fmtDate(assignment.deadline) },
+      owners.length > 1 ? { label: "Owners", value: ownerNames } : null,
       { label: "Assigned by", value: assignerName || "—" },
     ].filter(Boolean),
     tone: "alert",
@@ -1630,6 +1637,59 @@ export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
 
   const subject = `Social post assignment: "${truncate(articleTitle, 42)}" — due ${fmtDate(assignment.deadline)}`;
   const preheader = `${assignerName || "The team"} assigned you a post for "${truncate(articleTitle, 50)}".`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// ─── Social post due-today reminder ──────────────────────────────────────────
+// Sent by the daily bot to every owner of a tracker row on its post date.
+export function socialAssignmentDueEmail({ assignment, recipientName, siteUrl }) {
+  const articleTitle = assignment.articleTitle || "(untitled post)";
+  const firstName = String(recipientName || "there").trim().split(/\s+/)[0] || "there";
+  const plannerUrl = `${siteUrl}/admin/#/planner`;
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Topic", value: articleTitle },
+      assignment.type ? { label: "Type", value: assignment.type } : null,
+      assignment.platform && assignment.platform !== "any"
+        ? { label: "Platform", value: assignment.platform } : null,
+      { label: "Due", value: "Today" },
+    ].filter(Boolean),
+    tone: "alert",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      Your social post is due today.
+    </p>
+
+    ${statusBlock}
+
+    ${assignment.notes ? `
+    <div style="margin:18px 0 0 0;border-left:3px solid ${COLORS.hairline};padding:4px 0 4px 16px;">
+      <p style="margin:0;font-size:14px;line-height:1.65;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(assignment.notes)}</p>
+    </div>` : ""}
+
+    <p style="margin:18px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};">
+      Once it's posted, set the row to <strong>Published</strong> in the
+      Planner so the tracker stays clean for everyone.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(plannerUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the Planner</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">The Catalyst dashboard</span>
+    </p>
+  `;
+
+  const subject = `Due today: social post for "${truncate(articleTitle, 45)}"`;
+  const preheader = "Today's the post date you set — ship it and mark it Published.";
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 

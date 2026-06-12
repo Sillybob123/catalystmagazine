@@ -34,8 +34,6 @@ import {
   deleteDoc,
   arrayUnion,
   serverTimestamp,
-  query,
-  where,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, fmtDate, fmtRelative, slugify, confirmDialog } from "./ui.js";
 
@@ -132,6 +130,21 @@ function ensureTrackerStyles() {
              border-radius:7px; font:inherit; font-size:12px; background:#fff; color:#0f172a; }
     .ct-in:focus-visible { outline:2px solid #0f172a; outline-offset:0; border-color:#0f172a; }
     select.ct-in { padding-right:4px; }
+    /* Multi-owner picker: a details-popover of checkboxes, Sheets-chip style */
+    .ct-owners { position:relative; }
+    .ct-owners > summary { list-style:none; cursor:pointer; padding:6px 8px; border:1px solid #cbd5e1;
+                           border-radius:7px; font-size:12px; background:#fff; color:#0f172a;
+                           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ct-owners > summary::-webkit-details-marker { display:none; }
+    .ct-owners[open] > summary { border-color:#0f172a; }
+    .ct-owners-panel { position:absolute; z-index:30; top:calc(100% + 4px); left:0; min-width:200px;
+                       max-height:220px; overflow:auto; background:#fff; border:1px solid #e2e8f0;
+                       border-radius:10px; box-shadow:0 8px 24px rgba(15,23,42,.16); padding:6px; }
+    .ct-owners-panel label { display:flex; align-items:center; gap:8px; padding:6px 8px;
+                             border-radius:7px; font-size:12.5px; color:#0f172a; cursor:pointer; }
+    .ct-owners-panel label:hover { background:#f1f5f9; }
+    .ct-owners-panel input { width:14px; height:14px; accent-color:#0f172a; }
+    .ct-owner i + i { margin-left:-7px; box-shadow:0 0 0 2px #fff; }
     .ct-seg { display:inline-flex; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:999px;
               padding:3px; gap:2px; }
     .ct-seg button { border:0; background:transparent; color:#64748b; font:inherit; font-size:12px;
@@ -179,8 +192,9 @@ function isDoneStatus(s) {
   return normStatus(s) === "published";
 }
 
-// Roles that can be assigned a post.
-const ASSIGNABLE_ROLES = ["social_media", "marketing", "admin"];
+// Sort priority for the owner picker — social team first, then everyone
+// else. Any staff member can own a post (admins included).
+const TEAM_ROLE_PRIORITY = { social_media: 0, marketing: 1, admin: 2 };
 
 function canAssign(ctx) {
   if (ctx.role === "admin") return true;
@@ -299,7 +313,7 @@ async function loadData(ctx, container, state, reload) {
     fetchPublishedStories(),
     getDocs(collection(db, "social_posts")),
     getDocs(collection(db, "social_assignments")),
-    getDocs(query(collection(db, "users"), where("role", "in", ASSIGNABLE_ROLES))),
+    getDocs(collection(db, "users")),
     getDocs(collection(db, "planner_cleared")),
   ]);
 
@@ -310,8 +324,14 @@ async function loadData(ctx, container, state, reload) {
     ? postsRes.value.docs.map((d) => ({ id: d.id, ...d.data() })) : [];
   state.assignments = assignRes.status === "fulfilled"
     ? assignRes.value.docs.map((d) => ({ id: d.id, ...d.data() })) : null;
+  // Owner pool: every staff member. Doc id is spread LAST so a stray `id`
+  // field inside a user doc can never shadow the real uid (which silently
+  // dropped people — including the signed-in admin — from the picker).
   state.team = teamRes.status === "fulfilled"
-    ? teamRes.value.docs.map((d) => ({ id: d.id, ...d.data() })) : [];
+    ? teamRes.value.docs
+        .map((d) => ({ ...d.data(), id: d.id }))
+        .filter((u) => u.role && u.role !== "reader")
+    : [];
   state.cleared = clearedRes.status === "fulfilled"
     ? clearedRes.value.docs.map((d) => ({ id: d.id, ...d.data() })) : [];
 
@@ -453,12 +473,16 @@ function renderAssignments(ctx, mountEl, state, reload) {
 function trackerDisplayRow(ctx, state, reload, rerender, a) {
   const lead = canAssign(ctx);
   const myUid = ctx.user.uid;
-  const mine = a.assigneeId === myUid;
+  const owners = ownersOf(a);
+  const mine = isOwner(a, myUid);
   const canTouch = lead || mine || a.createdById === myUid;
   const isPub = a._status === "published";
   const due = parseDay(a.deadline);
   const dueFull = dueLabel(due, isPub);
-  const firstName = String(a.assigneeName || "—").trim().split(/\s+/)[0];
+  const ownerNames = owners.map((o) => o.name || o.email).filter(Boolean).join(", ") || "—";
+  const ownerAvatars = owners.slice(0, 3)
+    .map((o) => `<i style="background:${avatarColor(o.name || o.email)};">${esc((o.name || o.email || "?")[0].toUpperCase())}</i>`)
+    .join("");
 
   const tr = el("tr", {
     class: `${canTouch ? "ct-row " : ""}${mine && !isPub ? "ct-mine" : ""}${isPub ? " ct-pub" : ""}`.trim(),
@@ -471,7 +495,7 @@ function trackerDisplayRow(ctx, state, reload, rerender, a) {
       <span class="ct-topic" style="${isPub ? "opacity:.55;" : ""}" title="${esc(a.articleTitle || "")}">${esc(a.articleTitle || "(untitled)")}</span>
       ${a.link ? ` <a href="${esc(a.link)}" target="_blank" rel="noopener" style="font-size:11px;color:#2563eb;text-decoration:none;">&#8599;</a>` : ""}
     </td>
-    <td><span class="ct-owner" title="${esc(a.assigneeName || "")}"><i style="background:${avatarColor(a.assigneeName)};">${esc((a.assigneeName || "?")[0].toUpperCase())}</i><span>${esc(firstName)}</span></span></td>
+    <td><span class="ct-owner" title="${esc(ownerNames)}">${ownerAvatars || `<i style="background:#cbd5e1;">?</i>`}<span>${esc(ownerSummary(a))}</span></span></td>
     <td style="overflow:visible;"></td>
     <td class="ct-date${dueFull.urgent && !isPub ? " urgent" : ""}" title="${esc(dueFull.text)}">${esc(fmtShortDay(a.deadline))}</td>
     <td><span class="ct-notes" title="${esc(a.notes || "")}">${esc(a.notes || "")}</span></td>
@@ -531,9 +555,21 @@ function trackerDisplayRow(ctx, state, reload, rerender, a) {
 // Escape cancels — the spreadsheet muscle memory.
 function trackerEditorRow(ctx, state, reload, rerender, existing, prefill) {
   const lead = canAssign(ctx);
+  const myUid = ctx.user.uid;
   const team = trackerTeam(ctx, state);
-  const initialOwner = existing?.assigneeId || prefill.assigneeId || (lead ? (team[0]?.id || ctx.user.uid) : ctx.user.uid);
+  const initialOwnerIds = existing
+    ? ownersOf(existing).map((o) => o.id)
+    : (prefill.assigneeId ? [prefill.assigneeId] : [myUid]);
   const initialStatus = existing ? normStatus(existing.status) : "planned";
+
+  const ownerChecks = team.map((u) => {
+    const checked = initialOwnerIds.includes(u.id);
+    // Non-leads can always tick teammates in as co-owners, but can't hand a
+    // row off entirely: their own membership is locked on rows they create.
+    const locked = !lead && u.id === myUid && !existing;
+    return `<label><input type="checkbox" data-owner="${esc(u.id)}" ${checked ? "checked" : ""} ${locked ? "disabled checked" : ""}>
+      ${esc(u.name || u.email)}${u.isSelf ? " (you)" : ""}</label>`;
+  }).join("");
 
   const tr = el("tr", { class: "ct-editing" });
   tr.innerHTML = `
@@ -547,9 +583,12 @@ function trackerEditorRow(ctx, state, reload, rerender, existing, prefill) {
     <td>
       <input class="ct-in" data-in="topic" aria-label="Topic" placeholder="What's the post about?" value="${esc(existing?.articleTitle || prefill.articleTitle || "")}">
     </td>
-    <td><select class="ct-in" data-in="owner" aria-label="Owner" ${lead ? "" : "disabled"}>
-      ${team.map((u) => `<option value="${esc(u.id)}" ${u.id === initialOwner ? "selected" : ""}>${esc(u.name || u.email)}</option>`).join("")}
-    </select></td>
+    <td style="overflow:visible;">
+      <details class="ct-owners">
+        <summary data-in="owner-summary">Owners&hellip;</summary>
+        <div class="ct-owners-panel">${ownerChecks}</div>
+      </details>
+    </td>
     <td><select class="ct-in" data-in="status" aria-label="Status">
       ${STATUSES.map((s) => `<option value="${s.id}" ${s.id === initialStatus ? "selected" : ""}>${s.label}</option>`).join("")}
     </select></td>
@@ -564,14 +603,31 @@ function trackerEditorRow(ctx, state, reload, rerender, existing, prefill) {
     </td>`;
 
   const get = (k) => tr.querySelector(`[data-in="${k}"]`);
+
+  // Keep the owners summary chip in sync with the checkboxes.
+  const checkedOwners = () => [...tr.querySelectorAll("[data-owner]:checked")]
+    .map((cb) => team.find((u) => u.id === cb.dataset.owner))
+    .filter(Boolean);
+  const syncOwnerSummary = () => {
+    const owners = checkedOwners();
+    get("owner-summary").textContent = owners.length
+      ? owners.map((o) => String(o.name || o.email).trim().split(/\s+/)[0]).join(", ")
+      : "Owners…";
+  };
+  tr.querySelectorAll("[data-owner]").forEach((cb) => cb.addEventListener("change", syncOwnerSummary));
+  syncOwnerSummary();
+
   const save = async () => {
     const topic = get("topic").value.trim();
     const deadline = get("deadline").value;
-    const assignee = team.find((u) => u.id === get("owner").value);
+    const owners = checkedOwners();
     if (!topic) { toast("Give the post a topic.", "error"); get("topic").focus(); return; }
     if (!deadline) { toast("Set a post date.", "error"); get("deadline").focus(); return; }
-    if (!assignee) { toast("Pick an owner.", "error"); return; }
+    if (!owners.length) { toast("Pick at least one owner.", "error"); return; }
 
+    // Primary owner: the viewer when they're in the set (matches the rules'
+    // self-create check for non-leads), otherwise the first one ticked.
+    const primary = owners.find((o) => o.id === myUid) || owners[0];
     const status = get("status").value;
     const payload = {
       articleTitle: topic,
@@ -582,17 +638,20 @@ function trackerEditorRow(ctx, state, reload, rerender, existing, prefill) {
       deadline,
       link: get("link").value.trim(),
       notes: get("notes").value.trim(),
-      assigneeId: assignee.id,
-      assigneeName: assignee.name || assignee.email || "",
-      assigneeEmail: assignee.email || "",
+      assigneeId: primary.id,
+      assigneeName: primary.name || primary.email || "",
+      assigneeEmail: primary.email || "",
+      assignees: owners.map((o) => ({ id: o.id, name: o.name || "", email: o.email || "" })),
+      assigneeIds: owners.map((o) => o.id),
       status,
       doneAt: status === "published" ? (existing?.doneAt || new Date().toISOString()) : null,
     };
     const saveBtn = tr.querySelector('[data-act="save"]');
     saveBtn.disabled = true;
     try {
+      const others = owners.filter((o) => o.id !== myUid);
       await persistTrackerRow(ctx, payload, existing);
-      toast(existing ? "Saved." : `Added${assignee.id !== ctx.user.uid ? ` — emailing ${assignee.name || assignee.email}` : ""}.`, "success");
+      toast(existing ? "Saved." : `Added${others.length ? ` — emailing ${others.map((o) => String(o.name || o.email).split(/\s+/)[0]).join(", ")}` : ""}.`, "success");
       reload();
     } catch (err) {
       toast("Could not save: " + err.message, "error");
@@ -609,16 +668,19 @@ function trackerEditorRow(ctx, state, reload, rerender, existing, prefill) {
   return tr;
 }
 
-// Create or update a tracker row and email the owner when the post changed
-// hands (new row for someone else, or reassigned to someone new).
+// Create or update a tracker row and email the owners when the post changed
+// hands — a new row owned by someone else, or the owner set gaining people.
 async function persistTrackerRow(ctx, payload, existing) {
   const myUid = ctx.user.uid;
+  const newIds = payload.assigneeIds || (payload.assigneeId ? [payload.assigneeId] : []);
   let id;
   let notifyNeeded;
   if (existing) {
     id = existing.id;
     await updateDoc(doc(db, "social_assignments", id), payload);
-    notifyNeeded = payload.assigneeId !== existing.assigneeId && payload.assigneeId !== myUid;
+    const oldIds = ownersOf(existing).map((o) => o.id);
+    const added = newIds.filter((x) => !oldIds.includes(x));
+    notifyNeeded = added.some((x) => x !== myUid);
   } else {
     const ref = await addDoc(collection(db, "social_assignments"), {
       ...payload,
@@ -627,7 +689,7 @@ async function persistTrackerRow(ctx, payload, existing) {
       createdAt: new Date().toISOString(),
     });
     id = ref.id;
-    notifyNeeded = payload.assigneeId !== myUid;
+    notifyNeeded = newIds.some((x) => x !== myUid);
   }
   if (notifyNeeded) {
     // Best-effort email; the tracker row exists either way.
@@ -639,16 +701,45 @@ async function persistTrackerRow(ctx, payload, existing) {
   return id;
 }
 
-// Assignable people: the social/marketing/admin team, always including the
-// viewer so anyone can put their own name on a row.
+// Assignable people: every staff member, with the viewer pinned first
+// ("you") so putting your own name on a row is always one click.
 function trackerTeam(ctx, state) {
-  let team = (state.team || [])
-    .filter((u) => u.id !== undefined)
-    .sort((a, b) => String(a.name || a.email || "").localeCompare(String(b.name || b.email || "")));
-  if (!team.some((u) => u.id === ctx.user.uid)) {
-    team = [{ id: ctx.user.uid, name: ctx.profile.name || ctx.user.email, email: ctx.profile.email || ctx.user.email || "", role: ctx.role }, ...team];
-  }
-  return team;
+  const myUid = ctx.user.uid;
+  let team = (state.team || []).filter((u) => u.id !== undefined && u.id !== myUid);
+  team.sort((a, b) => {
+    const pa = TEAM_ROLE_PRIORITY[a.role] ?? 9;
+    const pb = TEAM_ROLE_PRIORITY[b.role] ?? 9;
+    if (pa !== pb) return pa - pb;
+    return String(a.name || a.email || "").localeCompare(String(b.name || b.email || ""));
+  });
+  const meDoc = (state.team || []).find((u) => u.id === myUid);
+  const me = {
+    id: myUid,
+    name: meDoc?.name || ctx.profile.name || ctx.user.email,
+    email: meDoc?.email || ctx.profile.email || ctx.user.email || "",
+    role: ctx.role,
+    isSelf: true,
+  };
+  return [me, ...team];
+}
+
+// Owners of a tracker row — the multi-owner array when present, else the
+// legacy single-assignee fields.
+function ownersOf(a) {
+  if (Array.isArray(a.assignees) && a.assignees.length) return a.assignees;
+  if (a.assigneeId) return [{ id: a.assigneeId, name: a.assigneeName || "", email: a.assigneeEmail || "" }];
+  return [];
+}
+
+function isOwner(a, uid) {
+  return ownersOf(a).some((o) => o.id === uid);
+}
+
+function ownerSummary(a) {
+  const owners = ownersOf(a);
+  if (!owners.length) return "—";
+  const first = String(owners[0].name || owners[0].email || "—").trim().split(/\s+/)[0];
+  return owners.length === 1 ? first : `${first} +${owners.length - 1}`;
 }
 
 function platformLabel(p) {
@@ -686,13 +777,7 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
   const lead = canAssign(ctx);
   const myUid = ctx.user.uid;
 
-  let team = (state.team || [])
-    .filter((u) => u.id !== undefined)
-    .sort((a, b) => String(a.name || a.email || "").localeCompare(String(b.name || b.email || "")));
-  // Make sure the viewer can always pick themselves, whatever their role.
-  if (!team.some((u) => u.id === myUid)) {
-    team = [{ id: myUid, name: ctx.profile.name || ctx.user.email, email: ctx.profile.email || ctx.user.email || "", role: ctx.role }, ...team];
-  }
+  const team = trackerTeam(ctx, state);
 
   // Article options: upcoming pipeline stories (not hidden/cleared) +
   // recently published.
@@ -704,7 +789,9 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
   const published = state.stories || [];
 
   const initialTopic = existing?.articleTitle || prefill.articleTitle || "";
-  const initialOwner = existing?.assigneeId || (lead ? (team[0]?.id || myUid) : myUid);
+  const initialOwnerIds = existing
+    ? ownersOf(existing).map((o) => o.id)
+    : (prefill.assigneeId ? [prefill.assigneeId] : [myUid]);
   const initialDeadline = existing?.deadline || prefill.deadline || isoDay(new Date(Date.now() + 3 * 86400000));
   const initialType = existing?.type || prefill.type || "";
   const initialStatus = existing ? normStatus(existing.status) : "planned";
@@ -734,16 +821,21 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
         </select>
       </label>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Owner
-        <select class="select" id="as-assignee" style="font-weight:400;" ${lead ? "" : "disabled"}>
-          ${team.map((u) => `<option value="${esc(u.id)}" ${u.id === initialOwner ? "selected" : ""}>${esc(u.name || u.email)}</option>`).join("")}
-        </select>
-      </label>
-      <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Post date
-        <input type="date" id="as-deadline" value="${esc(initialDeadline)}" style="padding:8px 10px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
-      </label>
+    <div style="display:grid;gap:4px;">
+      <span style="font-size:13px;font-weight:600;color:var(--ink);">Owners — pick one or several (shared task)</span>
+      <div id="as-owners" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:2px;max-height:160px;overflow:auto;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;padding:6px;">
+        ${team.map((u) => {
+          const checked = initialOwnerIds.includes(u.id);
+          const locked = !lead && u.id === myUid && !existing;
+          return `<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;font-size:12.5px;cursor:pointer;">
+            <input type="checkbox" data-owner="${esc(u.id)}" ${checked ? "checked" : ""} ${locked ? "disabled checked" : ""} style="width:14px;height:14px;accent-color:#0f172a;">
+            ${esc(u.name || u.email)}${u.isSelf ? " (you)" : ""}</label>`;
+        }).join("")}
+      </div>
     </div>
+    <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Post date
+      <input type="date" id="as-deadline" value="${esc(initialDeadline)}" style="padding:8px 10px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
+    </label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
       <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Status
         <select class="select" id="as-status" style="font-weight:400;">
@@ -757,9 +849,7 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
     <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Notes (optional)
       <textarea id="as-notes" rows="3" placeholder="Angle, must-include links, tone…" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;">${esc(existing?.notes || "")}</textarea>
     </label>
-    <div style="font-size:12px;color:var(--muted);">${lead
-      ? "The owner gets an email with the topic, deadline, and your notes — replies come back to you."
-      : "This goes on the shared tracker (and your Overview calendar) under your name."}</div>
+    <div style="font-size:12px;color:var(--muted);">Every owner gets an email with the topic, deadline, and your notes — plus a reminder email on the due date. It also lands on each owner's Overview calendar.</div>
   `;
 
   // Picking an article copies its title into the topic and remembers the link.
@@ -787,14 +877,16 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
 
   saveBtn.addEventListener("click", async () => {
     const articleTitle = topicInput.value.trim();
-    const assigneeId = body.querySelector("#as-assignee").value;
-    const assignee = team.find((u) => u.id === assigneeId);
+    const owners = [...body.querySelectorAll("#as-owners [data-owner]:checked")]
+      .map((cb) => team.find((u) => u.id === cb.dataset.owner))
+      .filter(Boolean);
     const deadline = body.querySelector("#as-deadline").value;
     const status = body.querySelector("#as-status").value;
     if (!articleTitle) { toast("Give the post a topic.", "error"); return; }
-    if (!assignee) { toast("Pick an owner.", "error"); return; }
+    if (!owners.length) { toast("Pick at least one owner.", "error"); return; }
     if (!deadline) { toast("Set a post date.", "error"); return; }
 
+    const primary = owners.find((o) => o.id === myUid) || owners[0];
     const payload = {
       articleTitle,
       projectId: pickedProjectId,
@@ -804,9 +896,11 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
       deadline,
       link: body.querySelector("#as-link").value.trim(),
       notes: body.querySelector("#as-notes").value.trim(),
-      assigneeId: assignee.id,
-      assigneeName: assignee.name || assignee.email || "",
-      assigneeEmail: assignee.email || "",
+      assigneeId: primary.id,
+      assigneeName: primary.name || primary.email || "",
+      assigneeEmail: primary.email || "",
+      assignees: owners.map((o) => ({ id: o.id, name: o.name || "", email: o.email || "" })),
+      assigneeIds: owners.map((o) => o.id),
       status,
       doneAt: status === "published" ? (existing?.doneAt || new Date().toISOString()) : null,
     };
@@ -816,7 +910,8 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
     try {
       await persistTrackerRow(ctx, payload, existing);
       modal.close();
-      toast(existing ? "Tracker updated." : `Added — it's on ${assignee.id === myUid ? "your" : `${assignee.name || assignee.email}'s`} calendar.`, "success");
+      const others = owners.filter((o) => o.id !== myUid);
+      toast(existing ? "Tracker updated." : `Added${others.length ? ` — emailing ${others.map((o) => String(o.name || o.email).split(/\s+/)[0]).join(", ")}` : " — it's on your calendar"}.`, "success");
       reload();
     } catch (err) {
       toast("Could not save: " + err.message, "error");

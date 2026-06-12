@@ -38,22 +38,29 @@ export const onRequestPost = async ({ request, env }) => {
     if (!docResp) return badRequest("Assignment not found");
     const assignment = unwrapDoc(docResp, assignmentId);
 
-    // Dedupe per assignment AND assignee: reassigning a post to someone new
-    // emails the new owner once, without re-spamming the previous one.
-    const logId = `assignment_${assignmentId}_${sanitizeId(assignment.assigneeId || "none")}`;
+    // Owner set: the multi-owner array when present, legacy single assignee
+    // otherwise. Dedupe per assignment AND owner set, so adding someone to a
+    // shared task emails the new set once without endless re-sends.
+    const ownerIds = (Array.isArray(assignment.assigneeIds) && assignment.assigneeIds.length
+      ? assignment.assigneeIds
+      : [assignment.assigneeId].filter(Boolean));
+    const logId = `assignment_${assignmentId}_${sanitizeId(ownerIds.slice().sort().join("-") || "none")}`;
     const existing = await firestoreGet(env, `bot_event_notify_log/${logId}`);
     if (existing) return json({ ok: true, sent: false, deduped: true });
 
-    // Resolve the assignee's email — prefer the live user doc over whatever
+    // Resolve each owner's email — prefer the live user doc over whatever
     // was snapshotted onto the assignment.
-    let email = "";
-    if (assignment.assigneeId) {
-      const userDoc = await firestoreGet(env, `users/${assignment.assigneeId}`);
-      email = userDoc?.fields?.email?.stringValue?.trim() || "";
+    const emails = [];
+    for (const ownerId of ownerIds) {
+      const userDoc = await firestoreGet(env, `users/${ownerId}`).catch(() => null);
+      const fromDoc = userDoc?.fields?.email?.stringValue?.trim() || "";
+      const fromSnapshot = (assignment.assignees || []).find((o) => o?.id === ownerId)?.email || "";
+      const email = fromDoc || String(fromSnapshot || "").trim()
+        || (ownerId === assignment.assigneeId ? String(assignment.assigneeEmail || "").trim() : "");
+      if (email && !emails.includes(email)) emails.push(email);
     }
-    if (!email) email = String(assignment.assigneeEmail || "").trim();
-    if (!email) {
-      return json({ ok: true, sent: false, skipped: true, reason: "assignee has no email on file" });
+    if (!emails.length) {
+      return json({ ok: true, sent: false, skipped: true, reason: "no owner emails on file" });
     }
 
     const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
@@ -64,7 +71,7 @@ export const onRequestPost = async ({ request, env }) => {
     });
 
     await sendEmail(env, {
-      to: email,
+      to: emails,
       subject,
       html,
       // Reply-to the assigner so questions go to the right person.
@@ -76,10 +83,10 @@ export const onRequestPost = async ({ request, env }) => {
       assignmentId,
       firedBy: auth.email || auth.uid,
       firedAt: new Date().toISOString(),
-      recipients: [email],
+      recipients: emails,
     }, logId).catch(() => {});
 
-    return json({ ok: true, sent: true, to: email });
+    return json({ ok: true, sent: true, to: emails });
   } catch (err) {
     return serverError(err);
   }

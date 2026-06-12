@@ -44,6 +44,7 @@ import {
   bundledReminderEmail,
   adminDigestEmail,
   adminTaskReminderEmail,
+  socialAssignmentDueEmail,
 } from "../../_utils/reminder-emails.js";
 import {
   taskDeadlineSoonEmail,
@@ -121,6 +122,7 @@ export const onRequestPost = async ({ request, env }) => {
       adminTaskReminders: { planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
       taskReminders:   { scanned: 0, planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
       calendarTasks:   { scanned: 0, planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
+      socialPosts:     { scanned: 0, planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
       adminDigest:     { sent: false, recipientCount: 0, skipped: null, error: null },
     };
 
@@ -618,6 +620,94 @@ export const onRequestPost = async ({ request, env }) => {
       }
     }
 
+    // ── Social post tracker due-today reminders ──────────────────────────────
+    //
+    // Every owner of a Planner content-tracker row (social_assignments) gets
+    // an email on the row's post date if the post isn't published yet.
+    // Dedupe key: `socialpost:${id}:due-today:${email}` in bot_reminder_log.
+    if (mode === "auto" || mode === "social") {
+      try {
+        const assignments = await loadSocialAssignments(env);
+        result.socialPosts.scanned = assignments.length;
+        const today = ymdInTz(now, DIGEST_TIMEZONE);
+        const usersById = new Map(users.map((u) => [u.id, u]));
+
+        const due = assignments.filter((a) =>
+          a.deadline === today && a.status !== "done" && a.status !== "published");
+
+        for (const a of due) {
+          // Owner set: multi-owner array when present, legacy single field
+          // otherwise. Fresh email from the user doc wins over the snapshot.
+          const owners = (Array.isArray(a.assignees) && a.assignees.length
+            ? a.assignees
+            : [{ id: a.assigneeId, name: a.assigneeName, email: a.assigneeEmail }])
+            .filter((o) => o && (o.id || o.email));
+
+          for (const owner of owners) {
+            const userDoc = owner.id ? usersById.get(owner.id) : null;
+            const email = (userDoc?.email || owner.email || "").trim();
+            const name = userDoc?.name || owner.name || "there";
+            if (!email) continue;
+            result.socialPosts.planned++;
+
+            const key = `socialpost:${a.id}:due-today:${email}`;
+            if (reminderLog[key]) {
+              result.socialPosts.skipped++;
+              continue;
+            }
+
+            const { subject, html } = socialAssignmentDueEmail({
+              assignment: a,
+              recipientName: name,
+              siteUrl,
+            });
+            result.socialPosts.items.push({ assignmentId: a.id, recipientEmail: email, subject });
+            if (dryRun) continue;
+
+            try {
+              await sendEmail(env, {
+                to: email,
+                subject,
+                html,
+                replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+              });
+              await recordReminderSent(env, key, {
+                assignmentId: a.id,
+                kind: "social-due-today",
+                recipientEmail: email,
+                sentAt: now.toISOString(),
+              });
+              await recordEmailLogEntry(env, {
+                sentAt: now.toISOString(),
+                recipientEmail: email,
+                recipientName: name,
+                role: "social",
+                kind: "social-due-today",
+                projectId: null,
+                projectTitle: a.articleTitle || "(untitled post)",
+                subject,
+                bodyText: htmlToPlainPreview(html, 2500),
+                reason: `Social post "${a.articleTitle || ""}" is due today (${a.deadline}).`,
+                daysInactive: null,
+                daysUntilDeadline: 0,
+                projectActivityAtSend: null,
+              });
+              result.socialPosts.sent++;
+            } catch (err) {
+              result.socialPosts.errors.push({
+                assignmentId: a.id,
+                recipientEmail: email,
+                error: err?.message || String(err),
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Social reminders must never block the article reminders.
+        result.socialPosts.errors.push({ fatal: true, error: err?.message || String(err) });
+      }
+    }
+
     // ── Admin digest ─────────────────────────────────────────────────────────
     //
     // Four ways the digest runs:
@@ -776,6 +866,18 @@ async function loadCalendarTasks(env) {
     createdByName: r.data.createdByName || "",
     participants: Array.isArray(r.data.participants) ? r.data.participants : [],
   }));
+}
+
+// Planner content-tracker rows (social post assignments). Small collection;
+// full scan is fine. Each doc: { articleTitle, type, platform, deadline
+// (YYYY-MM-DD), status, notes, assigneeId/Name/Email, assignees: [{id,name,
+// email}], assigneeIds, createdByName }.
+async function loadSocialAssignments(env) {
+  const rows = await firestoreRunQuery(env, {
+    from: [{ collectionId: "social_assignments" }],
+    limit: 2000,
+  });
+  return rows.map((r) => ({ id: r.id, ...r.data }));
 }
 
 // Email for a calendar task — sent to each participant on the reminder day

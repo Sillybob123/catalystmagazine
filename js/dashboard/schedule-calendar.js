@@ -133,6 +133,13 @@ function fmtMonthTitle(d) {
 
 // ─── Project helpers ──────────────────────────────────────────────────────────
 
+// Owner uids of a social post assignment — multi-owner array when present,
+// legacy single assigneeId otherwise.
+function assignmentOwnerIds(a) {
+  if (Array.isArray(a.assigneeIds) && a.assigneeIds.length) return a.assigneeIds;
+  return a.assigneeId ? [a.assigneeId] : [];
+}
+
 function pubDate(p)       { return p.deadlines?.publication || p.deadline || null; }
 function readyDate(p)     { const d = parseISO(pubDate(p)); return d ? toISO(addDays(d, -READY_LEAD_DAYS)) : null; }
 function interviewDate(p) { return p.deadlines?.interview || p.interviewDate || null; }
@@ -276,12 +283,12 @@ function buildEvents(projects, tasks, assignments, uid, filterMine) {
     push(t.date, { kind: "task", task: t, mine: true, done: t.status === "done" });
   }
 
-  // Social post assignments — on the assignee's calendar (it's their
+  // Social post assignments — on every owner's calendar (it's their
   // deadline) and the assigner's (so they can track what they handed out).
   // "done" is the legacy completed status; the tracker now uses "published".
   for (const a of assignments || []) {
     if (a.status === "done" || a.status === "published") continue;
-    const isAssignee = a.assigneeId === uid;
+    const isAssignee = assignmentOwnerIds(a).includes(uid);
     if (!isAssignee && a.createdById !== uid) continue;
     push(a.deadline, { kind: "assignment", assignment: a, mine: isAssignee, done: false });
   }
@@ -736,7 +743,7 @@ function renderProjectDetail(ev) {
 function renderAssignmentDetail(ev) {
   const a = ev.assignment;
   const m = KIND_META.assignment;
-  const canDone = a.assigneeId === _ctx.uid || a.createdById === _ctx.uid || _ctx.role === "admin";
+  const canDone = assignmentOwnerIds(a).includes(_ctx.uid) || a.createdById === _ctx.uid || _ctx.role === "admin";
 
   const box = el("div", { style: { border: "1px solid var(--hairline,#e5e7eb)", borderLeft: `4px solid ${m.dot}`, borderRadius: "10px", padding: "12px 14px", marginBottom: "10px" } });
   box.innerHTML = `
@@ -747,7 +754,9 @@ function renderAssignmentDetail(ev) {
     </div>
     <div style="font-weight:700;font-size:14px;color:var(--ink,#0b1220);">Post for &ldquo;${esc(a.articleTitle || "(untitled)")}&rdquo;</div>
     <div style="font-size:12.5px;color:var(--muted,#64748b);margin-top:3px;line-height:1.5;">
-      ${esc(a.assigneeName || "Unassigned")} · assigned by ${esc(a.createdByName || "—")}
+      ${esc((Array.isArray(a.assignees) && a.assignees.length
+        ? a.assignees.map((o) => o.name || o.email).filter(Boolean).join(", ")
+        : a.assigneeName) || "Unassigned")} · assigned by ${esc(a.createdByName || "—")}
       ${a.notes ? `<br>&ldquo;${esc(a.notes)}&rdquo;` : ""}
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
@@ -1084,7 +1093,7 @@ function renderRunway(state, uid) {
   // The viewer's own open post assignments, most urgent first — the calendar
   // chips show the dates; this is the at-a-glance to-do list version.
   const myAssignments = (state.assignments || [])
-    .filter((a) => a.status !== "done" && a.status !== "published" && a.assigneeId === uid)
+    .filter((a) => a.status !== "done" && a.status !== "published" && assignmentOwnerIds(a).includes(uid))
     .sort((a, b) => String(a.deadline || "9999").localeCompare(String(b.deadline || "9999")));
   if (myAssignments.length) {
     wrap.appendChild(el("div", { class: "sc-strip-title" }, `Your post assignments (${myAssignments.length})`));
