@@ -4133,8 +4133,8 @@ const teamMembers = [
     },
     {
         name: "Ginger Taurek",
-        role: "Writer",
-        bio: "Ginger is a senior at George Washington University School of Business studying Entrepreneurship and Innovation with a minor in Sustainability. Her interests in STEM and journalism come from a passion for wildlife conservation, global sustainability, and measures to implement climate resilience and sustainable development on a global scale. Deeply interested in storytelling and science communication, Ginger strives to connect science and policy with public awareness.",
+        role: "Writer, Operations & Events Lead",
+        bio: "Ginger Taurek is a rising senior at The George Washington University School of Business, studying Entrepreneurship and Innovation with a minor in Sustainability. As a writer and Operations & Events Lead at The Catalyst, she is committed to fostering community through both storytelling and engagement. Passionate about wildlife conservation and global sustainability, she is particularly interested in how innovation, policy, and communication can advance climate resilience and sustainable development. Her externship experiences with the National Geographic Society and The Nature Conservancy deepened her interest in storytelling as a tool for addressing environmental challenges. Ginger seeks to make complex environmental issues accessible to broader audiences and inspire meaningful action.",
         image: "/Ginger.webp",
         linkedin: "",
         email: ""
