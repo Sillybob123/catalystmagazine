@@ -1528,6 +1528,48 @@ export function directCommentEmail({ project, senderName, senderRole, message, r
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
+// ─── Direct message (Directory chat → email) ─────────────────────────────────
+// Sent when a teammate messages you from the dashboard's Directory tab. The
+// conversation lives in the dashboard chat; this is the "you have a message"
+// copy so people who aren't logged in still hear about it.
+export function directMessageEmail({ senderName, senderRole, message, recipientName, siteUrl }) {
+  const firstName = String(recipientName || "there").trim().split(/\s+/)[0] || "there";
+  const fromName = senderName || "A teammate";
+  const roleLine = senderRole ? ` (${senderRole})` : "";
+  const directoryUrl = `${siteUrl}/admin/#/directory`;
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(fromName)}${escapeHtml(roleLine)} sent you a message on the Catalyst dashboard.
+    </p>
+
+    <div style="margin:18px 0 0 0;border-left:3px solid ${COLORS.hairline};padding:4px 0 4px 16px;">
+      <p style="margin:0;font-size:15px;line-height:1.65;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(message)}</p>
+    </div>
+
+    <p style="margin:18px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};">
+      Reply from the Directory tab on your dashboard — or just reply to this
+      email to reach ${escapeHtml(fromName)} directly.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(directoryUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the conversation</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">The Catalyst dashboard</span>
+    </p>
+  `;
+
+  const subject = `New message from ${truncate(fromName, 40)}`;
+  const preheader = truncate(message, 90);
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
 // ─── Social team publish alert ───────────────────────────────────────────────
 // Sent to every social_media user the moment a story is published, so they
 // can get the announcement posts out while the piece is fresh.

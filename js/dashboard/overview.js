@@ -15,6 +15,7 @@ import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
+  const isAdmin = ctx.role === "admin";
 
   // Editorial calendar — every staff member sees the month's publish dates,
   // ready-by dates (publish − 1 week, for the social team), interviews, and
@@ -27,27 +28,52 @@ export async function mount(ctx, container) {
     }
   }
 
-  // Recent activity
-  const recent = el("div", { class: "card", style: { marginTop: "20px" } });
-  recent.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">Recent articles</div>
-        <div class="card-subtitle">The last 6 updates from the newsroom</div>
+  // Recent activity — admin only. Writers/editors land on their own
+  // calendar + deadlines, not the whole newsroom's feed.
+  if (isAdmin) {
+    const recent = el("div", { class: "card", style: { marginTop: "20px" } });
+    recent.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">Recent articles</div>
+          <div class="card-subtitle">The last 6 updates from the newsroom</div>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="#/writer/feed">See all &rarr;</a>
       </div>
-      <a class="btn btn-ghost btn-sm" href="#/writer/feed">See all &rarr;</a>
-    </div>
-    <div class="card-body" id="recent-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-  container.appendChild(recent);
-  loadRecentArticles(recent.querySelector("#recent-body"), ctx);
+      <div class="card-body" id="recent-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
+    container.appendChild(recent);
+    loadRecentArticles(recent.querySelector("#recent-body"), ctx);
+  }
 
-  // Newsletter reminder (admin only)
+  // Newsletter reminder (admin + newsletter builder)
   if (ctx.role === "admin" || ctx.role === "newsletter_builder") {
     const nlCard = el("div", { class: "card", style: { marginTop: "20px" } });
     nlCard.innerHTML = `<div class="card-body" id="nl-reminder"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
     container.appendChild(nlCard);
     loadNewsletterReminder(nlCard.querySelector("#nl-reminder"), ctx);
   }
+
+  // The team list lives in its own Directory tab now (#/directory) — point
+  // everyone there instead of repeating it here.
+  const directoryHint = el("div", { class: "card", style: { marginTop: "20px" } });
+  directoryHint.innerHTML = `
+    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:#eef2ff;border:1px solid #c7d2fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8.5 15.5a3.5 3.5 0 0 1 7 0"/></svg>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:15px;color:var(--ink);">Looking for a teammate?</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;">The team directory has everyone's role, email, and a private message button.</div>
+        </div>
+      </div>
+      <a class="btn btn-secondary btn-sm" href="#/directory">Open the directory &rarr;</a>
+    </div>`;
+  container.appendChild(directoryHint);
+
+  // For non-admins the Overview ends here — the workflow snapshot below is
+  // the admin's newsroom-wide view.
+  if (!isAdmin) return;
 
   // Catalyst bot (admin only) — writer reminders + Saturday digest
   if (ctx.role === "admin") {
@@ -64,21 +90,7 @@ export async function mount(ctx, container) {
     mountBotEmailLog(emailLogCard.querySelector("#bot-email-log"), ctx);
   }
 
-  // Staff directory
-  const staff = el("div", { class: "card", style: { marginTop: "20px" } });
-  staff.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">The team</div>
-        <div class="card-subtitle">Everyone on staff and what they do</div>
-      </div>
-      ${ctx.role === "admin" ? `<a class="btn btn-ghost btn-sm" href="#/admin/users">Manage &rarr;</a>` : ""}
-    </div>
-    <div class="card-body" id="staff-body"><div class="loading-state"><div class="spinner"></div>Loading&hellip;</div></div>`;
-  container.appendChild(staff);
-  loadStaff(staff.querySelector("#staff-body"), ctx);
-
-  // Shared pipeline
+  // Shared pipeline (admin only)
   const pipeline = el("div", { class: "card", style: { marginTop: "20px" } });
   pipeline.innerHTML = `
     <div class="card-header">
@@ -91,149 +103,6 @@ export async function mount(ctx, container) {
     <div id="pipeline-mount"></div>`;
   container.appendChild(pipeline);
   renderPipeline(pipeline.querySelector("#pipeline-mount"), ctx, { compact: true });
-}
-
-const ROLE_META = {
-  admin:              { label: "Administrator",      group: "Leadership",  order: 1, color: "#7c3aed" },
-  editor:             { label: "Editor / Writer",    group: "Editorial",   order: 2, color: "#0f766e" },
-  writer:             { label: "Writer",             group: "Editorial",   order: 3, color: "#0891b2" },
-  newsletter_builder: { label: "Newsletter Builder", group: "Publishing",  order: 4, color: "#b45309" },
-  marketing:          { label: "Marketing",          group: "Publishing",  order: 5, color: "#db2777" },
-  reader:             { label: "Reader",             group: "Community",   order: 6, color: "#64748b" },
-};
-
-const GROUP_ORDER = ["Leadership", "Editorial", "Publishing", "Community"];
-
-async function loadStaff(mount, ctx) {
-  try {
-    const snap = await getDocs(query(collection(db, "users"), limit(200)));
-    if (snap.empty) {
-      mount.innerHTML = `<div class="empty-state">No teammates found yet.</div>`;
-      return;
-    }
-
-    // Collect all user docs first, then dedupe.
-    //
-    // Background: a person can end up with multiple user docs (e.g. one
-    // created when they signed up to receive the newsletter as a 'reader',
-    // and another created later when an admin granted them an editor role).
-    // Without dedupe, the same human shows up twice in the directory — once
-    // as an Editor in Editorial, once as a Reader in Community. Dedupe by a
-    // stable identity key (lowercased email, or normalized name as a
-    // fallback) and keep the doc with the highest-priority role.
-    const raw = [];
-    snap.forEach((d) => {
-      const u = d.data();
-      if ((u.status || "active") === "inactive") return;
-      const role = u.role || "reader";
-      raw.push({ id: d.id, ...u, role });
-    });
-
-    const byKey = new Map();
-    for (const p of raw) {
-      const key = identityKey(p);
-      const existing = byKey.get(key);
-      if (!existing) {
-        byKey.set(key, p);
-        continue;
-      }
-      // Keep the entry whose role has the lowest order (higher priority).
-      const ao = ROLE_META[p.role]?.order ?? 99;
-      const bo = ROLE_META[existing.role]?.order ?? 99;
-      if (ao < bo) byKey.set(key, { ...existing, ...p });
-      // If same priority, prefer the one with a real name and email.
-      else if (ao === bo) {
-        const merged = {
-          ...existing,
-          name: existing.name || p.name,
-          email: existing.email || p.email,
-        };
-        byKey.set(key, merged);
-      }
-    }
-
-    // Readers/community are intentionally hidden from the overview directory —
-    // the staff card is for the editorial team, not the newsletter audience.
-    // (Admins manage readers via #/admin/users.)
-    const people = Array.from(byKey.values()).filter((p) => p.role !== "reader");
-
-    if (!people.length) {
-      mount.innerHTML = `<div class="empty-state">No teammates found yet.</div>`;
-      return;
-    }
-
-    // Sort by role order, then by name.
-    people.sort((a, b) => {
-      const ao = ROLE_META[a.role]?.order ?? 99;
-      const bo = ROLE_META[b.role]?.order ?? 99;
-      if (ao !== bo) return ao - bo;
-      return (a.name || a.email || "").localeCompare(b.name || b.email || "");
-    });
-
-    // Group
-    const groups = {};
-    for (const p of people) {
-      const g = ROLE_META[p.role]?.group || "Community";
-      if (!groups[g]) groups[g] = [];
-      groups[g].push(p);
-    }
-
-    mount.innerHTML = "";
-    for (const gName of GROUP_ORDER) {
-      const list = groups[gName];
-      if (!list || !list.length) continue;
-
-      const section = el("div", { class: "staff-group" });
-      section.innerHTML = `
-        <div class="staff-group-head">
-          <span class="staff-group-title">${esc(gName)}</span>
-          <span class="staff-group-count">${list.length}</span>
-        </div>
-        <div class="staff-grid"></div>`;
-      const grid = section.querySelector(".staff-grid");
-
-      list.forEach((p) => {
-        const meta = ROLE_META[p.role] || ROLE_META.reader;
-        const name = p.name || p.email || "Unknown";
-        const init = getInitials(name);
-        const card = el("div", { class: "staff-card" });
-        card.innerHTML = `
-          <div class="staff-avatar" style="background:${meta.color};">${esc(init)}</div>
-          <div class="staff-info">
-            <div class="staff-name">${esc(name)}</div>
-            <div class="staff-role" style="color:${meta.color};">${esc(meta.label)}</div>
-            ${p.email ? `<div class="staff-email">${esc(p.email)}</div>` : ""}
-          </div>`;
-        grid.appendChild(card);
-      });
-
-      mount.appendChild(section);
-    }
-  } catch (err) {
-    console.warn("[overview] staff load failed", err);
-    mount.innerHTML = `<div class="error-state">Could not load the team. ${esc(err?.message || "")}</div>`;
-  }
-}
-
-// Identity key for staff dedupe. Prefer email (lowercased, trimmed) — that's
-// the most reliable cross-doc anchor. Fall back to a normalized name when
-// email is missing so the older readers-only docs (which sometimes lack an
-// email field entirely) still collapse against their editorial twin.
-function identityKey(person) {
-  const email = String(person.email || "").trim().toLowerCase();
-  if (email) return `email:${email}`;
-  const name = String(person.name || "").trim().toLowerCase().replace(/\s+/g, " ");
-  if (name) return `name:${name}`;
-  return `id:${person.id}`;
-}
-
-function getInitials(nameOrEmail) {
-  const s = String(nameOrEmail || "").trim();
-  if (!s) return "?";
-  if (s.includes("@")) return s[0].toUpperCase();
-  const parts = s.split(/\s+/);
-  if (parts.length === 1) return parts[0][0].toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 async function loadNewsletterReminder(mount, ctx) {

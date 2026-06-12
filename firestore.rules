@@ -378,6 +378,24 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ---------- direct messages (Directory tab chat) ----------
+    // One doc per pair of teammates (doc id = sorted uids joined with '__').
+    // Only the two participants can read or append to their thread — private
+    // even from admins. The participant pair is frozen after creation so a
+    // thread can't be re-pointed at someone else's conversation.
+    match /dm_threads/{threadId} {
+      allow read: if isStaff()
+        && request.auth.uid in resource.data.participantIds;
+      allow create: if isStaff()
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() == 2
+        && request.auth.uid in request.resource.data.participantIds;
+      allow update: if isStaff()
+        && request.auth.uid in resource.data.participantIds
+        && request.resource.data.participantIds == resource.data.participantIds;
+      allow delete: if false;
+    }
+
     // ---------- winners' lounge chat ----------
     // Public chatroom for solvers of the brain teaser. Anonymous auth required.
     // Anyone signed in (anonymously or otherwise) can read + post.

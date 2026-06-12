@@ -51,6 +51,8 @@ const ICONS = {
   clipboard:   `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><polyline points="9 14 11 16 15 12"/></svg>`,
   // Tasks — a numbered list
   list:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>`,
+  // Directory — an address book (find teammates, message them)
+  addressBook: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8.5 15.5a3.5 3.5 0 0 1 7 0"/></svg>`,
 
   // Writing
   // Submit a draft — a pen drafting a line
@@ -179,6 +181,15 @@ const ROUTES = {
     roles: ["*"],
     group: "main",
     loader: () => import("./tasks.js?v=tasks-v5"),
+  },
+  // Directory — the whole team with roles + emails, plus private messaging
+  // (each chat message is also emailed to the recipient via /api/notify/dm).
+  "#/directory": {
+    label: "Directory",
+    icon: ICONS.addressBook,
+    roles: ["*"],
+    group: "main",
+    loader: () => import("./directory.js"),
   },
   "#/writer/draft": {
     label: "Submit a draft",
