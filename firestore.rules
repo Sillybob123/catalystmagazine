@@ -282,6 +282,24 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ---------- editorial calendar tasks ----------
+    // Personal & shared tasks shown on the Overview calendar. Any staff
+    // member can create a task (stamped with their own uid). Participants
+    // can update (mark done / reopen); only the creator or an admin can
+    // delete or rewrite it. The bot reads these server-side (Admin REST)
+    // to send reminder emails on the reminder day + day-of.
+    match /calendar_tasks/{taskId} {
+      allow read: if isStaff();
+      allow create: if isStaff()
+        && request.resource.data.createdById == request.auth.uid
+        && request.auth.uid in request.resource.data.participantIds;
+      allow update: if isAdmin()
+        || resource.data.createdById == request.auth.uid
+        || request.auth.uid in resource.data.participantIds;
+      allow delete: if isAdmin()
+        || resource.data.createdById == request.auth.uid;
+    }
+
     // ---------- social media posts ----------
     match /social_posts/{postId} {
       allow read: if isStaff();

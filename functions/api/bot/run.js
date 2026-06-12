@@ -120,6 +120,7 @@ export const onRequestPost = async ({ request, env }) => {
       bundled:         { planned: 0, sent: 0, errors: [] },
       adminTaskReminders: { planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
       taskReminders:   { scanned: 0, planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
+      calendarTasks:   { scanned: 0, planned: 0, sent: 0, skipped: 0, errors: [], items: [] },
       adminDigest:     { sent: false, recipientCount: 0, skipped: null, error: null },
     };
 
@@ -515,6 +516,108 @@ export const onRequestPost = async ({ request, env }) => {
       }
     }
 
+    // ── Calendar task reminders ──────────────────────────────────────────────
+    //
+    // Personal & shared tasks created on the Overview editorial calendar
+    // (calendar_tasks collection). Every participant gets an email:
+    //   • on the task's reminderDate (if set)   — "coming up"
+    //   • on the task's date                    — "today"
+    // Dedupe key: `caltask:${taskId}:${kind}:${email}` in bot_reminder_log,
+    // so re-runs on the same day never double-fire, and adding a person to
+    // a task re-arms reminders only for them.
+    if (mode === "auto" || mode === "calendar") {
+      try {
+        const calTasks = await loadCalendarTasks(env);
+        result.calendarTasks.scanned = calTasks.length;
+        const today = ymdInTz(now, DIGEST_TIMEZONE);
+
+        const calJobs = [];
+        for (const t of calTasks) {
+          if (t.status !== "active") continue;
+          if (!t.date) continue;
+          if (t.date === today) {
+            calJobs.push({ task: t, kind: "calendar-today" });
+          } else if (t.reminderDate === today && t.date > today) {
+            calJobs.push({ task: t, kind: "calendar-upcoming" });
+          }
+        }
+        result.calendarTasks.planned = calJobs.reduce(
+          (n, j) => n + (j.task.participants?.length || 0),
+          0
+        );
+
+        for (const job of calJobs) {
+          for (const person of job.task.participants || []) {
+            if (!person.email) continue;
+            const key = `caltask:${job.task.taskId}:${job.kind}:${person.email}`;
+            if (reminderLog[key]) {
+              result.calendarTasks.skipped++;
+              continue;
+            }
+
+            const { subject, html } = calendarTaskEmail({
+              kind: job.kind,
+              task: job.task,
+              recipientName: person.name || "there",
+              siteUrl,
+            });
+
+            result.calendarTasks.items.push({
+              taskId: job.task.taskId,
+              kind: job.kind,
+              recipientEmail: person.email,
+              recipientName: person.name,
+              subject,
+            });
+
+            if (dryRun) continue;
+
+            try {
+              await sendEmail(env, {
+                to: person.email,
+                subject,
+                html,
+                replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+              });
+              await recordReminderSent(env, key, {
+                taskId: job.task.taskId,
+                kind: job.kind,
+                recipientEmail: person.email,
+                sentAt: now.toISOString(),
+              });
+              await recordEmailLogEntry(env, {
+                sentAt: now.toISOString(),
+                recipientEmail: person.email,
+                recipientName: person.name || null,
+                role: "calendar",
+                kind: job.kind,
+                projectId: null,
+                projectTitle: job.task.title,
+                subject,
+                bodyText: htmlToPlainPreview(html, 2500),
+                reason: job.kind === "calendar-today"
+                  ? `Calendar task "${job.task.title}" is scheduled for today.`
+                  : `Calendar task "${job.task.title}" is coming up on ${job.task.date} (reminder date reached).`,
+                daysInactive: null,
+                daysUntilDeadline: null,
+                projectActivityAtSend: null,
+              });
+              result.calendarTasks.sent++;
+            } catch (err) {
+              result.calendarTasks.errors.push({
+                taskId: job.task.taskId,
+                recipientEmail: person.email,
+                error: err?.message || String(err),
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // Calendar reminders must never block the article reminders.
+        result.calendarTasks.errors.push({ fatal: true, error: err?.message || String(err) });
+      }
+    }
+
     // ── Admin digest ─────────────────────────────────────────────────────────
     //
     // Four ways the digest runs:
@@ -653,6 +756,82 @@ async function loadTaskReminders(env) {
     assignees:    Array.isArray(r.data.assignees) ? r.data.assignees : [],
     status:       r.data.status || "active",
   }));
+}
+
+// Calendar tasks created on the Overview editorial calendar. Small
+// collection; full scan is fine. Each doc: { title, notes, date (YYYY-MM-DD),
+// reminderDate, color, status, participants: [{uid,name,email}], createdByName }.
+async function loadCalendarTasks(env) {
+  const rows = await firestoreRunQuery(env, {
+    from: [{ collectionId: "calendar_tasks" }],
+    limit: 2000,
+  });
+  return rows.map((r) => ({
+    taskId: r.id,
+    title:        r.data.title || "(untitled task)",
+    notes:        r.data.notes || "",
+    date:         r.data.date || null,         // YYYY-MM-DD
+    reminderDate: r.data.reminderDate || null, // YYYY-MM-DD or null
+    status:       r.data.status || "active",
+    createdByName: r.data.createdByName || "",
+    participants: Array.isArray(r.data.participants) ? r.data.participants : [],
+  }));
+}
+
+// Email for a calendar task — sent to each participant on the reminder day
+// ("calendar-upcoming") and on the day itself ("calendar-today").
+function calendarTaskEmail({ kind, task, recipientName, siteUrl }) {
+  const isToday = kind === "calendar-today";
+  const niceDate = humanDateFromYMD(task.date);
+  const others = (task.participants || [])
+    .map((p) => p.name || p.email)
+    .filter(Boolean);
+  const shared = others.length > 1;
+
+  const subject = isToday
+    ? `Today: ${task.title}`
+    : `Coming up ${niceDate}: ${task.title}`;
+
+  const html = `
+  <div style="font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:560px;margin:0 auto;padding:28px 24px;color:#0b1220;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#0f766e;margin-bottom:14px;">Catalyst calendar</div>
+    <h1 style="font-size:20px;margin:0 0 6px;letter-spacing:-0.01em;">
+      ${isToday ? "It's today" : "Heads-up"}: ${escapeHtmlBot(task.title)}
+    </h1>
+    <p style="font-size:14px;line-height:1.6;color:#374151;margin:0 0 16px;">
+      Hi ${escapeHtmlBot(recipientName)} — ${isToday
+        ? `your ${shared ? "shared " : ""}calendar task is scheduled for <strong>today</strong>.`
+        : `a reminder that your ${shared ? "shared " : ""}calendar task is scheduled for <strong>${escapeHtmlBot(niceDate)}</strong>.`}
+    </p>
+    <div style="border:1px solid #e5e7eb;border-left:4px solid #0f766e;border-radius:10px;padding:14px 16px;margin:0 0 16px;">
+      <div style="font-weight:700;font-size:15px;">${escapeHtmlBot(task.title)}</div>
+      <div style="font-size:13px;color:#64748b;margin-top:4px;">${escapeHtmlBot(niceDate)}${task.createdByName ? ` · created by ${escapeHtmlBot(task.createdByName)}` : ""}</div>
+      ${task.notes ? `<div style="font-size:13.5px;color:#374151;line-height:1.55;margin-top:8px;white-space:pre-wrap;">${escapeHtmlBot(task.notes)}</div>` : ""}
+      ${shared ? `<div style="font-size:12.5px;color:#64748b;margin-top:8px;">On this with you: <strong>${others.map(escapeHtmlBot).join(", ")}</strong></div>` : ""}
+    </div>
+    <a href="${siteUrl}/admin/#/overview" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;padding:11px 18px;border-radius:9px;">Open the calendar</a>
+    <p style="font-size:11.5px;color:#94a3b8;margin:20px 0 0;line-height:1.5;">
+      You're receiving this because you're on this calendar task. Mark it done on the dashboard calendar to stop day-of reminders.
+    </p>
+  </div>`;
+
+  return { subject, html };
+}
+
+function humanDateFromYMD(ymd) {
+  if (!ymd) return "";
+  const d = new Date(`${ymd}T12:00:00Z`);
+  if (isNaN(d.getTime())) return ymd;
+  return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+}
+
+function escapeHtmlBot(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // The reminder log lives at `bot_reminder_log/state` as a single doc whose
