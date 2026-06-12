@@ -92,7 +92,7 @@ export async function mount(ctx, container) {
         <div class="card-header">
           <div>
             <div class="card-title">Up next</div>
-            <div class="card-subtitle">Every story headed to publication, soonest first — with the prep each one needs. Questions? Message the writer right from here.</div>
+            <div class="card-subtitle">Stories headed to publication, soonest first — with the prep each one needs. Stories whose dates slipped by more than a week are parked under "Waiting on a new date" so this list stays current.</div>
           </div>
           <button class="btn btn-secondary btn-sm" id="pl-refresh">Refresh</button>
         </div>
@@ -214,7 +214,10 @@ async function loadData(ctx, container, state, reload) {
 
   // ── Stats ──
   const set = (k, v) => { const n = container.querySelector(`[data-k="${k}"]`); if (n) n.textContent = v; };
-  const active = (state.projects || []).filter(isActiveProject);
+  const clearedIds = new Set((state.cleared || []).map((c) => c.id));
+  const active = (state.projects || [])
+    .filter(isActiveProject)
+    .filter((p) => !clearedIds.has(p.id));
   const now = startOfToday();
   const in14 = active.filter((p) => {
     const d = parseDay(pubDateOf(p));
@@ -352,8 +355,13 @@ function openAssignModal(ctx, state, reload, prefill) {
     return;
   }
 
-  // Article options: upcoming pipeline stories + recently published.
-  const upcoming = (state.projects || []).filter(isActiveProject);
+  // Article options: upcoming pipeline stories (not hidden/cleared) +
+  // recently published.
+  const clearedIds = new Set((state.cleared || []).map((c) => c.id));
+  const upcoming = (state.projects || [])
+    .filter(isActiveProject)
+    .filter((p) => !clearedIds.has(p.id))
+    .sort(byPubDate);
   const published = state.stories || [];
   const defaultDeadline = prefill.deadline || isoDay(new Date(Date.now() + 3 * 86400000));
 
@@ -362,7 +370,7 @@ function openAssignModal(ctx, state, reload, prefill) {
     <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Make a post about
       <select class="select" id="as-article" style="font-weight:400;">
         ${prefill.articleTitle ? `<option value="custom" selected>${esc(prefill.articleTitle)}</option>` : `<option value="">Choose an article…</option>`}
-        ${upcoming.length ? `<optgroup label="Coming up">${upcoming.map((p) => `<option value="p:${esc(p.id)}">${esc(p.title || "(untitled)")}${pubDateOf(p) ? ` — publishes ${esc(fmtDate(pubDateOf(p)))}` : ""}</option>`).join("")}</optgroup>` : ""}
+        ${upcoming.length ? `<optgroup label="Coming up">${upcoming.map((p) => `<option value="p:${esc(p.id)}">${esc(p.title || "(untitled)")}${pubDateOf(p) ? ` — publishes ${esc(fmtDay(pubDateOf(p)))}` : ""}</option>`).join("")}</optgroup>` : ""}
         ${published.length ? `<optgroup label="Just published">${published.map((s) => `<option value="s:${esc(s.id)}">${esc(s.title || "(untitled)")}</option>`).join("")}</optgroup>` : ""}
         <option value="other">Something else (type it in)</option>
       </select>
@@ -472,25 +480,136 @@ function pubDateOf(p) {
   return p.deadlines?.publication || p.deadline || null;
 }
 
-function renderUpcoming(ctx, mountEl, state, reload) {
-  const active = state.projects.filter(isActiveProject).sort((a, b) => {
-    const da = parseDay(pubDateOf(a));
-    const db_ = parseDay(pubDateOf(b));
-    if (da && db_) return da - db_;
-    if (da) return -1;
-    if (db_) return 1;
-    return String(a.title || "").localeCompare(String(b.title || ""));
-  });
+// Stories whose publication date slipped by more than this many days are
+// "stale": probably mis-scheduled, definitely not what the social team should
+// be staring at. They move to a collapsed "Waiting on a new date" section.
+const STALE_GRACE_DAYS = 7;
 
-  if (!active.length) {
-    mountEl.innerHTML = `<div class="empty-state">No stories in the pipeline right now. New proposals will show up here automatically.</div>`;
-    return;
-  }
+function byPubDate(a, b) {
+  const da = parseDay(pubDateOf(a));
+  const db_ = parseDay(pubDateOf(b));
+  if (da && db_) return da - db_;
+  if (da) return -1;
+  if (db_) return 1;
+  return String(a.title || "").localeCompare(String(b.title || ""));
+}
+
+function isStaleProject(p) {
+  const d = parseDay(pubDateOf(p));
+  return !!d && d.getTime() < startOfToday().getTime() - STALE_GRACE_DAYS * 86400000;
+}
+
+function renderUpcoming(ctx, mountEl, state, reload) {
+  const assigner = canAssign(ctx);
+  const clearedById = new Map(state.cleared.map((c) => [c.id, c]));
+  const active = state.projects.filter(isActiveProject);
+  const visible = active.filter((p) => !clearedById.has(p.id));
+  const hidden = active.filter((p) => clearedById.has(p.id));
+  const current = visible.filter((p) => !isStaleProject(p)).sort(byPubDate);
+  const stale = visible.filter(isStaleProject).sort(byPubDate);
 
   mountEl.innerHTML = "";
-  for (const p of active) {
+
+  if (!current.length) {
+    mountEl.appendChild(el("div", { class: "empty-state" },
+      stale.length || hidden.length
+        ? "Nothing scheduled right now — check the parked sections below."
+        : "No stories in the pipeline right now. New proposals will show up here automatically."));
+  }
+  for (const p of current) {
     mountEl.appendChild(renderUpcomingRow(ctx, p, state, reload));
   }
+
+  // Parked: dates that slipped over a week ago. Compact rows — the job here
+  // is to chase a real date (or hide the story), not to plan posts.
+  if (stale.length) {
+    const { toggle, list } = collapsedSection(`Waiting on a new date (${stale.length})`);
+    list.appendChild(el("div", {
+      style: "font-size:12px;color:var(--muted);padding:6px 4px 10px;line-height:1.55;",
+    }, "These publication dates passed over a week ago without the story going live. Message the writer to get a real date — they return to the main list automatically once the date is updated."));
+    for (const p of stale) {
+      const row = el("div", {
+        style: "display:flex;align-items:center;gap:12px;padding:8px 4px;border-bottom:1px solid var(--hairline,#f1f5f9);flex-wrap:wrap;",
+      });
+      const first = String(p.authorName || "the writer").trim().split(/\s+/)[0];
+      row.innerHTML = `
+        <div style="flex:1;min-width:220px;">
+          <span style="font-weight:600;font-size:13px;color:var(--ink);">${esc(p.title || "(untitled story)")}</span>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">
+            ${esc(p.authorName || "Unassigned")} · was planned for ${esc(fmtDay(pubDateOf(p)))} · ${esc(stageLabel(p))}
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-xs" data-act="chat">Message ${esc(first)}</button>
+        ${assigner ? `<button class="btn btn-ghost btn-xs" data-act="clear" title="Hide this story from the Planner — no social post needed">No post needed</button>` : ""}
+      `;
+      row.querySelector('[data-act="chat"]').addEventListener("click", () => openChatModal(ctx, p));
+      row.querySelector('[data-act="clear"]')?.addEventListener("click", () =>
+        clearProjectFromPlanner(ctx, p, reload));
+      list.appendChild(row);
+    }
+    mountEl.appendChild(toggle);
+    mountEl.appendChild(list);
+  }
+
+  // Hidden: stories a social lead cleared ("no post needed"). Restorable.
+  if (hidden.length) {
+    const { toggle, list } = collapsedSection(`Hidden — no post needed (${hidden.length})`);
+    for (const p of hidden) {
+      const meta = clearedById.get(p.id) || {};
+      const row = el("div", {
+        style: "display:flex;align-items:center;gap:12px;padding:8px 4px;border-bottom:1px solid var(--hairline,#f1f5f9);flex-wrap:wrap;opacity:.7;",
+      });
+      row.innerHTML = `
+        <div style="flex:1;min-width:220px;">
+          <span style="font-weight:600;font-size:13px;color:var(--ink);">${esc(p.title || "(untitled story)")}</span>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">
+            hidden by ${esc(meta.clearedByName || "—")}${meta.clearedAt ? ` · ${esc(fmtRelative(meta.clearedAt))}` : ""}
+          </div>
+        </div>
+        ${assigner ? `<button class="btn btn-ghost btn-xs" data-act="restore">Restore</button>` : ""}
+      `;
+      row.querySelector('[data-act="restore"]')?.addEventListener("click", async () => {
+        try {
+          await deleteDoc(doc(db, "planner_cleared", p.id));
+          toast("Restored to the Planner.", "info");
+          reload();
+        } catch (err) { toast("Could not restore: " + err.message, "error"); }
+      });
+      list.appendChild(row);
+    }
+    mountEl.appendChild(toggle);
+    mountEl.appendChild(list);
+  }
+}
+
+// Shared collapsed-section chrome: a ghost toggle button + a hidden list.
+function collapsedSection(label) {
+  const toggle = el("button", {
+    class: "btn btn-ghost btn-xs",
+    style: "margin-top:10px;color:var(--muted);",
+  }, `${label} — show`);
+  const list = el("div", { style: "display:none;margin-top:6px;" });
+  toggle.addEventListener("click", () => {
+    const open = list.style.display !== "none";
+    list.style.display = open ? "none" : "block";
+    toggle.textContent = `${label} — ${open ? "show" : "hide"}`;
+  });
+  return { toggle, list };
+}
+
+async function clearProjectFromPlanner(ctx, p, reload) {
+  try {
+    await setDoc(doc(db, "planner_cleared", p.id), {
+      projectId: p.id,
+      title: p.title || "",
+      reason: "no-post-needed",
+      clearedById: ctx.user.uid,
+      clearedByName: ctx.profile.name || ctx.user.email,
+      clearedAt: new Date().toISOString(),
+    });
+    toast(`"${p.title || "Story"}" hidden from the Planner.`, "success");
+    reload();
+  } catch (err) { toast("Could not hide: " + err.message, "error"); }
 }
 
 function renderUpcomingRow(ctx, p, state, reload) {
@@ -518,14 +637,15 @@ function renderUpcomingRow(ctx, p, state, reload) {
             ${esc(p.authorName || "Unassigned")}
           </span>
           <span>Stage: <strong style="color:var(--ink-2);">${esc(stage)}</strong></span>
-          <span>Publication: <strong style="color:var(--ink-2);">${pubDateStr ? esc(fmtDate(pubDateStr)) : "no date set"}</strong></span>
+          <span>Publication: <strong style="color:var(--ink-2);">${pubDateStr ? esc(fmtDay(pubDateStr)) : "no date set"}</strong></span>
           ${p.editorName ? `<span>Editor: <strong style="color:var(--ink-2);">${esc(p.editorName)}</strong></span>` : ""}
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-xs" data-act="proposal">View proposal</button>
         <button class="btn btn-secondary btn-xs" data-act="chat">Message ${esc(authorFirst)}</button>
-        ${canAssign(ctx) ? `<button class="btn btn-secondary btn-xs" data-act="assign">Assign post</button>` : ""}
+        ${canAssign(ctx) ? `<button class="btn btn-secondary btn-xs" data-act="assign">Assign post</button>
+        <button class="btn btn-ghost btn-xs" data-act="clear" title="Hide this story from the Planner — no social post needed">No post needed</button>` : ""}
       </div>
     </div>
     ${renderPrepPlan(p, pubDate, stale, authorFirst)}
@@ -539,6 +659,8 @@ function renderUpcomingRow(ctx, p, state, reload) {
       projectId: p.id,
       deadline: pubDate && !stale ? isoDay(new Date(pubDate.getTime() - 86400000)) : undefined,
     }));
+  row.querySelector('[data-act="clear"]')?.addEventListener("click", () =>
+    clearProjectFromPlanner(ctx, p, reload));
   return row;
 }
 
@@ -569,7 +691,7 @@ function renderPrepPlan(p, pubDate, stale, authorFirst) {
           <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;">
             ${cadenceDot(c.state)}
             <span style="color:${c.state === "overdue" ? "var(--danger,#b91c1c)" : c.state === "today" ? "var(--ink)" : "var(--ink-2)"};${c.state === "today" || c.state === "overdue" ? "font-weight:700;" : ""}">${esc(c.label)}</span>
-            <span style="margin-left:auto;color:var(--muted);white-space:nowrap;">${esc(c.when)} · ${esc(fmtDate(c.dateStr))}</span>
+            <span style="margin-left:auto;color:var(--muted);white-space:nowrap;">${esc(c.when)} · ${esc(fmtDay(c.dateStr))}</span>
             ${c.state === "today" ? `<span class="pill pill-pending" style="font-size:10.5px;">do today</span>` : ""}
             ${c.state === "overdue" ? `<span class="pill pill-rejected" style="font-size:10.5px;">catch up</span>` : ""}
           </div>`).join("")}
@@ -633,10 +755,10 @@ function openProposalModal(p) {
     ["Editor", p.editorName || "Not assigned"],
     ["Type", p.type || "Article"],
     ["Proposal status", p.proposalStatus || "pending"],
-    p.interviewDate ? ["Interview", fmtDate(p.interviewDate)] : null,
-    deadlines.draft ? ["Draft due", fmtDate(deadlines.draft)] : null,
-    deadlines.review ? ["Review due", fmtDate(deadlines.review)] : null,
-    pubDateOf(p) ? ["Publication", fmtDate(pubDateOf(p))] : null,
+    p.interviewDate ? ["Interview", fmtDay(p.interviewDate)] : null,
+    deadlines.draft ? ["Draft due", fmtDay(deadlines.draft)] : null,
+    deadlines.review ? ["Review due", fmtDay(deadlines.review)] : null,
+    pubDateOf(p) ? ["Publication", fmtDay(pubDateOf(p))] : null,
   ].filter(Boolean);
 
   const body = el("div", { style: "display:flex;flex-direction:column;gap:14px;" });
@@ -918,6 +1040,14 @@ function isoDay(d) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+// Format a YYYY-MM-DD string for display without the UTC-parse off-by-one
+// that `new Date("2025-11-08")` causes in US timezones (it would render as
+// Nov 7). Always route date *strings* through here, not fmtDate directly.
+function fmtDay(s) {
+  const d = parseDay(s);
+  return d ? fmtDate(d) : fmtDate(s);
 }
 
 // Parse a YYYY-MM-DD (or ISO) date string to a local-midnight Date, or null.
