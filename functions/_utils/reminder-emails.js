@@ -1587,7 +1587,8 @@ export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
 
   const statusBlock = buildStatusBlock({
     rows: [
-      { label: "Article", value: articleTitle },
+      { label: "Topic", value: articleTitle },
+      assignment.type ? { label: "Type", value: assignment.type } : null,
       assignment.platform && assignment.platform !== "any"
         ? { label: "Platform", value: assignment.platform }
         : { label: "Platform", value: "Your call (any)" },

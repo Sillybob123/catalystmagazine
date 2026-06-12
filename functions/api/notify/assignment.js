@@ -38,7 +38,9 @@ export const onRequestPost = async ({ request, env }) => {
     if (!docResp) return badRequest("Assignment not found");
     const assignment = unwrapDoc(docResp, assignmentId);
 
-    const logId = `assignment_${assignmentId}`;
+    // Dedupe per assignment AND assignee: reassigning a post to someone new
+    // emails the new owner once, without re-spamming the previous one.
+    const logId = `assignment_${assignmentId}_${sanitizeId(assignment.assigneeId || "none")}`;
     const existing = await firestoreGet(env, `bot_event_notify_log/${logId}`);
     if (existing) return json({ ok: true, sent: false, deduped: true });
 
@@ -82,6 +84,10 @@ export const onRequestPost = async ({ request, env }) => {
     return serverError(err);
   }
 };
+
+function sanitizeId(s) {
+  return String(s || "").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
+}
 
 function unwrapDoc(doc, id) {
   const fields = doc.fields || {};

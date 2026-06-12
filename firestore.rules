@@ -348,12 +348,19 @@ service cloud.firestore {
     // assignment (mark done / reopen); assigners and admins manage them.
     match /social_assignments/{assignmentId} {
       allow read: if isStaff();
-      allow create: if (isAdmin() || hasGrant('#/planner/assign'))
-        && request.resource.data.createdById == request.auth.uid;
+      // Leads (admin / '#/planner/assign' grant) can assign anyone; any
+      // staff member can add a tracker row they own themselves.
+      allow create: if request.resource.data.createdById == request.auth.uid
+        && (isAdmin()
+            || hasGrant('#/planner/assign')
+            || (isStaff() && request.resource.data.assigneeId == request.auth.uid));
       allow update: if isAdmin()
         || hasGrant('#/planner/assign')
-        || resource.data.assigneeId == request.auth.uid;
-      allow delete: if isAdmin() || hasGrant('#/planner/assign');
+        || resource.data.assigneeId == request.auth.uid
+        || resource.data.createdById == request.auth.uid;
+      allow delete: if isAdmin()
+        || hasGrant('#/planner/assign')
+        || (isStaff() && resource.data.createdById == request.auth.uid);
     }
 
     // ---------- planner cleared list ----------

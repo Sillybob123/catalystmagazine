@@ -55,6 +55,44 @@ const CADENCE = [
 
 const PLATFORMS = ["any", "instagram", "linkedin", "twitter", "facebook"];
 
+// Content types for the tracker — the team's recurring formats, each with a
+// stable chip color so the table scans like the old spreadsheet.
+const CONTENT_TYPES = [
+  { label: "Article highlight",        bg: "#fca5a5", ink: "#7f1d1d" },
+  { label: "Interview Reel",           bg: "#fecdd3", ink: "#9f1239" },
+  { label: "Infographic carousel",     bg: "#fbcfe8", ink: "#9d174d" },
+  { label: "LinkedIn Discussion Post", bg: "#c7d2fe", ink: "#3730a3" },
+  { label: "Wacky Word Wednesday",     bg: "#bfdbfe", ink: "#1e40af" },
+  { label: "Fellow spotlight",         bg: "#ddd6fe", ink: "#5b21b6" },
+  { label: "Science in One Number",    bg: "#bbf7d0", ink: "#166534" },
+  { label: "Book Review",              bg: "#e5e7eb", ink: "#374151" },
+  { label: "Other",                    bg: "#f1f5f9", ink: "#334155" },
+];
+
+function typeChip(label) {
+  if (!label) return "";
+  const t = CONTENT_TYPES.find((c) => c.label === label) || CONTENT_TYPES[CONTENT_TYPES.length - 1];
+  return `<span style="background:${t.bg};color:${t.ink};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;">${esc(label)}</span>`;
+}
+
+// Tracker statuses. Legacy docs used open/done — normalize on read.
+const STATUSES = [
+  { id: "planned",   label: "Planned",   bg: "#f1f5f9", ink: "#475569" },
+  { id: "drafting",  label: "Drafting",  bg: "#fef3c7", ink: "#92400e" },
+  { id: "scheduled", label: "Scheduled", bg: "#dbeafe", ink: "#1d4ed8" },
+  { id: "published", label: "Published", bg: "#dcfce7", ink: "#15803d" },
+];
+
+function normStatus(s) {
+  if (s === "open" || !s) return "planned";
+  if (s === "done") return "published";
+  return STATUSES.some((x) => x.id === s) ? s : "planned";
+}
+
+function isDoneStatus(s) {
+  return normStatus(s) === "published";
+}
+
 // Roles that can be assigned a post.
 const ASSIGNABLE_ROLES = ["social_media", "marketing", "admin"];
 
@@ -78,12 +116,12 @@ export async function mount(ctx, container) {
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">Post assignments</div>
+            <div class="card-title">Content tracker</div>
             <div class="card-subtitle">${assigner
-              ? "Who's making which post, and when it's due. Assign one from here or from any story below."
-              : "Posts assigned to the team. Yours are highlighted — mark them done when the post ships."}</div>
+              ? "Every planned post: platform, type, owner, status, post date. Assign content to anyone — they get an email with the deadline."
+              : "Every planned post. Add your own content here; rows with your name are yours to ship."}</div>
           </div>
-          ${assigner ? `<button class="btn btn-primary btn-sm" id="pl-assign-new">Assign a post</button>` : ""}
+          <button class="btn btn-primary btn-sm" id="pl-assign-new">Add content</button>
         </div>
         <div class="card-body" id="pl-assignments"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
       </div>
@@ -232,7 +270,7 @@ async function loadData(ctx, container, state, reload) {
     return sum + buildCadence(pubDate).filter((c) => c.state === "today" || c.state === "overdue").length;
   }, 0);
   const assignmentsDue = (state.assignments || []).filter((a) => {
-    if (a.status === "done") return false;
+    if (isDoneStatus(a.status)) return false;
     const d = parseDay(a.deadline);
     return d && d <= now;
   }).length;
@@ -249,86 +287,120 @@ async function loadData(ctx, container, state, reload) {
 // ─── Post assignments ─────────────────────────────────────────────────────────
 
 function renderAssignments(ctx, mountEl, state, reload) {
-  const assigner = canAssign(ctx);
+  const lead = canAssign(ctx);
   const myUid = ctx.user.uid;
-  const all = state.assignments.slice();
+  const showPublished = state.trackerShowPublished === true;
 
-  const open = all.filter((a) => a.status !== "done").sort((a, b) => {
-    // Mine first, then soonest deadline.
-    const mineA = a.assigneeId === myUid ? 0 : 1;
-    const mineB = b.assigneeId === myUid ? 0 : 1;
-    if (mineA !== mineB) return mineA - mineB;
-    return String(a.deadline || "9999").localeCompare(String(b.deadline || "9999"));
-  });
-  const done = all.filter((a) => a.status === "done")
-    .sort((a, b) => String(b.doneAt || "").localeCompare(String(a.doneAt || "")))
-    .slice(0, 5);
+  const rows = state.assignments
+    .map((a) => ({ ...a, _status: normStatus(a.status) }))
+    .filter((a) => showPublished || a._status !== "published")
+    .sort((a, b) => {
+      const pa = a._status === "published" ? 1 : 0;
+      const pb = b._status === "published" ? 1 : 0;
+      if (pa !== pb) return pa - pb;
+      return String(a.deadline || "9999").localeCompare(String(b.deadline || "9999"));
+    });
 
-  if (!open.length && !done.length) {
-    mountEl.innerHTML = `<div class="empty-state">No post assignments yet.${assigner ? ` Use "Assign a post" to give someone an article and a deadline — they'll get an email.` : ""}</div>`;
+  mountEl.innerHTML = "";
+
+  // Active / All filter pills.
+  const publishedCount = state.assignments.filter((a) => normStatus(a.status) === "published").length;
+  const filterBar = el("div", { style: "display:flex;gap:6px;margin-bottom:10px;align-items:center;" });
+  const mkPill = (label, all) => el("button", {
+    class: `btn btn-xs ${showPublished === all ? "btn-primary" : "btn-secondary"}`,
+    onclick: () => { state.trackerShowPublished = all; renderAssignments(ctx, mountEl, state, reload); },
+  }, label);
+  filterBar.appendChild(mkPill("Active", false));
+  filterBar.appendChild(mkPill(`All (incl. ${publishedCount} published)`, true));
+  mountEl.appendChild(filterBar);
+
+  if (!rows.length) {
+    mountEl.appendChild(el("div", { class: "empty-state" },
+      showPublished
+        ? "Nothing in the tracker yet. Use \"Add content\" to plan the first post."
+        : "No active content — everything's published. Use \"Add content\" to plan the next post."));
     return;
   }
 
-  mountEl.innerHTML = "";
-  for (const a of open) mountEl.appendChild(assignmentRow(ctx, a, state, reload, false));
-  if (done.length) {
-    const h = el("div", { style: "font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px;" }, "Recently completed");
-    mountEl.appendChild(h);
-    for (const a of done) mountEl.appendChild(assignmentRow(ctx, a, state, reload, true));
+  const scroll = el("div", { style: "overflow-x:auto;" });
+  const table = el("table", { style: "width:100%;border-collapse:collapse;font-size:13px;min-width:820px;" });
+  const th = (label) => `<th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--hairline,#e5e7eb);white-space:nowrap;">${label}</th>`;
+  table.innerHTML = `<thead><tr>${th("Platform")}${th("Type")}${th("Topic")}${th("Owner")}${th("Status")}${th("Post date")}${th("Notes")}${th("")}</tr></thead>`;
+  const tbody = el("tbody", {});
+
+  for (const a of rows) {
+    const mine = a.assigneeId === myUid;
+    const canTouch = lead || mine || a.createdById === myUid;
+    const isPub = a._status === "published";
+    const due = parseDay(a.deadline);
+    const dueText = dueLabel(due, isPub);
+    const td = "padding:9px 10px;border-bottom:1px solid var(--hairline,#f1f5f9);vertical-align:middle;";
+
+    const tr = el("tr", { style: mine && !isPub ? "background:var(--surface-2,#f8fafc);" : "" });
+    tr.innerHTML = `
+      <td style="${td}white-space:nowrap;color:var(--ink-2);">${esc(platformLabel(a.platform))}</td>
+      <td style="${td}">${typeChip(a.type) || `<span style="color:var(--muted);">—</span>`}</td>
+      <td style="${td}min-width:200px;">
+        <span style="font-weight:600;color:var(--ink);${isPub ? "opacity:.6;" : ""}">${esc(a.articleTitle || "(untitled)")}</span>
+        ${a.link ? ` <a href="${esc(a.link)}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--accent);">open&nbsp;asset</a>` : ""}
+        ${mine && !isPub ? ` <span class="pill pill-pending" style="font-size:10px;">yours</span>` : ""}
+      </td>
+      <td style="${td}white-space:nowrap;color:var(--ink-2);">${esc(a.assigneeName || "—")}</td>
+      <td style="${td}"></td>
+      <td style="${td}white-space:nowrap;font-size:12px;${dueText.urgent && !isPub ? "color:var(--danger,#b91c1c);font-weight:700;" : "color:var(--muted);"}">${esc(dueText.text)}</td>
+      <td style="${td}max-width:180px;"><span title="${esc(a.notes || "")}" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted);">${esc(a.notes || "")}</span></td>
+      <td style="${td}white-space:nowrap;text-align:right;">
+        ${canTouch ? `<button class="btn btn-ghost btn-xs" data-act="edit">Edit</button>` : ""}
+        ${(lead || a.createdById === myUid) ? `<button class="btn btn-ghost btn-xs" data-act="remove" style="color:var(--danger,#b91c1c);">Remove</button>` : ""}
+      </td>`;
+
+    // Inline status select — the fastest path from "drafting" to "published".
+    const statusCell = tr.children[4];
+    const meta = STATUSES.find((s) => s.id === a._status) || STATUSES[0];
+    if (canTouch) {
+      const sel = el("select", {
+        class: "select",
+        style: `font-size:11.5px;font-weight:700;padding:3px 6px;border-radius:999px;border:1px solid ${meta.ink}33;background:${meta.bg};color:${meta.ink};max-width:120px;`,
+      });
+      sel.innerHTML = STATUSES.map((s) => `<option value="${s.id}" ${s.id === a._status ? "selected" : ""}>${s.label}</option>`).join("");
+      sel.addEventListener("change", async () => {
+        try {
+          await updateDoc(doc(db, "social_assignments", a.id), {
+            status: sel.value,
+            doneAt: sel.value === "published" ? new Date().toISOString() : null,
+          });
+          reload();
+        } catch (err) {
+          toast("Could not update status: " + err.message, "error");
+          sel.value = a._status;
+        }
+      });
+      statusCell.appendChild(sel);
+    } else {
+      statusCell.innerHTML = `<span style="background:${meta.bg};color:${meta.ink};padding:2px 10px;border-radius:999px;font-size:11px;font-weight:700;">${esc(meta.label)}</span>`;
+    }
+
+    tr.querySelector('[data-act="edit"]')?.addEventListener("click", () =>
+      openAssignModal(ctx, state, reload, {}, a));
+    tr.querySelector('[data-act="remove"]')?.addEventListener("click", async () => {
+      const ok = await confirmDialog(`Remove "${a.articleTitle || "this content"}" from the tracker?`, { confirmText: "Remove", danger: true });
+      if (!ok) return;
+      try {
+        await deleteDoc(doc(db, "social_assignments", a.id));
+        reload();
+      } catch (err) { toast("Could not remove: " + err.message, "error"); }
+    });
+    tbody.appendChild(tr);
   }
+
+  table.appendChild(tbody);
+  scroll.appendChild(table);
+  mountEl.appendChild(scroll);
 }
 
-function assignmentRow(ctx, a, state, reload, isDone) {
-  const myUid = ctx.user.uid;
-  const assigner = canAssign(ctx);
-  const mine = a.assigneeId === myUid;
-  const due = parseDay(a.deadline);
-  const dueText = dueLabel(due, isDone);
-
-  const row = el("div", {
-    style: `display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:10px;margin-bottom:8px;flex-wrap:wrap;${isDone ? "opacity:.65;" : ""}${mine && !isDone ? "background:var(--surface-2,#f8fafc);" : ""}`,
-  });
-  row.innerHTML = `
-    <div style="flex:1;min-width:220px;">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-weight:600;font-size:13.5px;color:var(--ink);${isDone ? "text-decoration:line-through;" : ""}">Post for &ldquo;${esc(a.articleTitle || "untitled article")}&rdquo;</span>
-        ${a.platform && a.platform !== "any" ? `<span class="pill pill-draft" style="font-size:10.5px;">${esc(a.platform)}</span>` : ""}
-        ${mine && !isDone ? `<span class="pill pill-pending" style="font-size:10.5px;">yours</span>` : ""}
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:3px;">
-        ${esc(a.assigneeName || "Unassigned")} · assigned by ${esc(a.createdByName || "—")}${a.notes ? ` · “${esc(a.notes.length > 90 ? a.notes.slice(0, 89) + "…" : a.notes)}”` : ""}
-      </div>
-    </div>
-    <span style="font-size:12px;white-space:nowrap;${dueText.urgent && !isDone ? "color:var(--danger,#b91c1c);font-weight:700;" : "color:var(--muted);"}">${esc(dueText.text)}</span>
-    <div style="display:flex;gap:6px;">
-      ${(mine || assigner) && !isDone ? `<button class="btn btn-secondary btn-xs" data-act="done">Mark done</button>` : ""}
-      ${(mine || assigner) && isDone ? `<button class="btn btn-ghost btn-xs" data-act="reopen">Reopen</button>` : ""}
-      ${assigner ? `<button class="btn btn-ghost btn-xs" data-act="remove" style="color:var(--danger,#b91c1c);">Remove</button>` : ""}
-    </div>
-  `;
-
-  row.querySelector('[data-act="done"]')?.addEventListener("click", async () => {
-    try {
-      await updateDoc(doc(db, "social_assignments", a.id), { status: "done", doneAt: new Date().toISOString() });
-      toast("Nice — marked done.", "success");
-      reload();
-    } catch (err) { toast("Could not update: " + err.message, "error"); }
-  });
-  row.querySelector('[data-act="reopen"]')?.addEventListener("click", async () => {
-    try {
-      await updateDoc(doc(db, "social_assignments", a.id), { status: "open", doneAt: null });
-      reload();
-    } catch (err) { toast("Could not update: " + err.message, "error"); }
-  });
-  row.querySelector('[data-act="remove"]')?.addEventListener("click", async () => {
-    const ok = await confirmDialog(`Remove the assignment for "${a.articleTitle || "this article"}"?`, { confirmText: "Remove", danger: true });
-    if (!ok) return;
-    try {
-      await deleteDoc(doc(db, "social_assignments", a.id));
-      reload();
-    } catch (err) { toast("Could not remove: " + err.message, "error"); }
-  });
-  return row;
+function platformLabel(p) {
+  if (!p || p === "any") return "Any";
+  return p[0].toUpperCase() + p.slice(1);
 }
 
 function dueLabel(due, isDone) {
@@ -341,18 +413,20 @@ function dueLabel(due, isDone) {
   return { text: `due ${fmtDate(due)} (${days} days)`, urgent: false };
 }
 
-// Assign-a-post modal. `prefill` can carry { articleTitle, projectId, storyId }
-// when launched from a story row.
-function openAssignModal(ctx, state, reload, prefill) {
-  if (!canAssign(ctx)) return;
+// Add/edit-content modal. `prefill` can carry { articleTitle, projectId,
+// storyId, type, deadline } when launched from a story row; `existing` is a
+// tracker row being edited. Leads can assign anyone; everyone else can add
+// and edit content they own (the owner picker is locked to themselves).
+function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
+  const lead = canAssign(ctx);
+  const myUid = ctx.user.uid;
 
-  const team = (state.team || [])
+  let team = (state.team || [])
     .filter((u) => u.id !== undefined)
     .sort((a, b) => String(a.name || a.email || "").localeCompare(String(b.name || b.email || "")));
-
-  if (!team.length) {
-    toast("No assignable teammates found (social media / marketing roles).", "error");
-    return;
+  // Make sure the viewer can always pick themselves, whatever their role.
+  if (!team.some((u) => u.id === myUid)) {
+    team = [{ id: myUid, name: ctx.profile.name || ctx.user.email, email: ctx.profile.email || ctx.user.email || "", role: ctx.role }, ...team];
   }
 
   // Article options: upcoming pipeline stories (not hidden/cleared) +
@@ -363,107 +437,149 @@ function openAssignModal(ctx, state, reload, prefill) {
     .filter((p) => !clearedIds.has(p.id))
     .sort(byPubDate);
   const published = state.stories || [];
-  const defaultDeadline = prefill.deadline || isoDay(new Date(Date.now() + 3 * 86400000));
 
-  const body = el("div", { style: "display:flex;flex-direction:column;gap:12px;min-width:min(480px,80vw);" });
+  const initialTopic = existing?.articleTitle || prefill.articleTitle || "";
+  const initialOwner = existing?.assigneeId || (lead ? (team[0]?.id || myUid) : myUid);
+  const initialDeadline = existing?.deadline || prefill.deadline || isoDay(new Date(Date.now() + 3 * 86400000));
+  const initialType = existing?.type || prefill.type || "";
+  const initialStatus = existing ? normStatus(existing.status) : "planned";
+
+  const body = el("div", { style: "display:flex;flex-direction:column;gap:12px;min-width:min(500px,82vw);" });
   body.innerHTML = `
-    <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Make a post about
+    <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Topic — what's the post about?
+      <input id="as-topic" value="${esc(initialTopic)}" placeholder="e.g. Misfolded proteins, Fellow spotlight: Le Nguyen…" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
+    </label>
+    <label style="display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--muted);">Or pick an article (fills the topic for you)
       <select class="select" id="as-article" style="font-weight:400;">
-        ${prefill.articleTitle ? `<option value="custom" selected>${esc(prefill.articleTitle)}</option>` : `<option value="">Choose an article…</option>`}
+        <option value="">— choose an article —</option>
         ${upcoming.length ? `<optgroup label="Coming up">${upcoming.map((p) => `<option value="p:${esc(p.id)}">${esc(p.title || "(untitled)")}${pubDateOf(p) ? ` — publishes ${esc(fmtDay(pubDateOf(p)))}` : ""}</option>`).join("")}</optgroup>` : ""}
         ${published.length ? `<optgroup label="Just published">${published.map((s) => `<option value="s:${esc(s.id)}">${esc(s.title || "(untitled)")}</option>`).join("")}</optgroup>` : ""}
-        <option value="other">Something else (type it in)</option>
-      </select>
-    </label>
-    <input id="as-custom-title" placeholder="What's the post about?" style="display:none;padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
-    <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Assign to
-      <select class="select" id="as-assignee" style="font-weight:400;">
-        ${team.map((u) => `<option value="${esc(u.id)}">${esc(u.name || u.email)}${u.role ? ` (${esc(u.role === "social_media" ? "social media" : u.role)})` : ""}</option>`).join("")}
       </select>
     </label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Post due by
-        <input type="date" id="as-deadline" value="${esc(defaultDeadline)}" min="${esc(isoDay(new Date()))}" style="padding:8px 10px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
+      <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Type
+        <select class="select" id="as-type" style="font-weight:400;">
+          <option value="">— pick a format —</option>
+          ${CONTENT_TYPES.map((t) => `<option value="${esc(t.label)}" ${t.label === initialType ? "selected" : ""}>${esc(t.label)}</option>`).join("")}
+        </select>
       </label>
       <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Platform
         <select class="select" id="as-platform" style="font-weight:400;">
-          ${PLATFORMS.map((p) => `<option value="${p}">${p === "any" ? "Any / their call" : p[0].toUpperCase() + p.slice(1)}</option>`).join("")}
+          ${PLATFORMS.map((p) => `<option value="${p}" ${(existing?.platform || prefill.platform) === p ? "selected" : ""}>${p === "any" ? "Any" : platformLabel(p)}</option>`).join("")}
         </select>
       </label>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Owner
+        <select class="select" id="as-assignee" style="font-weight:400;" ${lead ? "" : "disabled"}>
+          ${team.map((u) => `<option value="${esc(u.id)}" ${u.id === initialOwner ? "selected" : ""}>${esc(u.name || u.email)}</option>`).join("")}
+        </select>
+      </label>
+      <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Post date
+        <input type="date" id="as-deadline" value="${esc(initialDeadline)}" style="padding:8px 10px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
+      </label>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Status
+        <select class="select" id="as-status" style="font-weight:400;">
+          ${STATUSES.map((s) => `<option value="${s.id}" ${s.id === initialStatus ? "selected" : ""}>${s.label}</option>`).join("")}
+        </select>
+      </label>
+      <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Asset link (optional)
+        <input id="as-link" value="${esc(existing?.link || "")}" placeholder="Canva / Drive / draft URL" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
+      </label>
+    </div>
     <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Notes (optional)
-      <textarea id="as-notes" rows="3" placeholder="Angle, must-include links, tone…" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+      <textarea id="as-notes" rows="3" placeholder="Angle, must-include links, tone…" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;">${esc(existing?.notes || "")}</textarea>
     </label>
-    <div style="font-size:12px;color:var(--muted);">They'll get an email with the article, deadline, and your notes — replies come back to you.</div>
+    <div style="font-size:12px;color:var(--muted);">${lead
+      ? "The owner gets an email with the topic, deadline, and your notes — replies come back to you."
+      : "This goes on the shared tracker (and your Overview calendar) under your name."}</div>
   `;
 
-  const articleSel = body.querySelector("#as-article");
-  const customInput = body.querySelector("#as-custom-title");
-  articleSel.addEventListener("change", () => {
-    customInput.style.display = articleSel.value === "other" ? "block" : "none";
-    if (articleSel.value === "other") customInput.focus();
+  // Picking an article copies its title into the topic and remembers the link.
+  let pickedProjectId = existing?.projectId || prefill.projectId || null;
+  let pickedStoryId = existing?.storyId || prefill.storyId || null;
+  const topicInput = body.querySelector("#as-topic");
+  body.querySelector("#as-article").addEventListener("change", (e) => {
+    const v = e.target.value;
+    pickedProjectId = null; pickedStoryId = null;
+    if (v.startsWith("p:")) {
+      const p = upcoming.find((x) => x.id === v.slice(2));
+      if (p) { topicInput.value = p.title || ""; pickedProjectId = p.id; }
+    } else if (v.startsWith("s:")) {
+      const s = published.find((x) => x.id === v.slice(2));
+      if (s) { topicInput.value = s.title || ""; pickedStoryId = s.id; }
+    }
   });
 
   const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
-  const saveBtn = el("button", { class: "btn btn-primary" }, "Assign & email");
-  const modal = openModal({ title: "Assign a social post", body, footer: [cancelBtn, saveBtn] });
+  const saveBtn = el("button", { class: "btn btn-primary" }, existing ? "Save changes" : "Add to tracker");
+  const modal = openModal({ title: existing ? "Edit content" : "Add content", body, footer: [cancelBtn, saveBtn] });
   if (!modal) return;
   cancelBtn.addEventListener("click", () => modal.close());
+  setTimeout(() => topicInput.focus(), 0);
 
   saveBtn.addEventListener("click", async () => {
-    const sel = articleSel.value;
-    let articleTitle = "", projectId = null, storyId = null;
-    if (sel === "custom") {
-      articleTitle = prefill.articleTitle || "";
-      projectId = prefill.projectId || null;
-      storyId = prefill.storyId || null;
-    } else if (sel === "other") {
-      articleTitle = customInput.value.trim();
-    } else if (sel.startsWith("p:")) {
-      const p = upcoming.find((x) => x.id === sel.slice(2));
-      articleTitle = p?.title || ""; projectId = p?.id || null;
-    } else if (sel.startsWith("s:")) {
-      const s = published.find((x) => x.id === sel.slice(2));
-      articleTitle = s?.title || ""; storyId = s?.id || null;
-    }
+    const articleTitle = topicInput.value.trim();
     const assigneeId = body.querySelector("#as-assignee").value;
     const assignee = team.find((u) => u.id === assigneeId);
     const deadline = body.querySelector("#as-deadline").value;
-    if (!articleTitle) { toast("Pick an article (or type one in).", "error"); return; }
-    if (!assignee) { toast("Pick who's making the post.", "error"); return; }
-    if (!deadline) { toast("Set a deadline.", "error"); return; }
+    const status = body.querySelector("#as-status").value;
+    if (!articleTitle) { toast("Give the post a topic.", "error"); return; }
+    if (!assignee) { toast("Pick an owner.", "error"); return; }
+    if (!deadline) { toast("Set a post date.", "error"); return; }
+
+    const payload = {
+      articleTitle,
+      projectId: pickedProjectId,
+      storyId: pickedStoryId,
+      type: body.querySelector("#as-type").value || "",
+      platform: body.querySelector("#as-platform").value,
+      deadline,
+      link: body.querySelector("#as-link").value.trim(),
+      notes: body.querySelector("#as-notes").value.trim(),
+      assigneeId: assignee.id,
+      assigneeName: assignee.name || assignee.email || "",
+      assigneeEmail: assignee.email || "",
+      status,
+      doneAt: status === "published" ? (existing?.doneAt || new Date().toISOString()) : null,
+    };
 
     saveBtn.disabled = true;
-    saveBtn.textContent = "Assigning…";
+    saveBtn.textContent = "Saving…";
     try {
-      const ref = await addDoc(collection(db, "social_assignments"), {
-        articleTitle,
-        projectId,
-        storyId,
-        platform: body.querySelector("#as-platform").value,
-        deadline,
-        notes: body.querySelector("#as-notes").value.trim(),
-        assigneeId: assignee.id,
-        assigneeName: assignee.name || assignee.email || "",
-        assigneeEmail: assignee.email || "",
-        status: "open",
-        createdById: ctx.user.uid,
-        createdByName: ctx.profile.name || ctx.user.email,
-        createdAt: new Date().toISOString(),
-        doneAt: null,
-      });
+      let id;
+      let notifyNeeded;
+      if (existing) {
+        id = existing.id;
+        await updateDoc(doc(db, "social_assignments", id), payload);
+        // Re-email only when the post changed hands to someone else.
+        notifyNeeded = assignee.id !== existing.assigneeId && assignee.id !== myUid;
+      } else {
+        const ref = await addDoc(collection(db, "social_assignments"), {
+          ...payload,
+          createdById: myUid,
+          createdByName: ctx.profile.name || ctx.user.email,
+          createdAt: new Date().toISOString(),
+        });
+        id = ref.id;
+        notifyNeeded = assignee.id !== myUid;
+      }
       modal.close();
-      toast(`Assigned to ${assignee.name || assignee.email} — emailing them now.`, "success");
+      toast(existing ? "Tracker updated." : `Added — it's on ${assignee.id === myUid ? "your" : `${assignee.name || assignee.email}'s`} calendar.`, "success");
       reload();
-      // Best-effort email; the assignment exists either way.
-      ctx.authedFetch("/api/notify/assignment", {
-        method: "POST",
-        body: JSON.stringify({ assignmentId: ref.id }),
-      }).catch((err) => console.warn("assignment email failed (non-blocking):", err));
+      if (notifyNeeded) {
+        // Best-effort email; the tracker row exists either way.
+        ctx.authedFetch("/api/notify/assignment", {
+          method: "POST",
+          body: JSON.stringify({ assignmentId: id }),
+        }).catch((err) => console.warn("assignment email failed (non-blocking):", err));
+      }
     } catch (err) {
-      toast("Could not assign: " + err.message, "error");
+      toast("Could not save: " + err.message, "error");
       saveBtn.disabled = false;
-      saveBtn.textContent = "Assign & email";
+      saveBtn.textContent = existing ? "Save changes" : "Add to tracker";
     }
   });
 }
@@ -644,8 +760,8 @@ function renderUpcomingRow(ctx, p, state, reload) {
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-secondary btn-xs" data-act="proposal">View proposal</button>
         <button class="btn btn-secondary btn-xs" data-act="chat">Message ${esc(authorFirst)}</button>
-        ${canAssign(ctx) ? `<button class="btn btn-secondary btn-xs" data-act="assign">Assign post</button>
-        <button class="btn btn-ghost btn-xs" data-act="clear" title="Hide this story from the Planner — no social post needed">No post needed</button>` : ""}
+        <button class="btn btn-secondary btn-xs" data-act="assign">${canAssign(ctx) ? "Assign post" : "Plan post"}</button>
+        ${canAssign(ctx) ? `<button class="btn btn-ghost btn-xs" data-act="clear" title="Hide this story from the Planner — no social post needed">No post needed</button>` : ""}
       </div>
     </div>
     ${renderPrepPlan(p, pubDate, stale, authorFirst)}
@@ -657,6 +773,7 @@ function renderUpcomingRow(ctx, p, state, reload) {
     openAssignModal(ctx, state, reload, {
       articleTitle: p.title || "",
       projectId: p.id,
+      type: "Article highlight",
       deadline: pubDate && !stale ? isoDay(new Date(pubDate.getTime() - 86400000)) : undefined,
     }));
   row.querySelector('[data-act="clear"]')?.addEventListener("click", () =>
@@ -949,12 +1066,12 @@ function renderPublished(ctx, mountEl, state, reload) {
       ${covered
         ? `<span class="pill pill-published" style="font-size:11px;">social: covered</span>`
         : `<span class="pill pill-pending" style="font-size:11px;">needs a post</span>
-           ${assigner ? `<button class="btn btn-secondary btn-xs" data-act="assign">Assign post</button>` : ""}
+           <button class="btn btn-secondary btn-xs" data-act="assign">${assigner ? "Assign post" : "Plan post"}</button>
            <a class="btn btn-secondary btn-xs" href="#/marketing/social">Create post</a>`}
       ${assigner ? `<button class="btn btn-ghost btn-xs" data-act="clear" title="Posts are done — remove this story from the Planner">Mark posted</button>` : ""}
     `;
     row.querySelector('[data-act="assign"]')?.addEventListener("click", () =>
-      openAssignModal(ctx, state, reload, { articleTitle: s.title || "", storyId: s.id }));
+      openAssignModal(ctx, state, reload, { articleTitle: s.title || "", storyId: s.id, type: "Article highlight" }));
     row.querySelector('[data-act="clear"]')?.addEventListener("click", async () => {
       try {
         await setDoc(doc(db, "planner_cleared", s.id), {

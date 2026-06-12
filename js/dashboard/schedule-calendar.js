@@ -278,8 +278,9 @@ function buildEvents(projects, tasks, assignments, uid, filterMine) {
 
   // Social post assignments — on the assignee's calendar (it's their
   // deadline) and the assigner's (so they can track what they handed out).
+  // "done" is the legacy completed status; the tracker now uses "published".
   for (const a of assignments || []) {
-    if (a.status === "done") continue;
+    if (a.status === "done" || a.status === "published") continue;
     const isAssignee = a.assigneeId === uid;
     if (!isAssignee && a.createdById !== uid) continue;
     push(a.deadline, { kind: "assignment", assignment: a, mine: isAssignee, done: false });
@@ -759,7 +760,7 @@ function renderAssignmentDetail(ev) {
     btn.disabled = true;
     try {
       await updateDoc(doc(workflowDb, "social_assignments", a.id), {
-        status: "done",
+        status: "published",
         doneAt: new Date().toISOString(),
       });
       btn.textContent = "Done ✓";
@@ -1083,7 +1084,7 @@ function renderRunway(state, uid) {
   // The viewer's own open post assignments, most urgent first — the calendar
   // chips show the dates; this is the at-a-glance to-do list version.
   const myAssignments = (state.assignments || [])
-    .filter((a) => a.status !== "done" && a.assigneeId === uid)
+    .filter((a) => a.status !== "done" && a.status !== "published" && a.assigneeId === uid)
     .sort((a, b) => String(a.deadline || "9999").localeCompare(String(b.deadline || "9999")));
   if (myAssignments.length) {
     wrap.appendChild(el("div", { class: "sc-strip-title" }, `Your post assignments (${myAssignments.length})`));
