@@ -85,36 +85,53 @@ function ensureTrackerStyles() {
     .ct-wrap { border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; background:#fff;
                box-shadow:0 1px 2px rgba(15,23,42,.05), 0 8px 24px -20px rgba(15,23,42,.25); }
     .ct-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-    table.ct { width:100%; border-collapse:separate; border-spacing:0; min-width:880px; font-size:13.5px; }
-    .ct thead th { background:#0f172a; color:#e2e8f0; text-align:left; padding:11px 14px;
-                   font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
-                   white-space:nowrap; }
-    .ct thead th svg { width:13px; height:13px; vertical-align:-2px; margin-right:7px; opacity:.55; }
-    .ct tbody td { padding:12px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle;
-                   color:#334155; }
+    table.ct { width:100%; border-collapse:separate; border-spacing:0; font-size:13px;
+               table-layout:fixed; }
+    .ct thead th { background:#0f172a; color:#e2e8f0; text-align:left; padding:10px 10px;
+                   font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+                   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ct thead th svg { width:12px; height:12px; vertical-align:-2px; margin-right:6px; opacity:.55; }
+    .ct tbody td { padding:9px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle;
+                   color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .ct tbody tr:last-child td { border-bottom:0; }
     .ct tbody tr { transition:background .15s ease; }
+    .ct tbody tr.ct-row { cursor:pointer; }
     .ct tbody tr:hover { background:#f8fafc; }
     .ct tbody tr.ct-mine { background:#f0f6ff; }
     .ct tbody tr.ct-mine:hover { background:#e8f1ff; }
     .ct tbody tr.ct-pub td { color:#94a3b8; }
-    .ct-chip { display:inline-block; padding:3px 11px; border-radius:999px; font-size:11px;
-               font-weight:700; white-space:nowrap; letter-spacing:.01em; }
+    .ct-chip { display:inline-block; max-width:100%; padding:3px 10px; border-radius:999px;
+               font-size:10.5px; font-weight:700; white-space:nowrap; overflow:hidden;
+               text-overflow:ellipsis; vertical-align:middle; letter-spacing:.01em; }
     .ct-topic { font-weight:600; color:#0f172a; letter-spacing:-.01em; }
-    .ct-owner { display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
-    .ct-owner i { width:20px; height:20px; border-radius:50%; flex-shrink:0; font-style:normal;
+    .ct-owner { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; max-width:100%; }
+    .ct-owner i { width:19px; height:19px; border-radius:50%; flex-shrink:0; font-style:normal;
                   display:inline-flex; align-items:center; justify-content:center;
-                  font-size:9.5px; font-weight:700; color:#fff; }
-    .ct-date { font-variant-numeric:tabular-nums; white-space:nowrap; font-size:12.5px; color:#64748b; }
+                  font-size:9px; font-weight:700; color:#fff; }
+    .ct-owner span { overflow:hidden; text-overflow:ellipsis; }
+    .ct-date { font-variant-numeric:tabular-nums; font-size:12px; color:#64748b; }
     .ct-date.urgent { color:#b91c1c; font-weight:700; }
-    .ct-status { appearance:none; -webkit-appearance:none; border-radius:999px; font-size:11px;
-                 font-weight:700; padding:4px 22px 4px 11px; cursor:pointer; line-height:1.2;
+    .ct-status { appearance:none; -webkit-appearance:none; border-radius:999px; font-size:10.5px;
+                 font-weight:700; padding:4px 18px 4px 9px; cursor:pointer; line-height:1.2;
+                 max-width:100%; overflow:hidden; text-overflow:ellipsis;
                  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%2364748b'/%3E%3C/svg%3E");
-                 background-repeat:no-repeat; background-position:right 9px center; }
-    .ct-notes { display:block; max-width:180px; overflow:hidden; text-overflow:ellipsis;
-                white-space:nowrap; font-size:12px; color:#94a3b8; }
-    .ct-act { opacity:0; transition:opacity .15s ease; white-space:nowrap; }
-    .ct tbody tr:hover .ct-act, .ct tbody tr:focus-within .ct-act { opacity:1; }
+                 background-repeat:no-repeat; background-position:right 7px center; }
+    .ct-notes { font-size:11.5px; color:#94a3b8; }
+    .ct-icon-btn { border:0; background:transparent; padding:4px; cursor:pointer; color:#94a3b8;
+                   border-radius:6px; line-height:0; vertical-align:middle; }
+    .ct-icon-btn:hover { background:#e2e8f0; color:#0f172a; }
+    .ct-icon-btn.danger:hover { background:#fee2e2; color:#b91c1c; }
+    .ct-icon-btn svg { width:14px; height:14px; }
+    .ct-icon-btn:focus-visible { outline:2px solid #0f172a; outline-offset:1px; }
+    /* New-row ghost — click to start typing, just like a fresh Sheets row. */
+    .ct-new td { color:#94a3b8; cursor:pointer; font-size:12.5px; font-weight:500; }
+    .ct-new:hover td { background:#f8fafc; color:#334155; }
+    /* Inline editor row */
+    tr.ct-editing td { background:#fbfdff; padding:7px 6px; overflow:visible; white-space:normal; }
+    .ct-in { width:100%; box-sizing:border-box; padding:6px 8px; border:1px solid #cbd5e1;
+             border-radius:7px; font:inherit; font-size:12px; background:#fff; color:#0f172a; }
+    .ct-in:focus-visible { outline:2px solid #0f172a; outline-offset:0; border-color:#0f172a; }
+    select.ct-in { padding-right:4px; }
     .ct-seg { display:inline-flex; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:999px;
               padding:3px; gap:2px; }
     .ct-seg button { border:0; background:transparent; color:#64748b; font:inherit; font-size:12px;
@@ -123,10 +140,10 @@ function ensureTrackerStyles() {
     .ct-seg button:focus-visible { outline:2px solid #0f172a; outline-offset:1px; }
     .ct-seg button.active { background:#fff; color:#0f172a; box-shadow:0 1px 3px rgba(15,23,42,.12); }
     @media (prefers-reduced-motion: reduce) {
-      .ct tbody tr, .ct-act, .ct-seg button { transition:none; }
-      .ct-act { opacity:1; }
+      .ct tbody tr, .ct-seg button { transition:none; }
     }
-    @media (max-width: 720px) { .ct-act { opacity:1; } }
+    /* Desktop fits with no sideways scroll; small screens scroll the sheet. */
+    @media (max-width: 860px) { table.ct { min-width:780px; } }
   `;
   document.head.appendChild(s);
 }
@@ -139,6 +156,9 @@ const CT_ICONS = {
   user: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
   cal:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
   globe:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20 15.3 15.3 0 0 1 0-20z"/></svg>`,
+  trash:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
+  check:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  x:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
 };
 
 // Tracker statuses. Legacy docs used open/done — normalize on read.
@@ -356,6 +376,7 @@ function renderAssignments(ctx, mountEl, state, reload) {
   const lead = canAssign(ctx);
   const myUid = ctx.user.uid;
   const showPublished = state.trackerShowPublished === true;
+  const rerender = () => renderAssignments(ctx, mountEl, state, reload);
 
   const rows = state.assignments
     .map((a) => ({ ...a, _status: normStatus(a.status) }))
@@ -372,30 +393,29 @@ function renderAssignments(ctx, mountEl, state, reload) {
 
   // Active / All — a quiet segmented control, not two shouting buttons.
   const publishedCount = state.assignments.filter((a) => normStatus(a.status) === "published").length;
-  const filterBar = el("div", { style: "display:flex;gap:6px;margin-bottom:12px;align-items:center;" });
+  const filterBar = el("div", { style: "display:flex;gap:10px;margin-bottom:12px;align-items:center;flex-wrap:wrap;" });
   const seg = el("div", { class: "ct-seg", role: "group", "aria-label": "Filter tracker" });
   const mkSeg = (label, all) => el("button", {
     class: showPublished === all ? "active" : "",
-    onclick: () => { state.trackerShowPublished = all; renderAssignments(ctx, mountEl, state, reload); },
+    onclick: () => { state.trackerShowPublished = all; rerender(); },
   }, label);
   seg.appendChild(mkSeg("Active", false));
   seg.appendChild(mkSeg(`All · ${publishedCount} published`, true));
   filterBar.appendChild(seg);
+  filterBar.appendChild(el("span", { style: "font-size:12px;color:var(--muted);" },
+    "Click any row to edit it. Click the bottom row to add new content."));
   mountEl.appendChild(filterBar);
-
-  if (!rows.length) {
-    mountEl.appendChild(el("div", { class: "empty-state" },
-      showPublished
-        ? "Nothing in the tracker yet. Use \"Add content\" to plan the first post."
-        : "No active content — everything's published. Use \"Add content\" to plan the next post."));
-    return;
-  }
 
   const wrap = el("div", { class: "ct-wrap" });
   const scroll = el("div", { class: "ct-scroll" });
   const table = el("table", { class: "ct" });
   const th = (icon, label) => `<th>${icon || ""}${label}</th>`;
-  table.innerHTML = `<thead><tr>
+  table.innerHTML = `
+  <colgroup>
+    <col style="width:9%"><col style="width:15%"><col style="width:25%"><col style="width:13%">
+    <col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:7%">
+  </colgroup>
+  <thead><tr>
     ${th(CT_ICONS.globe, "Platform")}
     ${th(CT_ICONS.tag, "Type")}
     ${th(CT_ICONS.text, "Topic")}
@@ -408,68 +428,20 @@ function renderAssignments(ctx, mountEl, state, reload) {
   const tbody = el("tbody", {});
 
   for (const a of rows) {
-    const mine = a.assigneeId === myUid;
-    const canTouch = lead || mine || a.createdById === myUid;
-    const isPub = a._status === "published";
-    const due = parseDay(a.deadline);
-    const dueText = dueLabel(due, isPub);
-
-    const tr = el("tr", { class: `${mine && !isPub ? "ct-mine" : ""}${isPub ? " ct-pub" : ""}`.trim() });
-    tr.innerHTML = `
-      <td style="white-space:nowrap;">${esc(platformLabel(a.platform))}</td>
-      <td>${typeChip(a.type) || `<span style="color:#cbd5e1;">—</span>`}</td>
-      <td style="min-width:220px;">
-        <span class="ct-topic" style="${isPub ? "opacity:.55;" : ""}">${esc(a.articleTitle || "(untitled)")}</span>
-        ${a.link ? ` <a href="${esc(a.link)}" target="_blank" rel="noopener" style="font-size:11.5px;color:#2563eb;text-decoration:none;">asset&nbsp;&rarr;</a>` : ""}
-      </td>
-      <td><span class="ct-owner"><i style="background:${avatarColor(a.assigneeName)};">${esc((a.assigneeName || "?")[0].toUpperCase())}</i>${esc(a.assigneeName || "—")}${mine && !isPub ? ` <span class="ct-chip" style="background:#fef3c7;color:#92400e;">you</span>` : ""}</span></td>
-      <td></td>
-      <td class="ct-date${dueText.urgent && !isPub ? " urgent" : ""}">${esc(dueText.text)}</td>
-      <td><span class="ct-notes" title="${esc(a.notes || "")}">${esc(a.notes || "")}</span></td>
-      <td class="ct-act" style="text-align:right;">
-        ${canTouch ? `<button class="btn btn-ghost btn-xs" data-act="edit">Edit</button>` : ""}
-        ${(lead || a.createdById === myUid) ? `<button class="btn btn-ghost btn-xs" data-act="remove" style="color:#b91c1c;">Remove</button>` : ""}
-      </td>`;
-
-    // Inline status select — the fastest path from "drafting" to "published".
-    const statusCell = tr.children[4];
-    const meta = STATUSES.find((s) => s.id === a._status) || STATUSES[0];
-    if (canTouch) {
-      const sel = el("select", {
-        class: "ct-status",
-        "aria-label": "Status",
-        style: `border:1px solid ${meta.ink}26;background-color:${meta.bg};color:${meta.ink};`,
-      });
-      sel.innerHTML = STATUSES.map((s) => `<option value="${s.id}" ${s.id === a._status ? "selected" : ""}>${s.label}</option>`).join("");
-      sel.addEventListener("change", async () => {
-        try {
-          await updateDoc(doc(db, "social_assignments", a.id), {
-            status: sel.value,
-            doneAt: sel.value === "published" ? new Date().toISOString() : null,
-          });
-          reload();
-        } catch (err) {
-          toast("Could not update status: " + err.message, "error");
-          sel.value = a._status;
-        }
-      });
-      statusCell.appendChild(sel);
-    } else {
-      statusCell.innerHTML = `<span class="ct-chip" style="background:${meta.bg};color:${meta.ink};">${esc(meta.label)}</span>`;
-    }
-
-    tr.querySelector('[data-act="edit"]')?.addEventListener("click", () =>
-      openAssignModal(ctx, state, reload, {}, a));
-    tr.querySelector('[data-act="remove"]')?.addEventListener("click", async () => {
-      const ok = await confirmDialog(`Remove "${a.articleTitle || "this content"}" from the tracker?`, { confirmText: "Remove", danger: true });
-      if (!ok) return;
-      try {
-        await deleteDoc(doc(db, "social_assignments", a.id));
-        reload();
-      } catch (err) { toast("Could not remove: " + err.message, "error"); }
-    });
-    tbody.appendChild(tr);
+    tbody.appendChild(trackerDisplayRow(ctx, state, reload, rerender, a));
   }
+
+  // The forever-empty bottom row — click it and start typing, Sheets-style.
+  const ghost = el("tr", { class: "ct-new", tabindex: "0", role: "button", "aria-label": "Add new content" });
+  ghost.innerHTML = `<td colspan="8">+ Add new content&hellip;</td>`;
+  const startNew = () => {
+    const editor = trackerEditorRow(ctx, state, reload, rerender, null, {});
+    ghost.replaceWith(editor);
+    editor.querySelector("[data-in='topic']").focus();
+  };
+  ghost.addEventListener("click", startNew);
+  ghost.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startNew(); } });
+  tbody.appendChild(ghost);
 
   table.appendChild(tbody);
   scroll.appendChild(table);
@@ -477,9 +449,223 @@ function renderAssignments(ctx, mountEl, state, reload) {
   mountEl.appendChild(wrap);
 }
 
+// A read row. Click anywhere on it (except a control) to edit in place.
+function trackerDisplayRow(ctx, state, reload, rerender, a) {
+  const lead = canAssign(ctx);
+  const myUid = ctx.user.uid;
+  const mine = a.assigneeId === myUid;
+  const canTouch = lead || mine || a.createdById === myUid;
+  const isPub = a._status === "published";
+  const due = parseDay(a.deadline);
+  const dueFull = dueLabel(due, isPub);
+  const firstName = String(a.assigneeName || "—").trim().split(/\s+/)[0];
+
+  const tr = el("tr", {
+    class: `${canTouch ? "ct-row " : ""}${mine && !isPub ? "ct-mine" : ""}${isPub ? " ct-pub" : ""}`.trim(),
+    title: canTouch ? "Click to edit" : "",
+  });
+  tr.innerHTML = `
+    <td>${esc(platformLabel(a.platform))}</td>
+    <td>${typeChip(a.type) || `<span style="color:#cbd5e1;">—</span>`}</td>
+    <td>
+      <span class="ct-topic" style="${isPub ? "opacity:.55;" : ""}" title="${esc(a.articleTitle || "")}">${esc(a.articleTitle || "(untitled)")}</span>
+      ${a.link ? ` <a href="${esc(a.link)}" target="_blank" rel="noopener" style="font-size:11px;color:#2563eb;text-decoration:none;">&#8599;</a>` : ""}
+    </td>
+    <td><span class="ct-owner" title="${esc(a.assigneeName || "")}"><i style="background:${avatarColor(a.assigneeName)};">${esc((a.assigneeName || "?")[0].toUpperCase())}</i><span>${esc(firstName)}</span></span></td>
+    <td style="overflow:visible;"></td>
+    <td class="ct-date${dueFull.urgent && !isPub ? " urgent" : ""}" title="${esc(dueFull.text)}">${esc(fmtShortDay(a.deadline))}</td>
+    <td><span class="ct-notes" title="${esc(a.notes || "")}">${esc(a.notes || "")}</span></td>
+    <td style="text-align:right;overflow:visible;">
+      ${(lead || a.createdById === myUid) ? `<button class="ct-icon-btn danger" data-act="remove" title="Remove row" aria-label="Remove row">${CT_ICONS.trash}</button>` : ""}
+    </td>`;
+
+  // Inline status select — the fastest path from "drafting" to "published".
+  const statusCell = tr.children[4];
+  const meta = STATUSES.find((s) => s.id === a._status) || STATUSES[0];
+  if (canTouch) {
+    const sel = el("select", {
+      class: "ct-status",
+      "aria-label": "Status",
+      style: `border:1px solid ${meta.ink}26;background-color:${meta.bg};color:${meta.ink};`,
+    });
+    sel.innerHTML = STATUSES.map((s) => `<option value="${s.id}" ${s.id === a._status ? "selected" : ""}>${s.label}</option>`).join("");
+    sel.addEventListener("change", async () => {
+      try {
+        await updateDoc(doc(db, "social_assignments", a.id), {
+          status: sel.value,
+          doneAt: sel.value === "published" ? new Date().toISOString() : null,
+        });
+        reload();
+      } catch (err) {
+        toast("Could not update status: " + err.message, "error");
+        sel.value = a._status;
+      }
+    });
+    statusCell.appendChild(sel);
+  } else {
+    statusCell.innerHTML = `<span class="ct-chip" style="background:${meta.bg};color:${meta.ink};">${esc(meta.label)}</span>`;
+  }
+
+  tr.querySelector('[data-act="remove"]')?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const ok = await confirmDialog(`Remove "${a.articleTitle || "this content"}" from the tracker?`, { confirmText: "Remove", danger: true });
+    if (!ok) return;
+    try {
+      await deleteDoc(doc(db, "social_assignments", a.id));
+      reload();
+    } catch (err) { toast("Could not remove: " + err.message, "error"); }
+  });
+
+  if (canTouch) {
+    tr.addEventListener("click", (e) => {
+      if (e.target.closest("select, a, button, input")) return;
+      const editor = trackerEditorRow(ctx, state, reload, rerender, a, {});
+      tr.replaceWith(editor);
+      editor.querySelector("[data-in='topic']").focus();
+    });
+  }
+  return tr;
+}
+
+// An in-place edit row: every cell becomes its matching input. Enter saves,
+// Escape cancels — the spreadsheet muscle memory.
+function trackerEditorRow(ctx, state, reload, rerender, existing, prefill) {
+  const lead = canAssign(ctx);
+  const team = trackerTeam(ctx, state);
+  const initialOwner = existing?.assigneeId || prefill.assigneeId || (lead ? (team[0]?.id || ctx.user.uid) : ctx.user.uid);
+  const initialStatus = existing ? normStatus(existing.status) : "planned";
+
+  const tr = el("tr", { class: "ct-editing" });
+  tr.innerHTML = `
+    <td><select class="ct-in" data-in="platform" aria-label="Platform">
+      ${PLATFORMS.map((p) => `<option value="${p}" ${(existing?.platform || prefill.platform || "any") === p ? "selected" : ""}>${p === "any" ? "Any" : platformLabel(p)}</option>`).join("")}
+    </select></td>
+    <td><select class="ct-in" data-in="type" aria-label="Type">
+      <option value="">Type…</option>
+      ${CONTENT_TYPES.map((t) => `<option value="${esc(t.label)}" ${t.label === (existing?.type || prefill.type || "") ? "selected" : ""}>${esc(t.label)}</option>`).join("")}
+    </select></td>
+    <td>
+      <input class="ct-in" data-in="topic" aria-label="Topic" placeholder="What's the post about?" value="${esc(existing?.articleTitle || prefill.articleTitle || "")}">
+    </td>
+    <td><select class="ct-in" data-in="owner" aria-label="Owner" ${lead ? "" : "disabled"}>
+      ${team.map((u) => `<option value="${esc(u.id)}" ${u.id === initialOwner ? "selected" : ""}>${esc(u.name || u.email)}</option>`).join("")}
+    </select></td>
+    <td><select class="ct-in" data-in="status" aria-label="Status">
+      ${STATUSES.map((s) => `<option value="${s.id}" ${s.id === initialStatus ? "selected" : ""}>${s.label}</option>`).join("")}
+    </select></td>
+    <td><input type="date" class="ct-in" data-in="deadline" aria-label="Post date" value="${esc(existing?.deadline || prefill.deadline || isoDay(new Date(Date.now() + 3 * 86400000)))}"></td>
+    <td style="display:grid;gap:4px;">
+      <input class="ct-in" data-in="notes" aria-label="Notes" placeholder="Notes…" value="${esc(existing?.notes || "")}">
+      <input class="ct-in" data-in="link" aria-label="Asset link" placeholder="Asset URL…" value="${esc(existing?.link || "")}">
+    </td>
+    <td style="text-align:right;white-space:nowrap;">
+      <button class="ct-icon-btn" data-act="save" title="Save (Enter)" aria-label="Save" style="color:#15803d;">${CT_ICONS.check}</button>
+      <button class="ct-icon-btn danger" data-act="cancel" title="Cancel (Esc)" aria-label="Cancel">${CT_ICONS.x}</button>
+    </td>`;
+
+  const get = (k) => tr.querySelector(`[data-in="${k}"]`);
+  const save = async () => {
+    const topic = get("topic").value.trim();
+    const deadline = get("deadline").value;
+    const assignee = team.find((u) => u.id === get("owner").value);
+    if (!topic) { toast("Give the post a topic.", "error"); get("topic").focus(); return; }
+    if (!deadline) { toast("Set a post date.", "error"); get("deadline").focus(); return; }
+    if (!assignee) { toast("Pick an owner.", "error"); return; }
+
+    const status = get("status").value;
+    const payload = {
+      articleTitle: topic,
+      projectId: existing?.projectId || prefill.projectId || null,
+      storyId: existing?.storyId || prefill.storyId || null,
+      type: get("type").value || "",
+      platform: get("platform").value,
+      deadline,
+      link: get("link").value.trim(),
+      notes: get("notes").value.trim(),
+      assigneeId: assignee.id,
+      assigneeName: assignee.name || assignee.email || "",
+      assigneeEmail: assignee.email || "",
+      status,
+      doneAt: status === "published" ? (existing?.doneAt || new Date().toISOString()) : null,
+    };
+    const saveBtn = tr.querySelector('[data-act="save"]');
+    saveBtn.disabled = true;
+    try {
+      await persistTrackerRow(ctx, payload, existing);
+      toast(existing ? "Saved." : `Added${assignee.id !== ctx.user.uid ? ` — emailing ${assignee.name || assignee.email}` : ""}.`, "success");
+      reload();
+    } catch (err) {
+      toast("Could not save: " + err.message, "error");
+      saveBtn.disabled = false;
+    }
+  };
+
+  tr.querySelector('[data-act="save"]').addEventListener("click", save);
+  tr.querySelector('[data-act="cancel"]').addEventListener("click", rerender);
+  tr.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.target.matches("select")) { e.preventDefault(); save(); }
+    if (e.key === "Escape") { e.preventDefault(); rerender(); }
+  });
+  return tr;
+}
+
+// Create or update a tracker row and email the owner when the post changed
+// hands (new row for someone else, or reassigned to someone new).
+async function persistTrackerRow(ctx, payload, existing) {
+  const myUid = ctx.user.uid;
+  let id;
+  let notifyNeeded;
+  if (existing) {
+    id = existing.id;
+    await updateDoc(doc(db, "social_assignments", id), payload);
+    notifyNeeded = payload.assigneeId !== existing.assigneeId && payload.assigneeId !== myUid;
+  } else {
+    const ref = await addDoc(collection(db, "social_assignments"), {
+      ...payload,
+      createdById: myUid,
+      createdByName: ctx.profile.name || ctx.user.email,
+      createdAt: new Date().toISOString(),
+    });
+    id = ref.id;
+    notifyNeeded = payload.assigneeId !== myUid;
+  }
+  if (notifyNeeded) {
+    // Best-effort email; the tracker row exists either way.
+    ctx.authedFetch("/api/notify/assignment", {
+      method: "POST",
+      body: JSON.stringify({ assignmentId: id }),
+    }).catch((err) => console.warn("assignment email failed (non-blocking):", err));
+  }
+  return id;
+}
+
+// Assignable people: the social/marketing/admin team, always including the
+// viewer so anyone can put their own name on a row.
+function trackerTeam(ctx, state) {
+  let team = (state.team || [])
+    .filter((u) => u.id !== undefined)
+    .sort((a, b) => String(a.name || a.email || "").localeCompare(String(b.name || b.email || "")));
+  if (!team.some((u) => u.id === ctx.user.uid)) {
+    team = [{ id: ctx.user.uid, name: ctx.profile.name || ctx.user.email, email: ctx.profile.email || ctx.user.email || "", role: ctx.role }, ...team];
+  }
+  return team;
+}
+
 function platformLabel(p) {
   if (!p || p === "any") return "Any";
+  if (p === "instagram") return "Instagram";
+  if (p === "linkedin") return "LinkedIn";
+  if (p === "twitter") return "Twitter / X";
   return p[0].toUpperCase() + p.slice(1);
+}
+
+// Compact date for the sheet ("Jun 16"); year added only when it differs.
+function fmtShortDay(s) {
+  const d = parseDay(s);
+  if (!d) return "—";
+  const opts = { month: "short", day: "numeric" };
+  if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+  return d.toLocaleDateString("en-US", opts);
 }
 
 function dueLabel(due, isDone) {
@@ -628,33 +814,10 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving…";
     try {
-      let id;
-      let notifyNeeded;
-      if (existing) {
-        id = existing.id;
-        await updateDoc(doc(db, "social_assignments", id), payload);
-        // Re-email only when the post changed hands to someone else.
-        notifyNeeded = assignee.id !== existing.assigneeId && assignee.id !== myUid;
-      } else {
-        const ref = await addDoc(collection(db, "social_assignments"), {
-          ...payload,
-          createdById: myUid,
-          createdByName: ctx.profile.name || ctx.user.email,
-          createdAt: new Date().toISOString(),
-        });
-        id = ref.id;
-        notifyNeeded = assignee.id !== myUid;
-      }
+      await persistTrackerRow(ctx, payload, existing);
       modal.close();
       toast(existing ? "Tracker updated." : `Added — it's on ${assignee.id === myUid ? "your" : `${assignee.name || assignee.email}'s`} calendar.`, "success");
       reload();
-      if (notifyNeeded) {
-        // Best-effort email; the tracker row exists either way.
-        ctx.authedFetch("/api/notify/assignment", {
-          method: "POST",
-          body: JSON.stringify({ assignmentId: id }),
-        }).catch((err) => console.warn("assignment email failed (non-blocking):", err));
-      }
     } catch (err) {
       toast("Could not save: " + err.message, "error");
       saveBtn.disabled = false;
