@@ -30,6 +30,7 @@ const ROLE_LABELS = {
   writer: "Writer",
   newsletter_builder: "Newsletter Builder",
   marketing: "Marketing",
+  social_media: "Social Media",
   reader: "Reader",
 };
 
@@ -77,6 +78,8 @@ const ICONS = {
   history:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/><polyline points="12 7 12 12 15 14"/></svg>`,
 
   // Marketing
+  // Planner — calendar with a checked day (what's coming up, what to prep)
+  planner:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>`,
   // Subscribers & growth — bar chart with trend arrow
   chart:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
   // Subscriber list — group of people
@@ -122,7 +125,7 @@ const state = {
 // when previewing, the sidebar/routing/context all use previewRole instead.
 // Write actions continue to run against the real admin identity (Firestore rules
 // check request.auth), so permissions are unaffected.
-const PREVIEW_ROLES = ["writer", "editor", "newsletter_builder", "marketing"];
+const PREVIEW_ROLES = ["writer", "editor", "newsletter_builder", "marketing", "social_media"];
 const PREVIEW_KEY = "catalyst.dashboard.previewRole";
 
 function getActiveRole() {
@@ -255,10 +258,19 @@ const ROUTES = {
     loader: () => import("./newsletter.js"),
     mountKey: "history",
   },
+  // Planner — the social/marketing team's command center: what's publishing
+  // soon, what social work is due, who to talk to, and what just went live.
+  "#/planner": {
+    label: "Planner",
+    icon: ICONS.planner,
+    roles: ["admin", "marketing", "social_media"],
+    group: "marketing",
+    loader: () => import("./planner.js"),
+  },
   "#/marketing/analytics": {
     label: "Subscribers & growth",
     icon: ICONS.chart,
-    roles: ["admin", "marketing", "newsletter_builder"],
+    roles: ["admin", "marketing", "newsletter_builder", "social_media"],
     group: "marketing",
     loader: () => import("./marketing.js"),
     mountKey: "analytics",
@@ -266,7 +278,7 @@ const ROUTES = {
   "#/marketing/subscribers": {
     label: "Subscriber list",
     icon: ICONS.users,
-    roles: ["admin", "marketing"],
+    roles: ["admin", "marketing", "social_media"],
     group: "marketing",
     loader: () => import("./marketing.js"),
     mountKey: "subscribers",
@@ -282,7 +294,7 @@ const ROUTES = {
   "#/marketing/social": {
     label: "Social media posts",
     icon: ICONS.share,
-    roles: ["admin", "marketing"],
+    roles: ["admin", "marketing", "social_media"],
     group: "marketing",
     loader: () => import("./marketing.js"),
     mountKey: "social",
@@ -290,7 +302,7 @@ const ROUTES = {
   "#/marketing/searchability": {
     label: "Searchability",
     icon: ICONS.search,
-    roles: ["admin", "marketing"],
+    roles: ["admin", "marketing", "social_media"],
     group: "marketing",
     loader: () => import("./searchability.js"),
     mountKey: "searchability",

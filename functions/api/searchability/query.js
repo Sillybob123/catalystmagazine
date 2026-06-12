@@ -157,7 +157,7 @@ async function gscFetch(env, requestBody) {
 
 export const onRequestPost = async ({ request, env }) => {
   try {
-    const auth = await requireRole(request, env, ["admin", "marketing"]);
+    const auth = await requireRole(request, env, ["admin", "marketing", "social_media"]);
     if (auth instanceof Response) return auth;
 
     let body;

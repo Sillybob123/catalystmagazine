@@ -9,7 +9,7 @@ const GEO_COLLECTION = "site_geo_daily";
 
 export const onRequestGet = async ({ request, env }) => {
   try {
-    const auth = await requireRole(request, env, ["admin", "marketing"]);
+    const auth = await requireRole(request, env, ["admin", "marketing", "social_media"]);
     if (auth instanceof Response) return auth;
 
     const url = new URL(request.url);

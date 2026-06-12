@@ -392,7 +392,7 @@ async function loadUsers(mount, ctx, reload) {
         </td>
         <td data-label="Role">
           <select class="select" style="font-size:12px;padding:5px 6px;width:100%;" data-action="role" data-id="${esc(d.id)}">
-            ${["admin","editor","writer","newsletter_builder","marketing","reader"].map(r =>
+            ${["admin","editor","writer","newsletter_builder","marketing","social_media","reader"].map(r =>
               `<option value="${r}" ${u.role === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}
           </select>
         </td>
@@ -469,6 +469,7 @@ function roleLabel(r) {
     writer: "Writer",
     newsletter_builder: "Newsletter Builder",
     marketing: "Marketing",
+    social_media: "Social Media",
     reader: "Reader",
   }[r] || r;
 }
@@ -488,11 +489,15 @@ const GRANTABLE_ROUTES = [
   { group: "Editorial pipeline", hash: "#/editor/queue",       label: "Editor queue",               baseRoles: ["admin", "editor"] },
 
   // Marketing
-  { group: "Marketing",          hash: "#/marketing/analytics",     label: "Subscribers & growth",        baseRoles: ["admin", "marketing", "newsletter_builder"] },
-  { group: "Marketing",          hash: "#/marketing/subscribers",   label: "Subscriber list",             baseRoles: ["admin", "marketing"] },
+  { group: "Marketing",          hash: "#/planner",                 label: "Planner (upcoming stories)",  baseRoles: ["admin", "marketing", "social_media"] },
+  // Not a page — a capability. Grants the "Assign a post" tools inside the
+  // Planner (assign social posts to specific people with deadlines).
+  { group: "Marketing",          hash: "#/planner/assign",          label: "Planner: assign social posts + deadlines", baseRoles: ["admin"] },
+  { group: "Marketing",          hash: "#/marketing/analytics",     label: "Subscribers & growth",        baseRoles: ["admin", "marketing", "newsletter_builder", "social_media"] },
+  { group: "Marketing",          hash: "#/marketing/subscribers",   label: "Subscriber list",             baseRoles: ["admin", "marketing", "social_media"] },
   { group: "Marketing",          hash: "#/marketing/collabs",       label: "Collaboration requests",      baseRoles: ["admin", "marketing"] },
-  { group: "Marketing",          hash: "#/marketing/social",        label: "Social media posts",          baseRoles: ["admin", "marketing"] },
-  { group: "Marketing",          hash: "#/marketing/searchability", label: "Searchability (Search Console)", baseRoles: ["admin", "marketing"] },
+  { group: "Marketing",          hash: "#/marketing/social",        label: "Social media posts",          baseRoles: ["admin", "marketing", "social_media"] },
+  { group: "Marketing",          hash: "#/marketing/searchability", label: "Searchability (Search Console)", baseRoles: ["admin", "marketing", "social_media"] },
 
   // Newsletter
   { group: "Newsletter",         hash: "#/newsletter/builder", label: "Newsletter builder",         baseRoles: ["admin", "newsletter_builder"] },

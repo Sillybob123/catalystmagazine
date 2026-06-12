@@ -4232,7 +4232,7 @@ const teamMembers = [
 const alumniMembers = [
     {
         name: "Sydney Reiser",
-        role: "Writer",
+        role: "Former Writer",
         bio: "Sydney is a Chemistry PhD student at Johns Hopkins University, having graduated summa cum laude from George Washington University with a B.S. in Chemistry. With a background in synthetic chemistry research and experience as a Physics Learning Assistant, she brings a strong analytical and pedagogical perspective to The Catalyst, aiming to make complex chemical concepts accessible and engaging for a wider audience.",
         image: "/Sydney.webp",
         linkedin: "",
@@ -4240,7 +4240,7 @@ const alumniMembers = [
     },
     {
         name: "Naama Ben-Dor",
-        role: "Senior Writer, Editor, Media Specialist",
+        role: "Former Senior Writer, Editor, Media Specialist",
         bio: "Naama is a summa cum laude graduate of Georgetown University and a member of Phi Beta Kappa, where she majored in Neurobiology with minors in Chemistry and Jewish Civilization. As the creative spark behind The Catalyst Magazine, she handles digital content and outreach, all while writing some of the magazine's most unexpected and entertaining pieces. Naama is drawn to science to understand not only how the world works but why, and deeply values the relatable nature of science journalism as a mechanism to learn about STEM.",
         image: "/NaamaCatalyst.webp",
         linkedin: "",
@@ -4248,7 +4248,7 @@ const alumniMembers = [
     },
     {
         name: "Rachel Lee",
-        role: "Photographer, Media Specialist",
+        role: "Former Photographer, Media Specialist",
         bio: "Rachel is a junior at George Washington University majoring in Communications and Business. Originally entering GWU as a pre-med student, Rachel comes from a strong STEM and biology-focused background, but her interests have shifted toward the communications field. She is passionate about making STEM topics more accessible through creative media and visual storytelling.",
         image: "/RachelLee.webp",
         linkedin: "",
@@ -4256,7 +4256,7 @@ const alumniMembers = [
     },
     {
         name: "Azza Uwhubetine",
-        role: "Writer",
+        role: "Former Writer",
         bio: "Azza studied English with a minor in Astronomy at George Washington University. At The Catalyst, she merged her love for science, particularly physics, with the journalistic and publishing world. Azza has held positions at various publishing organizations, gaining experience in editorial writing and storytelling, and also runs a non-profit dedicated to supporting children in West African communities.",
         image: "/Azza.webp",
         linkedin: "",

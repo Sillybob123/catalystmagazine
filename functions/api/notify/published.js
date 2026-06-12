@@ -20,10 +20,10 @@
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
 import { requireRole } from "../../_utils/auth.js";
-import { firestoreGet, firestoreCreate } from "../../_utils/firebase.js";
+import { firestoreGet, firestoreCreate, firestoreRunQuery } from "../../_utils/firebase.js";
 import { buildArticleUrl } from "../../_utils/article-meta.js";
 import { sendEmail } from "../../_utils/resend.js";
-import { articlePublishedEmail } from "../../_utils/reminder-emails.js";
+import { articlePublishedEmail, socialPublishedEmail } from "../../_utils/reminder-emails.js";
 
 const ID_RE = /^[A-Za-z0-9_-]{1,200}$/;
 
@@ -87,6 +87,21 @@ export const onRequestPost = async ({ request, env }) => {
 
     const authorId = field(fields, "authorId");
     const authorEmail = await resolveAuthorEmail(env, authorId);
+
+    const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
+    const category = field(fields, "category") || "Feature";
+    const slug = field(fields, "slug");
+    const authorName = field(fields, "authorName") || field(fields, "author") || "there";
+    const articleUrl = buildArticleUrl({ title, slug, category }, siteUrl);
+
+    // Tell the social media team a story just went live — they plan the
+    // announcement posts from the Planner. Best-effort: a social-send failure
+    // never blocks the author's congratulations email, and the shared
+    // {storyId}_published log already prevents repeats.
+    const socialRecipients = await notifySocialTeam(env, {
+      title, authorName, articleUrl, category, siteUrl,
+    });
+
     if (!authorEmail) {
       // Record the attempt so we don't re-scan on every dashboard re-save, but
       // mark it skipped so it's clear no mail went out.
@@ -95,16 +110,11 @@ export const onRequestPost = async ({ request, env }) => {
         type: "published",
         sent: false,
         reason: "no author email on record",
+        socialTeam: socialRecipients.join(", "),
         createdAt: new Date().toISOString(),
       }, `${storyId}_published`).catch(() => {});
-      return json({ ok: true, sent: false, skipped: true, reason: "no author email on record" });
+      return json({ ok: true, sent: false, skipped: true, reason: "no author email on record", socialTeam: socialRecipients });
     }
-
-    const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
-    const category = field(fields, "category") || "Feature";
-    const slug = field(fields, "slug");
-    const authorName = field(fields, "authorName") || field(fields, "author") || "there";
-    const articleUrl = buildArticleUrl({ title, slug, category }, siteUrl);
 
     const { subject, html } = articlePublishedEmail({
       title,
@@ -135,11 +145,50 @@ export const onRequestPost = async ({ request, env }) => {
       sent: true,
       to: authorEmail,
       cc: cc.join(", "),
+      socialTeam: socialRecipients.join(", "),
       createdAt: new Date().toISOString(),
     }, `${storyId}_published`).catch(() => {});
 
-    return json({ ok: true, sent: true, to: authorEmail, cc });
+    return json({ ok: true, sent: true, to: authorEmail, cc, socialTeam: socialRecipients });
   } catch (err) {
     return serverError(err);
   }
 };
+
+// Email every user with the social_media role that the story is live.
+// Returns the list of addresses we attempted (empty when the team is empty
+// or the send failed) — callers record it in the notify log for audit.
+async function notifySocialTeam(env, { title, authorName, articleUrl, category, siteUrl }) {
+  try {
+    const rows = await firestoreRunQuery(env, {
+      from: [{ collectionId: "users" }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: "role" },
+          op: "EQUAL",
+          value: { stringValue: "social_media" },
+        },
+      },
+      select: { fields: [{ fieldPath: "email" }, { fieldPath: "name" }] },
+      limit: 50,
+    });
+    const emails = (rows || [])
+      .map((r) => String(r.data?.email || "").trim())
+      .filter(Boolean);
+    if (!emails.length) return [];
+
+    const { subject, html } = socialPublishedEmail({
+      title, authorName, articleUrl, category, siteUrl,
+    });
+    await sendEmail(env, {
+      to: emails,
+      subject,
+      html,
+      replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+    });
+    return emails;
+  } catch (err) {
+    console.warn("[notify/published] social team email failed:", err?.message || err);
+    return [];
+  }
+}

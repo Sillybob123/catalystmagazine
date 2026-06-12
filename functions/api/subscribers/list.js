@@ -7,7 +7,7 @@ import { requireRole } from "../../_utils/auth.js";
 
 export const onRequestGet = async ({ request, env }) => {
   try {
-    const auth = await requireRole(request, env, ["admin", "marketing"]);
+    const auth = await requireRole(request, env, ["admin", "marketing", "social_media"]);
     if (auth instanceof Response) return auth;
 
     const docs = await firestoreRunQuery(env, {

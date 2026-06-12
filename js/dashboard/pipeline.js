@@ -1210,6 +1210,14 @@ function openDetailModal(projectId) {
       feed.insertBefore(row, feed.firstChild);
       commentInput.value = "";
       toast("Comment posted.", "success");
+      // Email the story's author a copy when someone else comments — the chat
+      // keeps the thread, the email makes sure they actually see it.
+      if (project.authorId && project.authorId !== _uid) {
+        _ctx.authedFetch("/api/notify/comment", {
+          method: "POST",
+          body: JSON.stringify({ projectId: project.id, message: text, toUserId: project.authorId }),
+        }).catch((err) => console.warn("comment email failed (non-blocking):", err));
+      }
       try {
         await _ctx.authedFetch("/api/notify/event", {
           method: "POST",

@@ -7,6 +7,8 @@ rules_version = '2';
 //   - writer              (submit + edit own drafts)
 //   - newsletter_builder  (compose + send newsletters, read subscribers)
 //   - marketing           (read subscribers + analytics)
+//   - social_media        (marketing reads + the Planner: upcoming stories,
+//                          publish notifications, comment-chat with authors)
 //   - reader              (default for newly registered users)
 
 service cloud.firestore {
@@ -55,7 +57,10 @@ service cloud.firestore {
     function isWriter()            { return hasAnyRole(['admin', 'editor', 'writer']); }
     function isNewsletterBuilder() { return hasAnyRole(['admin', 'newsletter_builder']); }
     function isMarketing()         { return hasAnyRole(['admin', 'marketing']); }
-    function isStaff()             { return hasAnyRole(['admin', 'editor', 'writer', 'newsletter_builder', 'marketing']); }
+    // Marketing OS surfaces shared by both marketing and the social media
+    // team: subscriber stats, subscriber list, social posts, searchability.
+    function isMarketingOS()       { return hasAnyRole(['admin', 'marketing', 'social_media']); }
+    function isStaff()             { return hasAnyRole(['admin', 'editor', 'writer', 'newsletter_builder', 'marketing', 'social_media']); }
 
     // ---------- users ----------
     // Anonymous tokens are explicitly excluded — only real (email/password)
@@ -161,7 +166,7 @@ service cloud.firestore {
     // Canonical write path is POST /api/subscribe (server-side, service account).
     // Anonymous create allowed as a fallback; reads are staff-only.
     match /subscribers/{emailKey} {
-      allow read: if isMarketing() || isNewsletterBuilder() || isEditor();
+      allow read: if isMarketingOS() || isNewsletterBuilder() || isEditor();
       allow create: if
         request.resource.data.email is string
         && request.resource.data.email.matches('.+@.+\\..+')
@@ -214,7 +219,7 @@ service cloud.firestore {
     // ---------- analytics events (page views, signups, etc.) ----------
     match /analytics_events/{eventId} {
       allow create: if true; // anonymous logging permitted
-      allow read: if isMarketing() || isAdmin();
+      allow read: if isMarketingOS();
       allow update, delete: if isAdmin();
     }
 
@@ -260,6 +265,13 @@ service cloud.firestore {
       allow update: if isAdmin()
         || isProjectAuthor()
         || resource.data.editorId == request.auth.uid;
+      // Comment chat: any staff member (incl. social_media via the Planner)
+      // may post to a project's activity feed — but ONLY the chat fields,
+      // nothing structural. Lets the social team ask the author questions
+      // without gaining edit rights over the project itself.
+      allow update: if isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['activity', 'lastActivity', 'updatedAt']);
       // Only admin or the original author can delete.
       allow delete: if isAdmin()
         || isProjectAuthor();
@@ -309,6 +321,34 @@ service cloud.firestore {
         || (isStaff() && resource.data.proposerId == request.auth.uid);
       allow delete: if isAdmin()
         || (isStaff() && resource.data.proposerId == request.auth.uid);
+    }
+
+    // ---------- social post assignments ----------
+    // Created from the Planner: "make a post for this article, due by X."
+    // Assigners are admins or users explicitly granted '#/planner/assign'
+    // (Users & roles → Extra access). The assignee can update their own
+    // assignment (mark done / reopen); assigners and admins manage them.
+    match /social_assignments/{assignmentId} {
+      allow read: if isStaff();
+      allow create: if (isAdmin() || hasGrant('#/planner/assign'))
+        && request.resource.data.createdById == request.auth.uid;
+      allow update: if isAdmin()
+        || hasGrant('#/planner/assign')
+        || resource.data.assigneeId == request.auth.uid;
+      allow delete: if isAdmin() || hasGrant('#/planner/assign');
+    }
+
+    // ---------- planner cleared list ----------
+    // "We've posted for this article — take it off the Planner." One doc per
+    // cleared story (doc id = story id). Clearing/restoring is for the social
+    // leads: admins or users granted '#/planner/assign'. Everyone on staff
+    // can read so the Planner hides cleared stories for the whole team.
+    match /planner_cleared/{storyId} {
+      allow read: if isStaff();
+      allow create: if (isAdmin() || hasGrant('#/planner/assign'))
+        && request.resource.data.clearedById == request.auth.uid;
+      allow delete: if isAdmin() || hasGrant('#/planner/assign');
+      allow update: if false;
     }
 
     // ---------- winners' lounge chat ----------

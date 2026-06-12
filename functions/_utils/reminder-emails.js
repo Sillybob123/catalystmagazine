@@ -1470,6 +1470,168 @@ function bundledItemLabel(item) {
   return item.kind;
 }
 
+// ─── Direct comment (project chat → email) ──────────────────────────────────
+// Sent to a teammate when someone posts a comment addressed to them on a
+// project — e.g. the social media team asking the author a question from the
+// Planner. The comment also lives in the project's activity chat; this email
+// is the "you have a message" copy so nothing gets missed.
+export function directCommentEmail({ project, senderName, senderRole, message, recipientName, siteUrl }) {
+  const projectTitle = project.title || "(untitled story)";
+  const firstName = String(recipientName || "there").trim().split(/\s+/)[0] || "there";
+  const fromName = senderName || "A teammate";
+  const roleLine = senderRole ? ` (${senderRole})` : "";
+  const projectUrl = `${siteUrl}/admin/#/pipeline/mine`;
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: projectTitle },
+      { label: "From", value: `${fromName}${roleLine}` },
+      project.deadlines?.publication
+        ? { label: "Publication", value: fmtDate(project.deadlines.publication) }
+        : null,
+    ].filter(Boolean),
+    tone: "info",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(fromName)} left you a comment on "${escapeHtml(projectTitle)}."
+    </p>
+
+    ${statusBlock}
+
+    <div style="margin:18px 0 0 0;border-left:3px solid ${COLORS.hairline};padding:4px 0 4px 16px;">
+      <p style="margin:0;font-size:15px;line-height:1.65;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(message)}</p>
+    </div>
+
+    <p style="margin:18px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};">
+      This message is also saved in the story's comment feed. You can reply
+      there from your dashboard — or reply to this email to reach
+      ${escapeHtml(fromName)} directly.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(projectUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the story &amp; reply</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">The Catalyst dashboard</span>
+    </p>
+  `;
+
+  const subject = `${truncate(fromName, 30)} commented on "${truncate(projectTitle, 40)}"`;
+  const preheader = truncate(message, 90);
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// ─── Social team publish alert ───────────────────────────────────────────────
+// Sent to every social_media user the moment a story is published, so they
+// can get the announcement posts out while the piece is fresh.
+export function socialPublishedEmail({ title, authorName, articleUrl, category, siteUrl }) {
+  const storyTitle = title || "(untitled story)";
+  const plannerUrl = `${siteUrl}/admin/#/planner`;
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Story", value: storyTitle },
+      { label: "Author", value: authorName || "—" },
+      { label: "Category", value: category || "Feature" },
+      { label: "Status", value: "Just published — live now" },
+    ],
+    tone: "alert",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi team,
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      A story just went live — time to share it.
+    </p>
+
+    ${statusBlock}
+
+    <p style="margin:0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      "${escapeHtml(storyTitle)}" by ${escapeHtml(authorName || "the Catalyst team")} is now
+      on the site. The first 24&ndash;48 hours matter most for reach — draft the
+      announcement post, tag the author, and schedule it for LinkedIn and Instagram.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(articleUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;margin-right:10px;">Read the article</a>
+      <a href="${escapeAttr(plannerUrl)}" style="display:inline-block;background:#ffffff;color:${COLORS.ink};text-decoration:none;padding:10px 22px;border-radius:6px;font-weight:600;font-size:14px;border:1px solid ${COLORS.hairline};">Open the Planner</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">The Catalyst dashboard</span>
+    </p>
+  `;
+
+  const subject = `Just published: "${truncate(storyTitle, 45)}" — ready to share`;
+  const preheader = "A new story is live. Draft the social posts while it's fresh.";
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// ─── Social post assignment ──────────────────────────────────────────────────
+// Sent to the assignee when an admin (or a granted user, e.g. the marketing
+// lead) assigns them a social post for a specific article with a deadline.
+export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
+  const articleTitle = assignment.articleTitle || "(untitled article)";
+  const firstName = String(assignment.assigneeName || "there").trim().split(/\s+/)[0] || "there";
+  const plannerUrl = `${siteUrl}/admin/#/planner`;
+
+  const statusBlock = buildStatusBlock({
+    rows: [
+      { label: "Article", value: articleTitle },
+      assignment.platform && assignment.platform !== "any"
+        ? { label: "Platform", value: assignment.platform }
+        : { label: "Platform", value: "Your call (any)" },
+      { label: "Due", value: fmtDate(assignment.deadline) },
+      { label: "Assigned by", value: assignerName || "—" },
+    ].filter(Boolean),
+    tone: "alert",
+  });
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi ${escapeHtml(firstName)},
+    </p>
+    <p style="margin:14px 0 0 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      You've been assigned a social post.
+    </p>
+
+    ${statusBlock}
+
+    ${assignment.notes ? `
+    <div style="margin:18px 0 0 0;border-left:3px solid ${COLORS.hairline};padding:4px 0 4px 16px;">
+      <p style="margin:0;font-size:14px;line-height:1.65;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(assignment.notes)}</p>
+    </div>` : ""}
+
+    <p style="margin:18px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};">
+      The Planner has the story's details, the proposal, and a direct line to the
+      writer if you have questions. Mark the assignment done there when the post ships.
+    </p>
+
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(plannerUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the Planner</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">The Catalyst dashboard</span>
+    </p>
+  `;
+
+  const subject = `Social post assignment: "${truncate(articleTitle, 42)}" — due ${fmtDate(assignment.deadline)}`;
+  const preheader = `${assignerName || "The team"} assigned you a post for "${truncate(articleTitle, 50)}".`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
 // ─── Utils ───────────────────────────────────────────────────────────────────
 
 function fmtDate(d) {
