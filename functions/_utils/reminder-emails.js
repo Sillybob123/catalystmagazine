@@ -1528,6 +1528,45 @@ export function directCommentEmail({ project, senderName, senderRole, message, r
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
+// ─── Staff announcement ──────────────────────────────────────────────────────
+// An admin alert pushed to the whole staff ("meeting today", "fill out the
+// When2meet"). The same announcement shows as a red banner on everyone's
+// dashboard Overview; this is the email copy, sent when the admin checks
+// "also email the team".
+export function announcementEmail({ title, message, link, senderName, siteUrl }) {
+  const headline = title || "Announcement from the Catalyst admins";
+  const overviewUrl = `${siteUrl}/admin/#/overview`;
+
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">
+      Hi team,
+    </p>
+
+    <div style="margin:16px 0 0 0;background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #b91c1c;border-radius:8px;padding:16px 18px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#b91c1c;margin-bottom:6px;">Staff announcement</div>
+      <div style="font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.4;color:${COLORS.ink};">${escapeHtml(headline)}</div>
+      ${message ? `<p style="margin:10px 0 0 0;font-size:15px;line-height:1.65;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(message)}</p>` : ""}
+    </div>
+
+    <div style="margin:22px 0 0 0;">
+      ${link
+        ? `<a href="${escapeAttr(link)}" style="display:inline-block;background:#b91c1c;color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;margin-right:10px;">Open the link</a>`
+        : ""}
+      <a href="${escapeAttr(overviewUrl)}" style="display:inline-block;background:${link ? "#ffffff" : COLORS.accent};color:${link ? COLORS.ink : "#ffffff"};text-decoration:none;padding:${link ? "10px" : "11px"} 22px;border-radius:6px;font-weight:600;font-size:14px;${link ? `border:1px solid ${COLORS.hairline};` : ""}">Open your dashboard</a>
+    </div>
+
+    <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
+      Thanks,<br>
+      <span style="color:${COLORS.ink};font-weight:600;">${escapeHtml(senderName || "The Catalyst admins")}</span><br>
+      <span style="color:${COLORS.muted};">The Catalyst Magazine</span>
+    </p>
+  `;
+
+  const subject = `[Catalyst] ${truncate(headline, 70)}`;
+  const preheader = truncate(message || headline, 90);
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
 // ─── Direct message (Directory chat → email) ─────────────────────────────────
 // Sent when a teammate messages you from the dashboard's Directory tab. The
 // conversation lives in the dashboard chat; this is the "you have a message"

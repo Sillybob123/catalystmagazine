@@ -378,6 +378,16 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ---------- staff announcements ----------
+    // Admin-authored alert banners shown at the top of every staff member's
+    // dashboard Overview ("meeting today — Zoom link", "fill out the
+    // When2meet"). Managed from Admin → Advanced tools → Announcements;
+    // optionally also emailed to all staff via /api/notify/announcement.
+    match /announcements/{announcementId} {
+      allow read: if isStaff();
+      allow create, update, delete: if isAdmin();
+    }
+
     // ---------- manual directory entries ----------
     // People admins added to the Directory tab who don't have a dashboard
     // account (advisors, interns, alumni). Staff can look them up; only

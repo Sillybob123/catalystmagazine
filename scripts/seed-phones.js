@@ -58,6 +58,9 @@ const ROWS = [
   ["Sienna",        "+1 (802) 558-8110"],
   ["Natalie Burg",  "+1 (248) 220-0462"],
   ["Yair",          "2405150910"],
+  ["Yahav",         "(917) 578-6213"],
+  // "MayMay" on the admin list — Catherine May May Hubbard in the directory.
+  ["Catherine May May Hubbard", "(808) 312-8296"],
 ];
 
 const norm = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");

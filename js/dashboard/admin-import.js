@@ -31,6 +31,14 @@ const RECENT_JOIN_DAYS = 14;
 // can pattern-match icon + name in ~200ms vs reading paragraphs.
 const TOOLS = [
   {
+    id: "announce",
+    label: "Announcements",
+    summary: "Post a red alert banner to every staff member's Overview — meetings, When2meets, urgent asks.",
+    danger: "writes",
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
+    mount: mountAnnounceTool,
+  },
+  {
     id: "import",
     label: "Import Wix posts",
     summary: "Bulk import an old Wix blog export into the article queue as drafts.",
@@ -184,6 +192,190 @@ function paneHeader(title, sub) {
       <h2 class="adv-pane-title">${esc(title)}</h2>
       ${sub ? `<p class="adv-pane-sub">${sub}</p>` : ""}
     </header>`;
+}
+
+// ─── Announcements ───────────────────────────────────────────────────────────
+// Post a red alert banner to every staff member's dashboard Overview, with an
+// optional one-click email blast to the whole team. Banners live in the
+// `announcements` collection; the Overview renders the active ones.
+
+function mountAnnounceTool(ctx, root) {
+  root.innerHTML = `
+    ${paneHeader("Staff announcements", `Post a <strong>red alert banner</strong> to the top of every staff member's dashboard Overview — a meeting reminder, a When2meet to fill out, a Zoom link. Optionally email the whole team the same message. Banners stay up until you remove them (or until an expiry date you set).`)}
+    <div class="adv-pane-body" style="display:grid;gap:18px;">
+      <form id="ann-form" style="display:grid;gap:14px;max-width:620px;">
+        <label style="display:grid;gap:5px;">
+          <span style="font-weight:600;font-size:13px;">Headline *</span>
+          <input id="ann-title" required maxlength="160" placeholder="e.g. Staff meeting today at 6pm" autocomplete="off"
+                 style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
+        </label>
+        <label style="display:grid;gap:5px;">
+          <span style="font-weight:600;font-size:13px;">Details <span style="font-weight:400;color:var(--muted);">(optional)</span></span>
+          <textarea id="ann-message" rows="3" maxlength="4000" placeholder="Add any context — agenda, what to bring, deadline to respond by…"
+                    style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;line-height:1.5;resize:vertical;"></textarea>
+        </label>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
+          <label style="display:grid;gap:5px;min-width:0;">
+            <span style="font-weight:600;font-size:13px;">Button link <span style="font-weight:400;color:var(--muted);">(optional)</span></span>
+            <input id="ann-link" type="url" placeholder="https://when2meet.com/…  or  Zoom URL" autocomplete="off"
+                   style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
+          </label>
+          <label style="display:grid;gap:5px;min-width:0;">
+            <span style="font-weight:600;font-size:13px;">Button text</span>
+            <input id="ann-link-label" maxlength="40" placeholder="Open link" autocomplete="off"
+                   style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
+          </label>
+        </div>
+        <label style="display:grid;gap:5px;max-width:220px;">
+          <span style="font-weight:600;font-size:13px;">Auto-remove on <span style="font-weight:400;color:var(--muted);">(optional)</span></span>
+          <input id="ann-expires" type="date"
+                 style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;padding:12px 14px;border:1px solid #fecaca;background:#fef2f2;border-radius:10px;">
+          <input id="ann-email" type="checkbox" style="margin-top:2px;width:16px;height:16px;flex-shrink:0;">
+          <span style="font-size:13.5px;line-height:1.5;color:var(--ink-2,#374151);">
+            <strong>Also email this to the whole team</strong> — sends the announcement to every staff member's inbox right now. Use it when you really need eyes on it (the banner alone is silent).
+          </span>
+        </label>
+        <div id="ann-msg" style="font-size:13px;min-height:18px;color:var(--danger,#b91c1c);"></div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button type="submit" id="ann-post" class="btn btn-accent btn-sm">Post announcement</button>
+          <span class="adv-action-hint">Appears on every staff Overview within seconds of posting.</span>
+        </div>
+      </form>
+
+      <div style="border-top:1px solid var(--hairline,#e5e7eb);padding-top:16px;">
+        <div style="font-weight:700;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted,#6b7280);margin-bottom:10px;">Currently live</div>
+        <div id="ann-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
+      </div>
+    </div>`;
+
+  const form = root.querySelector("#ann-form");
+  const msgEl = root.querySelector("#ann-msg");
+  const postBtn = root.querySelector("#ann-post");
+  const listEl = root.querySelector("#ann-list");
+
+  const refreshList = async () => {
+    try {
+      const snap = await getDocs(query(collection(db, "announcements"), limit(50)));
+      const items = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((a) => a.active !== false)
+        .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+      renderAnnList(listEl, items, ctx, refreshList);
+    } catch (err) {
+      listEl.innerHTML = `<div class="error-state">Could not load announcements: ${esc(err.message || err)}</div>`;
+    }
+  };
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msgEl.style.color = "var(--danger,#b91c1c)";
+    msgEl.textContent = "";
+
+    const title = root.querySelector("#ann-title").value.trim();
+    const message = root.querySelector("#ann-message").value.trim();
+    const link = root.querySelector("#ann-link").value.trim();
+    const linkLabel = root.querySelector("#ann-link-label").value.trim();
+    const expires = root.querySelector("#ann-expires").value;
+    const alsoEmail = root.querySelector("#ann-email").checked;
+
+    if (!title) { msgEl.textContent = "A headline is required."; return; }
+
+    postBtn.disabled = true;
+    postBtn.textContent = alsoEmail ? "Posting & emailing…" : "Posting…";
+    try {
+      const now = new Date().toISOString();
+      const docData = {
+        title,
+        message,
+        link,
+        linkLabel: linkLabel || (link ? "Open link" : ""),
+        active: true,
+        emailed: false,
+        expiresAt: expires ? `${expires}T23:59:59.999Z` : null,
+        createdAt: now,
+        createdById: ctx.user.uid,
+        createdByName: ctx.profile?.name || ctx.user.email || "Admin",
+      };
+      const ref = await addDoc(collection(db, "announcements"), docData);
+
+      if (alsoEmail) {
+        try {
+          const res = await ctx.authedFetch("/api/notify/announcement", {
+            method: "POST",
+            body: JSON.stringify({ announcementId: ref.id, title, message, link }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.sent) {
+            await updateDoc(ref, { emailed: true, emailedCount: data.recipientCount || 0, emailedAt: now });
+            msgEl.style.color = "var(--success,#0f766e)";
+            msgEl.textContent = `Posted and emailed to ${data.recipientCount} staff member${data.recipientCount === 1 ? "" : "s"}.`;
+          } else {
+            msgEl.style.color = "var(--success,#0f766e)";
+            msgEl.textContent = "Posted to the banner. (Email didn't send — check Resend config.)";
+          }
+        } catch {
+          msgEl.style.color = "var(--success,#0f766e)";
+          msgEl.textContent = "Posted to the banner. (Email didn't send.)";
+        }
+      } else {
+        msgEl.style.color = "var(--success,#0f766e)";
+        msgEl.textContent = "Announcement is live on every staff Overview.";
+      }
+
+      form.reset();
+      refreshList();
+    } catch (err) {
+      msgEl.style.color = "var(--danger,#b91c1c)";
+      msgEl.textContent = `Could not post: ${err.message || err}`;
+    } finally {
+      postBtn.disabled = false;
+      postBtn.textContent = "Post announcement";
+    }
+  });
+
+  refreshList();
+}
+
+function renderAnnList(listEl, items, ctx, refresh) {
+  if (!items.length) {
+    listEl.innerHTML = `<div class="empty-state" style="padding:20px;">No live announcements. Post one above and it shows up on every staff Overview.</div>`;
+    return;
+  }
+  listEl.innerHTML = "";
+  for (const a of items) {
+    const row = el("div", {
+      style: "display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:12px 14px;border:1px solid #fecaca;background:#fef2f2;border-radius:10px;margin-bottom:8px;",
+    });
+    row.innerHTML = `
+      <div style="min-width:0;flex:1;">
+        <div style="font-weight:700;font-size:14px;color:var(--ink,#0a0a0c);">${esc(a.title || "Announcement")}</div>
+        ${a.message ? `<div style="margin-top:3px;font-size:13px;color:var(--ink-2,#374151);line-height:1.5;white-space:pre-wrap;">${esc(a.message)}</div>` : ""}
+        <div style="margin-top:6px;font-size:11.5px;color:var(--muted,#6b7280);">
+          ${a.createdByName ? `By ${esc(a.createdByName)}` : ""}${a.createdAt ? ` · ${esc(fmtAnnDate(a.createdAt))}` : ""}${a.emailed ? ` · emailed${a.emailedCount ? ` to ${a.emailedCount}` : ""}` : " · banner only"}${a.expiresAt ? ` · auto-removes ${esc(fmtAnnDate(a.expiresAt))}` : ""}
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-xs" data-remove style="color:#b91c1c;white-space:nowrap;flex-shrink:0;">Remove</button>`;
+    row.querySelector("[data-remove]").addEventListener("click", async () => {
+      const ok = await confirmDialog(`Remove "${a.title || "this announcement"}" from everyone's dashboard?`, { confirmText: "Remove", danger: true });
+      if (!ok) return;
+      try {
+        await deleteDoc(doc(db, "announcements", a.id));
+        ctx.toast("Announcement removed.", "success");
+        refresh();
+      } catch (err) {
+        ctx.toast(`Could not remove: ${err.message || err}`, "error");
+      }
+    });
+    listEl.appendChild(row);
+  }
+}
+
+function fmtAnnDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 function mountImportTool(ctx, root) {

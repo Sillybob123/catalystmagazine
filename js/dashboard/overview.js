@@ -8,14 +8,23 @@ import {
   orderBy,
   limit,
   getDocs,
+  deleteDoc,
+  doc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { el, esc, fmtRelative, statusPill } from "./ui.js";
+import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
 import { renderPipeline } from "./pipeline.js";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
   const isAdmin = ctx.role === "admin";
+
+  // Staff announcements — admin-authored red banners at the very top of
+  // everyone's Overview ("meeting today — Zoom link", "fill out the
+  // When2meet"). Loaded best-effort so a failure never blanks the page.
+  const announceMount = el("div", { id: "overview-announcements" });
+  container.appendChild(announceMount);
+  loadAnnouncements(announceMount, ctx);
 
   // Editorial calendar — every staff member sees the month's publish dates,
   // ready-by dates (publish − 1 week, for the social team), interviews, and
@@ -103,6 +112,117 @@ export async function mount(ctx, container) {
     <div id="pipeline-mount"></div>`;
   container.appendChild(pipeline);
   renderPipeline(pipeline.querySelector("#pipeline-mount"), ctx, { compact: true });
+}
+
+// ─── Staff announcement banners ──────────────────────────────────────────────
+// Red, hard-to-miss banners admins post from Advanced tools → Announcements.
+// Everyone on staff sees active ones at the top of their Overview. Non-admins
+// can dismiss a banner for themselves (remembered in localStorage); admins see
+// a "Remove for everyone" button that deletes the announcement.
+
+const DISMISS_KEY = "catalyst.dashboard.dismissedAnnouncements";
+
+function getDismissed() {
+  try {
+    const v = JSON.parse(localStorage.getItem(DISMISS_KEY) || "[]");
+    return Array.isArray(v) ? v : [];
+  } catch { return []; }
+}
+function setDismissed(ids) {
+  try { localStorage.setItem(DISMISS_KEY, JSON.stringify(ids.slice(-100))); } catch {}
+}
+
+async function loadAnnouncements(mount, ctx) {
+  const isAdmin = ctx.role === "admin";
+  let items = [];
+  try {
+    const snap = await getDocs(query(collection(db, "announcements"), limit(50)));
+    const now = Date.now();
+    items = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((a) => {
+        if (a.active === false) return false;
+        // Optional auto-expiry: hide once expiresAt passes.
+        if (a.expiresAt && Date.parse(a.expiresAt) && Date.parse(a.expiresAt) < now) return false;
+        return true;
+      })
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  } catch (err) {
+    console.warn("[overview] announcements load failed", err);
+    return; // silent — never block the Overview
+  }
+
+  const dismissed = isAdmin ? [] : getDismissed();
+  const render = () => {
+    const visible = items.filter((a) => !dismissed.includes(a.id));
+    if (!visible.length) { mount.innerHTML = ""; return; }
+    mount.innerHTML = "";
+    for (const a of visible) {
+      mount.appendChild(announcementBanner(a, ctx, isAdmin, {
+        onDismiss: () => {
+          dismissed.push(a.id);
+          setDismissed(dismissed);
+          render();
+        },
+        onRemove: async (banner) => {
+          const ok = await confirmDialog(
+            "Remove this announcement for everyone on staff?",
+            { confirmText: "Remove", danger: true });
+          if (!ok) return;
+          try {
+            await deleteDoc(doc(db, "announcements", a.id));
+            items = items.filter((x) => x.id !== a.id);
+            render();
+            ctx.toast("Announcement removed.", "success");
+          } catch (err) {
+            ctx.toast(`Could not remove: ${err?.message || err}`, "error");
+          }
+        },
+      }));
+    }
+  };
+  render();
+}
+
+function announcementBanner(a, ctx, isAdmin, { onDismiss, onRemove }) {
+  const title = a.title || "Announcement";
+  const wrap = el("div", {
+    style: "margin-bottom:18px;background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #b91c1c;border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;",
+  });
+
+  const link = String(a.link || "").trim();
+  const linkIsHash = link.startsWith("#/");
+  const linkBtn = link
+    ? `<a href="${esc(link)}"${linkIsHash ? "" : ` target="_blank" rel="noopener"`} class="btn btn-sm" style="background:#b91c1c;color:#fff;border-color:#b91c1c;margin-top:10px;display:inline-flex;align-items:center;gap:6px;">
+         ${esc(a.linkLabel || "Open link")}
+         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+       </a>`
+    : "";
+
+  wrap.innerHTML = `
+    <div style="width:34px;height:34px;border-radius:9px;background:#b91c1c;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div style="min-width:0;flex:1;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#b91c1c;margin-bottom:3px;">Staff announcement</div>
+      <div style="font-size:16px;font-weight:700;letter-spacing:-0.01em;line-height:1.35;color:var(--ink,#0a0a0c);">${esc(title)}</div>
+      ${a.message ? `<div style="margin-top:6px;font-size:14px;line-height:1.6;color:var(--ink-2,#374151);white-space:pre-wrap;">${esc(a.message)}</div>` : ""}
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        ${linkBtn}
+      </div>
+      <div style="margin-top:10px;font-size:11.5px;color:var(--muted,#6b7280);">
+        ${a.createdByName ? `Posted by ${esc(a.createdByName)}` : "Posted by the admins"}${a.createdAt ? ` · ${esc(fmtRelative(a.createdAt))}` : ""}${a.emailed ? " · emailed to staff" : ""}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+      ${isAdmin
+        ? `<button type="button" data-act="remove" class="btn btn-ghost btn-xs" style="color:#b91c1c;white-space:nowrap;">Remove for everyone</button>`
+        : `<button type="button" data-act="dismiss" aria-label="Dismiss" title="Dismiss" style="border:0;background:transparent;cursor:pointer;color:#b91c1c;padding:2px 6px;font-size:18px;line-height:1;">&times;</button>`}
+    </div>`;
+
+  wrap.querySelector('[data-act="dismiss"]')?.addEventListener("click", () => onDismiss());
+  wrap.querySelector('[data-act="remove"]')?.addEventListener("click", () => onRemove(wrap));
+  return wrap;
 }
 
 async function loadNewsletterReminder(mount, ctx) {
