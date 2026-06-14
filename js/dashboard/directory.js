@@ -448,24 +448,28 @@ function openChat(ctx, state, person) {
   }
 
   const meta = ROLE_META[person.role] || ROLE_META.reader;
-  const body = el("div", { style: "display:flex;flex-direction:column;width:min(520px,88vw);margin:-4px -4px 0;" });
+  // The modal body has 24px padding all around; pull the whole chat out by
+  // that amount on every side so the header, message panel, and composer all
+  // share one consistent edge (no stray gutter on the right) and the message
+  // panel can span the full modal width.
+  const body = el("div", { class: "dm-chat-body", style: "display:flex;flex-direction:column;width:min(560px,90vw);" });
   body.innerHTML = `
-    <div style="display:flex;align-items:center;gap:11px;padding:0 2px 14px;border-bottom:1px solid var(--hairline,#e5e7eb);">
+    <div style="display:flex;align-items:center;gap:11px;padding:18px 24px;border-bottom:1px solid var(--hairline,#e5e7eb);">
       <span class="staff-avatar" style="background:${meta.color};width:40px;height:40px;font-size:13px;flex-shrink:0;">${esc(getInitials(person.name || person.email || "?"))}</span>
       <span style="min-width:0;">
         <span style="display:block;font-weight:700;font-size:15px;color:var(--ink);line-height:1.3;">${esc(person.name || person.email || "Teammate")}</span>
         <span style="display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(meta.label)}${person.email ? ` · ${esc(person.email)}` : ""}</span>
       </span>
     </div>
-    <div id="dm-scroll" style="height:min(48vh,380px);overflow-y:auto;padding:16px 4px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2,#f8fafc);margin:0 -4px;">
+    <div id="dm-scroll" style="height:min(48vh,380px);overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2,#f8fafc);">
       <div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>
     </div>
-    <form id="dm-form" style="display:flex;gap:8px;align-items:flex-end;padding:14px 2px 2px;border-top:1px solid var(--hairline,#e5e7eb);">
+    <form id="dm-form" style="display:flex;gap:10px;align-items:flex-end;padding:14px 20px;border-top:1px solid var(--hairline,#e5e7eb);background:#fff;">
       <textarea id="dm-input" rows="1" placeholder="Write a message…" maxlength="2000" required
-                style="flex:1;resize:none;max-height:120px;padding:11px 14px;border:1px solid var(--hairline,#e5e7eb);border-radius:22px;font-size:14px;font-family:inherit;line-height:1.45;background:#fff;"></textarea>
-      <button type="submit" class="btn btn-primary" id="dm-send" style="min-height:44px;min-width:44px;border-radius:22px;padding:0 18px;flex-shrink:0;">Send</button>
+                style="flex:1;min-width:0;resize:none;max-height:120px;padding:11px 16px;border:1px solid var(--hairline,#e5e7eb);border-radius:22px;font-size:14px;font-family:inherit;line-height:1.45;background:#fff;"></textarea>
+      <button type="submit" class="btn btn-primary" id="dm-send" style="min-height:44px;border-radius:22px;padding:0 20px;flex-shrink:0;">Send</button>
     </form>
-    <div id="dm-note" style="font-size:11.5px;color:var(--muted);margin-top:8px;padding:0 4px;min-height:15px;line-height:1.4;">They'll also get an email copy of each message.</div>`;
+    <div id="dm-note" style="font-size:11.5px;color:var(--muted);padding:0 20px 18px;min-height:15px;line-height:1.4;">They'll also get an email copy of each message.</div>`;
 
   const modal = openModal({
     title: "Private message",

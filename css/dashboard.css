@@ -183,25 +183,33 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* Pinned Planner link for the marketing / social team — their most-used
-   screen, surfaced at the top of the Workspace group with a colored,
-   stands-out treatment so it never gets lost. */
+   screen, surfaced at the top of the Workspace group with a subtle blue
+   tint so it stands out without shouting. */
 .nav-link-pinned {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: #eff6ff;
+  color: #1d4ed8;
   font-weight: 600;
-  border-color: rgba(20,184,166,0.28);
-  box-shadow: 0 1px 2px rgba(15,118,110,0.10);
+  border-color: #bfdbfe;
 }
+.nav-link-pinned .icon { color: #2563eb; }
 .nav-link-pinned:hover {
-  background: #b8f5e9;
-  color: var(--accent);
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 .nav-link-pinned.active {
-  background: var(--accent);
+  background: #2563eb;
   color: #fff;
-  border-color: var(--accent);
+  border-color: #2563eb;
 }
 .nav-link-pinned.active .icon { color: #fff; }
+
+/* Directory chat fills the modal body edge-to-edge. The negative margin
+   must exactly cancel .modal-body's padding (24px desktop, 16px mobile)
+   so the header/messages/composer share one clean edge with no gutter. */
+.dm-chat-body { margin: -24px; }
+@media (max-width: 768px) {
+  .dm-chat-body { margin: -16px; }
+}
 
 .sidebar-footer {
   padding: 14px 16px;
