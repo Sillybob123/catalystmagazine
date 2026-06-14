@@ -182,9 +182,44 @@ button { font-family: inherit; cursor: pointer; }
   color: var(--accent);
 }
 
-/* Pinned Planner link for the marketing / social team — their most-used
-   screen, surfaced at the top of the Workspace group with a subtle blue
-   tint so it stands out without shouting. */
+/* The label takes the row; the pin toggle sits at the far right. */
+.nav-link-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Pin toggle — a small thumbtack that appears on hover/focus of a row.
+   Always visible (and filled) when the item is pinned. */
+.nav-pin-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  margin: -4px -6px -4px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+.nav-pin-toggle .pin-glyph { width: 15px; height: 15px; }
+.nav-link:hover .nav-pin-toggle,
+.nav-link:focus-within .nav-pin-toggle,
+.nav-pin-toggle:focus-visible { opacity: 1; }
+.nav-pin-toggle:hover { background: rgba(15,23,42,0.08); color: var(--ink); }
+.nav-pin-toggle.is-pinned {
+  opacity: 1;
+  color: #2563eb;
+}
+.nav-pin-toggle.is-pinned .pin-glyph { fill: #2563eb; stroke: #2563eb; }
+
+/* Pinned group header gets a tack accent so it reads as "your shortcuts". */
+.nav-group-pinned .nav-group-title { color: #2563eb; }
+
+/* Pinned links — subtle blue tint so the user's shortcuts stand out
+   without shouting. (Used for the Pinned group; social media gets the
+   Planner here by default.) */
 .nav-link-pinned {
   background: #eff6ff;
   color: #1d4ed8;
@@ -202,6 +237,21 @@ button { font-family: inherit; cursor: pointer; }
   border-color: #2563eb;
 }
 .nav-link-pinned.active .icon { color: #fff; }
+.nav-link-pinned.active .nav-pin-toggle.is-pinned,
+.nav-link-pinned.active .nav-pin-toggle.is-pinned .pin-glyph { color: #fff; fill: #fff; stroke: #fff; }
+
+/* On touch devices there's no hover, so always show the toggle faintly. */
+@media (hover: none) {
+  .nav-pin-toggle { opacity: 0.5; }
+}
+
+/* Directory chat fills the modal body edge-to-edge. The negative margin
+   must exactly cancel .modal-body's padding (24px desktop, 16px mobile)
+   so the header/messages/composer share one clean edge with no gutter. */
+.dm-chat-body { margin: -24px; }
+@media (max-width: 768px) {
+  .dm-chat-body { margin: -16px; }
+}
 
 /* Directory chat fills the modal body edge-to-edge. The negative margin
    must exactly cancel .modal-body's padding (24px desktop, 16px mobile)

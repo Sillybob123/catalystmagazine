@@ -53,6 +53,8 @@ const ICONS = {
   list:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>`,
   // Directory — an address book (find teammates, message them)
   addressBook: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8.5 15.5a3.5 3.5 0 0 1 7 0"/></svg>`,
+  // Pin toggle — a thumbtack (outline = unpinned, filled via CSS = pinned)
+  pin:         `<svg class="pin-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.6-2.4a2 2 0 0 1-.4-1.2V8a2 2 0 0 1 2-2h-14a2 2 0 0 1 2 2v5.4a2 2 0 0 1-.4 1.2z"/></svg>`,
 
   // Writing
   // Submit a draft — a pen drafting a line
@@ -122,6 +124,7 @@ const state = {
   previewRole: null,   // Admin-only: role being previewed; null when not previewing
   previewUser: null,   // Admin-only: a specific teammate being previewed
                        //   { uid, name, email, role, extraAccess, profile }
+  pins: [],            // Ordered list of pinned route hashes (per-user, localStorage)
   currentRoute: null,
   currentModule: null,
   moduleCleanup: null,
@@ -134,6 +137,58 @@ const state = {
 const PREVIEW_ROLES = ["writer", "editor", "newsletter_builder", "marketing", "social_media"];
 const PREVIEW_KEY = "catalyst.dashboard.previewRole";
 const PREVIEW_USER_KEY = "catalyst.dashboard.previewUser";
+
+// ---------- pinned tabs (per-user, local) ----------
+// Each person can pin the routes they use most; pins surface in a "Pinned"
+// group at the very top of the sidebar, in pin order. Stored per-uid in
+// localStorage (a personal preference, not worth a Firestore write/read).
+// Defaults: the social-media team gets the Planner auto-pinned the first
+// time they load, since that's their command center.
+const PIN_KEY_PREFIX = "catalyst.dashboard.pins.";
+const DEFAULT_PINS_BY_ROLE = {
+  social_media: ["#/planner"],
+};
+
+function pinStorageKey() {
+  // Tie pins to the *viewed* identity so an admin previewing a teammate sees
+  // (and edits) that teammate's pins, mirroring how the rest of preview works.
+  const uid = state.previewUser?.uid || state.user?.uid || "anon";
+  return PIN_KEY_PREFIX + uid;
+}
+
+function loadPins() {
+  try {
+    const raw = localStorage.getItem(pinStorageKey());
+    if (raw !== null) {
+      const v = JSON.parse(raw);
+      return Array.isArray(v) ? v.filter((h) => typeof h === "string") : [];
+    }
+  } catch {}
+  // No saved pins yet → seed role defaults (only routes the role can access).
+  const role = getActiveRole();
+  const defaults = (DEFAULT_PINS_BY_ROLE[role] || [])
+    .filter((h) => ROUTES[h] && isRouteAllowed(h, ROUTES[h]));
+  if (defaults.length) savePins(defaults);
+  return defaults;
+}
+
+function savePins(pins) {
+  state.pins = pins;
+  try { localStorage.setItem(pinStorageKey(), JSON.stringify(pins)); } catch {}
+}
+
+function isPinned(hash) { return state.pins.includes(hash); }
+
+function togglePin(hash) {
+  const next = isPinned(hash)
+    ? state.pins.filter((h) => h !== hash)
+    : [...state.pins, hash];
+  savePins(next);
+  renderSidebar();
+  // Re-highlight the active link after the rebuild.
+  const path = (location.hash || "").split("?")[0];
+  document.querySelectorAll(".nav-link").forEach((a) => a.classList.toggle("active", a.dataset.route === path));
+}
 
 function getActiveRole() {
   if (state.previewUser) return state.previewUser.role || "reader";
@@ -459,6 +514,7 @@ onAuthStateChanged(auth, async (user) => {
     } catch {}
   }
 
+  state.pins = loadPins();
   initPresencePing();
   paintUserChip();
   renderSidebar();
@@ -545,6 +601,36 @@ function isRouteAllowed(hash, route) {
 }
 
 // ---------- sidebar ----------
+// Build one nav link, including its hover pin toggle. `pinned` controls the
+// highlighted styling and the toggle's filled/outline state.
+function buildNavLink(hash, route, { pinned } = {}) {
+  const link = el("a", {
+    class: "nav-link" + (pinned ? " nav-link-pinned" : ""),
+    href: hash,
+    "data-route": hash,
+  });
+  link.innerHTML = `${route.icon}<span class="nav-link-label">${route.label}</span>`;
+
+  // Overview is the home tab — keep it un-pinnable so "Pinned" never just
+  // duplicates the thing everyone already lands on.
+  if (hash !== "#/overview") {
+    const toggle = el("button", {
+      type: "button",
+      class: "nav-pin-toggle" + (pinned ? " is-pinned" : ""),
+      "aria-label": pinned ? `Unpin ${route.label}` : `Pin ${route.label}`,
+      title: pinned ? "Unpin" : "Pin to top",
+    });
+    toggle.innerHTML = ICONS.pin;
+    toggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePin(hash);
+    });
+    link.appendChild(toggle);
+  }
+  return link;
+}
+
 function renderSidebar() {
   const nav = document.getElementById("nav");
 
@@ -557,51 +643,32 @@ function renderSidebar() {
     byGroup.get(g).push({ hash, ...route });
   }
 
-  // For the marketing / social-media team the Planner is their single most
-  // important screen, so we pin a highlighted copy of it to the top of the
-  // Workspace group (right under Overview) instead of leaving it buried in
-  // the Marketing group further down. Admins keep the normal placement.
-  const activeRole = getActiveRole();
-  const pinPlanner = (activeRole === "marketing" || activeRole === "social_media")
-    && isRouteAllowed("#/planner", ROUTES["#/planner"]);
-  if (pinPlanner) {
-    const mainItems = byGroup.get("main") || [];
-    // Drop any normal Planner entry from its default group so it isn't listed
-    // twice, then we render the pinned version explicitly below.
-    for (const [, items] of byGroup) {
-      const i = items.findIndex((it) => it.hash === "#/planner");
-      if (i !== -1) items.splice(i, 1);
-    }
-    byGroup.set("main", mainItems);
-  }
+  // Only keep pins that are real, visible, allowed routes (a role change or a
+  // removed route shouldn't leave a dangling pin). Preserve pin order.
+  const pinnedHashes = state.pins.filter(
+    (h) => ROUTES[h] && !ROUTES[h].hidden && isRouteAllowed(h, ROUTES[h]) && h !== "#/overview");
 
   const frag = document.createDocumentFragment();
+
+  // "Pinned" group at the very top — the user's own shortcuts.
+  if (pinnedHashes.length) {
+    const group = el("div", { class: "nav-group nav-group-pinned" });
+    group.appendChild(el("div", { class: "nav-group-title" }, "Pinned"));
+    for (const hash of pinnedHashes) {
+      group.appendChild(buildNavLink(hash, ROUTES[hash], { pinned: true }));
+    }
+    frag.appendChild(group);
+  }
+
+  // Regular groups — every allowed route stays in its normal section too, so
+  // pinning is purely additive (the item is still findable where it lives).
   for (const g of GROUPS) {
     const items = byGroup.get(g.id);
     if (!items || !items.length) continue;
     const group = el("div", { class: "nav-group" });
     group.appendChild(el("div", { class: "nav-group-title" }, g.label));
     for (const item of items) {
-      const link = el("a", {
-        class: "nav-link",
-        href: item.hash,
-        "data-route": item.hash,
-      });
-      link.innerHTML = `${item.icon}<span>${item.label}</span>`;
-      group.appendChild(link);
-
-      // Pin the highlighted Planner link immediately after Overview in the
-      // Workspace group for the marketing/social team.
-      if (pinPlanner && g.id === "main" && item.hash === "#/overview") {
-        const planner = ROUTES["#/planner"];
-        const plannerLink = el("a", {
-          class: "nav-link nav-link-pinned",
-          href: "#/planner",
-          "data-route": "#/planner",
-        });
-        plannerLink.innerHTML = `${planner.icon}<span>${planner.label}</span>`;
-        group.appendChild(plannerLink);
-      }
+      group.appendChild(buildNavLink(item.hash, ROUTES[item.hash], { pinned: false }));
     }
     frag.appendChild(group);
   }
@@ -789,6 +856,7 @@ function setPreviewRole(nextRole) {
     sessionStorage.removeItem(PREVIEW_KEY);
   }
 
+  state.pins = loadPins();
   paintUserChip();
   renderSidebar();
   closeUserMenu();
@@ -826,6 +894,7 @@ function setPreviewUser(next) {
     sessionStorage.removeItem(PREVIEW_USER_KEY);
   }
 
+  state.pins = loadPins();
   paintUserChip();
   renderSidebar();
   closeUserMenu();
