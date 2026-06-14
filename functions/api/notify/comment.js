@@ -18,7 +18,7 @@
 // accidental double-sends and runaway loops, not real conversations.
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
-import { firestoreGet, firestoreCreate, firestoreUpdate } from "../../_utils/firebase.js";
+import { firestoreGet, firestoreCreate, firestoreUpdate, collectUserEmails } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { directCommentEmail } from "../../_utils/reminder-emails.js";
@@ -60,7 +60,13 @@ export const onRequestPost = async ({ request, env }) => {
 
     const recipientDoc = await firestoreGet(env, `users/${recipientId}`);
     const recipient = recipientDoc ? unwrapDoc(recipientDoc, recipientId) : null;
-    if (!recipient?.email) {
+    if (!recipient) {
+      return json({ ok: true, sent: false, skipped: true, reason: "recipient not found" });
+    }
+    // Reach every inbox on file (extraEmails + duplicate-doc emails), not just
+    // the primary.
+    const recipientEmails = await collectUserEmails(env, recipient);
+    if (!recipientEmails.length) {
       return json({ ok: true, sent: false, skipped: true, reason: "recipient has no email on file" });
     }
 
@@ -85,7 +91,7 @@ export const onRequestPost = async ({ request, env }) => {
     });
 
     await sendEmail(env, {
-      to: recipient.email,
+      to: recipientEmails,
       subject,
       html,
       // Reply-to the sender so the conversation can continue over email.
@@ -97,7 +103,7 @@ export const onRequestPost = async ({ request, env }) => {
       projectId,
       firedBy: auth.email || auth.uid,
       firedAt: new Date().toISOString(),
-      recipients: [recipient.email],
+      recipients: recipientEmails,
     };
     // Stamp the cooldown best-effort — a logging failure must not turn an
     // already-sent email into a 500.
@@ -111,7 +117,7 @@ export const onRequestPost = async ({ request, env }) => {
       }
     }
 
-    return json({ ok: true, sent: true, to: recipient.email });
+    return json({ ok: true, sent: true, to: recipientEmails });
   } catch (err) {
     return serverError(err);
   }

@@ -16,7 +16,7 @@
 // chat bursts turning into inbox floods, not real conversations.
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
-import { firestoreGet, firestoreCreate, firestoreUpdate, firestoreRunQuery } from "../../_utils/firebase.js";
+import { firestoreGet, firestoreCreate, firestoreUpdate, collectUserEmails } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { directMessageEmail } from "../../_utils/reminder-emails.js";
@@ -50,11 +50,10 @@ export const onRequestPost = async ({ request, env }) => {
     const recipient = recipientDoc ? unwrapDoc(recipientDoc, toUserId) : null;
     if (!recipient) return badRequest("Recipient not found");
 
-    // A person can have more than one email on file — extra fields on their
-    // doc (emails[], altEmail) and/or duplicate user docs created across
-    // separate signups that share their name. Gather them all so the message
-    // reaches every address, not just the primary.
-    const recipientEmails = await collectRecipientEmails(env, recipient);
+    // A person can have more than one email on file — admin-managed
+    // extraEmails, legacy emails[]/altEmail, and/or duplicate user docs that
+    // share their name. Gather them all so the message reaches every address.
+    const recipientEmails = await collectUserEmails(env, recipient);
     if (!recipientEmails.length) {
       return json({ ok: true, sent: false, skipped: true, reason: "recipient has no email on file" });
     }
@@ -110,50 +109,6 @@ export const onRequestPost = async ({ request, env }) => {
     return serverError(err);
   }
 };
-
-// Every email we can find for this person: the fields on their own doc plus
-// any other user docs that share their (normalized) name — the duplicate-doc
-// case where someone signed up twice. De-duplicated, lowercased.
-async function collectRecipientEmails(env, recipient) {
-  const set = new Set();
-  const add = (v) => {
-    const e = String(v || "").trim().toLowerCase();
-    if (e && e.includes("@")) set.add(e);
-  };
-
-  // Fields on the primary doc.
-  add(recipient.email);
-  add(recipient.altEmail);
-  if (Array.isArray(recipient.emails)) recipient.emails.forEach(add);
-
-  // Other docs with the same name (e.g. a second signup, a phone-only stub).
-  const name = String(recipient.name || "").trim();
-  if (name) {
-    try {
-      const rows = await firestoreRunQuery(env, {
-        from: [{ collectionId: "users" }],
-        where: {
-          fieldFilter: {
-            field: { fieldPath: "name" },
-            op: "EQUAL",
-            value: { stringValue: name },
-          },
-        },
-        select: { fields: [{ fieldPath: "email" }, { fieldPath: "altEmail" }, { fieldPath: "emails" }] },
-        limit: 20,
-      });
-      for (const r of rows || []) {
-        add(r.data?.email);
-        add(r.data?.altEmail);
-        if (Array.isArray(r.data?.emails)) r.data.emails.forEach(add);
-      }
-    } catch (err) {
-      console.warn("[notify/dm] name-match email lookup failed:", err?.message || err);
-    }
-  }
-
-  return Array.from(set);
-}
 
 function roleLabel(role) {
   return {

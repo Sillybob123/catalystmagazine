@@ -559,35 +559,119 @@ function openExtraAccessModal(ctx, user, onSaved) {
   const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
   const saveBtn   = el("button", { class: "btn btn-accent" },   "Save");
 
-  const modal = openModal({
-    title: `Extra page access — ${user.name || user.email}`,
-    bodyHtml: `
-      <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px;">
-        Give <strong>${esc(user.name || user.email)}</strong> access to specific dashboard pages beyond their <strong>${esc(roleLabel(userRole))}</strong> role.
-        Pages already visible via their role are disabled below.
+  const primaryEmail = String(user.email || "").trim();
+  const existingExtras = Array.isArray(user.extraEmails) ? user.extraEmails.filter(Boolean) : [];
+
+  const body = el("div", {});
+  body.innerHTML = `
+    <div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px;">
+      Give <strong>${esc(user.name || user.email)}</strong> access to specific dashboard pages beyond their <strong>${esc(roleLabel(userRole))}</strong> role,
+      and manage which inboxes their dashboard mail reaches.
+    </div>
+
+    <div style="border:1px solid var(--hairline,#e2e8f0);border-radius:10px;padding:14px 16px;margin-bottom:18px;background:#fafbfc;">
+      <div style="font-weight:700;font-size:13px;color:var(--ink);">Email addresses</div>
+      <div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin:4px 0 10px;">
+        Direct messages and dashboard notifications go to the primary email <em>and</em> every address listed here.
       </div>
-      <div class="extra-access-list" id="extra-access-list">
-        ${groupsHtml}
-      </div>`,
+      ${primaryEmail
+        ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+             <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:var(--ink);">${esc(primaryEmail)}</span>
+             <span style="font-size:10.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;background:#e2e8f0;padding:2px 7px;border-radius:999px;">Primary</span>
+           </div>`
+        : `<div style="font-size:12.5px;color:var(--danger,#b91c1c);margin-bottom:8px;">No primary email on this account.</div>`}
+      <div id="ea-extra-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+      <button type="button" class="btn btn-ghost btn-xs" id="ea-add-email" style="align-self:flex-start;">+ Add another email</button>
+    </div>
+
+    <div style="font-weight:700;font-size:13px;color:var(--ink);margin-bottom:8px;">Page access</div>
+    <div class="extra-access-list" id="extra-access-list">
+      ${groupsHtml}
+    </div>
+    <div id="ea-msg" class="hint" style="color:var(--danger);margin-top:10px;"></div>`;
+
+  const modal = openModal({
+    title: `Extra access — ${user.name || user.email}`,
+    body,
     footer: [cancelBtn, saveBtn],
+  });
+
+  // Dynamic extra-email rows (add/remove without re-render), mirroring the
+  // Edit-bot modal so both stay consistent.
+  const extraList = body.querySelector("#ea-extra-list");
+  const msgEl = body.querySelector("#ea-msg");
+  const extras = [...existingExtras];
+  function renderExtras() {
+    extraList.innerHTML = "";
+    if (!extras.length) {
+      extraList.innerHTML = `<div style="font-size:13px;color:var(--muted);">No additional addresses.</div>`;
+      return;
+    }
+    extras.forEach((email, i) => {
+      const row = el("div", { style: { display: "flex", gap: "8px", alignItems: "center" } });
+      row.innerHTML = `
+        <input class="input" type="email" data-extra-idx="${i}" value="${escAttr(email)}" placeholder="another@example.com" style="flex:1;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;">
+        <button type="button" class="btn btn-ghost btn-xs" data-remove-extra="${i}" style="color:var(--danger);flex-shrink:0;">Remove</button>`;
+      extraList.appendChild(row);
+    });
+  }
+  renderExtras();
+  extraList.addEventListener("input", (e) => {
+    const inp = e.target.closest("[data-extra-idx]");
+    if (!inp) return;
+    extras[parseInt(inp.dataset.extraIdx, 10)] = inp.value.trim();
+  });
+  extraList.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-remove-extra]");
+    if (!btn) return;
+    extras.splice(parseInt(btn.dataset.removeExtra, 10), 1);
+    renderExtras();
+  });
+  body.querySelector("#ea-add-email").addEventListener("click", () => {
+    extras.push("");
+    renderExtras();
+    const inputs = extraList.querySelectorAll("input[data-extra-idx]");
+    if (inputs.length) inputs[inputs.length - 1].focus();
   });
 
   cancelBtn.addEventListener("click", () => modal.close());
   saveBtn.addEventListener("click", async () => {
-    const newAccess = Array.from(modal.bodyEl.querySelectorAll('input[type="checkbox"]'))
+    msgEl.textContent = "";
+
+    // Validate + dedupe extra emails (drop any that equal the primary).
+    const seen = new Set(primaryEmail ? [primaryEmail.toLowerCase()] : []);
+    const cleanExtras = [];
+    for (const raw of extras) {
+      const e = String(raw || "").trim();
+      if (!e) continue;
+      if (!e.includes("@") || /\s/.test(e)) {
+        msgEl.textContent = `"${e}" doesn't look like a valid email address.`;
+        return;
+      }
+      const key = e.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      cleanExtras.push(e);
+    }
+
+    const newAccess = Array.from(modal.bodyEl.querySelectorAll('.extra-access-list input[type="checkbox"]'))
       .filter((cb) => cb.checked && !cb.disabled)
       .map((cb) => cb.dataset.hash);
+
     saveBtn.disabled = true;
     saveBtn.textContent = "Saving…";
     try {
-      await updateDoc(doc(db, "users", user.id), { extraAccess: newAccess });
-      ctx.toast("Extra access updated. The user will see new pages after they refresh.", "success");
+      await updateDoc(doc(db, "users", user.id), {
+        extraAccess: newAccess,
+        extraEmails: cleanExtras,
+      });
+      ctx.toast("Saved. Page access updates on their next refresh; mail now reaches every listed inbox.", "success");
       modal.close();
       onSaved?.();
     } catch (err) {
       saveBtn.disabled = false;
       saveBtn.textContent = "Save";
-      ctx.toast("Save failed: " + err.message, "error");
+      msgEl.textContent = "Save failed: " + (err.message || err);
     }
   });
 }

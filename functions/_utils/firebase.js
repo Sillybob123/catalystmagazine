@@ -369,3 +369,55 @@ export function fromFirestoreDoc(doc) {
     data: fromFirestoreFields(doc.fields || {}),
   };
 }
+
+// Every email address a person can be reached at: the fields on their user
+// doc (primary email, admin-managed extraEmails, legacy emails[]/altEmail)
+// PLUS any other user docs that share their exact name — the duplicate-signup
+// case where one human ended up with two accounts. De-duplicated, lowercased,
+// primary first. `user` is a plain object (e.g. fromFirestoreDoc(...).data or
+// a locally-unwrapped doc) with at least { name, email }.
+export async function collectUserEmails(env, user) {
+  const seen = new Set();
+  const out = [];
+  const add = (v) => {
+    const e = String(v || "").trim();
+    const k = e.toLowerCase();
+    if (e && e.includes("@") && !e.includes(" ") && !seen.has(k)) { seen.add(k); out.push(e); }
+  };
+
+  const addFromDoc = (d) => {
+    if (!d) return;
+    add(d.email);
+    add(d.altEmail);
+    if (Array.isArray(d.emails)) d.emails.forEach(add);
+    if (Array.isArray(d.extraEmails)) d.extraEmails.forEach(add);
+  };
+
+  addFromDoc(user);
+
+  const name = String(user?.name || "").trim();
+  if (name) {
+    try {
+      const rows = await firestoreRunQuery(env, {
+        from: [{ collectionId: "users" }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: "name" },
+            op: "EQUAL",
+            value: { stringValue: name },
+          },
+        },
+        select: { fields: [
+          { fieldPath: "email" }, { fieldPath: "altEmail" },
+          { fieldPath: "emails" }, { fieldPath: "extraEmails" },
+        ] },
+        limit: 20,
+      });
+      for (const r of rows || []) addFromDoc(r.data);
+    } catch (err) {
+      console.warn("[collectUserEmails] name-match lookup failed:", err?.message || err);
+    }
+  }
+
+  return out;
+}

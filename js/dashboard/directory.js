@@ -132,25 +132,40 @@ async function loadPeople() {
     });
   }
 
+  // Seed each record with the full set of emails declared on its own doc:
+  // primary + admin-managed extraEmails + any legacy emails[]/altEmail.
+  for (const p of raw) p.allEmails = emailsOf(p);
+
   const byKey = new Map();
   const orderOf = (p) => (p.manual ? 98 : (ROLE_META[p.role]?.order ?? 99));
+  const mergeEmails = (a, b) => {
+    const seen = new Set();
+    const out = [];
+    for (const e of [...(a || []), ...(b || [])]) {
+      const k = String(e || "").trim().toLowerCase();
+      if (k && !seen.has(k)) { seen.add(k); out.push(String(e).trim()); }
+    }
+    return out;
+  };
   for (const p of raw) {
     const key = identityKey(p);
     const existing = byKey.get(key);
     if (!existing) { byKey.set(key, p); continue; }
     const ao = orderOf(p);
     const bo = orderOf(existing);
-    if (ao < bo) byKey.set(key, { ...existing, ...p, id: p.id, role: p.role, manual: p.manual });
-    else if (ao === bo) {
+    // Whoever wins, the merged record carries every email + the phone from
+    // either doc, so duplicate accounts surface one complete contact card.
+    const allEmails = mergeEmails(existing.allEmails, p.allEmails);
+    if (ao < bo) {
+      byKey.set(key, { ...existing, ...p, id: p.id, role: p.role, manual: p.manual, phone: p.phone || existing.phone, allEmails });
+    } else {
       byKey.set(key, {
         ...existing,
         name: existing.name || p.name,
         email: existing.email || p.email,
         phone: existing.phone || p.phone,
+        allEmails,
       });
-    } else if (!existing.phone && p.phone) {
-      // The losing doc may still carry the only phone number on file.
-      byKey.set(key, { ...existing, phone: p.phone });
     }
   }
 
@@ -172,7 +187,8 @@ function renderDirectory(mountEl, ctx, state, search = "") {
   const matches = state.people.filter((p) => {
     if (!q) return true;
     const meta = ROLE_META[p.role] || ROLE_META.reader;
-    if ([p.name, p.email, p.title, meta.label].some((s) => String(s || "").toLowerCase().includes(q))) return true;
+    if ([p.name, p.title, meta.label].some((s) => String(s || "").toLowerCase().includes(q))) return true;
+    if ((p.allEmails || [p.email]).some((e) => String(e || "").toLowerCase().includes(q))) return true;
     if (qDigits && String(p.phone || "").replace(/\D/g, "").includes(qDigits)) return true;
     return false;
   });
@@ -209,13 +225,17 @@ function renderDirectory(mountEl, ctx, state, search = "") {
       const isSelf = p.id === ctx.user.uid;
       const isAdmin = ctx.role === "admin";
       const phone = String(p.phone || "").trim();
+      const emailList = (p.allEmails && p.allEmails.length) ? p.allEmails : (p.email ? [p.email] : []);
+      const emailsHtml = emailList.map((em, idx) =>
+        `<div class="staff-email"><a href="mailto:${esc(em)}" style="color:inherit;text-decoration:none;">${esc(em)}</a>${idx > 0 ? ` <span style="font-size:9.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#94a3b8;">alt</span>` : ""}</div>`
+      ).join("");
       const card = el("div", { class: "staff-card" });
       card.innerHTML = `
         <div class="staff-avatar" style="background:${meta.color};">${esc(getInitials(name))}</div>
         <div class="staff-info" style="min-width:0;">
           <div class="staff-name">${esc(name)}${isSelf ? ` <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">You</span>` : ""}</div>
           <div class="staff-role" style="color:${meta.color};">${esc(roleLabel)}</div>
-          ${p.email ? `<div class="staff-email"><a href="mailto:${esc(p.email)}" style="color:inherit;text-decoration:none;">${esc(p.email)}</a></div>` : ""}
+          ${emailsHtml}
           ${phone ? `<div class="staff-email"><a href="tel:${esc(phone.replace(/[^\d+]/g, ""))}" style="color:inherit;text-decoration:none;">${esc(fmtPhone(phone))}</a></div>` : ""}
           <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
             ${isSelf || p.manual ? "" : `
@@ -623,6 +643,24 @@ function identityKey(person) {
   const name = String(person.name || "").trim().toLowerCase().replace(/\s+/g, " ");
   if (name) return `name:${name}`;
   return `id:${person.id}`;
+}
+
+// All emails declared on one user/contact doc, de-duplicated and ordered with
+// the primary first. Honors the admin-managed extraEmails list plus any
+// legacy emails[]/altEmail fields.
+function emailsOf(p) {
+  const seen = new Set();
+  const out = [];
+  const add = (v) => {
+    const e = String(v || "").trim();
+    const k = e.toLowerCase();
+    if (e && e.includes("@") && !seen.has(k)) { seen.add(k); out.push(e); }
+  };
+  add(p.email);
+  if (Array.isArray(p.extraEmails)) p.extraEmails.forEach(add);
+  if (Array.isArray(p.emails)) p.emails.forEach(add);
+  add(p.altEmail);
+  return out;
 }
 
 // Normalize US numbers to "+1 (AAA) BBB-CCCC" for a consistent column; leave

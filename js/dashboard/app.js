@@ -244,7 +244,7 @@ const ROUTES = {
     icon: ICONS.addressBook,
     roles: ["*"],
     group: "main",
-    loader: () => import("./directory.js?v=chat-3"),
+    loader: () => import("./directory.js?v=chat-4"),
   },
   "#/writer/draft": {
     label: "Submit a draft",
@@ -393,7 +393,7 @@ const ROUTES = {
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=topics-alt"),
+    loader: () => import("./admin.js?v=multimail"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -418,7 +418,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=topics-alt"),
+    loader: () => import("./admin.js?v=multimail"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -426,7 +426,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=topics-alt"),
+    loader: () => import("./admin.js?v=multimail"),
     mountKey: "images",
   },
   "#/admin/advanced": {
