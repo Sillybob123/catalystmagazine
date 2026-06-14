@@ -452,7 +452,7 @@ function openChat(ctx, state, person) {
   // that amount on every side so the header, message panel, and composer all
   // share one consistent edge (no stray gutter on the right) and the message
   // panel can span the full modal width.
-  const body = el("div", { class: "dm-chat-body", style: "display:flex;flex-direction:column;width:min(560px,90vw);" });
+  const body = el("div", { class: "dm-chat-body", style: "display:flex;flex-direction:column;" });
   body.innerHTML = `
     <div style="display:flex;align-items:center;gap:11px;padding:18px 24px;border-bottom:1px solid var(--hairline,#e5e7eb);">
       <span class="staff-avatar" style="background:${meta.color};width:40px;height:40px;font-size:13px;flex-shrink:0;">${esc(getInitials(person.name || person.email || "?"))}</span>

@@ -246,19 +246,18 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* Directory chat fills the modal body edge-to-edge. The negative margin
-   must exactly cancel .modal-body's padding (24px desktop, 16px mobile)
-   so the header/messages/composer share one clean edge with no gutter. */
-.dm-chat-body { margin: -24px; }
-@media (max-width: 768px) {
-  .dm-chat-body { margin: -16px; }
+   cancels .modal-body's padding (24px desktop, 16px mobile) and the width
+   reclaims that same padding on both sides, so the header/messages/composer
+   span the full modal width (≈640px) with no gutter or leftover blank space. */
+.dm-chat-body {
+  margin: -24px;
+  width: calc(100% + 48px);
 }
-
-/* Directory chat fills the modal body edge-to-edge. The negative margin
-   must exactly cancel .modal-body's padding (24px desktop, 16px mobile)
-   so the header/messages/composer share one clean edge with no gutter. */
-.dm-chat-body { margin: -24px; }
 @media (max-width: 768px) {
-  .dm-chat-body { margin: -16px; }
+  .dm-chat-body {
+    margin: -16px;
+    width: calc(100% + 32px);
+  }
 }
 
 .sidebar-footer {

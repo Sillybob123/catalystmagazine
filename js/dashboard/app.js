@@ -244,7 +244,7 @@ const ROUTES = {
     icon: ICONS.addressBook,
     roles: ["*"],
     group: "main",
-    loader: () => import("./directory.js?v=chat-2"),
+    loader: () => import("./directory.js?v=chat-3"),
   },
   "#/writer/draft": {
     label: "Submit a draft",
