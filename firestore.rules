@@ -404,8 +404,12 @@ service cloud.firestore {
     // even from admins. The participant pair is frozen after creation so a
     // thread can't be re-pointed at someone else's conversation.
     match /dm_threads/{threadId} {
+      // A not-yet-created thread (resource == null) reads as empty — the
+      // listener attaches before the first message is sent. Once the doc
+      // exists, only its two participants can read it.
       allow read: if isStaff()
-        && request.auth.uid in resource.data.participantIds;
+        && (resource == null
+            || request.auth.uid in resource.data.participantIds);
       allow create: if isStaff()
         && request.resource.data.participantIds is list
         && request.resource.data.participantIds.size() == 2
