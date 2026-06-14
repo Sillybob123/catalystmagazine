@@ -557,6 +557,24 @@ function renderSidebar() {
     byGroup.get(g).push({ hash, ...route });
   }
 
+  // For the marketing / social-media team the Planner is their single most
+  // important screen, so we pin a highlighted copy of it to the top of the
+  // Workspace group (right under Overview) instead of leaving it buried in
+  // the Marketing group further down. Admins keep the normal placement.
+  const activeRole = getActiveRole();
+  const pinPlanner = (activeRole === "marketing" || activeRole === "social_media")
+    && isRouteAllowed("#/planner", ROUTES["#/planner"]);
+  if (pinPlanner) {
+    const mainItems = byGroup.get("main") || [];
+    // Drop any normal Planner entry from its default group so it isn't listed
+    // twice, then we render the pinned version explicitly below.
+    for (const [, items] of byGroup) {
+      const i = items.findIndex((it) => it.hash === "#/planner");
+      if (i !== -1) items.splice(i, 1);
+    }
+    byGroup.set("main", mainItems);
+  }
+
   const frag = document.createDocumentFragment();
   for (const g of GROUPS) {
     const items = byGroup.get(g.id);
@@ -571,6 +589,19 @@ function renderSidebar() {
       });
       link.innerHTML = `${item.icon}<span>${item.label}</span>`;
       group.appendChild(link);
+
+      // Pin the highlighted Planner link immediately after Overview in the
+      // Workspace group for the marketing/social team.
+      if (pinPlanner && g.id === "main" && item.hash === "#/overview") {
+        const planner = ROUTES["#/planner"];
+        const plannerLink = el("a", {
+          class: "nav-link nav-link-pinned",
+          href: "#/planner",
+          "data-route": "#/planner",
+        });
+        plannerLink.innerHTML = `${planner.icon}<span>${planner.label}</span>`;
+        group.appendChild(plannerLink);
+      }
     }
     frag.appendChild(group);
   }

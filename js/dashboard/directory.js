@@ -448,24 +448,24 @@ function openChat(ctx, state, person) {
   }
 
   const meta = ROLE_META[person.role] || ROLE_META.reader;
-  const body = el("div", { style: "display:flex;flex-direction:column;gap:0;width:min(560px,86vw);" });
+  const body = el("div", { style: "display:flex;flex-direction:column;width:min(520px,88vw);margin:-4px -4px 0;" });
   body.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--hairline,#e5e7eb);">
-      <span class="staff-avatar" style="background:${meta.color};width:36px;height:36px;font-size:12px;">${esc(getInitials(person.name || person.email || "?"))}</span>
+    <div style="display:flex;align-items:center;gap:11px;padding:0 2px 14px;border-bottom:1px solid var(--hairline,#e5e7eb);">
+      <span class="staff-avatar" style="background:${meta.color};width:40px;height:40px;font-size:13px;flex-shrink:0;">${esc(getInitials(person.name || person.email || "?"))}</span>
       <span style="min-width:0;">
-        <span style="display:block;font-weight:700;font-size:14px;color:var(--ink);">${esc(person.name || person.email || "Teammate")}</span>
-        <span style="display:block;font-size:12px;color:var(--muted);">${esc(meta.label)}${person.email ? ` · ${esc(person.email)}` : ""}</span>
+        <span style="display:block;font-weight:700;font-size:15px;color:var(--ink);line-height:1.3;">${esc(person.name || person.email || "Teammate")}</span>
+        <span style="display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(meta.label)}${person.email ? ` · ${esc(person.email)}` : ""}</span>
       </span>
     </div>
-    <div id="dm-scroll" style="max-height:46vh;min-height:160px;overflow-y:auto;padding:14px 2px;display:flex;flex-direction:column;gap:8px;">
+    <div id="dm-scroll" style="height:min(48vh,380px);overflow-y:auto;padding:16px 4px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2,#f8fafc);margin:0 -4px;">
       <div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>
     </div>
-    <form id="dm-form" style="display:flex;gap:8px;align-items:flex-end;border-top:1px solid var(--hairline,#e5e7eb);padding-top:12px;">
-      <textarea id="dm-input" rows="2" placeholder="Write a message… (they'll also get it by email)" maxlength="2000" required
-                style="flex:1;resize:none;padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:12px;font-size:13.5px;font-family:inherit;line-height:1.45;"></textarea>
-      <button type="submit" class="btn btn-primary btn-sm" id="dm-send" style="min-height:44px;">Send</button>
+    <form id="dm-form" style="display:flex;gap:8px;align-items:flex-end;padding:14px 2px 2px;border-top:1px solid var(--hairline,#e5e7eb);">
+      <textarea id="dm-input" rows="1" placeholder="Write a message…" maxlength="2000" required
+                style="flex:1;resize:none;max-height:120px;padding:11px 14px;border:1px solid var(--hairline,#e5e7eb);border-radius:22px;font-size:14px;font-family:inherit;line-height:1.45;background:#fff;"></textarea>
+      <button type="submit" class="btn btn-primary" id="dm-send" style="min-height:44px;min-width:44px;border-radius:22px;padding:0 18px;flex-shrink:0;">Send</button>
     </form>
-    <div id="dm-note" style="font-size:11.5px;color:var(--muted);margin-top:6px;min-height:15px;"></div>`;
+    <div id="dm-note" style="font-size:11.5px;color:var(--muted);margin-top:8px;padding:0 4px;min-height:15px;line-height:1.4;">They'll also get an email copy of each message.</div>`;
 
   const modal = openModal({
     title: "Private message",
@@ -497,22 +497,33 @@ function openChat(ctx, state, person) {
   const renderMessages = (data) => {
     const msgs = Array.isArray(data?.messages) ? data.messages : [];
     if (!msgs.length) {
-      scrollEl.innerHTML = `<div class="empty-state" style="padding:24px 10px;">No messages yet — say hi. ${esc(person.name || "They")} will get an email copy.</div>`;
+      scrollEl.innerHTML = `
+        <div style="margin:auto;text-align:center;color:var(--muted,#6b7280);font-size:13px;line-height:1.5;padding:0 24px;">
+          No messages yet — say hi.<br>${esc(person.name?.split(" ")[0] || "They")} will get an email copy.
+        </div>`;
       return;
     }
     scrollEl.innerHTML = "";
     for (const m of msgs) {
       const mine = m.senderId === ctx.user.uid;
-      const bubble = el("div", {
-        style: `max-width:78%;align-self:${mine ? "flex-end" : "flex-start"};` +
-               `background:${mine ? "var(--accent,#0f172a)" : "var(--surface-2,#f1f5f9)"};` +
-               `color:${mine ? "#fff" : "var(--ink,#111)"};` +
-               `border-radius:${mine ? "14px 14px 4px 14px" : "14px 14px 14px 4px"};padding:8px 12px;`,
+      const row = el("div", {
+        style: `display:flex;flex-direction:column;align-items:${mine ? "flex-end" : "flex-start"};max-width:80%;align-self:${mine ? "flex-end" : "flex-start"};`,
       });
-      bubble.innerHTML = `
-        <div style="font-size:13.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${esc(m.text || "")}</div>
-        <div style="font-size:10.5px;margin-top:3px;opacity:0.65;">${esc(fmtRelative(m.at))}</div>`;
-      scrollEl.appendChild(bubble);
+      const bubble = el("div", {
+        style: `background:${mine ? "var(--accent,#0f172a)" : "#fff"};` +
+               `color:${mine ? "#fff" : "var(--ink,#111)"};` +
+               `border:${mine ? "none" : "1px solid var(--hairline,#e5e7eb)"};` +
+               `border-radius:${mine ? "16px 16px 5px 16px" : "16px 16px 16px 5px"};padding:9px 13px;` +
+               `box-shadow:0 1px 1.5px rgba(15,23,42,0.06);`,
+      });
+      bubble.innerHTML = `<div style="font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${esc(m.text || "")}</div>`;
+      const time = el("div", {
+        style: `font-size:10.5px;color:var(--muted,#94a3b8);margin:3px 4px 0;`,
+      });
+      time.textContent = fmtRelative(m.at);
+      row.appendChild(bubble);
+      row.appendChild(time);
+      scrollEl.appendChild(row);
     }
     scrollEl.scrollTop = scrollEl.scrollHeight;
   };
@@ -555,6 +566,7 @@ function openChat(ctx, state, person) {
       }, { merge: true });
 
       input.value = "";
+      input.style.height = "auto";
       noteEl.textContent = "";
 
       // Email copy — best-effort; the chat itself is the source of truth.
@@ -590,6 +602,11 @@ function openChat(ctx, state, person) {
       e.preventDefault();
       form.requestSubmit();
     }
+  });
+  // Auto-grow the composer as they type, capped by max-height.
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 120) + "px";
   });
   setTimeout(() => input.focus(), 0);
 }
