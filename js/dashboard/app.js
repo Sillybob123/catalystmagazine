@@ -142,10 +142,14 @@ const PREVIEW_USER_KEY = "catalyst.dashboard.previewUser";
 // Each person can pin the routes they use most; pins surface in a "Pinned"
 // group at the very top of the sidebar, in pin order. Stored per-uid in
 // localStorage (a personal preference, not worth a Firestore write/read).
-// Defaults: the social-media team gets the Planner auto-pinned the first
-// time they load, since that's their command center.
+//
+// Role defaults: the marketing + social-media team always get the Planner
+// pinned — it's their command center. These defaults are *guaranteed* (merged
+// in on every load regardless of saved state), so they show even in admin
+// preview and can't quietly disappear. A user's own pins stack on top.
 const PIN_KEY_PREFIX = "catalyst.dashboard.pins.";
 const DEFAULT_PINS_BY_ROLE = {
+  marketing:    ["#/planner"],
   social_media: ["#/planner"],
 };
 
@@ -156,25 +160,42 @@ function pinStorageKey() {
   return PIN_KEY_PREFIX + uid;
 }
 
+// The role-driven pins for whoever's currently active (real or previewed),
+// limited to routes that identity can actually open.
+function defaultPinsForActive() {
+  const role = getActiveRole();
+  return (DEFAULT_PINS_BY_ROLE[role] || [])
+    .filter((h) => ROUTES[h] && isRouteAllowed(h, ROUTES[h]));
+}
+
 function loadPins() {
+  let saved = [];
   try {
     const raw = localStorage.getItem(pinStorageKey());
     if (raw !== null) {
       const v = JSON.parse(raw);
-      return Array.isArray(v) ? v.filter((h) => typeof h === "string") : [];
+      if (Array.isArray(v)) saved = v.filter((h) => typeof h === "string");
     }
   } catch {}
-  // No saved pins yet → seed role defaults (only routes the role can access).
-  const role = getActiveRole();
-  const defaults = (DEFAULT_PINS_BY_ROLE[role] || [])
-    .filter((h) => ROUTES[h] && isRouteAllowed(h, ROUTES[h]));
-  if (defaults.length) savePins(defaults);
-  return defaults;
+  // Always fold in role defaults (Planner for marketing/social), defaults
+  // first, then the user's own pins — deduped. This makes the auto-pin
+  // reliable even when previewing a teammate whose localStorage isn't on
+  // this device.
+  const merged = [];
+  const seen = new Set();
+  for (const h of [...defaultPinsForActive(), ...saved]) {
+    if (!seen.has(h)) { seen.add(h); merged.push(h); }
+  }
+  return merged;
 }
 
 function savePins(pins) {
   state.pins = pins;
-  try { localStorage.setItem(pinStorageKey(), JSON.stringify(pins)); } catch {}
+  // Don't persist the role defaults — they're re-derived on load. Storing only
+  // the user's own choices keeps "default" and "chosen" cleanly separated.
+  const defaults = new Set(defaultPinsForActive());
+  const userPins = pins.filter((h) => !defaults.has(h));
+  try { localStorage.setItem(pinStorageKey(), JSON.stringify(userPins)); } catch {}
 }
 
 function isPinned(hash) { return state.pins.includes(hash); }
@@ -602,8 +623,9 @@ function isRouteAllowed(hash, route) {
 
 // ---------- sidebar ----------
 // Build one nav link, including its hover pin toggle. `pinned` controls the
-// highlighted styling and the toggle's filled/outline state.
-function buildNavLink(hash, route, { pinned } = {}) {
+// highlighted styling; `isDefault` marks a role-pinned item (Planner for
+// marketing/social) which is locked — always pinned, no unpin toggle.
+function buildNavLink(hash, route, { pinned, isDefault } = {}) {
   const link = el("a", {
     class: "nav-link" + (pinned ? " nav-link-pinned" : ""),
     href: hash,
@@ -611,9 +633,19 @@ function buildNavLink(hash, route, { pinned } = {}) {
   });
   link.innerHTML = `${route.icon}<span class="nav-link-label">${route.label}</span>`;
 
-  // Overview is the home tab — keep it un-pinnable so "Pinned" never just
-  // duplicates the thing everyone already lands on.
-  if (hash !== "#/overview") {
+  if (isDefault) {
+    // Role-pinned: show a filled, non-interactive tack so it reads as
+    // intentionally pinned, but can't be removed.
+    const badge = el("span", {
+      class: "nav-pin-toggle is-pinned is-locked",
+      title: "Pinned for your role",
+      "aria-hidden": "true",
+    });
+    badge.innerHTML = ICONS.pin;
+    link.appendChild(badge);
+  } else if (hash !== "#/overview") {
+    // Overview is the home tab — keep it un-pinnable so "Pinned" never just
+    // duplicates the thing everyone already lands on.
     const toggle = el("button", {
       type: "button",
       class: "nav-pin-toggle" + (pinned ? " is-pinned" : ""),
@@ -647,15 +679,16 @@ function renderSidebar() {
   // removed route shouldn't leave a dangling pin). Preserve pin order.
   const pinnedHashes = state.pins.filter(
     (h) => ROUTES[h] && !ROUTES[h].hidden && isRouteAllowed(h, ROUTES[h]) && h !== "#/overview");
+  const defaultPins = new Set(defaultPinsForActive());
 
   const frag = document.createDocumentFragment();
 
-  // "Pinned" group at the very top — the user's own shortcuts.
+  // "Pinned" group at the very top — role defaults (locked) + the user's own.
   if (pinnedHashes.length) {
     const group = el("div", { class: "nav-group nav-group-pinned" });
     group.appendChild(el("div", { class: "nav-group-title" }, "Pinned"));
     for (const hash of pinnedHashes) {
-      group.appendChild(buildNavLink(hash, ROUTES[hash], { pinned: true }));
+      group.appendChild(buildNavLink(hash, ROUTES[hash], { pinned: true, isDefault: defaultPins.has(hash) }));
     }
     frag.appendChild(group);
   }

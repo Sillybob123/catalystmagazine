@@ -213,6 +213,8 @@ button { font-family: inherit; cursor: pointer; }
   color: #2563eb;
 }
 .nav-pin-toggle.is-pinned .pin-glyph { fill: #2563eb; stroke: #2563eb; }
+/* Role-pinned (locked) tack — visible but not a button. */
+.nav-pin-toggle.is-locked { cursor: default; pointer-events: none; }
 
 /* Pinned group header gets a tack accent so it reads as "your shortcuts". */
 .nav-group-pinned .nav-group-title { color: #2563eb; }
