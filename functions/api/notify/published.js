@@ -24,7 +24,7 @@ import { firestoreGet, firestoreCreate, firestoreRunQuery } from "../../_utils/f
 import { buildArticleUrl } from "../../_utils/article-meta.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { articlePublishedEmail, socialPublishedEmail } from "../../_utils/reminder-emails.js";
-import { createNotification } from "../../_utils/notifications.js";
+import { createNotification, getAdminUsers } from "../../_utils/notifications.js";
 
 const ID_RE = /^[A-Za-z0-9_-]{1,200}$/;
 
@@ -162,6 +162,22 @@ export const onRequestPost = async ({ request, env }) => {
         actorName: auth.name || auth.email || "",
         actionHash: "#/writer/mine",
       }, `notif_${storyId}_published`);
+    }
+
+    // Also notify every admin's bell (the publish email already CCs admins).
+    // Skip the author + the admin who triggered it. Deduped per (story, admin).
+    const admins = await getAdminUsers(env);
+    for (const a of admins) {
+      if (!a.uid || a.uid === authorId || a.uid === auth.uid) continue;
+      await createNotification(env, {
+        recipientId: a.uid,
+        type: "published",
+        title: `Published: "${title}"`,
+        body: authorName && authorName !== "there" ? `By ${authorName}` : "",
+        actorId: auth.uid,
+        actorName: auth.name || auth.email || "",
+        actionHash: "#/admin/articles",
+      }, `notif_${storyId}_published_admin_${a.uid}`);
     }
 
     return json({ ok: true, sent: true, to: authorEmail, cc, socialTeam: socialRecipients });

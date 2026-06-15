@@ -17,7 +17,7 @@
 //    a repeat fire collides (409) and we treat that as a successful no-op, so
 //    the same event never double-notifies the same person.
 
-import { firestoreCreate } from "./firebase.js";
+import { firestoreCreate, firestoreRunQuery } from "./firebase.js";
 
 // Create a single notification for one recipient. Returns true on a fresh
 // write, false on dedupe/skip/failure. Never throws.
@@ -85,4 +85,83 @@ export async function createNotifications(env, recipientIds, fields, dedupeIdFor
     if (ok) written++;
   }
   return written;
+}
+
+// ─── email-keyed notifications ───────────────────────────────────────────────
+// Many email sites (the bot's daily reminders, task/calendar notifies) only
+// know the recipient's EMAIL, not their uid. These helpers turn an email into a
+// uid (cached per request) so those sites can mirror their email into a bell
+// notification with a one-liner.
+
+// Resolve a staff member's uid from their email. `cache` is an optional
+// Map shared across a single request (e.g. one bot run) so resolving 30
+// reminders doesn't issue 30 identical Firestore queries. Returns "" if not
+// found. Never throws.
+export async function resolveUidByEmail(env, email, cache) {
+  const key = String(email || "").trim().toLowerCase();
+  if (!key) return "";
+  if (cache && cache.has(key)) return cache.get(key);
+  let uid = "";
+  try {
+    const rows = await firestoreRunQuery(env, {
+      from: [{ collectionId: "users" }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: "email" },
+          op: "EQUAL",
+          value: { stringValue: key },
+        },
+      },
+      select: { fields: [{ fieldPath: "email" }] },
+      limit: 1,
+    });
+    uid = rows && rows.length ? rows[0].id : "";
+  } catch (err) {
+    console.warn("[notifications] resolveUidByEmail failed:", String(err?.message || err));
+  }
+  if (cache) cache.set(key, uid);
+  return uid;
+}
+
+// Create a notification for one-or-more email addresses by resolving each to a
+// uid first. Use for send sites that only carry emails. `dedupeKey`, when
+// given, is suffixed per-recipient so the same daily reminder doesn't stack.
+// Best-effort; never throws. Returns the count written.
+export async function notifyByEmail(env, emails, fields, { dedupeKey = "", cache } = {}) {
+  const list = Array.isArray(emails) ? emails : [emails];
+  const resolved = [];
+  for (const e of list) {
+    const uid = await resolveUidByEmail(env, e, cache);
+    if (uid) resolved.push(uid);
+  }
+  if (!resolved.length) return 0;
+  return createNotifications(env, resolved, fields,
+    dedupeKey ? (uid) => `${dedupeKey}_${uid}` : undefined);
+}
+
+// All admin users as { uid, email }. Used to fan admin-broadcast emails (story
+// updates, digests, admin-task reminders) into per-admin bell notifications.
+// `cache` (optional Map) memoizes the list for a request. Never throws.
+export async function getAdminUsers(env, cache) {
+  if (cache && cache.has("__admins__")) return cache.get("__admins__");
+  let admins = [];
+  try {
+    const rows = await firestoreRunQuery(env, {
+      from: [{ collectionId: "users" }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: "role" },
+          op: "EQUAL",
+          value: { stringValue: "admin" },
+        },
+      },
+      select: { fields: [{ fieldPath: "email" }] },
+      limit: 50,
+    });
+    admins = (rows || []).map((r) => ({ uid: r.id, email: r.data?.email || "" }));
+  } catch (err) {
+    console.warn("[notifications] getAdminUsers failed:", String(err?.message || err));
+  }
+  if (cache) cache.set("__admins__", admins);
+  return admins;
 }

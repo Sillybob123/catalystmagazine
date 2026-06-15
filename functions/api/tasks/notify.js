@@ -31,6 +31,7 @@ import { firestoreCreate, firestoreGet, firestoreUpdate } from "../../_utils/fir
 import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { taskAssignedEmail } from "../../_utils/task-emails.js";
+import { notifyByEmail } from "../../_utils/notifications.js";
 
 const ALLOWED_ACTIONS = new Set(["assigned", "completed", "deleted"]);
 
@@ -123,6 +124,7 @@ async function handleAssigned({ env, body, taskId, siteUrl }) {
   // dashboard. If we'd hard-failed on a single bad address, the mirror
   // would still be created (above) and the rest of the assignment would
   // silently lose its first-touch email.
+  const notifCache = new Map();
   const emailResults = await Promise.all(
     validAssignees.map(async (a) => {
       try {
@@ -132,6 +134,13 @@ async function handleAssigned({ env, body, taskId, siteUrl }) {
           siteUrl,
         });
         await sendEmail(env, { to: a.email, subject, html, text });
+        // Mirror to the assignee's in-app bell (uid resolved from email).
+        await notifyByEmail(env, [a.email], {
+          type: "assignment",
+          title: `New task: ${title}`,
+          body: creatorName ? `Assigned by ${creatorName}` : "",
+          actionHash: "#/tasks",
+        }, { dedupeKey: `notif_taskassigned_${taskId}`, cache: notifCache });
         return { email: a.email, ok: true };
       } catch (err) {
         console.error(`[tasks/notify] assigned email to ${a.email} failed:`, err.message);

@@ -22,7 +22,7 @@
 import { json, badRequest, serverError } from "../../_utils/http.js";
 import { firestoreGet, firestoreCreate, firestoreUpdate } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
-import { createNotification } from "../../_utils/notifications.js";
+import { createNotification, getAdminUsers } from "../../_utils/notifications.js";
 import { sendEmail } from "../../_utils/resend.js";
 import {
   adminProposalPendingEmail,
@@ -222,8 +222,32 @@ async function createEventNotification(env, { type, project, auth, logId }) {
     recipientId = project?.authorId || "";
     actionHash = "#/pipeline/mine";
     text = `Your deadline-change request on "${title}" was reviewed`;
+  } else if (type === "proposal-pending" || type === "writing-complete" || type === "deadline-change-requested") {
+    // Admin-broadcast events — notify every admin's bell (mirrors the email
+    // that already goes to the admin list). This is the "admins get a
+    // notification when someone updates their story" case.
+    const adminTitle = {
+      "proposal-pending": `New proposal needs review: "${title}"`,
+      "writing-complete": `Writing complete on "${title}"`,
+      "deadline-change-requested": `Deadline-change requested on "${title}"`,
+    }[type];
+    const adminHash = type === "deadline-change-requested" ? "#/admin/tasks" : "#/admin/articles";
+    const admins = await getAdminUsers(env);
+    for (const a of admins) {
+      if (!a.uid || a.uid === auth?.uid) continue;
+      await createNotification(env, {
+        recipientId: a.uid,
+        type: "event",
+        eventType: type,
+        title: adminTitle,
+        actorId: auth?.uid || "",
+        actorName: auth?.name || auth?.email || "",
+        actionHash: adminHash,
+      }, `notif_${logId}_${a.uid}`);
+    }
+    return;
   } else {
-    return; // admin-broadcast types — no per-user bell in v1
+    return; // activity-update etc. — handled separately, no bell
   }
 
   if (!recipientId) return;

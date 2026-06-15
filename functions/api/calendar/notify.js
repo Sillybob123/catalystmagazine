@@ -16,6 +16,7 @@
 import { json, badRequest, serverError, isValidEmail } from "../../_utils/http.js";
 import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
+import { notifyByEmail } from "../../_utils/notifications.js";
 
 const MAX_PARTICIPANTS = 25;
 
@@ -69,6 +70,7 @@ export const onRequestPost = async ({ request, env }) => {
     const shared = recipients.length > 1;
 
     const result = { ok: true, sent: 0, errors: [] };
+    const notifCache = new Map();
 
     for (const person of recipients) {
       const isCreator = createdByEmail && person.email === createdByEmail;
@@ -84,6 +86,16 @@ export const onRequestPost = async ({ request, env }) => {
           html,
           replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
         });
+        // Mirror to the participant's bell (skip the creator — they made it).
+        if (!isCreator) {
+          await notifyByEmail(env, [person.email], {
+            type: "event",
+            eventType: "calendar",
+            title: `${createdByName} added you to: ${title}`,
+            body: `Scheduled for ${niceDate}.`,
+            actionHash: "#/overview",
+          }, { dedupeKey: `notif_calsched_${body.taskId || title}_${date}`, cache: notifCache });
+        }
         result.sent++;
       } catch (err) {
         result.errors.push({ email: person.email, error: err?.message || String(err) });

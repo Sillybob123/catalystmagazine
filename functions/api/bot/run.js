@@ -50,6 +50,24 @@ import {
   taskDeadlineSoonEmail,
   taskDeadlineTodayEmail,
 } from "../../_utils/task-emails.js";
+import {
+  createNotification,
+  notifyByEmail,
+  getAdminUsers,
+} from "../../_utils/notifications.js";
+
+// Today's date in the digest timezone (YYYY-MM-DD) — used to scope daily
+// notification dedupe keys so a reminder that legitimately re-fires tomorrow
+// creates a fresh bell entry, but the same day's cron re-run is a no-op.
+function todayKey() {
+  try {
+    return new Date().toLocaleDateString("en-CA", { timeZone: DIGEST_TIMEZONE });
+  } catch { return new Date().toISOString().slice(0, 10); }
+}
+
+// Per-request cache shared by the email→uid + admin-list lookups so a single
+// bot run doesn't re-query Firestore for the same person repeatedly.
+const _notifCache = () => new Map();
 
 const DEFAULT_ADMIN_RECIPIENTS = [
   "bendoryair@gmail.com",
@@ -79,6 +97,10 @@ export const onRequestPost = async ({ request, env }) => {
     const mode = body.mode || "auto";
     const dryRun = !!body.dryRun;
     const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
+    // Shared across this run for email→uid + admin lookups when mirroring
+    // emails into in-app notifications.
+    const notifCache = _notifCache();
+    const dayKey = todayKey();
 
     // ── Ping mode — no project data, just proves cron→Resend pipeline works ──
     if (mode === "ping") {
@@ -266,6 +288,20 @@ export const onRequestPost = async ({ request, env }) => {
               daysUntilDeadline: r.daysUntilDeadline ?? null,
               projectActivityAtSend: lastActivityIso(r.project),
             });
+            // Mirror the reminder into the recipient's bell. recipient.id is
+            // the uid (built from the users list). Dedupe per (project, kind,
+            // day) so the daily cron doesn't stack duplicates.
+            if (recipient.id) {
+              await createNotification(env, {
+                recipientId: recipient.id,
+                type: "event",
+                eventType: "reminder",
+                title: r.subject || "A Catalyst reminder",
+                body: reasonForReminder(r) || "",
+                actorName: "Catalyst bot",
+                actionHash: r.editor ? "#/editor/queue" : "#/pipeline/mine",
+              }, `notif_reminder_${r.projectId}_${r.kind}_${dayKey}_${recipient.id}`);
+            }
             if (r.editor) result.editorReminders.sent++;
             else result.writerReminders.sent++;
           } catch (err) {
@@ -315,6 +351,20 @@ export const onRequestPost = async ({ request, env }) => {
                 daysUntilDeadline: item.daysUntilDeadline ?? null,
                 projectActivityAtSend: lastActivityIso(item.project),
               });
+            }
+            // One bell notification for the bundled email. Dedupe per
+            // (recipient, day) so the daily cron doesn't stack duplicates.
+            if (b.recipient.id) {
+              const n = (b.items || []).length;
+              await createNotification(env, {
+                recipientId: b.recipient.id,
+                type: "event",
+                eventType: "reminder",
+                title: b.subject || `You have ${n} item${n === 1 ? "" : "s"} needing attention`,
+                body: htmlToPlainPreview(b.html, 140),
+                actorName: "Catalyst bot",
+                actionHash: b.role === "editor" ? "#/editor/queue" : "#/pipeline/mine",
+              }, `notif_reminder_bundle_${dayKey}_${b.recipient.id}`);
             }
             result.bundled.sent++;
           } catch (err) {
@@ -388,6 +438,20 @@ export const onRequestPost = async ({ request, env }) => {
               daysUntilDeadline: null,
               projectActivityAtSend: null,
             });
+            // Mirror to each admin's bell. Dedupe per (project, kind, admin, day).
+            const admins = await getAdminUsers(env, notifCache);
+            for (const a of admins) {
+              if (!a.uid) continue;
+              await createNotification(env, {
+                recipientId: a.uid,
+                type: "event",
+                eventType: "admin-task",
+                title: r.subject || "An admin task needs attention",
+                body: `Pending ${r.task.ageDays ?? "?"} day(s).`,
+                actorName: "Catalyst bot",
+                actionHash: "#/admin/tasks",
+              }, `notif_admintask_${r.projectId}_${r.kind}_${dayKey}_${a.uid}`);
+            }
             result.adminTaskReminders.sent++;
           } catch (err) {
             result.adminTaskReminders.errors.push({
@@ -501,6 +565,15 @@ export const onRequestPost = async ({ request, env }) => {
                 recipientEmail: a.email,
                 sentAt: now.toISOString(),
               });
+              // Mirror to the assignee's bell (uid resolved from email).
+              await notifyByEmail(env, [a.email], {
+                type: "event",
+                eventType: "task-reminder",
+                title: subject || `Task due: ${job.task.title}`,
+                body: job.daysUntil === 0 ? "Due today." : `Due in ${job.daysUntil} day(s).`,
+                actorName: "Catalyst bot",
+                actionHash: "#/tasks",
+              }, { dedupeKey: `notif_task_${job.task.taskId}_${job.kind}_${dayKey}`, cache: notifCache });
               result.taskReminders.sent++;
             } catch (err) {
               result.taskReminders.errors.push({
@@ -604,6 +677,22 @@ export const onRequestPost = async ({ request, env }) => {
                 daysUntilDeadline: null,
                 projectActivityAtSend: null,
               });
+              // Mirror to the participant's bell. Prefer a known uid, else
+              // resolve from email.
+              const calNotif = {
+                type: "event",
+                eventType: "calendar-reminder",
+                title: subject || `Calendar: ${job.task.title}`,
+                body: job.kind === "calendar-today" ? "Scheduled for today." : `Coming up on ${job.task.date}.`,
+                actorName: "Catalyst bot",
+                actionHash: "#/overview",
+              };
+              const calDedupe = `notif_caltask_${job.task.taskId}_${job.kind}_${dayKey}`;
+              if (person.id) {
+                await createNotification(env, { ...calNotif, recipientId: person.id }, `${calDedupe}_${person.id}`);
+              } else {
+                await notifyByEmail(env, [person.email], calNotif, { dedupeKey: calDedupe, cache: notifCache });
+              }
               result.calendarTasks.sent++;
             } catch (err) {
               result.calendarTasks.errors.push({
@@ -692,6 +781,21 @@ export const onRequestPost = async ({ request, env }) => {
                 daysUntilDeadline: 0,
                 projectActivityAtSend: null,
               });
+              // Mirror to the owner's bell. Prefer the known uid, else email.
+              const socNotif = {
+                type: "assignment",
+                eventType: "social-due",
+                title: subject || `Social post due today: ${a.articleTitle || "a post"}`,
+                body: `Due ${a.deadline}.`,
+                actorName: "Catalyst bot",
+                actionHash: "#/planner",
+              };
+              const socDedupe = `notif_socialdue_${a.id}_${dayKey}`;
+              if (owner.id) {
+                await createNotification(env, { ...socNotif, recipientId: owner.id }, `${socDedupe}_${owner.id}`);
+              } else {
+                await notifyByEmail(env, [email], socNotif, { dedupeKey: socDedupe, cache: notifCache });
+              }
               result.socialPosts.sent++;
             } catch (err) {
               result.socialPosts.errors.push({
@@ -772,6 +876,21 @@ export const onRequestPost = async ({ request, env }) => {
             html,
             replyTo: env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
           });
+          // Mirror the weekly digest to each admin's bell. Dedupe per (admin,
+          // day) so a same-day re-run doesn't duplicate.
+          const digestAdmins = await getAdminUsers(env, notifCache);
+          for (const a of digestAdmins) {
+            if (!a.uid) continue;
+            await createNotification(env, {
+              recipientId: a.uid,
+              type: "event",
+              eventType: "digest",
+              title: subject || "Your weekly Catalyst digest",
+              body: "The Saturday newsroom digest is ready.",
+              actorName: "Catalyst bot",
+              actionHash: "#/overview",
+            }, `notif_digest_${dayKey}_${a.uid}`);
+          }
           result.adminDigest.sent = true;
         } catch (err) {
           result.adminDigest.error = err?.message || String(err);
