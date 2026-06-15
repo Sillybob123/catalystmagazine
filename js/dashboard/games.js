@@ -215,6 +215,19 @@ Output ONLY a single JSON object, no prose, in EXACTLY this shape:
   ]
 }
 
+CRITICAL — the output must be VALID, PARSEABLE JSON (it is fed straight into JSON.parse). Follow these rules exactly or it will be rejected:
+- Output the raw JSON only. No markdown, no \`\`\`json fences, no commentary before or after.
+- Every double-quote that appears INSIDE a string value must be escaped as \\". This is the #1 cause of failures. For example, a quoted phrase in a question must be written:
+    "prompt": "The \\"Maxwell's demon\\" thought experiment violates which principle?"
+  NOT:
+    "prompt": "The "Maxwell's demon" thought experiment violates which principle?"
+  (The second one breaks the JSON.) If you'd rather avoid escaping, use single quotes or curly quotes (e.g. 'rigid' or “rigid”) around phrases instead of straight double-quotes.
+- Apostrophes (Newton's, Maxwell's) are fine as-is — only the " character needs escaping.
+- No trailing commas after the last item in an array or object.
+- "correct" must be a plain integer 0–3 (the index of the right option), not a string.
+- "options" must always be an array of exactly 4 strings.
+- Use straight ASCII quotes for the JSON structure itself; do not let autocorrect turn the structural quotes into curly quotes.
+
 ARTICLE METADATA:
 Title: __TITLE__
 Author: __AUTHOR__
@@ -529,7 +542,7 @@ function parseGameJson(raw) {
   try {
     data = JSON.parse(s);
   } catch (err) {
-    throw new Error("That doesn't look like valid JSON. Check for missing quotes or commas.");
+    throw new Error("That doesn't look like valid JSON. The usual cause is an un-escaped double-quote inside a question — e.g. \"the \"rigid\" idea\". Every \" inside a value must be written as \\\" (or use 'single' / curly quotes instead). Also check for trailing commas.");
   }
   if (!data || typeof data !== "object") throw new Error("Expected a JSON object at the top level.");
   if (!Array.isArray(data.questions)) throw new Error("Missing a 'questions' array.");
