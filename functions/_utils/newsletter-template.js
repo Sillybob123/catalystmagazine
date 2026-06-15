@@ -708,7 +708,7 @@ export function buildInboxNewsletter({
 
           <!-- Sign-off -->
           <tr>
-            <td style="padding:4px 36px 28px 36px;">
+            <td class="wrap-pad" style="padding:4px 36px 28px 36px;">
               <p style="margin:0;font-size:15px;line-height:1.6;color:#424245;font-family:Georgia,'Times New Roman',serif;">Thanks for reading,<br><strong style="color:#1d1d1f;">The Catalyst Team</strong></p>
             </td>
           </tr>
