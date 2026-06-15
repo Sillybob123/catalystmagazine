@@ -72,7 +72,7 @@ async function mountBuilder(ctx, container) {
               <input type="checkbox" id="f-brain-teaser" style="margin-top:2px;width:18px;height:18px;flex:none;cursor:pointer;">
               <span>
                 Include the brain teaser
-                <span class="hint" style="display:block;margin-top:2px;font-weight:400;">Adds a "Catalyst Riddle" block at the very bottom of the newsletter that links to <a href="/brain-teaser" target="_blank" rel="noopener">/brain-teaser</a>. Change the riddle on that page whenever you want.</span>
+                <span class="hint" style="display:block;margin-top:2px;font-weight:400;">Adds a "Catalyst Vault" block at the very bottom — the four puzzle clues plus a link to <a href="/brain-teaser" target="_blank" rel="noopener">/brain-teaser</a>. Update the puzzle on that page (and these clues in the template) whenever you want.</span>
               </span>
             </label>
           </div>

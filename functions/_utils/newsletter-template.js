@@ -399,24 +399,42 @@ function renderBookReviewSectionInbox(bookReviews, siteUrl) {
     </table>`;
 }
 
-// Inbox-template brain-teaser block. Same visual register as
-// renderBookReviewSectionInbox — no card, no colored fill, no button. Just a
-// hairline divider, an eyebrow, one serif sentence, and a single text link to
-// /brain-teaser. Keeping it to a single plain link is deliberate: a colored
-// pill button here is exactly the "promo CTA" signal Gmail's Promotions
-// classifier keys on, so the inbox theme stays text-link only.
+// The current "Catalyst Vault" puzzle — four dial clues, in order. Mirrors the
+// puzzle on /brain-teaser. When the puzzle on that page changes, update these
+// four lines too so the newsletter teaser matches what readers will see.
+const BRAIN_TEASER_CLUES = [
+  "Days in a week, notes in an octave, wonders of the ancient world — all count to the same digit.",
+  "The largest single digit whose square's digits add back to the digit itself.",
+  "The smallest “perfect” number — equal to the sum of the divisors beneath it.",
+  "Both two squared, and the number of sides on a square.",
+];
+
+// Inbox-template brain-teaser block. Now teases the actual puzzle (the four
+// dial clues) so curiosity drives the click — without breaking inbox
+// placement. Still NO card, NO colored fill, NO button: just a hairline
+// divider, an eyebrow, a one-line setup, the four clues as plain numbered
+// text, and a single underlined text link. Stacked containers / pill buttons /
+// colored panels are the exact "promo" signature Gmail's Promotions classifier
+// keys on, so we deliberately keep this as a column of plain text.
 function renderBrainTeaserInbox(siteUrl) {
   const sans = "Arial,Helvetica,sans-serif";
   const serif = "Georgia,'Times New Roman',serif";
   const href = `${siteUrl}/brain-teaser`;
+  const clueRows = BRAIN_TEASER_CLUES.map((c, i) => `
+          <p style="margin:0 0 7px 0;font-size:14px;line-height:1.55;color:#424245;font-family:${serif};">
+            <span style="color:#6e6e73;font-family:${sans};font-weight:700;">${i + 1}.</span>&nbsp; ${esc(c)}
+          </p>`).join("");
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="padding:6px 0 0 0;">
           <div style="height:1px;background:#e8e8ed;font-size:1px;line-height:1px;margin:0 0 18px 0;">&nbsp;</div>
-          <p style="margin:0 0 4px 0;font-size:11px;font-weight:700;letter-spacing:0.18em;color:#6e6e73;text-transform:uppercase;font-family:${sans};">One more thing — the Catalyst Riddle</p>
-          <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#424245;font-family:${serif};">We post a new riddle every couple of weeks. Solve this one and you'll earn your place in the Winners' Lounge.</p>
-          <a href="${esc(href)}" style="font-size:13px;color:#1d1d1f;font-family:${sans};text-decoration:underline;font-weight:600;">Try this week's riddle &rarr;</a>
+          <p style="margin:0 0 4px 0;font-size:11px;font-weight:700;letter-spacing:0.18em;color:#6e6e73;text-transform:uppercase;font-family:${sans};">One more thing — the Catalyst Vault</p>
+          <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#424245;font-family:${serif};">Four clues, each a single digit. Put them in order and you have the four-digit code that opens the vault. Think you can crack it?</p>
+          ${clueRows}
+          <p style="margin:14px 0 0 0;">
+            <a href="${esc(href)}" style="font-size:13px;color:#1d1d1f;font-family:${sans};text-decoration:underline;font-weight:600;">Enter your code and see if you cracked it &rarr;</a>
+          </p>
         </td>
       </tr>
     </table>`;
@@ -426,16 +444,24 @@ function renderBrainTeaserInbox(siteUrl) {
 // register of the classic article cards so it reads as a deliberate "feature"
 // at the foot of the issue.
 function renderBrainTeaserClassic(siteUrl) {
+  const sans = "-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif";
   const href = `${siteUrl}/brain-teaser`;
+  const clueRows = BRAIN_TEASER_CLUES.map((c, i) => `
+          <p style="margin:0 0 7px 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};font-family:${sans};">
+            <span style="color:${COLORS.muted};font-weight:700;">${i + 1}.</span>&nbsp; ${esc(c)}
+          </p>`).join("");
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="margin:0;border:1px solid ${COLORS.hairline};border-radius:16px;overflow:hidden;background:#fbfaf6;">
       <tr>
         <td style="padding:22px 26px 22px 26px;">
-          <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:8px;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">The Catalyst Riddle</div>
-          <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:1.25;color:${COLORS.ink};font-weight:700;margin-bottom:6px;">Can you solve this week's riddle?</div>
-          <p style="margin:0 0 14px 0;font-size:14px;line-height:1.6;color:${COLORS.inkSoft};font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">A fresh riddle every couple of weeks. Solve it and earn your place in the Winners' Lounge.</p>
-          <a href="${esc(href)}" style="font-size:14px;color:${COLORS.ink};text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">Try this week's riddle &rarr;</a>
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:8px;text-transform:uppercase;font-family:${sans};">The Catalyst Vault</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:1.25;color:${COLORS.ink};font-weight:700;margin-bottom:6px;">Can you crack this week's code?</div>
+          <p style="margin:0 0 14px 0;font-size:14px;line-height:1.6;color:${COLORS.inkSoft};font-family:${sans};">Four clues, each a single digit. Put them in order for the four-digit code that opens the vault:</p>
+          ${clueRows}
+          <p style="margin:16px 0 0 0;">
+            <a href="${esc(href)}" style="font-size:14px;color:${COLORS.ink};text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:${sans};">Enter your code and see if you cracked it &rarr;</a>
+          </p>
         </td>
       </tr>
     </table>`;
@@ -444,9 +470,10 @@ function renderBrainTeaserClassic(siteUrl) {
 // Append a brain-teaser section to the running plain-text line array.
 function appendBrainTeaserText(lines, siteUrl) {
   lines.push("---");
-  lines.push("THE CATALYST RIDDLE");
-  lines.push("We post a new riddle every couple of weeks. Solve this one and earn your place in the Winners' Lounge.");
-  lines.push(`Try it: ${siteUrl}/brain-teaser`);
+  lines.push("ONE MORE THING — THE CATALYST VAULT");
+  lines.push("Four clues, each a single digit. Put them in order for the four-digit code that opens the vault:");
+  BRAIN_TEASER_CLUES.forEach((c, i) => lines.push(`  ${i + 1}. ${c}`));
+  lines.push(`Enter your code and see if you cracked it: ${siteUrl}/brain-teaser`);
   lines.push("");
 }
 
