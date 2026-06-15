@@ -26,6 +26,9 @@ export function buildNewsletter({
   // "From The Catalyst Reviews" block at the bottom of the issue, separate from the
   // editorial article cards above.
   bookReviews = [],
+  // When true, append a "Catalyst Riddle" card at the bottom that links to
+  // /brain-teaser. Opt-in per issue from the newsletter builder.
+  brainTeaser = false,
   siteUrl = "https://www.catalyst-magazine.com",
   unsubscribeUrl = null,
   recipientEmail = null,
@@ -33,6 +36,7 @@ export function buildNewsletter({
 }) {
   const cardHtml = articles.map((a, i) => articleCard(a, siteUrl, i === 0)).join("");
   const bookReviewSection = renderBookReviewSection(bookReviews, siteUrl);
+  const brainTeaserSection = brainTeaser ? renderBrainTeaserClassic(siteUrl) : "";
   const unsub = unsubscribeUrl
     ? `<a href="${esc(unsubscribeUrl)}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`
     : `<a href="${esc(siteUrl)}/api/unsubscribe/${encodeURIComponent(recipientEmail || "__RECIPIENT__")}" style="color:${COLORS.muted};text-decoration:underline;">Unsubscribe</a>`;
@@ -121,6 +125,14 @@ export function buildNewsletter({
           <tr>
             <td class="px-40" style="padding:8px 40px 24px 40px;">
               ${bookReviewSection}
+            </td>
+          </tr>` : ""}
+
+          ${brainTeaserSection ? `
+          <!-- Brain teaser — opt-in engagement card at the foot of the issue. -->
+          <tr>
+            <td class="px-40" style="padding:8px 40px 24px 40px;">
+              ${brainTeaserSection}
             </td>
           </tr>` : ""}
 
@@ -387,6 +399,57 @@ function renderBookReviewSectionInbox(bookReviews, siteUrl) {
     </table>`;
 }
 
+// Inbox-template brain-teaser block. Same visual register as
+// renderBookReviewSectionInbox — no card, no colored fill, no button. Just a
+// hairline divider, an eyebrow, one serif sentence, and a single text link to
+// /brain-teaser. Keeping it to a single plain link is deliberate: a colored
+// pill button here is exactly the "promo CTA" signal Gmail's Promotions
+// classifier keys on, so the inbox theme stays text-link only.
+function renderBrainTeaserInbox(siteUrl) {
+  const sans = "Arial,Helvetica,sans-serif";
+  const serif = "Georgia,'Times New Roman',serif";
+  const href = `${siteUrl}/brain-teaser`;
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="padding:6px 0 0 0;">
+          <div style="height:1px;background:#e8e8ed;font-size:1px;line-height:1px;margin:0 0 18px 0;">&nbsp;</div>
+          <p style="margin:0 0 4px 0;font-size:11px;font-weight:700;letter-spacing:0.18em;color:#6e6e73;text-transform:uppercase;font-family:${sans};">One more thing — the Catalyst Riddle</p>
+          <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#424245;font-family:${serif};">We post a new riddle every couple of weeks. Solve this one and you'll earn your place in the Winners' Lounge.</p>
+          <a href="${esc(href)}" style="font-size:13px;color:#1d1d1f;font-family:${sans};text-decoration:underline;font-weight:600;">Try this week's riddle &rarr;</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+// Classic-template brain-teaser block. Matches the bordered, rounded card
+// register of the classic article cards so it reads as a deliberate "feature"
+// at the foot of the issue.
+function renderBrainTeaserClassic(siteUrl) {
+  const href = `${siteUrl}/brain-teaser`;
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="margin:0;border:1px solid ${COLORS.hairline};border-radius:16px;overflow:hidden;background:#fbfaf6;">
+      <tr>
+        <td style="padding:22px 26px 22px 26px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};margin-bottom:8px;text-transform:uppercase;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">The Catalyst Riddle</div>
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:1.25;color:${COLORS.ink};font-weight:700;margin-bottom:6px;">Can you solve this week's riddle?</div>
+          <p style="margin:0 0 14px 0;font-size:14px;line-height:1.6;color:${COLORS.inkSoft};font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">A fresh riddle every couple of weeks. Solve it and earn your place in the Winners' Lounge.</p>
+          <a href="${esc(href)}" style="font-size:14px;color:${COLORS.ink};text-decoration:underline;font-weight:600;letter-spacing:0.01em;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Helvetica,Arial,sans-serif;">Try this week's riddle &rarr;</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
+// Append a brain-teaser section to the running plain-text line array.
+function appendBrainTeaserText(lines, siteUrl) {
+  lines.push("---");
+  lines.push("THE CATALYST RIDDLE");
+  lines.push("We post a new riddle every couple of weeks. Solve this one and earn your place in the Winners' Lounge.");
+  lines.push(`Try it: ${siteUrl}/brain-teaser`);
+  lines.push("");
+}
+
 // Append a "From The Catalyst Reviews" plain-text section to the running line array.
 // No-op when bookReviews is empty so callers can call it unconditionally.
 function appendBookReviewsText(lines, bookReviews, siteUrl) {
@@ -428,6 +491,9 @@ export function buildInboxNewsletter({
   articles = [],
   // 0–2 book reviews; rendered as a "From The Catalyst Reviews" block under the articles.
   bookReviews = [],
+  // When true, append a "Catalyst Riddle" block at the very bottom that links
+  // to /brain-teaser. Opt-in per issue from the newsletter builder.
+  brainTeaser = false,
   siteUrl = "https://www.catalyst-magazine.com",
   unsubscribeUrl = null,
   recipientEmail = null,
@@ -451,6 +517,10 @@ export function buildInboxNewsletter({
   // links" pattern. Stacked containers/buttons are the exact signal Gmail's
   // Promotions classifier keys on, so the inbox theme avoids them entirely.
   const bookReviewSection = renderBookReviewSectionInbox(bookReviews, siteUrl);
+
+  // Optional brain-teaser block — sits below everything else, just above the
+  // sign-off. Inbox-safe (hairline + single text link, no button/colored fill).
+  const brainTeaserSection = brainTeaser ? renderBrainTeaserInbox(siteUrl) : "";
 
   function heroBlock(a) {
     if (!a) return "";
@@ -601,6 +671,14 @@ export function buildInboxNewsletter({
             </td>
           </tr>` : ""}
 
+          ${brainTeaserSection ? `
+          <!-- Brain teaser — opt-in engagement block at the foot of the issue. -->
+          <tr>
+            <td class="wrap-pad" style="padding:8px 36px 16px 36px;">
+              ${brainTeaserSection}
+            </td>
+          </tr>` : ""}
+
           <!-- Sign-off -->
           <tr>
             <td style="padding:4px 36px 28px 36px;">
@@ -642,6 +720,7 @@ export function buildNewsletterText({
   intro = "Here is the latest reporting from our team of student writers.",
   articles = [],
   bookReviews = [],
+  brainTeaser = false,
   siteUrl = "https://www.catalyst-magazine.com",
   recipientEmail = null,
   recipientFirstName = null,
@@ -668,6 +747,7 @@ export function buildNewsletterText({
   });
 
   appendBookReviewsText(lines, bookReviews, siteUrl);
+  if (brainTeaser) appendBrainTeaserText(lines, siteUrl);
 
   lines.push(`More stories: ${siteUrl}/articles`);
   lines.push("");
@@ -684,6 +764,7 @@ export function buildInboxNewsletterText({
   intro = "",
   articles = [],
   bookReviews = [],
+  brainTeaser = false,
   siteUrl = "https://www.catalyst-magazine.com",
   recipientEmail = null,
   recipientFirstName = null,
@@ -711,6 +792,7 @@ export function buildInboxNewsletterText({
   });
 
   appendBookReviewsText(lines, bookReviews, siteUrl);
+  if (brainTeaser) appendBrainTeaserText(lines, siteUrl);
 
   lines.push("Thanks for reading,");
   lines.push("The Catalyst Team");

@@ -67,6 +67,15 @@ async function mountBuilder(ctx, container) {
             <label class="label">Intro paragraph</label>
             <textarea class="textarea" id="f-intro" rows="3">Here is the latest reporting from our team of student writers. Tap any card to read the full piece.</textarea>
           </div>
+          <div class="field">
+            <label class="label" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-weight:500;">
+              <input type="checkbox" id="f-brain-teaser" style="margin-top:2px;width:18px;height:18px;flex:none;cursor:pointer;">
+              <span>
+                Include the brain teaser
+                <span class="hint" style="display:block;margin-top:2px;font-weight:400;">Adds a "Catalyst Riddle" block at the very bottom of the newsletter that links to <a href="/brain-teaser" target="_blank" rel="noopener">/brain-teaser</a>. Change the riddle on that page whenever you want.</span>
+              </span>
+            </label>
+          </div>
           <div id="builder-status" class="hint"></div>
           <div class="card" style="margin-top:20px;background:var(--surface-2);">
             <div class="card-body">
@@ -119,6 +128,7 @@ async function mountBuilder(ctx, container) {
     subject: card.querySelector("#f-subject"),
     headline: card.querySelector("#f-headline"),
     intro: card.querySelector("#f-intro"),
+    brainTeaser: card.querySelector("#f-brain-teaser"),
     status: card.querySelector("#builder-status"),
     picker: card.querySelector("#article-picker"),
     reviewPicker: card.querySelector("#review-picker"),
@@ -238,6 +248,7 @@ async function mountBuilder(ctx, container) {
           subject: els.subject.value,
           headline,
           intro: els.intro.value,
+          brainTeaser: els.brainTeaser.checked,
           theme: activeTheme,
         }),
       });
@@ -271,6 +282,7 @@ async function mountBuilder(ctx, container) {
     els.headline.addEventListener(evt, debounced(regenerate, 600));
     els.intro.addEventListener(evt, debounced(regenerate, 600));
   });
+  els.brainTeaser.addEventListener("change", regenerate);
 
   // ----- Article picker wiring -----
   function renderPicker() {
@@ -396,6 +408,7 @@ async function mountBuilder(ctx, container) {
       intro: els.intro.value.trim(),
       articles: currentArticles,
       bookReviews: currentBookReviews,
+      brainTeaser: els.brainTeaser.checked,
       siteUrl: "https://www.catalyst-magazine.com",
     };
   }

@@ -30,6 +30,7 @@ export const onRequestPost = async ({ request, env }) => {
     const subject = body.subject || "New from The Catalyst";
     const headline = body.headline || "New Stories From The Catalyst";
     const intro = body.intro || (theme === "inbox" ? "" : "Here is the latest reporting from our team of student writers. Tap any card to read the full piece.");
+    const brainTeaser = body.brainTeaser === true;
     const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
 
     let articles;
@@ -85,6 +86,7 @@ export const onRequestPost = async ({ request, env }) => {
           intro,
           articles: slicedArticles,
           bookReviews,
+          brainTeaser,
           siteUrl,
           recipientFirstName: "Reader",
         })
@@ -95,11 +97,12 @@ export const onRequestPost = async ({ request, env }) => {
           intro,
           articles: slicedArticles,
           bookReviews,
+          brainTeaser,
           siteUrl,
           recipientFirstName: "Reader",
         });
 
-    return json({ ok: true, html, subject, articles, bookReviews, theme });
+    return json({ ok: true, html, subject, articles, bookReviews, brainTeaser, theme });
   } catch (err) {
     return serverError(err);
   }
