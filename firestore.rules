@@ -378,6 +378,16 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ---------- public site settings ----------
+    // Small admin-managed config the public site reads (e.g. articlesHero —
+    // the optional override image behind the Articles page hero). Publicly
+    // readable so the static site can fetch it via the Firestore REST API;
+    // only admins can change it.
+    match /site_settings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     // ---------- staff announcements ----------
     // Admin-authored alert banners shown at the top of every staff member's
     // dashboard Overview ("meeting today — Zoom link", "fill out the

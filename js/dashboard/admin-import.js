@@ -5,11 +5,14 @@
 // We parse it with a state machine (no external deps) and map the columns we
 // care about into Catalyst's `stories` schema.
 
-import { db } from "../firebase-config.js";
+import { db, storage } from "../firebase-config.js";
 import {
   collection, addDoc, query, where, getDocs, orderBy, limit,
-  doc, updateDoc, deleteDoc, Timestamp,
+  doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  ref as storageRef, uploadBytesResumable, getDownloadURL,
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 
 // A user is "recently joined" if their account was created within this many
@@ -37,6 +40,14 @@ const TOOLS = [
     danger: "writes",
     iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
     mount: mountAnnounceTool,
+  },
+  {
+    id: "hero",
+    label: "Homepage hero image",
+    summary: "Override the big image behind the Articles page hero. Defaults to the newest published story's cover.",
+    danger: "writes",
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>`,
+    mount: mountHeroTool,
   },
   {
     id: "import",
@@ -192,6 +203,209 @@ function paneHeader(title, sub) {
       <h2 class="adv-pane-title">${esc(title)}</h2>
       ${sub ? `<p class="adv-pane-sub">${sub}</p>` : ""}
     </header>`;
+}
+
+// ─── Homepage hero image ─────────────────────────────────────────────────────
+// Override the big backdrop image behind the Articles page hero
+// ("Stories that move science forward"). The default is the newest published
+// story's cover; an admin can pin any image here instead — paste a URL or
+// upload a file. Stored at site_settings/articlesHero.{image}. The public
+// page (js/articles-new.js) reads this doc and prefers it over the default.
+const HERO_SETTINGS_PATH = ["site_settings", "articlesHero"];
+
+function mountHeroTool(ctx, root) {
+  root.innerHTML = `
+    ${paneHeader("Homepage hero image", `Override the large image behind the <strong>Articles page hero</strong> ("Stories that move science forward"). By default it shows the <strong>newest published story's cover</strong> — pin a custom image here if you'd rather show something else. Paste an image URL or upload a file, then Save. Reset any time to go back to the automatic default.`)}
+    <div class="adv-pane-body" style="display:grid;gap:18px;max-width:680px;">
+
+      <div>
+        <div style="font-weight:700;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted,#6b7280);margin-bottom:8px;">Live preview</div>
+        <div id="hero-preview" style="position:relative;aspect-ratio:16/7;border-radius:12px;overflow:hidden;background:#0f172a;border:1px solid var(--hairline,#e5e7eb);">
+          <div id="hero-preview-img" style="position:absolute;inset:0;background-size:cover;background-position:center;"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(15,23,42,0.1),rgba(15,23,42,0.55));"></div>
+          <div style="position:absolute;left:18px;bottom:14px;color:#fff;font-family:'Poppins',sans-serif;font-weight:800;font-size:18px;letter-spacing:-0.02em;text-shadow:0 2px 12px rgba(0,0,0,0.4);">Stories that move science forward.</div>
+          <span id="hero-source-badge" style="position:absolute;top:12px;left:12px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:rgba(0,0,0,0.55);color:#fff;backdrop-filter:blur(4px);">Loading…</span>
+        </div>
+      </div>
+
+      <label style="display:grid;gap:5px;">
+        <span style="font-weight:600;font-size:13px;">Image URL</span>
+        <input id="hero-url" type="url" placeholder="https://…  (paste a link, or use Upload below)" autocomplete="off"
+               style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
+      </label>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input id="hero-file" type="file" accept="image/*" hidden>
+        <button type="button" id="hero-upload-btn" class="btn btn-secondary btn-sm">Upload an image…</button>
+        <span id="hero-upload-status" class="adv-action-hint"></span>
+      </div>
+
+      <div id="hero-msg" style="font-size:13px;min-height:18px;color:var(--danger,#b91c1c);"></div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--hairline,#e5e7eb);padding-top:16px;">
+        <button type="button" id="hero-save" class="btn btn-accent btn-sm">Save hero image</button>
+        <button type="button" id="hero-reset" class="btn btn-ghost btn-sm">Reset to default (newest story)</button>
+        <span class="adv-action-hint">Changes show on the public Articles page within a minute.</span>
+      </div>
+    </div>`;
+
+  const urlInput   = root.querySelector("#hero-url");
+  const fileInput  = root.querySelector("#hero-file");
+  const uploadBtn  = root.querySelector("#hero-upload-btn");
+  const uploadStat = root.querySelector("#hero-upload-status");
+  const previewImg = root.querySelector("#hero-preview-img");
+  const badge      = root.querySelector("#hero-source-badge");
+  const msgEl      = root.querySelector("#hero-msg");
+  const saveBtn    = root.querySelector("#hero-save");
+  const resetBtn   = root.querySelector("#hero-reset");
+
+  let defaultImage = "";  // newest published story's cover (the auto default)
+  let savedOverride = ""; // what's currently persisted
+
+  function setPreview(src, isOverride) {
+    const shown = src || defaultImage || "";
+    previewImg.style.backgroundImage = shown ? `url('${shown.replace(/'/g, "%27")}')` : "none";
+    badge.textContent = isOverride ? "Custom (pinned)" : "Default · newest story";
+  }
+
+  // Live-preview whatever's typed; empty falls back to the default.
+  urlInput.addEventListener("input", () => {
+    const v = urlInput.value.trim();
+    setPreview(v, !!v);
+  });
+
+  // Load the current override + the newest published story's cover in parallel.
+  (async () => {
+    try {
+      const [overrideSnap, newest] = await Promise.all([
+        getDoc(doc(db, ...HERO_SETTINGS_PATH)),
+        fetchNewestPublishedCover(),
+      ]);
+      defaultImage = newest || "";
+      savedOverride = (overrideSnap.exists() && overrideSnap.data().image) || "";
+      urlInput.value = savedOverride;
+      setPreview(savedOverride, !!savedOverride);
+    } catch (err) {
+      msgEl.textContent = "Could not load current hero settings: " + (err.message || err);
+    }
+  })();
+
+  uploadBtn.addEventListener("click", () => fileInput.click());
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { msgEl.textContent = "Pick an image file."; return; }
+    msgEl.textContent = "";
+    uploadBtn.disabled = true;
+    uploadStat.textContent = "Uploading… 0%";
+    try {
+      const url = await uploadHeroImage(file, ctx, (pct) => { uploadStat.textContent = `Uploading… ${pct}%`; });
+      uploadStat.textContent = "Uploaded ✓";
+      urlInput.value = url;
+      setPreview(url, true);
+    } catch (err) {
+      uploadStat.textContent = "";
+      msgEl.textContent = "Upload failed: " + (err.message || err);
+    } finally {
+      uploadBtn.disabled = false;
+      fileInput.value = "";
+    }
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const image = urlInput.value.trim();
+    msgEl.style.color = "var(--danger,#b91c1c)";
+    msgEl.textContent = "";
+    if (!image) {
+      msgEl.textContent = "Enter a URL or upload an image — or use Reset to go back to the default.";
+      return;
+    }
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+    try {
+      await setDoc(doc(db, ...HERO_SETTINGS_PATH), {
+        image,
+        updatedAt: new Date().toISOString(),
+        updatedBy: ctx?.profile?.email || ctx?.user?.email || "admin",
+      }, { merge: true });
+      savedOverride = image;
+      setPreview(image, true);
+      toast("Homepage hero image saved.", "success");
+    } catch (err) {
+      msgEl.textContent = "Save failed: " + (err.message || err);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save hero image";
+    }
+  });
+
+  resetBtn.addEventListener("click", async () => {
+    const ok = await confirmDialog(
+      "Reset the homepage hero back to the newest published story's cover? The pinned custom image will be cleared.",
+      { confirmText: "Reset to default", danger: false }
+    );
+    if (!ok) return;
+    resetBtn.disabled = true;
+    try {
+      // Clearing image (empty string) makes the public page fall back to the
+      // newest story's cover. We keep the doc (with an audit trail) rather
+      // than deleting it.
+      await setDoc(doc(db, ...HERO_SETTINGS_PATH), {
+        image: "",
+        updatedAt: new Date().toISOString(),
+        updatedBy: ctx?.profile?.email || ctx?.user?.email || "admin",
+      }, { merge: true });
+      savedOverride = "";
+      urlInput.value = "";
+      uploadStat.textContent = "";
+      setPreview("", false);
+      toast("Hero reset to the newest story's cover.", "success");
+    } catch (err) {
+      msgEl.textContent = "Reset failed: " + (err.message || err);
+    } finally {
+      resetBtn.disabled = false;
+    }
+  });
+}
+
+// Newest published story's cover image — the automatic hero default. Mirrors
+// the public page's source of truth so the preview here matches the live site.
+async function fetchNewestPublishedCover() {
+  const qy = query(
+    collection(db, "stories"),
+    where("status", "==", "published"),
+    orderBy("publishedAt", "desc"),
+    limit(1)
+  );
+  const snap = await getDocs(qy);
+  if (snap.empty) return "";
+  const d = snap.docs[0].data();
+  return d.coverImage || d.image || "";
+}
+
+// Upload a hero image to Storage and return its download URL. We write under
+// stories/{uid}/hero/ — the same stories/{uid}/ prefix per-story uploads
+// already use — so this works under the existing Storage security rules
+// without needing a separate rules path for the homepage hero.
+function uploadHeroImage(file, ctx, onProgress) {
+  const uid = ctx?.user?.uid;
+  if (!uid) return Promise.reject(new Error("Not signed in."));
+  const ext = (file.name.match(/\.[a-z0-9]+$/i) || [""])[0].toLowerCase() || ".jpg";
+  const safe = `hero-${Date.now()}${ext}`;
+  const ref = storageRef(storage, `stories/${uid}/hero/${safe}`);
+  const task = uploadBytesResumable(ref, file, { contentType: file.type });
+  return new Promise((resolve, reject) => {
+    task.on(
+      "state_changed",
+      (snap) => onProgress && onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      (err) => reject(err),
+      async () => {
+        try { resolve(await getDownloadURL(task.snapshot.ref)); }
+        catch (err) { reject(err); }
+      }
+    );
+  });
 }
 
 // ─── Announcements ───────────────────────────────────────────────────────────

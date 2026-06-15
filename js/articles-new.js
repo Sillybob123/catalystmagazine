@@ -14,6 +14,12 @@
     const HERO_PLACEHOLDER = '/postimages/sustainable.webp';
     const PAGE_SIZE = 12;
 
+    // Admin hero override. By default the hero shows the newest published
+    // story's cover; an admin can pin a custom image from the dashboard
+    // (Advanced tools → Homepage hero image), stored at
+    // site_settings/articlesHero.image. Empty string / unset = use default.
+    let heroOverride = '';
+
     // ---------- DOM refs ----------
     const heroBackdrop   = document.getElementById('an-hero-backdrop');
     const spotlightEl    = document.getElementById('an-spotlight');
@@ -156,6 +162,23 @@
     }
 
     // ---------- Firestore ----------
+    // Fetch the admin hero override doc (site_settings/articlesHero) via the
+    // public Firestore REST endpoint. Publicly readable per firestore.rules.
+    // Failures are swallowed — the hero just falls back to the default cover.
+    async function loadHeroOverride() {
+        const projectId = 'catalystwriters-5ce43';
+        const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/site_settings/articlesHero`;
+        try {
+            const res = await fetch(url);
+            if (!res.ok) return; // 404 = no override set yet
+            const doc = await res.json();
+            const img = doc?.fields?.image?.stringValue || '';
+            heroOverride = typeof img === 'string' ? img.trim() : '';
+        } catch {
+            /* network error — keep default */
+        }
+    }
+
     async function loadFirestoreArticles() {
         // Reuse the same session cache key main.js uses so we don't re-fetch.
         const CACHE_KEY = 'catalyst_fs_cache_v6';
@@ -301,9 +324,11 @@
     }
 
     function paintHero(articles) {
-        if (!articles.length) return;
-
-        const src = articles[0].image || FALLBACK_IMAGE;
+        // The admin override wins when set; otherwise default to the newest
+        // published story's cover. (If neither exists, bail and keep the
+        // placeholder.)
+        const src = heroOverride || (articles.length ? articles[0].image : '') || '';
+        if (!src) return;
         const resized = getResizedImageUrl(src, 1800, 72);
 
         const probe = new Image();
@@ -656,8 +681,11 @@
     }
 
     function kickFirestore() {
+        // Resolve the admin hero override first so the hero paints with the
+        // pinned image (when set) instead of flashing the default cover.
+        const overrideReady = loadHeroOverride();
         loadFirestoreArticles()
-            .then(fsList => {
+            .then(async fsList => {
                 if (fsList.length) {
                     // Firestore is the source of truth for published stories —
                     // it always wins on cover image, date, excerpt, author. Fall
@@ -670,7 +698,9 @@
                     renderTopicPills();
                     renderFeed(true);
                 }
-                // Always paint the hero from the (now-fresh) newest article.
+                // Wait for the override lookup (already in flight) so a pinned
+                // hero wins over the newest article's cover.
+                await overrideReady;
                 paintHero(allArticles);
             })
             .catch(err => {
