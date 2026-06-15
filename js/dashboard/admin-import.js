@@ -215,8 +215,8 @@ const HERO_SETTINGS_PATH = ["site_settings", "articlesHero"];
 
 function mountHeroTool(ctx, root) {
   root.innerHTML = `
-    ${paneHeader("Homepage hero image", `Override the large image behind the <strong>Articles page hero</strong> ("Stories that move science forward"). By default it shows the <strong>newest published story's cover</strong> — pin a custom image here if you'd rather show something else. Paste an image URL or upload a file, then Save. Reset any time to go back to the automatic default.`)}
-    <div class="adv-pane-body" style="display:grid;gap:18px;max-width:680px;">
+    ${paneHeader("Homepage hero image", `Controls the large image behind the <strong>Articles page hero</strong> ("Stories that move science forward"). <strong>By default it follows your newest published story</strong> — publish a new article and the hero updates automatically. Pin a specific image here (pick a story cover, choose from the library, paste a URL, or upload) and it stays until you change or reset it.`)}
+    <div class="adv-pane-body" style="display:grid;gap:18px;max-width:720px;">
 
       <div>
         <div style="font-weight:700;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted,#6b7280);margin-bottom:8px;">Live preview</div>
@@ -228,23 +228,34 @@ function mountHeroTool(ctx, root) {
         </div>
       </div>
 
-      <label style="display:grid;gap:5px;">
-        <span style="font-weight:600;font-size:13px;">Image URL</span>
-        <input id="hero-url" type="url" placeholder="https://…  (paste a link, or use Upload below)" autocomplete="off"
-               style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
-      </label>
-
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <input id="hero-file" type="file" accept="image/*" hidden>
-        <button type="button" id="hero-upload-btn" class="btn btn-secondary btn-sm">Upload an image…</button>
-        <span id="hero-upload-status" class="adv-action-hint"></span>
+      <div>
+        <div style="font-weight:700;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted,#6b7280);margin-bottom:8px;">Choose from the image library</div>
+        <div id="hero-library" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;max-height:300px;overflow:auto;padding:2px;">
+          <div class="loading-state" style="grid-column:1/-1;padding:12px;"><div class="spinner"></div>Loading story covers…</div>
+        </div>
       </div>
+
+      <details style="border:1px solid var(--hairline,#e5e7eb);border-radius:10px;padding:0 14px;">
+        <summary style="cursor:pointer;padding:12px 0;font-weight:600;font-size:13px;">Or use a custom image (URL / upload)</summary>
+        <div style="display:grid;gap:12px;padding:0 0 14px;">
+          <label style="display:grid;gap:5px;">
+            <span style="font-weight:600;font-size:13px;">Image URL</span>
+            <input id="hero-url" type="url" placeholder="https://…  (paste a link, or use Upload below)" autocomplete="off"
+                   style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
+          </label>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input id="hero-file" type="file" accept="image/*" hidden>
+            <button type="button" id="hero-upload-btn" class="btn btn-secondary btn-sm">Upload an image…</button>
+            <span id="hero-upload-status" class="adv-action-hint"></span>
+          </div>
+        </div>
+      </details>
 
       <div id="hero-msg" style="font-size:13px;min-height:18px;color:var(--danger,#b91c1c);"></div>
 
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--hairline,#e5e7eb);padding-top:16px;">
-        <button type="button" id="hero-save" class="btn btn-accent btn-sm">Save hero image</button>
-        <button type="button" id="hero-reset" class="btn btn-ghost btn-sm">Reset to default (newest story)</button>
+        <button type="button" id="hero-save" class="btn btn-accent btn-sm" disabled>Pin this image</button>
+        <button type="button" id="hero-reset" class="btn btn-ghost btn-sm">Reset to automatic (follow newest story)</button>
         <span class="adv-action-hint">Changes show on the public Articles page within a minute.</span>
       </div>
     </div>`;
@@ -258,37 +269,72 @@ function mountHeroTool(ctx, root) {
   const msgEl      = root.querySelector("#hero-msg");
   const saveBtn    = root.querySelector("#hero-save");
   const resetBtn   = root.querySelector("#hero-reset");
+  const libraryEl  = root.querySelector("#hero-library");
 
-  let defaultImage = "";  // newest published story's cover (the auto default)
-  let savedOverride = ""; // what's currently persisted
+  let defaultImage = "";   // newest published story's cover (the auto default)
+  let savedOverride = "";  // what's currently persisted (empty = automatic)
+  let selected = "";       // image currently chosen in the UI (empty = none picked)
 
-  function setPreview(src, isOverride) {
-    const shown = src || defaultImage || "";
+  // Reflect the chosen image in the preview + badge, and enable Save only when
+  // the selection differs from what's already saved.
+  function setSelected(src) {
+    selected = (src || "").trim();
+    const shown = selected || savedOverride || defaultImage || "";
     previewImg.style.backgroundImage = shown ? `url('${shown.replace(/'/g, "%27")}')` : "none";
-    badge.textContent = isOverride ? "Custom (pinned)" : "Default · newest story";
+    const effective = selected || savedOverride;
+    badge.textContent = effective ? "Pinned" : "Automatic · newest story";
+    saveBtn.disabled = !selected || selected === savedOverride;
+    // Highlight the matching library tile.
+    libraryEl.querySelectorAll("[data-cover]").forEach((b) => {
+      b.style.outline = b.dataset.cover === selected ? "3px solid var(--accent,#2563eb)" : "none";
+      b.style.outlineOffset = "1px";
+    });
   }
 
-  // Live-preview whatever's typed; empty falls back to the default.
-  urlInput.addEventListener("input", () => {
-    const v = urlInput.value.trim();
-    setPreview(v, !!v);
-  });
+  // Typing/pasting a URL counts as a selection.
+  urlInput.addEventListener("input", () => setSelected(urlInput.value));
 
-  // Load the current override + the newest published story's cover in parallel.
+  // Load the current override + all published covers in parallel.
   (async () => {
     try {
-      const [overrideSnap, newest] = await Promise.all([
+      const [overrideSnap, stories] = await Promise.all([
         getDoc(doc(db, ...HERO_SETTINGS_PATH)),
-        fetchNewestPublishedCover(),
+        fetchPublishedCovers(),
       ]);
-      defaultImage = newest || "";
+      defaultImage = stories.length ? stories[0].cover : "";
       savedOverride = (overrideSnap.exists() && overrideSnap.data().image) || "";
-      urlInput.value = savedOverride;
-      setPreview(savedOverride, !!savedOverride);
+      renderLibrary(stories);
+      // Initialize selection to whatever's pinned (or nothing → automatic).
+      setSelected(savedOverride);
+      if (savedOverride) urlInput.value = savedOverride;
     } catch (err) {
       msgEl.textContent = "Could not load current hero settings: " + (err.message || err);
+      libraryEl.innerHTML = `<div class="error-state" style="grid-column:1/-1;">${esc(err.message || String(err))}</div>`;
     }
   })();
+
+  function renderLibrary(stories) {
+    if (!stories.length) {
+      libraryEl.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:12px;">No published stories with covers yet.</div>`;
+      return;
+    }
+    libraryEl.innerHTML = stories
+      .filter((s) => s.cover)
+      .map((s, i) => `
+        <button type="button" data-cover="${esc(s.cover)}" title="${esc(s.title)}"
+          style="position:relative;border:0;padding:0;cursor:pointer;border-radius:8px;overflow:hidden;aspect-ratio:16/10;background:#0f172a;">
+          <img src="${esc(s.cover)}" alt="${esc(s.title)}" loading="lazy"
+               style="width:100%;height:100%;object-fit:cover;display:block;">
+          ${i === 0 ? `<span style="position:absolute;top:6px;left:6px;font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 6px;border-radius:999px;background:rgba(37,99,235,0.9);color:#fff;">Newest</span>` : ""}
+        </button>`)
+      .join("");
+    libraryEl.querySelectorAll("[data-cover]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        urlInput.value = btn.dataset.cover;
+        setSelected(btn.dataset.cover);
+      });
+    });
+  }
 
   uploadBtn.addEventListener("click", () => fileInput.click());
 
@@ -303,7 +349,7 @@ function mountHeroTool(ctx, root) {
       const url = await uploadHeroImage(file, ctx, (pct) => { uploadStat.textContent = `Uploading… ${pct}%`; });
       uploadStat.textContent = "Uploaded ✓";
       urlInput.value = url;
-      setPreview(url, true);
+      setSelected(url);
     } catch (err) {
       uploadStat.textContent = "";
       msgEl.textContent = "Upload failed: " + (err.message || err);
@@ -314,53 +360,54 @@ function mountHeroTool(ctx, root) {
   });
 
   saveBtn.addEventListener("click", async () => {
-    const image = urlInput.value.trim();
+    const image = selected;
     msgEl.style.color = "var(--danger,#b91c1c)";
     msgEl.textContent = "";
     if (!image) {
-      msgEl.textContent = "Enter a URL or upload an image — or use Reset to go back to the default.";
+      msgEl.textContent = "Pick a cover, choose from the library, or add a custom image first.";
       return;
     }
     saveBtn.disabled = true;
-    saveBtn.textContent = "Saving…";
+    saveBtn.textContent = "Pinning…";
     try {
       await setDoc(doc(db, ...HERO_SETTINGS_PATH), {
         image,
+        mode: "pinned",
         updatedAt: new Date().toISOString(),
         updatedBy: ctx?.profile?.email || ctx?.user?.email || "admin",
       }, { merge: true });
       savedOverride = image;
-      setPreview(image, true);
-      toast("Homepage hero image saved.", "success");
+      setSelected(image);
+      toast("Hero image pinned. It will stay until you change or reset it.", "success");
     } catch (err) {
       msgEl.textContent = "Save failed: " + (err.message || err);
     } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = "Save hero image";
+      saveBtn.textContent = "Pin this image";
+      saveBtn.disabled = !selected || selected === savedOverride;
     }
   });
 
   resetBtn.addEventListener("click", async () => {
     const ok = await confirmDialog(
-      "Reset the homepage hero back to the newest published story's cover? The pinned custom image will be cleared.",
-      { confirmText: "Reset to default", danger: false }
+      "Switch the homepage hero back to automatic? It will follow your newest published story from now on (updating each time you publish), and the pinned image will be cleared.",
+      { confirmText: "Reset to automatic", danger: false }
     );
     if (!ok) return;
     resetBtn.disabled = true;
     try {
-      // Clearing image (empty string) makes the public page fall back to the
-      // newest story's cover. We keep the doc (with an audit trail) rather
-      // than deleting it.
+      // Empty image + mode:"auto" makes the public page follow the newest
+      // published story's cover. We keep the doc (audit trail) vs deleting it.
       await setDoc(doc(db, ...HERO_SETTINGS_PATH), {
         image: "",
+        mode: "auto",
         updatedAt: new Date().toISOString(),
         updatedBy: ctx?.profile?.email || ctx?.user?.email || "admin",
       }, { merge: true });
       savedOverride = "";
       urlInput.value = "";
       uploadStat.textContent = "";
-      setPreview("", false);
-      toast("Hero reset to the newest story's cover.", "success");
+      setSelected("");
+      toast("Hero set to automatic — it now follows your newest story.", "success");
     } catch (err) {
       msgEl.textContent = "Reset failed: " + (err.message || err);
     } finally {
@@ -369,19 +416,25 @@ function mountHeroTool(ctx, root) {
   });
 }
 
-// Newest published story's cover image — the automatic hero default. Mirrors
-// the public page's source of truth so the preview here matches the live site.
-async function fetchNewestPublishedCover() {
+// All published stories with their cover image, newest first. Powers both the
+// library picker and the automatic default (stories[0].cover). Mirrors the
+// public page's source of truth so the preview matches the live site.
+async function fetchPublishedCovers() {
   const qy = query(
     collection(db, "stories"),
     where("status", "==", "published"),
     orderBy("publishedAt", "desc"),
-    limit(1)
+    limit(60)
   );
   const snap = await getDocs(qy);
-  if (snap.empty) return "";
-  const d = snap.docs[0].data();
-  return d.coverImage || d.image || "";
+  return snap.docs.map((d) => {
+    const data = d.data();
+    return {
+      id: d.id,
+      title: data.title || "Untitled",
+      cover: data.coverImage || data.image || "",
+    };
+  });
 }
 
 // Upload a hero image to Storage and return its download URL. We write under

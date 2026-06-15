@@ -164,18 +164,27 @@
     // ---------- Firestore ----------
     // Fetch the admin hero override doc (site_settings/articlesHero) via the
     // public Firestore REST endpoint. Publicly readable per firestore.rules.
-    // Failures are swallowed — the hero just falls back to the default cover.
+    //
+    // The override only applies when an admin has explicitly *pinned* an image
+    // (mode === "pinned" with a non-empty image). Otherwise the hero stays in
+    // "automatic" mode and follows the newest published story — so publishing
+    // a new article updates the hero on its own, with no admin action needed.
+    // Failures are swallowed — the hero just falls back to the newest cover.
     async function loadHeroOverride() {
         const projectId = 'catalystwriters-5ce43';
         const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/site_settings/articlesHero`;
         try {
             const res = await fetch(url);
-            if (!res.ok) return; // 404 = no override set yet
+            if (!res.ok) return; // 404 = no override doc yet → automatic
             const doc = await res.json();
-            const img = doc?.fields?.image?.stringValue || '';
-            heroOverride = typeof img === 'string' ? img.trim() : '';
+            const f = doc?.fields || {};
+            const img = (f.image?.stringValue || '').trim();
+            // Back-compat: older docs had no `mode` field — treat a non-empty
+            // image as pinned. New docs set mode explicitly.
+            const mode = f.mode?.stringValue || (img ? 'pinned' : 'auto');
+            heroOverride = mode === 'pinned' ? img : '';
         } catch {
-            /* network error — keep default */
+            /* network error — keep automatic default */
         }
     }
 
