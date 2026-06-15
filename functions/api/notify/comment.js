@@ -22,6 +22,7 @@ import { firestoreGet, firestoreCreate, firestoreUpdate, collectUserEmails } fro
 import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { directCommentEmail } from "../../_utils/reminder-emails.js";
+import { createNotification } from "../../_utils/notifications.js";
 
 const STAFF_ROLES = ["admin", "editor", "writer", "newsletter_builder", "marketing", "social_media"];
 const MAX_MESSAGE_CHARS = 2000;
@@ -96,6 +97,18 @@ export const onRequestPost = async ({ request, env }) => {
       html,
       // Reply-to the sender so the conversation can continue over email.
       replyTo: auth.email || env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
+    });
+
+    // In-app notification (the topbar bell). Best-effort — never blocks the
+    // email. Each comment is distinct, so no dedupeId (auto-id).
+    await createNotification(env, {
+      recipientId,
+      type: "comment",
+      title: `${auth.name || auth.email || "A teammate"} commented on ${project.title || "your project"}`,
+      body: message.slice(0, 140),
+      actorId: auth.uid,
+      actorName: auth.name || auth.email || "",
+      actionHash: "#/pipeline/mine",
     });
 
     const stamp = {

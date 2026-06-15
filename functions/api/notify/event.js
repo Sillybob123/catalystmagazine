@@ -22,6 +22,7 @@
 import { json, badRequest, serverError } from "../../_utils/http.js";
 import { firestoreGet, firestoreCreate, firestoreUpdate } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
+import { createNotification } from "../../_utils/notifications.js";
 import { sendEmail } from "../../_utils/resend.js";
 import {
   adminProposalPendingEmail,
@@ -162,6 +163,14 @@ export const onRequestPost = async ({ request, env }) => {
       result = await sendDeadlineChangeResolved(env, project, siteUrl, body);
     }
 
+    // In-app notification (the topbar bell) for the person-targeted events —
+    // the "something needs me" set. Admin-broadcast types (proposal-pending,
+    // writing-complete, deadline-change-requested) are intentionally skipped
+    // here: admins already have the Overview pipeline widget + activity feed +
+    // email, and fanning out to every admin uid isn't worth it for v1.
+    // Best-effort and deduped on the same key as the email log.
+    await createEventNotification(env, { type, project, auth, logId });
+
     // Log even on partial-send so we don't retry-spam. The log records what we
     // attempted — actual failures come back in `result.errors`.
     await firestoreCreate(
@@ -187,6 +196,47 @@ export const onRequestPost = async ({ request, env }) => {
 // Allow GET for a quick health check without exposing data.
 export const onRequestGet = async () =>
   json({ ok: true, service: "catalyst-notify", hint: "POST { type, projectId } with bearer token." });
+
+// Mint an in-app notification for the person-targeted editorial events. Maps
+// each type to its recipient uid (author or editor on the project), a title,
+// and the dashboard hash to open. Best-effort; deduped on the email log id.
+async function createEventNotification(env, { type, project, auth, logId }) {
+  const title = project?.title || "your project";
+  let recipientId = "";
+  let actionHash = "";
+  let text = "";
+
+  if (type === "editor-assigned") {
+    recipientId = project?.editorId || "";
+    actionHash = "#/editor/queue";
+    text = `You've been assigned to edit "${title}"`;
+  } else if (type === "proposal-approved") {
+    recipientId = project?.authorId || "";
+    actionHash = "#/writer/mine";
+    text = `Your proposal "${title}" was approved`;
+  } else if (type === "review-complete") {
+    recipientId = project?.authorId || "";
+    actionHash = "#/writer/mine";
+    text = `Editor feedback is ready on "${title}"`;
+  } else if (type === "deadline-change-resolved") {
+    recipientId = project?.authorId || "";
+    actionHash = "#/pipeline/mine";
+    text = `Your deadline-change request on "${title}" was reviewed`;
+  } else {
+    return; // admin-broadcast types — no per-user bell in v1
+  }
+
+  if (!recipientId) return;
+  await createNotification(env, {
+    recipientId,
+    type: "event",
+    eventType: type,
+    title: text,
+    actorId: auth?.uid || "",
+    actorName: auth?.name || auth?.email || "",
+    actionHash,
+  }, `notif_${logId}`);
+}
 
 // ─── Handlers ────────────────────────────────────────────────────────────────
 

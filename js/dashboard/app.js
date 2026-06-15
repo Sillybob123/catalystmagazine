@@ -24,6 +24,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { el, toast, initials, openModal } from "./ui.js";
+import { initNotificationBell } from "./notifications.js";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -537,6 +538,10 @@ onAuthStateChanged(auth, async (user) => {
 
   state.pins = loadPins();
   initPresencePing();
+  // In-app notification bell — initialized once for the session (not per
+  // route). makeContext() supplies the current user (incl. previewed person)
+  // and live navigate(); passing it as a getter keeps navigation current.
+  try { state.unsubNotifs = initNotificationBell(makeContext({}), makeContext); } catch (e) { console.warn("[dashboard] notif bell init failed", e); }
   paintUserChip();
   renderSidebar();
   attachGlobalHandlers();

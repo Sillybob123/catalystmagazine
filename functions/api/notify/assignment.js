@@ -16,6 +16,7 @@ import { firestoreGet, firestoreCreate } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { socialAssignmentEmail } from "../../_utils/reminder-emails.js";
+import { createNotifications } from "../../_utils/notifications.js";
 
 const ID_RE = /^[A-Za-z0-9_-]{1,200}$/;
 
@@ -85,6 +86,18 @@ export const onRequestPost = async ({ request, env }) => {
       firedAt: new Date().toISOString(),
       recipients: emails,
     }, logId).catch(() => {});
+
+    // In-app notifications (the topbar bell) — one per owner. Best-effort,
+    // deduped per (assignment, owner) so re-runs don't double-notify.
+    const storyLabel = assignment.storyTitle || assignment.title || "a story";
+    await createNotifications(env, ownerIds, {
+      type: "assignment",
+      title: `You've been assigned a social post for ${storyLabel}`,
+      body: assignment.platform ? `Platform: ${assignment.platform}` : "",
+      actorId: auth.uid,
+      actorName: assignment.createdByName || auth.name || auth.email || "",
+      actionHash: "#/planner",
+    }, (rid) => `assignment_${assignmentId}_${rid}`);
 
     return json({ ok: true, sent: true, to: emails });
   } catch (err) {

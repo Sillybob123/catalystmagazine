@@ -24,6 +24,7 @@ import { firestoreGet, firestoreCreate, firestoreRunQuery } from "../../_utils/f
 import { buildArticleUrl } from "../../_utils/article-meta.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { articlePublishedEmail, socialPublishedEmail } from "../../_utils/reminder-emails.js";
+import { createNotification } from "../../_utils/notifications.js";
 
 const ID_RE = /^[A-Za-z0-9_-]{1,200}$/;
 
@@ -148,6 +149,20 @@ export const onRequestPost = async ({ request, env }) => {
       socialTeam: socialRecipients.join(", "),
       createdAt: new Date().toISOString(),
     }, `${storyId}_published`).catch(() => {});
+
+    // In-app notification (the topbar bell) for the author. Best-effort,
+    // deduped per story so a re-save never double-notifies.
+    if (authorId) {
+      await createNotification(env, {
+        recipientId: authorId,
+        type: "published",
+        title: `Your story "${title}" is live!`,
+        body: "Tap to see it in My articles.",
+        actorId: auth.uid,
+        actorName: auth.name || auth.email || "",
+        actionHash: "#/writer/mine",
+      }, `notif_${storyId}_published`);
+    }
 
     return json({ ok: true, sent: true, to: authorEmail, cc, socialTeam: socialRecipients });
   } catch (err) {
