@@ -4226,6 +4226,14 @@ const teamMembers = [
         image: "/cameron.webp",
         linkedin: "",
         email: ""
+    },
+    {
+        name: "Jada Traynor",
+        role: "Writer",
+        bio: "Jada Traynor is a senior at the George Washington University pursuing a double major in Chemistry and Biology with a minor in Human Anatomy. Throughout her time at GW, she has been engaged in both medicinal chemistry and genetics research, developing a strong interest in pharmacology, physiology, and the ways scientific discoveries can be translated into impactful clinical advances. She is drawn to work at the intersection of research and medicine, where a deeper understanding of human physiology can inspire problem solving and innovative approaches to patient care. Through The Catalyst, she hopes to highlight the profound and wide-ranging impact of scientific research by writing about the people, processes, and attitudes that drive scientific progress and how those discoveries influence our lives. In the future, she intends to pursue medical school and a career that combines patient care with scientific inquiry and problem solving.",
+        image: "/Jada.webp",
+        linkedin: "",
+        email: ""
     }
 ];
 
@@ -4311,7 +4319,7 @@ const rosterGroups = [
         title: "Undergraduate Fellowship",
         blurb: "Undergraduate writers reporting across the D.C. STEM landscape.",
         clusters: [
-            { members: ["Sienna Halstead", "Izzy Lubinsky", "Ginger Taurek", "LaMyla Hill", "Layla Abdoulaye", "Josh Shapo"] }
+            { members: ["Sienna Halstead", "Izzy Lubinsky", "Ginger Taurek", "LaMyla Hill", "Layla Abdoulaye", "Josh Shapo", "Jada Traynor"] }
         ]
     },
     {
