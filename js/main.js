@@ -4234,6 +4234,14 @@ const teamMembers = [
         image: "/Jada.webp",
         linkedin: "",
         email: ""
+    },
+    {
+        name: "Yahav Gutman",
+        role: "Writer",
+        bio: "Yahav is a second-year student pursuing a B.S. in Business & Engineering at Drexel University. As a certified personal trainer and performance coach, his interests lie in biomechanics, human performance, and the use of AI and data analysis to better understand training and adaptation. He seeks to bridge academic study and applied coaching practice in order to refine how human performance is measured and optimized. He is drawn to interdisciplinary approaches that turn complex systems into actionable insight.",
+        image: "/Yahav.webp",
+        linkedin: "",
+        email: ""
     }
 ];
 
@@ -4319,7 +4327,7 @@ const rosterGroups = [
         title: "Undergraduate Fellowship",
         blurb: "Undergraduate writers reporting across the D.C. STEM landscape.",
         clusters: [
-            { members: ["Sienna Halstead", "Izzy Lubinsky", "Ginger Taurek", "LaMyla Hill", "Layla Abdoulaye", "Josh Shapo", "Jada Traynor"] }
+            { members: ["Sienna Halstead", "Izzy Lubinsky", "Ginger Taurek", "LaMyla Hill", "Layla Abdoulaye", "Josh Shapo", "Jada Traynor", "Yahav Gutman"] }
         ]
     },
     {
