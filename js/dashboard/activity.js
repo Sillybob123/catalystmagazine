@@ -876,7 +876,7 @@ function humanStatus(project) {
   if (tl[FINAL_STEP]) return "Completed";
   if (project.proposalStatus === "rejected") return "Proposal rejected";
   if (project.proposalStatus !== "approved") return "Awaiting proposal approval";
-  if (project.type === "Interview" && !tl["Interview Complete"]) {
+  if (project.type === "Interview" && !project.noInterview && !tl["Interview Complete"]) {
     return tl["Interview Scheduled"] ? "Interview scheduled" : "Needs interview scheduled";
   }
   if (!tl["Article Writing Complete"]) return "Writing in progress";

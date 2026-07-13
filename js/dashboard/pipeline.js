@@ -24,6 +24,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, fmtDate, confirmDialog } from "./ui.js";
 import { showCalendarExportPrompt } from "./calendar-export.js";
+import { isProjectPublished, isProjectCompleted, fetchPublishedTitleSet } from "./publish-sync.js";
 import {
   deadlinePatchOnApproval,
   deadlinePatchOnInterviewScheduled,
@@ -267,7 +268,7 @@ function getProjectState(project, view, uid) {
       if (tl["Review Complete"] && !tl["Suggestions Reviewed"])
         return { column: COL.MY_REVIEW, color: "blue", status: "Review Editor Feedback" };
       if (project.proposalStatus === "approved") {
-        if (project.type === "Interview" && !tl["Interview Complete"]) {
+        if (project.type === "Interview" && !project.noInterview && !tl["Interview Complete"]) {
           return tl["Interview Scheduled"]
             ? { column: COL.IN_PROGRESS, color: "yellow", status: "Conduct Interview" }
             : { column: COL.TODO,        color: "default", status: "Schedule Interview" };
@@ -289,7 +290,7 @@ function getProjectState(project, view, uid) {
     const color = project.proposalStatus === "rejected" ? "red" : "default";
     return { column: COL.TOPIC_PROPOSAL, color, status: `Proposal ${project.proposalStatus || "pending"}` };
   }
-  if (project.type === "Interview" && !tl["Interview Complete"]) {
+  if (project.type === "Interview" && !project.noInterview && !tl["Interview Complete"]) {
     return tl["Interview Scheduled"]
       ? { column: COL.INTERVIEW_STAGE, color: "yellow", status: "Interview Scheduled" }
       : { column: COL.INTERVIEW_STAGE, color: "default", status: "Schedule Interview" };
@@ -356,6 +357,12 @@ function stringToColor(str) {
 let _allProjects = [];
 let _allEditors  = [];
 let _allUsers    = [];
+// Normalized titles of published stories — lets completed cards distinguish
+// "fully edited, waiting on the admin to publish" (purple) from "live on the
+// site" (regular white card). Loaded once per mount; projects stamped with
+// publishedAt by publish-sync.js don't need the title match at all.
+let _publishedTitles = new Set();
+let _publishedTitlesLoaded = false;
 let _view        = "interviews"; // "interviews" | "opeds" | "mine"
 let _uid         = null;
 let _role        = null;
@@ -395,6 +402,13 @@ function ensureKanbanStyles() {
     .kb-card.s-blue   { border-left-color:#3b82f6; }
     .kb-card.s-red    { border-left-color:#b91c1c; }
     .kb-card.s-dim    { opacity:.75; }
+    /* Fully edited but not yet published — the admin's cue to push it live.
+       Whole container goes purple; once the story is live it reverts to the
+       plain white "completed" card like everything else. */
+    .kb-card.s-purple { border-left-color:#7c3aed; background:#f5f3ff; border-color:#ddd6fe; }
+    .kb-card.s-purple:hover { box-shadow:0 4px 14px rgba(124,58,237,.22); }
+    .kb-badge-publish { background:#ede9fe; color:#6d28d9; }
+    .kb-badge-live { background:#dcfce7; color:#15803d; }
     .kb-card-title { font-size:13px; font-weight:600; color:#0b1220; line-height:1.4; margin:0 0 5px; }
     .kb-card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 6px; }
     .kb-badge { font-size:10px; font-weight:700; background:#f1f5f9; color:#64748b;
@@ -456,6 +470,12 @@ export async function mount(ctx, container) {
 
   // Load editors/users once
   await Promise.all([loadEditors(), loadUsers()]);
+
+  // Published-story titles (async, non-blocking): once loaded, re-render so
+  // completed-but-unpublished cards pick up their purple "publish me" state.
+  fetchPublishedTitleSet()
+    .then((set) => { _publishedTitles = set; _publishedTitlesLoaded = true; renderBoard(); })
+    .catch((e) => console.warn("[pipeline] published-title fetch failed", e));
 
   // Wire header buttons
   if (canPropose() && _view !== "mine") {
@@ -586,19 +606,33 @@ function renderCard(project) {
   const isInactive = inactive > 9 && state.column !== COL.COMPLETED && state.column !== COL.DONE;
   const hasDeadlineRequest = (project.deadlineRequest?.status === "pending") || (project.deadlineChangeRequest?.status === "pending");
 
-  const stateClass = { green: "s-green", yellow: "s-yellow", blue: "s-blue", red: "s-red" }[state.color] || "";
+  // Publish state only matters once the workflow is fully done: purple means
+  // "edited, reviewed, waiting on you to publish"; published cards stay plain.
+  const completed = isProjectCompleted(project);
+  const published = completed && isProjectPublished(project, _publishedTitles);
+  // Wait for the published-title fetch before painting purple, so completed
+  // cards don't flash "needs publishing" and immediately flip back on load.
+  // (Projects already stamped with publishedAt never depend on the fetch.)
+  const awaitingPublish = completed && !published && _publishedTitlesLoaded;
+
+  const stateClass = awaitingPublish
+    ? "s-purple"
+    : ({ green: "s-green", yellow: "s-yellow", blue: "s-blue", red: "s-red" }[state.color] || "");
   const card = el("div", {
     class: `kb-card ${stateClass}${isInactive ? " s-dim" : ""}`,
     onclick: () => openDetailModal(project.id),
   });
 
   const authorInitial = (project.authorName || "?")[0].toUpperCase();
+  const statusLabel = awaitingPublish ? "Ready to Publish" : published ? "Published" : state.status;
 
   card.innerHTML = `
     <div class="kb-card-title">${esc(project.title)}${hasDeadlineRequest ? " ⏰" : ""}</div>
     <div class="kb-card-meta">
       <span class="kb-badge">${esc(project.type || "")}</span>
-      <span class="kb-status">${esc(state.status)}</span>
+      <span class="kb-status">${esc(statusLabel)}</span>
+      ${awaitingPublish ? `<span class="kb-badge kb-badge-publish">Needs publishing</span>` : ""}
+      ${published ? `<span class="kb-badge kb-badge-live">Live</span>` : ""}
       ${isInactive ? `<span class="kb-badge kb-badge-idle">${inactive}d idle</span>` : ""}
     </div>
     <div class="kb-progress"><div class="kb-progress-fill" style="width:${progress}%"></div></div>
@@ -677,6 +711,9 @@ function openDetailModal(projectId) {
   }
   const state    = getProjectState(project, _view, _uid);
   const tl       = project.timeline || {};
+  const completed = isProjectCompleted(project);
+  const published = completed && isProjectPublished(project, _publishedTitles);
+  const awaitingPublish = completed && !published && _publishedTitlesLoaded;
   const deadlines = project.deadlines || {};
   const due       = pubDeadline(project);
   const inactive  = daysInactive(project);
@@ -687,9 +724,10 @@ function openDetailModal(projectId) {
   const pillFg = { green:"#15803d", yellow:"#b45309", blue:"#1d4ed8", red:"#b91c1c", default:"#475569" }[state.color] || "#475569";
 
   // Timeline checklist — each step enabled only for users who own that step.
-  // Op-Eds skip the interview-specific steps (they're not part of the op-ed flow).
+  // Op-Eds and no-interview stories skip the interview-specific steps.
+  const skipInterviewSteps = project.type === "Op-Ed" || !!project.noInterview;
   const relevantSteps = TIMELINE_STEPS.filter(step =>
-    !(project.type === "Op-Ed" && (step === "Interview Scheduled" || step === "Interview Complete"))
+    !(skipInterviewSteps && (step === "Interview Scheduled" || step === "Interview Complete"))
   );
   const stepsHtml = relevantSteps.map(step => {
     const checked  = !!tl[step];
@@ -708,7 +746,7 @@ function openDetailModal(projectId) {
   const dlInputStyle = `flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;`;
 
   const deadlineRows = DEADLINE_FIELDS
-    .filter(f => !(project.type === "Op-Ed" && (f.key === "contact" || f.key === "interview")))
+    .filter(f => !(skipInterviewSteps && (f.key === "contact" || f.key === "interview")))
     .map(f => {
       // Conduct Interview falls back to project.interviewDate so projects
       // that were scheduled before the deadlines mirror existed still show
@@ -773,7 +811,14 @@ function openDetailModal(projectId) {
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
       <span style="background:${pillBg};color:${pillFg};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${esc(state.status)}</span>
       <span style="background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${esc(project.type||"Article")}</span>
+      ${awaitingPublish ? `<span style="background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Needs publishing</span>` : ""}
+      ${published ? `<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Live${project.publishedAt ? ` · ${fmtDate(project.publishedAt)}` : ""}</span>` : ""}
     </div>
+    ${awaitingPublish && isAdmin ? `<div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#5b21b6;">
+      Editing is done — this piece is waiting on you to publish it. Head to
+      <a href="#/admin/articles" style="color:#6d28d9;font-weight:700;">All articles &amp; approvals</a> to push it live,
+      or use “Mark as published” below if it's already up.
+    </div>` : ""}
     <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#6b7280;margin-bottom:0;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;">
       <span>Author: <strong style="color:#1f2937;">${esc(project.authorName||"—")}</strong></span>
       <span>Editor: <strong style="color:#1f2937;">${esc(project.editorName||"Not assigned")}</strong></span>
@@ -792,7 +837,7 @@ function openDetailModal(projectId) {
 
     ${divider}
     ${sec("Progress")}
-    ${project.interviewDate && project.type === "Interview" ? `
+    ${project.interviewDate && project.type === "Interview" && !project.noInterview ? `
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#1e3a8a;display:flex;align-items:center;gap:8px;">
         <span style="font-weight:700;">📅 Interview scheduled:</span>
         <span>${fmtDate(project.interviewDate + "T00:00:00")}</span>
@@ -902,11 +947,40 @@ function openDetailModal(projectId) {
     };
     footerBtns.unshift(delBtn);
   }
+  if (isAdmin && awaitingPublish) {
+    // Manual override for the purple state: if the story is already live (or
+    // was published under a different title, so the auto-match missed it),
+    // the admin can clear the "needs publishing" flag right here.
+    const pubBtn = el("button", { class: "btn btn-accent btn-sm", style: { background: "#7c3aed", borderColor: "#7c3aed" } }, "Mark as published");
+    pubBtn.onclick = async () => {
+      const ok = await confirmDialog(
+        "Mark this project as published? Do this once the article is live on the site — the card will turn back to a normal completed card.",
+        { confirmText: "Mark as published" }
+      );
+      if (!ok) return;
+      pubBtn.disabled = true;
+      try {
+        await updateDoc(doc(workflowDb, "projects", project.id), {
+          publishedAt: new Date().toISOString(),
+          lastActivity: serverTimestamp(),
+          updatedAt: new Date().toISOString(),
+          activity: arrayUnion({ text: "marked the story as published 🎉", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
+        });
+        toast("Marked as published.", "success");
+        m.close();
+      } catch (e) { toast(e.message, "error"); pubBtn.disabled = false; }
+    };
+    footerBtns.push(pubBtn);
+  }
   const closeBtn = el("button", { class: "btn btn-secondary btn-sm" }, "Close");
   footerBtns.push(closeBtn);
 
   const m = openModal({ title: esc(project.title), body, footer: footerBtns });
   closeBtn.onclick = m.close;
+
+  // The "needs publishing" banner links into All articles & approvals — close
+  // the modal on click so it doesn't linger over the next page.
+  body.querySelector('a[href="#/admin/articles"]')?.addEventListener("click", () => m.close());
 
   // ── Wire interactions ──────────────────────────────────────────────────────
 
@@ -1266,11 +1340,24 @@ function openProposalModal(existing) {
         <input class="input" id="pm-deadline" type="date" value="${esc(p.deadlines?.publication || p.deadline || "")}">
       </div>
     </div>
+    <div class="field" id="pm-nointerview-wrap" style="${(p.type || "Interview") === "Interview" ? "" : "display:none;"}">
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;user-select:none;font-size:13px;line-height:1.5;color:#1f2937;">
+        <input type="checkbox" id="pm-nointerview" ${p.noInterview ? "checked" : ""} style="margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:#0f766e;cursor:pointer;">
+        <span><strong>No interview for this story</strong> — there's no one to interview, so skip the interview steps and deadlines. The story goes straight to the writing stage once approved.</span>
+      </label>
+    </div>
     <div class="field">
       <label class="label">Pitch / proposal <span style="color:var(--danger)">*</span></label>
       <textarea class="textarea" id="pm-proposal" rows="5" placeholder="Describe the story idea, angle, and why it matters…">${esc(p.proposal || "")}</textarea>
     </div>
     <div id="pm-err" style="color:var(--danger);font-size:12px;margin-top:4px;"></div>`;
+
+  // The no-interview option only makes sense for Interview-type stories
+  // (Op-Eds never have interview steps to begin with).
+  body.querySelector("#pm-type").addEventListener("change", (e) => {
+    body.querySelector("#pm-nointerview-wrap").style.display =
+      e.target.value === "Interview" ? "" : "none";
+  });
 
   const saveBtn = el("button", { class: "btn btn-accent" }, isEdit ? "Save changes" : "Submit proposal");
   const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
@@ -1284,6 +1371,7 @@ function openProposalModal(existing) {
     const type     = body.querySelector("#pm-type").value;
     const deadline = body.querySelector("#pm-deadline").value;
     const proposal = body.querySelector("#pm-proposal").value.trim();
+    const noInterview = type === "Interview" && body.querySelector("#pm-nointerview").checked;
 
     if (title.length < 3)  { err.textContent = "Title must be at least 3 characters."; return; }
     if (!deadline)          { err.textContent = "Publication deadline is required."; return; }
@@ -1294,7 +1382,7 @@ function openProposalModal(existing) {
     saveBtn.disabled = true; saveBtn.textContent = isEdit ? "Saving…" : "Submitting…";
 
     const patch = {
-      title, type,
+      title, type, noInterview,
       "deadlines.publication": deadline,
       deadline,
       proposal,
@@ -1350,7 +1438,7 @@ function openDeadlineRequestModal(project, parentModal) {
   const deadlines = project.deadlines || {};
 
   const fields = DEADLINE_FIELDS
-    .filter(f => !(project.type === "Op-Ed" && (f.key === "contact" || f.key === "interview")))
+    .filter(f => !((project.type === "Op-Ed" || project.noInterview) && (f.key === "contact" || f.key === "interview")))
     .map(f => `
       <div class="field">
         <label class="label">${esc(f.label)}</label>

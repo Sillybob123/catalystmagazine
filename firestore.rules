@@ -83,11 +83,16 @@ service cloud.firestore {
       // and the staff/editor pickers (loadUsers / loadEditors / loadStaff)
       // need to resolve teammate names and roles.
       allow read: if isRealUser() && (request.auth.uid == uid || isStaff());
-      // Users can create their own doc on first login.
-      // Only safe bootstrap roles allowed — no self-assigning admin/editor.
+      // Users can create their own doc on first login, but ONLY as a
+      // powerless 'reader'. Every staff role (writer included — writer is in
+      // isStaff(), which unlocks the full user directory, all drafts, private
+      // directory contacts, DMs, etc.) must be granted by an admin from
+      // Users & roles. Self-assigning 'writer' here was a privilege-escalation
+      // path: anyone who could obtain a real (email/password) Firebase Auth
+      // token could bootstrap themselves into staff and read internal PII.
       allow create: if isRealUser()
         && request.auth.uid == uid
-        && request.resource.data.role in ['reader', 'writer'];
+        && request.resource.data.role == 'reader';
       // Users can update safe fields on their own doc, but NOT privilege
       // fields. `role` and `extraAccess` are both admin-only — since the
       // security rules now honor extraAccess grants, letting a user write
@@ -263,9 +268,13 @@ service cloud.firestore {
     match /notifications/{notifId} {
       allow read:   if isStaff() && (request.auth.uid == resource.data.recipientId || isAdmin());
       allow create: if false;
+      // read/readAt = the unread dot; cleared/clearedAt = the bell's "Clear
+      // all" (a soft delete — the doc must survive so server-side dedupe
+      // doesn't re-create the same notification later).
       allow update: if isStaff()
                     && request.auth.uid == resource.data.recipientId
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']);
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['read', 'readAt', 'cleared', 'clearedAt']);
       allow delete: if isAdmin();
     }
 

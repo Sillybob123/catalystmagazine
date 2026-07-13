@@ -12,7 +12,7 @@ import {
   doc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
-import { renderPipeline } from "./pipeline.js";
+import { renderPipeline } from "./pipeline.js?v=noiv-1";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 
 export async function mount(ctx, container) {

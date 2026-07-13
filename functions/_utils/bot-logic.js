@@ -546,6 +546,7 @@ export function computeWriterReminders({ projects, users, reminderLog = {}, now 
     let contactDeadlinePassedBy = null;
     if (
       project.type === "Interview" &&
+      !project.noInterview &&
       project.proposalStatus === "approved" &&
       !tl["Interview Scheduled"] &&
       project.deadlines &&
@@ -569,6 +570,7 @@ export function computeWriterReminders({ projects, users, reminderLog = {}, now 
       !queuedForProject &&
       !interviewNotScheduledRuleApplies &&
       project.type === "Interview" &&
+      !project.noInterview &&
       project.proposalStatus === "approved" &&
       !tl["Interview Scheduled"] &&
       project.proposalApprovedAt

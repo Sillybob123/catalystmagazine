@@ -46,8 +46,15 @@ export function initNotificationBell(ctx, getCtx) {
     (err) => console.warn("[notifications] listen failed:", err?.message || err),
   );
 
+  // Cleared notifications stay in Firestore (deleting them would break the
+  // server's dedupe — a bot reminder with the same dedupeId would come back)
+  // but disappear from the bell entirely.
+  function visibleItems() {
+    return items.filter((n) => !n.cleared);
+  }
+
   function unreadCount() {
-    return items.filter((n) => !n.read).length;
+    return visibleItems().filter((n) => !n.read).length;
   }
 
   function paintBadge() {
@@ -109,18 +116,22 @@ export function initNotificationBell(ctx, getCtx) {
 
   function renderPanel() {
     if (!panel) return;
+    const visible = visibleItems();
     const hasUnread = unreadCount() > 0;
     const header = `
       <div class="notif-panel-head">
         <span class="notif-panel-title">Notifications</span>
-        ${hasUnread ? `<button type="button" class="notif-markall" id="notif-markall">Mark all read</button>` : ""}
+        <span class="notif-panel-actions">
+          ${hasUnread ? `<button type="button" class="notif-markall" id="notif-markall">Mark all read</button>` : ""}
+          ${visible.length ? `<button type="button" class="notif-markall notif-clearall" id="notif-clearall" title="Remove every notification from this list">Clear all</button>` : ""}
+        </span>
       </div>`;
 
     let listHtml;
-    if (!items.length) {
+    if (!visible.length) {
       listHtml = `<div class="notif-empty">You're all caught up.</div>`;
     } else {
-      listHtml = `<ul class="notif-list">` + items.map((n) => `
+      listHtml = `<ul class="notif-list">` + visible.map((n) => `
         <li class="notif-item ${n.read ? "" : "is-unread"}" data-id="${esc(n.id)}" tabindex="0" role="button">
           <span class="notif-dot" aria-hidden="true"></span>
           <span class="notif-text">
@@ -134,6 +145,8 @@ export function initNotificationBell(ctx, getCtx) {
 
     const markAll = panel.querySelector("#notif-markall");
     if (markAll) markAll.addEventListener("click", markAllRead);
+    const clearAll = panel.querySelector("#notif-clearall");
+    if (clearAll) clearAll.addEventListener("click", clearAllNotifs);
     panel.querySelectorAll(".notif-item").forEach((li) => {
       const act = () => onItemClick(li.dataset.id);
       li.addEventListener("click", act);
@@ -165,7 +178,7 @@ export function initNotificationBell(ctx, getCtx) {
   }
 
   async function markAllRead() {
-    const unread = items.filter((n) => !n.read);
+    const unread = visibleItems().filter((n) => !n.read);
     if (!unread.length) return;
     try {
       const batch = writeBatch(db);
@@ -174,6 +187,27 @@ export function initNotificationBell(ctx, getCtx) {
       await batch.commit();
     } catch (err) {
       console.warn("[notifications] markAllRead failed:", err?.message || err);
+    }
+  }
+
+  // Empties the inbox: everything currently listed is marked read + cleared
+  // (a soft flag — the docs stay for server-side dedupe, they just never show
+  // in the bell again). Optimistic so the panel empties instantly.
+  async function clearAllNotifs() {
+    const visible = visibleItems();
+    if (!visible.length) return;
+    const now = new Date().toISOString();
+    visible.forEach((n) => { n.cleared = true; if (!n.read) n.read = true; });
+    paintBadge();
+    renderPanel();
+    try {
+      const batch = writeBatch(db);
+      visible.forEach((n) => batch.update(doc(db, "notifications", n.id), {
+        read: true, readAt: n.readAt || now, cleared: true, clearedAt: now,
+      }));
+      await batch.commit();
+    } catch (err) {
+      console.warn("[notifications] clearAll failed:", err?.message || err);
     }
   }
 

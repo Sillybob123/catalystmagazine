@@ -7218,6 +7218,9 @@ button { font-family: inherit; cursor: pointer; }
 }
 .notif-markall:hover { background: var(--accent-soft); }
 .notif-markall:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.notif-panel-actions { display: flex; align-items: center; gap: 4px; }
+.notif-clearall { color: var(--muted); }
+.notif-clearall:hover { background: var(--surface-2, #f1f5f9); color: var(--ink); }
 
 .notif-empty {
   padding: 28px 16px;

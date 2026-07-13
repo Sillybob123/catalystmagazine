@@ -24,7 +24,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { el, toast, initials, openModal } from "./ui.js";
-import { initNotificationBell } from "./notifications.js";
+import { initNotificationBell } from "./notifications.js?v=clear-1";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -101,6 +101,8 @@ const ICONS = {
   search:      `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><polyline points="8 13 10 11 12 13 14 10"/></svg>`,
 
   // Admin
+  // Briefing — a compass (orient yourself: what happened, what to do, who to ping)
+  compass:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`,
   // All articles & approvals — a shield with a check (curation/approvals)
   shieldCheck: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
   // Games — a controller / dice
@@ -226,14 +228,14 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js"),
+    loader: () => import("./overview.js?v=noiv-1"),
   },
   "#/pipeline/interviews": {
     label: "Catalyst in the Capital",
     icon: ICONS.mic,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js"),
+    loader: () => import("./pipeline.js?v=noiv-1"),
     mountKey: "interviews",
   },
   "#/pipeline/opeds": {
@@ -241,7 +243,7 @@ const ROUTES = {
     icon: ICONS.quill,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js"),
+    loader: () => import("./pipeline.js?v=noiv-1"),
     mountKey: "opeds",
   },
   "#/pipeline/mine": {
@@ -249,7 +251,7 @@ const ROUTES = {
     icon: ICONS.clipboard,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js"),
+    loader: () => import("./pipeline.js?v=noiv-1"),
     mountKey: "mine",
   },
   "#/tasks": {
@@ -359,7 +361,7 @@ const ROUTES = {
     icon: ICONS.planner,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
-    loader: () => import("./planner.js"),
+    loader: () => import("./planner.js?v=noiv-1"),
   },
   "#/marketing/analytics": {
     label: "Subscribers & growth",
@@ -401,6 +403,17 @@ const ROUTES = {
     loader: () => import("./searchability.js"),
     mountKey: "searchability",
   },
+  // Briefing — the admin's catch-up page: a plain-English "since you were
+  // away" summary, top tasks, ready-to-publish pieces, who to check in with,
+  // and a digest of every change since the admin last marked themselves
+  // caught up. First stop after time off.
+  "#/admin/briefing": {
+    label: "Your briefing",
+    icon: ICONS.compass,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./briefing.js?v=noiv-1"),
+  },
   // Tasks — the admin's to-do / review / approve queue. Full-page sibling of
   // the "Your tasks" panel on Activity; both share task-engine.js.
   "#/admin/tasks": {
@@ -408,14 +421,14 @@ const ROUTES = {
     icon: ICONS.check,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./tasks-admin.js"),
+    loader: () => import("./tasks-admin.js?v=noiv-1"),
   },
   "#/admin/articles": {
     label: "All articles & approvals",
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=multimail"),
+    loader: () => import("./admin.js?v=pub-1"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -440,7 +453,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=multimail"),
+    loader: () => import("./admin.js?v=pub-1"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -448,7 +461,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=multimail"),
+    loader: () => import("./admin.js?v=pub-1"),
     mountKey: "images",
   },
   "#/admin/advanced": {
@@ -464,7 +477,7 @@ const ROUTES = {
     icon: ICONS.activity,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./activity.js"),
+    loader: () => import("./activity.js?v=noiv-1"),
   },
   // Final-review page — the shareable link the admin sends to the writer after
   // approving. Either the writer (story author) or any admin/editor can land
@@ -475,7 +488,7 @@ const ROUTES = {
     icon: ICONS.check,
     roles: ["admin", "editor", "writer"],
     hidden: true,
-    loader: () => import("./final-review.js?v=scope-fix"),
+    loader: () => import("./final-review.js?v=pub-1"),
   },
 };
 
@@ -561,12 +574,15 @@ async function ensureProfile(user) {
     }
     return data;
   }
-  // First-time login: create a reader/writer profile. Admin will upgrade their role.
+  // First-time login: create a POWERLESS profile — 'reader' / 'pending'. An
+  // admin must promote the account from Users & roles before it gains any
+  // staff access. (Self-assigning 'writer' here was a privilege-escalation
+  // path, and the Firestore rules now only permit self-creating a 'reader'.)
   const profile = {
     name: user.displayName || user.email.split("@")[0],
     email: user.email || "",
-    role: "writer",
-    status: "active",
+    role: "reader",
+    status: "pending",
     createdAt: new Date().toISOString(),
     lastSeenAt: new Date().toISOString(),
   };

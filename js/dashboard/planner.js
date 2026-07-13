@@ -1208,7 +1208,7 @@ function stageLabel(p) {
   if (tl["Edits Addressed"]) return "Final checks";
   if (tl["Review Complete"]) return "Author addressing edits";
   if (tl["Article Writing Complete"]) return "In editing";
-  if (p.type === "Interview" && !tl["Interview Complete"]) {
+  if (p.type === "Interview" && !p.noInterview && !tl["Interview Complete"]) {
     return tl["Interview Scheduled"] ? "Interview scheduled" : "Scheduling interview";
   }
   return "Writing";

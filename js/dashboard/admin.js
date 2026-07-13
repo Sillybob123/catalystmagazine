@@ -14,6 +14,7 @@ import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.
 import { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { el, esc, fmtRelative, fmtDate, statusPill, confirmDialog, openModal, slugify } from "./ui.js";
 import { loadImageLibrary, renderLibraryGrid, uploadToFirebase, openImageLibraryPicker, openArticlePreviewFromData } from "./writer.js";
+import { markStoryPublishedOnProject } from "./publish-sync.js";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -267,6 +268,9 @@ function renderRow(a, editors, ctx, reload) {
         } catch (notifyErr) {
           console.warn("published notify failed (non-blocking):", notifyErr);
         }
+        // Flip the matching workflow-pipeline card from purple ("needs
+        // publishing") to a regular completed card. Best-effort.
+        markStoryPublishedOnProject({ id: a.id, title: a.title }, ctx.profile.name || ctx.user.email);
         ctx.toast("Published.", "success");
         reload();
       } catch (err) { ctx.toast("Publish failed: " + err.message, "error"); }
@@ -1387,6 +1391,9 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
         } catch (notifyErr) {
           console.warn("published notify failed (non-blocking):", notifyErr);
         }
+        // Flip the matching workflow-pipeline card from purple ("needs
+        // publishing") to a regular completed card. Best-effort.
+        markStoryPublishedOnProject({ id: storyId, title: patch.title || story.title }, ctx.profile.name || ctx.user.email);
       }
       ctx.toast("Story updated.", "success");
       m.close();

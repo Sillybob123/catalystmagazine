@@ -346,8 +346,9 @@ export function buildAdminTasks(projects, users, overrides = {}, extras = {}) {
 
     if (project.proposalStatus === "rejected") continue;
 
-    // 2) Interview needs scheduling.
-    if (type === "Interview" && !tl["Interview Scheduled"] && !tl["Interview Complete"]) {
+    // 2) Interview needs scheduling. (Skipped for stories flagged noInterview —
+    //    they have no one to interview, so there's nothing to book.)
+    if (type === "Interview" && !project.noInterview && !tl["Interview Scheduled"] && !tl["Interview Complete"]) {
       tasks.push(mkTask({
         kind: "schedule",
         key: `${project.id}:interview`,

@@ -188,7 +188,7 @@ function stageLabel(p) {
   const tl = p.timeline || {};
   if (tl["Suggestions Reviewed"]) return "Completed";
   if (p.proposalStatus !== "approved") return `Proposal ${p.proposalStatus || "pending"}`;
-  if (p.type === "Interview" && !tl["Interview Complete"])
+  if (p.type === "Interview" && !p.noInterview && !tl["Interview Complete"])
     return tl["Interview Scheduled"] ? "Interview scheduled" : "Schedule interview";
   if (!tl["Article Writing Complete"]) return "Writing";
   if (!tl["Review Complete"]) return "In review";

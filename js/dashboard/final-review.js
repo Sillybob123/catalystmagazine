@@ -19,6 +19,7 @@ import {
   doc, getDoc, updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, confirmDialog, statusPill } from "./ui.js";
+import { markStoryPublishedOnProject } from "./publish-sync.js";
 
 // We deliberately do NOT load /css/article-premium.css as a normal <link> —
 // most of its rules are unscoped (.article-body, .article-share, etc.) and
@@ -176,6 +177,9 @@ export async function mount(ctx, container) {
       } catch (notifyErr) {
         console.warn("published notify failed (non-blocking):", notifyErr);
       }
+      // Flip the matching workflow-pipeline card from purple ("needs
+      // publishing") to a regular completed card. Best-effort.
+      markStoryPublishedOnProject({ id: storyId, title: story.title }, ctx.profile?.name || ctx.user.email);
       ctx.toast("Published. It's live on the site.", "success");
       publishBtn.textContent = "Published";
     } catch (err) {

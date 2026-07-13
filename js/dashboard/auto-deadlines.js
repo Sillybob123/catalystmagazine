@@ -40,9 +40,11 @@ function existing(project, key) {
 // timestamp they're stamping into proposalApprovedAt.
 //
 // Op-Eds skip the contact deadline — they have no professor to chase.
+// So do Interview-type stories flagged noInterview (no one to interview).
 export function deadlinePatchOnApproval(project, now = new Date()) {
   if (!project) return {};
   if ((project.type || "Interview") !== "Interview") return {};
+  if (project.noInterview) return {};
   if (existing(project, "contact")) return {};
   return { "deadlines.contact": addDays(now, 2) };
 }
