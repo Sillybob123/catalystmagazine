@@ -342,12 +342,17 @@
                 const userRef = doc(db, 'users', cred.user.uid);
                 let userDoc = await getDoc(userRef);
 
-                // Auto-provision Firestore doc for accounts created via Firebase console
+                // Auto-provision Firestore doc for accounts created via Firebase
+                // console. New self-provisioned accounts get NO privileges — a
+                // powerless 'reader' with 'pending' status. An admin must grant
+                // the real role from Users & roles before they can enter the
+                // dashboard. (Self-assigning 'writer' here was a privilege-
+                // escalation path — writer unlocks staff-wide reads/PII.)
                 if (!userDoc.exists()) {
                     await setDoc(userRef, {
                         email:       cred.user.email,
-                        role:        'writer',
-                        status:      'active',
+                        role:        'reader',
+                        status:      'pending',
                         displayName: cred.user.displayName || '',
                         createdAt:   new Date(),
                         updatedAt:   new Date(),
@@ -358,11 +363,14 @@
                 const data = userDoc.data();
                 const allowedRoles = ['writer', 'editor', 'admin', 'newsletter_builder', 'marketing'];
 
-                if (!data.role || !allowedRoles.includes(data.role))
-                    throw new Error('Your account does not have the required permissions.');
-
+                // Check activation state first so a freshly self-provisioned
+                // ('reader'/'pending') account gets the clear "contact your
+                // administrator" message instead of a generic permission error.
                 if (data.status === 'pending' || data.status === 'disabled')
                     throw new Error('Your account is pending activation. Contact your administrator.');
+
+                if (!data.role || !allowedRoles.includes(data.role))
+                    throw new Error('Your account does not have the required permissions.');
 
                 window.location.href = '/admin';
 
@@ -428,8 +436,10 @@
             const userRef = doc(db, 'users', user.uid);
             const userDoc = await getDoc(userRef);
             if (!userDoc.exists()) {
+                // Powerless bootstrap — see the sign-in handler above. New
+                // accounts start as 'reader'/'pending' until an admin promotes.
                 await setDoc(userRef, {
-                    email: user.email, role: 'writer', status: 'active',
+                    email: user.email, role: 'reader', status: 'pending',
                     displayName: user.displayName || '', createdAt: new Date(), updatedAt: new Date(),
                 });
             }
