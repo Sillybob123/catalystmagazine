@@ -4,6 +4,7 @@ const QUICK_CHECKLIST = [
   "Write a lead that earns attention and promises a payoff.",
   "Make sure the piece has a concrete angle, not just a broad topic.",
   "Check that every section moves the story forward.",
+  "Vary paragraph length, and let short paragraphs land after long ones.",
   "Attribute every quote and ground every factual claim in reporting.",
   "Define scientific terms for a college-level, science-literate reader.",
   "Avoid prescriptive language unless the piece is explicitly an op-ed.",
@@ -340,8 +341,53 @@ const SECTIONS = [
     `,
   },
   {
-    id: "endings",
+    id: "rhythm",
     number: "09",
+    label: "Craft",
+    title: "Paragraph Rhythm",
+    intro: "Paragraph length is not a formatting detail - it is pacing. A page of uniform blocks reads as a wall no matter how good the sentences are, and a page of one-liners reads as fragments. What follows is the rhythm our published work actually uses.",
+    bodyHtml: `
+      <div class="standards-subhead">One Paragraph, One Idea</div>
+      <p>A paragraph ends when the idea turns, not when it hits a word count. If you cannot say what a paragraph is about in a short phrase, it is holding two ideas and should be split at the seam. This is the only rule here that is actually a rule; everything below describes what tends to follow from it.</p>
+      <p>Two failure modes come from ignoring it. The first is chopping a thought in half because the block looked long on screen, which leaves the reader holding an incomplete idea across a white gap. The second is letting a paragraph quietly pick up a second idea because it still looked short. Length is the symptom you notice; the idea is the thing you are actually editing.</p>
+
+      <div class="standards-subhead">The Shape of a Catalyst Paragraph</div>
+      <div class="standards-feature-grid">
+        <article class="standards-feature-card">
+          <h4>Aim for About Three Sentences</h4>
+          <p>Across our published work the median paragraph runs roughly 66 words and three sentences. Treat that as a center of gravity you drift around, not a target you hit.</p>
+        </article>
+        <article class="standards-feature-card">
+          <h4>Past 120 Words, Justify It</h4>
+          <p>Only about one paragraph in eight runs longer than 120 words. That length is right for a genuinely dense mechanism you cannot fairly split, and wrong as a default.</p>
+        </article>
+        <article class="standards-feature-card">
+          <h4>Under 40 Words, Make It Land</h4>
+          <p>Roughly one in five paragraphs runs short. They work when they carry a turn, a consequence, or a verdict - not when they are simply the leftovers of a longer thought.</p>
+        </article>
+        <article class="standards-feature-card">
+          <h4>Vary on Purpose</h4>
+          <p>Three consecutive paragraphs of the same length flatten the pace even when each one is fine alone. Read your draft for the shape of the blocks, not just the words.</p>
+        </article>
+      </div>
+
+      <div class="standards-subhead">Short Paragraphs Are a Landing, Not an Opener</div>
+      <p>This is the pattern our strongest pieces share. A short paragraph earns its force from what comes before it: it resolves a long passage, reverses it, or hands off to the next section. Placed at the top of a section, where nothing has accumulated yet, the same sentence reads as a fragment.</p>
+      <p>In Aidan Schurr's profile of Rebecca Katz, a 75-word account of her illness is followed by a single line: "This experience, harrowing and surreal, would change everything, she said." The line lands because of the weight in front of it. Later in the same piece, a 117-word passage on outbreak response resolves into "In theory, that level of coordination sounds simple. In practice, it remains elusive."</p>
+      <p>When you are editing, look at the sequence of block lengths rather than any single paragraph. A long stretch that never releases is tiring; a run of short blocks with nothing to land on is choppy. The fix is usually to build one and then release it.</p>
+
+      <div class="standards-subhead">Density Is Usually a Structure Problem</div>
+      <p>When a section feels bunched, adding paragraph breaks often treats the symptom. Dense stretches are usually a sign that the section is carrying too much, and the real fix is a section header or a tighter angle. Our published pieces run a section header roughly every three to four paragraphs, and those headers do more work against wall-of-text than any break ever will. See Depth vs. Breadth for how to narrow what a section is trying to do.</p>
+
+      <aside class="standards-callout standards-callout--warn">
+        <div class="standards-callout-label">It Depends on the Piece</div>
+        <p>These numbers describe the center of our range, not its edges. Profiles and interviews run noticeably tighter, often around 36 to 45 words per paragraph, because they move on scene and quote. Explainers and mechanism-heavy features run denser, sometimes well past 120. Match the rhythm to the form you are writing, and do not edit a profile into an explainer's shape to satisfy an average.</p>
+      </aside>
+    `,
+  },
+  {
+    id: "endings",
+    number: "10",
     label: "Craft",
     title: "Endings & Kickers",
     intro: "A great ending does not just stop the article - it lands it. The final paragraph, or kicker, is your last impression and your last chance to resonate.",
@@ -377,7 +423,7 @@ const SECTIONS = [
   },
   {
     id: "workflow",
-    number: "10",
+    number: "11",
     label: "Workflow",
     title: "The Editing Process",
     intro: "Great journalism is not written in isolation - it is written in collaboration. Editing is not a judgment; it is the final stage of making the work as strong as it can be.",
@@ -398,7 +444,7 @@ const SECTIONS = [
   },
   {
     id: "checklist",
-    number: "11",
+    number: "12",
     label: "Quick Reference",
     title: "Writer's Quick-Reference Checklist",
     intro: "Run through this before submitting any draft.",
