@@ -7,7 +7,11 @@
 // reputation is segmented from transactional mail. Set in Cloudflare Pages
 // env vars. The fallback below uses Resend's onboarding domain only as a
 // last-resort dev default — never use it for real sends.
-export async function sendEmail(env, { to, subject, html, text, replyTo, cc, unsubscribeEmail = null }) {
+// `scheduledAt` (ISO 8601 string, up to 30 days out) hands the message to
+// Resend to hold and deliver later, so we don't need our own queue or cron
+// for delayed sends. Resend returns an id immediately; delivery happens at
+// the requested time.
+export async function sendEmail(env, { to, subject, html, text, replyTo, cc, unsubscribeEmail = null, scheduledAt = null }) {
   const apiKey = env.RESEND_API_KEY;
   const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
   const replyToAddr = env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com";
@@ -42,6 +46,7 @@ export async function sendEmail(env, { to, subject, html, text, replyTo, cc, uns
   // Without this, Gmail/Outlook flag HTML-only mail as a spam signal.
   if (personalizedText) payload.text = personalizedText;
   if (cc) payload.cc = Array.isArray(cc) ? cc : [cc];
+  if (scheduledAt) payload.scheduled_at = scheduledAt;
   if (unsubscribeEmail) {
     payload.headers = {
       // Gmail requires both a mailto: and an https: URL to show its native

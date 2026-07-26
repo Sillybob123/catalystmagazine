@@ -5,9 +5,21 @@
 import { json, badRequest, serverError, isValidEmail, rateLimit } from "../_utils/http.js";
 import { firestoreCreate } from "../_utils/firebase.js";
 import { sendEmail } from "../_utils/resend.js";
+import {
+  applicationReceivedEmail,
+  applicationReceivedText,
+  founderResumeRequestEmail,
+  founderResumeRequestText,
+} from "../_utils/application-emails.js";
 
 const TEAM_INBOX = "stemcatalystmagazine@gmail.com";
 const TEAM_CC = "helloman696@gmail.com";
+
+// Join-team applicants get a second, personal-sounding email from the
+// co-founders asking for a resume. It is deliberately delayed so it doesn't
+// land next to the automated confirmation — an instant "personal" note reads
+// as a bot. Scheduled through Resend rather than a queue we run ourselves.
+const FOUNDER_FOLLOWUP_DELAY_MS = (60 + 2) * 60 * 1000; // 1h 02m
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -67,16 +79,49 @@ export const onRequestPost = async ({ request, env }) => {
       console.error("Collaborate team notification failed:", err.message);
     }
 
-    // Confirmation to the submitter.
+    // Confirmation to the submitter. Join-team applicants get a dedicated
+    // acknowledgement that asks for nothing — the resume request arrives
+    // separately, later, from the founders.
+    const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
     try {
-      await sendEmail(env, {
-        to: email,
-        replyTo: TEAM_INBOX,
-        subject: "Thanks for reaching out to The Catalyst",
-        html: buildConfirmationEmail({ name, isJoinTeam }),
-      });
+      if (isJoinTeam) {
+        await sendEmail(env, {
+          to: email,
+          replyTo: TEAM_INBOX,
+          subject: "We received your application — The Catalyst",
+          html: applicationReceivedEmail({ name, role, siteUrl }),
+          text: applicationReceivedText({ name, role, siteUrl }),
+        });
+      } else {
+        await sendEmail(env, {
+          to: email,
+          replyTo: TEAM_INBOX,
+          subject: "Thanks for reaching out to The Catalyst",
+          html: buildConfirmationEmail({ name }),
+        });
+      }
     } catch (err) {
       console.error("Collaborate confirmation email failed:", err.message);
+    }
+
+    // Hand the founder resume request to Resend with a future send time.
+    // Resend holds it and delivers at 1h02m — no queue, no cron, and no
+    // risk of a Worker restart dropping it.
+    if (isJoinTeam) {
+      try {
+        await sendEmail(env, {
+          to: email,
+          replyTo: TEAM_INBOX,
+          subject: "Following up on your application",
+          html: founderResumeRequestEmail({ name, role, siteUrl }),
+          text: founderResumeRequestText({ name, role, siteUrl }),
+          scheduledAt: new Date(Date.now() + FOUNDER_FOLLOWUP_DELAY_MS).toISOString(),
+        });
+      } catch (err) {
+        // Non-fatal: the applicant still got their confirmation, and the
+        // team inbox has the application either way.
+        console.error("Founder follow-up scheduling failed:", err.message);
+      }
     }
 
     return json({ ok: true });
@@ -118,15 +163,12 @@ function buildTeamEmail({ name, email, role, selectedRole, otherRole, message, p
   `;
 }
 
-function buildConfirmationEmail({ name, isJoinTeam }) {
-  const joinTeamFollowUp = isJoinTeam
-    ? `<p>Please also reply to this email with your CV or resume attached so our team can review it.</p>`
-    : "";
-
+// Non-join-team submissions (article pitches, proposals). Join-team
+// applicants get applicationReceivedEmail instead.
+function buildConfirmationEmail({ name }) {
   return `
     <p>Hi ${escapeHtml(name)},</p>
     <p>Thanks for your interest in collaborating with The Catalyst. Our team will review your submission and be in touch soon.</p>
-    ${joinTeamFollowUp}
     <p>&mdash; The Catalyst Editorial Team</p>
   `;
 }
