@@ -4109,7 +4109,7 @@ const teamMembers = [
     },
     {
         name: "Lori Preci",
-        role: "Managing Editor, Writer",
+        role: "Managing Editor",
         bio: "Lori is pursuing a masters in biotechnology at Johns Hopkins University, and is also a recent George Washington University graduate with a dual degree in Cellular and Molecular Biology and Chemistry. Her interest in STEM emerged in her sophomore year at GWU as a Biochemistry Lab research assistant, where she witnessed interdisciplinary collaboration happening behind the scenes without any public recognition. Lori views The Catalyst as a bridge between the disconnect in scientific fields, and has the goal of making research more accessible and sparking curiosity in STEM.",
         image: "/LoriCatalyst.webp",
         linkedin: "",
@@ -4125,7 +4125,7 @@ const teamMembers = [
     },
     {
         name: "Le Nguyen",
-        role: "Writer",
+        role: "Editor",
         bio: "Le is a recent George Washington University graduate with a degree in Neuroscience, a minor in Creative Writing, and summa cum laude honors. With extensive research experience spanning neurodevelopment, cardiology, and pulmonary medicine at institutions including GWU School of Medicine, Johns Hopkins, and Minneapolis Heart Institute, Le brings a unique blend of scientific rigor and narrative skill to The Catalyst. Currently in his gap year working as an IR Medical Assistant at Beth Israel Deaconess Medical Center, Le is passionate about the intersections of medicine, research, and health equity as he prepares to pursue medical school.",
         image: "/Le.webp",
         linkedin: "",
@@ -4157,7 +4157,7 @@ const teamMembers = [
     },
     {
         name: "Belinda Li",
-        role: "Writer",
+        role: "Editor",
         bio: "Belinda is a recent graduate of Georgetown University, where she majored in biology and minored in journalism. She has an interest in science writing and journalism, and she is passionate about making science more accessible to a lay audience. Her interest in science communication was shaped through her work as an intern at NASA's Goddard Space Flight Center, where she contributed to projects bridging technical advancements and public understanding. Belinda is fascinated by all areas of science, and she hopes to continue exploring and sharing about science in her future career.",
         image: "/Belinda.webp",
         linkedin: "",
@@ -4192,14 +4192,6 @@ const teamMembers = [
         role: "Writer",
         bio: "Josh is an electrical engineering student at the George Washington University graduating in the spring of 2027. He is involved in science advocacy and engineering policy, particularly within the space and aviation sectors. In his capacity as the Chair of IEEE-GWU and the IEEE Region 2 Student Representative, he strives to make academic and industrial STEM opportunities more accessible to students. He is currently conducting machine learning-based Heliophysics to denoise satellite magnetometry signals and aid scientific understanding of solar storms.",
         image: "/JoshShapo.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
-        name: "Catherine May May Hubbard",
-        role: "Writer",
-        bio: "May May is a recent graduate from George Washington University with a B.S. in Chemistry and minor in Music. With a background in microbiology and infectious disease research, she fell in love with experimentation and piecing together the story that the research told. Teaching is a large part of her journey in education, and in college, she has had the opportunity to share her love for science as an Undergraduate Teaching Assistant for several biology laboratory courses. At The Catalyst, she hopes to use her writing to expand access to scientific knowledge and promote STEM education within the larger DMV community.",
-        image: "/maymay.webp",
         linkedin: "",
         email: ""
     },
@@ -4318,7 +4310,7 @@ const rosterGroups = [
         id: "staff",
         title: "Staff",
         clusters: [
-            { subtitle: "Editing", members: ["Belinda Li", "Alexis Tamm", "Le Nguyen", "Aidan Schurr", "Lori Preci"] },
+            { subtitle: "Editing", members: ["Belinda Li", "Alexis Tamm", "Le Nguyen", "Lori Preci"] },
             { subtitle: "Social Media", members: ["Skye Schurr", "Cameron Fields"] }
         ]
     },
@@ -4335,7 +4327,7 @@ const rosterGroups = [
         title: "Graduate Fellowship",
         blurb: "Graduate fellows bringing advanced research perspectives to the magazine.",
         clusters: [
-            { members: ["Aidan Brown", "Belinda Li", "Lori Preci", "Skye Schurr", "Cameron Fields", "Catherine May May Hubbard", "Le Nguyen"] }
+            { members: ["Aidan Brown", "Skye Schurr", "Cameron Fields"] }
         ]
     }
 ];
