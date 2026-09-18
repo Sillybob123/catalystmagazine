@@ -44,10 +44,8 @@ const ROLE_LABELS = {
 const ICONS = {
   // Workspace
   home:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-  // Catalyst in the Capital — a microphone (interview-led pipeline)
-  mic:         `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`,
-  // Op-Eds — a quill (opinion / argument)
-  quill:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17" y1="15" x2="9" y2="15"/></svg>`,
+  // Story Tracker — kanban columns (every story, grouped by edition)
+  board:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="5.5" y1="7" x2="6.5" y2="7"/><line x1="11.5" y1="7" x2="12.5" y2="7"/><line x1="11.5" y1="11" x2="12.5" y2="11"/><line x1="17.5" y1="7" x2="18.5" y2="7"/></svg>`,
   // My assignments — a clipboard with checks
   clipboard:   `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><polyline points="9 14 11 16 15 12"/></svg>`,
   // Tasks — a numbered list
@@ -180,6 +178,8 @@ function loadPins() {
       if (Array.isArray(v)) saved = v.filter((h) => typeof h === "string");
     }
   } catch {}
+  // A pin on a retired route (e.g. the old Op-Eds board) follows its redirect.
+  saved = saved.map((h) => ROUTES[h]?.redirect || h);
   // Always fold in role defaults (Planner for marketing/social), defaults
   // first, then the user's own pins — deduped. This makes the auto-pin
   // reliable even when previewing a teammate whose localStorage isn't on
@@ -228,30 +228,28 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=noiv-1"),
+    loader: () => import("./overview.js?v=edition-1"),
   },
-  "#/pipeline/interviews": {
-    label: "Catalyst in the Capital",
-    icon: ICONS.mic,
+  // One board for every story (interviews and op-eds alike), filtered by
+  // edition. Replaces the old Catalyst in the Capital / Op-Eds split.
+  "#/pipeline/all": {
+    label: "Story Tracker",
+    icon: ICONS.board,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js?v=noiv-1"),
-    mountKey: "interviews",
+    loader: () => import("./pipeline.js?v=edition-1"),
+    mountKey: "all",
   },
-  "#/pipeline/opeds": {
-    label: "Op-Eds",
-    icon: ICONS.quill,
-    roles: ["*"],
-    group: "main",
-    loader: () => import("./pipeline.js?v=noiv-1"),
-    mountKey: "opeds",
-  },
+  // Old split-board hashes — kept so bookmarks, saved pins, and links in
+  // already-sent emails land on the merged board instead of Overview.
+  "#/pipeline/interviews": { hidden: true, roles: ["*"], redirect: "#/pipeline/all" },
+  "#/pipeline/opeds":      { hidden: true, roles: ["*"], redirect: "#/pipeline/all" },
   "#/pipeline/mine": {
     label: "My assignments",
     icon: ICONS.clipboard,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js?v=noiv-1"),
+    loader: () => import("./pipeline.js?v=edition-1"),
     mountKey: "mine",
   },
   "#/tasks": {
@@ -412,7 +410,7 @@ const ROUTES = {
     icon: ICONS.compass,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./briefing.js?v=noiv-1"),
+    loader: () => import("./briefing.js?v=edition-1"),
   },
   // Tasks — the admin's to-do / review / approve queue. Full-page sibling of
   // the "Your tasks" panel on Activity; both share task-engine.js.
@@ -477,7 +475,7 @@ const ROUTES = {
     icon: ICONS.activity,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./activity.js?v=noiv-1"),
+    loader: () => import("./activity.js?v=edition-1"),
   },
   // Final-review page — the shareable link the admin sends to the writer after
   // approving. Either the writer (story author) or any admin/editor can land
@@ -766,6 +764,7 @@ async function handleRoute() {
   let route = ROUTES[hashPath];
 
   if (!route) { location.hash = "#/overview"; return; }
+  if (route.redirect) { location.replace(route.redirect); return; }
   if (!isRouteAllowed(hashPath, route)) {
     toast("You don't have access to that page.", "error");
     location.hash = "#/overview";

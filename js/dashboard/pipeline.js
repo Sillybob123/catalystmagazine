@@ -3,7 +3,12 @@
  *
  * Views:
  *   mount(ctx, container)  →  renders the full pipeline page
- *     ctx.mountKey: "interviews" | "opeds" | "mine" | undefined (defaults "interviews")
+ *     ctx.mountKey: "all" | "mine" | undefined (defaults "all")
+ *
+ * "all" is the Story Tracker: every story (interviews and op-eds alike) on one
+ * board, filtered by edition. Each project carries an optional `edition`
+ * string; the edition list and the current edition live in
+ * settings/editions ({ names: string[], current: string }), admin-managed.
  *
  * Data lives in catalystwriters-5ce43 (primary Firebase project).
  * Collections: projects, users (editors), tasks, settings
@@ -16,6 +21,7 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
+  setDoc,
   onSnapshot,
   arrayUnion,
   serverTimestamp,
@@ -48,11 +54,17 @@ const COL = {
   DONE:        "Done",
 };
 
+// Op-Eds and no-interview stories never land in Interview Stage — they go
+// straight from Topic Proposal to Writing Stage on the same board.
 const VIEW_COLUMNS = {
-  interviews: [COL.TOPIC_PROPOSAL, COL.INTERVIEW_STAGE, COL.WRITING_STAGE, COL.IN_REVIEW, COL.REVIEWING_SUGGESTIONS, COL.COMPLETED],
-  opeds:      [COL.TOPIC_PROPOSAL, COL.WRITING_STAGE, COL.IN_REVIEW, COL.REVIEWING_SUGGESTIONS, COL.COMPLETED],
-  mine:       [COL.TODO, COL.IN_PROGRESS, COL.MY_REVIEW, COL.DONE],
+  all:  [COL.TOPIC_PROPOSAL, COL.INTERVIEW_STAGE, COL.WRITING_STAGE, COL.IN_REVIEW, COL.REVIEWING_SUGGESTIONS, COL.COMPLETED],
+  mine: [COL.TODO, COL.IN_PROGRESS, COL.MY_REVIEW, COL.DONE],
 };
+
+// Edition filter sentinels (real edition names are free text, so these use a
+// prefix no admin would type).
+const ED_ALL  = "__all__";
+const ED_NONE = "__none__";
 
 const TIMELINE_STEPS = [
   "Topic Proposal Complete",
@@ -363,7 +375,13 @@ let _allUsers    = [];
 // publishedAt by publish-sync.js don't need the title match at all.
 let _publishedTitles = new Set();
 let _publishedTitlesLoaded = false;
-let _view        = "interviews"; // "interviews" | "opeds" | "mine"
+// settings/editions — the admin-managed edition list + which one is current.
+let _editions = { names: [], current: "" };
+let _editionsLoaded = false;
+// Selected tab on the Story Tracker: ED_ALL, ED_NONE, or an edition name.
+// null until the first settings snapshot picks a default.
+let _editionFilter = null;
+let _view        = "all"; // "all" | "mine"
 let _uid         = null;
 let _role        = null;
 let _profile     = null;
@@ -431,6 +449,36 @@ function ensureKanbanStyles() {
     .kb-avail-role { font-size:11px; color:#6b7280; }
     .kb-priority { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; color:#fff; letter-spacing:.05em; }
     .kb-desc { font-size:12px; color:#6b7280; margin:4px 0 6px; line-height:1.4; }
+    /* Edition filter — one tab per edition above the Story Tracker board. */
+    .kb-editions { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #e5e7eb;
+      border-radius:12px; padding:6px 8px 6px 14px; margin-bottom:16px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+    .kb-ed-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#64748b; flex-shrink:0; }
+    .kb-ed-tabs { display:flex; gap:4px; flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .kb-ed-tabs::-webkit-scrollbar { display:none; }
+    .kb-ed-tab { min-height:44px; padding:0 14px; border:0; border-radius:8px; background:transparent; cursor:pointer;
+      display:inline-flex; align-items:center; gap:7px; white-space:nowrap; flex-shrink:0;
+      font:600 13px/1 'Inter',-apple-system,BlinkMacSystemFont,sans-serif; color:#475569; transition:background .12s, color .12s; }
+    .kb-ed-tab:hover { background:#f1f5f9; color:#0b1220; }
+    .kb-ed-tab[aria-pressed="true"] { background:var(--accent-soft,#ccfbf1); color:var(--accent,#0f766e); }
+    .kb-ed-tab:focus-visible, .kb-ed-manage:focus-visible { outline:2px solid var(--accent,#0f766e); outline-offset:2px; }
+    .kb-ed-count { font-size:11px; font-weight:700; background:#e5e7eb; color:#6b7280; padding:2px 7px; border-radius:999px; }
+    .kb-ed-tab[aria-pressed="true"] .kb-ed-count { background:#fff; color:var(--accent,#0f766e); }
+    .kb-ed-now { font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--accent,#0f766e); }
+    .kb-ed-manage { flex-shrink:0; min-height:44px; }
+    .kb-badge-edition { background:#ecfeff; color:#0e7490; text-transform:none; letter-spacing:0; }
+    .kb-ed-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#f8fafc; }
+    .kb-ed-row + .kb-ed-row { margin-top:6px; }
+    .kb-ed-row-name { flex:1; min-width:0; font-size:13.5px; font-weight:600; color:#1f2937; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .kb-ed-row-meta { font-size:12px; color:#64748b; white-space:nowrap; }
+    .kb-ed-row label { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#475569; cursor:pointer; min-height:44px; }
+    @media (max-width: 640px) {
+      .kb-editions { flex-wrap:wrap; padding:8px; }
+      .kb-ed-label { width:100%; padding:2px 6px 0; }
+      .kb-ed-manage { width:100%; justify-content:center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .kb-ed-tab { transition:none; }
+    }
   `;
   document.head.appendChild(s);
 }
@@ -442,14 +490,17 @@ export async function mount(ctx, container) {
   _uid     = ctx.user.uid;
   _role    = ctx.role;
   _profile = ctx.profile;
-  _view    = ctx.mountKey || "interviews";
+  // Any legacy mount key ("interviews" / "opeds") lands on the merged board.
+  _view    = ctx.mountKey === "mine" ? "mine" : "all";
+  _editionFilter = null;
+  _editionsLoaded = false;
 
   ensureKanbanStyles();
   container.innerHTML = "";
   container.className = (container.className || "") + " kb-page";
 
-  const viewTitle = _view === "mine" ? "My Assignments" : _view === "opeds" ? "Op-Eds" : "Catalyst in the Capital";
-  const viewSub   = _view === "mine" ? "All your active projects and tasks." : "Every story moves left-to-right through the editorial lifecycle.";
+  const viewTitle = _view === "mine" ? "My Assignments" : "Story Tracker";
+  const viewSub   = _view === "mine" ? "All your active projects and tasks." : "Every story in an edition moves left-to-right through the editorial lifecycle.";
 
   const header = el("div", { class: "kb-header" });
   header.innerHTML = `
@@ -462,6 +513,19 @@ export async function mount(ctx, container) {
       ${_role === "admin" ? `<button class="btn btn-secondary btn-sm" id="pl-report-btn">Status report</button>` : ""}
     </div>`;
   container.appendChild(header);
+
+  if (_view === "all") {
+    const edBar = el("div", { class: "kb-editions", id: "pl-editions" });
+    edBar.addEventListener("click", (e) => {
+      if (e.target.closest("#pl-ed-manage")) { openEditionsModal(); return; }
+      const tab = e.target.closest("[data-edition]");
+      if (!tab) return;
+      _editionFilter = tab.dataset.edition;
+      renderEditionBar();
+      renderBoard();
+    });
+    container.appendChild(edBar);
+  }
 
   const scrollWrap = el("div", { class: "kb-scroll" });
   const boardEl   = el("div", { class: "kb-board", id: "pl-board" });
@@ -485,15 +549,190 @@ export async function mount(ctx, container) {
     container.querySelector("#pl-report-btn")?.addEventListener("click", () => openStatusReport());
   }
 
-  // Live subscription
-  const unsub = onSnapshot(collection(workflowDb, "projects"), snap => {
+  // Live subscriptions: projects + the edition list (the detail and proposal
+  // modals need editions on My Assignments too, not just the tracker).
+  const unsubProjects = onSnapshot(collection(workflowDb, "projects"), snap => {
     _allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderEditionBar();
     renderBoard();
   }, err => {
     boardEl.innerHTML = `<div class="error-state">Failed to load projects: ${esc(err.message)}</div>`;
   });
+  const onEditions = (data) => {
+    _editions = {
+      names: Array.isArray(data?.names) ? data.names.filter(n => typeof n === "string" && n.trim()).map(n => n.trim()) : [],
+      current: typeof data?.current === "string" ? data.current.trim() : "",
+    };
+    _editionsLoaded = true;
+    renderEditionBar();
+    renderBoard();
+  };
+  const unsubEditions = onSnapshot(doc(workflowDb, "settings", "editions"),
+    snap => onEditions(snap.exists() ? snap.data() : null),
+    err => { console.warn("[pipeline] editions load failed", err); onEditions(null); });
 
-  return () => unsub();
+  return () => { unsubProjects(); unsubEditions(); };
+}
+
+// ─── Editions ─────────────────────────────────────────────────────────────────
+
+function projectEdition(p) {
+  return typeof p?.edition === "string" ? p.edition.trim() : "";
+}
+
+// Managed editions in admin order, then any edition a project carries that
+// isn't in the managed list (so no story ever becomes unreachable).
+function allEditionNames() {
+  const names = [..._editions.names];
+  const seen = new Set(names);
+  const extra = [];
+  for (const p of _allProjects) {
+    const e = projectEdition(p);
+    if (e && !seen.has(e)) { seen.add(e); extra.push(e); }
+  }
+  return names.concat(extra.sort((a, b) => a.localeCompare(b)));
+}
+
+// Opens on the current edition (or everything, if none is set); a tab whose
+// edition has since been removed falls back the same way.
+function activeEditionFilter() {
+  const names = allEditionNames();
+  const fallback = _editions.current && names.includes(_editions.current) ? _editions.current : ED_ALL;
+  const f = _editionFilter ?? fallback;
+  if (f === ED_ALL || f === ED_NONE || names.includes(f)) return f;
+  return fallback;
+}
+
+function renderEditionBar() {
+  const bar = document.getElementById("pl-editions");
+  if (!bar || !_editionsLoaded) return;
+  const f = activeEditionFilter();
+  const names = allEditionNames();
+  const unassigned = _allProjects.filter(p => !projectEdition(p)).length;
+  const tabs = [
+    { key: ED_ALL, label: "All editions", n: _allProjects.length },
+    ...names.map(n => ({ key: n, label: n, n: _allProjects.filter(p => projectEdition(p) === n).length, now: n === _editions.current })),
+  ];
+  if (unassigned || f === ED_NONE) tabs.push({ key: ED_NONE, label: "No edition", n: unassigned });
+
+  bar.innerHTML = `
+    <span class="kb-ed-label" id="pl-ed-label">Edition</span>
+    <div class="kb-ed-tabs" role="group" aria-labelledby="pl-ed-label">
+      ${tabs.map(t => `
+        <button type="button" class="kb-ed-tab" data-edition="${esc(t.key)}" aria-pressed="${t.key === f}">
+          ${esc(t.label)}${t.now ? `<span class="kb-ed-now">Current</span>` : ""}<span class="kb-ed-count">${t.n}</span>
+        </button>`).join("")}
+    </div>
+    ${_role === "admin" ? `<button type="button" class="btn btn-secondary btn-sm kb-ed-manage" id="pl-ed-manage">${names.length ? "Manage editions" : "Add an edition"}</button>` : ""}`;
+}
+
+function openEditionsModal() {
+  const counts = new Map();
+  for (const p of _allProjects) {
+    const e = projectEdition(p);
+    if (e) counts.set(e, (counts.get(e) || 0) + 1);
+  }
+  let names = allEditionNames();
+  let current = _editions.current && names.includes(_editions.current) ? _editions.current : "";
+
+  const body = el("div", {});
+  body.innerHTML = `
+    <p style="margin:0 0 14px;font-size:13.5px;color:#475569;line-height:1.5;">
+      The Story Tracker is organized by edition. The <strong>current</strong> edition is the one the tracker opens on and the default for new pitches.
+    </p>
+    <div id="ed-list"></div>
+    <div class="field" style="margin-top:16px;">
+      <label class="label" for="ed-new">Add an edition</label>
+      <div style="display:flex;gap:8px;">
+        <input class="input" id="ed-new" maxlength="60" placeholder="e.g. Fall 2026" style="flex:1;">
+        <button type="button" class="btn btn-secondary" id="ed-add">Add</button>
+      </div>
+    </div>
+    <div id="ed-err" style="color:var(--danger);font-size:12px;margin-top:6px;"></div>`;
+
+  const listEl = body.querySelector("#ed-list");
+  const errEl  = body.querySelector("#ed-err");
+  const renderList = () => {
+    if (!names.length) {
+      listEl.innerHTML = `<div class="kb-empty" style="padding:14px 8px;">No editions yet. Add the first one below.</div>`;
+      return;
+    }
+    listEl.innerHTML = names.map((n, i) => {
+      const used = counts.get(n) || 0;
+      return `
+        <div class="kb-ed-row">
+          <span class="kb-ed-row-name" title="${esc(n)}">${esc(n)}</span>
+          <span class="kb-ed-row-meta">${used} ${used === 1 ? "story" : "stories"}</span>
+          <label><input type="radio" name="ed-current" value="${i}" ${n === current ? "checked" : ""}> Current</label>
+          <button type="button" class="btn btn-ghost btn-xs" data-remove="${i}" ${used ? `disabled title="Move its ${used} ${used === 1 ? "story" : "stories"} to another edition first"` : ""} style="color:var(--danger);">Remove</button>
+        </div>`;
+    }).join("");
+  };
+  renderList();
+
+  listEl.addEventListener("change", (e) => {
+    if (e.target.name === "ed-current") current = names[Number(e.target.value)] || "";
+  });
+  listEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-remove]");
+    if (!btn || btn.disabled) return;
+    const [removed] = names.splice(Number(btn.dataset.remove), 1);
+    if (removed === current) current = "";
+    renderList();
+  });
+
+  const input = body.querySelector("#ed-new");
+  const add = () => {
+    errEl.textContent = "";
+    const name = input.value.trim().replace(/\s+/g, " ");
+    if (!name) { errEl.textContent = "Type a name for the edition."; return; }
+    if (name.startsWith("__")) { errEl.textContent = "Edition names can't start with underscores."; return; }
+    if (names.some(n => n.toLowerCase() === name.toLowerCase())) { errEl.textContent = `"${name}" already exists.`; return; }
+    names.push(name);
+    if (!current) current = name;
+    input.value = "";
+    renderList();
+    input.focus();
+  };
+  body.querySelector("#ed-add").addEventListener("click", add);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } });
+
+  const saveBtn = el("button", { class: "btn btn-accent" }, "Save editions");
+  const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
+  const m = openModal({ title: "Editions", body, footer: [cancelBtn, saveBtn] });
+  cancelBtn.onclick = m.close;
+  setTimeout(() => input.focus(), 50);
+
+  saveBtn.onclick = async () => {
+    // An edition typed but not yet added shouldn't be silently dropped.
+    if (input.value.trim()) { add(); if (errEl.textContent) return; }
+    saveBtn.disabled = true;
+    // Changing the current edition jumps the board to it. Reset before the
+    // write: Firestore fires the local snapshot (which re-renders) before
+    // setDoc resolves.
+    if (current !== _editions.current) _editionFilter = null;
+    try {
+      await setDoc(doc(workflowDb, "settings", "editions"), {
+        names,
+        current,
+        updatedAt: new Date().toISOString(),
+        updatedBy: _uid,
+      });
+      toast("Editions saved.", "success");
+      m.close();
+    } catch (e) {
+      errEl.textContent = e.message;
+      saveBtn.disabled = false;
+    }
+  };
+}
+
+// <option> list for an edition <select>. `includeNone` adds a blank choice.
+function editionOptionsHtml(selected, { includeNone = false, noneLabel = "Not assigned yet" } = {}) {
+  const names = allEditionNames();
+  if (selected && !names.includes(selected)) names.push(selected);
+  return (includeNone ? `<option value="" ${!selected ? "selected" : ""}>${esc(noneLabel)}</option>` : "")
+    + names.map(n => `<option value="${esc(n)}" ${n === selected ? "selected" : ""}>${esc(n)}${n === _editions.current ? " (current)" : ""}</option>`).join("");
 }
 
 function canPropose() {
@@ -533,24 +772,29 @@ function filterProjects() {
     }
     return mine;
   }
-  const type = _view === "opeds" ? "Op-Ed" : "Interview";
-  return _allProjects.filter(p => p.type === type);
+  const f = activeEditionFilter();
+  if (f === ED_ALL) return _allProjects;
+  if (f === ED_NONE) return _allProjects.filter(p => !projectEdition(p));
+  return _allProjects.filter(p => projectEdition(p) === f);
 }
 
 function renderBoard() {
   const board = document.getElementById("pl-board");
   if (!board) return;
+  // Hold the tracker until the edition list arrives so it doesn't paint every
+  // story and then snap to the current edition a moment later.
+  if (_view === "all" && !_editionsLoaded) return;
   board.innerHTML = "";
 
   const projects = filterProjects();
-  const columns = VIEW_COLUMNS[_view] || VIEW_COLUMNS.interviews;
+  const columns = VIEW_COLUMNS[_view] || VIEW_COLUMNS.all;
 
   for (const colName of columns) {
     const colProjects = projects.filter(p => getProjectState(p, _view, _uid).column === colName);
     board.appendChild(renderColumn(colName, colProjects));
   }
 
-  // Availability column (interviews/opeds views, admin only)
+  // Availability column (Story Tracker, admin only)
   if (_view !== "mine" && _role === "admin") {
     board.appendChild(renderAvailabilityColumn());
   }
@@ -625,10 +869,14 @@ function renderCard(project) {
 
   const authorInitial = (project.authorName || "?")[0].toUpperCase();
   const statusLabel = awaitingPublish ? "Ready to Publish" : published ? "Published" : state.status;
+  // Edition badge is redundant when the board is already filtered to it.
+  const edition = projectEdition(project);
+  const showEdition = edition && !(_view === "all" && activeEditionFilter() === edition);
 
   card.innerHTML = `
     <div class="kb-card-title">${esc(project.title)}${hasDeadlineRequest ? " ⏰" : ""}</div>
     <div class="kb-card-meta">
+      ${showEdition ? `<span class="kb-badge kb-badge-edition">${esc(edition)}</span>` : ""}
       <span class="kb-badge">${esc(project.type || "")}</span>
       <span class="kb-status">${esc(statusLabel)}</span>
       ${awaitingPublish ? `<span class="kb-badge kb-badge-publish">Needs publishing</span>` : ""}
@@ -820,6 +1068,7 @@ function openDetailModal(projectId) {
       or use “Mark as published” below if it's already up.
     </div>` : ""}
     <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#6b7280;margin-bottom:0;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;">
+      <span>Edition: <strong style="color:#1f2937;">${esc(projectEdition(project)||"Not assigned")}</strong></span>
       <span>Author: <strong style="color:#1f2937;">${esc(project.authorName||"—")}</strong></span>
       <span>Editor: <strong style="color:#1f2937;">${esc(project.editorName||"Not assigned")}</strong></span>
       ${due?`<span>Due: <strong style="color:#1f2937;">${fmtDate(due+"T00:00:00")}</strong></span>`:""}
@@ -853,6 +1102,15 @@ function openDetailModal(projectId) {
         ${editorOptions}
       </select>
       <button class="btn btn-accent btn-sm" id="assign-editor-btn">${project.editorId?"Reassign":"Assign"}</button>
+    </div>
+
+    ${divider}
+    ${sec("Edition")}
+    <div style="display:flex;gap:8px;align-items:center;">
+      <select id="edition-select" aria-label="Edition" style="flex:1;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;">
+        ${editionOptionsHtml(projectEdition(project), { includeNone: true, noneLabel: "— No edition —" })}
+      </select>
+      <button class="btn btn-accent btn-sm" id="set-edition-btn">Move</button>
     </div>`:""}
 
     ${divider}
@@ -1180,6 +1438,27 @@ function openDetailModal(projectId) {
     } catch (e) { toast(e.message, "error"); btn.disabled = false; }
   });
 
+  // Move to another edition (admin)
+  body.querySelector("#set-edition-btn")?.addEventListener("click", async () => {
+    const next = body.querySelector("#edition-select")?.value || "";
+    const prev = projectEdition(project);
+    if (next === prev) return toast("The story is already in that edition.", "info");
+    const btn = body.querySelector("#set-edition-btn");
+    btn.disabled = true;
+    try {
+      await updateDoc(doc(workflowDb, "projects", project.id), {
+        edition: next || deleteField(),
+        updatedAt: new Date().toISOString(),
+        lastActivity: serverTimestamp(),
+        activity: arrayUnion({
+          text: next ? `moved the story to ${next}` : `removed the story from ${prev}`,
+          authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString(),
+        }),
+      });
+      toast(next ? `Moved to ${next}.` : "Removed from its edition.", "success"); m.close();
+    } catch (e) { toast(e.message, "error"); btn.disabled = false; }
+  });
+
   // Save deadlines
   body.querySelector("#save-deadlines-btn")?.addEventListener("click", async () => {
     const inputs = body.querySelectorAll(".dl-input");
@@ -1321,12 +1600,29 @@ function openProposalModal(existing) {
   const isEdit = !!existing;
   const p = existing || {};
 
+  // Edition picker — shown once any edition exists. New pitches must pick one
+  // (defaulting to the tab they're on, else the current edition); authors can
+  // move their story but only admins can take it out of an edition entirely.
+  const filterEd = _view === "all" ? activeEditionFilter() : ED_ALL;
+  const defaultEdition = isEdit
+    ? projectEdition(p)
+    : (filterEd !== ED_ALL && filterEd !== ED_NONE ? filterEd : _editions.current || "");
+  const editionField = allEditionNames().length ? `
+    <div class="field">
+      <label class="label" for="pm-edition">Edition${isEdit ? "" : ` <span style="color:var(--danger)">*</span>`}</label>
+      <select class="select" id="pm-edition">
+        ${!defaultEdition ? `<option value="" selected ${isEdit ? "" : "disabled"}>${isEdit ? "Not assigned yet" : "Choose an edition"}</option>` : ""}
+        ${editionOptionsHtml(defaultEdition)}
+      </select>
+    </div>` : "";
+
   const body = el("div", {});
   body.innerHTML = `
     <div class="field">
       <label class="label">Title <span style="color:var(--danger)">*</span></label>
       <input class="input" id="pm-title" placeholder="Article or project title" value="${esc(p.title || "")}">
     </div>
+    ${editionField}
     <div class="grid grid-2">
       <div class="field">
         <label class="label">Type</label>
@@ -1372,8 +1668,10 @@ function openProposalModal(existing) {
     const deadline = body.querySelector("#pm-deadline").value;
     const proposal = body.querySelector("#pm-proposal").value.trim();
     const noInterview = type === "Interview" && body.querySelector("#pm-nointerview").checked;
+    const edition = body.querySelector("#pm-edition")?.value || "";
 
     if (title.length < 3)  { err.textContent = "Title must be at least 3 characters."; return; }
+    if (!isEdit && body.querySelector("#pm-edition") && !edition) { err.textContent = "Choose which edition this story is for."; return; }
     if (!deadline)          { err.textContent = "Publication deadline is required."; return; }
     if (!proposal)          { err.textContent = "A pitch description is required."; return; }
     const dlDate = new Date(deadline);
@@ -1388,6 +1686,7 @@ function openProposalModal(existing) {
       proposal,
       updatedAt: new Date().toISOString(),
     };
+    if (edition) patch.edition = edition;
 
     try {
       if (isEdit) {
@@ -1579,7 +1878,7 @@ export function renderPipeline(mountEl, ctx, { compact = true } = {}) {
   _uid     = ctx.user?.uid;
   _role    = ctx.role;
   _profile = ctx.profile;
-  _view    = "interviews";
+  _view    = "all";
 
   const bodyEl = el("div", { class: "pipeline-embed" });
   mountEl.appendChild(bodyEl);
@@ -1588,16 +1887,15 @@ export function renderPipeline(mountEl, ctx, { compact = true } = {}) {
     collection(workflowDb, "projects"),
     snap => {
       _allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const interviews = _allProjects.filter(p => p.type === "Interview");
       const byCol = {};
-      for (const name of VIEW_COLUMNS.interviews) byCol[name] = [];
-      for (const p of interviews) {
-        const { column } = getProjectState(p, "interviews", _uid);
+      for (const name of VIEW_COLUMNS.all) byCol[name] = [];
+      for (const p of _allProjects) {
+        const { column } = getProjectState(p, "all", _uid);
         if (byCol[column]) byCol[column].push(p);
       }
       bodyEl.innerHTML = "";
       const grid = el("div", { class: "pipeline-embed-grid" });
-      for (const name of VIEW_COLUMNS.interviews) {
+      for (const name of VIEW_COLUMNS.all) {
         const col = byCol[name] || [];
         if (compact && !col.length) continue;
         const colEl = el("div", { class: "pipeline-col" });
@@ -1614,7 +1912,7 @@ export function renderPipeline(mountEl, ctx, { compact = true } = {}) {
           const due = pubDeadline(p);
           item.innerHTML = `
             <div class="pipeline-item-title">${esc(truncate(p.title || "Untitled", 55))}</div>
-            <div class="pipeline-item-meta">${esc([p.type, author && `by ${author}`, due && `due ${fmtShort(due)}`].filter(Boolean).join(" · "))}</div>`;
+            <div class="pipeline-item-meta">${esc([projectEdition(p), p.type, author && `by ${author}`, due && `due ${fmtShort(due)}`].filter(Boolean).join(" · "))}</div>`;
           item.addEventListener("click", () => openDetailModal(p.id));
           colBody.appendChild(item);
         });

@@ -80,8 +80,9 @@ export function fmtRelative(v) {
   return new Date(ms).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function pipelineHref(project) {
-  return `#/pipeline/${project.type === "Op-Ed" ? "opeds" : "interviews"}`;
+// Every story lives on the one Story Tracker board now.
+function pipelineHref() {
+  return "#/pipeline/all";
 }
 
 // Absolute date label like "May 18" / "May 18, 2024" (older years get the year),

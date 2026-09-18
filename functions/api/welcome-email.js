@@ -150,9 +150,9 @@ function roleGuide(role) {
       blurb: "Editors at The Catalyst wear two hats. You're the second pair of eyes on other writers' pieces — reviewing drafts, leaving notes, and signing off when they're publication-ready — and you're expected to pitch and write your own articles too. Most weeks you'll be doing both at the same time.",
       steps: [
         ...common,
-        "Open the <strong>Story Tracker</strong> pages in the sidebar — <strong>Catalyst in the Capital</strong>, <strong>Op-Eds</strong>, and <strong>My assignments</strong>. That's where every story moves through proposal, writing, review, and completion.",
-        "Use <strong>Catalyst in the Capital</strong> for interview/reporting pieces, <strong>Op-Eds</strong> for opinion pieces, and <strong>My assignments</strong> to track the projects assigned to you or written by you.",
-        "<strong>For writing your own pieces:</strong> open <strong>Catalyst in the Capital</strong> for an interview/reporting story or <strong>Op-Eds</strong> for an opinion piece, then click <strong>Propose a new story</strong> in the top-right corner. Wait for admin approval before drafting. The full writer workflow — proposal → writing → review → suggestions reviewed — applies to you too.",
+        "Open <strong>Story Tracker</strong> in the sidebar. Every story, interview/reporting pieces and op-eds alike, lives on that one board and moves through proposal, writing, review, and completion.",
+        "The tabs across the top of the Story Tracker filter it by <strong>edition</strong>; it opens on the current edition. Use <strong>My assignments</strong> to track the projects assigned to you or written by you.",
+        "<strong>For writing your own pieces:</strong> open <strong>Story Tracker</strong> and click <strong>Propose a new story</strong> in the top-right corner. Wait for admin approval before drafting. The full writer workflow — proposal → writing → review → suggestions reviewed — applies to you too.",
         "<strong>For editing others' pieces:</strong> when a writer finishes a draft, the article moves into the <strong>In Review</strong> column. Click into the article card to start reviewing. Leave inline notes directly in the editor — writers see them immediately. Be specific and kind: point at the sentence, suggest the fix.",
         "When you've finished reviewing someone's draft, open the article's <strong>Timeline</strong> panel and tick <strong>Review Complete</strong>. You'll be asked to confirm a 12-item editorial checklist before it'll let you mark it complete — this is the Catalyst editorial standards gate.",
         "After the writer addresses your notes, they'll resubmit. Once you're satisfied, an admin will move it to publish.",
@@ -187,9 +187,9 @@ function roleGuide(role) {
             <p style="margin:0 0 10px;">This is the part new editors miss most often: <strong>My assignments is not where you create a proposal.</strong> My assignments is only a tracking view for work already connected to you.</p>
             <ol style="margin:0 0 12px;padding-left:22px;color:#1d1d1f;font-size:0.93rem;line-height:1.65;">
               <li>Open the dashboard from this link: <a href="https://www.catalyst-magazine.com/admin/login" style="color:#14532d;font-weight:700;">www.catalyst-magazine.com/admin/login</a>.</li>
-              <li>From the sidebar, click <strong>Catalyst in the Capital</strong> if you are pitching an interview/reporting piece, or <strong>Op-Eds</strong> if you are pitching an opinion piece.</li>
+              <li>From the sidebar, click <strong>Story Tracker</strong>.</li>
               <li>Click <strong>Propose a new story</strong> in the top-right corner of that Story Tracker page.</li>
-              <li>Fill in the <strong>Title</strong>, choose the <strong>Type</strong>, select a realistic <strong>Publication deadline</strong>, and write the <strong>Pitch / proposal</strong>.</li>
+              <li>Fill in the <strong>Title</strong>, choose the <strong>Edition</strong> and the <strong>Type</strong> (interview/reporting or op-ed), select a realistic <strong>Publication deadline</strong>, and write the <strong>Pitch / proposal</strong>.</li>
               <li>In the pitch box, explain the angle, why the story matters now, and the source, paper, professor, organization, or primary document you expect to use.</li>
               <li>Click <strong>Submit proposal</strong>. The project will appear in <strong>Topic Proposal</strong> as <em>pending</em> until an admin approves it.</li>
               <li>After approval, use <strong>My assignments</strong> to find and track your own project.</li>
@@ -202,7 +202,7 @@ function roleGuide(role) {
           body: `
             <p style="margin:0 0 10px;">A quick note up front: at The Catalyst, the editor role is really an <strong>editor / writer</strong> role. We expect every editor to be pitching and drafting their own pieces alongside the editing work. The same Story Tracker, the same proposal-and-approval flow, and the same Timeline checkboxes apply to your own articles.</p>
             <p style="margin:0 0 10px;">When you're editing, you're acting on someone else's project. When you're writing, you're driving your own — exactly the way our writers do. The sections below cover both sides; please read them all.</p>
-            <p style="margin:0;">A practical tip: use <strong>My assignments</strong> to focus on your own work and assigned edits, then switch back to <strong>Catalyst in the Capital</strong> or <strong>Op-Eds</strong> when you need the full Story Tracker view.</p>`,
+            <p style="margin:0;">A practical tip: use <strong>My assignments</strong> to focus on your own work and assigned edits, then switch back to <strong>Story Tracker</strong> when you need the full view.</p>`,
         },
         {
           heading: "Writing your own pieces — what gets a proposal approved",
@@ -237,8 +237,8 @@ function roleGuide(role) {
       blurb: "You pitch ideas, draft articles, and shepherd them through review until they're ready to publish. Here's exactly how that works at The Catalyst.",
       steps: [
         ...common,
-        "Open the <strong>Story Tracker</strong> pages in the sidebar. Use <strong>Catalyst in the Capital</strong> for interview/reporting stories, <strong>Op-Eds</strong> for opinion pieces, and <strong>My assignments</strong> to track work connected to you.",
-        "To pitch an idea, open <strong>Catalyst in the Capital</strong> for an interview/reporting piece or <strong>Op-Eds</strong> for an opinion piece, then click <strong>Propose a new story</strong> in the top-right corner.",
+        "Open <strong>Story Tracker</strong> in the sidebar. Every story, interview/reporting pieces and op-eds alike, lives on that one board; the tabs across the top filter it by <strong>edition</strong>. Use <strong>My assignments</strong> to track work connected to you.",
+        "To pitch an idea, open <strong>Story Tracker</strong> and click <strong>Propose a new story</strong> in the top-right corner.",
         "Wait for admin approval. You'll see your project sitting in the <strong>Topic Proposal</strong> column with status <em>pending</em>. Approval typically comes within a few days. If it's <em>rejected</em>, read the note, revise, and resubmit — rejection isn't the end, it's a redirect.",
         "Once approved, the project moves to the <strong>Writing</strong> column. Open it, fill in your interview details and deadlines, then start drafting in the article editor. Your work auto-saves; you don't need to hit a save button.",
         "When your draft is finished, open the project's <strong>Timeline</strong> panel and tick <strong>Article Writing Complete</strong>. You'll be asked to confirm an 8-item self-review checklist (lead, angle, headline, sources, etc.) before it'll let you mark it complete. This is intentional — please take it seriously.",
@@ -254,9 +254,9 @@ function roleGuide(role) {
             <p style="margin:0 0 10px;">Start in the Story Tracker, not the article editor. The proposal creates the project; the article draft comes later, after approval.</p>
             <ol style="margin:0 0 12px;padding-left:22px;color:#1d1d1f;font-size:0.93rem;line-height:1.65;">
               <li>Open the dashboard from this link: <a href="https://www.catalyst-magazine.com/admin/login" style="color:#14532d;font-weight:700;">www.catalyst-magazine.com/admin/login</a>.</li>
-              <li>Click <strong>Catalyst in the Capital</strong> in the sidebar for interview/reporting stories, or <strong>Op-Eds</strong> for opinion pieces.</li>
-              <li>Click <strong>Propose a new story</strong> in the top-right corner. If you are in <strong>My assignments</strong>, you will not see this button; switch back to <strong>Catalyst in the Capital</strong> or <strong>Op-Eds</strong> first.</li>
-              <li>Enter a working <strong>Title</strong>, choose the story <strong>Type</strong>, select a realistic <strong>Publication deadline</strong>, and write the <strong>Pitch / proposal</strong>.</li>
+              <li>Click <strong>Story Tracker</strong> in the sidebar.</li>
+              <li>Click <strong>Propose a new story</strong> in the top-right corner. If you are in <strong>My assignments</strong>, you will not see this button; switch back to <strong>Story Tracker</strong> first.</li>
+              <li>Enter a working <strong>Title</strong>, choose the <strong>Edition</strong> and the story <strong>Type</strong> (interview/reporting or op-ed), select a realistic <strong>Publication deadline</strong>, and write the <strong>Pitch / proposal</strong>.</li>
               <li>Your pitch should answer: What is the exact angle? Why does it matter now? Who or what is your primary source?</li>
               <li>Click <strong>Submit proposal</strong>. Do not start drafting yet; wait until an admin approves it.</li>
               <li>Once approved, the project moves into <strong>Writing</strong>. From then on, you can find it in <strong>My assignments</strong> and begin drafting.</li>

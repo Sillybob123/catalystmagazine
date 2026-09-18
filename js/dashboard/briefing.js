@@ -59,8 +59,9 @@ function toMs(v) {
   return isNaN(t) ? 0 : t;
 }
 
-function pipelineHref(project) {
-  return `#/pipeline/${project.type === "Op-Ed" ? "opeds" : "interviews"}`;
+// Every story lives on the one Story Tracker board now.
+function pipelineHref() {
+  return "#/pipeline/all";
 }
 
 function firstName(name) {

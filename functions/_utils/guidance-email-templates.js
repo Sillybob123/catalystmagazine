@@ -24,10 +24,10 @@ const base = {
         heading: "Where to go first",
         bullets: [
           "Open the dashboard: catalyst-magazine.com/admin/login.",
-          "In the sidebar, use Catalyst in the Capital for interview/reporting stories.",
-          "In the sidebar, use Op-Eds for opinion pieces.",
+          "In the sidebar, open Story Tracker. Interview/reporting stories and op-eds share one board.",
+          "Use the edition tabs at the top of the Story Tracker to switch editions. It opens on the current edition.",
           "In the sidebar, use My assignments when you want to see only work connected to you.",
-          "To propose a new story, open Catalyst in the Capital or Op-Eds, then click Propose a new story in the top-right corner.",
+          "To propose a new story, open Story Tracker, then click Propose a new story in the top-right corner.",
         ],
       },
       {
@@ -120,8 +120,8 @@ const base = {
       {
         heading: "Step 4 — Confirm the article type",
         bullets: [
-          "Make sure the story is filed under the correct type: an interview or reporting piece belongs under Catalyst in the Capital, and an opinion piece belongs under Op-Eds.",
-          "If the type looks wrong, reply to this email or message an admin so we can move it to the right place — the type controls where the story is tracked and how it's published.",
+          "Make sure the story has the correct type: Interview for an interview or reporting piece, Op-Ed for an opinion piece.",
+          "If the type looks wrong, reply to this email or message an admin so we can fix it — the type controls how the story is published.",
         ],
       },
       {
@@ -162,10 +162,9 @@ const base = {
         heading: "Where to create it",
         bullets: [
           "Open the dashboard: catalyst-magazine.com/admin/login.",
-          "In the sidebar, click Catalyst in the Capital for interview/reporting stories.",
-          "In the sidebar, click Op-Eds for opinion pieces.",
-          "Click Propose a new story in the top-right corner.",
-          "If you are in My assignments, switch back to Catalyst in the Capital or Op-Eds first. My assignments is for tracking existing work, not creating a proposal.",
+          "In the sidebar, click Story Tracker. Interview/reporting stories and op-eds share one board.",
+          "Click Propose a new story in the top-right corner, then choose the edition the story is for.",
+          "If you are in My assignments, switch back to Story Tracker first. My assignments is for tracking existing work, not creating a proposal.",
         ],
       },
       {

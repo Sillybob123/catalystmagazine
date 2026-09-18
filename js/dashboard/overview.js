@@ -12,7 +12,7 @@ import {
   doc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
-import { renderPipeline } from "./pipeline.js?v=noiv-1";
+import { renderPipeline } from "./pipeline.js?v=edition-1";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 
 export async function mount(ctx, container) {
@@ -104,10 +104,10 @@ export async function mount(ctx, container) {
   pipeline.innerHTML = `
     <div class="card-header">
       <div>
-        <div class="card-title">Catalyst in the Capital — Editorial workflow</div>
+        <div class="card-title">Story Tracker — Editorial workflow</div>
         <div class="card-subtitle">Live from the scheduler database</div>
       </div>
-      <a class="btn btn-ghost btn-sm" href="#/pipeline/interviews">Full view &rarr;</a>
+      <a class="btn btn-ghost btn-sm" href="#/pipeline/all">Full view &rarr;</a>
     </div>
     <div id="pipeline-mount"></div>`;
   container.appendChild(pipeline);

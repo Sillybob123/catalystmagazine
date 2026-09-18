@@ -643,7 +643,7 @@ function renderPersonProjectRow(proj) {
   row.innerHTML = `
     <div class="act-proj-title">
       <span class="act-proj-role">${esc(proj.role)}</span>
-      <a href="#/pipeline/${proj.type === "Op-Ed" ? "opeds" : "interviews"}" class="act-proj-link">${esc(proj.title)}</a>
+      <a href="#/pipeline/all" class="act-proj-link">${esc(proj.title)}</a>
     </div>
     <div class="act-proj-meta">
       <span>${esc(proj.status)}</span>
