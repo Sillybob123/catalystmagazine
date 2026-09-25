@@ -52,7 +52,7 @@ export async function sendEmail(env, { to, subject, html, text, replyTo, cc, uns
       // Gmail requires both a mailto: and an https: URL to show its native
       // unsubscribe button. The mailto: is the legacy fallback; the https:
       // is the RFC 8058 one-click endpoint. Both must be present.
-      "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe/${encodeURIComponent(recipient)}>`,
+      "List-Unsubscribe": `<mailto:${replyToAddr}?subject=unsubscribe>, <${siteUrl}/api/unsubscribe/${encodeURIComponent(recipient)}>`,
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     };
   }
@@ -116,7 +116,7 @@ export async function sendBulkEmail(env, { recipients, subject, html, text, html
             reply_to: replyToAddr,
             track: { click: false, open: false },
             headers: {
-              "List-Unsubscribe": `<mailto:unsubscribe@catalyst-magazine.com?subject=unsubscribe>, <${siteUrl}/api/unsubscribe/${encodeURIComponent(email)}>`,
+              "List-Unsubscribe": `<mailto:${replyToAddr}?subject=unsubscribe>, <${siteUrl}/api/unsubscribe/${encodeURIComponent(email)}>`,
               "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
             },
           };

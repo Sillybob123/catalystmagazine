@@ -208,7 +208,7 @@
                     <h1 class="unsub-title">We couldn't find that address.</h1>
                     <p class="unsub-body" id="not-found-body"></p>
                     <div class="unsub-actions">
-                        <a href="mailto:contact@catalyst-magazine.com" class="btn btn-primary">Email us to remove</a>
+                        <a href="mailto:stemcatalystmagazine@gmail.com?subject=Unsubscribe" class="btn btn-primary">Email us to remove</a>
                         <a href="/" class="btn btn-secondary">Back to Home</a>
                     </div>
                 </div>
@@ -224,7 +224,7 @@
                     <h1 class="unsub-title">We hit an error.</h1>
                     <p class="unsub-body" id="error-body"></p>
                     <div class="unsub-actions">
-                        <a href="mailto:contact@catalyst-magazine.com" class="btn btn-primary">Email us to remove</a>
+                        <a href="mailto:stemcatalystmagazine@gmail.com?subject=Unsubscribe" class="btn btn-primary">Email us to remove</a>
                         <a href="/" class="btn btn-secondary">Back to Home</a>
                     </div>
                 </div>
@@ -275,8 +275,8 @@
 
         if (error) {
             document.getElementById("error-body").textContent = error === "invalid"
-                ? "The unsubscribe link appears to be malformed. Email us at contact@catalyst-magazine.com and we'll remove you manually."
-                : "We ran into a server error. Please try again in a moment, or email us at contact@catalyst-magazine.com.";
+                ? "The unsubscribe link appears to be malformed. Email us at stemcatalystmagazine@gmail.com and we'll remove you manually."
+                : "We ran into a server error. Please try again in a moment, or email us at stemcatalystmagazine@gmail.com.";
             show("error");
             return;
         }
@@ -299,8 +299,8 @@
 
         if (status === "not_found") {
             document.getElementById("not-found-body").innerHTML = email
-                ? `We don't have <strong>${escHtml(email)}</strong> on our list. If you think this is a mistake, please email us at <a href="mailto:contact@catalyst-magazine.com">contact@catalyst-magazine.com</a>.`
-                : "We couldn't find a subscription for that address. Please email us at <a href=\"mailto:contact@catalyst-magazine.com\">contact@catalyst-magazine.com</a>.";
+                ? `We don't have <strong>${escHtml(email)}</strong> on our list. If you think this is a mistake, please email us at <a href="mailto:stemcatalystmagazine@gmail.com">stemcatalystmagazine@gmail.com</a>.`
+                : "We couldn't find a subscription for that address. Please email us at <a href=\"mailto:stemcatalystmagazine@gmail.com\">stemcatalystmagazine@gmail.com</a>.";
             show("not-found");
             return;
         }
