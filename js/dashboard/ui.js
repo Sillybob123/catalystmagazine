@@ -144,3 +144,15 @@ export function statusPill(status) {
   const cls = map[status] || "pill pill-draft";
   return `<span class="${cls}">${esc(status || "draft")}</span>`;
 }
+
+// Drop every public-site story-listing cache (home, /articles, /book-reviews)
+// in this tab so a publish/edit shows up on the next page load. Matches by
+// prefix so bumping a cache version on the public site can't silently turn
+// this into a no-op again (it used to clear a key the site no longer used).
+export function clearPublicStoryCache() {
+  try {
+    Object.keys(sessionStorage)
+      .filter((k) => k.startsWith("catalyst_fs_"))
+      .forEach((k) => sessionStorage.removeItem(k));
+  } catch {}
+}

@@ -11,7 +11,9 @@
 
     const FALLBACK_IMAGE = '/NewsletterHeader1.png';
     const PAGE_SIZE      = 9;
-    const CACHE_KEY      = 'catalyst_fs_cache_v6'; // shared with articles-new.js / main.js
+    // Own key: this page selects review bodies, a different shape from the
+    // home/articles listing caches.
+    const CACHE_KEY      = 'catalyst_fs_reviews_cache_v1';
 
     // ---------- DOM refs ----------
     const featuredEl   = document.getElementById('br-featured');
@@ -270,7 +272,7 @@
         return list.map((item) => normalizeReview({ ...item, source: 'local' })).filter(Boolean);
     }
 
-    // Synchronous cache reader. Returns whatever the shared session cache
+    // Synchronous cache reader. Returns whatever the session cache
     // has right now (could be stale, could be empty). Used to paint the
     // page before the network probe resolves.
     function loadCachedReviews() {
@@ -332,7 +334,7 @@
                         { fieldPath: 'genre' }
                     ]
                 },
-                limit: 80
+                limit: 200
             }
         };
 
@@ -2142,10 +2144,9 @@
         setupReviewsModal();
 
         const prime = () => {
-            // Seed paint: prefer the shared session cache (built by main.js
-            // or articles-new.js on a previous visit in this tab) so the
-            // page paints with real data immediately. Fall back to whatever
-            // is in window.articles (data.js).
+            // Seed paint: prefer this page's session cache (from a previous
+            // visit in this tab) so the page paints with real data
+            // immediately. Fall back to whatever is in window.articles (data.js).
             const seedRaw = loadCachedReviews();
             const seed = seedRaw.length ? seedRaw : loadLocal();
             const split = splitReviews(seed);

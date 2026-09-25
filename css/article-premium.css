@@ -449,6 +449,12 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
 }
 .article-hero__meta .reading-time {
   display: inline-flex; align-items: center; gap: 6px;
+  /* Reset the card-level .reading-time rule in styles.css (muted grey +
+     margin-left:auto), which made this nearly invisible on the dark hero
+     and shoved it to the far edge. */
+  color: inherit;
+  font-size: inherit;
+  margin-left: 0;
 }
 .article-hero__caption {
   position: absolute;

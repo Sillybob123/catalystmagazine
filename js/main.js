@@ -2,15 +2,9 @@
 // THE CATALYST MAGAZINE - MAIN JAVASCRIPT
 // ============================================
 
-// Diagnostic marker: confirms main.js parsed and executed at all. If this line
-// doesn't appear in the console, the script never ran (HTML parse issue,
-// CSP block, MIME mismatch, etc.). Temporary — added 2026-05-22 to chase
-// the "articles don't render" bug.
-console.log('[catalyst] main.js loaded @', new Date().toISOString(), 'pathname=', window.location.pathname);
 window.__catalystMainLoaded = true;
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[catalyst] DOMContentLoaded fired. loadArticles=', typeof loadArticles, 'initApp=', typeof initApp, 'layoutReady=', !!window.layoutReady);
     // Don't block the Firestore fetch on the header/footer fragment requests.
     // They're independent; kicking off loadArticles() in parallel means the
     // hero can render as soon as the data resolves.
@@ -27,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
         : Promise.resolve();
 
     layoutPromise.finally(() => {
-        console.log('[catalyst] layoutPromise settled, calling initApp()');
         try {
             initApp();
         } catch (err) {
@@ -141,7 +134,7 @@ function createProgressiveImage(src, alt, className = '', eager = false, imageSe
         <img
             src="${displaySrc}"
             ${srcsetAttr}
-            alt="${alt}"
+            alt="${escapeHtmlAttr(alt)}"
             class="card-img"
             style="${customStyles}"
             width="${imgWidth}"
@@ -354,12 +347,8 @@ const deepClone = (val) => {
 };
 
 async function initApp() {
-    console.log('[catalyst] initApp() entered');
     try {
     setupNavigation();
-    // setupNewsletterModal is now called by layout.js after header injection,
-    // so skip it here to avoid double-binding.
-    // setupNewsletterModal();
     setupScrollEffects();
     setupScrollToTop();
     setupCollaborationMailto();
@@ -367,18 +356,15 @@ async function initApp() {
 
     // Page-specific initialization
     const page = document.body.dataset.page || detectPage();
-    console.log('[catalyst] initApp page=', page, 'body.dataset.page=', document.body.dataset.page);
     recordGeoVisit(page);
 
     // Render instant skeletons so containers are visible immediately
     renderInitialSkeletons(page);
 
     if (page === 'home' || page === 'articles' || page === 'article') {
-        console.log('[catalyst] awaiting articles (cached promise:', !!window.__articlesPromise, ')');
         // Reuse the load kicked off at DOMContentLoaded so Firestore runs in
         // parallel with the header/footer fetch instead of serially after it.
         const allArticles = await (window.__articlesPromise || loadArticles());
-        console.log('[catalyst] articles loaded:', allArticles.length, 'first title:', allArticles[0]?.title);
         // Book reviews route to /book-reviews. Hide them from home + articles
         // feeds, but keep them in the full set so /article/<slug> still resolves
         // when a reader follows a direct link to a book review.
@@ -397,7 +383,6 @@ async function initApp() {
     } else if (page === 'articles') {
         initArticlesPage(articleData);
     } else if (page === 'article') {
-        console.log('[catalyst] calling initArticleDetailPage with', articleData.length, 'articles');
         initArticleDetailPage(articleData);
     } else if (page === 'about') {
         initAboutPage();
@@ -594,40 +579,9 @@ function createSkeletonArticleCard(type = 'article') {
 // Keep this as a no-op to preserve any existing callers.
 function setupNavigation() {}
 
-// ============================================
-// NEWSLETTER MODAL
-// ============================================
-function setupNewsletterModal() {
-    const newsletterModal = document.getElementById('newsletter-modal');
-    if (!newsletterModal) return;
-
-    const mobileNewsletterBtn = document.getElementById('mobile-newsletter-btn');
-    const desktopSubscribeBtn = document.getElementById('desktop-subscribe-btn');
-    const modalClose = document.getElementById('newsletter-modal-close');
-    const modalOverlay = document.getElementById('newsletter-modal-overlay');
-
-    const openModal = () => {
-        newsletterModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    };
-
-    const closeModal = () => {
-        newsletterModal.classList.remove('active');
-        document.body.style.overflow = '';
-    };
-
-    // Both mobile mail icon and desktop subscribe button open the modal
-    mobileNewsletterBtn?.addEventListener('click', openModal);
-    desktopSubscribeBtn?.addEventListener('click', openModal);
-    modalClose?.addEventListener('click', closeModal);
-    modalOverlay?.addEventListener('click', closeModal);
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && newsletterModal.classList.contains('active')) {
-            closeModal();
-        }
-    });
-}
+// The newsletter modal is wired by setupNewsletterModal() in js/layout.js.
+// Don't redeclare it here: a second global declaration in this later script
+// silently replaces layout.js's version on every page that loads main.js.
 
 // ============================================
 // SCROLL EFFECTS
@@ -703,7 +657,7 @@ function initHeroFeatured(data) {
     container.innerHTML = `
         <div class="hero-featured-grid">
             ${featured.map(article => `
-                <div class="featured-card" onclick="viewArticle('${encodeURIComponent(getArticleLink(article))}')">
+                <div class="featured-card">
                     ${createProgressiveImage(
                         article.image || ARTICLE_FALLBACK_IMAGE,
                         article.title,
@@ -712,9 +666,9 @@ function initHeroFeatured(data) {
                         article.imageSettings // Pass custom image settings
                     )}
                     <div class="featured-card-overlay">
-                        <span class="featured-card-category">${formatCategory(article.category)}</span>
-                        <h3 class="featured-card-title">${article.title}</h3>
-                        <p class="featured-card-meta">${article.author} • ${article.date}</p>
+                        <span class="featured-card-category">${escapeHtmlAttr(formatCategory(article.category))}</span>
+                        <h3 class="featured-card-title"><a class="card-link" href="${escapeHtmlAttr(getArticleLink(article))}">${escapeHtmlAttr(article.title)}</a></h3>
+                        <p class="featured-card-meta">${escapeHtmlAttr(article.author)} • ${escapeHtmlAttr(article.date)}</p>
                     </div>
                 </div>
             `).join('')}
@@ -742,19 +696,19 @@ function initFeaturedStoriesGrid(data = []) {
         const lqipBg = window.__LQIP_MANIFEST && window.__LQIP_MANIFEST[article.image] ? window.__LQIP_MANIFEST[article.image] : '';
         const bgStyle = lqipBg ? `background-image: url('${lqipBg}'); background-size: cover; background-position: center;` : '';
 
+        const readingTime = cardReadingTime(article);
         return `
-        <div class="featured-story-card" onclick="viewArticle('${encodeURIComponent(getArticleLink(article))}')">
-            <div class="featured-story-image lazy-bg" data-bg-image="${article.image || ARTICLE_FALLBACK_IMAGE}" style="${bgStyle}" ${dataAttrs.join(' ')}></div>
+        <div class="featured-story-card">
+            <div class="featured-story-image lazy-bg" data-bg-image="${escapeHtmlAttr(article.image || ARTICLE_FALLBACK_IMAGE)}" style="${bgStyle}" ${dataAttrs.join(' ')}></div>
             <div class="featured-story-content">
-                <span class="featured-story-badge">${formatCategory(article.category)}</span>
-                <h3 class="featured-story-title">${article.title}</h3>
-                <p class="featured-story-excerpt">${article.excerpt}</p>
+                <span class="featured-story-badge">${escapeHtmlAttr(formatCategory(article.category))}</span>
+                <h3 class="featured-story-title"><a class="card-link" href="${escapeHtmlAttr(getArticleLink(article))}">${escapeHtmlAttr(article.title)}</a></h3>
+                <p class="featured-story-excerpt">${escapeHtmlAttr(article.excerpt)}</p>
                 <div class="featured-story-meta">
-                    <span class="featured-story-author">${article.author}</span>
-                    <span>•</span>
-                    <span>${article.date}</span>
-                    <span>•</span>
-                    <span>${article.readingTime || estimateReadingTime(article)}</span>
+                    <span class="featured-story-author">${escapeHtmlAttr(article.author)}</span>
+                    <span aria-hidden="true">•</span>
+                    <span>${escapeHtmlAttr(article.date)}</span>
+                    ${readingTime ? `<span aria-hidden="true">•</span><span>${readingTime}</span>` : ''}
                 </div>
             </div>
         </div>
@@ -885,36 +839,44 @@ function createArticleCard(article) {
     const imageSrc = article.image || ARTICLE_FALLBACK_IMAGE;
     const rawCategory = article.category || 'feature';
     const category = rawCategory === 'article' ? 'feature' : rawCategory;
-    const readingTime = article.readingTime || estimateReadingTime(article);
+    const readingTime = cardReadingTime(article);
     const imageMarkup = createProgressiveImage(
         imageSrc,
         article.title,
         'article-image',
         false,
         article.imageSettings,
-        `<span class="article-category ${category}">${formatCategory(rawCategory)}</span>`
+        `<span class="article-category ${escapeHtmlAttr(category)}">${escapeHtmlAttr(formatCategory(rawCategory))}</span>`
     );
 
     return `
-        <article class="article-card fade-in" onclick="viewArticle('${encodeURIComponent(link)}')">
+        <article class="article-card fade-in">
             ${imageMarkup}
             <div class="article-content">
-                <h3 class="article-title">${article.title}</h3>
-                <p class="article-excerpt">${article.excerpt}</p>
+                <h3 class="article-title"><a class="card-link" href="${escapeHtmlAttr(link)}">${escapeHtmlAttr(article.title)}</a></h3>
+                <p class="article-excerpt">${escapeHtmlAttr(article.excerpt)}</p>
                 <div class="article-meta">
-                    <span class="article-author">${article.author}</span>
-                    <span>${article.date}</span>
-                    <span class="reading-time">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <span class="article-author">${escapeHtmlAttr(article.author)}</span>
+                    <span>${escapeHtmlAttr(article.date)}</span>
+                    ${readingTime ? `<span class="reading-time">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
                         ${readingTime}
-                    </span>
+                    </span>` : ''}
                 </div>
             </div>
         </article>
     `;
+}
+
+// Listing queries leave out the article body to stay fast, so a reading time
+// computed there would only count the one-line excerpt (and every card said
+// "2 min read"). Only show one when the full text is actually available.
+function cardReadingTime(article) {
+    if (article.readingTime) return escapeHtmlAttr(article.readingTime);
+    return article.content ? estimateReadingTime(article) : '';
 }
 
 function renderEditorials() {
@@ -1268,7 +1230,6 @@ function showNotification(message, type = 'success') {
 // ARTICLE DETAIL PAGE
 // ============================================
 async function initArticleDetailPage(data) {
-    console.log('[catalyst] initArticleDetailPage entered. data.length=', data?.length, 'isArray=', Array.isArray(data));
     if (!Array.isArray(data)) {
         console.warn('[catalyst] data not array — redirecting to /articles');
         window.location.href = '/articles';
@@ -1282,10 +1243,8 @@ async function initArticleDetailPage(data) {
     const urlParams = new URLSearchParams(window.location.search);
     const rawId = urlParams.get('id');
     const isBookReviewUrl = window.location.pathname.startsWith('/book-review/');
-    console.log('[catalyst] pathSlug=', pathSlug, 'rawId=', rawId, 'isBookReviewUrl=', isBookReviewUrl);
 
     let article = await resolveArticleForDetailPage({ data, pathSlug, rawId });
-    console.log('[catalyst] resolved article:', article ? { id: article.id, title: article.title, slug: article.slug } : null);
 
     if (!article) {
         console.warn('[catalyst] article not resolved — redirecting to', isBookReviewUrl ? '/book-reviews' : '/articles');
@@ -1305,9 +1264,7 @@ async function initArticleDetailPage(data) {
 
     // Fetch the full Firestore document to get the article body (body/content),
     // which is excluded from the listing query projection to keep it fast.
-    console.log('[catalyst] fetching full body for article.id=', article.id);
     fetchFullArticleBody(article.id).then(full => {
-        console.log('[catalyst] fetchFullArticleBody resolved. full=', full ? { id: full.id, hasContent: !!full.content, blocks: full.blocks?.length || 0, title: full.title } : null);
         if (full) {
             if (full.content) article.content = full.content;
             if (full.blocks && full.blocks.length) article.blocks = full.blocks;
@@ -1322,10 +1279,8 @@ async function initArticleDetailPage(data) {
             if (full.rating != null) article.rating       = full.rating;
             if (full.communityPick !== undefined) article.communityPick = full.communityPick;
         }
-        console.log('[catalyst] calling renderArticleDetail (after full-body fetch)');
         try {
             renderArticleDetail(article);
-            console.log('[catalyst] renderArticleDetail returned cleanly');
         } catch (err) {
             console.error('[catalyst] renderArticleDetail THREW:', err, err?.stack);
         }
@@ -1333,7 +1288,6 @@ async function initArticleDetailPage(data) {
         console.warn('[catalyst] fetchFullArticleBody failed:', err?.message);
         try {
             renderArticleDetail(article);
-            console.log('[catalyst] renderArticleDetail returned cleanly (after fetch fail)');
         } catch (e) {
             console.error('[catalyst] renderArticleDetail THREW (after fetch fail):', e, e?.stack);
         }
@@ -1341,7 +1295,6 @@ async function initArticleDetailPage(data) {
 
     try {
         renderRelatedArticles(article, data);
-        console.log('[catalyst] renderRelatedArticles returned cleanly');
     } catch (err) {
         console.error('[catalyst] renderRelatedArticles THREW:', err, err?.stack);
     }
@@ -3220,7 +3173,10 @@ async function loadFromFirestore() {
     // bookAuthor, rating, isbn) to the shared query projection. Old v4
     // caches don't carry those fields, which is why fresh book reviews
     // weren't appearing on /book-reviews after publish.
-    const CACHE_KEY = 'catalyst_fs_cache_v6';
+    // v7: limit raised from 60 (older stories were silently dropped once the
+    // archive passed 60). /articles and /book-reviews now keep their own
+    // cache keys — their loaders cache different shapes than this one.
+    const CACHE_KEY = 'catalyst_fs_cache_v7';
     try {
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) return JSON.parse(cached);
@@ -3244,8 +3200,7 @@ async function loadFromFirestore() {
             ],
             // Only fetch the fields the listing UI needs — excludes the full
             // article body which can be 50-200 KB per document. The
-            // book-review-specific fields are included so /book-reviews can
-            // reuse the same shared sessionStorage cache without re-fetching.
+            // book-review fields feed the article page's review template.
             select: {
                 fields: [
                     { fieldPath: 'title' },
@@ -3273,17 +3228,15 @@ async function loadFromFirestore() {
                     { fieldPath: 'genre' },
                 ]
             },
-            limit: 60
+            limit: 200
         }
     };
 
-    console.log('[catalyst] loadFromFirestore: POSTing to', endpoint);
     const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
     });
-    console.log('[catalyst] loadFromFirestore: response status=', res.status, 'ok=', res.ok);
     if (!res.ok) {
         const errText = await res.text().catch(() => '(no body)');
         console.error('[catalyst] loadFromFirestore failed body:', errText.slice(0, 500));
@@ -3291,7 +3244,6 @@ async function loadFromFirestore() {
     }
 
     const rows = await res.json();
-    console.log('[catalyst] loadFromFirestore: raw rows length=', Array.isArray(rows) ? rows.length : 'NOT-ARRAY', 'sample:', JSON.stringify(rows).slice(0, 200));
     if (!Array.isArray(rows)) return [];
 
     const articles = rows

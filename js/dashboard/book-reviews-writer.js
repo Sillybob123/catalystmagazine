@@ -29,7 +29,7 @@ import {
   collection, doc, addDoc, updateDoc, getDoc, getDocs, deleteDoc,
   query, where, orderBy, serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { el, esc, toast, confirmDialog, fmtRelative, fmtDate, slugify, statusPill } from "./ui.js";
+import { el, esc, toast, confirmDialog, fmtRelative, fmtDate, slugify, statusPill, clearPublicStoryCache } from "./ui.js";
 import { uploadToFirebase } from "./writer.js";
 
 export async function mount(ctx, container) {
@@ -450,7 +450,7 @@ async function saveStory(ctx, card, editingId, desiredStatus, showError, clearEr
 // main feeds, we clear this so the next page load fetches fresh from
 // Firestore instead of serving a stale listing.
 function bustStoriesCache() {
-  try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+  clearPublicStoryCache();
 }
 
 // ============================================================

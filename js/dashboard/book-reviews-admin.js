@@ -18,7 +18,7 @@ import {
   collection, getDocs, orderBy, query,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-import { el, esc, toast, confirmDialog, fmtRelative, fmtDate } from "./ui.js";
+import { el, esc, toast, confirmDialog, fmtRelative, fmtDate, clearPublicStoryCache } from "./ui.js";
 
 const COLLECTION = "bookReviewSubmissions";
 
@@ -240,7 +240,7 @@ async function decide(sub, action, row, reload) {
     );
     // Bust the page's session cache so the new community pick appears
     // immediately when the admin opens /book-reviews.
-    try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+    clearPublicStoryCache();
     reload();
   } catch (err) {
     toast(err.message || "Something went wrong", "error", 5000);

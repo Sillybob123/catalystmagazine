@@ -562,6 +562,8 @@
     transition: background 0.2s var(--an-ease);
 }
 .articlesnew-body .an-search-clear:hover { background: rgba(0, 0, 0, 0.1); }
+/* display:inline-flex above would otherwise override the hidden attribute. */
+.articlesnew-body .an-search-clear[hidden] { display: none; }
 
 /* ---------- Topic (tag) pills ---------- */
 .articlesnew-body .an-topic-inner {

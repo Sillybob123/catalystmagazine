@@ -40,7 +40,16 @@ const excludedFiles = new Set([
   "wrangler.jsonc",
   "firestore.rules",
   "firestore.indexes.json",
-  "DEPLOYMENT-GUIDE.md"
+  "firestore-winners.rules",
+  "firebase.json",
+  "DEPLOYMENT-GUIDE.md",
+  // Internal scratch / legacy files that were being served publicly.
+  "index_backup.html",
+  "email_fixed_1.html",
+  "gameexample.html",
+  "Posts.csv",
+  "newarticlesturcture.json",
+  "article-index.txt"
 ]);
 
 const excludedExtensions = new Set([
@@ -48,11 +57,25 @@ const excludedExtensions = new Set([
   ".md",
   ".py",
   ".sh",
+  ".csv",
   // Source media for hero-frame extraction — large, used as input only.
   // The extracted WebP frames under public/assets/hero-frames/ ship instead.
   ".mov",
   ".mp4"
 ]);
+
+// Credentials must never reach the public bundle, even when they sit in the
+// working tree (they're gitignored, but a local `npm run pages:deploy` copies
+// whatever is on disk). Mirrors the secret patterns in .gitignore.
+const secretFilePatterns = [
+  /firebase-adminsdk.*\.json$/i,
+  /^service-?account.*\.json$/i,
+  /^(secrets|credentials)\.json$/i,
+  /^gsc-.*\.json$/i,
+  /^\.env(\..*)?$/i,
+  /^\.dev\.vars(\..*)?$/i,
+  /\.(pem|key|p12|pfx)$/i
+];
 
 async function resetOutputDirectory() {
   await fs.rm(outputDir, { recursive: true, force: true });
@@ -68,6 +91,10 @@ function shouldSkip(relativePath, dirent) {
   const baseName = path.basename(relativePath);
 
   if (baseName === ".DS_Store") {
+    return true;
+  }
+
+  if (!dirent.isDirectory() && secretFilePatterns.some((re) => re.test(baseName))) {
     return true;
   }
 

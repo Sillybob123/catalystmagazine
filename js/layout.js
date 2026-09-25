@@ -119,9 +119,25 @@ window.layoutReady = Promise.all([
     setupMobileNav();
     setupNavFitGuard();
     setupWelcomePopup();
+    ensureNewsletterHandler();
 }).catch(error => {
     console.error('[Layout] Error loading shared fragments', error);
 });
+
+// Every page gets the header's Subscribe modal (and possibly the welcome
+// popup), but not every page includes newsletter-handler.js. Without it those
+// forms fall back to a native submit — the modal posted to the retired
+// Mailchimp list. Load the handler here so every form goes to /api/subscribe.
+function ensureNewsletterHandler() {
+    if (typeof window.initNewsletterForms === 'function') {
+        window.initNewsletterForms();
+        return;
+    }
+    if (document.querySelector('script[src*="newsletter-handler.js"]')) return;
+    const script = document.createElement('script');
+    script.src = '/js/newsletter-handler.js';
+    document.head.appendChild(script);
+}
 
 // Runtime nav-fit guard. The CSS media query that swaps the desktop nav for the
 // mobile hamburger uses a fixed pixel breakpoint, but the real width the desktop
@@ -208,6 +224,14 @@ function setupMobileNav() {
     const navMenu = document.querySelector('.nav-menu');
     if (!menuToggle || !navMenu) return;
 
+    menuToggle.setAttribute('aria-expanded', 'false');
+
+    const closeMenu = () => {
+        navMenu.classList.remove('open');
+        menuToggle.classList.remove('active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+    };
+
     menuToggle.addEventListener('click', () => {
         const isOpen = navMenu.classList.toggle('open');
         menuToggle.classList.toggle('active', isOpen);
@@ -215,11 +239,14 @@ function setupMobileNav() {
     });
 
     navMenu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-            navMenu.classList.remove('open');
-            menuToggle.classList.remove('active');
-            menuToggle.setAttribute('aria-expanded', 'false');
-        });
+        link.addEventListener('click', closeMenu);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && navMenu.classList.contains('open')) {
+            closeMenu();
+            menuToggle.focus();
+        }
     });
 
     // Mark the active nav link based on the current URL so the highlight
@@ -247,14 +274,23 @@ function setupNewsletterModal() {
     const modalContent = newsletterModal.querySelector('.newsletter-modal-content');
     const firstField = newsletterModal.querySelector('input[name="FNAME"], input[name="firstName"], input[name="EMAIL"], input[name="email"]');
 
+    let opener = null;
     const openModal = () => {
+        opener = document.activeElement;
         newsletterModal.classList.add('active');
+        newsletterModal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
         setTimeout(() => (firstField || modalContent)?.focus({ preventScroll: true }), 120);
     };
     const closeModal = () => {
+        const active = document.activeElement;
+        if (active && newsletterModal.contains(active) && typeof active.blur === 'function') active.blur();
         newsletterModal.classList.remove('active');
+        newsletterModal.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
+        if (opener && document.contains(opener) && typeof opener.focus === 'function') {
+            opener.focus({ preventScroll: true });
+        }
     };
 
     mobileNewsletterBtn?.addEventListener('click', openModal);
@@ -274,10 +310,12 @@ function setupNewsletterModal() {
 function setupWelcomePopup() {
     if (isEditorial) return;
 
-    // Pages that already exist to drive a subscription/conversion shouldn't
-    // also throw the popup at the visitor. Add data-suppress-welcome="1"
-    // to <body> on any such page to opt out.
-    if (document.body.dataset.page === 'raffle') return;
+    // Pages that exist to drive a subscription/conversion, or where the
+    // visitor is filling in a form (contact, applications, unsubscribe),
+    // shouldn't also throw the popup at them. Add data-suppress-welcome="1"
+    // to <body> on any other page to opt out.
+    const suppressedPages = ['raffle', 'unsubscribe', 'contact', 'collaborate', 'sponsors', 'privacy', 'terms'];
+    if (suppressedPages.includes(document.body.dataset.page)) return;
     if (document.body.dataset.suppressWelcome === '1') return;
 
     const STORAGE_KEY = 'catalyst-welcome-seen-v1';
@@ -296,13 +334,10 @@ function setupWelcomePopup() {
         document.cookie = `${COOKIE_KEY}=1; path=/; max-age=${oneYear}; SameSite=Lax`;
     };
 
+    // ?welcome=1 forces the popup for design QA.
     const forceShow = new URLSearchParams(window.location.search).has('welcome');
-    if (hasSeen() && !forceShow) {
-        console.log('[welcome-popup] suppressed: already seen. Add ?welcome=1 to force.');
-        return;
-    }
+    if (hasSeen() && !forceShow) return;
     const openDelay = forceShow ? 350 : 6000;
-    console.log(`[welcome-popup] will appear in ${openDelay}ms`);
 
     const markup = `
         <div class="welcome-popup-overlay" id="welcome-popup-overlay"></div>
@@ -364,14 +399,18 @@ function setupWelcomePopup() {
     const closeBtn = document.getElementById('welcome-popup-close');
     const dismissBtn = document.getElementById('welcome-popup-dismiss');
     const responseDiv = popup.querySelector('.welcome-popup-response');
-    const firstFocus = popup.querySelector('input[name="FNAME"]');
+    const card = popup.querySelector('.welcome-popup-card');
+    let previousFocus = null;
 
     const open = () => {
+        previousFocus = document.activeElement;
         popup.classList.add('active');
         popup.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
         markSeen();
-        setTimeout(() => firstFocus?.focus({ preventScroll: true }), 600);
+        // Focus the dialog itself, not the first input: focusing a text field
+        // the visitor didn't tap pops the on-screen keyboard on Android.
+        setTimeout(() => card?.focus({ preventScroll: true }), 50);
     };
 
     const close = () => {
@@ -385,6 +424,9 @@ function setupWelcomePopup() {
         popup.classList.remove('active');
         popup.setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
+        if (previousFocus && document.contains(previousFocus) && typeof previousFocus.focus === 'function') {
+            previousFocus.focus({ preventScroll: true });
+        }
     };
 
     overlay?.addEventListener('click', close);
@@ -392,7 +434,26 @@ function setupWelcomePopup() {
     dismissBtn?.addEventListener('click', close);
 
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && popup.classList.contains('active')) close();
+        if (!popup.classList.contains('active')) return;
+        if (e.key === 'Escape') {
+            close();
+            return;
+        }
+        // Keep Tab inside the dialog while it's open.
+        if (e.key === 'Tab' && card) {
+            const focusable = Array.from(card.querySelectorAll('button, input, a[href]'))
+                .filter(el => !el.disabled && el.offsetParent !== null);
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && (document.activeElement === first || document.activeElement === card)) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
     });
 
     // Close on successful subscribe — newsletter-handler.js sets a success
@@ -406,7 +467,20 @@ function setupWelcomePopup() {
         observer.observe(responseDiv, { attributes: true, attributeFilter: ['class'] });
     }
 
-    // Show after a deliberate delay so the page has time to settle. The
-    // preview query string opens quickly for design QA.
-    setTimeout(open, openDelay);
+    // Show after a deliberate delay so the page has time to settle. Never
+    // interrupt a visitor who is typing into a form or already has the
+    // Subscribe modal open — check again a little later instead.
+    const visitorIsBusy = () => {
+        const el = document.activeElement;
+        if (el && el.matches && el.matches('input, textarea, select, [contenteditable="true"]')) return true;
+        return !!document.querySelector('.newsletter-modal.active');
+    };
+    const tryOpen = () => {
+        if (visitorIsBusy()) {
+            setTimeout(tryOpen, 4000);
+            return;
+        }
+        open();
+    };
+    setTimeout(tryOpen, openDelay);
 }

@@ -1446,8 +1446,9 @@ img {
 
 .featured-story-meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 4px 12px;
   font-size: 0.85rem;
   color: var(--text-muted);
   padding-top: 16px;
@@ -1458,6 +1459,11 @@ img {
 .featured-story-author {
   font-weight: 600;
   color: var(--text-dark);
+}
+
+/* Wrap between items, never inside one ("Jul 27," / "2026"). */
+.featured-story-meta > span {
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {
@@ -1681,6 +1687,35 @@ img {
 .article-read-btn:hover {
   transform: translateX(4px);
   box-shadow: var(--shadow-glow);
+}
+
+/* ============================================
+   CARD LINKS
+   Story cards are clickable through a real link on the title whose ::after
+   covers the whole card, so they support cmd/middle-click, long-press, the
+   keyboard, and search-engine crawlers (an onclick handler supports none).
+   ============================================ */
+.card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.card-link:focus-visible {
+  outline: none;
+}
+
+.article-card:has(.card-link:focus-visible),
+.featured-card:has(.card-link:focus-visible),
+.featured-story-card:has(.card-link:focus-visible) {
+  outline: 2px solid var(--text-dark);
+  outline-offset: 3px;
 }
 
 /* ============================================
@@ -2483,6 +2518,10 @@ img {
   line-height: 1.6;
   color: var(--text-muted);
   margin-bottom: 16px;
+  /* Name and role stay centered under the photo; multi-line bios read far
+     better ragged-right than centered. */
+  text-align: left;
+  text-wrap: pretty;
 }
 
 .team-member-social {
@@ -6584,6 +6623,13 @@ body[data-page="editorial-studio"] .requires-editor {
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
     text-align: left;
     isolation: isolate;
+}
+
+/* The dialog container takes focus on open (so Tab starts inside it); it
+   isn't itself interactive, so it doesn't need a focus ring. */
+.welcome-popup-card:focus,
+.newsletter-modal-content:focus {
+    outline: none;
 }
 
 .welcome-popup.active .welcome-popup-card {

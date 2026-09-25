@@ -18,7 +18,7 @@ import { db } from "../firebase-config.js";
 import {
   doc, getDoc, updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { el, esc, confirmDialog, statusPill } from "./ui.js";
+import { el, esc, confirmDialog, statusPill, clearPublicStoryCache } from "./ui.js";
 import { markStoryPublishedOnProject } from "./publish-sync.js";
 
 // We deliberately do NOT load /css/article-premium.css as a normal <link> —
@@ -166,7 +166,7 @@ export async function mount(ctx, container) {
       // Bust the public listing cache so /book-reviews and /articles
       // pick up the freshly-published story on the next load instead of
       // serving the previous session-cache snapshot.
-      try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+      clearPublicStoryCache();
       // Congratulate the author by email (CC admins). Best-effort and
       // idempotent server-side — never block or fail the publish on it.
       try {

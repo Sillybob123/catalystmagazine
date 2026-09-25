@@ -1,7 +1,9 @@
 // js/newsletter-handler.js
 // Replaces mailchimp-handler.js. Posts the newsletter form to /api/subscribe.
 
-document.addEventListener('DOMContentLoaded', function () {
+// layout.js injects this script on pages that don't include it, which can be
+// after DOMContentLoaded has already fired — so boot immediately in that case.
+function bootNewsletterForms() {
   const layoutPromise =
     window.layoutReady && typeof window.layoutReady.then === 'function'
       ? window.layoutReady.catch((err) =>
@@ -12,7 +14,13 @@ document.addEventListener('DOMContentLoaded', function () {
   layoutPromise.finally(() => {
     initForms();
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootNewsletterForms);
+} else {
+  bootNewsletterForms();
+}
 
 function initForms() {
   document

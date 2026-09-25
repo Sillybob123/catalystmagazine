@@ -62,8 +62,8 @@
 
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"></noscript>
-    <link rel="preload" href="css/styles.css?v=20260609-names" as="style">
-    <link rel="stylesheet" href="css/styles.css?v=20260609-names">
+    <link rel="preload" href="css/styles.css?v=20260925-review" as="style">
+    <link rel="stylesheet" href="css/styles.css?v=20260925-review">
 
     <!-- DC skyline background (Capitol + Washington Monument) — preload for instant paint -->
     <link rel="preload" as="image" href="dc-skyline.webp" type="image/webp" fetchpriority="low">
@@ -1037,10 +1037,22 @@
         opacity: 1 !important;
       }
       @media (max-width: 640px) {
+        /* Three equal columns so the bar never wraps a tab onto a second row. */
+        body[data-page="home"] .category-filters {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        }
         body[data-page="home"] .filter-btn {
-          padding: 14px 18px !important;
-          font-size: 0.7rem !important;
-          letter-spacing: 0.15em !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          min-height: 48px !important;
+          padding: 12px 6px !important;
+          font-size: 0.66rem !important;
+          letter-spacing: 0.1em !important;
+          line-height: 1.35 !important;
+          text-align: center !important;
+          white-space: normal !important;
         }
       }
 
@@ -1469,9 +1481,9 @@
                             <circle cx="11" cy="11" r="8"></circle>
                             <path d="m21 21-4.35-4.35"></path>
                         </svg>
-                        <input type="text" id="search-input" class="search-input" placeholder="Search articles by title, author, or topic...">
-                        <button id="search-clear" class="search-clear" style="display: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <input type="text" id="search-input" class="search-input" placeholder="Search articles by title, author, or topic…" aria-label="Search articles" autocomplete="off">
+                        <button type="button" id="search-clear" class="search-clear" aria-label="Clear search" style="display: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                                 <line x1="18" y1="6" x2="6" y2="18"></line>
                                 <line x1="6" y1="6" x2="18" y2="18"></line>
                             </svg>
@@ -1495,7 +1507,7 @@
                 <div class="category-filters" style="margin-bottom: 24px;">
                     <a href="/articles" class="filter-btn active">All Articles</a>
                     <a href="/articles?category=editorial" class="filter-btn">Editorials</a>
-                    <a href="brain-teaser" class="filter-btn">Brain Teaser</a>
+                    <a href="/brain-teaser" class="filter-btn">Brain Teaser</a>
                 </div>
 
                 <!-- Topic / tag pills — rendered by main.js from the tags on the
@@ -1651,11 +1663,11 @@
 
     <div id="site-footer"></div>
 
-    <script defer src="js/layout.js?v=20260603-navfix"></script>
+    <script defer src="js/layout.js?v=20260925-review"></script>
     <script defer src="js/newsletter-handler.js"></script>
     <script defer src="js/lqip-manifest.js"></script>
     <script defer src="js/data.js?v=2"></script>
-    <script defer src="js/main.js?v=20260603-topics"></script>
+    <script defer src="js/main.js?v=20260925-review"></script>
     <script>
       // Mobile hero behavior:
       //   1. Drive --p (0 → 1 scroll progress) so the hero copy can zoom

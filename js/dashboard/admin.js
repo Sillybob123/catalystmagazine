@@ -12,7 +12,7 @@ import {
 import { deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { el, esc, fmtRelative, fmtDate, statusPill, confirmDialog, openModal, slugify } from "./ui.js";
+import { el, esc, fmtRelative, fmtDate, statusPill, confirmDialog, openModal, slugify, clearPublicStoryCache } from "./ui.js";
 import { loadImageLibrary, renderLibraryGrid, uploadToFirebase, openImageLibraryPicker, openArticlePreviewFromData } from "./writer.js";
 import { markStoryPublishedOnProject } from "./publish-sync.js";
 
@@ -257,7 +257,7 @@ function renderRow(a, editors, ctx, reload) {
         // Bust the public listing cache so the article (and especially
         // book reviews, which read the same cache key) shows up on the
         // next /book-reviews or /articles load without a hard refresh.
-        try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+        clearPublicStoryCache();
         // Congratulate the author by email (CC admins). Best-effort and
         // idempotent server-side — never block or fail the publish on it.
         try {
@@ -286,7 +286,7 @@ function renderRow(a, editors, ctx, reload) {
           rejectedByName: ctx.profile.name || ctx.user.email,
           updatedAt: new Date().toISOString(),
         });
-        try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+        clearPublicStoryCache();
         ctx.toast("Rejected.", "success"); reload();
       } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
     }
@@ -295,7 +295,7 @@ function renderRow(a, editors, ctx, reload) {
       if (!ok) return;
       try {
         await deleteDoc(doc(db, "stories", a.id));
-        try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+        clearPublicStoryCache();
         ctx.toast("Deleted.", "success"); reload();
       } catch (err) { ctx.toast("Delete failed: " + err.message, "error"); }
     }
@@ -1377,7 +1377,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       // Bust the shared public-listing cache so /book-reviews and /articles
       // pick up the edit on their very next load instead of waiting for
       // the per-tab sessionStorage cache to expire.
-      try { sessionStorage.removeItem("catalyst_fs_cache_v5"); } catch {}
+      clearPublicStoryCache();
       // If this save is what flips the story to "published" (it wasn't before),
       // congratulate the author by email (CC admins). Best-effort + idempotent
       // server-side — never block the save on it. Editing an already-published

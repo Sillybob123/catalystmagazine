@@ -189,8 +189,11 @@
     }
 
     async function loadFirestoreArticles() {
-        // Reuse the same session cache key main.js uses so we don't re-fetch.
-        const CACHE_KEY = 'catalyst_fs_cache_v6';
+        // Own cache key: this page caches objects from its own mapper below,
+        // which don't match main.js's shape (no slug/lightCover, /article/
+        // links only). Sharing one key let whichever page loaded first feed
+        // the other the wrong shape.
+        const CACHE_KEY = 'catalyst_fs_articles_cache_v1';
         try {
             const cached = sessionStorage.getItem(CACHE_KEY);
             if (cached) return JSON.parse(cached).map(fsToNormalized).filter(Boolean);
@@ -224,16 +227,10 @@
                         { fieldPath: 'dek' },
                         { fieldPath: 'category' },
                         { fieldPath: 'slug' },
-                        { fieldPath: 'tags' },
-                        // Book-review fields so the shared session cache
-                        // (also read by /book-reviews) carries them.
-                        { fieldPath: 'communityPick' },
-                        { fieldPath: 'bookAuthor' },
-                        { fieldPath: 'rating' },
-                        { fieldPath: 'isbn' }
+                        { fieldPath: 'tags' }
                     ]
                 },
-                limit: 60
+                limit: 200
             }
         };
 

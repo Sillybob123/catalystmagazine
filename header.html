@@ -1,8 +1,8 @@
 <!-- Header -->
 <header class="header">
     <div class="container nav-container">
-        <button class="mobile-newsletter-btn" id="mobile-newsletter-btn" aria-label="Newsletter">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="mobile-newsletter-btn" id="mobile-newsletter-btn" aria-label="Subscribe to the newsletter" aria-haspopup="dialog">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <rect x="2" y="4" width="20" height="16" rx="2"/>
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
             </svg>
@@ -14,8 +14,8 @@
             <span class="brand-name">The Catalyst</span>
         </a>
 
-        <nav>
-            <ul class="nav-menu">
+        <nav aria-label="Primary">
+            <ul class="nav-menu" id="primary-nav">
                 <li><a href="/" class="nav-link">Home</a></li>
                 <li><a href="/articles" class="nav-link">Articles</a></li>
                 <li><a href="/book-reviews" class="nav-link">Book Reviews</a></li>
@@ -25,10 +25,10 @@
         </nav>
 
         <div class="nav-cta">
-            <button class="btn btn-primary" id="desktop-subscribe-btn">Subscribe</button>
+            <button class="btn btn-primary" id="desktop-subscribe-btn" aria-haspopup="dialog">Subscribe</button>
         </div>
 
-        <button class="menu-toggle" aria-label="Toggle menu">
+        <button class="menu-toggle" aria-label="Menu" aria-controls="primary-nav" aria-expanded="false">
             <span></span>
             <span></span>
             <span></span>
@@ -37,24 +37,25 @@
 </header>
 
 <!-- Newsletter Modal -->
-<div class="newsletter-modal" id="newsletter-modal">
+<div class="newsletter-modal" id="newsletter-modal" role="dialog" aria-modal="true" aria-labelledby="newsletter-modal-title" aria-hidden="true">
     <div class="newsletter-modal-overlay" id="newsletter-modal-overlay"></div>
     <div class="newsletter-modal-content" tabindex="-1">
         <button class="newsletter-modal-close" id="newsletter-modal-close" aria-label="Close">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
         </button>
         <p class="newsletter-modal-eyebrow">The Catalyst Dispatch</p>
-        <h3 class="newsletter-modal-title">Get thoughtful science stories in your inbox.</h3>
+        <h3 class="newsletter-modal-title" id="newsletter-modal-title">Get thoughtful science stories in your inbox.</h3>
         <p class="newsletter-modal-subtitle">A concise note with our strongest stories, D.C. STEM spotlights, and interviews from curious people.</p>
-        <form action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d" method="post" id="mc-embedded-subscribe-form-modal" name="mc-embedded-subscribe-form" class="newsletter-form-glass" novalidate>
+        <!-- Submitted by js/newsletter-handler.js to /api/subscribe (layout.js makes sure it is loaded). -->
+        <form method="post" id="mc-embedded-subscribe-form-modal" class="newsletter-form-glass" novalidate>
             <div class="newsletter-form-grid">
-                <input type="text" name="FNAME" class="form-input-glass" placeholder="First name" required autocomplete="given-name">
-                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last name" required autocomplete="family-name">
+                <input type="text" name="FNAME" class="form-input-glass" placeholder="First name" aria-label="First name" required autocomplete="given-name">
+                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last name" aria-label="Last name" required autocomplete="family-name">
             </div>
-            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL-modal" placeholder="Email address" required autocomplete="email" inputmode="email">
+            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL-modal" placeholder="Email address" aria-label="Email address" required autocomplete="email" inputmode="email">
 
             <!-- Bot prevention -->
             <div aria-hidden="true" style="position: absolute; left: -5000px;">
@@ -63,11 +64,11 @@
 
             <button type="submit" name="subscribe" class="btn btn-primary btn-glass">
                 Subscribe
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
             </button>
-            <div id="mce-response-modal" class="newsletter-response"></div>
+            <div id="mce-response-modal" class="newsletter-response" aria-live="polite"></div>
         </form>
     </div>
 </div>

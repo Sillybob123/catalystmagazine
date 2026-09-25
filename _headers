@@ -6,6 +6,13 @@
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 
+# Shared header/footer fragments are fetched by js/layout.js, not visited.
+# Keep them out of search results.
+/header
+  X-Robots-Tag: noindex
+/footer
+  X-Robots-Tag: noindex
+
 /article
   Cache-Control: public, max-age=0, must-revalidate
 
