@@ -43,3 +43,9 @@
 
 /flappybird.png
   Cache-Control: public, max-age=0, must-revalidate
+
+# Homepage-beta drawing plates. Requested with a ?v= query from
+# homepage-beta.html, so bump that (the V constant) whenever these
+# files change; the URLs themselves can then be cached for a year.
+/beta/*
+  Cache-Control: public, max-age=31536000, immutable
