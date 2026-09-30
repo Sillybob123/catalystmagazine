@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+    <!-- End Google Tag Manager -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- Remove this line when the editions launch. Fall 2024, Summer 2025 and
+         Fall 2025 below are placeholder editions (art, themes and story titles
+         are samples), so the page stays out of search until they are real. -->
+    <meta name="robots" content="noindex, nofollow">
+    <title>The Editions: Every Edition of The Catalyst | The Catalyst Magazine</title>
+    <meta name="description" content="Every edition of The Catalyst, from the first issue in 2024 to the one out now: themes, covers and highlights from each season of student STEM journalism in Washington, D.C.">
+    <meta name="theme-color" content="#f8f7f3">
+    <link rel="canonical" href="https://www.catalyst-magazine.com/editorial-overview">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="The Catalyst Magazine">
+    <meta property="og:title" content="The Editions: Every Edition of The Catalyst">
+    <meta property="og:description" content="Browse every edition of The Catalyst, season by season.">
+    <meta property="og:image" content="https://www.catalyst-magazine.com/editions/og-archive.jpg?v=1">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="The covers of every edition of The Catalyst, fanned out on warm paper.">
+    <meta property="og:url" content="https://www.catalyst-magazine.com/editorial-overview">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.catalyst-magazine.com/editions/og-archive.jpg?v=1">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
+    <style>
+      /* ============================================================
+         THE EDITIONS — the archive of every edition. Same paper, ink
+         and type as the homepage; each edition keeps its own season's
+         colour (--acc / --tint) inside its chapter.
+         ============================================================ */
+      body[data-page="editions"] {
+        --paper: #f8f7f3;  --paper-2: #f1efe8;
+        --ink: #0f172a;  --ink-2: #334155;  --muted: #5b6678;
+        --hair: rgba(15, 23, 42, 0.14);  --hair-2: rgba(15, 23, 42, 0.07);
+        --sans: 'Poppins', system-ui, -apple-system, sans-serif;
+        --serif: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+        --gutter: clamp(18px, 4.5vw, 64px);
+        --maxw: 1280px;
+        --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+        margin: 0; background: var(--paper); color: var(--ink);
+        font: 400 16px/1.6 var(--serif);
+        -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+        overflow-x: clip;
+      }
+      html:has(body[data-page="editions"]) { background: #f8f7f3; }
+      body[data-page="editions"] *, body[data-page="editions"] *::before, body[data-page="editions"] *::after { box-sizing: border-box; }
+      body[data-page="editions"] main { display: block; }
+      body[data-page="editions"] #site-footer .footer { margin-top: 0; }
+
+      .ea-wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gutter); }
+      .ea-kicker {
+        display: inline-flex; align-items: center; gap: 10px; margin: 0;
+        font: 600 12px/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted);
+      }
+      .ea-kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; }
+
+      .ea-btn {
+        display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 24px;
+        border-radius: 999px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+        font: 500 15px/1 var(--sans); text-decoration: none;
+        transition: transform .3s var(--ease-out), background-color .2s, color .2s, border-color .2s;
+      }
+      .ea-btn svg { width: 17px; height: 17px; transition: transform .3s var(--ease-out); }
+      .ea-btn:hover { transform: translateY(-1px); }
+      .ea-btn:hover svg { transform: translateX(3px); }
+      .ea-btn.line { background: transparent; color: var(--ink); border-color: var(--hair); }
+      .ea-btn.line:hover { border-color: var(--ink); }
+      .ea-btn:focus-visible, .ea-fan-item:focus-visible, .ea-years a:focus-visible, .ea-ed-cover:focus-visible {
+        outline: 2px solid var(--ink); outline-offset: 4px;
+      }
+
+      /* ---------- the magazine cover (same build as the edition pages) ---------- */
+      .ea-cover {
+        position: relative; margin: 0; width: 100%;
+        aspect-ratio: 3584 / 4800; container-type: inline-size;
+        border-radius: 3px; overflow: hidden; background: #fff;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, .12), 0 36px 70px -30px rgba(15, 23, 42, .45);
+      }
+      .ea-cover .art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .ea-cover::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background:
+          linear-gradient(90deg, rgba(15,23,42,.16), rgba(15,23,42,0) 2.5%, rgba(255,255,255,.18) 3.5%, rgba(255,255,255,0) 7%),
+          linear-gradient(calc(115deg + var(--sheen, 0deg)), rgba(255,255,255,0) 35%, rgba(255,255,255,.2) 50%, rgba(255,255,255,0) 65%);
+        mix-blend-mode: screen;
+      }
+      .ea-mast { position: absolute; left: 6.5cqw; right: 6.5cqw; top: 5cqw; }
+      .ea-mast img { display: block; width: 100%; height: auto; }
+      .ea-dateline {
+        display: flex; justify-content: space-between; gap: 1em;
+        margin-top: 2.2cqw; padding-top: 1.6cqw; border-top: 1px solid rgba(15,23,42,.55);
+        font: 600 2.35cqw/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: #0f172a;
+      }
+      .ea-cover-title {
+        position: absolute; left: 6.5cqw; width: 42cqw; top: 30cqw; margin: 0;
+        font: italic 400 7.4cqw/1.02 var(--serif); color: #0f172a; letter-spacing: -0.015em;
+      }
+      .ea-cover-lines { position: absolute; left: 6.5cqw; right: 6.5cqw; bottom: 6cqw; display: grid; gap: 1.8cqw; }
+      .ea-cover-lines::before {
+        content: ""; position: absolute; z-index: -1; left: -6.5cqw; right: -6.5cqw; bottom: -6cqw; height: calc(100% + 22cqw);
+        background: linear-gradient(0deg, rgba(251,252,252,.94) 45%, rgba(251,252,252,0));
+      }
+      .ea-cover-lines p { margin: 0; font: 600 3.1cqw/1.25 var(--sans); color: #0f172a; }
+      .ea-cover-lines p span { display: block; font: 500 2.1cqw/1.5 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--acc, #3b6e8f); }
+      /* a night sky: the masthead and title go white */
+      .ea-cover.is-night .ea-mast img { filter: invert(1) brightness(1.08); }
+      .ea-cover.is-night .ea-dateline { color: #f5f1ea; border-top-color: rgba(245,241,234,.6); }
+      .ea-cover.is-night .ea-cover-title { color: #f5f1ea; text-shadow: 0 1px 1.4cqw rgba(24, 22, 52, .55), 0 0 5cqw rgba(24, 22, 52, .35); }
+      .ea-cover.is-night .ea-dateline { text-shadow: 0 1px 1cqw rgba(24, 22, 52, .5); }
+
+      /* ============================================================
+         HERO — the title on the left, every cover fanned on the right
+         ============================================================ */
+      .ea-hero { position: relative; padding: calc(96px + clamp(24px, 6vh, 72px)) 0 clamp(56px, 8vh, 96px); }
+      .ea-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
+      .ea-hero h1 {
+        margin: 22px 0 0; font: 700 clamp(48px, 7vw, 104px)/.95 var(--sans); letter-spacing: -0.04em; color: var(--ink);
+      }
+      .ea-hero h1 em {
+        display: block; margin-top: .16em; font: italic 400 .5em/1.08 var(--serif); letter-spacing: -0.01em; color: var(--ink-2);
+      }
+      .ea-lede { margin: 26px 0 0; max-width: 500px; font: 400 clamp(17px, 1.35vw, 20px)/1.6 var(--serif); color: var(--ink-2); }
+      .ea-facts { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 30px 0 0; padding: 18px 0 0; border-top: 1px solid var(--hair); max-width: 500px; }
+      .ea-facts div { display: grid; gap: 2px; }
+      .ea-facts b { font: 700 26px/1 var(--sans); letter-spacing: -0.02em; }
+      .ea-facts span { font: 500 12px/1.3 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+      .ea-hero .ea-btn { margin-top: 30px; }
+
+      .ea-fan {
+        --cw: clamp(150px, 15.5vw, 228px); --step: 8deg;
+        position: relative; height: calc(var(--cw) * 1.34 + 110px); margin: 0; padding: 0; list-style: none;
+      }
+      .ea-fan li { position: absolute; left: 50%; bottom: 40px; width: var(--cw); margin-left: calc(var(--cw) / -2); }
+      .ea-fan-item {
+        display: block; text-decoration: none; color: inherit;
+        transform-origin: 50% 190%;
+        transform: rotate(0deg) translateY(30px); opacity: 0;
+        transition: transform .9s var(--ease-out), opacity .7s var(--ease-out);
+        transition-delay: calc(var(--i) * 70ms);
+      }
+      .is-ready .ea-fan-item { opacity: 1; transform: rotate(calc((var(--i) - 2) * var(--step))) translateY(0); }
+      .ea-fan:hover { --step: 10.5deg; }
+      .is-ready .ea-fan-item:hover, .is-ready .ea-fan-item:focus-visible {
+        transform: rotate(calc((var(--i) - 2) * var(--step))) translateY(-26px); transition-delay: 0s;
+      }
+      .ea-fan-item .ea-cover { box-shadow: 0 2px 6px rgba(15,23,42,.12), 0 30px 50px -26px rgba(15,23,42,.5); }
+      .ea-fan-tag {
+        position: absolute; left: 50%; top: calc(100% + 12px); transform: translateX(-50%);
+        white-space: nowrap; font: 600 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
+        opacity: 0; transition: opacity .25s;
+      }
+      .ea-fan-item:hover .ea-fan-tag, .ea-fan-item:focus-visible .ea-fan-tag { opacity: 1; }
+
+      /* ============================================================
+         YEAR RAIL — follows you down the page
+         ============================================================ */
+      .ea-rail { position: sticky; top: 94px; z-index: 50; pointer-events: none; }
+      .ea-years {
+        pointer-events: auto; display: inline-flex; align-items: center; gap: 4px; padding: 6px;
+        border: 1px solid var(--hair-2); border-radius: 999px;
+        background: rgba(248, 247, 243, .86); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+        box-shadow: 0 10px 30px -18px rgba(15, 23, 42, .35);
+      }
+      .ea-years span { padding: 0 10px 0 12px; font: 600 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+      .ea-years a {
+        display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: 999px;
+        font: 600 14px/1 var(--sans); color: var(--ink-2); text-decoration: none; transition: background-color .25s, color .25s;
+      }
+      .ea-years a:hover { color: var(--ink); background: rgba(15,23,42,.06); }
+      .ea-years a[aria-current="true"] { background: var(--ink); color: var(--paper); }
+
+      /* ============================================================
+         A YEAR, and its editions
+         ============================================================ */
+      .ea-year { position: relative; }
+      .ea-year-head { display: flex; align-items: baseline; gap: 18px 28px; flex-wrap: wrap; padding: clamp(64px, 9vw, 120px) 0 clamp(28px, 4vw, 44px); }
+      .ea-year-num {
+        font: 700 clamp(88px, 15vw, 210px)/.8 var(--sans); letter-spacing: -0.05em;
+        color: transparent; -webkit-text-stroke: 1.2px rgba(15, 23, 42, .28);
+      }
+      .ea-year-sub { font: 400 clamp(16px, 1.3vw, 19px)/1.4 var(--serif); font-style: italic; color: var(--muted); }
+
+      .ea-ed {
+        --acc: #334155; --tint: #f1efe8;
+        --lift: clamp(150px, 17vw, 270px);         /* how far the cover rises into the banner */
+        position: relative; scroll-margin-top: 150px;
+        padding-bottom: clamp(72px, 9vw, 130px);
+        background: linear-gradient(180deg, var(--tint) 0, var(--tint) 55%, var(--paper) 100%);
+      }
+      .ea-ed + .ea-ed { margin-top: 0; }
+      .ea-banner { position: relative; height: clamp(240px, 36vw, 520px); overflow: hidden; background: var(--tint); }
+      .ea-banner img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 60% 50%; }
+      .ea-banner::after {
+        content: ""; position: absolute; inset: 0; pointer-events: none;
+        background:
+          linear-gradient(180deg, rgba(10,14,24,.34) 0, rgba(10,14,24,0) 30%),
+          linear-gradient(180deg, rgba(0,0,0,0) 55%, var(--tint) 100%);
+      }
+      .ea-banner-label {
+        position: absolute; z-index: 1; top: clamp(18px, 3vw, 34px); left: 0; right: 0;
+        display: flex; justify-content: space-between; align-items: center; gap: 16px;
+        font: 600 12px/1 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: #fbfaf7;
+        text-shadow: 0 1px 12px rgba(0,0,0,.35);
+      }
+      .ea-badge {
+        display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 14px; border-radius: 999px;
+        background: rgba(251,250,247,.92); color: var(--acc); text-shadow: none; letter-spacing: .14em;
+      }
+      .ea-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 18%, transparent); }
+
+      .ea-ed-grid {
+        position: relative; z-index: 2; margin-top: calc(-1 * var(--lift));
+        display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 96px); align-items: start;
+      }
+      .ea-ed.flip .ea-ed-grid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+      .ea-ed.flip .ea-ed-coverwrap { order: 2; }
+      .ea-ed-coverwrap { perspective: 1600px; }
+      .ea-ed.flip .ea-ed-coverwrap { display: flex; justify-content: flex-end; }
+      .ea-ed-cover {
+        --tx: 0deg; --ty: 0deg;
+        display: block; width: min(100%, 380px); text-decoration: none; color: inherit;
+        transform: rotateX(var(--tx)) rotateY(var(--ty)); transition: transform .5s var(--ease-out);
+      }
+      .ea-ed-cover .ea-cover { box-shadow: 0 2px 6px rgba(15,23,42,.14), 0 50px 90px -34px color-mix(in srgb, var(--acc) 55%, rgba(15,23,42,.6)); }
+      .ea-ed-copy { padding-top: calc(var(--lift) + clamp(20px, 3vw, 40px)); max-width: 620px; }
+      .ea-ed-kicker { color: var(--acc); }
+      .ea-ed h2 { margin: 18px 0 0; font: 700 clamp(34px, 4.4vw, 60px)/1 var(--sans); letter-spacing: -0.035em; color: var(--ink); }
+      .ea-ed h2 em { display: block; margin-top: .12em; font: italic 400 .92em/1.05 var(--serif); letter-spacing: -0.01em; color: var(--acc); }
+      .ea-ed-dek { margin: 22px 0 0; font: 400 clamp(17px, 1.3vw, 19px)/1.6 var(--serif); color: var(--ink-2); }
+      .ea-ed-inside { margin: 32px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--hair); }
+      .ea-ed-inside li { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: baseline; padding: 14px 0; border-bottom: 1px solid var(--hair-2); }
+      .ea-ed-inside li span { font: 600 11px/1.4 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--acc); }
+      .ea-ed-inside li b { font: 600 clamp(16px, 1.25vw, 18px)/1.35 var(--sans); letter-spacing: -0.01em; color: var(--ink); }
+      .ea-ed-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; margin-top: 30px; }
+      .ea-ed-foot .ea-btn { background: var(--acc); border-color: var(--acc); }
+      .ea-ed-meta { font: 500 13px/1.4 var(--sans); color: var(--muted); letter-spacing: .02em; }
+      .ea-soon {
+        display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px; border-radius: 999px;
+        border: 1px dashed color-mix(in srgb, var(--acc) 55%, transparent); color: var(--acc);
+        font: 500 14px/1 var(--sans);
+      }
+
+      /* ============================================================
+         CLOSE
+         ============================================================ */
+      .ea-close { padding: clamp(80px, 10vw, 140px) 0 clamp(90px, 11vw, 150px); border-top: 1px solid var(--hair); }
+      .ea-close-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 80px); align-items: end; }
+      .ea-close h2 { margin: 18px 0 0; font: 700 clamp(36px, 5vw, 72px)/.98 var(--sans); letter-spacing: -0.04em; }
+      .ea-close h2 em { font: italic 400 1em/1 var(--serif); letter-spacing: -0.01em; color: var(--ink-2); }
+      .ea-close p { margin: 0 0 22px; font: 400 clamp(17px, 1.3vw, 19px)/1.6 var(--serif); color: var(--ink-2); max-width: 460px; }
+      .ea-close .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+      /* ---------- arrivals ---------- */
+      [data-reveal] { opacity: 0; transform: translateY(26px); transition: opacity 1s var(--ease-out), transform 1.1s var(--ease-out); transition-delay: var(--d, 0s); }
+      [data-reveal].in { opacity: 1; transform: none; }
+      .ea-rise { opacity: 0; transform: translateY(16px); transition: opacity 1s var(--ease-out), transform 1s var(--ease-out); transition-delay: var(--d, 0s); }
+      .is-ready .ea-rise { opacity: 1; transform: none; }
+
+      /* ============================================================
+         PHONES AND TABLETS
+         ============================================================ */
+      @media (max-width: 899px) {
+        .ea-hero { padding-top: 112px; }
+        .ea-hero-grid { grid-template-columns: 1fr; gap: 12px; }
+        .ea-fan { --cw: min(34vw, 170px); --step: 7deg; height: calc(var(--cw) * 1.34 + 90px); order: -1; }
+        .ea-fan li { bottom: 26px; }
+        .ea-fan-tag { display: none; }
+        .ea-facts b { font-size: 22px; }
+        .ea-rail { top: 86px; }
+        .ea-years { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+        .ea-years::-webkit-scrollbar { display: none; }
+        .ea-years span { display: none; }
+        .ea-years { background: rgba(248, 247, 243, .95); }
+        .ea-years a { padding: 0 13px; }
+        .ea-ed { --lift: 34vw; }
+        .ea-banner { height: 58vw; }
+        .ea-banner-label { font-size: 11px; letter-spacing: .14em; }
+        .ea-ed-grid, .ea-ed.flip .ea-ed-grid { grid-template-columns: 1fr; gap: 26px; }
+        .ea-ed.flip .ea-ed-coverwrap { order: 0; justify-content: flex-start; }
+        .ea-ed-cover { width: min(58vw, 300px); }
+        .ea-ed-copy { padding-top: 0; }
+        .ea-ed-inside li { grid-template-columns: 1fr; gap: 4px; }
+        .ea-close-grid { grid-template-columns: 1fr; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ea-fan-item, [data-reveal], .ea-rise, .ea-ed-cover, .ea-btn, .ea-btn svg { transition: none !important; }
+        [data-reveal], .ea-rise { opacity: 1; transform: none; }
+        .ea-fan-item { opacity: 1; transform: rotate(calc((var(--i) - 2) * var(--step))); }
+      }
+    </style>
+</head>
+<body data-page="editions" data-suppress-welcome="1">
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <div id="site-header"></div>
+
+    <main>
+        <!-- ============================ HERO ============================ -->
+        <section class="ea-hero" aria-labelledby="ea-title">
+            <div class="ea-wrap ea-hero-grid">
+                <div class="ea-hero-copy">
+                    <p class="ea-kicker ea-rise">The Catalyst &middot; Edition archive</p>
+                    <h1 id="ea-title" class="ea-rise" style="--d:.08s">The Editions. <em>Every season, bound and kept.</em></h1>
+                    <p class="ea-lede ea-rise" style="--d:.16s">Each edition gathers a season of our reporting around a single idea. Here is every one of them, from the first issue in the fall of 2024 to the edition out now.</p>
+                    <div class="ea-facts ea-rise" style="--d:.24s">
+                        <div><b>5</b><span>Editions</span></div>
+                        <div><b>58</b><span>Stories</span></div>
+                        <div><b>2024&ndash;27</b><span>Seasons</span></div>
+                    </div>
+                    <a class="ea-btn ea-rise" style="--d:.3s" href="#spring-2027">Start with the latest
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+                    </a>
+                </div>
+
+                <!-- oldest on the left, the current edition on top -->
+                <ul class="ea-fan" aria-label="Jump to an edition">
+                    <li><a class="ea-fan-item" href="#fall-2024" style="--i:0" aria-label="Fall 2024: Science in the Capital">
+                        <div class="ea-cover" style="--acc:#8a5a3b">
+                            <img class="art" src="/editions/fall-2024/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async">
+                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Fall 2024</span><span>No. 01</span></div></div>
+                            <p class="ea-cover-title">Science in the Capital</p>
+                        </div>
+                        <span class="ea-fan-tag">Fall 2024</span>
+                    </a></li>
+                    <li><a class="ea-fan-item" href="#summer-2025" style="--i:1" aria-label="Summer 2025: Intelligence in the Capital">
+                        <div class="ea-cover" style="--acc:#4f7a4a">
+                            <img class="art" src="/editions/summer-2025/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async">
+                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Summer 2025</span><span>No. 02</span></div></div>
+                            <p class="ea-cover-title">Intelligence in the Capital</p>
+                        </div>
+                        <span class="ea-fan-tag">Summer 2025</span>
+                    </a></li>
+                    <li><a class="ea-fan-item" href="#fall-2025" style="--i:2" aria-label="Fall 2025: Space and Discovery in the Capital">
+                        <div class="ea-cover is-night" style="--acc:#a4562a">
+                            <img class="art" src="/editions/fall-2025/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async">
+                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Fall 2025</span><span>No. 03</span></div></div>
+                            <p class="ea-cover-title">Space &amp; Discovery in the Capital</p>
+                        </div>
+                        <span class="ea-fan-tag">Fall 2025</span>
+                    </a></li>
+                    <li><a class="ea-fan-item" href="#winter-2026" style="--i:3" aria-label="Winter 2026: Medical Innovation in the Capital">
+                        <div class="ea-cover" style="--acc:#3b6e8f">
+                            <img class="art" src="/editions/winter/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async">
+                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Winter 2026</span><span>No. 04</span></div></div>
+                            <p class="ea-cover-title">Medical Innovation in the Capital</p>
+                        </div>
+                        <span class="ea-fan-tag">Winter 2026</span>
+                    </a></li>
+                    <li><a class="ea-fan-item" href="#spring-2027" style="--i:4" aria-label="Spring 2027, the current edition: Climate and Ecology in the Capital">
+                        <div class="ea-cover" style="--acc:#a8436a">
+                            <img class="art" src="/editions/spring/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async" fetchpriority="high">
+                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Spring 2027</span><span>No. 05</span></div></div>
+                            <p class="ea-cover-title">Climate &amp; Ecology in the Capital</p>
+                        </div>
+                        <span class="ea-fan-tag">Spring 2027 &middot; Current</span>
+                    </a></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- the rail only follows you through the editions, not the close -->
+        <div class="ea-archive">
+        <!-- ========================== YEAR RAIL ========================== -->
+        <div class="ea-rail">
+            <div class="ea-wrap">
+                <nav class="ea-years" aria-label="Editions by year">
+                    <span>Jump to</span>
+                    <a href="#y2027" data-year="2027">2027</a>
+                    <a href="#y2026" data-year="2026">2026</a>
+                    <a href="#y2025" data-year="2025">2025</a>
+                    <a href="#y2024" data-year="2024">2024</a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- ============================= 2027 ============================= -->
+        <section class="ea-year" id="y2027" data-year="2027" aria-labelledby="y2027-label">
+            <div class="ea-wrap ea-year-head" data-reveal>
+                <span class="ea-year-num" id="y2027-label">2027</span>
+                <span class="ea-year-sub">One edition so far &middot; Spring</span>
+            </div>
+
+            <article class="ea-ed" id="spring-2027" style="--acc:#a8436a; --tint:#f9eff0" aria-labelledby="spring-2027-title">
+                <div class="ea-banner">
+                    <img src="/editions/spring/hero-1600.webp?v=1" srcset="/editions/spring/hero-1600.webp?v=1 1600w, /editions/spring/hero-2600.webp?v=1 2600w" sizes="100vw"
+                         alt="" width="1600" height="679" loading="lazy" decoding="async">
+                    <div class="ea-banner-label ea-wrap"><span>No. 05 &middot; Spring 2027</span><span class="ea-badge">Current edition</span></div>
+                </div>
+                <div class="ea-wrap ea-ed-grid">
+                    <div class="ea-ed-coverwrap" data-reveal>
+                        <a class="ea-ed-cover" href="/edition-spring" aria-label="Open the Spring 2027 edition">
+                            <figure class="ea-cover">
+                                <img class="art" src="/editions/spring/cover-1100.webp?v=1" srcset="/editions/spring/cover-700.webp?v=1 700w, /editions/spring/cover-1100.webp?v=1 1100w"
+                                     sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
+                                     alt="The Spring 2027 cover: a pen-and-ink drawing of cherry trees in blossom lining a path to the Capitol dome.">
+                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Spring 2027</span><span>Washington, D.C.</span></div></div>
+                                <p class="ea-cover-title" aria-hidden="true">Climate &amp; Ecology in the Capital</p>
+                                <div class="ea-cover-lines" aria-hidden="true">
+                                    <p><span>Feature</span>Why the Cherry Blossoms Keep Blooming Earlier</p>
+                                    <p><span>Profile</span>Bringing the Anacostia Back to Life</p>
+                                </div>
+                            </figure>
+                        </a>
+                    </div>
+                    <div class="ea-ed-copy" data-reveal style="--d:.1s">
+                        <p class="ea-kicker ea-ed-kicker">Spring 2027 &middot; Climate &amp; ecology</p>
+                        <h2 id="spring-2027-title">Climate &amp; Ecology <em>in the Capital.</em></h2>
+                        <p class="ea-ed-dek">Stories from the rivers, rooftops and blossom-lined paths where Washington is learning how a city lives with its climate.</p>
+                        <ul class="ea-ed-inside" aria-label="Inside this edition">
+                            <li><span>Feature</span><b>Why the Cherry Blossoms Keep Blooming Earlier</b></li>
+                            <li><span>Profile</span><b>Bringing the Anacostia Back to Life</b></li>
+                            <li><span>Feature</span><b>Mapping the Hottest Blocks in Washington</b></li>
+                        </ul>
+                        <div class="ea-ed-foot">
+                            <a class="ea-btn" href="/edition-spring">Open the edition
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                            </a>
+                            <span class="ea-ed-meta">13 stories &middot; Spring 2027</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <!-- ============================= 2026 ============================= -->
+        <section class="ea-year" id="y2026" data-year="2026" aria-labelledby="y2026-label">
+            <div class="ea-wrap ea-year-head" data-reveal>
+                <span class="ea-year-num" id="y2026-label">2026</span>
+                <span class="ea-year-sub">One edition &middot; Winter</span>
+            </div>
+
+            <article class="ea-ed flip" id="winter-2026" style="--acc:#3b6e8f; --tint:#edf2f6" aria-labelledby="winter-2026-title">
+                <div class="ea-banner">
+                    <img src="/editions/winter/hero-1600.webp?v=2" srcset="/editions/winter/hero-1600.webp?v=2 1600w, /editions/winter/hero-2600.webp?v=2 2600w" sizes="100vw"
+                         alt="" width="1600" height="679" loading="lazy" decoding="async">
+                    <div class="ea-banner-label ea-wrap"><span>No. 04 &middot; Winter 2026</span></div>
+                </div>
+                <div class="ea-wrap ea-ed-grid">
+                    <div class="ea-ed-coverwrap" data-reveal>
+                        <a class="ea-ed-cover" href="/edition-winter" aria-label="Open the Winter 2026 edition">
+                            <figure class="ea-cover">
+                                <img class="art" src="/editions/winter/cover-1100.webp?v=1" srcset="/editions/winter/cover-700.webp?v=1 700w, /editions/winter/cover-1100.webp?v=1 1100w"
+                                     sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
+                                     alt="The Winter 2026 cover: a pen-and-ink drawing of the frozen Reflecting Pool looking toward the Washington Monument.">
+                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Winter 2026</span><span>Washington, D.C.</span></div></div>
+                                <p class="ea-cover-title" aria-hidden="true">Medical Innovation in the Capital</p>
+                                <div class="ea-cover-lines" aria-hidden="true">
+                                    <p><span>Feature</span>The AI Listening for Heart Failure</p>
+                                    <p><span>Profile</span>Engineering Cartilage From Scratch</p>
+                                </div>
+                            </figure>
+                        </a>
+                    </div>
+                    <div class="ea-ed-copy" data-reveal style="--d:.1s">
+                        <p class="ea-kicker ea-ed-kicker">Winter 2026 &middot; Medicine</p>
+                        <h2 id="winter-2026-title">Medical Innovation <em>in the Capital.</em></h2>
+                        <p class="ea-ed-dek">Stories from the labs, clinics and classrooms where Washington is building the next generation of medicine.</p>
+                        <ul class="ea-ed-inside" aria-label="Inside this edition">
+                            <li><span>Feature</span><b>The AI Listening for Heart Failure</b></li>
+                            <li><span>Profile</span><b>Engineering Cartilage From Scratch</b></li>
+                            <li><span>Feature</span><b>Health Care on Wheels in Wards 7 and 8</b></li>
+                        </ul>
+                        <div class="ea-ed-foot">
+                            <a class="ea-btn" href="/edition-winter">Open the edition
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                            </a>
+                            <span class="ea-ed-meta">13 stories &middot; Winter 2026</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <!-- ============================= 2025 ============================= -->
+        <section class="ea-year" id="y2025" data-year="2025" aria-labelledby="y2025-label">
+            <div class="ea-wrap ea-year-head" data-reveal>
+                <span class="ea-year-num" id="y2025-label">2025</span>
+                <span class="ea-year-sub">Two editions &middot; Summer and Fall</span>
+            </div>
+
+            <!-- placeholder edition: replace the art, theme and stories when it is real -->
+            <article class="ea-ed" id="fall-2025" style="--acc:#a4562a; --tint:#f6eee5" aria-labelledby="fall-2025-title">
+                <div class="ea-banner">
+                    <img src="/editions/fall-2025/hero-1600.webp?v=1" srcset="/editions/fall-2025/hero-900.webp?v=1 900w, /editions/fall-2025/hero-1600.webp?v=1 1600w, /editions/fall-2025/hero-2600.webp?v=1 2600w" sizes="100vw"
+                         alt="" width="1600" height="679" loading="lazy" decoding="async">
+                    <div class="ea-banner-label ea-wrap"><span>No. 03 &middot; Fall 2025</span></div>
+                </div>
+                <div class="ea-wrap ea-ed-grid">
+                    <div class="ea-ed-coverwrap" data-reveal>
+                        <div class="ea-ed-cover">
+                            <figure class="ea-cover is-night">
+                                <img class="art" src="/editions/fall-2025/cover-1100.webp?v=1" srcset="/editions/fall-2025/cover-700.webp?v=1 700w, /editions/fall-2025/cover-1100.webp?v=1 1100w"
+                                     sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
+                                     alt="The Fall 2025 cover: a pen-and-ink drawing of the Washington Monument at dusk down an avenue of autumn elms, under a crescent moon and a constellation.">
+                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Fall 2025</span><span>Washington, D.C.</span></div></div>
+                                <p class="ea-cover-title" aria-hidden="true">Space &amp; Discovery in the Capital</p>
+                                <div class="ea-cover-lines" aria-hidden="true">
+                                    <p><span>Feature</span>The Dark-Sky Fight Over the National Mall</p>
+                                    <p><span>Profile</span>Tracking Satellites From a Georgetown Rooftop</p>
+                                </div>
+                            </figure>
+                        </div>
+                    </div>
+                    <div class="ea-ed-copy" data-reveal style="--d:.1s">
+                        <p class="ea-kicker ea-ed-kicker">Fall 2025 &middot; Space</p>
+                        <h2 id="fall-2025-title">Space &amp; Discovery <em>in the Capital.</em></h2>
+                        <p class="ea-ed-dek">From the Smithsonian&rsquo;s hangars to the agencies a few blocks away, the people in Washington who study everything beyond it.</p>
+                        <ul class="ea-ed-inside" aria-label="Inside this edition">
+                            <li><span>Feature</span><b>The Dark-Sky Fight Over the National Mall</b></li>
+                            <li><span>Profile</span><b>Tracking Satellites From a Georgetown Rooftop</b></li>
+                            <li><span>Interview</span><b>What a Meteorite Remembers</b></li>
+                        </ul>
+                        <div class="ea-ed-foot">
+                            <span class="ea-soon">Coming to the online archive</span>
+                            <span class="ea-ed-meta">12 stories &middot; Fall 2025</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+
+            <!-- placeholder edition: replace the art, theme and stories when it is real -->
+            <article class="ea-ed flip" id="summer-2025" style="--acc:#4f7a4a; --tint:#eef2ea" aria-labelledby="summer-2025-title">
+                <div class="ea-banner">
+                    <img src="/editions/summer-2025/hero-1600.webp?v=1" srcset="/editions/summer-2025/hero-900.webp?v=1 900w, /editions/summer-2025/hero-1600.webp?v=1 1600w, /editions/summer-2025/hero-2600.webp?v=1 2600w" sizes="100vw"
+                         alt="" width="1600" height="679" loading="lazy" decoding="async">
+                    <div class="ea-banner-label ea-wrap"><span>No. 02 &middot; Summer 2025</span></div>
+                </div>
+                <div class="ea-wrap ea-ed-grid">
+                    <div class="ea-ed-coverwrap" data-reveal>
+                        <div class="ea-ed-cover">
+                            <figure class="ea-cover">
+                                <img class="art" src="/editions/summer-2025/cover-1100.webp?v=1" srcset="/editions/summer-2025/cover-700.webp?v=1 700w, /editions/summer-2025/cover-1100.webp?v=1 1100w"
+                                     sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
+                                     alt="The Summer 2025 cover: a pen-and-ink drawing of the Lincoln Memorial across the Reflecting Pool on a summer evening, with fireflies and faint circuit lines in the water.">
+                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Summer 2025</span><span>Washington, D.C.</span></div></div>
+                                <p class="ea-cover-title" aria-hidden="true">Intelligence in the Capital</p>
+                                <div class="ea-cover-lines" aria-hidden="true">
+                                    <p><span>Feature</span>Teaching Machines to Read the Law</p>
+                                    <p><span>Interview</span>Who Audits the Algorithm?</p>
+                                </div>
+                            </figure>
+                        </div>
+                    </div>
+                    <div class="ea-ed-copy" data-reveal style="--d:.1s">
+                        <p class="ea-kicker ea-ed-kicker">Summer 2025 &middot; AI &amp; data</p>
+                        <h2 id="summer-2025-title">Intelligence <em>in the Capital.</em></h2>
+                        <p class="ea-ed-dek">Artificial intelligence, data and the people deciding how both get used, in the labs, agencies and classrooms of Washington.</p>
+                        <ul class="ea-ed-inside" aria-label="Inside this edition">
+                            <li><span>Feature</span><b>Teaching Machines to Read the Law</b></li>
+                            <li><span>Profile</span><b>The Data Scientists Mapping D.C.&rsquo;s Tree Canopy</b></li>
+                            <li><span>Interview</span><b>Who Audits the Algorithm?</b></li>
+                        </ul>
+                        <div class="ea-ed-foot">
+                            <span class="ea-soon">Coming to the online archive</span>
+                            <span class="ea-ed-meta">11 stories &middot; Summer 2025</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <!-- ============================= 2024 ============================= -->
+        <section class="ea-year" id="y2024" data-year="2024" aria-labelledby="y2024-label">
+            <div class="ea-wrap ea-year-head" data-reveal>
+                <span class="ea-year-num" id="y2024-label">2024</span>
+                <span class="ea-year-sub">Where it started &middot; Fall</span>
+            </div>
+
+            <!-- placeholder edition: replace the art, theme and stories when it is real -->
+            <article class="ea-ed" id="fall-2024" style="--acc:#8a5a3b; --tint:#f5efe6" aria-labelledby="fall-2024-title">
+                <div class="ea-banner">
+                    <img src="/editions/fall-2024/hero-1600.webp?v=1" srcset="/editions/fall-2024/hero-900.webp?v=1 900w, /editions/fall-2024/hero-1600.webp?v=1 1600w, /editions/fall-2024/hero-2600.webp?v=1 2600w" sizes="100vw"
+                         alt="" width="1600" height="679" loading="lazy" decoding="async">
+                    <div class="ea-banner-label ea-wrap"><span>No. 01 &middot; Fall 2024</span><span class="ea-badge">The first edition</span></div>
+                </div>
+                <div class="ea-wrap ea-ed-grid">
+                    <div class="ea-ed-coverwrap" data-reveal>
+                        <div class="ea-ed-cover">
+                            <figure class="ea-cover">
+                                <img class="art" src="/editions/fall-2024/cover-1100.webp?v=1" srcset="/editions/fall-2024/cover-700.webp?v=1 700w, /editions/fall-2024/cover-1100.webp?v=1 1100w"
+                                     sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
+                                     alt="The Fall 2024 cover: a pen-and-ink drawing of the Smithsonian Castle on a misty autumn morning, seen along a garden path.">
+                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Fall 2024</span><span>Washington, D.C.</span></div></div>
+                                <p class="ea-cover-title" aria-hidden="true">Science in the Capital</p>
+                                <div class="ea-cover-lines" aria-hidden="true">
+                                    <p><span>Feature</span>A City of Laboratories</p>
+                                    <p><span>Profile</span>Inside the Smithsonian&rsquo;s Frozen Zoo</p>
+                                </div>
+                            </figure>
+                        </div>
+                    </div>
+                    <div class="ea-ed-copy" data-reveal style="--d:.1s">
+                        <p class="ea-kicker ea-ed-kicker">Fall 2024 &middot; The first edition</p>
+                        <h2 id="fall-2024-title">Science <em>in the Capital.</em></h2>
+                        <p class="ea-ed-dek">Where The Catalyst began: a first look at the researchers, labs and questions that make Washington a science city.</p>
+                        <ul class="ea-ed-inside" aria-label="Inside this edition">
+                            <li><span>Feature</span><b>A City of Laboratories</b></li>
+                            <li><span>Profile</span><b>Inside the Smithsonian&rsquo;s Frozen Zoo</b></li>
+                            <li><span>Essay</span><b>Why We Started The Catalyst</b></li>
+                        </ul>
+                        <div class="ea-ed-foot">
+                            <span class="ea-soon">Coming to the online archive</span>
+                            <span class="ea-ed-meta">9 stories &middot; Fall 2024</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        </div>
+
+        <!-- ============================= CLOSE ============================= -->
+        <section class="ea-close" aria-labelledby="ea-close-title">
+            <div class="ea-wrap ea-close-grid">
+                <div data-reveal>
+                    <p class="ea-kicker">The next edition</p>
+                    <h2 id="ea-close-title">Already being reported. <em>Want to be in it?</em></h2>
+                </div>
+                <div data-reveal style="--d:.1s">
+                    <p>Every edition is written, edited and designed by students. Pitch us a story, or read everything we have published between editions.</p>
+                    <div class="actions">
+                        <a class="ea-btn" href="/collaborate">Pitch a story
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                        <a class="ea-btn line" href="/articles">All articles</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script defer src="/js/layout.js?v=20260925-review"></script>
+    <script>
+      (function () {
+        var body = document.body;
+        var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        requestAnimationFrame(function () { requestAnimationFrame(function () { body.classList.add('is-ready'); }); });
+
+        // chapters and year heads settle in as they arrive
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('[data-reveal]').forEach(function (el) { io.observe(el); });
+
+        // the year rail lights the year in the middle of the screen
+        var links = document.querySelectorAll('.ea-years a');
+        function setYear(y) { links.forEach(function (a) { a.setAttribute('aria-current', a.dataset.year === y ? 'true' : 'false'); }); }
+        var yio = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) setYear(e.target.dataset.year); });
+        }, { rootMargin: '-45% 0px -50% 0px' });
+        document.querySelectorAll('.ea-year').forEach(function (s) { yio.observe(s); });
+
+        // covers tilt toward the pointer (mouse only; nothing moves with scroll)
+        if (!REDUCED && window.matchMedia('(pointer: fine)').matches) {
+          document.querySelectorAll('.ea-ed-cover').forEach(function (c) {
+            c.addEventListener('pointermove', function (e) {
+              var r = c.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+              c.style.setProperty('--ty', (x * 10).toFixed(2) + 'deg');
+              c.style.setProperty('--tx', (-y * 8).toFixed(2) + 'deg');
+              c.querySelector('.ea-cover').style.setProperty('--sheen', (x * 40).toFixed(1) + 'deg');
+            });
+            c.addEventListener('pointerleave', function () { c.style.setProperty('--ty', '0deg'); c.style.setProperty('--tx', '0deg'); });
+          });
+        }
+      })();
+    </script>
+</body>
+</html>
