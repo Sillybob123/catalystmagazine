@@ -261,14 +261,15 @@
         def.style.opacity = String(1 - out);
         // desktop: the definition's vertical centre matches the Capitol's
         var mid = domeMidY(headerBottom() + 28, window.innerHeight - 28);
-        if (!portrait()) def.style.top = (mid - def.offsetHeight / 2).toFixed(1) + 'px'; else def.style.top = '';
+        var TEXT_LIFT = 36;   // px: text sits slightly above the dome's centre line
+        if (!portrait()) def.style.top = (mid - def.offsetHeight / 2 - TEXT_LIFT).toFixed(1) + 'px'; else def.style.top = '';
         def.style.transform = 'translate3d(0,' + (-out * 60).toFixed(1) + 'px,0)';
         def.style.visibility = out >= 1 ? 'hidden' : '';
         var inn = ease(map(p, 0.47, 0.6));
         missionIn.style.opacity = String(inn);
         if (!portrait()) {
           // top of the mission block sits level with the tip of the statue
-          missionIn.style.top = (mid - missionIn.offsetHeight / 2).toFixed(1) + 'px';   // same centre line
+          missionIn.style.top = (mid - missionIn.offsetHeight / 2 - TEXT_LIFT).toFixed(1) + 'px';   // same line as the definition
         } else missionIn.style.top = '';
         missionIn.style.transform = 'translate3d(0,' + ((1 - inn) * 70).toFixed(1) + 'px,0)';
       }
