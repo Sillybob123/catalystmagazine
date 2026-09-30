@@ -343,7 +343,7 @@
       window.scrollTo(0, yAt(launch(k) * cost));
       if (k < 1) raf = requestAnimationFrame(step); else stop();
     }
-    function stop() { cancelAnimationFrame(raf); playing = false; root.style.scrollBehavior = ''; }
+    function stop() { cancelAnimationFrame(raf); playing = false; swallow = false; root.style.scrollBehavior = ''; }   // once it stops, scrolling is the reader's
 
     // Only the gesture that started the autoplay is held back: a trackpad
     // flick keeps sending ever-smaller wheel events for a second or so. Any
@@ -359,7 +359,7 @@
         // only-decaying glide, whose last tiny ticks may arrive late. A
         // repeated full wheel notch is a new scroll.
         var notch = abs >= 50 && abs === lastAbs;
-        var sameGesture = e.deltaY > 0 && !notch && (abs <= 4 || (gap < 300 && (now - swallowStart < 450 || abs <= lastAbs * 1.15 + 1)));
+        var sameGesture = playing && e.deltaY > 0 && !notch && gap < 300 && now - swallowStart < 1600 && (now - swallowStart < 450 || abs <= 4 || abs <= lastAbs * 1.15 + 1);   // only while it plays, and never for long
         lastWheel = now; lastAbs = abs;
         if (sameGesture) { e.preventDefault(); return; }
         swallow = false;
