@@ -1101,11 +1101,11 @@
           if (portrait()) to += window.innerHeight * 0.45;
           if (to <= from + 4) return;
           var span = mall.el.offsetHeight - window.innerHeight, z = portrait() ? ZOOM_PHONE : ZOOM_DESK;
-          SLOW = portrait() ? 3 : 2.4;
+          SLOW = portrait() ? 2.4 : 1.9;
           slowA = clamp(mall.el.offsetTop + z[0] * span, from, to);
           slowB = clamp(mall.el.offsetTop + z[1] * span, slowA, to);
           cost = (to - from) + (SLOW - 1) * (slowB - slowA);
-          dur = portrait() ? 4000 : 5200;
+          dur = portrait() ? 3600 : 4700;
           playing = true; start = performance.now();
           root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
           raf = requestAnimationFrame(step);
