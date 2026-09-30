@@ -2,7 +2,8 @@
    Seasonal edition pages (edition-*.html) — shared styles.
    Each edition sets its palette on body.wx-<season> and its
    weather with body[data-weather] (see js/edition.js).
-   Winter is a night edition: deep blue page, ice-white type.
+   The defaults below are the winter night palette; a season
+   overrides these tokens on body.wx-<season> (e.g. edition-spring).
    ============================================================ */
 
 body.wx {
@@ -14,6 +15,18 @@ body.wx {
   --wx-accent: #a8cde8;       /* ice blue */
   --wx-hair: rgba(226, 238, 248, 0.16);
   --wx-footer-bg: #f5f8f9;
+  --wx-scrim: 11, 21, 38;     /* rgb of the hero legibility wash */
+  --wx-h1-em: #dbe9f5;
+  --wx-h1-shadow: 0 2px 30px rgba(11,21,38,.35);
+  --wx-btn-bg: #f3f7fb;  --wx-btn-fg: #0b1526;  --wx-btn-hover: #fff;
+  --wx-line-bg: rgba(255,255,255,.04);  --wx-line-border: rgba(226,238,248,.35);  --wx-line-hover: rgba(255,255,255,.08);
+  --wx-cover-glow: rgba(168,205,232,.28);
+  --wx-cover-shadow: 0 2px 6px rgba(0,0,0,.25), 0 40px 80px -24px rgba(0,0,0,.65);
+  --wx-img-bg: #16263e;
+  --wx-card-shadow: 0 2px 4px rgba(0,0,0,.25), 0 30px 60px -30px rgba(0,0,0,.7);
+  --wx-card-shadow-hover: 0 2px 4px rgba(0,0,0,.25), 0 40px 70px -30px rgba(0,0,0,.8);
+  --wx-frost: rgba(210,228,242,.35);
+  --wx-title-hover: #fff;
 
   --wx-sans: 'Poppins', system-ui, -apple-system, sans-serif;
   --wx-serif: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
@@ -33,7 +46,7 @@ html:has(body.wx) { background: var(--wx-bg); }
 .wx em { font-family: var(--wx-serif); font-style: italic; font-weight: 400; }
 .wx-wrap { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 var(--wx-gutter); box-sizing: border-box; }
 
-/* falling snow: above the backdrops, below the content */
+/* falling weather (snow, petals): above the backdrops, below the content */
 .wx-weather { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
 .wx main { position: relative; }
 
@@ -51,14 +64,14 @@ html:has(body.wx) { background: var(--wx-bg); }
 .wx-btn svg { width: 18px; height: 18px; transition: transform .3s var(--wx-ease); }
 .wx-btn:hover svg { transform: translateY(3px); }
 .wx-btn:active { transform: scale(.98); }
-.wx-btn-light { background: #f3f7fb; color: #0b1526; border: 1px solid #f3f7fb; }
-.wx-btn-light:hover { background: #fff; }
-.wx-btn-line { background: rgba(255,255,255,.04); color: var(--wx-ink); border: 1px solid rgba(226,238,248,.35); }
-.wx-btn-line:hover { border-color: var(--wx-ink); background: rgba(255,255,255,.08); }
+.wx-btn-light { background: var(--wx-btn-bg); color: var(--wx-btn-fg); border: 1px solid var(--wx-btn-bg); }
+.wx-btn-light:hover { background: var(--wx-btn-hover); border-color: var(--wx-btn-hover); }
+.wx-btn-line { background: var(--wx-line-bg); color: var(--wx-ink); border: 1px solid var(--wx-line-border); }
+.wx-btn-line:hover { border-color: var(--wx-ink); background: var(--wx-line-hover); }
 .wx-btn:focus-visible, .wx-story a:focus-visible { outline: 2px solid var(--wx-accent); outline-offset: 4px; }
 
 /* ============================================================
-   HERO — blue-hour Capitol in snow, drifting very slowly
+   HERO — full-bleed seasonal backdrop, drifting very slowly
    ============================================================ */
 .wx-hero {
   position: relative; min-height: max(100svh, 700px); overflow: hidden;
@@ -83,8 +96,8 @@ html:has(body.wx) { background: var(--wx-bg); }
 .wx-hero::after {
   content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(11,21,38,.88) 0%, rgba(11,21,38,.62) 34%, rgba(11,21,38,.12) 62%, rgba(11,21,38,0) 80%),
-    linear-gradient(180deg, rgba(11,21,38,.35) 0%, rgba(11,21,38,0) 22%, rgba(11,21,38,0) 72%, var(--wx-bg) 100%);
+    linear-gradient(90deg, rgba(var(--wx-scrim),.88) 0%, rgba(var(--wx-scrim),.62) 34%, rgba(var(--wx-scrim),.12) 62%, rgba(var(--wx-scrim),0) 80%),
+    linear-gradient(180deg, rgba(var(--wx-scrim),.35) 0%, rgba(var(--wx-scrim),0) 22%, rgba(var(--wx-scrim),0) 72%, var(--wx-bg) 100%);
 }
 .wx-hero-grid {
   position: relative; z-index: 2;
@@ -95,9 +108,9 @@ html:has(body.wx) { background: var(--wx-bg); }
 .wx-hero h1 {
   margin: 0; color: var(--wx-ink);
   font: 700 clamp(44px, 6.2vw, 96px)/.98 var(--wx-sans); letter-spacing: -0.035em;
-  text-shadow: 0 2px 30px rgba(11,21,38,.35);
+  text-shadow: var(--wx-h1-shadow);
 }
-.wx-hero h1 em { display: block; font-size: .92em; letter-spacing: -0.015em; color: #dbe9f5; }
+.wx-hero h1 em { display: block; font-size: .92em; letter-spacing: -0.015em; color: var(--wx-h1-em); }
 .wx-hero .lede {
   margin: 26px 0 0; max-width: 470px;
   font: 400 clamp(17px, 1.35vw, 20px)/1.6 var(--wx-serif); color: var(--wx-ink-2);
@@ -120,10 +133,7 @@ html:has(body.wx) { background: var(--wx-bg); }
   border-radius: 3px; overflow: hidden; background: #fff;
   transform: translate3d(0, var(--lift), 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
   transform-style: preserve-3d; will-change: transform;
-  box-shadow:
-    0 2px 6px rgba(0,0,0,.25),
-    0 40px 80px -24px rgba(0,0,0,.65),
-    0 0 90px -10px rgba(168,205,232,.28);
+  box-shadow: var(--wx-cover-shadow), 0 0 90px -10px var(--wx-cover-glow);
   opacity: 0; translate: 0 40px; scale: .97;
   transition: opacity 1.3s var(--wx-ease) .15s, translate 1.5s var(--wx-ease) .15s, scale 1.5s var(--wx-ease) .15s;
 }
@@ -168,12 +178,18 @@ html:has(body.wx) { background: var(--wx-bg); }
   .wx-hero { align-items: flex-start; min-height: 0; }
   .wx-backdrop img { object-position: 50% 100%; transform-origin: 50% 80%; }
   .wx-hero::after {
-    background: linear-gradient(180deg, rgba(11,21,38,.78) 0%, rgba(11,21,38,.5) 38%, rgba(11,21,38,.1) 62%, rgba(11,21,38,.2) 85%, var(--wx-bg) 100%);
+    background: linear-gradient(180deg, rgba(var(--wx-scrim),.78) 0%, rgba(var(--wx-scrim),.5) 38%, rgba(var(--wx-scrim),.1) 62%, rgba(var(--wx-scrim),.2) 85%, var(--wx-bg) 100%);
   }
   .wx-hero-grid { grid-template-columns: 1fr; gap: 32px; padding-top: 96px; padding-bottom: 64px; }
   .wx-hero h1 { font-size: clamp(40px, 11vw, 64px); }
   .wx-hero .lede { font-size: 17px; margin-top: 18px; }
   .wx-actions { margin-top: 24px; }
+  /* a soft wash behind the copy so it reads over any part of the scene */
+  .wx-hero-copy { position: relative; }
+  .wx-hero-copy::before {
+    content: ""; position: absolute; z-index: -1; inset: -28px -18px -24px; border-radius: 28px; pointer-events: none;
+    background: radial-gradient(ellipse 75% 70% at 45% 50%, rgba(var(--wx-scrim),.86) 40%, rgba(var(--wx-scrim),.55) 70%, rgba(var(--wx-scrim),0) 100%);
+  }
   /* phones and tablets: the magazine leads, the headline follows */
   .wx-cover-wrap { order: -1; }
   .wx-cover { width: min(62vw, 300px) !important; }
@@ -199,17 +215,17 @@ html:has(body.wx) { background: var(--wx-bg); }
 
 .wx-story a { display: grid; gap: 12px; color: inherit; text-decoration: none; border-radius: 4px; }
 .wx-story-img {
-  position: relative; overflow: hidden; border-radius: 4px; background: #16263e;
+  position: relative; overflow: hidden; border-radius: 4px; background: var(--wx-img-bg);
   aspect-ratio: 4 / 5;
-  box-shadow: 0 2px 4px rgba(0,0,0,.25), 0 30px 60px -30px rgba(0,0,0,.7);
+  box-shadow: var(--wx-card-shadow);
   transition: transform .6s var(--wx-ease), box-shadow .6s var(--wx-ease);
 }
-.wx-story a:hover .wx-story-img { transform: translateY(-6px); box-shadow: 0 2px 4px rgba(0,0,0,.25), 0 40px 70px -30px rgba(0,0,0,.8), 0 0 60px -20px rgba(168,205,232,.35); }
+.wx-story a:hover .wx-story-img { transform: translateY(-6px); box-shadow: var(--wx-card-shadow-hover), 0 0 60px -20px var(--wx-cover-glow); }
 .wx-story-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 /* frost that melts off the cover as the story settles in */
 .wx-story-img::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: rgba(210,228,242,.35);
+  background: var(--wx-frost);
   -webkit-backdrop-filter: blur(12px) saturate(.6); backdrop-filter: blur(12px) saturate(.6);
   transition: opacity 1.8s var(--wx-ease) calc(var(--d, 0s) + .35s);
 }
@@ -221,7 +237,7 @@ html:has(body.wx) { background: var(--wx-bg); }
   font: 600 clamp(19px, 1.55vw, 23px)/1.22 var(--wx-sans); letter-spacing: -0.018em;
   transition: color .2s;
 }
-.wx-story a:hover h3 { color: #fff; text-decoration: underline; text-decoration-color: rgba(168,205,232,.6); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+.wx-story a:hover h3 { color: var(--wx-title-hover); text-decoration: underline; text-decoration-color: var(--wx-accent); text-underline-offset: .18em; text-decoration-thickness: 1px; }
 .wx-story-dek { margin: 0; font: 400 16.5px/1.55 var(--wx-serif); color: var(--wx-ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .wx-story-by { margin: 2px 0 0; font: 500 14px/1.4 var(--wx-sans); color: var(--wx-ink); }
 .wx-story-by span { color: var(--wx-muted); font-weight: 400; }

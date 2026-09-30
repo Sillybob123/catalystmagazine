@@ -3,7 +3,7 @@
 
    body data attributes:
      data-edition   the edition's name in the Story Tracker, e.g. "Winter 2026"
-     data-weather   "snow" (fall/spring can add their own particle)
+     data-weather   "snow" or "petals" (fall can add falling leaves)
 
    Stories: the cards written in #wx-stories are shown as-is. Any
    published story whose `edition` matches data-edition (set from the
@@ -42,18 +42,21 @@
   }
 
   /* ------------------------------------------------------------
-     Weather: real six-armed snow crystals at three depths. Far
+     Weather. data-weather="snow": real six-armed snow crystals at
+     three depths. data-weather="petals": tumbling cherry petals. Far
      flakes are small and soft, near ones larger, sharper and slowly
      turning. They drift with the "wind" of your cursor and lift a
      little as you scroll. Pre-rendered sprites keep it cheap.
      ------------------------------------------------------------ */
   var Weather = (function () {
     var canvas = document.querySelector('.wx-weather');
-    if (!canvas || body.dataset.weather !== 'snow') return { frame: function () {} };
+    var KIND = body.dataset.weather;
+    if (!canvas || (KIND !== 'snow' && KIND !== 'petals')) return { frame: function () {} };
+    var PETALS = KIND === 'petals';
     var ctx = canvas.getContext('2d');
     var dpr = Math.min(window.devicePixelRatio || 1, 2), W = 0, H = 0, flakes = [];
     var small = window.innerWidth < 700;
-    var COUNT = small ? 21 : 44;                  // light, unhurried snowfall
+    var COUNT = PETALS ? (small ? 14 : 30) : (small ? 21 : 44);   // light, unhurried
 
     // --- sprites -------------------------------------------------
     function crystal(size, seed) {
@@ -97,13 +100,49 @@
       return c;
     }
     function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-    var CRYSTALS = [1, 2, 3, 4, 5, 6].map(function (s) { return crystal(128, s * 7919); });
-    var SOFT = soft(64);
+    // a cherry petal: rounded, with the notch at its tip, pale at the
+    // edge and a deeper pink toward the base
+    function petal(size, seed) {
+      var c = document.createElement('canvas'); c.width = c.height = size;
+      var g = c.getContext('2d'), rnd = mulberry(seed), w = size * (0.3 + rnd() * 0.06), h = size * 0.44;
+      g.translate(size / 2, size / 2);
+      g.beginPath();
+      g.moveTo(0, h);                                          // base
+      g.bezierCurveTo(-w * 1.3, h * 0.35, -w * 1.15, -h * 0.9, -w * 0.28, -h);
+      g.lineTo(0, -h * (0.78 + rnd() * 0.08));                 // the notch
+      g.lineTo(w * 0.28, -h);
+      g.bezierCurveTo(w * 1.15, -h * 0.9, w * 1.3, h * 0.35, 0, h);
+      g.closePath();
+      var gr = g.createLinearGradient(0, h, 0, -h);
+      gr.addColorStop(0, 'rgba(226,122,152,0.95)');
+      gr.addColorStop(0.35, 'rgba(246,184,203,0.95)');
+      gr.addColorStop(1, 'rgba(255,236,242,0.95)');
+      g.fillStyle = gr; g.fill();
+      g.strokeStyle = 'rgba(214,120,150,0.35)'; g.lineWidth = size * 0.012;
+      g.beginPath(); g.moveTo(0, h * 0.9); g.quadraticCurveTo(w * 0.1, 0, 0, -h * 0.7); g.stroke();   // a faint vein
+      return c;
+    }
+    var CRYSTALS = PETALS ? [] : [1, 2, 3, 4, 5, 6].map(function (s) { return crystal(128, s * 7919); });
+    var SOFT = PETALS ? null : soft(64);
+    var PETAL_SPRITES = PETALS ? [1, 2, 3, 4].map(function (s) { return petal(96, s * 104729); }) : [];
 
     // --- flakes ----------------------------------------------------
     // depth z: 0 far … 1 near. Most snow is soft and small; only the
     // nearest ~16% of flakes are close enough to show their crystal shape.
     function make(top) {
+      if (PETALS) {
+        // petals tumble: a slow spin plus a flip (scaleX) as they turn over
+        var zp = Math.random();
+        return {
+          x: Math.random() * W, y: top ? -40 : Math.random() * H, z: zp, petal: true,
+          size: (small ? 7 : 8) + zp * (small ? 8 : 11),
+          sprite: PETAL_SPRITES[(Math.random() * PETAL_SPRITES.length) | 0],
+          vy: 0.35 + zp * 0.75, ph: Math.random() * 6.28, sway: 0.5 + Math.random() * 0.7,
+          rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.03,
+          flip: Math.random() * 6.28, vf: 0.015 + Math.random() * 0.03,
+          a: 0.55 + zp * 0.4
+        };
+      }
       var z = Math.pow(Math.random(), 1.35);
       var near = z > 0.82;
       return {
@@ -132,15 +171,22 @@
         var f = flakes[i];
         if (!REDUCED) {
           f.y += f.vy - scrollDelta * (0.04 + f.z * 0.14);
-          f.x += Math.sin(t * 0.007 + f.ph) * f.sway * (0.4 + f.z) + wind * (0.25 + f.z);
+          f.x += Math.sin(t * 0.007 + f.ph) * f.sway * (0.4 + f.z) + wind * (0.25 + f.z) + (f.petal ? 0.18 + f.z * 0.25 : 0);
           f.rot += f.vr;
+          if (f.petal) f.flip += f.vf;
           if (f.y > H + 40) { flakes[i] = make(true); continue; }
           if (f.y < -50) f.y = H + 30;
           if (f.x > W + 30) f.x = -30; else if (f.x < -30) f.x = W + 30;
         }
         var s = f.size;
         ctx.globalAlpha = f.a;
-        if (f.sprite === SOFT) {
+        if (f.petal) {
+          ctx.setTransform(dpr, 0, 0, dpr, f.x * dpr, f.y * dpr);
+          ctx.rotate(f.rot);
+          ctx.scale(Math.max(0.15, Math.abs(Math.cos(f.flip))), 1);
+          ctx.drawImage(f.sprite, -s / 2, -s / 2, s, s);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        } else if (f.sprite === SOFT) {
           ctx.drawImage(SOFT, f.x - s / 2, f.y - s / 2, s, s);
         } else {
           ctx.setTransform(dpr, 0, 0, dpr, f.x * dpr, f.y * dpr);
