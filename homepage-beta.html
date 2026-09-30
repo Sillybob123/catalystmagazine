@@ -941,6 +941,7 @@
       /* ============================================================
          ARCHIVE — the Library of Congress reading-room dome
          ============================================================ */
+      var libCopy = document.getElementById('library-copy');
       var library = new Plate({
         id: 'library', ghost: 0.14, entry: true,
         inkAt: function (p) { return lerp(0.06, 1.04, map(p, 0.12, 0.9)); },
@@ -956,7 +957,13 @@
           // centred about two-thirds across; a slow push while it inks
           var s = 1 + p * 0.04;
           var h2 = (vh - 72) * 0.94 * s, w2 = h2 / AR;
-          return { w: w2, h: h2, x: vw * 0.66 - cx * w2, y: 72 + (vh - 72 - h2) / 2 };
+          // right-hand side, clear of the copy column: the dome's left edge
+          // (≈0.95/2 of the plate height left of its centre) sits 48px past
+          // the copy, and it never runs off the right edge
+          var copyRight = libCopy.getBoundingClientRect().right;
+          var domeR = h2 * 0.475;
+          var dx = Math.min(Math.max(copyRight + 48 + domeR, vw * 0.66), vw - 24 - domeR);
+          return { w: w2, h: h2, x: dx - cx * w2, y: 72 + (vh - 72 - h2) / 2 };
         }
       });
 
