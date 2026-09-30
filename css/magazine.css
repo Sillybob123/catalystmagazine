@@ -1,0 +1,50 @@
+/* ============================================================
+   Magazine page edges — the pages behind a cover, showing along
+   its fore-edge (right) and foot, so a flat cover reads as a real
+   magazine with some thickness. Light falls from the top left.
+
+   Use: put one of these first in a cover's box-shadow, before its
+   drop shadow:
+       box-shadow: var(--mag-pages), 0 30px 60px -30px rgba(...);
+   --mag-pages-lg  big covers (edition hero, overview chapters)
+   --mag-pages     mid-size covers (the overview fan)
+   --mag-pages-sm  thumbnails (teasers, article badges)
+   Every edition cover component already does this, so a new cover
+   gets its pages automatically.
+   ============================================================ */
+:root {
+  --mag-crease: rgba(40, 32, 20, .24);   /* where the cover meets the pages */
+  --mag-sheet: #fbf8f1;                   /* a page edge catching the light */
+  --mag-sheet-2: #f2ede3;
+  --mag-gap: #dcd4c5;                     /* the shade between pages */
+  --mag-gap-2: #cfc6b5;
+  --mag-under: rgba(40, 32, 20, .2);      /* the stack's own soft shadow */
+
+  --mag-pages-lg:
+    .5px .5px 0 var(--mag-crease),
+    1.6px 1.1px 0 var(--mag-sheet),
+    2.8px 2px 0 var(--mag-gap),
+    4px 2.9px 0 var(--mag-sheet),
+    5.2px 3.8px 0 var(--mag-gap),
+    6.4px 4.7px 0 var(--mag-sheet-2),
+    7.6px 5.6px 0 var(--mag-gap),
+    8.8px 6.5px 0 var(--mag-sheet-2),
+    10px 7.4px 0 var(--mag-gap-2),
+    10.6px 8px 2px var(--mag-under);
+  --mag-pages:
+    .5px .5px 0 var(--mag-crease),
+    1.4px 1px 0 var(--mag-sheet),
+    2.4px 1.7px 0 var(--mag-gap),
+    3.4px 2.4px 0 var(--mag-sheet),
+    4.4px 3.1px 0 var(--mag-gap),
+    5.4px 3.8px 0 var(--mag-sheet-2),
+    6.4px 4.5px 0 var(--mag-gap-2),
+    7px 5px 1.5px var(--mag-under);
+  --mag-pages-sm:
+    .5px .5px 0 var(--mag-crease),
+    1.2px .9px 0 var(--mag-sheet),
+    2px 1.5px 0 var(--mag-gap),
+    2.8px 2.1px 0 var(--mag-sheet-2),
+    3.4px 2.6px 0 var(--mag-gap-2),
+    3.8px 3px 1px var(--mag-under);
+}

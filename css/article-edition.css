@@ -52,7 +52,7 @@ body[data-page="article"].in-edition {
 .ed-cover {
   position: relative; display: block; flex: none; aspect-ratio: 3584 / 4800; container-type: inline-size;
   overflow: hidden; border-radius: 2px; background: #fff;
-  box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 14px 30px -14px rgba(0,0,0,.6);
+  box-shadow: var(--mag-pages-sm), 0 1px 3px rgba(0,0,0,.25), 0 14px 30px -14px rgba(0,0,0,.6);
 }
 .ed-cover--sm { width: 58px; }
 .ed-cover--md { width: 150px; }

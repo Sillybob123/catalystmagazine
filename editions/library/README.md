@@ -39,6 +39,12 @@ its hero photo is dark, whether the cover's sky is dark, and its status.
    summer and fall.
 6. Add the edition to `edition-overview.html` (hero fan, year rail, a chapter).
 
+Covers get their page edges (the pages showing behind the cover, so it looks
+like a real magazine) from `css/magazine.css`: every cover component already
+uses it, so a new edition's cover has them automatically. Any new cover style
+should start its `box-shadow` with `var(--mag-pages-lg)` / `var(--mag-pages)` /
+`var(--mag-pages-sm)`.
+
 An edition that is not out yet gets `data-upcoming="<Month Year>"` on `<body>`:
 its stories show as locked previews (see `js/edition.js`).
 
