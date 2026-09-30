@@ -13,7 +13,7 @@
   var body = document.body;
   var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var DPR = Math.min(window.devicePixelRatio || 1, 2);
-  var V = '1';
+  var V = '2';
   var clamp = function (v, a, b) { return Math.min(Math.max(v, a), b); };
   var map = function (v, a, b) { return clamp((v - a) / (b - a), 0, 1); };
   var lerp = function (a, b, t) { return a + (b - a) * t; };
@@ -215,7 +215,12 @@
         def.style.visibility = out >= 1 ? 'hidden' : '';
         var inn = ease(map(p, 0.47, 0.6));
         missionIn.style.opacity = String(inn);
-        missionIn.style.transform = (portrait() ? '' : 'translateY(-40%) ') + 'translate3d(0,' + ((1 - inn) * 70).toFixed(1) + 'px,0)';
+        if (!portrait()) {
+          // top of the mission block sits level with the tip of the statue
+          var c = dome.canvas, R = dome.rect(c.clientWidth, c.clientHeight, dome.sp);
+          missionIn.style.top = (R.y + DOME.tip * R.h).toFixed(1) + 'px';
+        } else missionIn.style.top = '';
+        missionIn.style.transform = 'translate3d(0,' + ((1 - inn) * 70).toFixed(1) + 'px,0)';
       }
       lightWords(p);
     }

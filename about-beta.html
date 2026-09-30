@@ -26,8 +26,8 @@
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
 
-    <link rel="preload" as="image" href="/beta/about-dome/plate-s.webp?v=1" fetchpriority="high">
-    <link rel="preload" as="image" href="/beta/about-dome/map.webp?v=1" fetchpriority="high">
+    <link rel="preload" as="image" href="/beta/about-dome/plate-s.webp?v=2" fetchpriority="high">
+    <link rel="preload" as="image" href="/beta/about-dome/map.webp?v=2" fetchpriority="high">
 
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
     <style>
@@ -150,8 +150,8 @@
          ============================================================ */
       .ab-mission { position: relative; padding: clamp(40px, 6vh, 80px) 0 clamp(90px, 12vh, 140px); }
       .ab-mission-in {
-        position: absolute; z-index: 2; left: var(--edge); top: 50%;
-        max-width: min(600px, 46vw); opacity: 0; transform: translateY(-40%); pointer-events: none;
+        position: absolute; z-index: 2; left: var(--edge); top: 20%;   /* JS sets top to the statue's tip */
+        max-width: min(600px, 46vw); opacity: 0; pointer-events: none;
         will-change: transform, opacity;
       }
       .ab-mission-in::before {
@@ -187,10 +187,10 @@
       .ab-frame figure { position: absolute; inset: 0; margin: 0; opacity: 0; transition: opacity 1s var(--ease-out); }
       .ab-frame figure.on { opacity: 1; }
       .ab-frame img {
-        width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply;
+        width: 100%; height: 100%; object-fit: contain;   /* paper tone is baked into the image */
         transform: scale(var(--s, 1.06)); transition: transform 6s var(--ease-out);
-        -webkit-mask-image: radial-gradient(ellipse 78% 74% at 50% 50%, #000 58%, transparent 100%);
-                mask-image: radial-gradient(ellipse 78% 74% at 50% 50%, #000 58%, transparent 100%);
+        -webkit-mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 70%, transparent 100%);
+                mask-image: radial-gradient(ellipse 72% 72% at 50% 50%, #000 70%, transparent 100%);
       }
       .ab-frame figure.on img { --s: 1; }
       .ab-frame figcaption {
@@ -208,7 +208,7 @@
         .ab-frame { display: none; }
         .ab-acts { padding: 0; }
         .ab-act { min-height: 0; opacity: 1; padding: 0 0 64px; }
-        .ab-act .ab-act-img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; mix-blend-mode: multiply; margin-bottom: 18px;
+        .ab-act .ab-act-img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; margin-bottom: 18px;
           -webkit-mask-image: radial-gradient(ellipse 80% 76% at 50% 50%, #000 60%, transparent 100%); mask-image: radial-gradient(ellipse 80% 76% at 50% 50%, #000 60%, transparent 100%); }
       }
 
@@ -401,25 +401,25 @@
                 </div>
                 <div class="ab-story-grid">
                     <div class="ab-frame" aria-hidden="true">
-                        <figure class="on" data-act="0"><img src="/beta/library/plate-m.webp?v=4" alt="" style="object-position: 69% 50%" loading="lazy"><figcaption>The Library of Congress</figcaption></figure>
-                        <figure data-act="1"><img src="/beta/mall/plate-m.webp?v=4" alt="" style="object-position: 62% 60%" loading="lazy"><figcaption>The National Mall</figcaption></figure>
-                        <figure data-act="2"><img src="/beta/tidal/plate-m.webp?v=4" alt="" style="object-position: 64% 70%" loading="lazy"><figcaption>The Tidal Basin</figcaption></figure>
+                        <figure class="on" data-act="0"><img src="/beta/about-story-1-1200.webp?v=3" srcset="/beta/about-story-1-700.webp?v=3 700w, /beta/about-story-1-1200.webp?v=3 1200w" sizes="(max-width: 900px) 100vw, 560px" alt="" loading="lazy" decoding="async"></figure>
+                        <figure data-act="1"><img src="/beta/about-story-2-1200.webp?v=3" srcset="/beta/about-story-2-700.webp?v=3 700w, /beta/about-story-2-1200.webp?v=3 1200w" sizes="(max-width: 900px) 100vw, 560px" alt="" loading="lazy" decoding="async"></figure>
+                        <figure data-act="2"><img src="/beta/about-story-3-1200.webp?v=3" srcset="/beta/about-story-3-700.webp?v=3 700w, /beta/about-story-3-1200.webp?v=3 1200w" sizes="(max-width: 900px) 100vw, 560px" alt="" loading="lazy" decoding="async"></figure>
                     </div>
                     <div class="ab-acts">
                         <article class="ab-act on" data-act="0">
-                            <img class="ab-act-img" src="/beta/library/plate-m.webp?v=4" alt="" style="object-position: 69% 50%" loading="lazy">
+                            <img class="ab-act-img" src="/beta/about-story-1-700.webp?v=3" alt="The spark: students in conversation, the Capitol through the window" loading="lazy" decoding="async">
                             <span class="num">01</span>
                             <h3>The spark</h3>
                             <p>The Catalyst began as a conversation between a few students who felt that STEM research, happening all around them in one of the most scientifically active cities in the country, wasn&rsquo;t reaching the people who should care most about it. Washington is home to world-class universities, federal research agencies and a policy world where science matters. We wanted a publication that reflected that.</p>
                         </article>
                         <article class="ab-act" data-act="1">
-                            <img class="ab-act-img" src="/beta/mall/plate-m.webp?v=4" alt="" style="object-position: 62% 60%" loading="lazy">
+                            <img class="ab-act-img" src="/beta/about-story-2-700.webp?v=3" alt="The build: a shared worktable and the D.C. campuses our writers come from" loading="lazy" decoding="async">
                             <span class="num">02</span>
                             <h3>The build</h3>
                             <p>We started small: a handful of writers, no budget and a lot of shared Google Docs. Contributors from across the D.C. area joined, students from GW, Georgetown, Howard, Johns Hopkins and beyond, each bringing a different lens to the same goal. The magazine grew with the people in it more than from any master plan.</p>
                         </article>
                         <article class="ab-act" data-act="2">
-                            <img class="ab-act-img" src="/beta/tidal/plate-m.webp?v=4" alt="" style="object-position: 64% 70%" loading="lazy">
+                            <img class="ab-act-img" src="/beta/about-story-3-700.webp?v=3" alt="Today: reading The Catalyst on the National Mall" loading="lazy" decoding="async">
                             <span class="num">03</span>
                             <h3>Today</h3>
                             <p>The Catalyst is now a cross-institutional student magazine with a growing readership and a clear editorial identity. We&rsquo;re still student-run, still independent and still driven by the same conviction: good science writing can change how people think. We&rsquo;re glad you&rsquo;re here.</p>
@@ -519,6 +519,6 @@
     <script defer src="/js/data.js"></script>
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
     <script defer src="/js/main.js?v=20260925-review"></script>
-    <script defer src="/js/about-beta.js?v=2"></script>
+    <script defer src="/js/about-beta.js?v=3"></script>
 </body>
 </html>
