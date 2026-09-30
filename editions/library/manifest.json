@@ -1,6 +1,6 @@
 {
-  "about": "Art library for future Catalyst editions. Each set = a textless cover drawing (pen-and-ink + watercolor, 3584:4800) plus a matching wide hero photo (~2.36:1) and a tall phone hero (800:1434). Pick an available set whose season matches the new edition, then set its status to \"used\" and used_by to the edition. See README.md.",
-  "season_rule": "Winter = Dec-Feb (named by the year it starts), Spring = Mar-May, Summer = Jun-Aug, Fall = Sep-Nov. The Catalyst publishes fall, winter and spring editions; a thin summer folds into fall.",
+  "about": "Art library (21 sets: 20 made for it plus fall-06, the Castle art first used for Fall 2026) for future Catalyst editions. Each set = a textless cover drawing (pen-and-ink + watercolor, 3584:4800) plus a matching wide hero photo (~2.36:1) and a tall phone hero (800:1434). Pick an available set whose season matches the new edition, then set its status to \"used\" and used_by to the edition. See README.md.",
+  "season_rule": "Winter = Dec-Feb, named by the year of its January (Dec 2026-Feb 2027 = Winter 2027); Spring = Mar-May; Summer = Jun-Aug; Fall = Sep-Nov. The Catalyst publishes fall, winter and spring editions; a thin season folds into the next edition.",
   "sets": [
     {
       "id": "spring-01",
@@ -621,13 +621,44 @@
         "wide": "2ba91959-77ba-434e-bd55-90b5ef367db3",
         "tall": "a2c973f4-a499-4df5-a4ec-66fc7e7db013"
       }
+    },
+    {
+      "id": "fall-06",
+      "season": "fall",
+      "landmark": "Smithsonian Castle",
+      "description": "The red sandstone Castle on the National Mall on a misty autumn morning, ochre and russet trees.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/fall-06/cover-700.webp",
+          "/editions/library/fall-06/cover-1100.webp",
+          "/editions/library/fall-06/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/fall-06/hero-900.webp",
+          "/editions/library/fall-06/hero-1600.webp",
+          "/editions/library/fall-06/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/fall-06/hero-tall-800.webp",
+          "/editions/library/fall-06/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "a9c1213c-29cf-41a0-a5c0-cb7e00baefc1",
+        "wide": "30b8a061-f33b-4cd1-9914-24b9d73692ad",
+        "tall": "1dddb8a8-7943-4b0d-ab88-279ef9ce6db2"
+      }
     }
   ],
   "already_used_by_editions": [
     {
-      "edition": "Winter 2024 (first edition)",
-      "page": "/edition-winter-2024",
-      "art": "/editions/winter-2024/",
+      "edition": "Winter 2025 (first edition)",
+      "page": "/edition-winter-2025",
+      "art": "/editions/winter-2025/",
       "landmark": "Dupont Circle in snow"
     },
     {
@@ -652,16 +683,16 @@
       "edition": "Fall 2026",
       "page": "/edition-fall-2026",
       "art": "/editions/fall-2026/",
-      "landmark": "Smithsonian Castle, misty morning"
+      "landmark": "Jefferson Memorial across the Tidal Basin in autumn"
     },
     {
-      "edition": "Winter 2026 (upcoming, Dec 2026)",
+      "edition": "Winter 2027 (upcoming, out Dec 2026)",
       "page": "/edition-winter",
       "art": "/editions/winter/",
       "landmark": "Capitol at night in snow; frozen Reflecting Pool cover"
     },
     {
-      "edition": "Spring 2027 (upcoming, Mar 2027)",
+      "edition": "Spring 2027 (saved, hidden from the overview for now)",
       "page": "/edition-spring",
       "art": "/editions/spring/",
       "landmark": "Tidal Basin blossoms; cherry-lined path to the Capitol cover"

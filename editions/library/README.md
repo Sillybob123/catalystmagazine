@@ -1,6 +1,6 @@
 # Edition art library
 
-Ready-made art for future editions of The Catalyst: **20 sets, 5 per season**
+Ready-made art for future editions of The Catalyst: **21 sets: 5 per season, plus a sixth fall set (`fall-06`)**
 (spring, summer, fall, winter). Each set is one Washington, D.C. landmark in
 that season, generated with Higgsfield (Nano Banana) to match the existing
 edition pages.
@@ -18,8 +18,8 @@ its hero photo is dark, whether the cover's sky is dark, and its status.
 
 ## Making a new edition
 
-1. Work out the season. Winter = Dec–Feb (named by the year it starts, e.g.
-   Winter 2026 = Dec 2026–Feb 2027), Spring = Mar–May, Summer = Jun–Aug,
+1. Work out the season. Winter = Dec–Feb, named by the year of its January
+   (e.g. Winter 2027 = Dec 2026–Feb 2027), Spring = Mar–May, Summer = Jun–Aug,
    Fall = Sep–Nov. The Catalyst publishes fall, winter and spring editions; a
    thin summer is folded into fall.
 2. In `manifest.json`, pick a set with that `season` and `"status": "available"`.
@@ -30,7 +30,7 @@ its hero photo is dark, whether the cover's sky is dark, and its status.
    * a **light** hero (`hero_is_dark: false`): copy `edition-fall-2026.html`
      (or `edition-spring-2026.html` for blossom colours);
    * a **dark** hero (`hero_is_dark: true`): copy `edition-fall-2025.html`
-     or `edition-winter-2024.html` (light text, with a colour band easing the
+     or `edition-winter-2025.html` (light text, with a colour band easing the
      hero into the page).
    * `cover_sky_is_dark: true`: add `is-night` to the `.wx-cover` figure and
      the `.wx-cover.is-night` rules (see `edition-fall-2025.html`) so the
@@ -45,5 +45,5 @@ its stories show as locked previews (see `js/edition.js`).
 ## Sets already used
 
 `manifest.json → already_used_by_editions` lists the art used by existing
-editions (in `editions/<edition>/`, plus `editions/winter/` and
-`editions/spring/`). Those landmarks are taken.
+editions (in `editions/<edition>/`, plus `editions/winter/` (Winter 2027) and
+`editions/spring/` (Spring 2027, saved but hidden from the overview for now)). Those landmarks are taken.

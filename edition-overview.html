@@ -141,7 +141,7 @@
       .ea-facts span { font: 500 12px/1.3 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
       .ea-hero .ea-btn { margin-top: 30px; }
 
-      .ea-fan-box { --cw: clamp(160px, 17vw, 250px); --step: 5.2deg; --mid: 3; }
+      .ea-fan-box { --cw: clamp(160px, 17vw, 250px); --step: 5.8deg; --mid: 2.5; }
       .ea-fan { position: relative; height: calc(var(--cw) * 1.34 + 70px); margin: 0; padding: 0; list-style: none; }
       /* the (untilted) list boxes all overlap in the middle, so they must
          not catch the pointer; only the tilted covers do */
@@ -329,11 +329,11 @@
                 <div class="ea-hero-copy">
                     <p class="ea-kicker ea-rise">The Catalyst &middot; Edition archive</p>
                     <h1 id="ea-title" class="ea-rise" style="--d:.08s"><span class="nw">The Editions.</span> <em>Every season, bound and kept.</em></h1>
-                    <p class="ea-lede ea-rise" style="--d:.16s">Each edition gathers a season of our reporting around a single idea. Here is every one of them, from our first issue in the winter of 2024 to the editions still to come.</p>
+                    <p class="ea-lede ea-rise" style="--d:.16s">Each edition gathers a season of our reporting around a single idea. Here is every one of them, from our first issue in the winter of 2025 to the edition still to come.</p>
                     <div class="ea-facts ea-rise" style="--d:.24s">
                         <div><b>5</b><span>Published</span></div>
                         <div><b>52</b><span>Stories</span></div>
-                        <div><b>2</b><span>On the way</span></div>
+                        <div><b>1</b><span>On the way</span></div>
                     </div>
                     <a class="ea-btn ea-rise" style="--d:.3s" href="#fall-2026">Read the current edition
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
@@ -343,10 +343,10 @@
                 <!-- oldest on the left, the current edition on top -->
                 <div class="ea-fan-box">
                 <ul class="ea-fan" aria-label="Jump to an edition">
-                    <li><a class="ea-fan-item" href="#winter-2024" data-caption="Winter 2024|Science in the Capital" style="--i:0" aria-label="Winter 2024: Science in the Capital">
+                    <li><a class="ea-fan-item" href="#winter-2025" data-caption="Winter 2025|Science in the Capital" style="--i:0" aria-label="Winter 2025: Science in the Capital">
                         <div class="ea-cover" style="--acc:#3b6e8f">
-                            <img class="art" src="/editions/winter-2024/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async">
-                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Winter 2024</span><span>No. 01</span></div></div>
+                            <img class="art" src="/editions/winter-2025/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async">
+                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Winter 2025</span><span>No. 01</span></div></div>
                             <p class="ea-cover-title">Science in the Capital</p>
                         </div>
                     </a></li>
@@ -378,13 +378,14 @@
                             <p class="ea-cover-title">New Frontiers in the Capital</p>
                         </div>
                     </a></li>
-                    <li><a class="ea-fan-item" href="#winter-2026" data-caption="Winter 2026 &middot; Coming December 2026|Medical Innovation in the Capital" style="--i:5" aria-label="Winter 2026, coming december 2026: Medical Innovation in the Capital">
+                    <li><a class="ea-fan-item" href="#winter-2027" data-caption="Winter 2027 &middot; Coming December 2026|Medical Innovation in the Capital" style="--i:5" aria-label="Winter 2027, coming december 2026: Medical Innovation in the Capital">
                         <div class="ea-cover" style="--acc:#3b6e8f">
                             <img class="art" src="/editions/winter/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async">
-                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Winter 2026</span><span>No. 06</span></div></div>
+                            <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Winter 2027</span><span>No. 06</span></div></div>
                             <p class="ea-cover-title">Medical Innovation in the Capital</p>
                         </div>
                     </a></li>
+                    <!-- Spring 2027: hidden for now. To restore: remove this comment wrapper and set --i to the next number.
                     <li><a class="ea-fan-item" href="#spring-2027" data-caption="Spring 2027 &middot; Coming March 2027|Climate &amp; Ecology in the Capital" style="--i:6" aria-label="Spring 2027, coming march 2027: Climate &amp; Ecology in the Capital">
                         <div class="ea-cover" style="--acc:#a8436a">
                             <img class="art" src="/editions/spring/cover-700.webp?v=1" alt="" width="700" height="937" decoding="async">
@@ -392,8 +393,9 @@
                             <p class="ea-cover-title">Climate &amp; Ecology in the Capital</p>
                         </div>
                     </a></li>
+                    -->
                 </ul>
-                <p class="ea-fan-caption" aria-hidden="true">Spring 2027 &middot; Coming March 2027<em>Climate &amp; Ecology in the Capital</em></p>
+                <p class="ea-fan-caption" aria-hidden="true">Winter 2027 &middot; Coming December 2026<em>Medical Innovation in the Capital</em></p>
                 </div>
             </div>
         </section>
@@ -408,7 +410,6 @@
                     <a href="#y2027" data-year="2027">2027</a>
                     <a href="#y2026" data-year="2026">2026</a>
                     <a href="#y2025" data-year="2025">2025</a>
-                    <a href="#y2024" data-year="2024">2024</a>
                 </nav>
             </div>
         </div>
@@ -417,9 +418,10 @@
         <section class="ea-year" id="y2027" data-year="2027" aria-labelledby="y2027-label">
             <div class="ea-wrap ea-year-head" data-reveal>
                 <span class="ea-year-num" id="y2027-label">2027</span>
-                <span class="ea-year-sub">Coming in March &middot; Spring</span>
+                <span class="ea-year-sub">Coming in December &middot; Winter</span>
             </div>
 
+            <!-- Spring 2027: hidden for now (the Winter 2027 preview comes first). To restore, remove this comment wrapper.
             <article class="ea-ed is-upcoming" id="spring-2027" style="--acc:#a8436a; --tint:#f9eff0" aria-labelledby="spring-2027-title">
                 <div class="ea-banner">
                     <img src="/editions/spring/hero-1600.webp?v=1" srcset="/editions/spring/hero-1600.webp?v=1 1600w, /editions/spring/hero-2600.webp?v=1 2600w" sizes="100vw"
@@ -457,37 +459,29 @@
                     </div>
                 </div>
             </article>
-        </section>
-
-        <!-- ============================= 2026 ============================= -->
-        <section class="ea-year" id="y2026" data-year="2026" aria-labelledby="y2026-label">
-            <div class="ea-wrap ea-year-head" data-reveal>
-                <span class="ea-year-num" id="y2026-label">2026</span>
-                <span class="ea-year-sub">Three editions &middot; Spring, Fall and the Winter to come</span>
-            </div>
-
-            <article class="ea-ed flip is-upcoming" id="winter-2026" style="--acc:#3b6e8f; --tint:#edf2f6" aria-labelledby="winter-2026-title">
+            -->
+            <article class="ea-ed is-upcoming" id="winter-2027" style="--acc:#3b6e8f; --tint:#edf2f6" aria-labelledby="winter-2027-title">
                 <div class="ea-banner">
-                    <img src="/editions/winter/hero-1600.webp?v=2" srcset="/editions/winter/hero-1600.webp?v=2 1600w, /editions/winter/hero-2600.webp?v=2 2600w" sizes="100vw"
+                    <img src="/editions/winter/hero-1600.webp?v=2" srcset="/editions/winter/hero-900.webp?v=2 900w, /editions/winter/hero-1600.webp?v=2 1600w, /editions/winter/hero-2600.webp?v=2 2600w" sizes="100vw"
                          alt="" width="1600" height="679" loading="lazy" decoding="async">
-                    <div class="ea-banner-label ea-wrap"><span>No. 06 &middot; Winter 2026</span><span class="ea-badge">Coming December 2026</span></div>
+                    <div class="ea-banner-label ea-wrap"><span>No. 06 &middot; Winter 2027</span><span class="ea-badge">Coming December 2026</span></div>
                 </div>
                 <div class="ea-wrap ea-ed-grid">
                     <div class="ea-ed-coverwrap" data-reveal>
-                        <a class="ea-ed-cover" href="/edition-winter" aria-label="Preview the Winter 2026 edition">
+                        <a class="ea-ed-cover" href="/edition-winter" aria-label="Preview the Winter 2027 edition">
                             <figure class="ea-cover">
                                 <img class="art" src="/editions/winter/cover-1100.webp?v=1" srcset="/editions/winter/cover-700.webp?v=1 700w, /editions/winter/cover-1100.webp?v=1 1100w"
                                      sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
-                                     alt="The Winter 2026 cover: a pen-and-ink drawing of the frozen Reflecting Pool looking toward the Washington Monument.">
-                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Winter 2026</span><span>Washington, D.C.</span></div></div>
+                                     alt="The Winter 2027 cover: a pen-and-ink drawing of the frozen Reflecting Pool looking toward the Washington Monument.">
+                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Winter 2027</span><span>Washington, D.C.</span></div></div>
                                 <p class="ea-cover-title" aria-hidden="true">Medical Innovation in the Capital</p>
                                 <div class="ea-cover-lines" aria-hidden="true"><p><span>Feature</span>The AI Listening for Heart Failure</p><p><span>Profile</span>Engineering Cartilage From Scratch</p></div>
                             </figure>
                         </a>
                     </div>
                     <div class="ea-ed-copy" data-reveal style="--d:.1s">
-                        <p class="ea-kicker ea-ed-kicker">Winter 2026 &middot; Medicine</p>
-                        <h2 id="winter-2026-title">Medical Innovation <em>in the Capital.</em></h2>
+                        <p class="ea-kicker ea-ed-kicker">Winter 2027 &middot; Medicine</p>
+                        <h2 id="winter-2027-title">Medical Innovation <em>in the Capital.</em></h2>
                         <p class="ea-ed-dek">Stories from the labs, clinics and classrooms where Washington is building the next generation of medicine.</p>
                         <ul class="ea-ed-inside" aria-label="A preview of this edition">
                             <li><span>Feature</span><b>The AI Listening for Heart Failure</b></li>
@@ -503,7 +497,16 @@
                     </div>
                 </div>
             </article>
-            <article class="ea-ed" id="fall-2026" style="--acc:#9a5a2e; --tint:#f5eee4" aria-labelledby="fall-2026-title">
+        </section>
+
+        <!-- ============================= 2026 ============================= -->
+        <section class="ea-year" id="y2026" data-year="2026" aria-labelledby="y2026-label">
+            <div class="ea-wrap ea-year-head" data-reveal>
+                <span class="ea-year-num" id="y2026-label">2026</span>
+                <span class="ea-year-sub">Two editions &middot; Spring and Fall</span>
+            </div>
+
+            <article class="ea-ed flip" id="fall-2026" style="--acc:#9a5a2e; --tint:#f5eee4" aria-labelledby="fall-2026-title">
                 <div class="ea-banner">
                     <img src="/editions/fall-2026/hero-1600.webp?v=1" srcset="/editions/fall-2026/hero-900.webp?v=1 900w, /editions/fall-2026/hero-1600.webp?v=1 1600w, /editions/fall-2026/hero-2600.webp?v=1 2600w" sizes="100vw"
                          alt="" width="1600" height="679" loading="lazy" decoding="async">
@@ -515,7 +518,7 @@
                             <figure class="ea-cover">
                                 <img class="art" src="/editions/fall-2026/cover-1100.webp?v=1" srcset="/editions/fall-2026/cover-700.webp?v=1 700w, /editions/fall-2026/cover-1100.webp?v=1 1100w"
                                      sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
-                                     alt="The Fall 2026 cover: a pen-and-ink drawing of the Smithsonian Castle on a misty autumn morning.">
+                                     alt="The Fall 2026 cover: a pen-and-ink drawing of the Jefferson Memorial across the Tidal Basin in autumn.">
                                 <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Fall 2026</span><span>Washington, D.C.</span></div></div>
                                 <p class="ea-cover-title" aria-hidden="true">New Frontiers in the Capital</p>
                                 <div class="ea-cover-lines" aria-hidden="true"><p><span>Feature</span>NASA DAVINCI: What the Mission To Venus Says About Humanity's Place in Space</p><p><span>Feature</span>Saving the Good Guys: The Quest for Target-Specific Antibiotics</p></div>
@@ -540,7 +543,7 @@
                     </div>
                 </div>
             </article>
-            <article class="ea-ed flip" id="spring-2026" style="--acc:#9b3a6e; --tint:#f8eef2" aria-labelledby="spring-2026-title">
+            <article class="ea-ed" id="spring-2026" style="--acc:#9b3a6e; --tint:#f8eef2" aria-labelledby="spring-2026-title">
                 <div class="ea-banner">
                     <img src="/editions/spring-2026/hero-1600.webp?v=1" srcset="/editions/spring-2026/hero-900.webp?v=1 900w, /editions/spring-2026/hero-1600.webp?v=1 1600w, /editions/spring-2026/hero-2600.webp?v=1 2600w" sizes="100vw"
                          alt="" width="1600" height="679" loading="lazy" decoding="async">
@@ -583,10 +586,10 @@
         <section class="ea-year" id="y2025" data-year="2025" aria-labelledby="y2025-label">
             <div class="ea-wrap ea-year-head" data-reveal>
                 <span class="ea-year-num" id="y2025-label">2025</span>
-                <span class="ea-year-sub">Two editions &middot; Spring and Fall</span>
+                <span class="ea-year-sub">Where it started &middot; Winter, Spring and Fall</span>
             </div>
 
-            <article class="ea-ed" id="fall-2025" style="--acc:#a4562a; --tint:#f6eee5" aria-labelledby="fall-2025-title">
+            <article class="ea-ed flip" id="fall-2025" style="--acc:#a4562a; --tint:#f6eee5" aria-labelledby="fall-2025-title">
                 <div class="ea-banner">
                     <img src="/editions/fall-2025/hero-1600.webp?v=1" srcset="/editions/fall-2025/hero-900.webp?v=1 900w, /editions/fall-2025/hero-1600.webp?v=1 1600w, /editions/fall-2025/hero-2600.webp?v=1 2600w" sizes="100vw"
                          alt="" width="1600" height="679" loading="lazy" decoding="async">
@@ -623,7 +626,7 @@
                     </div>
                 </div>
             </article>
-            <article class="ea-ed flip" id="spring-2025" style="--acc:#a8436a; --tint:#f9eff0" aria-labelledby="spring-2025-title">
+            <article class="ea-ed" id="spring-2025" style="--acc:#a8436a; --tint:#f9eff0" aria-labelledby="spring-2025-title">
                 <div class="ea-banner">
                     <img src="/editions/spring-2025/hero-1600.webp?v=1" srcset="/editions/spring-2025/hero-900.webp?v=1 900w, /editions/spring-2025/hero-1600.webp?v=1 1600w, /editions/spring-2025/hero-2600.webp?v=1 2600w" sizes="100vw"
                          alt="" width="1600" height="679" loading="lazy" decoding="async">
@@ -660,37 +663,28 @@
                     </div>
                 </div>
             </article>
-        </section>
-
-        <!-- ============================= 2024 ============================= -->
-        <section class="ea-year" id="y2024" data-year="2024" aria-labelledby="y2024-label">
-            <div class="ea-wrap ea-year-head" data-reveal>
-                <span class="ea-year-num" id="y2024-label">2024</span>
-                <span class="ea-year-sub">Where it started &middot; Winter</span>
-            </div>
-
-            <article class="ea-ed" id="winter-2024" style="--acc:#3b6e8f; --tint:#edf2f6" aria-labelledby="winter-2024-title">
+            <article class="ea-ed flip" id="winter-2025" style="--acc:#3b6e8f; --tint:#edf2f6" aria-labelledby="winter-2025-title">
                 <div class="ea-banner">
-                    <img src="/editions/winter-2024/hero-1600.webp?v=1" srcset="/editions/winter-2024/hero-900.webp?v=1 900w, /editions/winter-2024/hero-1600.webp?v=1 1600w, /editions/winter-2024/hero-2600.webp?v=1 2600w" sizes="100vw"
+                    <img src="/editions/winter-2025/hero-1600.webp?v=1" srcset="/editions/winter-2025/hero-900.webp?v=1 900w, /editions/winter-2025/hero-1600.webp?v=1 1600w, /editions/winter-2025/hero-2600.webp?v=1 2600w" sizes="100vw"
                          alt="" width="1600" height="679" loading="lazy" decoding="async">
-                    <div class="ea-banner-label ea-wrap"><span>No. 01 &middot; Winter 2024</span><span class="ea-badge">The first edition</span></div>
+                    <div class="ea-banner-label ea-wrap"><span>No. 01 &middot; Winter 2025</span><span class="ea-badge">The first edition</span></div>
                 </div>
                 <div class="ea-wrap ea-ed-grid">
                     <div class="ea-ed-coverwrap" data-reveal>
-                        <a class="ea-ed-cover" href="/edition-winter-2024" aria-label="Open the Winter 2024 edition">
+                        <a class="ea-ed-cover" href="/edition-winter-2025" aria-label="Open the Winter 2025 edition">
                             <figure class="ea-cover">
-                                <img class="art" src="/editions/winter-2024/cover-1100.webp?v=1" srcset="/editions/winter-2024/cover-700.webp?v=1 700w, /editions/winter-2024/cover-1100.webp?v=1 1100w"
+                                <img class="art" src="/editions/winter-2025/cover-1100.webp?v=1" srcset="/editions/winter-2025/cover-700.webp?v=1 700w, /editions/winter-2025/cover-1100.webp?v=1 1100w"
                                      sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
-                                     alt="The Winter 2024 cover: a pen-and-ink drawing of Dupont Circle and its fountain in fresh snow.">
-                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Winter 2024</span><span>Washington, D.C.</span></div></div>
+                                     alt="The Winter 2025 cover: a pen-and-ink drawing of Dupont Circle and its fountain in fresh snow.">
+                                <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Winter 2025</span><span>Washington, D.C.</span></div></div>
                                 <p class="ea-cover-title" aria-hidden="true">Science in the Capital</p>
                                 <div class="ea-cover-lines" aria-hidden="true"><p><span>Op-Ed</span>An Ode to Microglia</p><p><span>Profile</span>From Music to Nuclear Policy: Professor Christopher Cahill’s unexpected Journey in Science and Policy</p></div>
                             </figure>
                         </a>
                     </div>
                     <div class="ea-ed-copy" data-reveal style="--d:.1s">
-                        <p class="ea-kicker ea-ed-kicker">Winter 2024 &middot; The first edition</p>
-                        <h2 id="winter-2024-title">Science <em>in the Capital.</em></h2>
+                        <p class="ea-kicker ea-ed-kicker">Winter 2025 &middot; The first edition</p>
+                        <h2 id="winter-2025-title">Science <em>in the Capital.</em></h2>
                         <p class="ea-ed-dek">Where The Catalyst began: the researchers, labs and questions that make Washington a science city.</p>
                         <ul class="ea-ed-inside" aria-label="Inside this edition">
                             <li><span>Op-Ed</span><a href="/article/an-ode-to-microglia"><b>An Ode to Microglia</b></a></li>
@@ -698,7 +692,7 @@
                             <li><span>Interview</span><a href="/article/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells"><b>A Universe of Plasma: How one Scientist Connects his World from Satellites to Cells.</b></a></li>
                         </ul>
                         <div class="ea-ed-foot">
-                            <a class="ea-btn" href="/edition-winter-2024">Open the edition
+                            <a class="ea-btn" href="/edition-winter-2025">Open the edition
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                             </a>
                             <span class="ea-ed-meta">10 stories &middot; December 2024 &ndash; February 2025</span>

@@ -116,3 +116,5 @@
 # signal. Google picks up the new canonical from the listing.
 /article/posts/games/*   /articles                  301
 /article/posts/*         /articles                  301
+/edition-winter-2024      /edition-winter-2025      301
+/edition-winter-2024.html /edition-winter-2025      301
