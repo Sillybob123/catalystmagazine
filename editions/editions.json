@@ -11,6 +11,12 @@
   "paper": "#f3f6f8",
   "deep": "#0b1526",
   "current": false,
+  "lede": "Our first edition: the researchers, labs and questions that make Washington a science city, from microglia and dopamine to plasma, forensics and nuclear policy.",
+  "season": "Winter",
+  "year": "2025",
+  "start": "2024-12-01",
+  "end": "2025-03-01",
+  "count": 10,
   "night": false,
   "stories": [
    {
@@ -107,6 +113,12 @@
   "paper": "#fbf5f3",
   "deep": "#3a1f33",
   "current": false,
+  "lede": "Genes, fuels and big ideas: a season of stories on evolution, cleaner energy, paradoxes and the way science talks to the public.",
+  "season": "Spring",
+  "year": "2025",
+  "start": "2025-03-01",
+  "end": "2025-06-01",
+  "count": 9,
   "night": false,
   "stories": [
    {
@@ -195,6 +207,12 @@
   "paper": "#f6f1ea",
   "deep": "#0e1628",
   "current": false,
+  "lede": "Mental health care, myasthenia gravis and demyelination, a brain that edits reality and robots that operate: our summer and fall of 2025.",
+  "season": "Fall",
+  "year": "2025",
+  "start": "2025-06-01",
+  "end": "2025-12-01",
+  "count": 13,
   "night": true,
   "stories": [
    {
@@ -315,6 +333,12 @@
   "paper": "#fbf5f3",
   "deep": "#33192b",
   "current": false,
+  "lede": "Memory and misfolded proteins, AI in the classroom and the kitchen, microbes that help life adapt, and the physics of protons.",
+  "season": "Spring",
+  "year": "2026",
+  "start": "2025-12-01",
+  "end": "2026-06-01",
+  "count": 10,
   "night": false,
   "stories": [
    {
@@ -411,6 +435,12 @@
   "paper": "#f7f1e8",
   "deep": "#2a1d14",
   "current": true,
+  "lede": "A mission to Venus, antibiotics that choose their targets, algae that dance and a new look at Alzheimer’s: reporting from the edges of research.",
+  "season": "Fall",
+  "year": "2026",
+  "start": "2026-06-01",
+  "end": "2026-12-01",
+  "count": 10,
   "night": false,
   "stories": [
    {
