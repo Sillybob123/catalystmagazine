@@ -29,6 +29,7 @@ import {
   updateDoc,
   arrayUnion,
   serverTimestamp,
+  deleteField,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 export function normTitle(t) {
@@ -84,6 +85,38 @@ export async function fetchPublishedTitleSet() {
 }
 
 /**
+ * The edition of the workflow project matching a story title ("" if none).
+ * Used by the writer's final-review publish, which can only write the story
+ * in the same update that flips it to published.
+ */
+export async function editionForStoryTitle(title) {
+  try {
+    const key = normTitle(title);
+    if (!key) return "";
+    const snap = await getDocs(collection(db, "projects"));
+    const match = snap.docs.map((d) => d.data()).find((p) => normTitle(p.title) === key && p.edition);
+    return (match && match.edition) || "";
+  } catch (e) {
+    console.warn("[publish-sync] edition lookup failed (non-blocking)", e);
+    return "";
+  }
+}
+
+/**
+ * Write (or clear, with "") the public `edition` on a story. Best-effort:
+ * never throws, so it can't block a publish or an edition move.
+ */
+export async function setStoryEdition(storyId, edition) {
+  try {
+    await updateDoc(doc(db, "stories", storyId), { edition: edition || deleteField() });
+    return true;
+  } catch (e) {
+    console.warn("[publish-sync] could not set story edition (non-blocking)", e);
+    return false;
+  }
+}
+
+/**
  * Stamp the workflow project that corresponds to a just-published story.
  * Fire-and-forget: callers must never let a failure here block the publish
  * itself (the story is already live). Returns true if a project was stamped.
@@ -97,6 +130,11 @@ export async function markStoryPublishedOnProject(story, byName) {
       .map((d) => ({ id: d.id, ...d.data() }))
       .filter((p) => normTitle(p.title) === key);
     if (!candidates.length) return false;
+    // Carry the project's edition onto the public story so it shows up on
+    // that edition's page (e.g. /edition-winter). Editors/admins may update
+    // a published story; a writer's final-review publish already wrote it.
+    const edition = (candidates.find((p) => p.edition) || {}).edition;
+    if (edition && story.id) await setStoryEdition(story.id, edition);
     // Prefer one that isn't already stamped (re-publishing shouldn't re-stamp
     // an unrelated duplicate); otherwise nothing to do.
     const target = candidates.find((p) => !p.publishedAt && !p.publishedStoryId);

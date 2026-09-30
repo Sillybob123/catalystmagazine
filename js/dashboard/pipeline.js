@@ -30,7 +30,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, fmtDate, confirmDialog } from "./ui.js";
 import { showCalendarExportPrompt } from "./calendar-export.js";
-import { isProjectPublished, isProjectCompleted, fetchPublishedTitleSet } from "./publish-sync.js";
+import { isProjectPublished, isProjectCompleted, fetchPublishedTitleSet, setStoryEdition } from "./publish-sync.js";
 import {
   deadlinePatchOnApproval,
   deadlinePatchOnInterviewScheduled,
@@ -1455,6 +1455,9 @@ function openDetailModal(projectId) {
           authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString(),
         }),
       });
+      // Already live? Move the public story too, so it appears on (or
+      // leaves) that edition's page right away.
+      if (project.publishedStoryId) await setStoryEdition(project.publishedStoryId, next);
       toast(next ? `Moved to ${next}.` : "Removed from its edition.", "success"); m.close();
     } catch (e) { toast(e.message, "error"); btn.disabled = false; }
   });

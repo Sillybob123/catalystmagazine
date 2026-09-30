@@ -1,0 +1,295 @@
+/* ============================================================
+   Seasonal edition pages (edition-*.html) — shared styles.
+   Each edition sets its palette on body.wx-<season> and its
+   weather with body[data-weather] (see js/edition.js).
+   Winter is a night edition: deep blue page, ice-white type.
+   ============================================================ */
+
+body.wx {
+  --wx-bg: #0b1526;
+  --wx-bg-2: #0f1d33;
+  --wx-ink: #f3f7fb;          /* headings */
+  --wx-ink-2: #c6d3e1;        /* body copy */
+  --wx-muted: #8ea2b8;
+  --wx-accent: #a8cde8;       /* ice blue */
+  --wx-hair: rgba(226, 238, 248, 0.16);
+  --wx-footer-bg: #f5f8f9;
+
+  --wx-sans: 'Poppins', system-ui, -apple-system, sans-serif;
+  --wx-serif: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+  --wx-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --wx-gutter: clamp(18px, 4.5vw, 64px);
+
+  margin: 0;
+  background: linear-gradient(180deg, var(--wx-bg) 0%, var(--wx-bg-2) 100%);
+  background-attachment: scroll;
+  color: var(--wx-ink-2);
+  font: 400 16px/1.6 var(--wx-serif);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+html:has(body.wx) { background: var(--wx-bg); }
+.wx .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.wx em { font-family: var(--wx-serif); font-style: italic; font-weight: 400; }
+.wx-wrap { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 var(--wx-gutter); box-sizing: border-box; }
+
+/* falling snow: above the backdrops, below the content */
+.wx-weather { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.wx main { position: relative; }
+
+.wx-kicker {
+  display: inline-flex; align-items: center; gap: 12px; margin: 0 0 22px;
+  font: 600 12px/1.2 var(--wx-sans); letter-spacing: .2em; text-transform: uppercase; color: var(--wx-accent);
+}
+.wx-kicker::before { content: ""; width: 26px; height: 1px; background: currentColor; }
+
+.wx-btn {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 26px;
+  border-radius: 999px; font: 500 15px/1 var(--wx-sans); text-decoration: none; cursor: pointer;
+  transition: transform .25s var(--wx-ease), background-color .25s, border-color .25s, color .25s;
+}
+.wx-btn svg { width: 18px; height: 18px; transition: transform .3s var(--wx-ease); }
+.wx-btn:hover svg { transform: translateY(3px); }
+.wx-btn:active { transform: scale(.98); }
+.wx-btn-light { background: #f3f7fb; color: #0b1526; border: 1px solid #f3f7fb; }
+.wx-btn-light:hover { background: #fff; }
+.wx-btn-line { background: rgba(255,255,255,.04); color: var(--wx-ink); border: 1px solid rgba(226,238,248,.35); }
+.wx-btn-line:hover { border-color: var(--wx-ink); background: rgba(255,255,255,.08); }
+.wx-btn:focus-visible, .wx-story a:focus-visible { outline: 2px solid var(--wx-accent); outline-offset: 4px; }
+
+/* ============================================================
+   HERO — blue-hour Capitol in snow, drifting very slowly
+   ============================================================ */
+.wx-hero {
+  position: relative; min-height: max(100svh, 700px); overflow: hidden;
+  display: flex; align-items: center; background: var(--wx-bg);
+}
+.wx-backdrop {
+  position: absolute; inset: -4%; z-index: 0; pointer-events: none;
+  transform: translate3d(var(--wx-px, 0px), var(--wx-py, 0px), 0);
+  will-change: transform;
+}
+.wx-backdrop picture, .wx-backdrop img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 70% 60%;
+  display: block;
+}
+/* a slow breathing drift; alternate + ease-in-out means it never visibly restarts */
+.wx-backdrop img { animation: wx-drift 60s ease-in-out infinite alternate; transform-origin: 72% 60%; }
+@keyframes wx-drift {
+  from { transform: scale(1.02) translate3d(0, 0, 0); }
+  to   { transform: scale(1.10) translate3d(-1.2%, -0.8%, 0); }
+}
+/* legibility: darker on the text side and into the section below */
+.wx-hero::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(11,21,38,.88) 0%, rgba(11,21,38,.62) 34%, rgba(11,21,38,.12) 62%, rgba(11,21,38,0) 80%),
+    linear-gradient(180deg, rgba(11,21,38,.35) 0%, rgba(11,21,38,0) 22%, rgba(11,21,38,0) 72%, var(--wx-bg) 100%);
+}
+.wx-hero-grid {
+  position: relative; z-index: 2;
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: clamp(32px, 5vw, 88px);
+  align-items: center; padding-top: 120px; padding-bottom: clamp(72px, 12vh, 140px);
+}
+.wx-hero-copy { will-change: transform, opacity; }
+.wx-hero h1 {
+  margin: 0; color: var(--wx-ink);
+  font: 700 clamp(44px, 6.2vw, 96px)/.98 var(--wx-sans); letter-spacing: -0.035em;
+  text-shadow: 0 2px 30px rgba(11,21,38,.35);
+}
+.wx-hero h1 em { display: block; font-size: .92em; letter-spacing: -0.015em; color: #dbe9f5; }
+.wx-hero .lede {
+  margin: 26px 0 0; max-width: 470px;
+  font: 400 clamp(17px, 1.35vw, 20px)/1.6 var(--wx-serif); color: var(--wx-ink-2);
+}
+.wx-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 34px; }
+.wx-meta { font: 500 13px/1.4 var(--wx-sans); color: var(--wx-muted); letter-spacing: .02em; }
+
+.wx-rise { opacity: 0; transform: translateY(18px); transition: opacity 1.1s var(--wx-ease), transform 1.1s var(--wx-ease); transition-delay: var(--d, 0s); }
+.wx.is-ready .wx-rise { opacity: 1; transform: none; }
+
+/* the magazine */
+.wx-cover-wrap { perspective: 1800px; display: flex; justify-content: center; }
+.wx-cover {
+  --tilt-x: 0deg; --tilt-y: 0deg; --lift: 0px;
+  position: relative; margin: 0;
+  /* desktop width is set by js/edition.js to match the hero text block */
+  width: var(--wx-cover-w, min(100%, 360px, calc((100svh - 300px) * 0.747)));
+  aspect-ratio: 3584 / 4800;
+  container-type: inline-size;
+  border-radius: 3px; overflow: hidden; background: #fff;
+  transform: translate3d(0, var(--lift), 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-style: preserve-3d; will-change: transform;
+  box-shadow:
+    0 2px 6px rgba(0,0,0,.25),
+    0 40px 80px -24px rgba(0,0,0,.65),
+    0 0 90px -10px rgba(168,205,232,.28);
+  opacity: 0; translate: 0 40px; scale: .97;
+  transition: opacity 1.3s var(--wx-ease) .15s, translate 1.5s var(--wx-ease) .15s, scale 1.5s var(--wx-ease) .15s;
+}
+.wx.is-ready .wx-cover { opacity: 1; translate: 0 0; scale: 1; }
+.wx-cover img.art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.wx-cover::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(15,23,42,.16), rgba(15,23,42,0) 2.5%, rgba(255,255,255,.18) 3.5%, rgba(255,255,255,0) 7%),
+    linear-gradient(calc(115deg + var(--sheen, 0deg)), rgba(255,255,255,0) 35%, rgba(255,255,255,.22) 50%, rgba(255,255,255,0) 65%);
+  mix-blend-mode: screen;
+}
+.wx-cover-mast { position: absolute; left: 6.5cqw; right: 6.5cqw; top: 5cqw; }
+.wx-cover-mast img { display: block; width: 100%; height: auto; }
+.wx-cover-dateline {
+  display: flex; justify-content: space-between; gap: 1em;
+  margin-top: 2.2cqw; padding-top: 1.6cqw; border-top: 1px solid rgba(15,23,42,.55);
+  font: 600 2.35cqw/1 var(--wx-sans); letter-spacing: .2em; text-transform: uppercase; color: #0f172a;
+}
+.wx-cover-title {
+  position: absolute; left: 6.5cqw; width: 42cqw; top: 30cqw; margin: 0;
+  font: italic 400 7.4cqw/1.02 var(--wx-serif); color: #0f172a; letter-spacing: -0.015em;
+}
+.wx-cover-lines { position: absolute; left: 6.5cqw; right: 6.5cqw; bottom: 6cqw; display: grid; gap: 1.8cqw; }
+.wx-cover-lines::before {
+  content: ""; position: absolute; z-index: -1; left: -6.5cqw; right: -6.5cqw; bottom: -6cqw; height: calc(100% + 22cqw);
+  background: linear-gradient(0deg, rgba(251,252,252,.94) 45%, rgba(251,252,252,0));
+}
+.wx-cover-lines p { margin: 0; font: 600 3.1cqw/1.25 var(--wx-sans); color: #0f172a; }
+.wx-cover-lines p span { display: block; font: 500 2.1cqw/1.5 var(--wx-sans); letter-spacing: .16em; text-transform: uppercase; color: #3b6e8f; }
+
+.wx-scroll {
+  position: absolute; z-index: 3; left: 50%; bottom: 26px; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  font: 500 11px/1 var(--wx-sans); letter-spacing: .22em; text-transform: uppercase; color: var(--wx-ink-2);
+  text-decoration: none; transition: opacity .4s;
+}
+.wx-scroll::after { content: ""; width: 1px; height: 34px; background: linear-gradient(var(--wx-ink-2), transparent); transform-origin: top; animation: wx-cue 2.4s var(--wx-ease) infinite; }
+@keyframes wx-cue { 0% { transform: scaleY(0); } 70%, 100% { transform: scaleY(1); opacity: 0; } }
+
+@media (max-width: 899px) {
+  .wx-hero { align-items: flex-start; min-height: 0; }
+  .wx-backdrop img { object-position: 50% 100%; transform-origin: 50% 80%; }
+  .wx-hero::after {
+    background: linear-gradient(180deg, rgba(11,21,38,.78) 0%, rgba(11,21,38,.5) 38%, rgba(11,21,38,.1) 62%, rgba(11,21,38,.2) 85%, var(--wx-bg) 100%);
+  }
+  .wx-hero-grid { grid-template-columns: 1fr; gap: 32px; padding-top: 96px; padding-bottom: 64px; }
+  .wx-hero h1 { font-size: clamp(40px, 11vw, 64px); }
+  .wx-hero .lede { font-size: 17px; margin-top: 18px; }
+  .wx-actions { margin-top: 24px; }
+  /* phones and tablets: the magazine leads, the headline follows */
+  .wx-cover-wrap { order: -1; }
+  .wx-cover { width: min(62vw, 300px) !important; }
+  .wx-scroll { display: none; }
+}
+
+/* ============================================================
+   STORIES — a rack of covers
+   ============================================================ */
+.wx-stories { position: relative; z-index: 2; padding: clamp(72px, 10vh, 120px) 0 clamp(80px, 10vh, 120px); }
+.wx-sec-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px 48px; margin-bottom: clamp(40px, 6vw, 72px); }
+.wx-sec-head h2 {
+  margin: 0; max-width: 15ch; color: var(--wx-ink);
+  font: 700 clamp(34px, 4.6vw, 64px)/1.02 var(--wx-sans); letter-spacing: -0.035em;
+}
+.wx-sec-head p.intro { margin: 18px 0 0; max-width: 540px; font: 400 18px/1.6 var(--wx-serif); color: var(--wx-ink-2); }
+.wx-crystal { width: 64px; height: 64px; color: var(--wx-accent); opacity: .8; transform: rotate(var(--spin, 0deg)); }
+
+/* 3 columns; the lead story takes a 2×2 block */
+.wx-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(44px, 5vw, 72px) clamp(20px, 2.6vw, 40px); }
+.wx-story { min-width: 0; }
+.wx-story:first-child { grid-column: span 2; grid-row: span 2; }
+
+.wx-story a { display: grid; gap: 12px; color: inherit; text-decoration: none; border-radius: 4px; }
+.wx-story-img {
+  position: relative; overflow: hidden; border-radius: 4px; background: #16263e;
+  aspect-ratio: 4 / 5;
+  box-shadow: 0 2px 4px rgba(0,0,0,.25), 0 30px 60px -30px rgba(0,0,0,.7);
+  transition: transform .6s var(--wx-ease), box-shadow .6s var(--wx-ease);
+}
+.wx-story a:hover .wx-story-img { transform: translateY(-6px); box-shadow: 0 2px 4px rgba(0,0,0,.25), 0 40px 70px -30px rgba(0,0,0,.8), 0 0 60px -20px rgba(168,205,232,.35); }
+.wx-story-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* frost that melts off the cover as the story settles in */
+.wx-story-img::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: rgba(210,228,242,.35);
+  -webkit-backdrop-filter: blur(12px) saturate(.6); backdrop-filter: blur(12px) saturate(.6);
+  transition: opacity 1.8s var(--wx-ease) calc(var(--d, 0s) + .35s);
+}
+.wx-story.in .wx-story-img::after { opacity: 0; }
+
+.wx-story-kicker { margin: 8px 0 0; font: 600 11.5px/1.3 var(--wx-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--wx-accent); }
+.wx-story h3 {
+  margin: 0; color: var(--wx-ink); text-wrap: balance;
+  font: 600 clamp(19px, 1.55vw, 23px)/1.22 var(--wx-sans); letter-spacing: -0.018em;
+  transition: color .2s;
+}
+.wx-story a:hover h3 { color: #fff; text-decoration: underline; text-decoration-color: rgba(168,205,232,.6); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+.wx-story-dek { margin: 0; font: 400 16.5px/1.55 var(--wx-serif); color: var(--wx-ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wx-story-by { margin: 2px 0 0; font: 500 14px/1.4 var(--wx-sans); color: var(--wx-ink); }
+.wx-story-by span { color: var(--wx-muted); font-weight: 400; }
+
+/* lead story: fills its 2×2 block — the cover stretches to the height
+   of the two stories beside it, so there's never a gap under it */
+.wx-story:first-child a { height: 100%; display: flex; flex-direction: column; }
+.wx-story:first-child .wx-story-img { aspect-ratio: auto; flex: 1 1 auto; min-height: 360px; }
+.wx-story:first-child h3 { font-size: clamp(26px, 2.6vw, 38px); line-height: 1.1; letter-spacing: -0.028em; }
+.wx-story:first-child .wx-story-dek { font-size: 18.5px; -webkit-line-clamp: 4; }
+
+/* stories drift down and settle like snow */
+.wx-story {
+  opacity: 0; transform: translate3d(0, -42px, 0) rotate(var(--r, 0deg)); filter: blur(5px);
+  transition: opacity 1.3s var(--wx-ease), transform 1.6s var(--wx-ease), filter 1.3s var(--wx-ease);
+  transition-delay: var(--d, 0s);
+}
+.wx-story.in { opacity: 1; transform: none; filter: none; }
+
+@media (max-width: 1023px) {
+  .wx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wx-story:first-child { grid-row: auto; }
+  .wx-story:first-child a { height: auto; display: grid; }
+  .wx-story:first-child .wx-story-img { aspect-ratio: 16 / 11; flex: none; min-height: 0; }
+  /* a story left alone on the last row spans it */
+  .wx-story:nth-child(even):last-child { grid-column: 1 / -1; }
+  .wx-story:nth-child(even):last-child .wx-story-img { aspect-ratio: 16 / 11; }
+}
+@media (max-width: 639px) {
+  .wx-grid { gap: 40px 14px; }
+  .wx-sec-head { grid-template-columns: 1fr; }
+  .wx-crystal { display: none; }
+  .wx-story a { gap: 8px; }
+  .wx-story h3 { font-size: 16px; line-height: 1.25; }
+  .wx-story-dek { display: none; }
+  .wx-story-kicker { font-size: 10px; margin-top: 4px; }
+  .wx-story-by { font-size: 12.5px; }
+  .wx-story-by span { display: none; }
+  .wx-story:first-child h3, .wx-story:nth-child(even):last-child h3 { font-size: 23px; }
+  .wx-story:first-child .wx-story-dek, .wx-story:nth-child(even):last-child .wx-story-dek { display: -webkit-box; font-size: 16px; }
+}
+
+/* ============================================================
+   CLOSING
+   ============================================================ */
+.wx-close { position: relative; z-index: 2; padding: 0 0 clamp(80px, 12vh, 140px); }
+.wx-close-inner {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 28px 48px;
+  border-top: 1px solid var(--wx-hair); padding-top: clamp(32px, 4vw, 48px);
+}
+.wx-close h2 { margin: 0; font: 700 clamp(28px, 3.2vw, 44px)/1.08 var(--wx-sans); letter-spacing: -0.03em; color: var(--wx-ink); }
+.wx-close p { margin: 12px 0 0; font: 400 17px/1.6 var(--wx-serif); color: var(--wx-ink-2); max-width: 520px; }
+.wx-close-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 767px) { .wx-close-inner { grid-template-columns: 1fr; } }
+
+/* the shared site footer keeps its usual light look below the night page */
+body.wx #site-footer { position: relative; z-index: 2; }
+body.wx #site-footer .footer {
+  margin-top: 0; background: var(--wx-footer-bg);
+  -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .wx-rise, .wx-cover, .wx-story { opacity: 1 !important; transform: none !important; translate: none !important; scale: none !important; filter: none !important; transition: none !important; }
+  .wx-backdrop img { animation: none; }
+  .wx-story-img::after { display: none; }
+  .wx-scroll::after { animation: none; }
+}

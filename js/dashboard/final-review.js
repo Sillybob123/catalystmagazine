@@ -19,7 +19,7 @@ import {
   doc, getDoc, updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, confirmDialog, statusPill, clearPublicStoryCache } from "./ui.js";
-import { markStoryPublishedOnProject } from "./publish-sync.js";
+import { markStoryPublishedOnProject, editionForStoryTitle } from "./publish-sync.js";
 
 // We deliberately do NOT load /css/article-premium.css as a normal <link> —
 // most of its rules are unscoped (.article-body, .article-share, etc.) and
@@ -162,6 +162,10 @@ export async function mount(ctx, container) {
       // Preserve an existing publishedAt (admin may have set it manually from
       // the edit modal, or it carried over from a legacy import).
       if (!story.publishedAt) patch.publishedAt = new Date().toISOString();
+      // Carry the workflow project's edition onto the story in this same
+      // write — a writer can't update the story again once it's published.
+      const edition = story.edition || await editionForStoryTitle(story.title);
+      if (edition) patch.edition = edition;
       await updateDoc(docRef, patch);
       // Bust the public listing cache so /book-reviews and /articles
       // pick up the freshly-published story on the next load instead of
