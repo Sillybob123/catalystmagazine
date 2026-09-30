@@ -717,6 +717,7 @@
       var map = function (v, a, b) { return clamp((v - a) / (b - a), 0, 1); };
       var lerp = function (a, b, t) { return a + (b - a) * t; };
       var ease = function (t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; };
+      var glide = function (t) { return 0.5 - 0.5 * Math.cos(Math.PI * t); };   // softer in-out for the hero zoom
 
       requestAnimationFrame(function () { document.body.classList.add('is-loaded'); });
 
@@ -967,6 +968,9 @@
       }
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { heroFrameKey = ''; mall.key = ''; });
 
+      // p-ranges of the push into the Capitol (the autoplay slows through them)
+      var ZOOM_DESK = [0.24, 0.5], ZOOM_PHONE = [0.6, 1];
+
       var mall = new Plate({
         id: 'mall', ghost: 0.26,
         inkAt: function (p) { return lerp(0.24, 1.04, map(p, 0, portrait() ? 0.56 : 0.32)); },
@@ -992,7 +996,7 @@
           if (!portrait()) {
             // desktop: ease toward the Capitol and settle it on the left
             // third, leaving the right side clear for the Catalyst mark
-            var m = ease(map(p, 0.24, 0.5));
+            var m = glide(map(p, ZOOM_DESK[0], ZOOM_DESK[1]));
             if (m > 0) {
               // anchor on the tip of the dome (plate 0.787, 0.386): it rises
               // as it zooms, finishing level with the top of the kicker line
@@ -1003,7 +1007,7 @@
             }
             return R;
           }
-          var z = ease(map(p, 0.68, 1));
+          var z = glide(map(p, ZOOM_PHONE[0], ZOOM_PHONE[1]));
           if (z > 0) {
             var fx = 0.787, fy = 0.5;               // Capitol dome, in plate coordinates
             var s = 1 + z * (portrait(vw, vh) ? 0.9 : 1.5);
@@ -1084,6 +1088,7 @@
       function heroAutoplay() {
         var root = document.documentElement;
         var playing = false, swallow = false, lastWheel = 0, start = 0, from = 0, to = 0, dur = 0, raf = 0, touchY = null;
+        var SLOW = 2.4, slowA = 0, slowB = 0, cost = 0;   // the zoom plays SLOW× slower than the rest
         var DOWN_KEYS = { ArrowDown: 1, PageDown: 1, ' ': 1, Spacebar: 1 };
         var UP_KEYS = { ArrowUp: 1, PageUp: 1, Home: 1 };
         function atTop() { return window.scrollY < 8; }
@@ -1095,15 +1100,28 @@
           // phones: carry on past the dome until the stories start to show
           if (portrait()) to += window.innerHeight * 0.45;
           if (to <= from + 4) return;
-          dur = portrait() ? 2800 : 4200;
+          var span = mall.el.offsetHeight - window.innerHeight, z = portrait() ? ZOOM_PHONE : ZOOM_DESK;
+          SLOW = portrait() ? 3 : 2.4;
+          slowA = clamp(mall.el.offsetTop + z[0] * span, from, to);
+          slowB = clamp(mall.el.offsetTop + z[1] * span, slowA, to);
+          cost = (to - from) + (SLOW - 1) * (slowB - slowA);
+          dur = portrait() ? 4000 : 5200;
           playing = true; start = performance.now();
           root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
           raf = requestAnimationFrame(step);
         }
         function step(now) {
           var k = Math.min(1, (now - start) / dur);
-          window.scrollTo(0, from + (to - from) * (0.5 - 0.5 * Math.cos(Math.PI * k)));
+          window.scrollTo(0, yAt(glide(k) * cost));
           if (k < 1) raf = requestAnimationFrame(step); else stop();
+        }
+        // scroll position for a share of the total "cost", where every px
+        // inside the zoom costs SLOW
+        function yAt(c) {
+          var a = slowA - from, zc = (slowB - slowA) * SLOW;
+          if (c <= a) return from + c;
+          if (c <= a + zc) return slowA + (c - a) / SLOW;
+          return slowB + (c - a - zc);
         }
         function stop() { cancelAnimationFrame(raf); playing = false; root.style.scrollBehavior = ''; }
 
