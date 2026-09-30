@@ -38,7 +38,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="/beta/collab/desk-1100.webp?v=2" imagesrcset="/beta/collab/desk-700.webp?v=2 700w, /beta/collab/desk-1100.webp?v=2 1100w" imagesizes="(max-width: 899px) 90vw, 46vw">
+    <link rel="preload" as="image" href="/beta/collab/desk-1100.webp?v=3" imagesrcset="/beta/collab/desk-700.webp?v=3 700w, /beta/collab/desk-1100.webp?v=3 1100w" imagesizes="(max-width: 899px) 90vw, 46vw">
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
     <script type="application/ld+json">
     {
@@ -99,8 +99,8 @@
       .cl-btn.line { background: transparent; color: var(--ink); border-color: var(--hair); }
       .cl-btn.line:hover { border-color: var(--ink); }
       .cl-btn:focus-visible, .cl-role:focus-visible, .cl-tab:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-      /* the drawings are on paper: let the page's paper show through */
-      .cl-art { display: block; width: 100%; height: auto; mix-blend-mode: multiply; }
+      /* the drawings are printed on the page's own paper colour (no blending, so nothing flashes white) */
+      .cl-art { display: block; width: 100%; height: auto; }
 
       [data-reveal] { opacity: 0; transform: translateY(24px); transition: opacity 1s var(--ease-out), transform 1s var(--ease-out); transition-delay: var(--d, 0s); }
       [data-reveal].in { opacity: 1; transform: none; }
@@ -108,7 +108,7 @@
       /* ---------- hero ---------- */
       .cl-hero { padding: calc(96px + clamp(28px, 6vh, 72px)) 0 clamp(56px, 8vh, 100px); }
       .cl-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 80px); align-items: center; }
-      .cl-hero h1 { margin: 22px 0 0; font: 700 clamp(46px, 6.2vw, 92px)/.96 var(--sans); letter-spacing: -0.045em; }
+      .cl-hero h1 { margin: 22px 0 0; font: 700 clamp(46px, 6.2vw, 92px)/1.06 var(--sans); letter-spacing: -0.045em; }
       .cl-hero h1 em { display: block; margin-top: .1em; font: italic 400 .9em/1.02 var(--serif); letter-spacing: -0.015em; color: var(--ink-2); }
       .cl-hero .cl-lede { max-width: 520px; }
       .cl-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
@@ -131,7 +131,7 @@
       /* ---------- the roles ---------- */
       .cl-roles { padding: clamp(64px, 9vw, 120px) 0; background: var(--paper-2); }
       .cl-roles-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
-      .cl-roles-intro { position: sticky; top: 120px; background: var(--paper-2); }   /* sticky isolates it: give the drawing paper to blend into */
+      .cl-roles-intro { position: sticky; top: 120px; }
       .cl-roles-intro .cl-art { margin-top: clamp(24px, 3vw, 40px); }
       .cl-role-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ink); }
       .cl-role-list li { border-bottom: 1px solid var(--hair); }
@@ -232,7 +232,7 @@
                     <p class="cl-from" data-reveal style="--d:.24s">Our contributors study at <b>George Washington</b>, <b>Georgetown</b>, <b>Howard</b>, <b>American</b>, <b>Maryland</b> and <b>Johns Hopkins</b>. No experience in journalism required; curiosity is.</p>
                 </div>
                 <figure class="cl-hero-art" data-reveal style="--d:.1s">
-                    <img class="cl-art" src="/beta/collab/desk-1100.webp?v=2" srcset="/beta/collab/desk-700.webp?v=2 700w, /beta/collab/desk-1100.webp?v=2 1100w, /beta/collab/desk-1600.webp?v=2 1600w"
+                    <img class="cl-art" src="/beta/collab/desk-1100.webp?v=3" srcset="/beta/collab/desk-700.webp?v=3 700w, /beta/collab/desk-1100.webp?v=3 1100w, /beta/collab/desk-1600.webp?v=3 1600w"
                          sizes="(max-width: 899px) 90vw, 46vw" width="1100" height="1366" fetchpriority="high" decoding="async"
                          alt="A pen-and-ink drawing of a student reporter's desk: an open notebook, a recorder and marked-up proofs by a window onto the U.S. Capitol.">
                 </figure>
@@ -251,25 +251,25 @@
                 </div>
                 <ol class="cl-steps">
                     <li class="cl-step" data-reveal>
-                        <img class="cl-art" src="/beta/collab/step-pitch-600.webp?v=2" width="600" height="600" loading="lazy" decoding="async" alt="">
+                        <img class="cl-art" src="/beta/collab/step-pitch-600.webp?v=3" width="600" height="600" loading="lazy" decoding="async" alt="">
                         <span class="cl-step-no">The pitch</span>
                         <h3>Start with a question</h3>
                         <p>A lab down the street, a result you can't stop thinking about, a scientist whose path surprised you. Send us a few lines on the story and why it matters.</p>
                     </li>
                     <li class="cl-step" data-reveal style="--d:.08s">
-                        <img class="cl-art" src="/beta/collab/step-report-600.webp?v=2" width="600" height="600" loading="lazy" decoding="async" alt="">
+                        <img class="cl-art" src="/beta/collab/step-report-600.webp?v=3" width="600" height="600" loading="lazy" decoding="async" alt="">
                         <span class="cl-step-no">The reporting</span>
                         <h3>Go and find out</h3>
                         <p>Interview the people doing the work, read the research, visit the lab. We help with introductions, questions and the tricky parts of explaining a field you are new to.</p>
                     </li>
                     <li class="cl-step" data-reveal style="--d:.16s">
-                        <img class="cl-art" src="/beta/collab/step-edit-600.webp?v=2" width="600" height="600" loading="lazy" decoding="async" alt="">
+                        <img class="cl-art" src="/beta/collab/step-edit-600.webp?v=3" width="600" height="600" loading="lazy" decoding="async" alt="">
                         <span class="cl-step-no">The edit</span>
                         <h3>Work it with an editor</h3>
                         <p>Drafts go back and forth with an editor who reads line by line: structure, accuracy, clarity, the sentence that isn't quite there yet. Designers and illustrators take it from there.</p>
                     </li>
                     <li class="cl-step" data-reveal style="--d:.24s">
-                        <img class="cl-art" src="/beta/collab/step-edition-600.webp?v=2" width="600" height="600" loading="lazy" decoding="async" alt="">
+                        <img class="cl-art" src="/beta/collab/step-edition-600.webp?v=3" width="600" height="600" loading="lazy" decoding="async" alt="">
                         <span class="cl-step-no">The edition</span>
                         <h3>Published, with your name on it</h3>
                         <p>Finished stories run in the season's edition under your byline, alongside the rest of the issue, and stay in the archive for good.</p>
@@ -285,7 +285,7 @@
                     <p class="cl-kicker" data-reveal>The team</p>
                     <h2 class="cl-h2" id="cl-roles-title" data-reveal style="--d:.06s">Every edition takes <em>a masthead.</em></h2>
                     <p class="cl-lede" data-reveal style="--d:.12s">Writers are only part of it. These are the roles that put an edition together; pick the one that sounds like you, or tell us what you would add.</p>
-                    <img class="cl-art" data-reveal style="--d:.18s" src="/beta/collab/table-1100.webp?v=2" srcset="/beta/collab/table-700.webp?v=2 700w, /beta/collab/table-1100.webp?v=2 1100w" sizes="(max-width: 899px) 90vw, 36vw" width="1100" height="614" loading="lazy" decoding="async" alt="A pen-and-ink drawing of a long worktable laid out with a magazine team's tools: proofs, a layout on a laptop, a sketchbook, a camera and a microphone.">
+                    <img class="cl-art" data-reveal style="--d:.18s" src="/beta/collab/table-1100.webp?v=3" srcset="/beta/collab/table-700.webp?v=3 700w, /beta/collab/table-1100.webp?v=3 1100w" sizes="(max-width: 899px) 90vw, 36vw" width="1100" height="614" loading="lazy" decoding="async" alt="A pen-and-ink drawing of a long worktable laid out with a magazine team's tools: proofs, a layout on a laptop, a sketchbook, a camera and a microphone.">
                 </div>
                 <ul class="cl-role-list">
                     <li data-reveal><button type="button" class="cl-role" data-apply="join" data-role="Writer">
