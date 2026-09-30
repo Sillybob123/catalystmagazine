@@ -227,7 +227,7 @@
         .hb-rule { height: 1px; background: var(--ink); opacity: 0; transform-origin: 50% 50%; }
         /* the stories rise straight in under the heading */
         #latest {
-          z-index: 5; padding-top: 56px;
+          z-index: 5; padding-top: 8px;
           background: linear-gradient(180deg, rgba(248,247,243,0) 0, rgba(248,247,243,.92) 70px, var(--paper) 160px);
         }
         #latest .hb-eyebrow, #latest #latest-title {
@@ -1088,6 +1088,35 @@
          so nobody is left wondering whether to keep scrolling. Scrolling
          up mid-play hands control straight back; scrolling back up
          through the hero later scrubs it by hand as before. */
+      // Where the hero ends and the stories begin.
+      function heroEnd() {
+        var to = mall.el.offsetTop + mall.el.offsetHeight - window.innerHeight;
+        if (portrait()) to += window.innerHeight * 0.45;   // phones: on past the dome until the stories show
+        return to;
+      }
+
+      /* Seen the hero this visit? Coming back to the homepage (the logo,
+         Home) lands straight on the latest stories, the drawing already
+         finished. Scrolling back up still runs the hero by hand, and a
+         scroll down from the very top replays it, faster. */
+      var SEEN_KEY = 'catalyst-hero-seen', heroSeen = false, snap = false;
+      try { heroSeen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch (e) {}
+      function markHeroSeen() {
+        if (heroSeen) return;
+        heroSeen = true;
+        try { sessionStorage.setItem(SEEN_KEY, '1'); } catch (e) {}
+      }
+      function skipToStories() {
+        var nav = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || {};
+        // the browser restores the reader's place on Back/Forward; links to a section keep their target
+        if (!heroSeen || REDUCED || nav.type === 'back_forward' || location.hash || /[?&]q=/.test(location.search) || window.scrollY > 8) return;
+        var root = document.documentElement, prev = root.style.scrollBehavior;
+        root.style.scrollBehavior = 'auto';
+        window.scrollTo(0, heroEnd());
+        root.style.scrollBehavior = prev;
+        snap = true;                                         // no replay: every scene jumps to its place
+      }
+
       function heroAutoplay() {
         var root = document.documentElement;
         var playing = false, swallow = false, lastWheel = 0, start = 0, from = 0, to = 0, dur = 0, raf = 0, touchY = null;
@@ -1100,9 +1129,7 @@
         function play() {
           if (playing) return;
           from = window.scrollY;
-          to = mall.el.offsetTop + mall.el.offsetHeight - window.innerHeight;
-          // phones: carry on past the dome until the stories start to show
-          if (portrait()) to += window.innerHeight * 0.45;
+          to = heroEnd();
           if (to <= from + 4) return;
           var span = mall.el.offsetHeight - window.innerHeight, z = portrait() ? ZOOM_PHONE : ZOOM_DESK;
           SLOW = portrait() ? 2.4 : 2.8;
@@ -1110,6 +1137,7 @@
           slowB = clamp(mall.el.offsetTop + z[1] * span, slowA, to);
           cost = (to - from) + (SLOW - 1) * (slowB - slowA);
           dur = portrait() ? 3200 : 4000;
+          if (heroSeen) { dur *= 0.55; SLOW = 1.6; cost = (to - from) + (SLOW - 1) * (slowB - slowA); }   // a replay: quicker
           playing = true; start = performance.now();
           root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
           raf = requestAnimationFrame(step);
@@ -1192,9 +1220,11 @@
             if (!s.t0 && s.ready && r.top < vh * (portrait() ? 0.7 : 0.6)) s.t0 = time;   // well into view
             s.p = s.t0 ? glide(clamp((time - s.t0) / s.auto, 0, 1)) : 0;
           } else s.p = s.entry ? entryProgress(s.el) : pinProgress(s.el);
-          s.sp = Math.abs(s.p - s.sp) < 0.0005 ? s.p : lerp(s.sp, s.p, 0.14);
+          s.sp = snap || Math.abs(s.p - s.sp) < 0.0005 ? s.p : lerp(s.sp, s.p, 0.14);
           s.render();
         }
+        snap = false;
+        if (!heroSeen && mall.p > 0.97) markHeroSeen();
         requestAnimationFrame(tick);
       }
 
@@ -1210,6 +1240,7 @@
         requestAnimationFrame(still);
       } else {
         mall.load();
+        skipToStories();
         heroAutoplay();
         // later plates start streaming as they approach
         var lazyIO = new IntersectionObserver(function (entries) {
