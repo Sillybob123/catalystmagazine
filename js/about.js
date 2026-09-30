@@ -345,25 +345,40 @@
     }
     function stop() { cancelAnimationFrame(raf); playing = false; root.style.scrollBehavior = ''; }
 
+    // Only the gesture that started the autoplay is held back: a trackpad
+    // flick keeps sending ever-smaller wheel events for a second or so. Any
+    // new scrolling (a fresh wheel turn, a scroll that speeds up again, a new
+    // touch, a key or a click) stops the autoplay on the spot and the page
+    // scrolls normally from wherever it is, so nobody is ever locked in.
+    var swallowStart = 0, lastAbs = 0;
     window.addEventListener('wheel', function (e) {
       if (e.ctrlKey) return;                         // pinch-zoom
-      var now = performance.now();
-      if (e.deltaY < 0) { if (playing) stop(); swallow = false; return; }
+      var now = performance.now(), abs = Math.abs(e.deltaY), gap = now - lastWheel;
       if (swallow) {
-        // hold back the rest of the gesture (trackpad inertia included)
-        if (playing || now - lastWheel < 200) { e.preventDefault(); lastWheel = now; return; }
+        // the starting flick: the finger's own push (up to ~450ms), then an
+        // only-decaying glide, whose last tiny ticks may arrive late. A
+        // repeated full wheel notch is a new scroll.
+        var notch = abs >= 50 && abs === lastAbs;
+        var sameGesture = e.deltaY > 0 && !notch && (abs <= 4 || (gap < 300 && (now - swallowStart < 450 || abs <= lastAbs * 1.15 + 1)));
+        lastWheel = now; lastAbs = abs;
+        if (sameGesture) { e.preventDefault(); return; }
         swallow = false;
       }
-      if (e.deltaY > 0 && atTop() && inHero(e.target)) { e.preventDefault(); lastWheel = now; swallow = true; play(); }
+      if (playing) { stop(); return; }               // the reader has taken over
+      if (e.deltaY > 0 && atTop() && inHero(e.target)) {
+        e.preventDefault(); lastWheel = swallowStart = now; lastAbs = abs; swallow = true; play();
+      }
     }, { passive: false });
 
     window.addEventListener('touchstart', function (e) {
+      if (playing) stop();                           // a new touch takes over
       touchY = e.touches.length === 1 && inHero(e.target) ? e.touches[0].clientY : null;
     }, { passive: true });
     window.addEventListener('touchmove', function (e) {
       if (touchY === null) return;
       var dy = e.touches[0].clientY - touchY;         // < 0: finger moving up, page scrolling down
       if (playing) {
+        // still the swipe that started it: let the autoplay carry on
         if (dy > 12) { stop(); touchY = null; return; }
         if (e.cancelable) e.preventDefault();
         return;
@@ -373,15 +388,12 @@
         if (dy < -6) play();
       }
     }, { passive: false });
+    window.addEventListener('pointerdown', function (e) { if (playing && e.pointerType === 'mouse') stop(); });
 
     window.addEventListener('keydown', function (e) {
       var t = e.target;
       if (e.altKey || e.ctrlKey || e.metaKey || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName)))) return;
-      if (playing) {
-        if (UP_KEYS[e.key]) { stop(); return; }
-        if (DOWN_KEYS[e.key]) e.preventDefault();
-        return;
-      }
+      if (playing) { if (DOWN_KEYS[e.key] || UP_KEYS[e.key]) stop(); return; }   // the key scrolls as usual
       if (DOWN_KEYS[e.key] && !e.shiftKey && atTop()) { e.preventDefault(); play(); }
     });
   }

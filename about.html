@@ -473,7 +473,7 @@
         .ab-def-note { display: none; }
         .ab-stage .ab-mission-in { left: var(--gutter); right: var(--gutter); max-width: none; top: calc(var(--nav-h) + 64vw); transform: none; }
         .ab-stage .ab-mission-in::before { inset: -20px -24px -40px; }
-        .ab-stage .ab-statement { max-width: none; font-size: clamp(24px, 6.8vw, 32px); line-height: 1.16; }
+        .ab-stage .ab-statement { max-width: none; font-size: clamp(22px, 6vw, 27px); line-height: 1.2; }
         .ab-cue { display: none; }
       }
 
@@ -491,8 +491,8 @@
         background: radial-gradient(ellipse 60% 60% at 40% 50%, rgba(248,247,243,.95) 45%, rgba(248,247,243,0) 80%);
       }
       .ab-statement {
-        margin: 0; max-width: 20ch;
-        font: 600 clamp(30px, 3.4vw, 50px)/1.14 var(--sans); letter-spacing: -0.03em; color: var(--ink);
+        margin: 0; max-width: 22ch;
+        font: 600 clamp(26px, 2.6vw, 38px)/1.16 var(--sans); letter-spacing: -0.025em; color: var(--ink);
       }
       .ab-statement .w { opacity: .14; transition: opacity .35s linear; }
       .ab-statement .w.on { opacity: 1; }
@@ -691,7 +691,7 @@
                 <!-- the mission rises into the definition's place as the dome finishes -->
                 <div class="ab-mission-in" id="ab-mission-in">
                     <p class="ab-kicker">Our mission</p>
-                    <p class="ab-statement" id="ab-statement">We give a platform to the next generation of researchers, innovators and critical thinkers, and tell the stories that move ideas from the lab <em>into the public conversation.</em></p>
+                    <p class="ab-statement" id="ab-statement">We give the next generation of scientists a platform, and carry their ideas from the lab <em>into the public conversation.</em></p>
                 </div>
                 <div class="ab-cue" id="ab-cue" aria-hidden="true">Scroll</div>
                 <button type="button" class="ab-more" id="ab-more">Scroll down<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>
@@ -853,6 +853,6 @@
     <script defer src="/js/data.js"></script>
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
     <script defer src="/js/main.js?v=20260925-review"></script>
-    <script defer src="/js/about.js?v=15"></script>
+    <script defer src="/js/about.js?v=16"></script>
 </body>
 </html>
