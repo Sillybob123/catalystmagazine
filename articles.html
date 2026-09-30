@@ -115,6 +115,11 @@
       .ar-loop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.4s ease; pointer-events: none;
  }
       .ar-loop.is-playing { opacity: 1; }
+      /* Safari's <img> loop: fade the plain-paper rim into the still beneath (safe on an image, unlike a video layer) */
+      img.ar-loop { -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent), linear-gradient(transparent, #000 4%, #000 96%, transparent); -webkit-mask-composite: source-in;
+        mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent), linear-gradient(transparent, #000 4%, #000 96%, transparent); mask-composite: intersect; }
+      /* never let Safari draw its own play button over the drawing */
+      .ar-loop::-webkit-media-controls, .ar-loop::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
 
       /* ---------- the filter bar ---------- */
       .ar-bar { position: sticky; top: 84px; z-index: 50; padding: 10px 0; }
@@ -333,6 +338,6 @@
     <div id="site-footer"></div>
 
     <script defer src="/js/layout.js?v=20260925-review"></script>
-    <script defer src="/js/articles.js?v=5"></script>
+    <script defer src="/js/articles.js?v=6"></script>
 </body>
 </html>

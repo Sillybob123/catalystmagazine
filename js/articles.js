@@ -336,33 +336,38 @@
     if (!v || REDUCED || conn.saveData || /(^|-)2g/.test(conn.effectiveType || '')) return;
     var fig = v.parentNode;
     var src = (window.matchMedia('(max-width: 899px)').matches && v.dataset.srcSm) || v.dataset.src;
-    var onScreen = true, started = false, fresh = 0;
-    function play() {
-      if (!onScreen || !v.paused) return;
-      var p = v.play();
-      if (p && p.catch) p.catch(function () {
-        // one retry on a fresh element, in case this one was already refused
-        if (fresh++ < 1) { var n = v.cloneNode(false); n.src = src; n.muted = true; fig.replaceChild(n, v); v = n; watch(); setTimeout(play, 400); }
-        else waitForTouch();
-      });
+    var started = false;
+
+    // Safari (every iOS browser included) can show an .mp4 through <img>: it
+    // loops silently with no controls, no play button and no autoplay
+    // permission to ask for, even in Low Power Mode.
+    function asImage(fallback) {
+      var img = new Image();
+      img.className = 'ar-loop';
+      img.alt = ''; img.setAttribute('aria-hidden', 'true'); img.decoding = 'async';
+      img.onload = function () {
+        fig.replaceChild(img, v);
+        requestAnimationFrame(function () { requestAnimationFrame(function () { img.classList.add('is-playing'); }); });
+      };
+      img.onerror = fallback;
+      img.src = src;
     }
-    // iOS Low Power Mode (or Safari's auto-play setting) refuses even muted
-    // autoplay until the reader interacts; the still stays until then.
-    function waitForTouch() {
-      function go() { ['touchend', 'click', 'keydown'].forEach(function (n) { window.removeEventListener(n, go); }); play(); }
-      ['touchend', 'click', 'keydown'].forEach(function (n) { window.addEventListener(n, go, { passive: true }); });
-    }
-    function watch() { v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true }); }
-    function start() {
-      if (started) return; started = true;
-      v.muted = true;
-      v.autoplay = true;                // Safari honours the attribute more readily than play()
-      v.preload = 'auto';
-      v.src = src;                      // start buffering straight away
-      watch();
+
+    // Everyone else: a muted inline <video>, playing only while on screen.
+    function asVideo() {
+      v.muted = true; v.autoplay = true; v.preload = 'auto';
+      v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true });
+      v.src = src;
+      var onScreen = true;
+      function play() { if (onScreen && v.paused) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } }
       if ('IntersectionObserver' in window) {
         new IntersectionObserver(function (es) { onScreen = es[0].isIntersecting; if (onScreen) play(); else v.pause(); }).observe(fig);
       } else play();
+    }
+
+    function start() {
+      if (started) return; started = true;
+      if (/Apple/.test(navigator.vendor || '')) asImage(asVideo); else asVideo();
     }
     // begin as soon as the drawing itself has loaded, not after every story image
     if (!still || still.complete) setTimeout(start, 0);
