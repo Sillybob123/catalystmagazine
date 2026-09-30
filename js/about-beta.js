@@ -119,8 +119,8 @@
      ------------------------------------------------------------ */
   var hero = document.getElementById('ab-hero');
   var def = document.getElementById('ab-def');
-  var cue = document.getElementById('ab-cue');
   var missionIn = document.getElementById('ab-mission-in');
+  var cue = document.getElementById('ab-cue');
   var DOME = { x: 0.672, tip: 0.1 };                   // dome centre / statue tip in plate coordinates
   var dome = new Plate(hero, '/beta/about-dome/', {
     ghost: 0.22,
@@ -131,8 +131,17 @@
         var w = vw * 1.75 * s, h = w * AR;
         return { w: w, h: h, x: vw * 0.5 - DOME.x * w, y: 70 - DOME.tip * h * 0.55 };
       }
-      var h2 = Math.max(vh * 1.02, vw * 0.6 * AR) * s, w2 = h2 / AR;
-      return { w: w2, h: h2, x: vw * 0.71 - DOME.x * w2, y: 86 - DOME.tip * h2 * 0.7 };
+      // size the drawing so its leftmost line (the horizontal measurement
+      // line, ≈0.26 of the plate's width left of the dome's axis) always
+      // clears the text column by 56px
+      var cx = vw * 0.72;
+      var textRight = Math.max(def.offsetLeft + def.offsetWidth, missionIn.offsetLeft + missionIn.offsetWidth);
+      var maxW = (cx - textRight - 56) / 0.26;
+      var h2 = Math.min(vh * 0.9, maxW * AR) * s, w2 = h2 / AR;
+      // centred vertically in the space under the header (the drawing
+      // runs from the statue at ~0.10 to the base at ~0.90 of the plate)
+      var top = 72, y = top + (vh - top) / 2 - 0.5 * h2;
+      return { w: w2, h: h2, x: cx - DOME.x * w2, y: Math.max(y, 86 - DOME.tip * h2) };
     }
   });
   dome.load();
