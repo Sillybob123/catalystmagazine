@@ -218,6 +218,12 @@ html:has(body.wx) { background: var(--wx-bg); }
    STORIES — a rack of covers
    ============================================================ */
 .wx-stories { position: relative; z-index: 2; padding: clamp(72px, 10vh, 120px) 0 clamp(80px, 10vh, 120px); }
+/* phones: a tighter run from "Read the edition" down to the contents */
+@media (max-width: 899px) {
+  .wx-hero-grid { padding-bottom: 48px; }
+  .wx-fade { height: var(--wx-fade-h-m, 150px); }
+  .wx-stories { padding-top: 60px; }
+}
 /* contents header: a folio rule, then the title and intro side by side */
 .wx-sec-head { margin-bottom: clamp(48px, 6vw, 80px); }
 .wx-folio {
