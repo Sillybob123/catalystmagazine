@@ -139,6 +139,31 @@
 
       /* ---------- Hero: the National Mall ---------- */
       .scene-mall { --len: 220vh; }
+      .hero-brand { display: none; }
+      /* Desktop hero: ink the Mall, settle the camera on the Capitol at
+         the left, draw the Catalyst mark on the right, then let the latest
+         stories rise over the resting drawing (the next section overlaps
+         the last 70vh of this pinned scene). */
+      @media (min-width: 761px) and (min-aspect-ratio: 9/10) {
+        .scene-mall { --len: 340vh; margin-bottom: -60vh; }
+        .hero-brand {
+          display: block; position: absolute; z-index: 3;
+          left: 57%; right: var(--edge); top: 50%; transform: translateY(-50%);
+          max-width: 460px; pointer-events: none;
+        }
+        .brand-mark { width: 116px; height: 116px; color: var(--ink); margin-bottom: 26px; overflow: visible; }
+        .brand-mark path, .brand-mark ellipse { stroke-dasharray: 1; stroke-dashoffset: 1; }
+        .brand-mark .bm-dot { opacity: 0; transform-box: fill-box; transform-origin: center; }
+        .brand-word { display: block; width: min(100%, 420px); height: auto; opacity: 0; transform: translateY(14px); }
+        .brand-line { margin: 22px 0 0; max-width: 400px; font: 400 21px/1.5 var(--serif); color: var(--ink-2); opacity: 0; transform: translateY(12px); }
+        .brand-cue { margin: 30px 0 0; font: 600 12px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); opacity: 0; }
+        /* the rising stories fade in from the drawing */
+        #latest {
+          z-index: 5;
+          padding-top: calc(clamp(80px, 12vh, 140px) + 24vh);
+          background: linear-gradient(180deg, rgba(248,247,243,0) 0, rgba(248,247,243,.86) 16vh, var(--paper) 30vh);
+        }
+      }
       .hero-copy {
         left: var(--edge); top: calc(var(--nav-h) + clamp(24px, 8vh, 96px));
         max-width: min(560px, 42vw);
@@ -395,7 +420,8 @@
          REDUCED MOTION — no pinning, no scrubbing: finished plates
          ============================================================ */
       @media (prefers-reduced-motion: reduce) {
-        .scene { height: auto !important; }
+        .scene { height: auto !important; margin-bottom: 0 !important; }
+        .hero-brand { display: none !important; }
         .stage { position: relative; height: auto; min-height: 100vh; }
         @supports (height: 100svh) { .stage { min-height: 100svh; } }
         .display .line > span, .lede, .hb-actions, [data-reveal], .fig img { transition: none !important; transform: none !important; opacity: 1 !important; }
@@ -430,6 +456,21 @@
                         </a>
                         <a href="/about" class="hb-btn hb-btn-line">Our mission</a>
                     </div>
+                </div>
+                <!-- desktop: once the drawing settles on the Capitol, the
+                     Catalyst mark draws itself beside it (its orbits echo
+                     the ring around the dome), then the latest stories rise -->
+                <div class="hero-brand" id="hero-brand">
+                    <svg class="brand-mark" viewBox="-64 -64 128 128" fill="none" stroke="currentColor" aria-hidden="true">
+                        <path class="bm-hex" pathLength="1" stroke-width="6" stroke-linejoin="round" d="M0-40L34.6-20V20L0 40-34.6 20V-20Z"/>
+                        <ellipse class="bm-orb" pathLength="1" stroke-width="1.8" rx="58" ry="11"/>
+                        <ellipse class="bm-orb" pathLength="1" stroke-width="1.8" rx="58" ry="13" transform="rotate(56)"/>
+                        <ellipse class="bm-orb" pathLength="1" stroke-width="1.8" rx="58" ry="13" transform="rotate(-56)"/>
+                        <circle class="bm-dot" r="4.5" fill="currentColor" stroke="none"/>
+                    </svg>
+                    <img class="brand-word" src="/beta/wordmark.webp?v=1" alt="The Catalyst" width="900" height="142">
+                    <p class="brand-line">Science journalism from the students of Washington, D.C.</p>
+                    <p class="brand-cue">The latest stories <span aria-hidden="true">&darr;</span></p>
                 </div>
                 <div class="scroll-cue" id="scroll-cue" aria-hidden="true">Scroll<span></span></div>
             </div>
@@ -620,7 +661,7 @@
       var FS = '#version 300 es\nprecision highp float;' +
         'in vec2 uv;uniform sampler2D P;uniform sampler2D M;uniform float t;uniform float g;uniform vec3 k;uniform vec3 q;out vec4 o;' +
         'void main(){' +
-        'float ink=1.0-texture(P,uv).r;' +
+        'float ink=(1.0-texture(P,uv).r)*smoothstep(0.0,0.035,uv.x)*smoothstep(1.0,0.965,uv.x);' +
         'float m=texture(M,uv).r;' +
         'float a=smoothstep(m-0.035,m+0.004,t);' +                       // stroke lands
         'float wet=a*(1.0-smoothstep(m,m+0.07,t));' +                    // freshly inked: a touch darker
@@ -769,9 +810,38 @@
          ============================================================ */
       var heroCopy = document.getElementById('hero-copy');
       var cue = document.getElementById('scroll-cue');
+
+      // Catalyst mark: the hexagon, then each orbit, then the nucleus,
+      // then the wordmark and line, all tied to scroll progress
+      var brand = document.getElementById('hero-brand');
+      var bmHex = brand.querySelector('.bm-hex');
+      var bmOrbs = brand.querySelectorAll('.bm-orb');
+      var bmDot = brand.querySelector('.bm-dot');
+      var bmWord = brand.querySelector('.brand-word');
+      var bmLine = brand.querySelector('.brand-line');
+      var bmCue = brand.querySelector('.brand-cue');
+      function drawBrand(p) {
+        bmHex.style.strokeDashoffset = String(1 - ease(map(p, 0.42, 0.52)));
+        for (var i = 0; i < bmOrbs.length; i++) {
+          var a = 0.46 + i * 0.035;
+          bmOrbs[i].style.strokeDashoffset = String(1 - ease(map(p, a, a + 0.09)));
+        }
+        var d = map(p, 0.55, 0.59);
+        bmDot.style.opacity = String(d);
+        bmDot.style.transform = 'scale(' + (0.4 + 0.6 * d).toFixed(3) + ')';
+        var w = ease(map(p, 0.55, 0.64));
+        bmWord.style.opacity = String(w);
+        bmWord.style.transform = 'translate3d(0,' + ((1 - w) * 14).toFixed(1) + 'px,0)';
+        var l = ease(map(p, 0.59, 0.67));
+        bmLine.style.opacity = String(l);
+        bmLine.style.transform = 'translate3d(0,' + ((1 - l) * 12).toFixed(1) + 'px,0)';
+        bmCue.style.opacity = String(map(p, 0.64, 0.7) * (1 - map(p, 0.76, 0.82)));
+        // step aside as the stories rise over the drawing
+        brand.style.opacity = String(1 - map(p, 0.78, 0.92));
+      }
       var mall = new Plate({
         id: 'mall', ghost: 0.26,
-        inkAt: function (p) { return lerp(0.24, 1.04, map(p, 0, 0.56)); },
+        inkAt: function (p) { return lerp(0.24, 1.04, map(p, 0, portrait() ? 0.56 : 0.32)); },
         rect: function (vw, vh, t, p) {
           var R;
           if (portrait(vw, vh)) {
@@ -783,6 +853,18 @@
           } else {
             var w2 = Math.min(vw * 0.96, vh * 1.78), h2 = w2 * AR;
             R = { w: w2, h: h2, x: vw - w2 * 0.95, y: vh - h2 + h2 * 0.05 };   // right-anchored, a little past the edge so the Monument clears the copy
+          }
+          if (!portrait()) {
+            // desktop: ease toward the Capitol and settle it on the left
+            // third, leaving the right side clear for the Catalyst mark
+            var m = ease(map(p, 0.24, 0.5));
+            if (m > 0) {
+              var dx = 0.787, dy = 0.5, k = 1 + 0.55 * m;
+              var tx = lerp(R.x + dx * R.w, vw * 0.27, m), ty = lerp(R.y + dy * R.h, vh * 0.56, m);
+              R = { w: R.w * k, h: R.h * k };
+              R.x = tx - dx * R.w; R.y = ty - dy * R.h;
+            }
+            return R;
           }
           var z = ease(map(p, 0.68, 1));
           if (z > 0) {
@@ -796,7 +878,9 @@
         },
         after: function (p) {
           cue.style.opacity = String(1 - map(p, 0, 0.06));
-          var out = map(p, 0.56, 0.72);
+          var desk = !portrait();
+          if (desk) drawBrand(p);
+          var out = desk ? map(p, 0.2, 0.34) : map(p, 0.56, 0.72);
           heroCopy.style.opacity = String(1 - out);
           heroCopy.style.transform = 'translate3d(0,' + (-out * 50) + 'px,0)';
           heroCopy.style.visibility = out >= 1 ? 'hidden' : '';

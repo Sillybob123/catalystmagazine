@@ -185,11 +185,16 @@
       canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
       if (!flakes.length) for (var i = 0; i < COUNT; i++) flakes.push(make(false));
     }
+    // Mobile browsers resize the fixed canvas when the address bar shows
+    // or hides, sometimes without a window resize event; a stale buffer
+    // then gets stretched and the flakes look squashed. Track the box.
     window.addEventListener('resize', resize);
+    if ('ResizeObserver' in window) new ResizeObserver(resize).observe(canvas);
     resize();
     var t = 0;
     function frame(scrollDelta) {
       t += 1;
+      if (canvas.clientWidth !== W || canvas.clientHeight !== H) resize();
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       var wind = P.vx * 0.8;
