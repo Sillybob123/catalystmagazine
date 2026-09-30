@@ -48,8 +48,11 @@
         --sans: 'Poppins', system-ui, -apple-system, sans-serif;
         --serif: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
 
-        --gutter: clamp(16px, 4vw, 56px);
-        --maxw: 1320px;
+        --gutter: clamp(18px, 4.5vw, 64px);   /* same as the edition pages */
+        --maxw: 1280px;
+        /* left edge of the centred content column (same column as the
+           header and the edition pages), used by the pinned scene copy */
+        --edge: max(var(--gutter), calc((100% - var(--maxw)) / 2 + var(--gutter)));
         --nav-h: 72px;
         --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
       }
@@ -137,7 +140,7 @@
       /* ---------- Hero: the National Mall ---------- */
       .scene-mall { --len: 220vh; }
       .hero-copy {
-        left: var(--gutter); top: calc(var(--nav-h) + clamp(24px, 8vh, 96px));
+        left: var(--edge); top: calc(var(--nav-h) + clamp(24px, 8vh, 96px));
         max-width: min(560px, 42vw);
       }
       /* keep the wash off the Monument, which sits just right of the copy */
@@ -192,7 +195,7 @@
 
       /* ---------- Archive: Library of Congress dome ---------- */
       .scene-library { --len: 160vh; }
-      .library-copy { left: var(--gutter); top: 50%; transform: translateY(-50%); max-width: min(520px, 38vw); }
+      .library-copy { left: var(--edge); top: 50%; transform: translateY(-50%); max-width: min(520px, 38vw); }
       .library-copy .body { margin: 0 0 30px; font: 400 clamp(17px, 1.3vw, 19px)/1.65 var(--serif); color: var(--ink-2); }
       @media (max-width: 760px), (max-aspect-ratio: 9/10) {
         .scene-library { --len: 150vh; }
@@ -202,7 +205,7 @@
 
       /* ---------- Newsletter: the Tidal Basin ---------- */
       .scene-tidal { --len: 200vh; }
-      .tidal-copy { left: var(--gutter); top: calc(var(--nav-h) + clamp(16px, 6vh, 72px)); max-width: min(560px, 46vw); }
+      .tidal-copy { left: var(--edge); top: calc(var(--nav-h) + clamp(16px, 6vh, 72px)); max-width: min(560px, 46vw); }
       .tidal-copy .h2 { margin-bottom: 16px; }
       .tidal-copy .body { margin: 0 0 24px; max-width: 460px; font: 400 18px/1.6 var(--serif); color: var(--ink-2); }
       .nl-form { display: grid; gap: 10px; max-width: 520px; }
@@ -772,7 +775,7 @@
             R = { w: w, h: h, x: vw * 0.5 - 0.63 * w, y: 76 - 0.19 * h };
           } else {
             var w2 = Math.min(vw * 0.96, vh * 1.78), h2 = w2 * AR;
-            R = { w: w2, h: h2, x: vw - w2 * 0.99, y: vh - h2 + h2 * 0.05 };
+            R = { w: w2, h: h2, x: vw - w2 * 0.95, y: vh - h2 + h2 * 0.05 };   // right-anchored, a little past the edge so the Monument clears the copy
           }
           var z = ease(map(p, 0.68, 1));
           if (z > 0) {

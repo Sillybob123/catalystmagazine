@@ -115,7 +115,9 @@ html:has(body.wx) { background: var(--wx-bg); }
   font: 700 clamp(44px, 6.2vw, 96px)/.98 var(--wx-sans); letter-spacing: -0.035em;
   text-shadow: var(--wx-h1-shadow);
 }
-.wx-hero h1 em { display: block; font-size: .92em; letter-spacing: -0.015em; color: var(--wx-h1-em); }
+/* the italic line gets its own room so descenders above it (the g in
+   "Ecology") never touch its capitals */
+.wx-hero h1 em { display: block; margin-top: .14em; font-size: .92em; line-height: 1.02; letter-spacing: -0.015em; color: var(--wx-h1-em); }
 .wx-hero .lede {
   margin: 26px 0 0; max-width: 470px;
   font: 400 clamp(17px, 1.35vw, 20px)/1.6 var(--wx-serif); color: var(--wx-ink-2);
