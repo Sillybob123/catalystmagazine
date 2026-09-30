@@ -148,3 +148,19 @@ body[data-page="article"].in-edition {
 @media (prefers-reduced-motion: reduce) {
   .ed-next__img img, .ed-next__edition::before, .ed-ribbon__go svg, .ed-next__ed-btn svg, .ed-next__all svg { transition: none; }
 }
+
+/* ---------- the newsletter box, in the edition's colours ---------- */
+.in-edition .article-newsletter {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(255,255,255,.07), transparent 55%),
+    linear-gradient(135deg, var(--ed-deep) 0%, color-mix(in srgb, var(--ed-deep) 78%, var(--ed-acc)) 62%, color-mix(in srgb, var(--ed-deep) 52%, var(--ed-acc)) 100%);
+  box-shadow: 0 20px 48px -24px color-mix(in srgb, var(--ed-deep) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ed-acc) 30%, transparent);
+}
+.in-edition .article-newsletter__glow { background: radial-gradient(circle, color-mix(in srgb, var(--ed-acc) 55%, transparent), transparent 70%); }
+.in-edition .article-newsletter__eyebrow { color: color-mix(in srgb, var(--ed-acc) 45%, #fff); }
+.in-edition .article-newsletter__title { color: #fbf8f3; }
+.in-edition .article-newsletter__input { border-color: color-mix(in srgb, var(--ed-acc) 40%, rgba(255,255,255,.2)); }
+.in-edition .article-newsletter__input:focus { border-color: color-mix(in srgb, var(--ed-acc) 60%, #fff); }
+.in-edition .article-newsletter__btn { background: #fbf8f3; color: var(--ed-deep); }
+.in-edition .article-newsletter__btn svg { color: var(--ed-acc); }
