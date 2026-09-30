@@ -126,6 +126,11 @@
   // mission headline share — low enough that the small kickers above them
   // clear the fixed site header
   var TIP_Y = 136;
+  function headerBottom() {
+    var h = document.querySelector('.header');
+    return h ? h.getBoundingClientRect().bottom : 76;
+  }
+  function domeMidY(top, bottom) { return top + (bottom - top) * 0.46; }
   function tipY() {
     var h = document.querySelector('.header');
     var hb = h ? h.getBoundingClientRect().bottom : 76;
@@ -166,11 +171,15 @@
       // right of the axis) stays 32px inside the screen, and its base
       // (0.80 of the plate height below the tip) stays 32px above the bottom.
       var tr = textRight(), L = tr + 56, Rr = vw - 32;
-      var w2 = Math.min((Rr - L) / (0.26 + 0.29), (vh - TIP_Y - 32) / (0.8 * AR));
+      var top = headerBottom() + 28, bottom = vh - 28;
+      var w2 = 0.88 * Math.min((Rr - L) / (0.26 + 0.29), (bottom - top) / (0.8 * AR));
       var cx = L + 0.26 * w2 + ((Rr - L) - 0.55 * w2) / 2;    // centre any spare room
       w2 *= s;
       var h2 = w2 * AR;
-      return { w: w2, h: h2, x: cx - DOME.x * w2, y: TIP_Y - DOME.tip * h2 };
+      // the drawing (statue tip 0.10 → base 0.90 of the plate) is centred
+      // a little above the middle of the space under the header
+      var midY = domeMidY(top, bottom);
+      return { w: w2, h: h2, x: cx - DOME.x * w2, y: midY - 0.5 * h2 };
     }
   });
   dome.load();
@@ -250,14 +259,16 @@
         // the definition leaves upward, the mission rises into its place
         var out = ease(map(p, 0.4, 0.52));
         def.style.opacity = String(1 - out);
-        if (!portrait()) def.style.top = (TIP_Y - defWord.offsetTop).toFixed(1) + 'px'; else def.style.top = '';
+        // desktop: the definition's vertical centre matches the Capitol's
+        var mid = domeMidY(headerBottom() + 28, window.innerHeight - 28);
+        if (!portrait()) def.style.top = (mid - def.offsetHeight / 2).toFixed(1) + 'px'; else def.style.top = '';
         def.style.transform = 'translate3d(0,' + (-out * 60).toFixed(1) + 'px,0)';
         def.style.visibility = out >= 1 ? 'hidden' : '';
         var inn = ease(map(p, 0.47, 0.6));
         missionIn.style.opacity = String(inn);
         if (!portrait()) {
           // top of the mission block sits level with the tip of the statue
-          missionIn.style.top = (TIP_Y - statementEl.offsetTop).toFixed(1) + 'px';
+          missionIn.style.top = (mid - missionIn.offsetHeight / 2).toFixed(1) + 'px';   // same centre line
         } else missionIn.style.top = '';
         missionIn.style.transform = 'translate3d(0,' + ((1 - inn) * 70).toFixed(1) + 'px,0)';
       }
