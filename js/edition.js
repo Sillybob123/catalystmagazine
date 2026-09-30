@@ -23,7 +23,6 @@
   var heroCopy = document.querySelector('.wx-hero-copy');
   var cover = document.querySelector('.wx-cover');
   var backdrop = document.querySelector('.wx-backdrop');
-  var crystal = document.querySelector('.wx-crystal');
   var cue = document.querySelector('.wx-scroll');
 
   requestAnimationFrame(function () { body.classList.add('is-ready'); });
@@ -42,11 +41,34 @@
   }
 
   /* ------------------------------------------------------------
+     Optional looping backdrop video: <video class="wx-loop"
+     data-src-wide="…" data-src-tall="…"> inside .wx-backdrop. The still
+     stays until the video is actually playing, then it fades in. Loaded
+     after the page, played only on screen, skipped on data saver.
+     ------------------------------------------------------------ */
+  (function () {
+    var v = document.querySelector('.wx-backdrop video.wx-loop');
+    var conn = navigator.connection || {};
+    if (!v || REDUCED || conn.saveData || /(^|-)2g/.test(conn.effectiveType || '')) return;
+    function start() {
+      var tall = window.matchMedia('(max-width: 899px)').matches;
+      v.src = tall ? v.dataset.srcTall : v.dataset.srcWide;
+      v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true });
+      new IntersectionObserver(function (es) {
+        if (es[0].isIntersecting) v.play().catch(function () {}); else v.pause();
+      }).observe(v.parentElement);
+    }
+    if (document.readyState === 'complete') start(); else window.addEventListener('load', start);
+  })();
+
+  /* ------------------------------------------------------------
      Weather. data-weather="snow": real six-armed snow crystals at
      three depths. data-weather="petals": tumbling cherry petals. Far
      flakes are small and soft, near ones larger, sharper and slowly
      turning. They drift with the "wind" of your cursor and lift a
      little as you scroll. Pre-rendered sprites keep it cheap.
+     Snow is white over the (dark) hero and a cool steel tint once it
+     falls past the hero onto the light page below.
      ------------------------------------------------------------ */
   var Weather = (function () {
     var canvas = document.querySelector('.wx-weather');
@@ -59,13 +81,13 @@
     var COUNT = PETALS ? (small ? 14 : 30) : (small ? 21 : 44);   // light, unhurried
 
     // --- sprites -------------------------------------------------
-    function crystal(size, seed) {
+    function crystal(size, seed, stroke, glow) {
       // a dendrite: six arms, each with tapering side branches and small tip forks
       var c = document.createElement('canvas'); c.width = c.height = size;
       var g = c.getContext('2d'), R = size * 0.44, rnd = mulberry(seed);
       g.translate(size / 2, size / 2);
-      g.strokeStyle = 'rgba(255,255,255,0.96)'; g.lineCap = 'round'; g.lineJoin = 'round';
-      g.shadowColor = 'rgba(190,220,245,0.85)'; g.shadowBlur = size * 0.035;
+      g.strokeStyle = stroke; g.lineCap = 'round'; g.lineJoin = 'round';
+      g.shadowColor = glow; g.shadowBlur = size * 0.035;
       var branches = [0.28, 0.46, 0.64, 0.8].map(function (at, j) {
         return { at: at + (rnd() - 0.5) * 0.05, len: (0.3 - j * 0.06) * (0.8 + rnd() * 0.4) };
       });
@@ -92,10 +114,10 @@
       g.stroke();
       return c;
     }
-    function soft(size) {
+    function soft(size, core, halo) {
       var c = document.createElement('canvas'); c.width = c.height = size;
       var g = c.getContext('2d'), gr = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-      gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(0.45, 'rgba(240,247,255,0.55)'); gr.addColorStop(1, 'rgba(240,247,255,0)');
+      gr.addColorStop(0, core); gr.addColorStop(0.45, halo + '0.55)'); gr.addColorStop(1, halo + '0)');
       g.fillStyle = gr; g.fillRect(0, 0, size, size);
       return c;
     }
@@ -122,8 +144,12 @@
       g.beginPath(); g.moveTo(0, h * 0.9); g.quadraticCurveTo(w * 0.1, 0, 0, -h * 0.7); g.stroke();   // a faint vein
       return c;
     }
-    var CRYSTALS = PETALS ? [] : [1, 2, 3, 4, 5, 6].map(function (s) { return crystal(128, s * 7919); });
-    var SOFT = PETALS ? null : soft(64);
+    var SEEDS = [1, 2, 3, 4, 5, 6];
+    var CRYSTALS = PETALS ? [] : SEEDS.map(function (s) { return crystal(128, s * 7919, 'rgba(255,255,255,0.96)', 'rgba(190,220,245,0.85)'); });
+    var CRYSTALS_INK = PETALS ? [] : SEEDS.map(function (s) { return crystal(128, s * 7919, 'rgba(112,143,170,0.95)', 'rgba(255,255,255,0.9)'); });
+    var SOFT = PETALS ? null : soft(64, 'rgba(255,255,255,0.95)', 'rgba(240,247,255,');
+    var SOFT_INK = PETALS ? null : soft(64, 'rgba(128,158,184,0.9)', 'rgba(150,178,202,');
+    var heroEl = document.querySelector('.wx-hero');
     var PETAL_SPRITES = PETALS ? [1, 2, 3, 4].map(function (s) { return petal(96, s * 104729); }) : [];
 
     // --- flakes ----------------------------------------------------
@@ -148,7 +174,7 @@
       return {
         x: Math.random() * W, y: top ? -40 : Math.random() * H, z: z,
         size: near ? (small ? 9 : 10) + (z - 0.82) / 0.18 * (small ? 6 : 8) : 2 + z * 7,
-        sprite: near ? CRYSTALS[(Math.random() * CRYSTALS.length) | 0] : SOFT,
+        ci: near ? (Math.random() * SEEDS.length) | 0 : -1,
         vy: 0.16 + z * 0.95, ph: Math.random() * 6.28, sway: 0.2 + Math.random() * 0.5,
         rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.01,
         a: near ? 0.7 + (z - 0.82) : 0.22 + z * 0.65
@@ -167,6 +193,7 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       var wind = P.vx * 0.8;
+      var heroBottom = heroEl ? heroEl.getBoundingClientRect().bottom : 1e9;
       for (var i = 0; i < flakes.length; i++) {
         var f = flakes[i];
         if (!REDUCED) {
@@ -186,12 +213,12 @@
           ctx.scale(Math.max(0.15, Math.abs(Math.cos(f.flip))), 1);
           ctx.drawImage(f.sprite, -s / 2, -s / 2, s, s);
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        } else if (f.sprite === SOFT) {
-          ctx.drawImage(SOFT, f.x - s / 2, f.y - s / 2, s, s);
+        } else if (f.ci < 0) {
+          ctx.drawImage(f.y > heroBottom ? SOFT_INK : SOFT, f.x - s / 2, f.y - s / 2, s, s);
         } else {
           ctx.setTransform(dpr, 0, 0, dpr, f.x * dpr, f.y * dpr);
           ctx.rotate(f.rot);
-          ctx.drawImage(f.sprite, -s / 2, -s / 2, s, s);
+          ctx.drawImage((f.y > heroBottom ? CRYSTALS_INK : CRYSTALS)[f.ci], -s / 2, -s / 2, s, s);
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
       }
@@ -251,7 +278,6 @@
       }
       if (cue) cue.style.opacity = String(1 - clamp(y / 120, 0, 1));
     }
-    if (crystal && !REDUCED) crystal.style.setProperty('--spin', (y * 0.05).toFixed(1) + 'deg');
     Weather.frame(REDUCED ? 0 : clamp(dy, -40, 40));
     requestAnimationFrame(loop);
   }

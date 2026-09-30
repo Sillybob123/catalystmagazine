@@ -44,7 +44,7 @@
           imagesrcset="/editions/spring/hero-tall-800.webp?v=1 800w, /editions/spring/hero-tall-1200.webp?v=1 1200w" imagesizes="100vw">
 
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
-    <link rel="stylesheet" href="/css/edition.css?v=8">
+    <link rel="stylesheet" href="/css/edition.css?v=10">
     <style>
       /* Spring: a morning edition — blossom paper, plum ink, rose accent */
       body.wx-spring {
@@ -99,7 +99,7 @@
                         <a class="wx-btn wx-btn-light" href="#stories">Read the edition
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
                         </a>
-                        <span class="wx-meta"><span data-wx-count>12 stories</span> &middot; Spring 2027</span>
+                        <span class="wx-meta"><span data-wx-count>13 stories</span> &middot; Spring 2027</span>
                     </div>
                 </div>
 
@@ -126,18 +126,11 @@
         <section class="wx-stories" id="stories" aria-labelledby="wx-stories-title">
             <div class="wx-wrap">
                 <header class="wx-sec-head">
-                    <div>
-                        <p class="wx-kicker">In this edition</p>
-                        <h2 id="wx-stories-title">Stories from <em>the spring edition.</em></h2>
+                    <div class="wx-folio"><span>The Spring Edition</span><span>Contents</span><span data-wx-count>13 stories</span></div>
+                    <div class="wx-sec-grid">
+                        <h2 id="wx-stories-title">Inside <em>this edition.</em></h2>
                         <p class="intro">Scientists, planners and students across the District, and what they are learning as the seasons shift.</p>
                     </div>
-                    <!-- a five-petal cherry blossom -->
-                    <svg class="wx-crystal" viewBox="-50 -50 100 100" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true">
-                        <g id="wx-petal"><path d="M0-7C-9-14-13-27-6-38c2 3 4 4 6 4s4-1 6-4c7 11 3 24-6 31z"/></g>
-                        <use href="#wx-petal" transform="rotate(72)"/><use href="#wx-petal" transform="rotate(144)"/>
-                        <use href="#wx-petal" transform="rotate(216)"/><use href="#wx-petal" transform="rotate(288)"/>
-                        <circle r="4"/><path d="M0-4v-9M3.8-1.2l8.5-2.8M2.4 3.2l5.3 7.3M-2.4 3.2l-5.3 7.3M-3.8-1.2l-8.5-2.8" stroke-width="1"/>
-                    </svg>
                 </header>
 
                 <div class="wx-grid" id="wx-stories">
@@ -268,6 +261,16 @@
                             <p class="wx-story-by">By Kofi Mensah <span>&middot; 6 min read</span></p>
                         </a>
                     </article>
+
+                    <article class="wx-story">
+                        <a href="/articles">
+                            <div class="wx-story-img"><img src="/editions/spring/story-13-900.webp?v=1" srcset="/editions/spring/story-13-480.webp?v=1 480w, /editions/spring/story-13-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Feature</p>
+                            <h3>Rebuilding the Chesapeake&rsquo;s Oyster Reefs</h3>
+                            <p class="wx-story-dek">Restored reefs are filtering the bay and bringing back the fish and crabs that depend on them.</p>
+                            <p class="wx-story-by">By Caleb Whitaker <span>&middot; 6 min read</span></p>
+                        </a>
+                    </article>
                 </div>
             </div>
         </section>
@@ -292,13 +295,6 @@
     <div id="site-footer"></div>
 
     <script defer src="/js/layout.js?v=20260925-review"></script>
-    <script defer src="/js/edition.js?v=8"></script>
-    <script>
-      // The shared header's scrolled style (main.js does this on other pages).
-      window.addEventListener('scroll', function () {
-        var h = document.querySelector('.header');
-        if (h) h.classList.toggle('scrolled', window.scrollY > 50);
-      }, { passive: true });
-    </script>
+    <script defer src="/js/edition.js?v=10"></script>
 </body>
 </html>

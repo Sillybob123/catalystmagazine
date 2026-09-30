@@ -44,7 +44,45 @@
           imagesrcset="/editions/winter/hero-tall-800.webp?v=1 800w, /editions/winter/hero-tall-1200.webp?v=1 1200w" imagesizes="100vw">
 
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
-    <link rel="stylesheet" href="/css/edition.css?v=8">
+    <link rel="stylesheet" href="/css/edition.css?v=10">
+    <style>
+      /* Winter: a night hero over a light frost page */
+      body.wx-winter {
+        --wx-bg: #f3f6f8;  --wx-bg-2: #edf1f4;
+        --wx-ink: #0f1b2d;  --wx-ink-2: #3e4b5d;  --wx-muted: #667488;
+        --wx-accent: #3b6e8f;
+        --wx-hair: rgba(15, 27, 45, 0.13);
+        --wx-footer-bg: #f3f6f8;
+        --wx-img-bg: #e3e9ee;
+        --wx-card-shadow: 0 2px 4px rgba(20, 40, 60, .08), 0 30px 60px -34px rgba(20, 40, 60, .4);
+        --wx-card-shadow-hover: 0 2px 4px rgba(20, 40, 60, .1), 0 40px 70px -32px rgba(20, 40, 60, .48);
+        --wx-cover-glow: rgba(120, 165, 200, .3);
+        --wx-frost: rgba(236, 243, 248, .6);
+        --wx-title-hover: #3b6e8f;
+        --wx-btn-bg: #0f1b2d;  --wx-btn-fg: #f5f8fa;  --wx-btn-hover: #1d2e45;
+        --wx-line-bg: rgba(255,255,255,.6);  --wx-line-border: rgba(15,27,45,.2);  --wx-line-hover: #fff;
+        /* the night hero ends in its own colour; a long band below eases it into the frost page */
+        --wx-hero-end: #0b1526;
+        --wx-fade-h: 320px;
+        --wx-fade-bg: linear-gradient(180deg, #0b1526 0%, #152338 14%, #25354c 28%, #3f5068 42%, #66778d 56%, #95a3b3 70%, #c4cdd7 84%, #e6ebf0 94%, #f3f6f8 100%);
+      }
+      /* the hero keeps the night palette */
+      body.wx-winter .wx-hero {
+        --wx-ink: #f3f7fb;  --wx-ink-2: #c6d3e1;  --wx-muted: #a3b4c6;  --wx-accent: #a8cde8;
+        --wx-btn-bg: #f3f7fb;  --wx-btn-fg: #0b1526;  --wx-btn-hover: #fff;
+        --wx-cover-glow: rgba(168, 205, 232, .28);
+        --wx-cover-shadow: 0 2px 6px rgba(0,0,0,.25), 0 40px 80px -24px rgba(0,0,0,.65);
+      }
+      html:has(body.wx-winter) { background: #f3f6f8; }
+      /* a little less zoom than the shared drift */
+      body.wx-winter .wx-backdrop { inset: -2%; }
+      body.wx-winter .wx-backdrop img, body.wx-winter .wx-backdrop video { animation-name: wx-drift-winter; }
+      @keyframes wx-drift-winter {
+        from { transform: scale(1) translate3d(0, 0, 0); }
+        to   { transform: scale(1.045) translate3d(-0.6%, -0.4%, 0); }
+      }
+      @media (max-width: 899px) { body.wx-winter { --wx-fade-h: 220px; } }
+    </style>
 </head>
 <!-- data-edition must match the edition's name in the Story Tracker
      (Admin → Story Tracker → Manage editions). Stories published in that
@@ -66,6 +104,9 @@
                     <img src="/editions/winter/hero-1600.webp?v=1" srcset="/editions/winter/hero-1600.webp?v=1 1600w, /editions/winter/hero-2600.webp?v=1 2600w"
                          sizes="100vw" alt="" width="1600" height="679" decoding="async" fetchpriority="high">
                 </picture>
+                <!-- seamless 10s loop (first frame = last frame), Higgsfield / Kling 3.0 -->
+                <video class="wx-loop" muted loop playsinline preload="none" disablepictureinpicture
+                       data-src-wide="/editions/winter/hero-loop.mp4?v=1" data-src-tall="/editions/winter/hero-loop-tall.mp4?v=1"></video>
             </div>
 
             <div class="wx-wrap wx-hero-grid">
@@ -77,7 +118,7 @@
                         <a class="wx-btn wx-btn-light" href="#stories">Read the edition
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
                         </a>
-                        <span class="wx-meta"><span data-wx-count>12 stories</span> &middot; Winter 2026</span>
+                        <span class="wx-meta"><span data-wx-count>13 stories</span> &middot; Winter 2026</span>
                     </div>
                 </div>
 
@@ -100,22 +141,17 @@
             <a class="wx-scroll" href="#stories">Scroll</a>
         </section>
 
+        <div class="wx-fade" aria-hidden="true"></div>
+
         <!-- ========================== STORIES ========================== -->
         <section class="wx-stories" id="stories" aria-labelledby="wx-stories-title">
             <div class="wx-wrap">
                 <header class="wx-sec-head">
-                    <div>
-                        <p class="wx-kicker">In this edition</p>
-                        <h2 id="wx-stories-title">Stories from <em>the winter edition.</em></h2>
+                    <div class="wx-folio"><span>The Winter Edition</span><span>Contents</span><span data-wx-count>13 stories</span></div>
+                    <div class="wx-sec-grid">
+                        <h2 id="wx-stories-title">Inside <em>this edition.</em></h2>
                         <p class="intro">Researchers, clinicians and engineers across the District, and the ideas they are testing this season.</p>
                     </div>
-                    <!-- six-sided, like a snowflake and our logo -->
-                    <svg class="wx-crystal" viewBox="-50 -50 100 100" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
-                        <g id="wx-arm"><path d="M0 0V-44M0-16l-9-9M0-16l9-9M0-30l-7-7M0-30l7-7"/></g>
-                        <use href="#wx-arm" transform="rotate(60)"/><use href="#wx-arm" transform="rotate(120)"/>
-                        <use href="#wx-arm" transform="rotate(180)"/><use href="#wx-arm" transform="rotate(240)"/><use href="#wx-arm" transform="rotate(300)"/>
-                        <circle r="5"/>
-                    </svg>
                 </header>
 
                 <div class="wx-grid" id="wx-stories">
@@ -246,6 +282,16 @@
                             <p class="wx-story-by">By Marcus Bell <span>&middot; 5 min read</span></p>
                         </a>
                     </article>
+
+                    <article class="wx-story">
+                        <a href="/articles">
+                            <div class="wx-story-img"><img src="/editions/winter/story-13-900.webp?v=1" srcset="/editions/winter/story-13-480.webp?v=1 480w, /editions/winter/story-13-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Feature</p>
+                            <h3>The Search for a Flu Vaccine That Lasts</h3>
+                            <p class="wx-story-dek">Researchers are designing vaccines that target the parts of the virus that barely change from year to year.</p>
+                            <p class="wx-story-by">By Leah Goldberg <span>&middot; 7 min read</span></p>
+                        </a>
+                    </article>
                 </div>
             </div>
         </section>
@@ -270,13 +316,6 @@
     <div id="site-footer"></div>
 
     <script defer src="/js/layout.js?v=20260925-review"></script>
-    <script defer src="/js/edition.js?v=8"></script>
-    <script>
-      // The shared header's scrolled style (main.js does this on other pages).
-      window.addEventListener('scroll', function () {
-        var h = document.querySelector('.header');
-        if (h) h.classList.toggle('scrolled', window.scrollY > 50);
-      }, { passive: true });
-    </script>
+    <script defer src="/js/edition.js?v=10"></script>
 </body>
 </html>
