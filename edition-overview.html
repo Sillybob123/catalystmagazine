@@ -15,20 +15,25 @@
          are samples), so the page stays out of search until they are real. -->
     <meta name="robots" content="noindex, nofollow">
     <title>The Editions: Every Edition of The Catalyst | The Catalyst Magazine</title>
-    <meta name="description" content="Every edition of The Catalyst, from the first issue in 2024 to the one out now: themes, covers and highlights from each season of student STEM journalism in Washington, D.C.">
+    <meta name="description" content="Every edition of The Catalyst, student science journalism from Washington, D.C.: five editions and 52 stories since our first issue in winter 2025, plus a sneak peek at the Winter 2027 edition.">
     <meta name="theme-color" content="#f8f7f3">
     <link rel="canonical" href="https://www.catalyst-magazine.com/edition-overview">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="The Catalyst Magazine">
     <meta property="og:title" content="The Editions: Every Edition of The Catalyst">
-    <meta property="og:description" content="Browse every edition of The Catalyst, season by season.">
-    <meta property="og:image" content="https://www.catalyst-magazine.com/editions/og-archive.jpg?v=1">
+    <meta property="og:description" content="Five editions and 52 stories of student science journalism from Washington, D.C., season by season, plus a sneak peek at Winter 2027.">
+    <meta property="og:image" content="https://www.catalyst-magazine.com/editions/og-archive.jpg?v=2">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="The covers of every edition of The Catalyst, fanned out on warm paper.">
+    <meta property="og:image:alt" content="The covers of every edition of The Catalyst, fanned out on warm paper beside the headline The Editions.">
     <meta property="og:url" content="https://www.catalyst-magazine.com/edition-overview">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content="https://www.catalyst-magazine.com/editions/og-archive.jpg?v=1">
+    <meta name="twitter:image" content="https://www.catalyst-magazine.com/editions/og-archive.jpg?v=2">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta name="twitter:title" content="The Editions: Every Edition of The Catalyst">
+    <meta name="twitter:description" content="Five editions and 52 stories of student science journalism from Washington, D.C., season by season, plus a sneak peek at Winter 2027.">
+    <meta name="twitter:image:alt" content="The covers of every edition of The Catalyst, fanned out on warm paper beside the headline The Editions.">
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "CollectionPage", "name": "The Editions: Every Edition of The Catalyst", "description": "Every edition of The Catalyst, student science journalism from Washington, D.C.: five editions and 52 stories since our first issue in winter 2025, plus a sneak peek at the Winter 2027 edition.", "url": "https://www.catalyst-magazine.com/edition-overview", "image": "https://www.catalyst-magazine.com/editions/og-archive.jpg?v=2", "inLanguage": "en-US", "isPartOf": {"@type": "Periodical", "name": "The Catalyst Magazine", "url": "https://www.catalyst-magazine.com/"}, "hasPart": [{"@type": "PublicationIssue", "name": "The Fall 2026 Edition: New Frontiers in the Capital", "url": "https://www.catalyst-magazine.com/edition-fall-2026", "image": "https://www.catalyst-magazine.com/editions/fall-2026/og.jpg?v=1"}, {"@type": "PublicationIssue", "name": "The Spring 2026 Edition: Minds, Machines & Microbes in the Capital", "url": "https://www.catalyst-magazine.com/edition-spring-2026", "image": "https://www.catalyst-magazine.com/editions/spring-2026/og.jpg?v=1"}, {"@type": "PublicationIssue", "name": "The Fall 2025 Edition: Health & the Mind in the Capital", "url": "https://www.catalyst-magazine.com/edition-fall-2025", "image": "https://www.catalyst-magazine.com/editions/fall-2025/og.jpg?v=1"}, {"@type": "PublicationIssue", "name": "The Spring 2025 Edition: Discovery in the Capital", "url": "https://www.catalyst-magazine.com/edition-spring-2025", "image": "https://www.catalyst-magazine.com/editions/spring-2025/og.jpg?v=1"}, {"@type": "PublicationIssue", "name": "The Winter 2025 Edition: Science in the Capital", "url": "https://www.catalyst-magazine.com/edition-winter-2025", "image": "https://www.catalyst-magazine.com/editions/winter-2025/og.jpg?v=1"}]}</script>
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -141,7 +146,7 @@
       .ea-facts span { font: 500 12px/1.3 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
       .ea-hero .ea-btn { margin-top: 30px; }
 
-      .ea-fan-box { --cw: clamp(160px, 16.5vw, 244px); --step: 9.5deg; --mid: 2; }
+      .ea-fan-box { --cw: calc(clamp(160px, 16.5vw, 244px) * var(--fan-scale, 1)); --step: 9.5deg; --mid: 2; }   /* --step / --mid: set from the number of covers */
       .ea-fan { position: relative; height: calc(var(--cw) * 1.34 + 70px); margin: 0; padding: 0; list-style: none; }
       /* the (untilted) list boxes all overlap in the middle, so they must
          not catch the pointer; only the tilted covers do */
@@ -155,18 +160,17 @@
         transition: transform .9s var(--ease-out), opacity .7s var(--ease-out);
         transition-delay: calc(var(--i) * 70ms);
       }
-      .ea-fan { --h: 99; --push: 0px; }
       .ea-fan li:hover, .ea-fan li:focus-within { z-index: 10; }
-      .is-ready .ea-fan-item {
-        opacity: 1;
-        /* sign(i - hovered) x push: the covers either side of the one you point at slide away from it */
-        transform: translateX(calc(clamp(-1, (var(--i) - var(--h)) * 99, 1) * var(--push))) rotate(calc((var(--i) - var(--mid, 3)) * var(--step)));
+      /* --dx is set by the page script while you point at a cover: the covers
+         either side ease aside, within the room there is (never over the text) */
+      .is-ready .ea-fan-item { opacity: 1; transform: translateX(var(--dx, 0px)) rotate(calc((var(--i) - var(--mid, 3)) * var(--step))); }
+      .ea-fan.settled .ea-fan-item {
+        transition: transform .62s cubic-bezier(.22, 1, .36, 1), opacity .7s var(--ease-out); transition-delay: 0s;
+        will-change: transform;
       }
-      .ea-fan.is-open { --push: calc(var(--cw) * .5); }
-      .ea-fan.settled .ea-fan-item { transition: transform .55s var(--ease-out), opacity .7s var(--ease-out); transition-delay: 0s; }
       .ea-fan-item .ea-cover {
         box-shadow: 0 2px 6px rgba(15,23,42,.12), 0 30px 50px -26px rgba(15,23,42,.5);
-        transition: transform .45s var(--ease-out), box-shadow .45s var(--ease-out);
+        transition: transform .55s cubic-bezier(.22, 1, .36, 1), box-shadow .55s cubic-bezier(.22, 1, .36, 1);
       }
       .ea-fan-item:hover .ea-cover, .ea-fan-item:focus-visible .ea-cover {
         transform: translateY(-38px);
@@ -342,7 +346,7 @@
       @media (max-width: 899px) {
         .ea-hero { padding-top: 112px; }
         .ea-hero-grid { grid-template-columns: 1fr; gap: 12px; }
-        .ea-fan-box { --cw: min(32vw, 160px); --step: 8deg; order: -1; }
+        .ea-fan-box { --cw: calc(min(32vw, 160px) * var(--fan-scale, 1)); --step: 8deg; order: -1; }
         .ea-fan { height: calc(var(--cw) * 1.34 + 56px); }
         .ea-fan li { bottom: 18px; }
         .ea-fan-caption { margin-top: 30px; }
@@ -818,16 +822,89 @@
         document.querySelector('.ea-fan').addEventListener('pointerleave', function () { cap.innerHTML = capDefault; });
 
         // pointing at a cover: it comes forward and the rest slide aside so it reads in full
-        var fanEl = document.querySelector('.ea-fan');
+        var fanEl = document.querySelector('.ea-fan'), fanBox = fanEl.parentElement;
+        var fanItems = Array.prototype.slice.call(fanEl.querySelectorAll('.ea-fan-item')), n = fanItems.length;
+        // the spread: generous with a few covers, tighter as the collection grows
+        var mqPhone = window.matchMedia('(max-width: 899px)');
+        function fanSpread() {
+          var step = n > 1 ? Math.min(mqPhone.matches ? 8 : 9.5, (mqPhone.matches ? 34 : 42) / (n - 1)) : 0;
+          fanBox.style.setProperty('--step', step.toFixed(2) + 'deg');
+          fanBox.style.setProperty('--mid', String((n - 1) / 2));
+          fanBox.style.setProperty('--fan-scale', String(Math.max(0.78, Math.min(1, 1 - (n - 6) * 0.05))));
+          return step;
+        }
+        fanSpread();
+        if (mqPhone.addEventListener) mqPhone.addEventListener('change', fanSpread);
+        // where each cover sits at rest (they turn about a point below them)
+        function textEdge() {
+          var right = 0, rg = document.createRange();
+          document.querySelectorAll('.ea-hero-copy > *').forEach(function (el) {
+            rg.selectNodeContents(el);
+            Array.prototype.forEach.call(rg.getClientRects(), function (q) { right = Math.max(right, q.right); });
+          });
+          return right;
+        }
+        function fanGeometry() {
+          var li = fanItems[0].parentElement, cw = li.offsetWidth, ch = cw * 4800 / 3584;
+          var step = parseFloat(getComputedStyle(fanBox).getPropertyValue('--step')) * Math.PI / 180, mid = (n - 1) / 2;
+          var fr = fanEl.getBoundingClientRect(), br = fanBox.getBoundingClientRect();
+          return {
+            cw: cw, limit: document.documentElement.clientWidth - 16,
+            // the covers may use the gutter up to 28px short of where the text actually ends
+            boxLeft: Math.min(br.left, textEdge() + 28),
+            left: function (i) { return fr.left + fr.width / 2 + 1.4 * ch * Math.sin((i - mid) * step) - cw / 2; },
+            overhang: function (i) {                                          // how far the tilted corners reach past the straight edges
+              var a = Math.abs((i - mid) * step);
+              return (cw / 2) * (Math.cos(a) - 1) + 0.5 * ch * Math.sin(a) + 2;
+            }
+          };
+        }
         setTimeout(function () { fanEl.classList.add('settled'); }, 1500);   // after the covers have fanned in
         if (!REDUCED && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-          var open = function (a) { fanEl.style.setProperty('--h', a.style.getPropertyValue('--i')); fanEl.classList.add('is-open'); };
-          document.querySelectorAll('.ea-fan-item').forEach(function (a) {
+          var open = function (a) {
+            fanEl.classList.add('settled');
+            var h = fanItems.indexOf(a), g = fanGeometry(), cw = g.cw;
+            var rest = fanItems.map(function (_, i) { return g.left(i); });   // left edges at rest
+            var strip = Math.max(30, Math.min(56, cw * 0.2));                // every other cover keeps this much showing
+            var nudge = 10;                                                    // and parts a little, even when there is room
+            var leftBound = g.boxLeft + g.overhang(0), rightBound = g.limit - g.overhang(n - 1) - cw;
+            // lay the covers out around the pointed-at one, its left edge at x
+            function place(x) {
+              var L = rest.slice(), R = x + cw, j, k;
+              L[h] = x;
+              for (j = 1; h + j < n; j++) {                                    // right: each edge shows past the one before
+                k = h + j;
+                L[k] = Math.max(rest[k] + nudge, j === 1 ? R + strip - cw : Math.max(R + (j - 1) * strip, L[k - 1] + strip));
+              }
+              for (j = 1; h - j >= 0; j++) {                                   // left: the same, towards the left
+                k = h - j;
+                L[k] = Math.min(rest[k] - nudge, x - j * strip, L[k + 1] - strip);
+              }
+              return L;
+            }
+            var L = place(rest[h]);
+            // short of room on the right: slide the pointed-at cover (and those left of it) a little left,
+            // into the free space by the fan. Only ever left: that keeps it under the pointer.
+            // how far it can go while every cover to its left still keeps its strip inside the bound
+            var over = L[n - 1] - rightBound, room = rest[h] - (leftBound + h * strip);
+            if (over > 0 && room > 0) L = place(rest[h] - Math.min(over, room, cw * 0.45));
+            // still no room: squeeze the rest evenly
+            var j, m = n - 1 - h;
+            over = L[n - 1] - rightBound;
+            if (over > 0 && m > 0) for (j = 1; j <= m; j++) L[h + j] -= over * j / m;
+            over = leftBound - L[0];
+            if (over > 0 && h > 0) for (j = 1; j <= h; j++) L[h - j] = Math.min(rest[h - j], L[h - j] + over * j / h);
+            fanItems.forEach(function (it, i) {
+              it.style.setProperty('--dx', (L[i] - rest[i]).toFixed(1) + 'px');
+            });
+          };
+          var close = function () { fanItems.forEach(function (it) { it.style.setProperty('--dx', '0px'); }); };
+          fanItems.forEach(function (a) {
             a.addEventListener('pointerenter', function () { open(a); });
             a.addEventListener('focus', function () { open(a); });
           });
-          fanEl.addEventListener('pointerleave', function () { fanEl.classList.remove('is-open'); });
-          fanEl.addEventListener('focusout', function (e) { if (!fanEl.contains(e.relatedTarget)) fanEl.classList.remove('is-open'); });
+          fanEl.addEventListener('pointerleave', close);
+          fanEl.addEventListener('focusout', function (e) { if (!fanEl.contains(e.relatedTarget)) close(); });
         }
         document.querySelector('.ea-fan').addEventListener('focusout', function (e) { if (!e.currentTarget.contains(e.relatedTarget)) cap.innerHTML = capDefault; });
 
