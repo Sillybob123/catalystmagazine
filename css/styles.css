@@ -471,6 +471,18 @@ img {
   transition: all var(--transition-normal);
 }
 
+/* Safari: a backdrop-filter on the header itself gets punched through wherever
+   a child repaints (a link's hover, the page scrolling under it), leaving hard
+   rectangles of un-frosted glass. The frost lives on its own layer behind the
+   header's contents instead; the header's own background is unchanged. */
+.header { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.header::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  border-radius: inherit;
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
 .header.scrolled {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.82));
   box-shadow:
@@ -560,7 +572,7 @@ img {
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--text-body);
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
   white-space: nowrap;
 }
 
