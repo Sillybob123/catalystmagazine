@@ -160,27 +160,35 @@
         transition: transform .9s var(--ease-out), opacity .7s var(--ease-out);
         transition-delay: calc(var(--i) * 70ms);
       }
-      .ea-fan li:hover, .ea-fan li:focus-within { z-index: 10; }
+      /* the pointed-at cover (.is-front, set by the page script) comes forward a
+         beat after its neighbours start easing aside, and goes back a beat after
+         they return, so it never pops in front of them */
+      .ea-fan { --fan-ease: cubic-bezier(.42, 0, .16, 1); }
+      .ea-fan li { transition: z-index 0s linear .34s; }
+      .ea-fan li.is-front { z-index: 10; transition-delay: .16s; }
+      .ea-fan.plain-hover li:hover, .ea-fan li:focus-within { z-index: 10; }
       /* --dx is set by the page script while you point at a cover: the covers
          either side ease aside, within the room there is (never over the text) */
       .is-ready .ea-fan-item { opacity: 1; transform: translateX(var(--dx, 0px)) rotate(calc((var(--i) - var(--mid, 3)) * var(--step))); }
       .ea-fan.settled .ea-fan-item {
-        transition: transform .62s cubic-bezier(.22, 1, .36, 1), opacity .7s var(--ease-out); transition-delay: 0s;
+        transition: transform .95s var(--fan-ease), opacity .7s var(--ease-out); transition-delay: 0s;
         will-change: transform;
       }
       .ea-fan-item .ea-cover {
         box-shadow: 0 2px 6px rgba(15,23,42,.12), 0 30px 50px -26px rgba(15,23,42,.5);
-        transition: transform .55s cubic-bezier(.22, 1, .36, 1), box-shadow .55s cubic-bezier(.22, 1, .36, 1);
+        transition: transform .9s var(--fan-ease), box-shadow .9s var(--fan-ease);
       }
-      .ea-fan-item:hover .ea-cover, .ea-fan-item:focus-visible .ea-cover {
-        transform: translateY(-38px);
+      .ea-fan li.is-front .ea-cover, .ea-fan.plain-hover .ea-fan-item:hover .ea-cover, .ea-fan-item:focus-visible .ea-cover {
+        transform: translateY(-30px) scale(1.015);
         box-shadow: 0 4px 10px rgba(15,23,42,.14), 0 44px 70px -28px rgba(15,23,42,.55);
       }
       /* one caption under the whole fan, so no cover can hide it */
       .ea-fan-caption {
         min-height: 22px; margin: 46px 0 0; text-align: center;
         font: 600 12px/1.5 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--ink);
+        transition: opacity .3s ease, transform .3s ease;
       }
+      .ea-fan-caption.is-out { opacity: 0; transform: translateY(4px); }
       .ea-fan-caption em { margin-left: 8px; font: italic 400 16px/1.5 var(--serif); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
 
       /* ============================================================
@@ -814,12 +822,14 @@
 
         // the caption under the fan names whichever cover you point at
         var cap = document.querySelector('.ea-fan-caption'), capDefault = cap.innerHTML;
-        function caption(el) { var v = el.getAttribute('data-caption').split('|'); cap.innerHTML = v[0] + '<em>' + v[1] + '</em>'; }
-        document.querySelectorAll('.ea-fan-item').forEach(function (a) {
-          a.addEventListener('pointerenter', function () { caption(a); });
-          a.addEventListener('focus', function () { caption(a); });
-        });
-        document.querySelector('.ea-fan').addEventListener('pointerleave', function () { cap.innerHTML = capDefault; });
+        var capTimer = 0, capNow = capDefault;
+        function setCaption(html) {                       // a soft crossfade, not a swap
+          if (html === capNow) return;
+          capNow = html; clearTimeout(capTimer);
+          cap.classList.add('is-out');
+          capTimer = setTimeout(function () { cap.innerHTML = html; cap.classList.remove('is-out'); }, 200);
+        }
+        function caption(el) { var v = el.getAttribute('data-caption').split('|'); setCaption(v[0] + '<em>' + v[1] + '</em>'); }
 
         // pointing at a cover: it comes forward and the rest slide aside so it reads in full
         var fanEl = document.querySelector('.ea-fan'), fanBox = fanEl.parentElement;
@@ -898,15 +908,38 @@
               it.style.setProperty('--dx', (L[i] - rest[i]).toFixed(1) + 'px');
             });
           };
-          var close = function () { fanItems.forEach(function (it) { it.style.setProperty('--dx', '0px'); }); };
+          var front = null, tOpen = 0, tClose = 0;
+          var show = function (a) {
+            if (front === a) return;
+            if (front) front.parentElement.classList.remove('is-front');
+            front = a; a.parentElement.classList.add('is-front');
+            open(a); caption(a);
+          };
+          var close = function () {
+            if (front) front.parentElement.classList.remove('is-front');
+            front = null;
+            fanItems.forEach(function (it) { it.style.setProperty('--dx', '0px'); });
+            setCaption(capDefault);
+          };
+          // a moment's intent before anything moves, so sweeping across the fan stays calm
           fanItems.forEach(function (a) {
-            a.addEventListener('pointerenter', function () { open(a); });
-            a.addEventListener('focus', function () { open(a); });
+            a.addEventListener('pointerenter', function () {
+              clearTimeout(tClose); clearTimeout(tOpen);
+              tOpen = setTimeout(function () { show(a); }, front ? 60 : 90);
+            });
+            a.addEventListener('focus', function () { clearTimeout(tClose); show(a); });
           });
-          fanEl.addEventListener('pointerleave', close);
+          fanEl.addEventListener('pointerleave', function () { clearTimeout(tOpen); tClose = setTimeout(close, 160); });
           fanEl.addEventListener('focusout', function (e) { if (!fanEl.contains(e.relatedTarget)) close(); });
+        } else {
+          // reduced motion or touch: covers simply come forward, the caption follows
+          fanEl.classList.add('plain-hover');
+          fanItems.forEach(function (a) {
+            a.addEventListener('pointerenter', function () { caption(a); });
+            a.addEventListener('focus', function () { caption(a); });
+          });
+          fanEl.addEventListener('pointerleave', function () { setCaption(capDefault); });
         }
-        document.querySelector('.ea-fan').addEventListener('focusout', function (e) { if (!e.currentTarget.contains(e.relatedTarget)) cap.innerHTML = capDefault; });
 
         // chapters and year heads settle in as they arrive
         var io = new IntersectionObserver(function (es) {
