@@ -1092,6 +1092,7 @@
         var root = document.documentElement;
         var playing = false, swallow = false, lastWheel = 0, start = 0, from = 0, to = 0, dur = 0, raf = 0, touchY = null;
         var SLOW = 2.4, slowA = 0, slowB = 0, cost = 0;   // the zoom plays SLOW× slower than the rest
+        var launch = function (t) { return 1 - (1 - t) * (1 - t); };
         var DOWN_KEYS = { ArrowDown: 1, PageDown: 1, ' ': 1, Spacebar: 1 };
         var UP_KEYS = { ArrowUp: 1, PageUp: 1, Home: 1 };
         function atTop() { return window.scrollY < 8; }
@@ -1104,18 +1105,18 @@
           if (portrait()) to += window.innerHeight * 0.45;
           if (to <= from + 4) return;
           var span = mall.el.offsetHeight - window.innerHeight, z = portrait() ? ZOOM_PHONE : ZOOM_DESK;
-          SLOW = portrait() ? 2.4 : 1.9;
+          SLOW = portrait() ? 2.4 : 2.8;
           slowA = clamp(mall.el.offsetTop + z[0] * span, from, to);
           slowB = clamp(mall.el.offsetTop + z[1] * span, slowA, to);
           cost = (to - from) + (SLOW - 1) * (slowB - slowA);
-          dur = portrait() ? 3600 : 4700;
+          dur = portrait() ? 3200 : 4000;
           playing = true; start = performance.now();
           root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
           raf = requestAnimationFrame(step);
         }
         function step(now) {
           var k = Math.min(1, (now - start) / dur);
-          window.scrollTo(0, yAt(glide(k) * cost));
+          window.scrollTo(0, yAt(launch(k) * cost));   // moves at once, lands softly
           if (k < 1) raf = requestAnimationFrame(step); else stop();
         }
         // scroll position for a share of the total "cost", where every px
