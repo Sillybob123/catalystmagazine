@@ -1,52 +1,34 @@
 /* ============================================================
    Article, read from an edition (body.in-edition, set by
    js/article-edition.js). The edition's colours come in as
-   --ed-acc / --ed-paper / --ed-deep; everything else is the
+   --ed-acc / --ed-deep (accents only); everything else is the
    normal article page (css/article-premium.css).
    ============================================================ */
 body[data-page="article"].in-edition {
   --accent: var(--ed-acc);
   --accent-soft: var(--ed-acc);
-  --paper: var(--ed-paper);
-  --paper-tint: var(--ed-paper);
-  --line: color-mix(in srgb, var(--ed-acc) 18%, #e6e6e6);
-  background: var(--ed-paper);
 }
 
-/* ---------- hero: the edition's night falls at the foot ---------- */
-.in-edition .article-hero::before {
-  background: linear-gradient(180deg,
-    rgba(0,0,0,0) 0%, rgba(0,0,0,.1) 32%,
-    color-mix(in srgb, var(--ed-deep) 70%, transparent) 76%,
-    var(--ed-deep) 100%);
-}
-.in-edition .ed-folio {
-  display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
-  max-width: 560px; margin: 0 0 22px; padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255,255,255,.34);
-  font: 600 11px/1.3 "Poppins", var(--sans); letter-spacing: .22em; text-transform: uppercase;
-  color: rgba(255,255,255,.88);
-}
-.in-edition .ed-folio span + span::before { content: ""; display: inline-block; width: 18px; height: 1px; margin: 0 14px 3px 0; background: currentColor; vertical-align: middle; opacity: .6; }
-.in-edition .article-hero__category { background: var(--ed-acc); border-color: var(--ed-acc); }
-
-/* ---------- the "in this edition" ribbon ---------- */
+/* ---------- "from this edition": a light strip on the paper under the hero ---------- */
 .ed-ribbon {
-  display: block; background: var(--ed-deep); color: #fbf8f3; text-decoration: none;
-  border-top: 1px solid rgba(255,255,255,.08);
+  display: block; color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  transition: background-color .3s ease;
 }
+.ed-ribbon:hover { background: color-mix(in srgb, var(--ed-acc) 5%, transparent); }
 .ed-ribbon__in {
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 20px;
-  max-width: 880px; margin: 0 auto; padding: 16px 24px 18px;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px;
+  max-width: 760px; margin: 0 auto; padding: 16px 24px;
 }
-.ed-ribbon__text { display: grid; gap: 2px; min-width: 0; }
-.ed-ribbon__kicker { font: 600 11px/1.3 "Poppins", var(--sans); letter-spacing: .2em; text-transform: uppercase; color: color-mix(in srgb, var(--ed-acc) 45%, #fff); }
-.ed-ribbon__title { font: italic 400 20px/1.25 var(--serif); color: #fbf8f3; }
-.ed-ribbon__meta { display: grid; justify-items: end; gap: 4px; font: 500 12.5px/1.3 "Poppins", var(--sans); color: rgba(251,248,243,.7); white-space: nowrap; }
-.ed-ribbon__go { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #fbf8f3; }
-.ed-ribbon__go svg { width: 15px; height: 15px; transition: transform .25s cubic-bezier(.16,1,.3,1); }
+.ed-ribbon__text { display: grid; gap: 3px; min-width: 0; }
+.ed-ribbon__kicker { font: 600 10.5px/1.3 "Poppins", var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-muted); }
+.ed-ribbon__title { font: italic 400 19px/1.25 var(--serif); color: var(--ink); }
+.ed-ribbon__meta { display: grid; justify-items: end; gap: 5px; font: 500 12.5px/1.3 "Poppins", var(--sans); color: var(--ink-muted); white-space: nowrap; }
+.ed-ribbon__go { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; font-weight: 600; color: var(--ink); }
+.ed-ribbon__go svg { width: 15px; height: 15px; color: var(--ed-acc); transition: transform .25s cubic-bezier(.16,1,.3,1); }
 .ed-ribbon:hover .ed-ribbon__go svg { transform: translateX(3px); }
 .ed-ribbon:focus-visible { outline: 2px solid var(--ed-acc); outline-offset: -4px; }
+.ed-ribbon .ed-cover--sm { width: 40px; box-shadow: 0 1px 2px rgba(15,23,42,.18), 0 8px 18px -10px rgba(15,23,42,.45); }
 
 /* ---------- a small magazine cover ---------- */
 .ed-cover {
@@ -135,9 +117,10 @@ body[data-page="article"].in-edition {
 .ed-next__card:focus-visible, .ed-next__edition:focus-visible, .ed-next__all:focus-visible { outline: 2px solid var(--ed-acc); outline-offset: 4px; }
 
 @media (max-width: 700px) {
-  .ed-ribbon__in { grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 14px 18px; }
+  .ed-ribbon__in { grid-template-columns: auto minmax(0, 1fr); gap: 12px 14px; padding: 14px 18px; }
   .ed-ribbon__meta { grid-column: 1 / -1; grid-auto-flow: column; justify-content: space-between; justify-items: start; }
   .ed-ribbon__title { font-size: 17px; }
+  .ed-ribbon__meta { align-items: center; }
   .ed-next { margin-top: 56px; }
   .ed-next__grid { grid-template-columns: 1fr; }
   .ed-next__card:last-child { text-align: left; }

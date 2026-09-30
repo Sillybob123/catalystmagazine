@@ -1,8 +1,8 @@
 /* ============================================================
    Article, read from an edition (/article/<slug>?edition=<id>).
    Edition pages link their stories with ?edition=; this dresses
-   the article in that edition: its colours, an edition folio in
-   the hero, an "in this edition" ribbon, and a way on to the
+   the article in that edition: a quiet accent colour, a light "from
+   this edition" strip under the hero, and a way on to the
    previous / next story and back to the edition. Without the
    parameter the article page is untouched. Data comes from
    /edition-art/editions.json (written by the edition build).
@@ -64,23 +64,8 @@
     b.style.setProperty('--ed-paper', ed.paper);
     b.style.setProperty('--ed-deep', ed.deep);
 
-    var back = document.querySelector('.article-page .back-link');
-    if (back) {
-      back.href = ed.page;
-      back.lastChild.textContent = ' The ' + ed.label + ' edition';
-    }
-
-    // the edition's own art for the story, where it has some
-    if (story && story.art) {
-      var img = hero.querySelector('.article-hero__image');
-      if (img) img.style.backgroundImage = "url('" + story.art + "')";
-    }
-
-    var surface = hero.querySelector('.article-hero__surface');
-    if (surface) {
-      surface.insertAdjacentHTML('afterbegin',
-        '<p class="ed-folio"><span>The Catalyst</span><span>The ' + esc(ed.label) + ' Edition &middot; No. ' + esc(ed.no) + '</span></p>');
-    }
+    // The hero, its image, tag and back link stay exactly as on any other
+    // article; the edition is marked by the light strip under the hero.
 
     var n = ed.stories.length;
     hero.insertAdjacentHTML('afterend',

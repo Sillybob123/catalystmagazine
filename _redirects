@@ -112,12 +112,11 @@
 /writingcontest/         /collaborate               301
 /writingcontest/*        /collaborate               301
 
-# Old Wix article URLs were "/article/posts/games/articleN.html" — the
-# numbered articles now live at /article/<slug>. Mapping per-number requires
-# a lookup table we don't have, so send them to /articles as the cleanest
-# signal. Google picks up the new canonical from the listing.
-/article/posts/games/*   /articles                  301
-/article/posts/*         /articles                  301
+# Article bodies reference images and quiz games with relative paths
+# ("posts/insidearticleimages/x.webp", "posts/games/articleN.html"). Under
+# /article/<slug> those resolve to /article/posts/..., so send them to the
+# real files. (js/main.js also roots these paths; this catches old links.)
+/article/posts/*         /posts/:splat              301
 /edition-winter-2024      /edition-winter-2025      301
 /edition-winter-2024.html /edition-winter-2025      301
 

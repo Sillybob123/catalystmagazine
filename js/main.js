@@ -1658,9 +1658,9 @@ function renderArticleDetail(article) {
     });
 
     // --- Content ----------------------------------------------------------
-    const contentHtml = article.blocks?.length
+    const contentHtml = rootRelativePaths(article.blocks?.length
         ? renderContentBlocks(article.blocks)
-        : (article.content || `<p>${article.excerpt || ''}</p>`);
+        : (article.content || `<p>${article.excerpt || ''}</p>`));
     const readingTime = article.readingTime || estimateReadingTime(article);
     const heroImage = getResizedImageUrl(article.image || ARTICLE_FALLBACK_IMAGE, 1600, 80);
     const category = formatCategory(article.category || 'feature');
@@ -2048,7 +2048,7 @@ function renderBookReviewDetail(article, container) {
     // decide.js still get the nicer treatment.
     bodyHtml = promotePullquotes(bodyHtml);
 
-    const contentHtml = bodyHtml;
+    const contentHtml = rootRelativePaths(bodyHtml);
     const readingTime = article.readingTime || estimateReadingTime(article);
     const rating = (typeof article.rating === 'number' && article.rating >= 0 && article.rating <= 5) ? article.rating : null;
     const ratingPct = rating != null ? Math.round((rating / 5) * 100) : null;
@@ -3014,6 +3014,16 @@ function renderRelatedArticles(currentArticle, data = articleData) {
 
     registerFadeIn(container);
     registerProgressiveImages(container);
+}
+
+// Story HTML written for the old flat site uses relative paths
+// ("posts/insidearticleimages/x.webp", "posts/games/articleN.html"). Under
+// /article/<slug> those resolve to /article/posts/..., so root them.
+function rootRelativePaths(html) {
+    return String(html || '').replace(
+        /(\s(?:src|href|poster|data-src)\s*=\s*)(["'])(?![a-z][a-z0-9+.-]*:|\/|#|\?|\s)([^"']+)\2/gi,
+        '$1$2/$3$2'
+    );
 }
 
 function viewArticle(linkOrId) {
