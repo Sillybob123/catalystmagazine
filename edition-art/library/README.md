@@ -24,7 +24,7 @@ its hero photo is dark, whether the cover's sky is dark, and its status.
    thin summer is folded into fall.
 2. In `manifest.json`, pick a set with that `season` and `"status": "available"`.
    Prefer a landmark that suits the edition's theme.
-3. Move its folder to `editions/<season>-<year>/`, and in `manifest.json` set
+3. Move its folder to `edition-art/<season>-<year>/`, and in `manifest.json` set
    `"status": "used"` and `"used_by": "<Season Year>"`. Never reuse a used set.
 4. Build the page from an existing edition page:
    * a **light** hero (`hero_is_dark: false`): copy `edition-fall-2026.html`
@@ -51,5 +51,5 @@ its stories show as locked previews (see `js/edition.js`).
 ## Sets already used
 
 `manifest.json → already_used_by_editions` lists the art used by existing
-editions (in `editions/<edition>/`, plus `editions/winter/` (Winter 2027) and
-`editions/spring/` (Spring 2027, saved but hidden from the overview for now)). Those landmarks are taken.
+editions (in `edition-art/<edition>/`, plus `edition-art/winter/` (Winter 2027) and
+`edition-art/spring/` (Spring 2027, saved but hidden from the overview for now)). Those landmarks are taken.

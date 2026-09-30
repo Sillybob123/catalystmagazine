@@ -4,8 +4,8 @@
   "no": "01",
   "title": "Science in the Capital",
   "page": "/edition-winter-2025",
-  "cover": "/editions/winter-2025/cover-700.webp?v=1",
-  "banner": "/editions/winter-2025/hero-1600.webp?v=1",
+  "cover": "/edition-art/winter-2025/cover-700.webp?v=1",
+  "banner": "/edition-art/winter-2025/hero-1600.webp?v=1",
   "span": "December 2024 – February 2025",
   "acc": "#3b6e8f",
   "paper": "#f3f6f8",
@@ -24,80 +24,80 @@
     "title": "An Ode to Microglia",
     "kicker": "Op-Ed",
     "author": "Naama Ben-Dor",
-    "img": "/editions/winter-2025/stories/an-ode-to-microglia-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/an-ode-to-microglia-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/an-ode-to-microglia-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/an-ode-to-microglia-1300.webp?v=1"
    },
    {
     "slug": "from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy",
     "title": "From Music to Nuclear Policy: Professor Christopher Cahill’s unexpected Journey in Science and Policy",
     "kicker": "Profile",
     "author": "Lori Preci and Yair Ben-Dor",
-    "img": "/editions/winter-2025/stories/from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy-1300.webp?v=1"
    },
    {
     "slug": "the-district-a-sustainable-city",
     "title": "The District: A Sustainable City?",
     "kicker": "Feature",
     "author": "Ginger Taurek",
-    "img": "/editions/winter-2025/stories/the-district-a-sustainable-city-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/the-district-a-sustainable-city-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/the-district-a-sustainable-city-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/the-district-a-sustainable-city-1300.webp?v=1"
    },
    {
     "slug": "understanding-science-to-learn-science-dopamine-and-why-you-should-care",
     "title": "Understanding Science to Learn Science: Dopamine and Why You Should Care",
     "kicker": "Op-Ed",
     "author": "Naama Ben-Dor",
-    "img": "/editions/winter-2025/stories/understanding-science-to-learn-science-dopamine-and-why-you-should-care-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/understanding-science-to-learn-science-dopamine-and-why-you-should-care-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/understanding-science-to-learn-science-dopamine-and-why-you-should-care-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/understanding-science-to-learn-science-dopamine-and-why-you-should-care-1300.webp?v=1"
    },
    {
     "slug": "from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry",
     "title": "From Fluorine to Forensics: The Road From Academia to Forensic Chemistry",
     "kicker": "Interview",
     "author": "Naama Ben-Dor",
-    "img": "/editions/winter-2025/stories/from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry-1300.webp?v=1"
    },
    {
     "slug": "everything-sings-the-science-of-systems",
     "title": "Everything Sings: The Science of Systems",
     "kicker": "Op-Ed",
     "author": "Aidan Schurr",
-    "img": "/editions/winter-2025/stories/everything-sings-the-science-of-systems-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/everything-sings-the-science-of-systems-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/everything-sings-the-science-of-systems-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/everything-sings-the-science-of-systems-1300.webp?v=1"
    },
    {
     "slug": "a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells",
     "title": "A Universe of Plasma: How one Scientist Connects his World from Satellites to Cells.",
     "kicker": "Interview",
     "author": "Aidan Schurr",
-    "img": "/editions/winter-2025/stories/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells-1300.webp?v=1"
    },
    {
     "slug": "how-cutting-edge-research-in-washington-dc-is-reshaping-science-and-medicine",
     "title": "How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine",
     "kicker": "Feature",
     "author": "Yair Ben-Dor",
-    "img": "/editions/winter-2025/stories/how-cutting-edge-research-in-washington-dc-is-reshaping-science-and-medicine-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/how-cutting-edge-research-in-washington-dc-is-reshaping-science-and-medicine-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/how-cutting-edge-research-in-washington-dc-is-reshaping-science-and-medicine-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/how-cutting-edge-research-in-washington-dc-is-reshaping-science-and-medicine-1300.webp?v=1"
    },
    {
     "slug": "from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-research",
     "title": "From Brain to Bench to Bedside and Beyond: How a DC Neuroscientist is Changing Brain Disease Research",
     "kicker": "Profile",
     "author": "Aidan Schurr",
-    "img": "/editions/winter-2025/stories/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-research-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-research-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-research-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-research-1300.webp?v=1"
    },
    {
     "slug": "chromatic-chemistry-transition-metals-and-natures-hidden-color-palette",
     "title": "Chromatic Chemistry: Transition Metals and Nature’s Hidden Color Palette",
     "kicker": "Op-Ed",
     "author": "Lori Preci",
-    "img": "/editions/winter-2025/stories/chromatic-chemistry-transition-metals-and-natures-hidden-color-palette-900.webp?v=1",
-    "art": "/editions/winter-2025/stories/chromatic-chemistry-transition-metals-and-natures-hidden-color-palette-1300.webp?v=1"
+    "img": "/edition-art/winter-2025/stories/chromatic-chemistry-transition-metals-and-natures-hidden-color-palette-900.webp?v=1",
+    "art": "/edition-art/winter-2025/stories/chromatic-chemistry-transition-metals-and-natures-hidden-color-palette-1300.webp?v=1"
    }
   ]
  },
@@ -106,8 +106,8 @@
   "no": "02",
   "title": "Discovery in the Capital",
   "page": "/edition-spring-2025",
-  "cover": "/editions/spring-2025/cover-700.webp?v=1",
-  "banner": "/editions/spring-2025/hero-1600.webp?v=1",
+  "cover": "/edition-art/spring-2025/cover-700.webp?v=1",
+  "banner": "/edition-art/spring-2025/hero-1600.webp?v=1",
   "span": "March – May 2025",
   "acc": "#a8436a",
   "paper": "#fbf5f3",
@@ -200,8 +200,8 @@
   "no": "03",
   "title": "Health & the Mind in the Capital",
   "page": "/edition-fall-2025",
-  "cover": "/editions/fall-2025/cover-700.webp?v=1",
-  "banner": "/editions/fall-2025/hero-1600.webp?v=1",
+  "cover": "/edition-art/fall-2025/cover-700.webp?v=1",
+  "banner": "/edition-art/fall-2025/hero-1600.webp?v=1",
   "span": "June – November 2025",
   "acc": "#a4562a",
   "paper": "#f6f1ea",
@@ -326,8 +326,8 @@
   "no": "04",
   "title": "Minds, Machines & Microbes in the Capital",
   "page": "/edition-spring-2026",
-  "cover": "/editions/spring-2026/cover-700.webp?v=1",
-  "banner": "/editions/spring-2026/hero-1600.webp?v=1",
+  "cover": "/edition-art/spring-2026/cover-700.webp?v=1",
+  "banner": "/edition-art/spring-2026/hero-1600.webp?v=1",
   "span": "December 2025 – May 2026",
   "acc": "#9b3a6e",
   "paper": "#fbf5f3",
@@ -428,8 +428,8 @@
   "no": "05",
   "title": "New Frontiers in the Capital",
   "page": "/edition-fall-2026",
-  "cover": "/editions/fall-2026/cover-700.webp?v=1",
-  "banner": "/editions/fall-2026/hero-1600.webp?v=1",
+  "cover": "/edition-art/fall-2026/cover-700.webp?v=1",
+  "banner": "/edition-art/fall-2026/hero-1600.webp?v=1",
   "span": "June – November 2026",
   "acc": "#9a5a2e",
   "paper": "#f7f1e8",

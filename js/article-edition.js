@@ -5,7 +5,7 @@
    the hero, an "in this edition" ribbon, and a way on to the
    previous / next story and back to the edition. Without the
    parameter the article page is untouched. Data comes from
-   /editions/editions.json (written by the edition build).
+   /edition-art/editions.json (written by the edition build).
    Styles: css/article-edition.css.
    ============================================================ */
 (function () {
@@ -13,7 +13,7 @@
   var id = new URLSearchParams(location.search).get('edition');
   if (!id || !/^[a-z0-9-]+$/.test(id)) return;
 
-  var ready = fetch('/editions/editions.json', { cache: 'force-cache' })
+  var ready = fetch('/edition-art/editions.json', { cache: 'force-cache' })
     .then(function (r) { if (!r.ok) throw new Error('editions ' + r.status); return r.json(); })
     .then(function (all) { return all[id] || null; })
     .catch(function (e) { console.warn('[edition] could not load editions.json', e); return null; });
@@ -30,7 +30,7 @@
   function cover(ed, cls) {
     return '<span class="ed-cover ' + (cls || '') + (ed.night ? ' is-night' : '') + '" aria-hidden="true">' +
       '<img class="ed-cover__art" src="' + esc(ed.cover) + '" alt="" loading="lazy" decoding="async">' +
-      '<span class="ed-cover__mast"><img src="/editions/winter/masthead.webp?v=1" alt=""><span class="ed-cover__date"><span>' + esc(ed.label) + '</span><span>No. ' + esc(ed.no) + '</span></span></span>' +
+      '<span class="ed-cover__mast"><img src="/edition-art/winter/masthead.webp?v=1" alt=""><span class="ed-cover__date"><span>' + esc(ed.label) + '</span><span>No. ' + esc(ed.no) + '</span></span></span>' +
       '<span class="ed-cover__title">' + esc(ed.title) + '</span></span>';
   }
 

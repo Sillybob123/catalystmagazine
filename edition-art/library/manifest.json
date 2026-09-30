@@ -13,18 +13,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/spring-01/cover-700.webp",
-          "/editions/library/spring-01/cover-1100.webp",
-          "/editions/library/spring-01/cover-1600.webp"
+          "/edition-art/library/spring-01/cover-700.webp",
+          "/edition-art/library/spring-01/cover-1100.webp",
+          "/edition-art/library/spring-01/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/spring-01/hero-900.webp",
-          "/editions/library/spring-01/hero-1600.webp",
-          "/editions/library/spring-01/hero-2600.webp"
+          "/edition-art/library/spring-01/hero-900.webp",
+          "/edition-art/library/spring-01/hero-1600.webp",
+          "/edition-art/library/spring-01/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/spring-01/hero-tall-800.webp",
-          "/editions/library/spring-01/hero-tall-1200.webp"
+          "/edition-art/library/spring-01/hero-tall-800.webp",
+          "/edition-art/library/spring-01/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -44,18 +44,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/spring-02/cover-700.webp",
-          "/editions/library/spring-02/cover-1100.webp",
-          "/editions/library/spring-02/cover-1600.webp"
+          "/edition-art/library/spring-02/cover-700.webp",
+          "/edition-art/library/spring-02/cover-1100.webp",
+          "/edition-art/library/spring-02/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/spring-02/hero-900.webp",
-          "/editions/library/spring-02/hero-1600.webp",
-          "/editions/library/spring-02/hero-2600.webp"
+          "/edition-art/library/spring-02/hero-900.webp",
+          "/edition-art/library/spring-02/hero-1600.webp",
+          "/edition-art/library/spring-02/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/spring-02/hero-tall-800.webp",
-          "/editions/library/spring-02/hero-tall-1200.webp"
+          "/edition-art/library/spring-02/hero-tall-800.webp",
+          "/edition-art/library/spring-02/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -75,18 +75,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/spring-03/cover-700.webp",
-          "/editions/library/spring-03/cover-1100.webp",
-          "/editions/library/spring-03/cover-1600.webp"
+          "/edition-art/library/spring-03/cover-700.webp",
+          "/edition-art/library/spring-03/cover-1100.webp",
+          "/edition-art/library/spring-03/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/spring-03/hero-900.webp",
-          "/editions/library/spring-03/hero-1600.webp",
-          "/editions/library/spring-03/hero-2600.webp"
+          "/edition-art/library/spring-03/hero-900.webp",
+          "/edition-art/library/spring-03/hero-1600.webp",
+          "/edition-art/library/spring-03/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/spring-03/hero-tall-800.webp",
-          "/editions/library/spring-03/hero-tall-1200.webp"
+          "/edition-art/library/spring-03/hero-tall-800.webp",
+          "/edition-art/library/spring-03/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -106,18 +106,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/spring-04/cover-700.webp",
-          "/editions/library/spring-04/cover-1100.webp",
-          "/editions/library/spring-04/cover-1600.webp"
+          "/edition-art/library/spring-04/cover-700.webp",
+          "/edition-art/library/spring-04/cover-1100.webp",
+          "/edition-art/library/spring-04/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/spring-04/hero-900.webp",
-          "/editions/library/spring-04/hero-1600.webp",
-          "/editions/library/spring-04/hero-2600.webp"
+          "/edition-art/library/spring-04/hero-900.webp",
+          "/edition-art/library/spring-04/hero-1600.webp",
+          "/edition-art/library/spring-04/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/spring-04/hero-tall-800.webp",
-          "/editions/library/spring-04/hero-tall-1200.webp"
+          "/edition-art/library/spring-04/hero-tall-800.webp",
+          "/edition-art/library/spring-04/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -137,18 +137,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/spring-05/cover-700.webp",
-          "/editions/library/spring-05/cover-1100.webp",
-          "/editions/library/spring-05/cover-1600.webp"
+          "/edition-art/library/spring-05/cover-700.webp",
+          "/edition-art/library/spring-05/cover-1100.webp",
+          "/edition-art/library/spring-05/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/spring-05/hero-900.webp",
-          "/editions/library/spring-05/hero-1600.webp",
-          "/editions/library/spring-05/hero-2600.webp"
+          "/edition-art/library/spring-05/hero-900.webp",
+          "/edition-art/library/spring-05/hero-1600.webp",
+          "/edition-art/library/spring-05/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/spring-05/hero-tall-800.webp",
-          "/editions/library/spring-05/hero-tall-1200.webp"
+          "/edition-art/library/spring-05/hero-tall-800.webp",
+          "/edition-art/library/spring-05/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -168,18 +168,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/summer-01/cover-700.webp",
-          "/editions/library/summer-01/cover-1100.webp",
-          "/editions/library/summer-01/cover-1600.webp"
+          "/edition-art/library/summer-01/cover-700.webp",
+          "/edition-art/library/summer-01/cover-1100.webp",
+          "/edition-art/library/summer-01/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/summer-01/hero-900.webp",
-          "/editions/library/summer-01/hero-1600.webp",
-          "/editions/library/summer-01/hero-2600.webp"
+          "/edition-art/library/summer-01/hero-900.webp",
+          "/edition-art/library/summer-01/hero-1600.webp",
+          "/edition-art/library/summer-01/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/summer-01/hero-tall-800.webp",
-          "/editions/library/summer-01/hero-tall-1200.webp"
+          "/edition-art/library/summer-01/hero-tall-800.webp",
+          "/edition-art/library/summer-01/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -199,18 +199,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/summer-02/cover-700.webp",
-          "/editions/library/summer-02/cover-1100.webp",
-          "/editions/library/summer-02/cover-1600.webp"
+          "/edition-art/library/summer-02/cover-700.webp",
+          "/edition-art/library/summer-02/cover-1100.webp",
+          "/edition-art/library/summer-02/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/summer-02/hero-900.webp",
-          "/editions/library/summer-02/hero-1600.webp",
-          "/editions/library/summer-02/hero-2600.webp"
+          "/edition-art/library/summer-02/hero-900.webp",
+          "/edition-art/library/summer-02/hero-1600.webp",
+          "/edition-art/library/summer-02/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/summer-02/hero-tall-800.webp",
-          "/editions/library/summer-02/hero-tall-1200.webp"
+          "/edition-art/library/summer-02/hero-tall-800.webp",
+          "/edition-art/library/summer-02/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -230,18 +230,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/summer-03/cover-700.webp",
-          "/editions/library/summer-03/cover-1100.webp",
-          "/editions/library/summer-03/cover-1600.webp"
+          "/edition-art/library/summer-03/cover-700.webp",
+          "/edition-art/library/summer-03/cover-1100.webp",
+          "/edition-art/library/summer-03/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/summer-03/hero-900.webp",
-          "/editions/library/summer-03/hero-1600.webp",
-          "/editions/library/summer-03/hero-2600.webp"
+          "/edition-art/library/summer-03/hero-900.webp",
+          "/edition-art/library/summer-03/hero-1600.webp",
+          "/edition-art/library/summer-03/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/summer-03/hero-tall-800.webp",
-          "/editions/library/summer-03/hero-tall-1200.webp"
+          "/edition-art/library/summer-03/hero-tall-800.webp",
+          "/edition-art/library/summer-03/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -261,18 +261,18 @@
       "cover_sky_is_dark": true,
       "files": {
         "cover": [
-          "/editions/library/summer-04/cover-700.webp",
-          "/editions/library/summer-04/cover-1100.webp",
-          "/editions/library/summer-04/cover-1600.webp"
+          "/edition-art/library/summer-04/cover-700.webp",
+          "/edition-art/library/summer-04/cover-1100.webp",
+          "/edition-art/library/summer-04/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/summer-04/hero-900.webp",
-          "/editions/library/summer-04/hero-1600.webp",
-          "/editions/library/summer-04/hero-2600.webp"
+          "/edition-art/library/summer-04/hero-900.webp",
+          "/edition-art/library/summer-04/hero-1600.webp",
+          "/edition-art/library/summer-04/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/summer-04/hero-tall-800.webp",
-          "/editions/library/summer-04/hero-tall-1200.webp"
+          "/edition-art/library/summer-04/hero-tall-800.webp",
+          "/edition-art/library/summer-04/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -292,18 +292,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/summer-05/cover-700.webp",
-          "/editions/library/summer-05/cover-1100.webp",
-          "/editions/library/summer-05/cover-1600.webp"
+          "/edition-art/library/summer-05/cover-700.webp",
+          "/edition-art/library/summer-05/cover-1100.webp",
+          "/edition-art/library/summer-05/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/summer-05/hero-900.webp",
-          "/editions/library/summer-05/hero-1600.webp",
-          "/editions/library/summer-05/hero-2600.webp"
+          "/edition-art/library/summer-05/hero-900.webp",
+          "/edition-art/library/summer-05/hero-1600.webp",
+          "/edition-art/library/summer-05/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/summer-05/hero-tall-800.webp",
-          "/editions/library/summer-05/hero-tall-1200.webp"
+          "/edition-art/library/summer-05/hero-tall-800.webp",
+          "/edition-art/library/summer-05/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -323,18 +323,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/fall-01/cover-700.webp",
-          "/editions/library/fall-01/cover-1100.webp",
-          "/editions/library/fall-01/cover-1600.webp"
+          "/edition-art/library/fall-01/cover-700.webp",
+          "/edition-art/library/fall-01/cover-1100.webp",
+          "/edition-art/library/fall-01/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/fall-01/hero-900.webp",
-          "/editions/library/fall-01/hero-1600.webp",
-          "/editions/library/fall-01/hero-2600.webp"
+          "/edition-art/library/fall-01/hero-900.webp",
+          "/edition-art/library/fall-01/hero-1600.webp",
+          "/edition-art/library/fall-01/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/fall-01/hero-tall-800.webp",
-          "/editions/library/fall-01/hero-tall-1200.webp"
+          "/edition-art/library/fall-01/hero-tall-800.webp",
+          "/edition-art/library/fall-01/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -354,18 +354,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/fall-02/cover-700.webp",
-          "/editions/library/fall-02/cover-1100.webp",
-          "/editions/library/fall-02/cover-1600.webp"
+          "/edition-art/library/fall-02/cover-700.webp",
+          "/edition-art/library/fall-02/cover-1100.webp",
+          "/edition-art/library/fall-02/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/fall-02/hero-900.webp",
-          "/editions/library/fall-02/hero-1600.webp",
-          "/editions/library/fall-02/hero-2600.webp"
+          "/edition-art/library/fall-02/hero-900.webp",
+          "/edition-art/library/fall-02/hero-1600.webp",
+          "/edition-art/library/fall-02/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/fall-02/hero-tall-800.webp",
-          "/editions/library/fall-02/hero-tall-1200.webp"
+          "/edition-art/library/fall-02/hero-tall-800.webp",
+          "/edition-art/library/fall-02/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -385,18 +385,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/fall-03/cover-700.webp",
-          "/editions/library/fall-03/cover-1100.webp",
-          "/editions/library/fall-03/cover-1600.webp"
+          "/edition-art/library/fall-03/cover-700.webp",
+          "/edition-art/library/fall-03/cover-1100.webp",
+          "/edition-art/library/fall-03/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/fall-03/hero-900.webp",
-          "/editions/library/fall-03/hero-1600.webp",
-          "/editions/library/fall-03/hero-2600.webp"
+          "/edition-art/library/fall-03/hero-900.webp",
+          "/edition-art/library/fall-03/hero-1600.webp",
+          "/edition-art/library/fall-03/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/fall-03/hero-tall-800.webp",
-          "/editions/library/fall-03/hero-tall-1200.webp"
+          "/edition-art/library/fall-03/hero-tall-800.webp",
+          "/edition-art/library/fall-03/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -416,18 +416,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/fall-04/cover-700.webp",
-          "/editions/library/fall-04/cover-1100.webp",
-          "/editions/library/fall-04/cover-1600.webp"
+          "/edition-art/library/fall-04/cover-700.webp",
+          "/edition-art/library/fall-04/cover-1100.webp",
+          "/edition-art/library/fall-04/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/fall-04/hero-900.webp",
-          "/editions/library/fall-04/hero-1600.webp",
-          "/editions/library/fall-04/hero-2600.webp"
+          "/edition-art/library/fall-04/hero-900.webp",
+          "/edition-art/library/fall-04/hero-1600.webp",
+          "/edition-art/library/fall-04/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/fall-04/hero-tall-800.webp",
-          "/editions/library/fall-04/hero-tall-1200.webp"
+          "/edition-art/library/fall-04/hero-tall-800.webp",
+          "/edition-art/library/fall-04/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -447,18 +447,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/fall-05/cover-700.webp",
-          "/editions/library/fall-05/cover-1100.webp",
-          "/editions/library/fall-05/cover-1600.webp"
+          "/edition-art/library/fall-05/cover-700.webp",
+          "/edition-art/library/fall-05/cover-1100.webp",
+          "/edition-art/library/fall-05/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/fall-05/hero-900.webp",
-          "/editions/library/fall-05/hero-1600.webp",
-          "/editions/library/fall-05/hero-2600.webp"
+          "/edition-art/library/fall-05/hero-900.webp",
+          "/edition-art/library/fall-05/hero-1600.webp",
+          "/edition-art/library/fall-05/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/fall-05/hero-tall-800.webp",
-          "/editions/library/fall-05/hero-tall-1200.webp"
+          "/edition-art/library/fall-05/hero-tall-800.webp",
+          "/edition-art/library/fall-05/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -478,18 +478,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/winter-01/cover-700.webp",
-          "/editions/library/winter-01/cover-1100.webp",
-          "/editions/library/winter-01/cover-1600.webp"
+          "/edition-art/library/winter-01/cover-700.webp",
+          "/edition-art/library/winter-01/cover-1100.webp",
+          "/edition-art/library/winter-01/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/winter-01/hero-900.webp",
-          "/editions/library/winter-01/hero-1600.webp",
-          "/editions/library/winter-01/hero-2600.webp"
+          "/edition-art/library/winter-01/hero-900.webp",
+          "/edition-art/library/winter-01/hero-1600.webp",
+          "/edition-art/library/winter-01/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/winter-01/hero-tall-800.webp",
-          "/editions/library/winter-01/hero-tall-1200.webp"
+          "/edition-art/library/winter-01/hero-tall-800.webp",
+          "/edition-art/library/winter-01/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -509,18 +509,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/winter-02/cover-700.webp",
-          "/editions/library/winter-02/cover-1100.webp",
-          "/editions/library/winter-02/cover-1600.webp"
+          "/edition-art/library/winter-02/cover-700.webp",
+          "/edition-art/library/winter-02/cover-1100.webp",
+          "/edition-art/library/winter-02/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/winter-02/hero-900.webp",
-          "/editions/library/winter-02/hero-1600.webp",
-          "/editions/library/winter-02/hero-2600.webp"
+          "/edition-art/library/winter-02/hero-900.webp",
+          "/edition-art/library/winter-02/hero-1600.webp",
+          "/edition-art/library/winter-02/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/winter-02/hero-tall-800.webp",
-          "/editions/library/winter-02/hero-tall-1200.webp"
+          "/edition-art/library/winter-02/hero-tall-800.webp",
+          "/edition-art/library/winter-02/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -540,18 +540,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/winter-03/cover-700.webp",
-          "/editions/library/winter-03/cover-1100.webp",
-          "/editions/library/winter-03/cover-1600.webp"
+          "/edition-art/library/winter-03/cover-700.webp",
+          "/edition-art/library/winter-03/cover-1100.webp",
+          "/edition-art/library/winter-03/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/winter-03/hero-900.webp",
-          "/editions/library/winter-03/hero-1600.webp",
-          "/editions/library/winter-03/hero-2600.webp"
+          "/edition-art/library/winter-03/hero-900.webp",
+          "/edition-art/library/winter-03/hero-1600.webp",
+          "/edition-art/library/winter-03/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/winter-03/hero-tall-800.webp",
-          "/editions/library/winter-03/hero-tall-1200.webp"
+          "/edition-art/library/winter-03/hero-tall-800.webp",
+          "/edition-art/library/winter-03/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -571,18 +571,18 @@
       "cover_sky_is_dark": true,
       "files": {
         "cover": [
-          "/editions/library/winter-04/cover-700.webp",
-          "/editions/library/winter-04/cover-1100.webp",
-          "/editions/library/winter-04/cover-1600.webp"
+          "/edition-art/library/winter-04/cover-700.webp",
+          "/edition-art/library/winter-04/cover-1100.webp",
+          "/edition-art/library/winter-04/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/winter-04/hero-900.webp",
-          "/editions/library/winter-04/hero-1600.webp",
-          "/editions/library/winter-04/hero-2600.webp"
+          "/edition-art/library/winter-04/hero-900.webp",
+          "/edition-art/library/winter-04/hero-1600.webp",
+          "/edition-art/library/winter-04/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/winter-04/hero-tall-800.webp",
-          "/editions/library/winter-04/hero-tall-1200.webp"
+          "/edition-art/library/winter-04/hero-tall-800.webp",
+          "/edition-art/library/winter-04/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -602,18 +602,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/winter-05/cover-700.webp",
-          "/editions/library/winter-05/cover-1100.webp",
-          "/editions/library/winter-05/cover-1600.webp"
+          "/edition-art/library/winter-05/cover-700.webp",
+          "/edition-art/library/winter-05/cover-1100.webp",
+          "/edition-art/library/winter-05/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/winter-05/hero-900.webp",
-          "/editions/library/winter-05/hero-1600.webp",
-          "/editions/library/winter-05/hero-2600.webp"
+          "/edition-art/library/winter-05/hero-900.webp",
+          "/edition-art/library/winter-05/hero-1600.webp",
+          "/edition-art/library/winter-05/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/winter-05/hero-tall-800.webp",
-          "/editions/library/winter-05/hero-tall-1200.webp"
+          "/edition-art/library/winter-05/hero-tall-800.webp",
+          "/edition-art/library/winter-05/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -633,18 +633,18 @@
       "cover_sky_is_dark": false,
       "files": {
         "cover": [
-          "/editions/library/fall-06/cover-700.webp",
-          "/editions/library/fall-06/cover-1100.webp",
-          "/editions/library/fall-06/cover-1600.webp"
+          "/edition-art/library/fall-06/cover-700.webp",
+          "/edition-art/library/fall-06/cover-1100.webp",
+          "/edition-art/library/fall-06/cover-1600.webp"
         ],
         "hero_wide": [
-          "/editions/library/fall-06/hero-900.webp",
-          "/editions/library/fall-06/hero-1600.webp",
-          "/editions/library/fall-06/hero-2600.webp"
+          "/edition-art/library/fall-06/hero-900.webp",
+          "/edition-art/library/fall-06/hero-1600.webp",
+          "/edition-art/library/fall-06/hero-2600.webp"
         ],
         "hero_tall": [
-          "/editions/library/fall-06/hero-tall-800.webp",
-          "/editions/library/fall-06/hero-tall-1200.webp"
+          "/edition-art/library/fall-06/hero-tall-800.webp",
+          "/edition-art/library/fall-06/hero-tall-1200.webp"
         ]
       },
       "higgsfield_jobs": {
@@ -658,43 +658,43 @@
     {
       "edition": "Winter 2025 (first edition)",
       "page": "/edition-winter-2025",
-      "art": "/editions/winter-2025/",
+      "art": "/edition-art/winter-2025/",
       "landmark": "Dupont Circle in snow"
     },
     {
       "edition": "Spring 2025",
       "page": "/edition-spring-2025",
-      "art": "/editions/spring-2025/",
+      "art": "/edition-art/spring-2025/",
       "landmark": "Library of Congress with magnolias"
     },
     {
       "edition": "Fall 2025",
       "page": "/edition-fall-2025",
-      "art": "/editions/fall-2025/",
+      "art": "/edition-art/fall-2025/",
       "landmark": "Washington Monument, autumn dusk"
     },
     {
       "edition": "Spring 2026",
       "page": "/edition-spring-2026",
-      "art": "/editions/spring-2026/",
+      "art": "/edition-art/spring-2026/",
       "landmark": "Einstein Memorial with redbuds"
     },
     {
       "edition": "Fall 2026",
       "page": "/edition-fall-2026",
-      "art": "/editions/fall-2026/",
+      "art": "/edition-art/fall-2026/",
       "landmark": "Jefferson Memorial across the Tidal Basin in autumn"
     },
     {
       "edition": "Winter 2027 (upcoming, out Dec 2026)",
       "page": "/edition-winter",
-      "art": "/editions/winter/",
+      "art": "/edition-art/winter/",
       "landmark": "Capitol at night in snow; frozen Reflecting Pool cover"
     },
     {
       "edition": "Spring 2027 (saved, hidden from the overview for now)",
       "page": "/edition-spring",
-      "art": "/editions/spring/",
+      "art": "/edition-art/spring/",
       "landmark": "Tidal Basin blossoms; cherry-lined path to the Capitol cover"
     }
   ]

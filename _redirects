@@ -120,3 +120,7 @@
 /article/posts/*         /articles                  301
 /edition-winter-2024      /edition-winter-2025      301
 /edition-winter-2024.html /edition-winter-2025      301
+
+# Edition art moved from /editions/ to /edition-art/ (so /editions can be the page).
+# Keeps shared preview images and older links working.
+/editions/*              /edition-art/:splat       301

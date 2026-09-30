@@ -52,5 +52,5 @@
 
 # Seasonal edition art (edition-*.html). Requested with ?v=; bump it in
 # the page when an image is replaced.
-/editions/*
+/edition-art/*
   Cache-Control: public, max-age=31536000, immutable
