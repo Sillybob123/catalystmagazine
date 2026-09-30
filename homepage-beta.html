@@ -864,7 +864,7 @@
         var mw = 124, mh = 124 * 622 / 643;             // .hb-mark (an <svg> has no offsetWidth)
         var ww = bWord.offsetWidth, wh = bWord.offsetHeight;
         var hw = bHead.offsetWidth, hh = bHead.offsetHeight;
-        var ax = vw * 0.57, ay = (vh - (mh + 22 + wh + 30 + hh)) / 2 + 20;
+        var ax = vw * 0.57, ay = heroCopy.offsetTop;   // same top line as the dome's tip
         var A = { mark: [ax, ay, 1], word: [ax, ay + mh + 22, 1], head: [ax, ay + mh + 22 + wh + 30 + (1 - h) * 14, 1] };
         var ms = 44 / mh, ws = 28 / wh, hs = 0.52;          // header-row sizes
         var gap = 16, sepGap = 26;
@@ -908,8 +908,10 @@
             // third, leaving the right side clear for the Catalyst mark
             var m = ease(map(p, 0.24, 0.5));
             if (m > 0) {
-              var dx = 0.787, dy = 0.5, k = 1 + 0.55 * m;
-              var tx = lerp(R.x + dx * R.w, vw * 0.27, m), ty = lerp(R.y + dy * R.h, vh * 0.56, m);
+              // anchor on the tip of the dome (plate 0.787, 0.386): it rises
+              // as it zooms, finishing level with the top of the kicker line
+              var dx = 0.787, dy = 0.386, k = 1 + 0.55 * m;
+              var tx = lerp(R.x + dx * R.w, vw * 0.27, m), ty = lerp(R.y + dy * R.h, heroCopy.offsetTop, m);
               R = { w: R.w * k, h: R.h * k };
               R.x = tx - dx * R.w; R.y = ty - dy * R.h;
             }
