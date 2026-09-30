@@ -120,10 +120,11 @@
   var hero = document.getElementById('ab-hero');
   var def = document.getElementById('ab-def');
   var cue = document.getElementById('ab-cue');
+  var missionIn = document.getElementById('ab-mission-in');
   var DOME = { x: 0.672, tip: 0.1 };                   // dome centre / statue tip in plate coordinates
   var dome = new Plate(hero, '/beta/about-dome/', {
     ghost: 0.22,
-    inkAt: function (p) { return REDUCED ? 1.04 : lerp(0.2, 1.04, map(p, 0, 0.6)); },
+    inkAt: function (p) { return REDUCED ? 1.04 : lerp(0.2, 1.04, map(p, 0, 0.42)); },
     rect: function (vw, vh, p) {
       var s = 1 + 0.05 * ease(map(p, 0.3, 1));        // a slow push while it inks
       if (portrait()) {
@@ -159,9 +160,9 @@
     });
   })(statement);
   var words = statement.querySelectorAll('.w');
-  function lightWords() {
-    var r = statement.getBoundingClientRect(), vh = window.innerHeight;
-    var f = REDUCED ? 1 : map(vh * 0.82 - r.top, 0, r.height + vh * 0.3);
+  // lit by hero progress: the statement is pinned in the hero stage
+  function lightWords(p) {
+    var f = REDUCED ? 1 : map(p, 0.58, 0.9);
     var n = Math.round(f * words.length);
     for (var i = 0; i < words.length; i++) words[i].classList.toggle('on', i < n);
   }
@@ -207,12 +208,17 @@
       dome.render();
       if (!REDUCED) {
         cue.style.opacity = String(1 - map(p, 0, 0.08));
-        var out = map(p, 0.72, 0.98);
+        // the definition leaves upward, the mission rises into its place
+        var out = ease(map(p, 0.4, 0.52));
         def.style.opacity = String(1 - out);
-        def.style.transform = (portrait() ? '' : 'translateY(-46%) ') + 'translate3d(0,' + (-out * 40).toFixed(1) + 'px,0)';
+        def.style.transform = (portrait() ? '' : 'translateY(-46%) ') + 'translate3d(0,' + (-out * 60).toFixed(1) + 'px,0)';
+        def.style.visibility = out >= 1 ? 'hidden' : '';
+        var inn = ease(map(p, 0.47, 0.6));
+        missionIn.style.opacity = String(inn);
+        missionIn.style.transform = (portrait() ? '' : 'translateY(-40%) ') + 'translate3d(0,' + ((1 - inn) * 70).toFixed(1) + 'px,0)';
       }
+      lightWords(p);
     }
-    lightWords();
     closeParallax();
     requestAnimationFrame(tick);
   }
