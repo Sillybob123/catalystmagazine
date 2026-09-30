@@ -1076,6 +1076,78 @@
 
       var scenes = [mall, library, tidal];
 
+      /* Hero autoplay: one scroll down from the top plays the whole hero
+         sequence by itself — the page glides to where the stories begin —
+         so nobody is left wondering whether to keep scrolling. Scrolling
+         up mid-play hands control straight back; scrolling back up
+         through the hero later scrubs it by hand as before. */
+      function heroAutoplay() {
+        var root = document.documentElement;
+        var playing = false, swallow = false, lastWheel = 0, start = 0, from = 0, to = 0, dur = 0, raf = 0, touchY = null;
+        var DOWN_KEYS = { ArrowDown: 1, PageDown: 1, ' ': 1, Spacebar: 1 };
+        var UP_KEYS = { ArrowUp: 1, PageUp: 1, Home: 1 };
+        function atTop() { return window.scrollY < 8; }
+        function inHero(el) { return el && el.nodeType === 1 ? mall.el.contains(el) || el === document.body || el === root : false; }
+        function play() {
+          if (playing) return;
+          from = window.scrollY;
+          to = mall.el.offsetTop + mall.el.offsetHeight - window.innerHeight;
+          // phones: carry on past the dome until the stories start to show
+          if (portrait()) to += window.innerHeight * 0.45;
+          if (to <= from + 4) return;
+          dur = portrait() ? 2800 : 4200;
+          playing = true; start = performance.now();
+          root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
+          raf = requestAnimationFrame(step);
+        }
+        function step(now) {
+          var k = Math.min(1, (now - start) / dur);
+          window.scrollTo(0, from + (to - from) * (0.5 - 0.5 * Math.cos(Math.PI * k)));
+          if (k < 1) raf = requestAnimationFrame(step); else stop();
+        }
+        function stop() { cancelAnimationFrame(raf); playing = false; root.style.scrollBehavior = ''; }
+
+        window.addEventListener('wheel', function (e) {
+          if (e.ctrlKey) return;                         // pinch-zoom
+          var now = performance.now();
+          if (e.deltaY < 0) { if (playing) stop(); swallow = false; return; }
+          if (swallow) {
+            // hold back the rest of the gesture (trackpad inertia included)
+            if (playing || now - lastWheel < 200) { e.preventDefault(); lastWheel = now; return; }
+            swallow = false;
+          }
+          if (e.deltaY > 0 && atTop() && inHero(e.target)) { e.preventDefault(); lastWheel = now; swallow = true; play(); }
+        }, { passive: false });
+
+        window.addEventListener('touchstart', function (e) {
+          touchY = e.touches.length === 1 && inHero(e.target) ? e.touches[0].clientY : null;
+        }, { passive: true });
+        window.addEventListener('touchmove', function (e) {
+          if (touchY === null) return;
+          var dy = e.touches[0].clientY - touchY;         // < 0: finger moving up, page scrolling down
+          if (playing) {
+            if (dy > 12) { stop(); touchY = null; return; }
+            if (e.cancelable) e.preventDefault();
+            return;
+          }
+          if (dy < 0 && atTop() && e.cancelable) {
+            e.preventDefault();
+            if (dy < -6) play();
+          }
+        }, { passive: false });
+
+        window.addEventListener('keydown', function (e) {
+          var t = e.target;
+          if (e.altKey || e.ctrlKey || e.metaKey || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName)))) return;
+          if (playing) {
+            if (UP_KEYS[e.key]) { stop(); return; }
+            if (DOWN_KEYS[e.key]) e.preventDefault();
+            return;
+          }
+          if (DOWN_KEYS[e.key] && !e.shiftKey && atTop()) { e.preventDefault(); play(); }
+        });
+      }
+
       function tick(time) {
         if (siteHeader) siteHeader.classList.toggle('scrolled', window.scrollY > 50);
         var vh = window.innerHeight;
@@ -1101,6 +1173,7 @@
         requestAnimationFrame(still);
       } else {
         mall.load();
+        heroAutoplay();
         // later plates start streaming as they approach
         var lazyIO = new IntersectionObserver(function (entries) {
           entries.forEach(function (e) {
