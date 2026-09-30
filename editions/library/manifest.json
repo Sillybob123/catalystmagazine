@@ -1,0 +1,670 @@
+{
+  "about": "Art library for future Catalyst editions. Each set = a textless cover drawing (pen-and-ink + watercolor, 3584:4800) plus a matching wide hero photo (~2.36:1) and a tall phone hero (800:1434). Pick an available set whose season matches the new edition, then set its status to \"used\" and used_by to the edition. See README.md.",
+  "season_rule": "Winter = Dec-Feb (named by the year it starts), Spring = Mar-May, Summer = Jun-Aug, Fall = Sep-Nov. The Catalyst publishes fall, winter and spring editions; a thin summer folds into fall.",
+  "sets": [
+    {
+      "id": "spring-01",
+      "season": "spring",
+      "landmark": "National Capitol Columns, U.S. National Arboretum",
+      "description": "Sandstone columns on a green hill above a reflecting pool; azaleas and a spring meadow.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/spring-01/cover-700.webp",
+          "/editions/library/spring-01/cover-1100.webp",
+          "/editions/library/spring-01/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/spring-01/hero-900.webp",
+          "/editions/library/spring-01/hero-1600.webp",
+          "/editions/library/spring-01/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/spring-01/hero-tall-800.webp",
+          "/editions/library/spring-01/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "f8ebb50a-7429-4ebd-9b29-9ee52298c57f",
+        "wide": "aee0ab63-eb9d-4267-a99f-fe040b880909",
+        "tall": "66be4275-0ed7-4133-b688-670dd1deebb8"
+      }
+    },
+    {
+      "id": "spring-02",
+      "season": "spring",
+      "landmark": "C&O Canal, Georgetown",
+      "description": "The canal towpath with an old stone lock, brick warehouses and white dogwoods in bloom.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/spring-02/cover-700.webp",
+          "/editions/library/spring-02/cover-1100.webp",
+          "/editions/library/spring-02/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/spring-02/hero-900.webp",
+          "/editions/library/spring-02/hero-1600.webp",
+          "/editions/library/spring-02/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/spring-02/hero-tall-800.webp",
+          "/editions/library/spring-02/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "6110c40b-4f43-4ee4-8ca6-47bca1386097",
+        "wide": "7811e9ba-7f37-4d32-bfbb-fa3aac02dd95",
+        "tall": "7b3a8525-373e-4374-b658-1207ad154b70"
+      }
+    },
+    {
+      "id": "spring-03",
+      "season": "spring",
+      "landmark": "Dumbarton Oaks gardens, Georgetown",
+      "description": "Terraced gardens with a long arbor of lavender wisteria, stone steps and boxwood.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/spring-03/cover-700.webp",
+          "/editions/library/spring-03/cover-1100.webp",
+          "/editions/library/spring-03/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/spring-03/hero-900.webp",
+          "/editions/library/spring-03/hero-1600.webp",
+          "/editions/library/spring-03/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/spring-03/hero-tall-800.webp",
+          "/editions/library/spring-03/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "85a125b3-88e3-4624-93c7-213d96c70868",
+        "wide": "05333f56-c749-493e-8519-55da3cc676c0",
+        "tall": "f924c548-8d7e-4317-98f7-9708268907e1"
+      }
+    },
+    {
+      "id": "spring-04",
+      "season": "spring",
+      "landmark": "United States Botanic Garden",
+      "description": "The glass conservatory behind beds of tulips, with the Capitol dome beyond.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/spring-04/cover-700.webp",
+          "/editions/library/spring-04/cover-1100.webp",
+          "/editions/library/spring-04/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/spring-04/hero-900.webp",
+          "/editions/library/spring-04/hero-1600.webp",
+          "/editions/library/spring-04/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/spring-04/hero-tall-800.webp",
+          "/editions/library/spring-04/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "b0d15604-c902-402a-8e14-82f473fe78a6",
+        "wide": "3420841b-a0d9-482e-90ed-4ea514c720ae",
+        "tall": "87a83623-fa4e-4f20-930e-4469f8f30c82"
+      }
+    },
+    {
+      "id": "spring-05",
+      "season": "spring",
+      "landmark": "Enid A. Haupt Garden and the Smithsonian Castle",
+      "description": "Parterre beds of tulips in front of the red sandstone Castle.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/spring-05/cover-700.webp",
+          "/editions/library/spring-05/cover-1100.webp",
+          "/editions/library/spring-05/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/spring-05/hero-900.webp",
+          "/editions/library/spring-05/hero-1600.webp",
+          "/editions/library/spring-05/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/spring-05/hero-tall-800.webp",
+          "/editions/library/spring-05/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "136c238c-1b01-4ba3-b2f8-a7634c0b628d",
+        "wide": "469ca345-3b74-428e-bbae-cb383bd4bf70",
+        "tall": "6e3370e8-3457-4c84-afaa-9ae3cc000b92"
+      }
+    },
+    {
+      "id": "summer-01",
+      "season": "summer",
+      "landmark": "Lincoln Memorial and the Reflecting Pool",
+      "description": "A summer evening: the memorial glowing at the end of the pool, fireflies over the lawn, circuit-like lines in the water on the cover.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": true,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/summer-01/cover-700.webp",
+          "/editions/library/summer-01/cover-1100.webp",
+          "/editions/library/summer-01/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/summer-01/hero-900.webp",
+          "/editions/library/summer-01/hero-1600.webp",
+          "/editions/library/summer-01/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/summer-01/hero-tall-800.webp",
+          "/editions/library/summer-01/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "3b5b5cab-c250-4572-8f23-bb6c1ad61ae7",
+        "wide": "e9d90b80-6eff-4dbe-974a-2cfe23e9ede1",
+        "tall": "d22b8249-9592-487f-9850-00f80a7f701e"
+      }
+    },
+    {
+      "id": "summer-02",
+      "season": "summer",
+      "landmark": "Georgetown waterfront and Key Bridge",
+      "description": "The Potomac at golden hour, the stone arches of Key Bridge and sailboats.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/summer-02/cover-700.webp",
+          "/editions/library/summer-02/cover-1100.webp",
+          "/editions/library/summer-02/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/summer-02/hero-900.webp",
+          "/editions/library/summer-02/hero-1600.webp",
+          "/editions/library/summer-02/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/summer-02/hero-tall-800.webp",
+          "/editions/library/summer-02/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "ab1be9e5-3598-40bf-b817-81850bb9416f",
+        "wide": "3118bf2a-8a3a-4905-93a0-8b2f5415db8b",
+        "tall": "a21d970c-ad4d-44aa-b7d4-5ff2df35c7d5"
+      }
+    },
+    {
+      "id": "summer-03",
+      "season": "summer",
+      "landmark": "Great Falls of the Potomac",
+      "description": "White water over dark rock between lush summer forest.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/summer-03/cover-700.webp",
+          "/editions/library/summer-03/cover-1100.webp",
+          "/editions/library/summer-03/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/summer-03/hero-900.webp",
+          "/editions/library/summer-03/hero-1600.webp",
+          "/editions/library/summer-03/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/summer-03/hero-tall-800.webp",
+          "/editions/library/summer-03/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "d491d7a9-9490-4028-ab97-16a54b789975",
+        "wide": "056e6814-cdab-4088-be59-63dfa9bd32df",
+        "tall": "5eed3f29-6ffb-4f67-a7bf-941645e6b3ad"
+      }
+    },
+    {
+      "id": "summer-04",
+      "season": "summer",
+      "landmark": "Fourth of July on the National Mall",
+      "description": "Fireworks over the Washington Monument, reflected in the Reflecting Pool at night.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": true,
+      "cover_sky_is_dark": true,
+      "files": {
+        "cover": [
+          "/editions/library/summer-04/cover-700.webp",
+          "/editions/library/summer-04/cover-1100.webp",
+          "/editions/library/summer-04/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/summer-04/hero-900.webp",
+          "/editions/library/summer-04/hero-1600.webp",
+          "/editions/library/summer-04/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/summer-04/hero-tall-800.webp",
+          "/editions/library/summer-04/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "04ca8e40-dbe2-4010-944e-0c1e05d64bbf",
+        "wide": "2ad56bfb-614c-40ce-91ae-d5e1fe58ec2f",
+        "tall": "8a8094cf-d980-468d-9aa8-d3e777155c03"
+      }
+    },
+    {
+      "id": "summer-05",
+      "season": "summer",
+      "landmark": "Kenilworth Aquatic Gardens",
+      "description": "Ponds of pink lotus in July, a wooden boardwalk and willows.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/summer-05/cover-700.webp",
+          "/editions/library/summer-05/cover-1100.webp",
+          "/editions/library/summer-05/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/summer-05/hero-900.webp",
+          "/editions/library/summer-05/hero-1600.webp",
+          "/editions/library/summer-05/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/summer-05/hero-tall-800.webp",
+          "/editions/library/summer-05/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "d1f4ad65-96c6-4825-8421-051a5aa10e09",
+        "wide": "f69db63e-adf0-49fe-a503-bf6366fbcabc",
+        "tall": "9ecf6501-3284-44a5-b24d-4f02fe06ea90"
+      }
+    },
+    {
+      "id": "fall-01",
+      "season": "fall",
+      "landmark": "Georgetown rowhouses",
+      "description": "A cobblestone street of brick rowhouses under blazing orange maples.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": true,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/fall-01/cover-700.webp",
+          "/editions/library/fall-01/cover-1100.webp",
+          "/editions/library/fall-01/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/fall-01/hero-900.webp",
+          "/editions/library/fall-01/hero-1600.webp",
+          "/editions/library/fall-01/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/fall-01/hero-tall-800.webp",
+          "/editions/library/fall-01/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "35dde6ab-c3ae-41c9-9c7b-4df4fec4e1e6",
+        "wide": "9f674d74-467b-41af-a15a-ec755d6f5a2f",
+        "tall": "fba8b4ee-ebdb-4fd1-837d-9c4e5f82319a"
+      }
+    },
+    {
+      "id": "fall-02",
+      "season": "fall",
+      "landmark": "Arlington Memorial Bridge and the Lincoln Memorial",
+      "description": "The granite bridge across a misty Potomac at autumn sunrise.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/fall-02/cover-700.webp",
+          "/editions/library/fall-02/cover-1100.webp",
+          "/editions/library/fall-02/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/fall-02/hero-900.webp",
+          "/editions/library/fall-02/hero-1600.webp",
+          "/editions/library/fall-02/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/fall-02/hero-tall-800.webp",
+          "/editions/library/fall-02/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "01f9dc7d-bfb9-4fd3-87f6-a153c770a3ab",
+        "wide": "beb71dc7-e6fb-4e2a-9682-ceafb32ac001",
+        "tall": "defc5728-8f30-454c-a37f-128924bdf338"
+      }
+    },
+    {
+      "id": "fall-03",
+      "season": "fall",
+      "landmark": "Healy Hall, Georgetown University",
+      "description": "The Gothic clock spire rising above gold and crimson trees.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/fall-03/cover-700.webp",
+          "/editions/library/fall-03/cover-1100.webp",
+          "/editions/library/fall-03/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/fall-03/hero-900.webp",
+          "/editions/library/fall-03/hero-1600.webp",
+          "/editions/library/fall-03/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/fall-03/hero-tall-800.webp",
+          "/editions/library/fall-03/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "aabe9a84-9957-4a93-8716-8f76aa7e40fe",
+        "wide": "44f0a44b-48b5-49d6-b868-9456eb6f3cff",
+        "tall": "7eeec1d5-e6aa-4e7e-8aa3-c5f24e5432c4"
+      }
+    },
+    {
+      "id": "fall-04",
+      "season": "fall",
+      "landmark": "National Museum of Natural History",
+      "description": "The domed museum across the National Mall between yellow and orange elms.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/fall-04/cover-700.webp",
+          "/editions/library/fall-04/cover-1100.webp",
+          "/editions/library/fall-04/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/fall-04/hero-900.webp",
+          "/editions/library/fall-04/hero-1600.webp",
+          "/editions/library/fall-04/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/fall-04/hero-tall-800.webp",
+          "/editions/library/fall-04/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "54ad66a7-6c7c-4352-87e5-824a8c8a4422",
+        "wide": "1d5fe158-3956-4981-be36-b103499b11d9",
+        "tall": "8bf48f3b-c3a5-447a-8fec-e8fedfb0da76"
+      }
+    },
+    {
+      "id": "fall-05",
+      "season": "fall",
+      "landmark": "Meridian Hill Park cascade",
+      "description": "The long stone waterfall steps between russet and golden trees.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": true,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/fall-05/cover-700.webp",
+          "/editions/library/fall-05/cover-1100.webp",
+          "/editions/library/fall-05/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/fall-05/hero-900.webp",
+          "/editions/library/fall-05/hero-1600.webp",
+          "/editions/library/fall-05/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/fall-05/hero-tall-800.webp",
+          "/editions/library/fall-05/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "a58cd0d0-7ac5-44ce-bc6a-c9859bafdfa3",
+        "wide": "ecb299f4-fc5a-46e9-a476-db64f9ae8202",
+        "tall": "59a956bb-5be4-40fe-a813-c85fe145657a"
+      }
+    },
+    {
+      "id": "winter-01",
+      "season": "winter",
+      "landmark": "Union Station",
+      "description": "The Beaux-Arts station in falling snow at dusk, its arches glowing.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": true,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/winter-01/cover-700.webp",
+          "/editions/library/winter-01/cover-1100.webp",
+          "/editions/library/winter-01/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/winter-01/hero-900.webp",
+          "/editions/library/winter-01/hero-1600.webp",
+          "/editions/library/winter-01/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/winter-01/hero-tall-800.webp",
+          "/editions/library/winter-01/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "c82a2f53-ffe8-4c77-880a-9fa9eacb360c",
+        "wide": "978c84b8-9141-4793-acbf-1e8d0c3730b8",
+        "tall": "5b499a8f-e4bc-472a-b648-5b815f183b80"
+      }
+    },
+    {
+      "id": "winter-02",
+      "season": "winter",
+      "landmark": "Jefferson Memorial and the Tidal Basin",
+      "description": "The memorial across a partly frozen basin, snow on the bare cherry trees.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/winter-02/cover-700.webp",
+          "/editions/library/winter-02/cover-1100.webp",
+          "/editions/library/winter-02/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/winter-02/hero-900.webp",
+          "/editions/library/winter-02/hero-1600.webp",
+          "/editions/library/winter-02/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/winter-02/hero-tall-800.webp",
+          "/editions/library/winter-02/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "9a3febb7-d589-4786-a221-48212944d053",
+        "wide": "f5fefaed-4cb6-4189-ab34-1887fe926907",
+        "tall": "75080a6a-105c-45db-ac31-7ca84d7ceecf"
+      }
+    },
+    {
+      "id": "winter-03",
+      "season": "winter",
+      "landmark": "Arts and Industries Building, Smithsonian",
+      "description": "The polychrome brick building in fresh snow at blue hour, windows lit.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": true,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/winter-03/cover-700.webp",
+          "/editions/library/winter-03/cover-1100.webp",
+          "/editions/library/winter-03/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/winter-03/hero-900.webp",
+          "/editions/library/winter-03/hero-1600.webp",
+          "/editions/library/winter-03/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/winter-03/hero-tall-800.webp",
+          "/editions/library/winter-03/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "69fb631f-91b5-4c16-a799-e325576677bf",
+        "wide": "7432219c-d2ca-46b4-99fc-48bbfc06fe9c",
+        "tall": "0c4aa335-e409-4583-829b-2e788a985949"
+      }
+    },
+    {
+      "id": "winter-04",
+      "season": "winter",
+      "landmark": "Capitol holiday tree, West Lawn",
+      "description": "A lit evergreen on the snowy lawn below the illuminated Capitol dome at night.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": true,
+      "cover_sky_is_dark": true,
+      "files": {
+        "cover": [
+          "/editions/library/winter-04/cover-700.webp",
+          "/editions/library/winter-04/cover-1100.webp",
+          "/editions/library/winter-04/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/winter-04/hero-900.webp",
+          "/editions/library/winter-04/hero-1600.webp",
+          "/editions/library/winter-04/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/winter-04/hero-tall-800.webp",
+          "/editions/library/winter-04/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "0b09bd9a-a25e-4b43-946e-95961800bccc",
+        "wide": "c2597074-eca7-43fc-aeb0-fe818a09d505",
+        "tall": "cfa7a296-a496-456f-932a-78be318dbf37"
+      }
+    },
+    {
+      "id": "winter-05",
+      "season": "winter",
+      "landmark": "Washington National Cathedral",
+      "description": "The Gothic cathedral in snow at dusk, snow-laden evergreens.",
+      "status": "available",
+      "used_by": null,
+      "hero_is_dark": false,
+      "cover_sky_is_dark": false,
+      "files": {
+        "cover": [
+          "/editions/library/winter-05/cover-700.webp",
+          "/editions/library/winter-05/cover-1100.webp",
+          "/editions/library/winter-05/cover-1600.webp"
+        ],
+        "hero_wide": [
+          "/editions/library/winter-05/hero-900.webp",
+          "/editions/library/winter-05/hero-1600.webp",
+          "/editions/library/winter-05/hero-2600.webp"
+        ],
+        "hero_tall": [
+          "/editions/library/winter-05/hero-tall-800.webp",
+          "/editions/library/winter-05/hero-tall-1200.webp"
+        ]
+      },
+      "higgsfield_jobs": {
+        "cover": "7d708788-4e67-406d-b80a-3c89f9a5e1f7",
+        "wide": "2ba91959-77ba-434e-bd55-90b5ef367db3",
+        "tall": "a2c973f4-a499-4df5-a4ec-66fc7e7db013"
+      }
+    }
+  ],
+  "already_used_by_editions": [
+    {
+      "edition": "Winter 2024 (first edition)",
+      "page": "/edition-winter-2024",
+      "art": "/editions/winter-2024/",
+      "landmark": "Dupont Circle in snow"
+    },
+    {
+      "edition": "Spring 2025",
+      "page": "/edition-spring-2025",
+      "art": "/editions/spring-2025/",
+      "landmark": "Library of Congress with magnolias"
+    },
+    {
+      "edition": "Fall 2025",
+      "page": "/edition-fall-2025",
+      "art": "/editions/fall-2025/",
+      "landmark": "Washington Monument, autumn dusk"
+    },
+    {
+      "edition": "Spring 2026",
+      "page": "/edition-spring-2026",
+      "art": "/editions/spring-2026/",
+      "landmark": "Einstein Memorial with redbuds"
+    },
+    {
+      "edition": "Fall 2026",
+      "page": "/edition-fall-2026",
+      "art": "/editions/fall-2026/",
+      "landmark": "Smithsonian Castle, misty morning"
+    },
+    {
+      "edition": "Winter 2026 (upcoming, Dec 2026)",
+      "page": "/edition-winter",
+      "art": "/editions/winter/",
+      "landmark": "Capitol at night in snow; frozen Reflecting Pool cover"
+    },
+    {
+      "edition": "Spring 2027 (upcoming, Mar 2027)",
+      "page": "/edition-spring",
+      "art": "/editions/spring/",
+      "landmark": "Tidal Basin blossoms; cherry-lined path to the Capitol cover"
+    }
+  ]
+}

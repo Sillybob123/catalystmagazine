@@ -369,7 +369,11 @@
   }
 
   var EDITION = norm(body.dataset.edition);
-  if (grid && EDITION) {
+  // The current edition also takes every article published in its span
+  // (data-from / data-to, ISO dates), so new stories join it on their own.
+  var FROM = Date.parse(body.dataset.from || ''), TO = Date.parse(body.dataset.to || '');
+  var RANGED = !isNaN(FROM) && !isNaN(TO);
+  if (grid && (EDITION || RANGED)) {
     var fields = ['title', 'authorName', 'author', 'publishedAt', 'createdAt', 'category', 'slug', 'edition', 'coverImage', 'dek', 'deck'];
     fetch('https://firestore.googleapis.com/v1/projects/catalystwriters-5ce43/databases/(default)/documents:runQuery', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -381,19 +385,29 @@
       } })
     }).then(function (r) { if (!r.ok) throw new Error('Firestore ' + r.status); return r.json(); })
       .then(function (rows) {
-        var have = {};
-        stories().forEach(function (s) { var l = s.querySelector('a'); if (l) have[l.getAttribute('href')] = 1; });
+        var have = {}, titles = {};
+        stories().forEach(function (s) {
+          var l = s.querySelector('a'), h = s.querySelector('h3');
+          if (l) have[l.getAttribute('href')] = 1;
+          if (h) titles[norm(h.textContent)] = 1;
+        });
         var add = (Array.isArray(rows) ? rows : []).map(function (r) { return r.document; }).filter(Boolean).map(function (d) {
           var f = d.fields || {}, str = function (k) { return (f[k] && f[k].stringValue) || ''; };
-          if (norm(str('edition')) !== EDITION || !str('title')) return null;
+          if (!str('title')) return null;
           var cat = (str('category') || 'feature').toLowerCase().replace(/\s+/g, '-');
+          var when = (f.publishedAt && (f.publishedAt.timestampValue || f.publishedAt.stringValue)) || '';
+          var t = Date.parse(when) || 0;
+          var tagged = EDITION && norm(str('edition')) === EDITION;
+          var inSpan = RANGED && t >= FROM && t < TO && cat !== 'book-review' && cat !== 'bookreview';
+          if (!tagged && !inSpan) return null;
+          if (titles[norm(str('title'))]) return null;
           var href = (cat === 'book-review' ? '/book-review/' : '/article/') + encodeURIComponent(str('slug') || slugify(str('title')));
           if (have[href]) return null;
           var img = str('coverImage');
           if (img && !/^https?:\/\//i.test(img)) img = location.origin + '/' + img.replace(/^\/+/, '');
-          var when = (f.publishedAt && (f.publishedAt.timestampValue || f.publishedAt.stringValue)) || '';
+          titles[norm(str('title'))] = 1;
           return { href: href, title: str('title'), author: str('authorName') || str('author') || 'The Catalyst',
-            label: LABELS[cat] || 'Story', dek: str('dek') || str('deck'), img: img || '/NewsletterHeader1.png', t: Date.parse(when) || 0 };
+            label: LABELS[cat] || 'Story', dek: str('dek') || str('deck'), img: img || '/NewsletterHeader1.png', t: t };
         }).filter(Boolean).sort(function (a, b) { return a.t - b.t; });
         if (!add.length) return;
         grid.insertAdjacentHTML('beforeend', add.map(card).join(''));
@@ -403,11 +417,64 @@
       .catch(function (e) { console.warn('[edition] could not load edition stories', e); });
   }
 
+  /* ------------------------------------------------------------
+     An upcoming edition (data-upcoming="December 2026"): its stories
+     are previews. Title and writer show; the art and teaser are
+     veiled, and a story opens a note that it arrives with the edition.
+     ------------------------------------------------------------ */
+  var UPCOMING = body.dataset.upcoming;
+  if (UPCOMING && grid) {
+    body.classList.add('wx-upcoming');
+    var LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+    var lockCards = function () {
+      stories().forEach(function (s) {
+        if (s.dataset.locked) return;
+        s.dataset.locked = '1';
+        var img = s.querySelector('.wx-story-img');
+        if (img) img.insertAdjacentHTML('beforeend', '<span class="wx-lock">' + LOCK + '<span>' + esc(UPCOMING) + '</span></span>');
+        var a = s.querySelector('a');
+        if (a) { a.setAttribute('aria-haspopup', 'dialog'); a.setAttribute('aria-label', 'Preview: ' + (s.querySelector('h3') || {}).textContent + ', arriving ' + UPCOMING); }
+      });
+    };
+    lockCards();
+    var dlg = document.createElement('dialog');
+    dlg.className = 'wx-lock-dlg';
+    dlg.setAttribute('aria-labelledby', 'wx-lock-title');
+    document.body.appendChild(dlg);
+    var ed = body.dataset.edition || 'this edition';
+    grid.addEventListener('click', function (ev) {
+      var a = ev.target.closest('.wx-story a');
+      if (!a) return;
+      ev.preventDefault();
+      var s = a.closest('.wx-story');
+      var get = function (sel) { var el = s.querySelector(sel); return el ? el.textContent.trim() : ''; };
+      var by = get('.wx-story-by').replace(/\s*\u00b7.*$/, '');
+      dlg.innerHTML =
+        '<div class="wx-lock-in">' +
+          '<p class="wx-lock-kicker">' + LOCK + '<span>Arrives ' + esc(UPCOMING) + '</span></p>' +
+          '<h3 id="wx-lock-title">' + esc(get('h3')) + '</h3>' +
+          (by ? '<p class="wx-lock-by">' + esc(by) + '</p>' : '') +
+          (get('.wx-story-dek') ? '<p class="wx-lock-blurb">' + esc(get('.wx-story-dek')) + '</p>' : '') +
+          '<p class="wx-lock-note">This story is part of the ' + esc(ed) + ' edition, out in ' + esc(UPCOMING) + '. Come back then to read it, or subscribe and we&rsquo;ll send the edition when it&rsquo;s released.</p>' +
+          '<div class="wx-lock-actions"><button type="button" class="wx-btn wx-btn-light" data-wx-subscribe>Subscribe</button>' +
+          '<button type="button" class="wx-btn wx-btn-line" data-wx-close>Close</button></div>' +
+        '</div>';
+      dlg.querySelector('[data-wx-close]').addEventListener('click', function () { dlg.close(); });
+      dlg.querySelector('[data-wx-subscribe]').addEventListener('click', function () { dlg.close(); subscribe(); });
+      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    });
+    dlg.addEventListener('click', function (ev) { if (ev.target === dlg) dlg.close(); });
+    // stories tagged for this edition that arrive later are previews too
+    new MutationObserver(lockCards).observe(grid, { childList: true });
+  }
+
+  function subscribe() {
+    var open = document.getElementById('desktop-subscribe-btn') || document.getElementById('mobile-newsletter-btn');
+    if (open) open.click(); else location.href = '/#newsletter-section';
+  }
+
   // "Subscribe" in the closing band opens the site's newsletter modal.
   document.querySelectorAll('[data-wx-subscribe]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var open = document.getElementById('desktop-subscribe-btn') || document.getElementById('mobile-newsletter-btn');
-      if (open) open.click(); else location.href = '/#newsletter-section';
-    });
+    b.addEventListener('click', subscribe);
   });
 })();

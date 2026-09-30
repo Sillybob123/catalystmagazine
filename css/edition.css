@@ -354,3 +354,36 @@ body.wx #site-footer .footer {
   .wx-story-img img { opacity: 1 !important; transition: none !important; }
   .wx-scroll::after { animation: none; }
 }
+
+/* ============================================================
+   UPCOMING EDITION — story previews (body[data-upcoming], see
+   js/edition.js). Title and writer read clearly; the art and the
+   teaser are veiled until the edition is out.
+   ============================================================ */
+.wx-upcoming .wx-story-img img { filter: blur(16px) saturate(.85); transform: scale(1.15); }
+.wx-upcoming .wx-story-dek { filter: blur(4.5px); user-select: none; }
+.wx-lock {
+  position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; border-radius: 999px; white-space: nowrap;
+  background: rgba(255, 255, 255, .86); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font: 600 11px/1 var(--wx-sans); letter-spacing: .14em; text-transform: uppercase; color: #1f2430;
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, .35);
+}
+.wx-lock svg { width: 15px; height: 15px; flex: none; }
+
+.wx-lock-dlg {
+  position: fixed; inset: 0; margin: auto; height: fit-content;   /* the site's reset zeroes the dialog's centring margin */
+  width: min(520px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); padding: 0; border: 0; border-radius: 14px;
+  background: var(--wx-bg); color: var(--wx-ink-2);
+  box-shadow: 0 40px 100px -30px rgba(0, 0, 0, .5);
+}
+.wx-lock-dlg::backdrop { background: rgba(10, 14, 24, .45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.wx-lock-in { padding: clamp(24px, 4vw, 36px); }
+.wx-lock-kicker { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font: 600 11.5px/1.2 var(--wx-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--wx-accent); }
+.wx-lock-kicker svg { width: 16px; height: 16px; flex: none; }
+.wx-lock-dlg h3 { margin: 0; font: 700 clamp(23px, 3vw, 30px)/1.12 var(--wx-sans); letter-spacing: -0.02em; color: var(--wx-ink); text-wrap: balance; }
+.wx-lock-by { margin: 10px 0 0; font: 500 14px/1.4 var(--wx-sans); color: var(--wx-ink); }
+.wx-lock-blurb { margin: 16px 0 0; font: italic 400 17px/1.55 var(--wx-serif); color: var(--wx-ink-2); }
+.wx-lock-note { margin: 16px 0 0; padding-top: 16px; border-top: 1px solid var(--wx-hair); font: 400 15.5px/1.55 var(--wx-serif); color: var(--wx-muted); }
+.wx-lock-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.wx-lock-actions .wx-btn { min-height: 46px; }

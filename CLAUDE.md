@@ -100,3 +100,9 @@ Reuse these on any new dark+gold editorial surface. They satisfy Impeccable's "n
 - Don't rewrite working pages — refine. Preserve identity by default (Impeccable v3.0.6 rule).
 - Touch targets must be ≥44px (Pro Max P2). Always include `:focus-visible` outlines on interactive elements.
 - Always wrap heavy motion / blur in `@media (prefers-reduced-motion: reduce)` and reduce blur radius on mobile.
+
+## Editions (seasonal magazine pages)
+
+- `edition-overview.html` lists every edition. Past editions (`edition-winter-2024`, `-spring-2025`, `-fall-2025`, `-spring-2026`, `-fall-2026`) hold the real published articles for their date span (book reviews excluded); `edition-fall-2026` is the current one and also pulls in new articles by date (`data-from` / `data-to` on `<body>`, see `js/edition.js`). `edition-winter` (Winter 2026, out Dec 2026) and `edition-spring` (Spring 2027) are upcoming: `data-upcoming` turns their stories into locked previews.
+- Seasons: Winter = Dec–Feb, named by the year it starts; Spring = Mar–May; Fall = Sep–Nov. A thin summer folds into fall.
+- **Art for new editions: `editions/library/`** — 20 ready sets (5 per season: textless cover + wide hero + phone hero). Read `editions/library/README.md` and `manifest.json` before making an edition; mark the set you use as `used`.
