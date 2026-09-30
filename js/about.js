@@ -122,6 +122,7 @@
   var missionIn = document.getElementById('ab-mission-in');
   var cue = document.getElementById('ab-cue');
   var DOME = { x: 0.672, tip: 0.1 };
+  var mShift = 0;                                   // phones: px the hero composition has glided up
   // desktop: the line the statue's tip and the tops of "Catalyst" / the
   // mission headline share — low enough that the small kickers above them
   // clear the fixed site header
@@ -157,8 +158,10 @@
     rect: function (vw, vh, p) {
       var s = 1 + 0.05 * ease(map(p, 0.3, 1));        // a slow push while it inks
       if (portrait()) {
-        var w = vw * 1.75 * s, h = w * AR;
-        return { w: w, h: h, x: vw * 0.5 - DOME.x * w, y: 70 - DOME.tip * h * 0.55 };
+        // phones: drawing on top, text underneath; the whole composition
+        // glides up as you scroll (mShift) so the text comes fully into view
+        var w = vw * 1.45 * s, h = w * AR;
+        return { w: w, h: h, x: vw * 0.5 - DOME.x * w, y: 70 - DOME.tip * h * 0.55 - mShift };
       }
       // The statue's tip sits a little under the header (TIP_Y); the text
       // on the left lines up with it. The drawing is as large as it can be
@@ -263,7 +266,15 @@
         var mid = domeMidY(headerBottom() + 28, window.innerHeight - 28);
         var TEXT_LIFT = 36;   // px: text sits slightly above the dome's centre line
         if (!portrait()) def.style.top = (mid - def.offsetHeight / 2 - TEXT_LIFT).toFixed(1) + 'px'; else def.style.top = '';
-        def.style.transform = 'translate3d(0,' + (-out * 60).toFixed(1) + 'px,0)';
+        if (portrait()) {
+          // how far the text runs past the bottom of the visible screen
+          // (tallest of the definition and the mission), then glide up by
+          // that much early in the scroll so both are fully readable
+          var vh2 = window.innerHeight;
+          var need = Math.max(0, def.offsetTop + def.offsetHeight, missionIn.offsetTop + missionIn.offsetHeight) - (vh2 - 28);
+          mShift = Math.max(0, need) * ease(map(p, 0.03, 0.3));
+        } else mShift = 0;
+        def.style.transform = 'translate3d(0,' + (-out * 60 - mShift).toFixed(1) + 'px,0)';
         def.style.visibility = out >= 1 ? 'hidden' : '';
         var inn = ease(map(p, 0.47, 0.6));
         missionIn.style.opacity = String(inn);
@@ -271,7 +282,7 @@
           // top of the mission block sits level with the tip of the statue
           missionIn.style.top = (mid - missionIn.offsetHeight / 2 - TEXT_LIFT).toFixed(1) + 'px';   // same line as the definition
         } else missionIn.style.top = '';
-        missionIn.style.transform = 'translate3d(0,' + ((1 - inn) * 70).toFixed(1) + 'px,0)';
+        missionIn.style.transform = 'translate3d(0,' + ((1 - inn) * 70 - mShift).toFixed(1) + 'px,0)';
       }
       lightWords(p);
     }

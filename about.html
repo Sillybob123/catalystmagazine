@@ -452,13 +452,13 @@
 
       @media (max-width: 760px), (max-aspect-ratio: 9/10) {
         .ab-hero { height: 280vh; }
-        .ab-def { left: var(--gutter); right: var(--gutter); max-width: none; top: calc(var(--nav-h) + 78vw); transform: none; }
+        .ab-def { left: var(--gutter); right: var(--gutter); max-width: none; top: calc(var(--nav-h) + 66vw); transform: none; }
         .ab-def::before { inset: -20px -24px -40px; }
         .ab-word { font-size: clamp(54px, 16vw, 84px); }
         .ab-pron { margin: 12px 0 16px; font-size: 17px; }
         .ab-senses li { padding: 11px 0; font-size: 16px; }
         .ab-def-note { display: none; }
-        .ab-stage .ab-mission-in { left: var(--gutter); right: var(--gutter); max-width: none; top: calc(var(--nav-h) + 74vw); transform: none; }
+        .ab-stage .ab-mission-in { left: var(--gutter); right: var(--gutter); max-width: none; top: calc(var(--nav-h) + 64vw); transform: none; }
         .ab-stage .ab-mission-in::before { inset: -20px -24px -40px; }
         .ab-stage .ab-statement { max-width: none; font-size: clamp(24px, 6.8vw, 32px); line-height: 1.16; }
         .ab-cue { display: none; }
@@ -550,6 +550,7 @@
       @media (max-width: 700px) {
         .ab-stats { grid-template-columns: 1fr; }
         .ab-stat + .ab-stat { border-left: 0; border-top: 1px solid var(--hair); padding-left: 0; }
+        .ab-stat { text-align: center; }
       }
 
       /* ============================================================
@@ -838,6 +839,6 @@
     <script defer src="/js/data.js"></script>
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
     <script defer src="/js/main.js?v=20260925-review"></script>
-    <script defer src="/js/about.js?v=12"></script>
+    <script defer src="/js/about.js?v=13"></script>
 </body>
 </html>

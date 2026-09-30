@@ -354,11 +354,11 @@ function setupWelcomePopup() {
                 <div class="welcome-popup-name-row">
                     <label class="welcome-popup-field">
                         <span>First name</span>
-                        <input type="text" name="FNAME" class="welcome-popup-input" placeholder="Ada" required autocomplete="given-name">
+                        <input type="text" name="FNAME" class="welcome-popup-input" placeholder="First name" required autocomplete="given-name">
                     </label>
                     <label class="welcome-popup-field">
                         <span>Last name</span>
-                        <input type="text" name="LNAME" class="welcome-popup-input" placeholder="Lovelace" required autocomplete="family-name">
+                        <input type="text" name="LNAME" class="welcome-popup-input" placeholder="Last name" required autocomplete="family-name">
                     </label>
                 </div>
                 <label class="welcome-popup-field welcome-popup-field--email">
