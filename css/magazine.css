@@ -29,32 +29,33 @@
 .ea-cover-lines::before, .wx-cover-lines::before { border-radius: 0 0 3px 3px; }
 
 .ea-cover::before, .wx-cover::before, .ed-cover::before {
-  --fore: max(1.8px, 2.3cqw);            /* depth of the page block at the fore-edge */
-  --foot: max(1.3px, 1.5cqw);            /* at the fore-edge corner; nothing at the spine */
+  --fore: max(1.2px, 1.15cqw);           /* depth of the page block at the fore-edge (a slim glossy issue) */
+  --foot: max(1px, .75cqw);              /* at the fore-edge corner; nothing at the spine */
   content: ""; position: absolute; z-index: -1; pointer-events: none;
   left: 0; top: 0; right: calc(-1 * var(--fore)); bottom: calc(-1 * var(--foot));
-  border-radius: 0 2px 3px 0;
+  border-radius: 0 1.5px 2px 0;
   /* cover's top right corner, down the fore-edge, back along the foot to the spine */
   clip-path: polygon(0 0, calc(100% - var(--fore)) 0, 100% calc(var(--foot) * .85), 100% 100%, 0 calc(100% - var(--foot)));
   background:
-    /* fore-edge light: shade against the cover, lit across the middle, a soft lip outside,
-       and a little less light toward the foot */
-    linear-gradient(180deg, rgba(64, 48, 28, 0) 50%, rgba(64, 48, 28, .14))
-      right top / var(--fore) 100% no-repeat,
+    /* fore-edge: coated white stock — in the cover's shadow at first, then a clean
+       sheen across the middle and a soft falloff at the outer lip */
     linear-gradient(90deg,
-      rgba(64, 48, 28, .34) 0, rgba(64, 48, 28, .08) 20%, rgba(255, 252, 245, .08) 45%,
-      rgba(255, 252, 245, .38) 68%, rgba(64, 48, 28, .04) 88%, rgba(64, 48, 28, .2) 100%)
+      rgba(22, 26, 34, .30) 0, rgba(22, 26, 34, .10) 22%, rgba(255, 255, 255, 0) 42%,
+      rgba(255, 255, 255, .95) 62%, rgba(255, 255, 255, .6) 80%, rgba(22, 26, 34, .16) 100%)
       right top / var(--fore) 100% no-repeat,
-    /* the pages themselves: a macro photograph of real page edges */
-    url("/editions/paper-edge-v.webp") right top / var(--fore) auto repeat-y,
-    /* foot: the underside, in shadow, deepest against the cover and toward the spine */
-    linear-gradient(180deg, rgba(50, 37, 22, .44), rgba(50, 37, 22, .18) 55%, rgba(50, 37, 22, .3))
+    /* a little less light toward the foot */
+    linear-gradient(180deg, rgba(22, 26, 34, 0) 45%, rgba(22, 26, 34, .08))
+      right top / var(--fore) 100% no-repeat,
+    /* the sheets: barely there, as on a coated magazine */
+    repeating-linear-gradient(90deg, rgba(22, 26, 34, 0) 0 .8px, rgba(22, 26, 34, .045) .8px 1.1px)
+      right top / var(--fore) 100% no-repeat,
+    /* foot: the underside, in soft shadow, deepest against the cover and toward the spine */
+    linear-gradient(180deg, rgba(22, 26, 34, .30), rgba(22, 26, 34, .12) 55%, rgba(22, 26, 34, .2))
       left bottom / 100% var(--foot) no-repeat,
-    linear-gradient(90deg, rgba(36, 27, 16, .35), rgba(36, 27, 16, 0) 50%)
+    linear-gradient(90deg, rgba(22, 26, 34, .22), rgba(22, 26, 34, 0) 45%)
       left bottom / 100% var(--foot) no-repeat,
-    url("/editions/paper-edge-h.webp") left bottom / auto var(--foot) repeat-x,
-    /* the paper */
-    #f3eee4;
+    /* the paper: bright white */
+    #fbfbfa;
 }
 
 /* the edition pages' cover tilts toward the pointer: keep it flat inside so the
