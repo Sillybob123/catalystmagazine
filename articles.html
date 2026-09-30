@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://wsrv.nl" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
-    <link rel="preload" as="image" href="/beta/articles/table-1100.webp?v=2" imagesrcset="/beta/articles/table-700.webp?v=2 700w, /beta/articles/table-1100.webp?v=2 1100w" imagesizes="(max-width: 899px) 92vw, 48vw">
+    <link rel="preload" as="image" href="/beta/articles/reading-1440.webp?v=3" imagesrcset="/beta/articles/reading-960.webp?v=3 960w, /beta/articles/reading-1440.webp?v=3 1440w" imagesizes="(max-width: 899px) 94vw, 50vw">
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
     <link rel="stylesheet" href="/css/magazine.css?v=7">
     <script type="application/ld+json">
@@ -86,7 +86,8 @@
       /* ---------- hero ---------- */
       .ar-hero { padding: calc(96px + clamp(24px, 5vh, 64px)) 0 clamp(36px, 5vh, 64px); }
       .ar-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 80px); align-items: center; }
-      .ar-hero h1 { margin: 20px 0 0; font: 700 clamp(48px, 6.4vw, 96px)/1 var(--sans); letter-spacing: -0.045em; }
+      .ar-hero h1 { margin: 20px 0 0; font: 700 clamp(44px, 5.2vw, 84px)/1 var(--sans); letter-spacing: -0.045em; }
+      .ar-hero h1 .nw { white-space: nowrap; }   /* "The Articles." stays on one line */
       .ar-hero h1 em { display: block; margin-top: .1em; font: italic 400 .52em/1.15 var(--serif); letter-spacing: -0.01em; color: var(--ink-2); }
       .ar-lede { margin: 22px 0 0; max-width: 520px; font: 400 clamp(17px, 1.35vw, 20px)/1.6 var(--serif); color: var(--ink-2); }
       .ar-search { position: relative; margin-top: 30px; max-width: 540px; }
@@ -103,9 +104,12 @@
       .ar-search.has-q kbd { display: none; }
       .ar-search.has-q .clear { display: inline-flex; }
       .ar-search .clear:hover { color: var(--ink); background: rgba(15,23,42,.06); }
-      .ar-hero-art { margin: 0; }
+      .ar-hero-art { position: relative; margin: 0; }
       .ar-hero-art img { display: block; width: 100%; height: auto; }
-      .ar-hero-art.is-photo img { border-radius: 6px; aspect-ratio: 4 / 3; object-fit: cover; box-shadow: 0 2px 6px rgba(15,23,42,.1), 0 40px 80px -40px rgba(15,23,42,.45); }
+      /* the loop plays over its own first frame, so the fade-in is seamless */
+      .ar-loop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.4s ease; pointer-events: none;
+        -webkit-mask-image: radial-gradient(ellipse at center, #000 56%, transparent 71%); mask-image: radial-gradient(ellipse at center, #000 56%, transparent 71%); }
+      .ar-loop.is-playing { opacity: 1; }
 
       /* ---------- the filter bar ---------- */
       .ar-bar { position: sticky; top: 84px; z-index: 50; padding: 10px 0; }
@@ -243,7 +247,7 @@
             <div class="ar-wrap ar-hero-grid">
                 <div>
                     <p class="ar-kicker" data-reveal>The Catalyst &middot; The archive</p>
-                    <h1 id="ar-title" data-reveal style="--d:.06s">The Articles. <em>Every story we&rsquo;ve published.</em></h1>
+                    <h1 id="ar-title" data-reveal style="--d:.06s"><span class="nw">The Articles.</span> <em>Every story we&rsquo;ve published.</em></h1>
                     <p class="ar-lede" data-reveal style="--d:.12s">Features, profiles, interviews and editorials on the science shaping Washington, gathered by edition. Search by title, writer or subject, or browse the shelves below.</p>
                     <form class="ar-search" role="search" data-reveal style="--d:.18s" onsubmit="return false">
                         <label class="sr-only" for="ar-q">Search articles</label>
@@ -256,9 +260,11 @@
                     </form>
                 </div>
                 <figure class="ar-hero-art" id="ar-hero-art" data-reveal style="--d:.1s">
-                    <img id="ar-hero-img" src="/beta/articles/table-1100.webp?v=2" srcset="/beta/articles/table-700.webp?v=2 700w, /beta/articles/table-1100.webp?v=2 1100w, /beta/articles/table-1600.webp?v=2 1600w"
-                         sizes="(max-width: 899px) 92vw, 48vw" width="1100" height="821" fetchpriority="high" decoding="async"
-                         alt="A pen-and-ink drawing of a library reading table under arched windows, stacked with printed magazines and articles.">
+                    <img id="ar-hero-img" class="ar-still" src="/beta/articles/reading-1440.webp?v=3" srcset="/beta/articles/reading-960.webp?v=3 960w, /beta/articles/reading-1440.webp?v=3 1440w"
+                         sizes="(max-width: 899px) 94vw, 50vw" width="1440" height="804" fetchpriority="high" decoding="async"
+                         alt="A pen-and-ink drawing of a library reading table under arched windows, stacked with printed magazines and articles, a green lamp glowing.">
+                    <!-- a calm 10s loop of the same drawing (Higgsfield / Kling 3.0; first frame = last frame) -->
+                    <video class="ar-loop" muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" data-src="/beta/articles/reading-loop.mp4?v=2"></video>
                 </figure>
             </div>
         </section>
@@ -321,6 +327,6 @@
     <div id="site-footer"></div>
 
     <script defer src="/js/layout.js?v=20260925-review"></script>
-    <script defer src="/js/articles.js?v=2"></script>
+    <script defer src="/js/articles.js?v=3"></script>
 </body>
 </html>

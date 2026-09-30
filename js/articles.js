@@ -327,6 +327,22 @@
     e.preventDefault(); $('ar-q').focus();
   });
 
+  /* the hero drawing's calm loop: loaded after the page, played only on screen,
+     skipped on data saver, slow connections and reduced motion */
+  (function heroLoop() {
+    var v = document.querySelector('.ar-loop');
+    var conn = navigator.connection || {};
+    if (!v || REDUCED || conn.saveData || /(^|-)2g/.test(conn.effectiveType || '')) return;
+    function start() {
+      v.src = v.dataset.src;
+      v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true });
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es) { if (es[0].isIntersecting) v.play().catch(function () {}); else v.pause(); }).observe(v.parentNode);
+      } else v.play().catch(function () {});
+    }
+    if (document.readyState === 'complete') start(); else window.addEventListener('load', start);
+  })();
+
   /* ---------------- start ---------------- */
   readURL(); syncControls(); observe();
   Promise.all([loadStories(), editionsReady]).then(function (r) {
