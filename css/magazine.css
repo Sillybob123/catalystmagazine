@@ -27,6 +27,23 @@
 .ea-cover, .wx-cover, .ed-cover { overflow: visible !important; isolation: isolate; }
 .ea-cover .art, .wx-cover img.art, .ed-cover__art { border-radius: inherit; }
 .ea-cover-lines::before, .wx-cover-lines::before { border-radius: 0 0 3px 3px; }
+/* the cover lines carry their own white fade (a ::before at z-index -1): keep it
+   above the artwork now that the cover is its own stacking context */
+.ea-cover-lines, .wx-cover-lines { z-index: 1; }
+
+/* the spine: the cover curls down into the binding on the left, so it falls into
+   shadow there, with a thin highlight where the fold turns back to the light.
+   Normal blending (the older sheen layer screened, which can only lighten). */
+.ea-cover::after, .wx-cover::after, .ed-cover::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  border-radius: inherit; mix-blend-mode: normal !important;
+  background:
+    linear-gradient(90deg,
+      rgba(8, 12, 20, .5) 0, rgba(8, 12, 20, .3) .8%, rgba(8, 12, 20, .12) 2%,
+      rgba(255, 255, 255, .26) 3%, rgba(255, 255, 255, .06) 4.6%,
+      rgba(8, 12, 20, .07) 6.5%, rgba(8, 12, 20, 0) 11%),
+    linear-gradient(calc(115deg + var(--sheen, 0deg)), rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, .13) 50%, rgba(255, 255, 255, 0) 65%) !important;
+}
 
 .ea-cover::before, .wx-cover::before, .ed-cover::before {
   --fore: max(1.2px, 1.15cqw);           /* depth of the page block at the fore-edge (a slim glossy issue) */
