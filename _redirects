@@ -19,6 +19,12 @@
 /raffle.html             /raffle                   301
 /sponsors.html           /sponsors                 301
 
+# ------ Beta pages promoted to the live home and about (2026-09-30) ------
+/homepage-beta           /                         301
+/homepage-beta.html      /                         301
+/about-beta              /about                    301
+/about-beta.html         /about                    301
+
 # ------ /investors → /sponsors (renamed 2026-05-08) ---------
 /investors               /sponsors                 301
 /investors.html          /sponsors                 301

@@ -1,5 +1,5 @@
 /* ============================================================
-   About (beta) — about-beta.html
+   About page — about.html
    Hero: a Capitol dome ink plate that draws itself (same WebGL
    engine as homepage-beta: one crisp plate + a draw-order map).
    Then: mission lit word by word, story chapters beside their
@@ -295,10 +295,13 @@
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
-  var people = {};
+  var people = {}, seen = {};
   function personCard(m, i) {
     people[m.name] = m;
-    return '<button type="button" class="ab-person" data-reveal style="--d:' + ((i % 4) * 0.06).toFixed(2) + 's" data-name="' + esc(m.name) + '">' +
+    // id = the anchor the About page's structured data uses (/about#yair-ben-dor)
+    var id = String(m.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    var first = !document.getElementById(id) && !seen[id]; seen[id] = 1;
+    return '<button type="button" class="ab-person"' + (first ? ' id="' + id + '"' : '') + ' data-reveal style="--d:' + ((i % 4) * 0.06).toFixed(2) + 's" data-name="' + esc(m.name) + '">' +
       '<span class="ph"><img src="' + esc(m.image) + '" alt="" loading="lazy" decoding="async" onerror="this.src=\'/NewsletterHeader1.png\'"></span>' +
       '<span><strong>' + esc(m.name) + '</strong><span>' + esc(m.role) + '</span></span></button>';
   }

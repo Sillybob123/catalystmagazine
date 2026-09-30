@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-TV2SBHW5');</script>
+    <!-- End Google Tag Manager -->
+
+    <!-- Google AdSense site verification -->
+    <meta name="google-adsense-account" content="ca-pub-2354303171488552">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="The Catalyst Magazine — Washington D.C.'s student-run STEM publication. Profiles, interviews, and features on science, research, and innovation from D.C.-area universities and beyond.">
+    <meta name="keywords" content="The Catalyst Magazine, Catalyst Magazine, Catalyst DC, The Catalyst, Catalyst Magazine DC, STEM magazine Washington DC, student-run science magazine, science journalism DC, STEM stories, research profiles, science interviews">
+    <meta name="author" content="The Catalyst Magazine">
+    <meta name="robots" content="noindex, follow">
+    <!-- Previous version, kept as a backup; not for search. -->
+    <meta name="theme-color" content="#0d5eaf">
+    <title>The Catalyst Magazine | STEM in Washington D.C.</title>
+    <link rel="canonical" href="https://www.catalyst-magazine.com/">
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="The Catalyst Magazine">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:url" content="https://www.catalyst-magazine.com/">
+    <meta property="og:title" content="The Catalyst Magazine | STEM in Washington D.C.">
+    <meta property="og:description" content="Explore Catalyst Magazine, a student-run hub for STEM enthusiasts, blending science, engineering, and art to inspire creativity and innovation.">
+    <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="The Catalyst Magazine logo">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://www.catalyst-magazine.com/">
+    <meta name="twitter:title" content="The Catalyst Magazine | STEM in Washington D.C.">
+    <meta name="twitter:description" content="Explore Catalyst Magazine, a student-run hub for STEM enthusiasts, blending science, engineering, and art to inspire creativity and innovation.">
+    <meta name="twitter:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+    <meta name="twitter:image:alt" content="The Catalyst Magazine logo">
+    <!-- Preconnect to external resources for faster loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://wsrv.nl" crossorigin>
+    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+
+
+    <!-- Preload critical images for instant display (viewport-aware to avoid double download) -->
+    <link rel="preload" as="image" href="WebLogo.png" media="(min-width: 769px)" fetchpriority="high">
+    <link rel="preload" as="image" href="NewLogoShape.png" media="(max-width: 768px)" fetchpriority="high">
+
+    <!-- DNS prefetch for external image sources -->
+
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"></noscript>
+    <link rel="preload" href="css/styles.css?v=20260925-review" as="style">
+    <link rel="stylesheet" href="css/styles.css?v=20260925-review">
+
+    <!-- DC skyline background (Capitol + Washington Monument) — preload for instant paint -->
+    <link rel="preload" as="image" href="dc-skyline.webp" type="image/webp" fetchpriority="low">
+    <style>
+      /* Replace the default Capitol SVG + clip-path obelisk with a single
+         full-width watercolor skyline that ships as one tiny WebP (~57 KB). */
+      body[data-page="home"] .dc-silhouette { display: none !important; }
+      body[data-page="home"] .dc-capitol {
+        /* Override existing .dc-capitol so the new image fills the bottom band */
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -6vw;
+        width: 100%;
+        max-width: none;
+        aspect-ratio: 1672 / 941;
+        height: auto;
+        background: url('dc-skyline.webp') no-repeat center bottom;
+        background-size: contain;
+        opacity: 0.55;
+        filter: none;
+        mix-blend-mode: multiply;
+        will-change: auto;
+        transform: translateZ(0);
+        contain: layout paint;
+        pointer-events: none;
+      }
+
+      /* ---------- "Recent Stories" eyebrow above the cards ----------
+         Switched from flex to grid (1fr auto 1fr) so both side lines are
+         guaranteed to paint symmetrically on the very first frame. The
+         old flex-based layout intermittently dropped the left line on
+         desktop until a scroll-induced repaint kicked in. */
+      body[data-page="home"] .hero-featured-wrap {
+        display: block;
+      }
+      body[data-page="home"] .hero-featured-eyebrow {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 14px;
+        margin: 0 auto 22px;
+        max-width: 360px;
+        width: 100%;
+        opacity: 1;
+      }
+      @media (min-width: 769px) {
+        body[data-page="home"] .hero-featured-eyebrow {
+          margin: 64px auto 26px;
+        }
+      }
+      body[data-page="home"] .hero-featured-eyebrow-line {
+        display: block;
+        width: 100%;
+        height: 1px;
+        /* Stronger, more visible line. Old gradient faded to transparent
+           at both ends which made the lines look truncated/missing on a
+           busy hero background. New version stays opaque across the full
+           track so symmetry is unmistakable. */
+        background: #94a3b8;
+        opacity: 0.7;
+      }
+      /* Belt-and-suspenders: the LEFT line specifically gets justify-self
+         end so it always hugs the text, eliminating any chance of the
+         track collapsing on first paint. The RIGHT line gets justify-self
+         start. Together with grid 1fr auto 1fr they're guaranteed
+         symmetric. */
+      body[data-page="home"] .hero-featured-eyebrow-line:first-child {
+        justify-self: stretch;
+      }
+      body[data-page="home"] .hero-featured-eyebrow-line:last-child {
+        justify-self: stretch;
+      }
+      body[data-page="home"] .hero-featured-eyebrow-text {
+        font: 600 11px/1 'Poppins', system-ui, sans-serif;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #475569;
+        white-space: nowrap;
+      }
+
+      /* ---------- Cinematic hero exit (all breakpoints) ---------- */
+      /* Two different exits, both driven by --p (scroll progress 0→1):
+           Desktop: 3D carousel takeover — the article cards LIFT UP from
+                    below the fold, translate FORWARD in Z toward the
+                    viewer, and pass IN FRONT of the hero copy. The hero
+                    copy simultaneously recedes BACKWARD into the page
+                    (Z-translate, scale down, blur, fade) so the cards
+                    feel like they're physically stepping over the title
+                    in 3D space. The user reads it as: cards "come out"
+                    of the page and take over.
+           Mobile:  hero zooms forward through the camera (more aggressive,
+                    reads better on small screens).
+         Both are GPU-only (transform / opacity / filter), rAF-throttled. */
+      body[data-page="home"] .hero {
+        perspective: 1600px;
+        perspective-origin: 50% 35%;
+        position: relative;
+      }
+
+      /* ---------- Tighten the gap between the hero and the next
+         section. The hero was min-height: 95vh + flex-centered, which
+         left a lot of empty air below the cards before the next
+         section began. We let the hero size to its content (with a
+         comfortable floor) and trim the bottom padding so "Featured
+         Stories" sits closer to the cards without crowding them.
+         align-items: flex-start prevents the cards from drifting up
+         to vertical center when the hero auto-sizes. */
+      @media (min-width: 769px) {
+        body[data-page="home"] .hero {
+          min-height: 0;
+          padding-bottom: 32px;
+          align-items: flex-start;
+        }
+        body[data-page="home"] .hero-container {
+          width: 100%;
+        }
+      }
+
+      /* ---- Desktop: 3D carousel takeover (calibrated, not aggressive) ----
+         As you scroll, article cards lift up + come forward in Z,
+         passing in front of the hero copy as it recedes and softens.
+         Tuned to read as cinematic depth, not a gimmick — numbers
+         pulled back from the prior over-aggressive pass. */
+      @media (min-width: 769px) {
+        body[data-page="home"] .hero-content {
+          will-change: transform, opacity, filter;
+          transform-origin: 50% 40%;
+          /* push hero AWAY + scale down + blur + fade — enough to
+             clearly read as receding, not so much it disappears. */
+          transform:
+            translate3d(0, calc(var(--p, 0) * -22px), calc(var(--p, 0) * -260px))
+            scale(calc(1 - var(--p, 0) * 0.18));
+          opacity: calc(1 - var(--p, 0) * 1.4);
+          filter: blur(calc(var(--p, 0) * 8px));
+        }
+        body[data-page="home"] .hero-title {
+          will-change: transform;
+          transform: translate3d(0, calc(var(--p, 0) * -10px), 0);
+        }
+        body[data-page="home"] .hero-description {
+          will-change: transform, opacity;
+          transform: translate3d(0, calc(var(--p, 0) * 14px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.6);
+        }
+        body[data-page="home"] .hero-actions {
+          will-change: transform, opacity;
+          transform: translate3d(0, calc(var(--p, 0) * 24px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.9);
+        }
+
+        /* Cards lift up + forward — moderate, not extreme.
+             • Y: -200px lifts them into the lower hero band but not
+               so far they fly off-screen.
+             • Z: +180px brings them clearly forward of the receding
+               hero (440px Z-gap, plenty for depth read).
+             • scale 1 → 1.05 keeps the forward motion subtle. */
+        body[data-page="home"] .hero-featured-wrap {
+          will-change: transform;
+          transform-origin: 50% 50%;
+          transform:
+            translate3d(0, calc(var(--p, 0) * -200px), calc(var(--p, 0) * 180px))
+            scale(calc(1 + var(--p, 0) * 0.05));
+          position: relative;
+          z-index: 5;
+        }
+
+        /* Subtle bottom-pivoted rotateX so the lift reads as a
+           gentle carousel arc, not a flat slide. */
+        body[data-page="home"] .hero-featured {
+          transform: rotateX(calc(var(--p, 0) * -2.5deg));
+          transform-origin: 50% 100%;
+        }
+
+        /* Skyline drifts up + softens for depth */
+        body[data-page="home"] .dc-capitol {
+          transform: translate3d(0, calc(var(--p, 0) * -32px), 0);
+          opacity: calc(0.55 - var(--p, 0) * 0.3);
+        }
+      }
+
+      /* ---- Mobile: hero zooms forward (unchanged punchy exit) ---- */
+      @media (max-width: 768px) {
+        body[data-page="home"] .hero-content {
+          will-change: transform, opacity, filter;
+          transform-origin: 50% 35%;
+          transform:
+            translate3d(0, calc(var(--p, 0) * -36px), calc(var(--p, 0) * 220px))
+            scale(calc(1 + var(--p, 0) * 0.42))
+            rotateX(calc(var(--p, 0) * -8deg));
+          opacity: calc(1 - var(--p, 0) * 1.55);
+          filter: blur(calc(var(--p, 0) * 14px));
+        }
+        body[data-page="home"] .hero-title {
+          will-change: transform;
+          transform: translate3d(0, calc(var(--p, 0) * -12px), 0)
+                     scale(calc(1 + var(--p, 0) * 0.06));
+        }
+        body[data-page="home"] .hero-description {
+          will-change: transform, opacity;
+          transform: translate3d(0, calc(var(--p, 0) * 18px), 0);
+          opacity: calc(1 - var(--p, 0) * 1.8);
+        }
+        body[data-page="home"] .hero-actions {
+          will-change: transform, opacity;
+          transform: translate3d(0, calc(var(--p, 0) * 32px), 0);
+          opacity: calc(1 - var(--p, 0) * 2.2);
+        }
+        body[data-page="home"] .dc-capitol {
+          transform: translate3d(0, calc(var(--p, 0) * -42px), 0)
+                     scale(calc(1 + var(--p, 0) * 0.05));
+          opacity: calc(0.7 - var(--p, 0) * 0.45);
+        }
+      }
+
+      /* Once the hero copy is mostly faded (--p ~> 0.85), lock it out of
+         pointer events so it can't intercept clicks on the article cards
+         that have lifted forward in 3D. We previously gated this on
+         .cards-revealed, but that flipped the moment the cards' edge
+         entered the viewport — while the hero CTAs ("Read Latest Stories",
+         "Our Mission") were still ~visible and looked clickable. Users
+         saw an apparently-live button stop responding mid-scroll.
+         The .hero-content-faded class is added by the scroll-progress
+         driver below once --p >= 0.85; until then, buttons stay alive. */
+      body[data-page="home"].hero-content-faded .hero-content {
+        pointer-events: none;
+      }
+
+      /* ---------- Mobile hero layout ---------- */
+      /* The hero owns the first viewport: text + buttons + watercolor skyline.
+         The article card is pushed below the fold and animates in as it
+         enters view. A tappable chevron invites the user to scroll. */
+      @media (max-width: 768px) {
+        body[data-page="home"] .hero {
+          min-height: 100dvh;
+          padding-top: 110px;
+          padding-bottom: 96px; /* breathing room for the scroll chevron */
+        }
+
+        /* Skyline anchored to the bottom of the hero */
+        body[data-page="home"] .dc-capitol {
+          aspect-ratio: auto;
+          height: 38vh;
+          max-height: 340px;
+          bottom: 0;
+          background-position: center bottom;
+          background-size: 100% auto;
+          -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 35%, #000 100%);
+                  mask-image: linear-gradient(180deg, transparent 0%, #000 35%, #000 100%);
+        }
+
+        /* Push the article block below the fold so the hero owns screen 1 */
+        body[data-page="home"] .hero-featured-wrap { margin-top: 18vh; }
+        body[data-page="home"] .hero-featured {
+          margin-top: 0;
+          /* hidden state — JS toggles .is-revealed when it enters view */
+          opacity: 0;
+          transform: translate3d(0, 36px, 0);
+          transition: opacity 700ms cubic-bezier(.22,.61,.36,1),
+                      transform 700ms cubic-bezier(.22,.61,.36,1);
+          will-change: transform, opacity;
+        }
+        body[data-page="home"] .hero-featured.is-revealed {
+          opacity: 1;
+          transform: translate3d(0, 0, 0);
+        }
+
+        /* Tappable scroll chevron */
+        body[data-page="home"] .scroll-cue {
+          position: absolute;
+          left: 50%;
+          bottom: 22px;
+          transform: translateX(-50%);
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 4px;
+          color: #475569;
+          font: 500 11px/1 'Poppins', system-ui, sans-serif;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          text-decoration: none;
+          opacity: 0.85;
+          transition: opacity 280ms ease, transform 280ms ease;
+          z-index: 2;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+        }
+        body[data-page="home"] .scroll-cue:focus-visible {
+          outline: 2px solid #0f172a;
+          outline-offset: 6px;
+          border-radius: 12px;
+        }
+        body[data-page="home"] .scroll-cue::after {
+          content: '';
+          width: 14px;
+          height: 14px;
+          border-right: 1.5px solid currentColor;
+          border-bottom: 1.5px solid currentColor;
+          transform: rotate(45deg);
+          animation: scrollCueBob 1.6s ease-in-out infinite;
+        }
+        /* Fade the cue out as the user scrolls past it */
+        body[data-page="home"].is-scrolled .scroll-cue {
+          opacity: 0;
+          transform: translateX(-50%) translateY(8px);
+          pointer-events: none;
+        }
+
+        @keyframes scrollCueBob {
+          0%, 100% { transform: rotate(45deg) translate(0, 0); }
+          50%      { transform: rotate(45deg) translate(3px, 3px); }
+        }
+      }
+
+      /* Small phones: trim skyline + card spacing */
+      @media (max-width: 480px) {
+        body[data-page="home"] .dc-capitol {
+          height: 32vh;
+          opacity: 0.65;
+        }
+        body[data-page="home"] .hero-featured-wrap { margin-top: 14vh; }
+      }
+
+      /* Hide the cue on desktop */
+      @media (min-width: 769px) {
+        body[data-page="home"] .scroll-cue { display: none; }
+      }
+
+      /* Reduced motion: skip animations + filters entirely */
+      @media (prefers-reduced-motion: reduce) {
+        body[data-page="home"] .hero-featured,
+        body[data-page="home"] .hero-featured-wrap,
+        body[data-page="home"] .hero-content,
+        body[data-page="home"] .hero-title,
+        body[data-page="home"] .hero-description,
+        body[data-page="home"] .hero-actions,
+        body[data-page="home"] .dc-capitol {
+          transform: none !important;
+          opacity: 1 !important;
+          filter: none !important;
+          transition: none !important;
+        }
+        body[data-page="home"] .scroll-cue::after { animation: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        body[data-page="home"] .dc-capitol { will-change: auto; }
+      }
+
+      /* ═══════════════════════════════════════════════════════════════
+         EDITORIAL PREMIUM OVERRIDES (index_copy.html only)
+         Aesthetic-only: typography, eyebrows, accents, copy detail.
+         No structural changes — keeps all 3D scroll choreography intact.
+         ═══════════════════════════════════════════════════════════════ */
+      body[data-page="home"] {
+        --serif: 'Source Serif Pro', 'Georgia', 'Times New Roman', serif;
+        --ease-emph: cubic-bezier(0.2, 0, 0, 1);
+        --ink: #0b1220;
+        --ink-2: #1f2937;
+        --muted: #4b5563;
+        --muted-light: #6b7280;
+        --hair: rgba(15, 23, 42, 0.13);
+      }
+
+      /* ───── Hero title ───── */
+      body[data-page="home"] .hero-title {
+        font-weight: 700;
+        letter-spacing: -0.045em;
+        line-height: 0.98;
+        font-size: clamp(2.8rem, 6.4vw, 5.6rem);
+        gap: 0.22em 0.28em;
+        align-items: baseline;
+      }
+      /* Strip the gradient + glow on "Capital" — replace with elegant italic serif */
+      body[data-page="home"] .hero-title .highlight {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        color: var(--ink);
+        background: none;
+        -webkit-text-fill-color: currentColor;
+        position: relative;
+        padding-bottom: 0.06em;
+        /* Preserve the dramatic-entry, but kill the shimmerGlow that was
+           designed for the gradient text fill (would just brighten flat ink). */
+        animation: dramaticEntry 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s forwards;
+        filter: none !important;
+      }
+      body[data-page="home"] .hero-title .highlight::after {
+        content: '';
+        position: absolute;
+        /* Explicitly reset all four edges so the global `inset: -4px`
+           cascade doesn't push us into a 4px-tall glow halo. */
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: -0.12em !important;
+        height: 4px !important;
+        background: var(--ink) !important;
+        border-radius: 2px !important;
+        transform: scaleX(0);
+        transform-origin: left center;
+        animation: heroDrawLine 1.1s var(--ease-emph) 1.6s forwards;
+        opacity: 0.88;
+        z-index: 1 !important;
+        filter: none !important;
+        inset: auto 0 -0.12em 0 !important;
+      }
+      @keyframes heroDrawLine {
+        from { transform: scaleX(0); }
+        to   { transform: scaleX(1); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        body[data-page="home"] .hero-title .highlight::after {
+          animation: none;
+          transform: scaleX(1);
+        }
+      }
+
+      /* ───── Hero description ───── */
+      body[data-page="home"] .hero-description {
+        font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+        line-height: 1.6;
+        max-width: 62ch;
+        color: var(--muted);
+        font-weight: 400;
+        letter-spacing: -0.005em;
+        margin-bottom: 44px;
+      }
+
+      /* ───── Hero CTAs — refined button system ───── */
+      body[data-page="home"] .hero-actions .btn {
+        position: relative;
+        overflow: hidden;
+        padding: 16px 28px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
+        transition: transform 0.25s var(--ease-emph), box-shadow 0.25s var(--ease-emph);
+      }
+      body[data-page="home"] .hero-actions .btn svg {
+        transition: transform 0.3s var(--ease-emph);
+      }
+      body[data-page="home"] .hero-actions .btn:hover svg {
+        transform: translateX(4px);
+      }
+      body[data-page="home"] .hero-actions .btn-primary {
+        background: var(--ink);
+        box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.45), 0 2px 4px rgba(15, 23, 42, 0.08);
+        border: none;
+      }
+      body[data-page="home"] .hero-actions .btn-primary:hover {
+        background: #1e293b;
+        box-shadow: 0 16px 36px -12px rgba(15, 23, 42, 0.55), 0 4px 8px rgba(15, 23, 42, 0.12);
+      }
+      body[data-page="home"] .hero-actions .btn-primary::after,
+      body[data-page="home"] .hero-actions .btn-secondary::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+        transform: translateX(-110%);
+        transition: transform 0.7s var(--ease-emph);
+        pointer-events: none;
+      }
+      body[data-page="home"] .hero-actions .btn-primary:hover::after,
+      body[data-page="home"] .hero-actions .btn-secondary:hover::after {
+        transform: translateX(110%);
+      }
+
+      /* ───── Section eyebrows — masthead labels, no pills ───── */
+      body[data-page="home"] .eyebrow {
+        background: none;
+        border: none;
+        padding: 0;
+        border-radius: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 18px;
+      }
+      body[data-page="home"] .eyebrow::before {
+        content: '';
+        width: 28px;
+        height: 1px;
+        background: var(--ink);
+        display: inline-block;
+      }
+
+      /* Section header — left-align the eyebrow that the rest of the site centers */
+      body[data-page="home"] .section-header {
+        text-align: center;
+      }
+      body[data-page="home"] .section-header .eyebrow {
+        justify-content: center;
+      }
+
+      /* ───── Section titles — italic serif accents on last word ───── */
+      body[data-page="home"] .section-title {
+        font-weight: 700;
+        letter-spacing: -0.035em;
+        line-height: 1.04;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+      }
+      body[data-page="home"] .section-title em {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+      }
+
+      body[data-page="home"] .section-subtitle {
+        font-size: 1.04rem;
+        line-height: 1.6;
+        color: var(--muted);
+        letter-spacing: -0.005em;
+        max-width: 58ch;
+      }
+
+      /* ───── "Recent Stories" inline eyebrow already has masthead vibe;
+         tighten the typography only ───── */
+      body[data-page="home"] .hero-featured-eyebrow-text {
+        font-family: 'Poppins', system-ui, sans-serif;
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.26em;
+        color: var(--muted);
+      }
+      body[data-page="home"] .hero-featured-eyebrow-line {
+        background: var(--hair);
+        opacity: 1;
+      }
+
+      /* ───── Brain Teaser section — editorial polish ───── */
+      body[data-page="home"] .brain-teaser-section .brain-teaser-card {
+        border-radius: 24px;
+      }
+      body[data-page="home"] .brain-teaser-card > p:first-child {
+        /* "New Puzzle · Issue No. 02" — match masthead style; was indigo */
+        color: var(--muted) !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.22em !important;
+        font-size: 0.65rem !important;
+      }
+      body[data-page="home"] .brain-teaser-question {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+      body[data-page="home"] .brain-teaser-question em.brain-teaser-serif {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 600;
+        letter-spacing: -0.012em;
+      }
+      /* The riddle verse box — re-tone the indigo "What am I?" + bold answer-words */
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] {
+        border-color: var(--hair) !important;
+        background: #fafaf6 !important;
+        border-radius: 16px !important;
+      }
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] p:first-of-type {
+        font-family: var(--serif) !important;
+        font-style: italic !important;
+        font-weight: 400 !important;
+        font-size: 1.12rem !important;
+        line-height: 1.85 !important;
+        color: var(--ink-2) !important;
+        letter-spacing: 0 !important;
+      }
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] p:first-of-type em {
+        font-family: var(--serif) !important;
+        font-style: italic !important;
+        font-weight: 600 !important;
+        color: var(--ink) !important;
+        background: linear-gradient(transparent 68%, rgba(15,23,42,0.1) 68%, rgba(15,23,42,0.1) 90%, transparent 90%);
+        padding: 0 2px;
+      }
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] p:last-of-type {
+        color: var(--muted) !important;
+        letter-spacing: 0.28em !important;
+        font-size: 0.65rem !important;
+      }
+      body[data-page="home"] .brain-teaser-card hr {
+        background: var(--hair) !important;
+      }
+      body[data-page="home"] .brain-teaser-card div[style*="border: 1px solid"] > div[aria-hidden] {
+        background: linear-gradient(90deg, transparent, var(--hair), transparent) !important;
+      }
+      body[data-page="home"] .brain-teaser-reveal {
+        background: var(--ink) !important;
+        border: none !important;
+        box-shadow: 0 8px 24px -8px rgba(15, 23, 42, 0.45) !important;
+      }
+      body[data-page="home"] .brain-teaser-reveal:hover {
+        background: #1e293b !important;
+      }
+
+      /* ───── Newsletter — editorial title accent ───── */
+      body[data-page="home"] .newsletter-title em {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 600;
+        letter-spacing: -0.012em;
+      }
+
+      /* ───── Category cards — softer arrow motion ───── */
+      body[data-page="home"] .category-card {
+        transition: transform 0.4s var(--ease-emph), box-shadow 0.4s var(--ease-emph);
+      }
+      body[data-page="home"] .category-card h3 em {
+        font-family: var(--serif);
+        font-style: italic;
+        font-weight: 600;
+      }
+      body[data-page="home"] .category-arrow {
+        transition: transform 0.3s var(--ease-emph);
+      }
+      body[data-page="home"] .category-card:hover .category-arrow {
+        transform: translate(4px, -4px);
+      }
+
+      /* ───── Category-filter pills — quieter, more editorial ───── */
+      body[data-page="home"] .category-filters .filter-btn {
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+
+      /* ───── Search box — softer focus ───── */
+      body[data-page="home"] .search-box {
+        transition: border-color 0.25s var(--ease-emph), box-shadow 0.25s var(--ease-emph);
+      }
+      body[data-page="home"] .search-box:focus-within {
+        border-color: var(--ink) !important;
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.08) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         BACKGROUND — kill the floating colored blobs, KEEP the D.C.
+         skyline (Capitol + Washington Monument watercolor). Set warm
+         paper tone underneath.
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] {
+        background: #faf8f4 !important;
+      }
+      /* Hide ONLY the 4 abstract gradient blobs — the .dc-capitol
+         skyline lives in the same .bg-blobs container and must stay. */
+      body[data-page="home"] .blob {
+        display: none !important;
+      }
+      body[data-page="home"] .bg-blobs::after {
+        display: none !important;
+      }
+
+      /* Subtle editorial paper-grain layered BEHIND the skyline
+         (z-index: -2 vs the global .bg-blobs at -1) */
+      body[data-page="home"]::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: -2;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse at 15% 12%, rgba(15,23,42,0.04) 0%, transparent 45%),
+          radial-gradient(ellipse at 85% 88%, rgba(15,23,42,0.03) 0%, transparent 40%);
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         FEATURED CARDS (hero 3-up grid) — strip glassmorphism
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .featured-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 18px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 16px 36px -22px rgba(15, 23, 42, 0.18) !important;
+        transition: transform 0.4s var(--ease-emph), box-shadow 0.4s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .featured-card:hover {
+        transform: translateY(-4px) !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 28px 48px -24px rgba(15, 23, 42, 0.3) !important;
+        background: #ffffff !important;
+        border-color: rgba(15, 23, 42, 0.18) !important;
+      }
+      body[data-page="home"] .featured-card-image-wrapper {
+        height: 220px !important;
+      }
+      body[data-page="home"] .featured-card-image-wrapper .card-img {
+        filter: saturate(1) !important;
+        transition: transform 0.6s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .featured-card:hover .featured-card-image-wrapper .card-img {
+        filter: saturate(1.05) brightness(1.02) !important;
+        transform: scale(1.04) !important;
+      }
+      body[data-page="home"] .featured-card-overlay {
+        padding: 22px 22px 22px !important;
+        gap: 10px !important;
+      }
+      body[data-page="home"] .featured-card-category {
+        background: none !important;
+        color: var(--muted) !important;
+        padding: 0 !important;
+        font-size: 0.66rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.22em !important;
+        text-transform: uppercase !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+      }
+      body[data-page="home"] .featured-card-category::before {
+        content: '';
+        width: 18px;
+        height: 1px;
+        background: var(--ink);
+      }
+      body[data-page="home"] .featured-card-title {
+        font-size: 1.15rem !important;
+        font-weight: 700 !important;
+        line-height: 1.28 !important;
+        letter-spacing: -0.022em !important;
+        color: var(--ink) !important;
+      }
+      body[data-page="home"] .featured-card-meta {
+        font-size: 0.78rem !important;
+        font-weight: 500 !important;
+        color: var(--muted) !important;
+        letter-spacing: 0.01em !important;
+        border-top: 1px solid var(--hair) !important;
+        padding-top: 12px !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         ARTICLE CARDS — clean editorial chrome
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .article-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 16px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 12px 28px -18px rgba(15, 23, 42, 0.16) !important;
+        transition: transform 0.4s var(--ease-emph), box-shadow 0.4s var(--ease-emph), border-color 0.4s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .article-card:hover {
+        transform: translateY(-4px) !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 24px 40px -20px rgba(15, 23, 42, 0.28) !important;
+        background: #ffffff !important;
+        border-color: rgba(15, 23, 42, 0.18) !important;
+      }
+      body[data-page="home"] .article-card:hover .article-image img,
+      body[data-page="home"] .article-card:hover .article-image .card-img.loaded {
+        transform: scale(1.05) !important;
+        filter: saturate(1.04) brightness(1.02) !important;
+      }
+      body[data-page="home"] .article-image {
+        height: 220px !important;
+      }
+      body[data-page="home"] .article-content {
+        padding: 22px 22px 22px !important;
+      }
+      body[data-page="home"] .article-title {
+        font-size: 1.15rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.022em !important;
+        line-height: 1.28 !important;
+        color: var(--ink) !important;
+      }
+      body[data-page="home"] .article-excerpt {
+        font-size: 0.9rem !important;
+        line-height: 1.55 !important;
+        color: var(--muted) !important;
+        margin-top: 8px !important;
+      }
+      body[data-page="home"] .article-meta {
+        margin-top: 16px !important;
+        padding-top: 14px !important;
+        border-top: 1px solid var(--hair) !important;
+        font-size: 0.78rem !important;
+        color: var(--muted) !important;
+        letter-spacing: 0.01em !important;
+      }
+      body[data-page="home"] .article-author {
+        color: var(--ink) !important;
+        font-weight: 600 !important;
+      }
+      body[data-page="home"] .reading-time {
+        color: var(--muted-light) !important;
+      }
+      /* Category badge on article cards — flat slate chip */
+      body[data-page="home"] .article-category {
+        background: rgba(15, 23, 42, 0.92) !important;
+        color: #fff !important;
+        padding: 6px 12px !important;
+        font-size: 0.62rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.16em !important;
+        border-radius: 100px !important;
+        box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.4) !important;
+        top: 14px !important;
+        left: 14px !important;
+      }
+      body[data-page="home"] .article-category.feature,
+      body[data-page="home"] .article-category.profile,
+      body[data-page="home"] .article-category.interview,
+      body[data-page="home"] .article-category.op-ed,
+      body[data-page="home"] .article-category.editorial {
+        background: rgba(15, 23, 42, 0.92) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         FEATURED-STORY-CARD — same editorial treatment
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .featured-story-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 16px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 12px 28px -18px rgba(15, 23, 42, 0.16) !important;
+      }
+      body[data-page="home"] .featured-story-card:hover {
+        transform: translateY(-4px) !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 24px 40px -20px rgba(15, 23, 42, 0.28) !important;
+        border-color: rgba(15, 23, 42, 0.18) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         CATEGORY-CARDS — editorial paper cards, no glass
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .category-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 20px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 18px 36px -22px rgba(15, 23, 42, 0.18) !important;
+        padding: 32px 32px 28px !important;
+        transition: transform 0.4s var(--ease-emph), box-shadow 0.4s var(--ease-emph), border-color 0.4s var(--ease-emph) !important;
+        gap: 0 !important;
+      }
+      body[data-page="home"] .category-card:hover {
+        transform: translateY(-4px) !important;
+        background: #ffffff !important;
+        border-color: rgba(15, 23, 42, 0.22) !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 28px 48px -24px rgba(15, 23, 42, 0.3) !important;
+      }
+      body[data-page="home"] .category-card::before {
+        display: none !important;
+      }
+      body[data-page="home"] .category-card::after {
+        display: none !important;
+      }
+      body[data-page="home"] .category-card h3 {
+        font-size: 1.6rem !important;
+        font-weight: 600 !important;
+        color: var(--ink) !important;
+        letter-spacing: -0.025em !important;
+        margin-bottom: 12px !important;
+        padding-top: 8px !important;
+      }
+      body[data-page="home"] .category-card p {
+        color: var(--muted) !important;
+        font-size: 0.93rem !important;
+        line-height: 1.6 !important;
+        margin: 0 !important;
+        flex: 1;
+        padding-bottom: 24px;
+      }
+      body[data-page="home"] .category-arrow {
+        align-self: flex-end !important;
+        width: 36px !important;
+        height: 36px !important;
+        background: rgba(15, 23, 42, 0.05) !important;
+        color: var(--ink) !important;
+        border: 1px solid var(--hair) !important;
+        transition: transform 0.3s var(--ease-emph), background 0.3s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .category-card:hover .category-arrow {
+        background: var(--ink) !important;
+        color: #fff !important;
+        transform: translate(4px, -4px) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         CATEGORY FILTERS — editorial tab bar, hairline-anchored
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .category-filters {
+        display: flex !important;
+        align-items: stretch !important;
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+        gap: 0 !important;
+        padding: 0 !important;
+        border-top: 1px solid var(--hair) !important;
+        border-bottom: 1px solid var(--hair) !important;
+        max-width: 720px !important;
+        margin: 0 auto 40px !important;
+      }
+      body[data-page="home"] .filter-btn {
+        background: transparent !important;
+        border: none !important;
+        color: var(--muted) !important;
+        padding: 18px 28px !important;
+        font-size: 0.74rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.18em !important;
+        text-transform: uppercase !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        position: relative !important;
+        transition: color 0.25s var(--ease-emph) !important;
+        text-decoration: none !important;
+      }
+      body[data-page="home"] .filter-btn + .filter-btn {
+        border-left: 1px solid var(--hair) !important;
+      }
+      body[data-page="home"] .filter-btn::after {
+        content: '' !important;
+        position: absolute !important;
+        left: 50% !important;
+        bottom: -1px !important;
+        transform: translateX(-50%) scaleX(0) !important;
+        transform-origin: center !important;
+        width: 32px !important;
+        height: 2px !important;
+        background: var(--ink) !important;
+        transition: transform 0.3s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .filter-btn:hover {
+        color: var(--ink) !important;
+        background: transparent !important;
+        transform: none !important;
+      }
+      body[data-page="home"] .filter-btn:hover::after {
+        transform: translateX(-50%) scaleX(0.6) !important;
+        opacity: 0.4 !important;
+      }
+      body[data-page="home"] .filter-btn.active {
+        color: var(--ink) !important;
+        background: transparent !important;
+      }
+      body[data-page="home"] .filter-btn.active::after {
+        transform: translateX(-50%) scaleX(1) !important;
+        opacity: 1 !important;
+      }
+      @media (max-width: 640px) {
+        /* Three equal columns so the bar never wraps a tab onto a second row. */
+        body[data-page="home"] .category-filters {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        }
+        body[data-page="home"] .filter-btn {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          min-height: 48px !important;
+          padding: 12px 6px !important;
+          font-size: 0.66rem !important;
+          letter-spacing: 0.1em !important;
+          line-height: 1.35 !important;
+          text-align: center !important;
+          white-space: normal !important;
+        }
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         SEARCH BOX — flat paper input with hairline
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .search-box {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 8px 24px -18px rgba(15, 23, 42, 0.18) !important;
+      }
+      body[data-page="home"] .search-box:focus-within {
+        border-color: var(--ink) !important;
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+      }
+      body[data-page="home"] .search-input {
+        font-size: 0.97rem !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         NEWSLETTER — light editorial dispatch, paper-on-paper
+         Kills all the global gradients, animations, rotating overlay.
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .newsletter {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 28px !important;
+        padding: 0 !important;
+        text-align: left !important;
+        overflow: hidden !important;
+        position: relative !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 30px 60px -32px rgba(15, 23, 42, 0.22) !important;
+      }
+      /* Kill the rotating gradient + radial-light overlays from the global */
+      body[data-page="home"] .newsletter::before,
+      body[data-page="home"] .newsletter::after {
+        content: none !important;
+        display: none !important;
+        animation: none !important;
+        background: none !important;
+      }
+      body[data-page="home"] .newsletter-content {
+        position: relative !important;
+        z-index: 1 !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) !important;
+        gap: 64px !important;
+        align-items: center !important;
+        padding: 72px 64px !important;
+        text-align: left !important;
+      }
+      body[data-page="home"] .newsletter-text {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      body[data-page="home"] .newsletter-eyebrow {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        font-family: 'Poppins', system-ui, sans-serif !important;
+        font-size: 0.66rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.24em !important;
+        text-transform: uppercase !important;
+        color: var(--muted) !important;
+        margin: 0 0 24px !important;
+      }
+      body[data-page="home"] .newsletter-eyebrow::before {
+        content: '' !important;
+        width: 28px !important;
+        height: 1px !important;
+        background: var(--ink) !important;
+        display: inline-block !important;
+      }
+      body[data-page="home"] .newsletter-title {
+        color: var(--ink) !important;
+        font-size: clamp(2rem, 3.4vw, 3rem) !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.038em !important;
+        line-height: 1.08 !important;
+        margin: 0 0 20px !important;
+        padding-bottom: 0.14em !important;
+        overflow: visible !important;
+      }
+      body[data-page="home"] .newsletter-title em {
+        display: inline-block !important;
+        padding-bottom: 0.04em !important;
+      }
+      body[data-page="home"] .newsletter-subtitle {
+        color: var(--muted) !important;
+        font-size: 1.04rem !important;
+        line-height: 1.6 !important;
+        max-width: 44ch !important;
+        margin: 0 0 28px !important;
+      }
+      body[data-page="home"] .newsletter-fineprint {
+        font-size: 0.76rem !important;
+        color: var(--muted-light) !important;
+        letter-spacing: 0.02em !important;
+        line-height: 1.55 !important;
+        margin: 0 !important;
+        padding-top: 22px !important;
+        border-top: 1px solid var(--hair) !important;
+        max-width: 44ch !important;
+      }
+      /* Form panel — subtle warm-paper inset card */
+      body[data-page="home"] .newsletter .newsletter-form-glass {
+        position: relative !important;
+        background: #faf8f4 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 20px !important;
+        padding: 28px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+      }
+      body[data-page="home"] .newsletter .newsletter-form-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px !important;
+      }
+      body[data-page="home"] .newsletter .form-input-glass {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        color: var(--ink) !important;
+        font-size: 0.95rem !important;
+        font-family: inherit !important;
+        padding: 14px 16px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        transition: border-color 0.25s var(--ease-emph), box-shadow 0.25s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .newsletter .form-input-glass::placeholder {
+        color: var(--muted-light) !important;
+      }
+      body[data-page="home"] .newsletter .form-input-glass:focus,
+      body[data-page="home"] .newsletter .form-input-glass:hover {
+        background: #ffffff !important;
+        border-color: var(--ink) !important;
+        outline: none !important;
+        box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08) !important;
+      }
+      body[data-page="home"] .newsletter .btn-glass {
+        background: var(--ink) !important;
+        color: #fff !important;
+        border: none !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: -0.005em !important;
+        padding: 16px 22px !important;
+        border-radius: 12px !important;
+        width: 100% !important;
+        justify-content: center !important;
+        box-shadow: 0 8px 24px -10px rgba(15, 23, 42, 0.45) !important;
+        margin-top: 6px !important;
+        position: relative !important;
+        overflow: hidden !important;
+        transition: transform 0.25s var(--ease-emph), background 0.25s var(--ease-emph), box-shadow 0.25s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .newsletter .btn-glass:hover {
+        background: #1e293b !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 14px 32px -10px rgba(15, 23, 42, 0.55) !important;
+      }
+      body[data-page="home"] .newsletter .btn-glass svg {
+        transition: transform 0.3s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .newsletter .btn-glass:hover svg {
+        transform: translateX(4px) !important;
+      }
+      @media (max-width: 880px) {
+        body[data-page="home"] .newsletter-content {
+          grid-template-columns: 1fr !important;
+          gap: 32px !important;
+          padding: 48px 36px !important;
+        }
+        body[data-page="home"] .newsletter-subtitle,
+        body[data-page="home"] .newsletter-fineprint {
+          max-width: 100% !important;
+        }
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         BRAIN TEASER CARD — paper card on warm bg
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .brain-teaser-card {
+        background: #ffffff !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1px solid var(--hair) !important;
+        border-radius: 24px !important;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.03),
+          0 24px 48px -28px rgba(15, 23, 42, 0.2) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         "VIEW ALL ARTICLES" CTA — quieter
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .load-more-container .btn-secondary {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: 1.5px solid var(--ink) !important;
+        color: var(--ink) !important;
+        font-weight: 600 !important;
+        padding: 16px 28px !important;
+        box-shadow: none !important;
+        transition: background 0.25s var(--ease-emph), color 0.25s var(--ease-emph) !important;
+      }
+      body[data-page="home"] .load-more-container .btn-secondary:hover {
+        background: var(--ink) !important;
+        color: #fff !important;
+        transform: translateY(-2px) !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         SECTION HEADER — left-anchor on desktop, editorial rhythm
+         ───────────────────────────────────────────────────────────── */
+      body[data-page="home"] .section-header {
+        max-width: 720px;
+        margin: 0 auto 56px !important;
+      }
+      body[data-page="home"] .section-title::after {
+        display: none !important;
+      }
+
+      /* ─────────────────────────────────────────────────────────────
+         RESPONSIVE
+         ───────────────────────────────────────────────────────────── */
+      @media (max-width: 640px) {
+        body[data-page="home"] .hero-title {
+          font-size: clamp(2.4rem, 11vw, 3.4rem);
+        }
+        body[data-page="home"] .hero-description {
+          font-size: 1rem;
+          line-height: 1.55;
+        }
+        body[data-page="home"] .newsletter {
+          border-radius: 22px !important;
+        }
+        body[data-page="home"] .newsletter-content {
+          padding: 40px 28px !important;
+        }
+        body[data-page="home"] .category-card {
+          padding: 28px 24px !important;
+        }
+        body[data-page="home"] .featured-card-overlay,
+        body[data-page="home"] .article-content {
+          padding: 18px !important;
+        }
+      }
+    </style>
+
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": ["Organization", "NewsMediaOrganization"],
+                "@id": "https://www.catalyst-magazine.com/#organization",
+                "name": "The Catalyst Magazine",
+                "alternateName": [
+                    "The Catalyst",
+                    "Catalyst Magazine",
+                    "Catalyst DC",
+                    "Catalyst Magazine DC",
+                    "The Catalyst DC"
+                ],
+                "description": "The Catalyst is a Washington, D.C.-based student-run STEM magazine publishing profiles, interviews, and features on science, research, and innovation.",
+                "url": "https://www.catalyst-magazine.com",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://www.catalyst-magazine.com/NewLogoShape.png",
+                    "width": 1200,
+                    "height": 630
+                },
+                "foundingLocation": "Washington, D.C.",
+                "areaServed": "US",
+                "sameAs": [
+                    "https://www.instagram.com/thecatalyst_dc/",
+                    "https://www.linkedin.com/company/the-catalyst-stem-magazine"
+                ],
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressLocality": "Washington",
+                    "addressRegion": "DC",
+                    "addressCountry": "US"
+                }
+            },
+            {
+                "@type": "WebSite",
+                "@id": "https://www.catalyst-magazine.com/#website",
+                "url": "https://www.catalyst-magazine.com",
+                "name": "The Catalyst Magazine",
+                "publisher": { "@id": "https://www.catalyst-magazine.com/#organization" },
+                "inLanguage": "en-US",
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "https://www.catalyst-magazine.com/articles?q={search_term_string}"
+                    },
+                    "query-input": "required name=search_term_string"
+                }
+            }
+        ]
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "The Catalyst Magazine",
+        "url": "https://www.catalyst-magazine.com",
+        "description": "STEM Stories That Spark Change - A student-run magazine exploring science, technology, engineering, and mathematics in Washington D.C.",
+        "publisher": {
+            "@type": "Organization",
+            "name": "The Catalyst Magazine"
+        },
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://www.catalyst-magazine.com/articles?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+</head>
+<body data-page="home">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
+    <!-- Animated Background Blobs -->
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+        <div class="dc-capitol"></div>
+        <div class="dc-silhouette"></div>
+    </div>
+
+    <div id="site-header"></div>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="container hero-container">
+                <div class="hero-content">
+                    <h1 class="hero-title">
+                        <span class="hero-word hero-word-1">STEM</span>
+                        <span class="hero-word hero-word-2">in</span>
+                        <span class="hero-word hero-word-3">the</span>
+                        <span class="hero-title-nowrap"><span class="hero-word hero-word-4">Nation's</span>
+                        <span class="hero-word hero-word-5 highlight">Capital</span></span>
+                    </h1>
+                    <p class="hero-description">
+                        Profiles, interviews, and features on the science shaping D.C. — reported, edited, and designed by the students at the front of the room.
+                    </p>
+                    <div class="hero-actions">
+                        <a href="/articles" class="btn btn-primary">
+                            Read Latest Stories
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a href="/about" class="btn btn-secondary">Our Mission</a>
+                    </div>
+                </div>
+
+                <!-- Featured Articles Grid -->
+                <div class="hero-featured-wrap">
+                    <div class="hero-featured-eyebrow" aria-hidden="true">
+                        <span class="hero-featured-eyebrow-line"></span>
+                        <span class="hero-featured-eyebrow-text">Recent Stories</span>
+                        <span class="hero-featured-eyebrow-line"></span>
+                    </div>
+                    <div class="hero-featured" id="hero-featured">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+            <!-- Mobile-only tappable scroll anchor (hidden on desktop via CSS) -->
+            <a class="scroll-cue" href="#hero-featured" aria-label="Scroll to latest articles">
+                <span>Scroll</span>
+            </a>
+        </section>
+
+        <!-- Recent Stories Grid -->
+        <section class="section" style="padding-top: 24px;">
+            <div class="container">
+                <div class="section-header">
+                    <span class="eyebrow">Featured Stories</span>
+                    <h2 class="section-title">Featured Stories from <em>The Catalyst.</em></h2>
+                    <p class="section-subtitle">Exploring groundbreaking research and the brilliant minds driving innovation in D.C. and beyond.</p>
+                </div>
+
+                <div class="featured-stories-grid" id="featured-stories-grid">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Section -->
+        <section class="section" style="padding-top: 40px; padding-bottom: 60px;">
+            <div class="container">
+                <div class="search-container">
+                    <div class="search-box">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="search-input" class="search-input" placeholder="Search articles by title, author, or topic…" aria-label="Search articles" autocomplete="off">
+                        <button type="button" id="search-clear" class="search-clear" aria-label="Clear search" style="display: none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="search-results-count" class="search-results-count" style="display: none;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Posts Section -->
+        <section class="section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="eyebrow">From the Archive</span>
+                    <h2 class="section-title">Browse <em>older stories.</em></h2>
+                    <p class="section-subtitle">Dig through profiles, features, and interviews from our contributors' back catalog.</p>
+                </div>
+
+                <!-- Category Pills -->
+                <div class="category-filters" style="margin-bottom: 24px;">
+                    <a href="/articles" class="filter-btn active">All Articles</a>
+                    <a href="/articles?category=editorial" class="filter-btn">Editorials</a>
+                    <a href="/brain-teaser" class="filter-btn">Brain Teaser</a>
+                </div>
+
+                <!-- Topic / tag pills — rendered by main.js from the tags on the
+                     loaded stories. Filters the grid below by subject. -->
+                <div class="topic-filters" id="home-topic-filters" role="group" aria-label="Filter stories by topic" hidden>
+                    <!-- Topic pills injected by JS -->
+                </div>
+
+                <!-- Articles Grid -->
+                <div class="articles-grid" id="home-articles-grid">
+                    <!-- Rendered by JS -->
+                </div>
+
+                <div class="load-more-container">
+                    <a href="/articles" class="btn btn-secondary">
+                        View All Articles
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Categories -->
+        <section class="section category-explore-section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="eyebrow">By Section</span>
+                    <h2 class="section-title">Explore by <em>category.</em></h2>
+                    <p class="section-subtitle">Discover stories that spark your curiosity.</p>
+                </div>
+
+                <div class="category-grid">
+                    <a href="/articles?category=feature" class="category-card category-features fade-in">
+                        <h3>Features</h3>
+                        <p>In-depth explorations of groundbreaking research and innovations shaping our world.</p>
+                        <div class="category-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="/articles?category=profile" class="category-card category-profiles fade-in">
+                        <h3>Profiles</h3>
+                        <p>Meet the scientists and innovators driving discoveries in the D.C. area and beyond.</p>
+                        <div class="category-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="/articles?category=interview" class="category-card category-interviews fade-in">
+                        <h3>Interviews</h3>
+                        <p>Candid conversations with leading experts sharing their journeys and insights.</p>
+                        <div class="category-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="/articles?category=editorial" class="category-card category-editorials fade-in">
+                        <h3>Editorials</h3>
+                        <p>Thoughtful perspectives and op-eds on pressing issues in science and society.</p>
+                        <div class="category-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Brain Teaser Section -->
+        <section class="section brain-teaser-section">
+            <div class="container">
+                <div class="section-header">
+                    <span class="eyebrow">Challenge Yourself</span>
+                    <h2 class="section-title">The Catalyst <em>Vault.</em></h2>
+                    <p class="section-subtitle">A new cipher every issue &mdash; four riddles, one code, one attempt. Only the sharpest minds will unlock the Winners' Lounge.</p>
+                </div>
+
+                <div class="brain-teaser-card" id="brain-teaser-card">
+                    <p style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #6366f1; margin-bottom: 20px;">New Puzzle &middot; Issue No. 04</p>
+                    <h3 class="brain-teaser-question">Can you <em class="brain-teaser-serif">crack</em> The Catalyst Vault?</h3>
+                    <p style="color: var(--text-muted); margin: 16px 0 32px; font-size: 0.97rem; line-height: 1.65;">
+                        Four riddles, each resolving to a single English word. The number of letters in that word is the dial's digit &mdash; and you get one attempt.
+                    </p>
+
+                    <!-- Cipher preview -->
+                    <div style="position: relative; max-width: 540px; margin: 0 auto 36px; padding: 28px 28px 24px; border: 1px solid #e5e7eb; border-radius: 14px; background: #fafaf9;">
+                        <div aria-hidden="true" style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 56%; height: 1px; background: linear-gradient(90deg, transparent, #c7c7cc, transparent);"></div>
+                        <p style="font-family: 'Poppins', sans-serif; font-weight: 500; font-size: 1.0rem; line-height: 1.95; color: #1d1d1f; margin: 0; letter-spacing: -0.005em; text-align: left;">
+                            <strong style="font-weight: 700; color: #6366f1;">01.</strong>&nbsp; my maker never needs me, my buyer never uses me, my user never <em style="font-style: normal; font-weight: 700; color: #0f172a;">knows</em> me<br>
+                            <strong style="font-weight: 700; color: #6366f1;">02.</strong>&nbsp; no mouth, yet I answer every call in your <em style="font-style: normal; font-weight: 700; color: #0f172a;">own</em> voice<br>
+                            <strong style="font-weight: 700; color: #6366f1;">03.</strong>&nbsp; name me <em style="font-style: normal; font-weight: 700; color: #0f172a;">aloud</em> and I am already broken<br>
+                            <strong style="font-weight: 700; color: #6366f1;">04.</strong>&nbsp; a bed I never sleep in, a mouth that never <em style="font-style: normal; font-weight: 700; color: #0f172a;">speaks</em>
+                        </p>
+                        <hr aria-hidden="true" style="width: 32px; height: 1px; background: #e5e7eb; border: 0; margin: 18px auto 14px;">
+                        <p style="font-family: 'Poppins', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: #6366f1; margin: 0; text-align: center;">Enter the 4-digit code</p>
+                    </div>
+
+                    <a href="brain-teaser" class="btn btn-primary brain-teaser-reveal" style="margin-bottom: 0;">
+                        Accept the Challenge
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Newsletter Section -->
+        <section class="section" id="newsletter-section">
+            <div class="container">
+                <div class="newsletter">
+                    <div class="newsletter-content">
+                        <div class="newsletter-text">
+                            <span class="newsletter-eyebrow">The Newsletter </span>
+                            <h3 class="newsletter-title">Join the <em>changemakers.</em></h3>
+                            <p class="newsletter-subtitle">A newsletter from D.C.'s student-run STEM desk — exclusive stories, profiles, and spotlights, straight to your inbox.</p>
+                            <p class="newsletter-fineprint">Read by students at GW, Georgetown, Howard, American &amp; UMD. No spam. Unsubscribe anytime.</p>
+                        </div>
+                        <form action="https://catalyst-magazine.us3.list-manage.com/subscribe/post?u=d76819924b4f0773791d6827b&amp;id=1ce6c96e6d" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="newsletter-form-glass" novalidate>
+                            <div class="newsletter-form-grid">
+                                <input type="text" name="FNAME" class="form-input-glass" placeholder="First name" required>
+                                <input type="text" name="LNAME" class="form-input-glass" placeholder="Last name" required>
+                            </div>
+                            <input type="email" name="EMAIL" class="form-input-glass" id="mce-EMAIL" placeholder="you@university.edu" required>
+
+                            <!-- Bot prevention -->
+                            <div aria-hidden="true" style="position: absolute; left: -5000px;">
+                                <input type="text" name="b_d76819924b4f0773791d6827b_1ce6c96e6d" tabindex="-1" value="">
+                            </div>
+
+                            <button type="submit" name="subscribe" class="btn btn-primary btn-glass">
+                                Subscribe to The Catalyst
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                            <div id="mce-response" class="newsletter-response"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="site-footer"></div>
+
+    <script defer src="js/layout.js?v=20260925-review"></script>
+    <script defer src="js/newsletter-handler.js"></script>
+    <script defer src="js/lqip-manifest.js"></script>
+    <script defer src="js/data.js?v=2"></script>
+    <script defer src="js/main.js?v=20260925-review"></script>
+    <script>
+      // Mobile hero behavior:
+      //   1. Drive --p (0 → 1 scroll progress) so the hero copy can zoom
+      //      into the page (scale + blur + fade) as the user scrolls.
+      //   2. Fade the chevron once scrolling starts.
+      //   3. Reveal the article card with a synced transition when it
+      //      enters the viewport.
+      //   4. Smooth-scroll the chevron tap to the card.
+      (function () {
+        var body = document.body;
+        var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // (1) Scroll progress driver — runs on every breakpoint so the
+        // cinematic hero exit fires on desktop AND mobile. rAF-throttled,
+        // GPU-only (transform/opacity/filter), no jank.
+        if (!prefersReduced) {
+          var hero = document.querySelector('.hero');
+          if (hero) {
+            var ticking = false;
+            var update = function () {
+              var h = hero.offsetHeight || window.innerHeight;
+              // ramp 0 → 1 over the first ~55% of hero height so the
+              // exit punches early and finishes before the cards arrive.
+              var p = Math.min(Math.max(window.scrollY / (h * 0.55), 0), 1);
+              body.style.setProperty('--p', p.toFixed(3));
+              // Once the hero copy is essentially invisible (opacity hits 0
+              // around p≈0.7 on desktop and p≈0.65 on mobile, per the CSS
+              // above), let the cards behind it catch clicks. Until then
+              // the buttons stay live.
+              if (p >= 0.85) {
+                body.classList.add('hero-content-faded');
+              } else {
+                body.classList.remove('hero-content-faded');
+              }
+              ticking = false;
+            };
+            var onScrollP = function () {
+              if (!ticking) { window.requestAnimationFrame(update); ticking = true; }
+            };
+            window.addEventListener('scroll', onScrollP, { passive: true });
+            window.addEventListener('resize', update);
+            update();
+          }
+        }
+
+        // (2) Fade chevron on first scroll
+        var onScroll = function () {
+          if (window.scrollY > 24) {
+            body.classList.add('is-scrolled');
+            window.removeEventListener('scroll', onScroll);
+          }
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+
+        // (3) Reveal the article card when it enters view
+        var card = document.getElementById('hero-featured');
+        if (card && 'IntersectionObserver' in window) {
+          var startObserving = function () {
+            var io = new IntersectionObserver(function (entries) {
+              entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                  card.classList.add('is-revealed');
+                  body.classList.add('cards-revealed');
+                  io.disconnect();
+                }
+              });
+            }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+            io.observe(card);
+          };
+
+          if (card.children.length) {
+            startObserving();
+          } else {
+            var mo = new MutationObserver(function () {
+              if (card.children.length) { mo.disconnect(); startObserving(); }
+            });
+            mo.observe(card, { childList: true });
+            setTimeout(startObserving, 2000);
+          }
+        }
+
+        // (4) Smooth-scroll the chevron tap
+        var cue = document.querySelector('.scroll-cue');
+        if (cue) {
+          cue.addEventListener('click', function (e) {
+            var target = document.getElementById('hero-featured');
+            if (!target) return;
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }
+      })();
+    </script>
+</body>
+</html>
