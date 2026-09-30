@@ -64,6 +64,13 @@ const excludedExtensions = new Set([
   ".mp4"
 ]);
 
+// ...except the small web-encoded loops the pages actually play. Keep in
+// step with the mp4 exceptions in .gitignore.
+const shippedVideoPatterns = [
+  /^edition-art\/[^/]+\/[^/]+\.mp4$/,
+  /^beta\/articles\/[^/]+\.mp4$/
+];
+
 // Credentials must never reach the public bundle, even when they sit in the
 // working tree (they're gitignored, but a local `npm run pages:deploy` copies
 // whatever is on disk). Mirrors the secret patterns in .gitignore.
@@ -104,6 +111,10 @@ function shouldSkip(relativePath, dirent) {
 
   if (excludedFiles.has(relativePath) || excludedFiles.has(baseName)) {
     return true;
+  }
+
+  if (!dirent.isDirectory() && shippedVideoPatterns.some((re) => re.test(parts.join("/")))) {
+    return false;
   }
 
   if (!dirent.isDirectory() && excludedExtensions.has(path.extname(baseName))) {
