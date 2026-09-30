@@ -130,7 +130,7 @@
     var h = document.querySelector('.header');
     var hb = h ? h.getBoundingClientRect().bottom : 76;
     var kick = Math.max(defWord.offsetTop, statementEl.offsetTop);   // kicker + gap above the big line
-    return Math.round(hb + 24 + kick);
+    return Math.round(hb + 24 + kick + window.innerHeight * 0.07);
   }                   // dome centre / statue tip in plate coordinates
   // right edge of the widest rendered line of hero text (definition or
   // mission), not the width of their boxes
@@ -161,13 +161,14 @@
       // the plate's width left of the dome's axis) clears the widest line
       // of text by 44px, its right wing (≈0.29 right of the axis) stays on
       // screen, and its base (≈0.80 below the tip) stays above the bottom.
-      // Balance the dome between the text and the right edge: its leftmost
-      // line clears the text by 44px, and the outer right wing may feather
-      // just past the edge (0.25 of the plate right of the axis stays on).
-      var tr = textRight(), L = tr + 44, Rr = vw - 8;
-      var w2 = (Rr - L) / (0.26 + 0.25);
-      var cx = L + 0.26 * w2;
-      w2 = Math.min(w2, (vh - TIP_Y - 12) / (0.8 * AR)) * s;
+      // Fit the dome between the text and the right edge: its leftmost
+      // line clears the text by 56px, its right wing (0.29 of the plate
+      // right of the axis) stays 32px inside the screen, and its base
+      // (0.80 of the plate height below the tip) stays 32px above the bottom.
+      var tr = textRight(), L = tr + 56, Rr = vw - 32;
+      var w2 = Math.min((Rr - L) / (0.26 + 0.29), (vh - TIP_Y - 32) / (0.8 * AR));
+      var cx = L + 0.26 * w2 + ((Rr - L) - 0.55 * w2) / 2;    // centre any spare room
+      w2 *= s;
       var h2 = w2 * AR;
       return { w: w2, h: h2, x: cx - DOME.x * w2, y: TIP_Y - DOME.tip * h2 };
     }
