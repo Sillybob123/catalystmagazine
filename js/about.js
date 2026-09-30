@@ -292,6 +292,95 @@
   requestAnimationFrame(tick);
 
   /* ------------------------------------------------------------
+     Hero autoplay (same as the homepage): one scroll down from the
+     top plays the whole hero by itself — the dome inks, the
+     definition gives way to the mission, the mission lights up — so
+     nobody is left wondering whether to keep scrolling. Scrolling up
+     mid-play hands control back; scrolling back through the hero
+     later scrubs it by hand.
+     ------------------------------------------------------------ */
+  function heroAutoplay() {
+    var root = document.documentElement;
+    var glide = function (t) { return 0.5 - 0.5 * Math.cos(Math.PI * t); };
+    var playing = false, swallow = false, lastWheel = 0, start = 0, from = 0, to = 0, dur = 0, raf = 0, touchY = null;
+    // the definition stays up a little longer so it can be read
+    var SLOW = 1.6, slowA = 0, slowB = 0, cost = 0;
+    var DOWN_KEYS = { ArrowDown: 1, PageDown: 1, ' ': 1, Spacebar: 1 };
+    var UP_KEYS = { ArrowUp: 1, PageUp: 1, Home: 1 };
+    function atTop() { return window.scrollY < 8; }
+    function inHero(el) { return el && el.nodeType === 1 ? hero.contains(el) || el === document.body || el === root : false; }
+    function play() {
+      if (playing) return;
+      var top = hero.getBoundingClientRect().top + window.scrollY, span = hero.offsetHeight - window.innerHeight;
+      from = window.scrollY;
+      to = top + span;
+      if (to <= from + 4) return;
+      slowA = clamp(top + 0.12 * span, from, to);
+      slowB = clamp(top + 0.4 * span, slowA, to);
+      cost = (to - from) + (SLOW - 1) * (slowB - slowA);
+      dur = portrait() ? 4400 : 5000;
+      playing = true; start = performance.now();
+      root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
+      raf = requestAnimationFrame(step);
+    }
+    // scroll position for a share of the total "cost"; each px of the
+    // definition's stretch costs SLOW
+    function yAt(c) {
+      var a = slowA - from, zc = (slowB - slowA) * SLOW;
+      if (c <= a) return from + c;
+      if (c <= a + zc) return slowA + (c - a) / SLOW;
+      return slowB + (c - a - zc);
+    }
+    function step(now) {
+      var k = Math.min(1, (now - start) / dur);
+      window.scrollTo(0, yAt(glide(k) * cost));
+      if (k < 1) raf = requestAnimationFrame(step); else stop();
+    }
+    function stop() { cancelAnimationFrame(raf); playing = false; root.style.scrollBehavior = ''; }
+
+    window.addEventListener('wheel', function (e) {
+      if (e.ctrlKey) return;                         // pinch-zoom
+      var now = performance.now();
+      if (e.deltaY < 0) { if (playing) stop(); swallow = false; return; }
+      if (swallow) {
+        // hold back the rest of the gesture (trackpad inertia included)
+        if (playing || now - lastWheel < 200) { e.preventDefault(); lastWheel = now; return; }
+        swallow = false;
+      }
+      if (e.deltaY > 0 && atTop() && inHero(e.target)) { e.preventDefault(); lastWheel = now; swallow = true; play(); }
+    }, { passive: false });
+
+    window.addEventListener('touchstart', function (e) {
+      touchY = e.touches.length === 1 && inHero(e.target) ? e.touches[0].clientY : null;
+    }, { passive: true });
+    window.addEventListener('touchmove', function (e) {
+      if (touchY === null) return;
+      var dy = e.touches[0].clientY - touchY;         // < 0: finger moving up, page scrolling down
+      if (playing) {
+        if (dy > 12) { stop(); touchY = null; return; }
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
+      if (dy < 0 && atTop() && e.cancelable) {
+        e.preventDefault();
+        if (dy < -6) play();
+      }
+    }, { passive: false });
+
+    window.addEventListener('keydown', function (e) {
+      var t = e.target;
+      if (e.altKey || e.ctrlKey || e.metaKey || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(t.tagName)))) return;
+      if (playing) {
+        if (UP_KEYS[e.key]) { stop(); return; }
+        if (DOWN_KEYS[e.key]) e.preventDefault();
+        return;
+      }
+      if (DOWN_KEYS[e.key] && !e.shiftKey && atTop()) { e.preventDefault(); play(); }
+    });
+  }
+  if (!REDUCED) heroAutoplay();
+
+  /* ------------------------------------------------------------
      Reveal-on-scroll
      ------------------------------------------------------------ */
   var revealIO = new IntersectionObserver(function (es) {

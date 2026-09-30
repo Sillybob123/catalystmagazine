@@ -770,6 +770,8 @@
         this.ghost = opts.ghost;
         this.after = opts.after || null;
         this.entry = !!opts.entry;             // start drawing as the scene scrolls into view
+        this.auto = opts.auto || 0;            // ms: once in view, ink by time instead of by scroll
+        this.t0 = 0;
         this.p = 0; this.sp = 0; this.key = ''; this.ready = false; this.started = false;
         this.gl = this.canvas.getContext('webgl2', { alpha: false, antialias: false, premultipliedAlpha: false });
         if (this.gl) this.initGL(); else this.ctx = this.canvas.getContext('2d');
@@ -1062,9 +1064,10 @@
          ============================================================ */
       var tidal = new Plate({
         id: 'tidal', ghost: 0.14, entry: true,
-        // phones: the section scrolls through in one pass, so finish inking
-        // while the whole drawing is still on screen
-        inkAt: function (p) { return lerp(0.06, 1.04, portrait() ? map(p, 0.05, 0.7) : map(p, 0.1, 0.86)); },
+        // draws itself once it is well into view (see tick) rather than
+        // waiting on more scrolling; p here is that playback, 0..1
+        auto: 2600,
+        inkAt: function (p) { return lerp(0.06, 1.04, p); },
         rect: function (vw, vh, t) {
           if (portrait(vw, vh)) {
             // drawing on top, copy underneath; drift from the Monument
@@ -1172,7 +1175,10 @@
         for (var i = 0; i < scenes.length; i++) {
           var s = scenes[i], r = s.el.getBoundingClientRect();
           if (r.bottom < -50 || r.top > vh + 50) continue;
-          s.p = s.entry ? entryProgress(s.el) : pinProgress(s.el);
+          if (s.auto) {
+            if (!s.t0 && s.ready && r.top < vh * (portrait() ? 0.7 : 0.6)) s.t0 = time;   // well into view
+            s.p = s.t0 ? glide(clamp((time - s.t0) / s.auto, 0, 1)) : 0;
+          } else s.p = s.entry ? entryProgress(s.el) : pinProgress(s.el);
           s.sp = Math.abs(s.p - s.sp) < 0.0005 ? s.p : lerp(s.sp, s.p, 0.14);
           s.render();
         }
