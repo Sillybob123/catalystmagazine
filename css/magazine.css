@@ -39,9 +39,9 @@
   border-radius: inherit; mix-blend-mode: normal !important;
   background:
     linear-gradient(90deg,
-      rgba(8, 12, 20, .5) 0, rgba(8, 12, 20, .3) .8%, rgba(8, 12, 20, .12) 2%,
-      rgba(255, 255, 255, .26) 3%, rgba(255, 255, 255, .06) 4.6%,
-      rgba(8, 12, 20, .07) 6.5%, rgba(8, 12, 20, 0) 11%),
+      rgba(8, 12, 20, .3) 0, rgba(8, 12, 20, .17) .8%, rgba(8, 12, 20, .07) 2%,
+      rgba(255, 255, 255, .18) 3%, rgba(255, 255, 255, .04) 4.6%,
+      rgba(8, 12, 20, .04) 6.5%, rgba(8, 12, 20, 0) 10%),
     linear-gradient(calc(115deg + var(--sheen, 0deg)), rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, .13) 50%, rgba(255, 255, 255, 0) 65%) !important;
 }
 
@@ -61,16 +61,16 @@
       rgba(255, 255, 255, .95) 62%, rgba(255, 255, 255, .6) 80%, rgba(22, 26, 34, .16) 100%)
       right top / var(--fore) 100% no-repeat,
     /* a little less light toward the foot */
-    linear-gradient(180deg, rgba(22, 26, 34, 0) 45%, rgba(22, 26, 34, .08))
+    linear-gradient(180deg, rgba(22, 26, 34, 0) 45%, rgba(22, 26, 34, .08) calc(100% - var(--foot)), rgba(22, 26, 34, .2) 100%)
       right top / var(--fore) 100% no-repeat,
     /* the sheets: barely there, as on a coated magazine */
     repeating-linear-gradient(90deg, rgba(22, 26, 34, 0) 0 .8px, rgba(22, 26, 34, .045) .8px 1.1px)
       right top / var(--fore) 100% no-repeat,
     /* foot: the underside, in soft shadow, deepest against the cover and toward the spine */
     linear-gradient(180deg, rgba(22, 26, 34, .30), rgba(22, 26, 34, .12) 55%, rgba(22, 26, 34, .2))
-      left bottom / 100% var(--foot) no-repeat,
+      left bottom / calc(100% - var(--fore)) var(--foot) no-repeat,
     linear-gradient(90deg, rgba(22, 26, 34, .22), rgba(22, 26, 34, 0) 45%)
-      left bottom / 100% var(--foot) no-repeat,
+      left bottom / calc(100% - var(--fore)) var(--foot) no-repeat,
     /* the paper: bright white */
     #fbfbfa;
 }
