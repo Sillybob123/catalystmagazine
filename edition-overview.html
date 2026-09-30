@@ -170,12 +170,12 @@
          either side ease aside, within the room there is (never over the text) */
       .is-ready .ea-fan-item { opacity: 1; transform: translateX(var(--dx, 0px)) rotate(calc((var(--i) - var(--mid, 3)) * var(--step))); }
       .ea-fan.settled .ea-fan-item {
-        transition: transform .95s var(--fan-ease), opacity .7s var(--ease-out); transition-delay: 0s;
+        transition: transform .55s var(--fan-ease), opacity .7s var(--ease-out); transition-delay: 0s;
         will-change: transform;
       }
       .ea-fan-item .ea-cover {
         box-shadow: 0 2px 6px rgba(15,23,42,.12), 0 30px 50px -26px rgba(15,23,42,.5);
-        transition: transform .9s var(--fan-ease), box-shadow .9s var(--fan-ease);
+        transition: transform .5s var(--fan-ease), box-shadow .5s var(--fan-ease);
       }
       .ea-fan li.is-front .ea-cover, .ea-fan.plain-hover .ea-fan-item:hover .ea-cover, .ea-fan-item:focus-visible .ea-cover {
         transform: translateY(-30px) scale(1.015);
@@ -185,7 +185,7 @@
       .ea-fan-caption {
         min-height: 22px; margin: 46px 0 0; text-align: center;
         font: 600 12px/1.5 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--ink);
-        transition: opacity .3s ease, transform .3s ease;
+        transition: opacity .2s ease, transform .2s ease;
       }
       .ea-fan-caption.is-out { opacity: 0; transform: translateY(4px); }
       .ea-fan-caption em { margin-left: 8px; font: italic 400 16px/1.5 var(--serif); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
@@ -396,8 +396,8 @@
             <div class="ea-wrap ea-hero-grid">
                 <div class="ea-hero-copy">
                     <p class="ea-kicker ea-rise">The Catalyst &middot; Edition archive</p>
-                    <h1 id="ea-title" class="ea-rise" style="--d:.08s"><span class="nw">The Editions.</span> <em>Every season, bound and kept.</em></h1>
-                    <p class="ea-lede ea-rise" style="--d:.16s">Each edition gathers a season of our reporting around a single idea. Here is every one of them, from our first issue in the winter of 2025 to the edition still to come.</p>
+                    <h1 id="ea-title" class="ea-rise" style="--d:.08s"><span class="nw">The Editions.</span> <em>Our reporting, season by season.</em></h1>
+                    <p class="ea-lede ea-rise" style="--d:.16s">Every season, our student journalists take one idea and follow it through the labs, clinics and classrooms of Washington, D.C. Here is each edition, from our first issue in winter 2025 to the one now in the works.</p>
                     <div class="ea-facts ea-rise" style="--d:.24s">
                         <div><b>5</b><span>Published</span></div>
                         <div><b>52</b><span>Stories</span></div>
@@ -826,7 +826,7 @@
           if (html === capNow) return;
           capNow = html; clearTimeout(capTimer);
           cap.classList.add('is-out');
-          capTimer = setTimeout(function () { cap.innerHTML = html; cap.classList.remove('is-out'); }, 200);
+          capTimer = setTimeout(function () { cap.innerHTML = html; cap.classList.remove('is-out'); }, 130);
         }
         function caption(el) { var v = el.getAttribute('data-caption').split('|'); setCaption(v[0] + '<em>' + v[1] + '</em>'); }
 
@@ -862,6 +862,7 @@
             // the covers may use the gutter up to 28px short of where the text actually ends
             boxLeft: Math.min(br.left, textEdge() + 28),
             left: function (i) { return fr.left + fr.width / 2 + 1.4 * ch * Math.sin((i - mid) * step) - cw / 2; },
+            angle: function (i) { return (i - mid) * step; },
             overhang: function (i) {                                          // how far the tilted corners reach past the straight edges
               var a = Math.abs((i - mid) * step);
               return (cw / 2) * (Math.cos(a) - 1) + 0.5 * ch * Math.sin(a) + 2;
@@ -906,7 +907,7 @@
             fanItems.forEach(function (it, i) {
               it.style.setProperty('--dx', (L[i] - rest[i]).toFixed(1) + 'px');
               // the covers lying on the one being pulled out make way a little sooner
-              it.style.transitionDuration = i > h ? '.62s, .7s' : '';
+              it.style.transitionDuration = i > h ? '.36s, .7s' : '';
               it.style.transitionTimingFunction = i > h ? 'cubic-bezier(.3, 0, .18, 1), ease' : '';
             });
             return { L: L, g: g };
@@ -917,7 +918,7 @@
              lying on it, changes place in the stack there, then slides back into
              place in front while the others close up. Putting it back is the same,
              reversed. */
-          var D = 1000, SWAP = 0.46;
+          var D = 540, SWAP = 0.46;
           function pullDistance(i, L, g) {                    // how far cover i must slide to clear the one on it
             if (i >= n - 1) return 0;
             var need = (L[i] + g.cw + g.overhang(i)) - (L[i + 1] - g.overhang(i + 1)) + 10;
@@ -941,41 +942,76 @@
             li._swap = setTimeout(function () { li.classList.toggle('is-front', raise); }, D * SWAP);
             return D;
           }
-          var front = null, tOpen = 0, tClose = 0, tCheck = 0, busyUntil = 0, px = 0, py = 0;
-          fanEl.addEventListener('pointermove', function (e) { px = e.clientX; py = e.clientY; });
-          function underPointer() {
-            var el = document.elementFromPoint(px, py);
-            return el && el.closest ? el.closest('.ea-fan-item') : null;
+          /* Which cover you are pointing at is read from where the covers are going,
+             not from where they are mid-slide: each cover owns the strip of the fan
+             where its edge shows (the one in front owns its whole width). Covers
+             sliding under a still pointer can never change the pick. */
+          var front = null, tOpen = 0, tClose = 0, pending = -1, target = null;
+          // the covers' target layout: straight left edges at mid-height, the one in front, and each cover's tilt
+          function setZones(L, g, h) {
+            var fr = fanEl.getBoundingClientRect(), li = fanItems[0].parentElement;
+            target = { L: L, h: h, cw: g.cw, left: fr.left, top: fr.top,
+                       midY: li.getBoundingClientRect().top + li.offsetHeight / 2 - fr.top,
+                       tan: fanItems.map(function (_, i) { return Math.tan(g.angle(i)); }) };
+          }
+          function restZones() {
+            var g = fanGeometry();
+            setZones(fanItems.map(function (_, i) { return g.left(i); }), g, -1);
+          }
+          function pick(x, y) {
+            if (!target) restZones();
+            var fr = fanEl.getBoundingClientRect(), T = target, h = T.h;
+            x -= fr.left - T.left; y -= fr.top - T.top;                        // the page may have scrolled
+            var dy = T.midY - (y - T.top);                                     // how far above the covers' middle
+            var e = T.L.map(function (l, i) { return l + dy * T.tan[i]; });    // each cover's left edge at this height
+            var Rh = h >= 0 ? e[h] + T.cw : 0, best = 0, bd = Infinity, i, a, b, d;
+            for (i = 0; i < n; i++) {
+              if (i === h) { a = e[h]; b = Rh; }
+              else if (h >= 0 && i < h) { a = e[i]; b = Math.min(e[i + 1], e[h]); }
+              else { a = h >= 0 ? Math.max(e[i], Rh) : e[i]; b = i < n - 1 ? e[i + 1] : e[i] + T.cw; }
+              if (b <= a) continue;
+              d = x < a ? a - x : x > b ? x - b : 0;
+              if (d < bd) { bd = d; best = i; }
+            }
+            return best;
           }
           var show = function (a) {
             if (front === a) return;
             var prev = front; front = a;
-            var lay = open(a), t = 0;
-            if (prev) t = pull(prev, pullDistance(fanItems.indexOf(prev), lay.L, lay.g), false);
-            t = Math.max(t, pull(a, pullDistance(fanItems.indexOf(a), lay.L, lay.g), true));
-            busyUntil = performance.now() + t;
+            var lay = open(a), h = fanItems.indexOf(a);
+            setZones(lay.L, lay.g, h);
+            if (prev) pull(prev, pullDistance(fanItems.indexOf(prev), lay.L, lay.g), false);
+            pull(a, pullDistance(h, lay.L, lay.g), true);
             caption(a);
-            // covers moved under a still pointer: once they settle, follow whatever it now rests on
-            clearTimeout(tCheck);
-            if (t) tCheck = setTimeout(function () { var u = underPointer(); if (u && u !== front && fanEl.matches(':hover')) show(u); }, t + 40);
           };
           var close = function () {
             var g = fanGeometry(), rest = fanItems.map(function (_, i) { return g.left(i); });
             if (front) pull(front, pullDistance(fanItems.indexOf(front), rest, g), false);
-            front = null; busyUntil = 0;
+            front = null; pending = -1; clearTimeout(tOpen);
+            setZones(rest, g, -1);
             fanItems.forEach(function (it) { it.style.setProperty('--dx', '0px'); it.style.transitionDuration = ''; it.style.transitionTimingFunction = ''; });
             setCaption(capDefault);
           };
-          // a moment's intent before anything moves, and no new pick while a cover is on its way out
-          fanItems.forEach(function (a) {
-            a.addEventListener('pointerenter', function () {
-              clearTimeout(tClose); clearTimeout(tOpen);
-              var wait = Math.max(front ? 60 : 90, busyUntil - performance.now());
-              tOpen = setTimeout(function () { var u = underPointer() || a; show(u); }, wait);
-            });
-            a.addEventListener('focus', function () { clearTimeout(tClose); show(a); });
+          // a short moment of intent on a new cover, then it comes out
+          fanEl.addEventListener('pointermove', function (e) {
+            clearTimeout(tClose);
+            var k = pick(e.clientX, e.clientY);
+            if (front && fanItems[k] === front) { pending = -1; clearTimeout(tOpen); return; }
+            if (k === pending) return;
+            pending = k; clearTimeout(tOpen);
+            tOpen = setTimeout(function () { pending = -1; show(fanItems[k]); }, front ? 45 : 70);
           });
-          fanEl.addEventListener('pointerleave', function () { clearTimeout(tOpen); tClose = setTimeout(close, 160); });
+          fanEl.addEventListener('pointerleave', function () { clearTimeout(tOpen); pending = -1; tClose = setTimeout(close, 120); });
+          // a click opens the cover you are pointing at, even if another is sliding under the pointer
+          fanEl.addEventListener('click', function (e) {
+            var a = e.target.closest && e.target.closest('.ea-fan-item');
+            if (!a || e.detail === 0) return;                 // keyboard clicks keep their own target
+            var t = fanItems[pick(e.clientX, e.clientY)];
+            if (t !== a) { e.preventDefault(); e.stopPropagation(); t.click(); }
+          }, true);
+          window.addEventListener('resize', function () { target = null; });
+          fanEl._pick = pick;                                  // (for checking the fan against what shows)
+          fanItems.forEach(function (a) { a.addEventListener('focus', function () { clearTimeout(tClose); show(a); }); });
           fanEl.addEventListener('focusout', function (e) { if (!fanEl.contains(e.relatedTarget)) close(); });
         } else {
           // reduced motion or touch: covers simply come forward, the caption follows
