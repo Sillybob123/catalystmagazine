@@ -106,13 +106,14 @@
       .ar-search .clear:hover { color: var(--ink); background: rgba(15,23,42,.06); }
       .ar-hero-art { position: relative; margin: 0; }
       .ar-hero-art img { display: block; width: 100%; height: auto; }
+      /* the figure slides in but never goes transparent: Safari won't autoplay a
+         video inside an invisible parent, so only the still fades */
+      .ar-hero-art[data-reveal] { opacity: 1; }
+      .ar-hero-art[data-reveal] .ar-still { opacity: 0; transition: opacity .9s var(--ease-out) .1s; }
+      .ar-hero-art[data-reveal].in .ar-still { opacity: 1; }
       /* the loop plays over its own first frame, so the fade-in is seamless */
       .ar-loop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.4s ease; pointer-events: none;
-        /* soften only the plain-paper rim, so the video meets the page without a seam */
-        -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent), linear-gradient(transparent, #000 3%, #000 97%, transparent);
-        -webkit-mask-composite: source-in;
-        mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent), linear-gradient(transparent, #000 3%, #000 97%, transparent);
-        mask-composite: intersect; }
+ }
       .ar-loop.is-playing { opacity: 1; }
 
       /* ---------- the filter bar ---------- */
@@ -235,6 +236,7 @@
       }
       @media (prefers-reduced-motion: reduce) {
         [data-reveal] { opacity: 1; transform: none; transition: none; }
+        .ar-hero-art[data-reveal] .ar-still { opacity: 1; transition: none; }
         .ar-fig img { transition: opacity .2s; transform: none; }
       }
     </style>
@@ -268,7 +270,7 @@
                          sizes="(max-width: 899px) 94vw, 50vw" width="1280" height="1024" fetchpriority="high" decoding="async"
                          alt="A watercolour drawing of the U.S. Capitol reflected in the Reflecting Pool, framed by cherry blossoms, with an open magazine and a cup of coffee on the stone ledge.">
                     <!-- a calm 10s loop of the same drawing: blossoms sway, petals drift, a ripple, steam, a page lifts (Higgsfield / Kling 3.0; first frame = last frame) -->
-                    <video class="ar-loop" muted loop playsinline preload="none" disablepictureinpicture aria-hidden="true" data-src="/beta/articles/capitol-loop.mp4?v=1"></video>
+                    <video class="ar-loop" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1" data-src="/beta/articles/capitol-loop.mp4?v=2" data-src-sm="/beta/articles/capitol-loop-sm.mp4?v=2"></video>
                 </figure>
             </div>
         </section>
@@ -331,6 +333,6 @@
     <div id="site-footer"></div>
 
     <script defer src="/js/layout.js?v=20260925-review"></script>
-    <script defer src="/js/articles.js?v=3"></script>
+    <script defer src="/js/articles.js?v=5"></script>
 </body>
 </html>

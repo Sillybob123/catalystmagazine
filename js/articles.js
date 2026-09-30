@@ -331,16 +331,42 @@
      skipped on data saver, slow connections and reduced motion */
   (function heroLoop() {
     var v = document.querySelector('.ar-loop');
+    var still = document.getElementById('ar-hero-img');
     var conn = navigator.connection || {};
     if (!v || REDUCED || conn.saveData || /(^|-)2g/.test(conn.effectiveType || '')) return;
-    function start() {
-      v.src = v.dataset.src;
-      v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true });
-      if ('IntersectionObserver' in window) {
-        new IntersectionObserver(function (es) { if (es[0].isIntersecting) v.play().catch(function () {}); else v.pause(); }).observe(v.parentNode);
-      } else v.play().catch(function () {});
+    var fig = v.parentNode;
+    var src = (window.matchMedia('(max-width: 899px)').matches && v.dataset.srcSm) || v.dataset.src;
+    var onScreen = true, started = false, fresh = 0;
+    function play() {
+      if (!onScreen || !v.paused) return;
+      var p = v.play();
+      if (p && p.catch) p.catch(function () {
+        // one retry on a fresh element, in case this one was already refused
+        if (fresh++ < 1) { var n = v.cloneNode(false); n.src = src; n.muted = true; fig.replaceChild(n, v); v = n; watch(); setTimeout(play, 400); }
+        else waitForTouch();
+      });
     }
-    if (document.readyState === 'complete') start(); else window.addEventListener('load', start);
+    // iOS Low Power Mode (or Safari's auto-play setting) refuses even muted
+    // autoplay until the reader interacts; the still stays until then.
+    function waitForTouch() {
+      function go() { ['touchend', 'click', 'keydown'].forEach(function (n) { window.removeEventListener(n, go); }); play(); }
+      ['touchend', 'click', 'keydown'].forEach(function (n) { window.addEventListener(n, go, { passive: true }); });
+    }
+    function watch() { v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true }); }
+    function start() {
+      if (started) return; started = true;
+      v.muted = true;
+      v.autoplay = true;                // Safari honours the attribute more readily than play()
+      v.preload = 'auto';
+      v.src = src;                      // start buffering straight away
+      watch();
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es) { onScreen = es[0].isIntersecting; if (onScreen) play(); else v.pause(); }).observe(fig);
+      } else play();
+    }
+    // begin as soon as the drawing itself has loaded, not after every story image
+    if (!still || still.complete) setTimeout(start, 0);
+    else { still.addEventListener('load', start, { once: true }); still.addEventListener('error', start, { once: true }); }
   })();
 
   /* ---------------- start ---------------- */
