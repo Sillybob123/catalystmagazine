@@ -59,8 +59,6 @@
 
       *, *::before, *::after { box-sizing: border-box; }
       html { -webkit-text-size-adjust: 100%; background: var(--paper); }
-      html.lenis, html.lenis body { height: auto; }
-      .lenis.lenis-smooth { scroll-behavior: auto !important; }
       body {
         margin: 0;
         background: var(--paper);
@@ -636,7 +634,6 @@
 
     <div id="site-footer"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js" defer></script>
     <script src="/js/layout.js?v=20260925-review" defer></script>
     <script src="/js/newsletter-handler.js" defer></script>
     <script>
@@ -987,10 +984,8 @@
       });
 
       var scenes = [mall, library, tidal];
-      var lenis = null;
 
       function tick(time) {
-        if (lenis) lenis.raf(time);
         if (siteHeader) siteHeader.classList.toggle('scrolled', window.scrollY > 50);
         var vh = window.innerHeight;
         for (var i = 0; i < scenes.length; i++) {
@@ -1025,16 +1020,10 @@
         }, { rootMargin: '150% 0px' });
         lazyIO.observe(library.el);
         lazyIO.observe(tidal.el);
-
-        window.addEventListener('load', function () {
-          if (window.Lenis && window.matchMedia('(pointer: fine)').matches) {
-            lenis = new window.Lenis({ duration: 1.15, smoothWheel: true });
-          }
-        });
         requestAnimationFrame(tick);
       }
 
-      // In-page anchors go through Lenis when it's active.
+      // In-page anchors: smooth-scroll to the target, then move focus.
       document.addEventListener('click', function (e) {
         var a = e.target.closest && e.target.closest('a[href^="#"]');
         if (!a) return;
@@ -1043,15 +1032,14 @@
         e.preventDefault();
         // The newsletter stage pins at the top of its section, so the
         // form is already on screen when we land there.
-        if (lenis) lenis.scrollTo(target);
-        else target.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+        target.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
         var focusEl = id === 'latest' ? document.getElementById('latest-title')
                     : id === 'search' ? document.getElementById('archive-q')
                     : id === 'newsletter' ? document.getElementById('nl-first') : null;
         if (focusEl) setTimeout(function () {
           if (focusEl.tagName === 'H2') focusEl.setAttribute('tabindex', '-1');
           focusEl.focus({ preventScroll: true });
-        }, lenis ? 1000 : 600);
+        }, 600);
       });
 
       /* ------------------------------------------------------------
