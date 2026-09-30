@@ -964,7 +964,7 @@
             R = { w: w, h: h, x: vw * 0.5 - 0.63 * w, y: 76 - 0.19 * h };
           } else {
             var w2 = Math.min(vw * 0.96, vh * 1.78), h2 = w2 * AR;
-            R = { w: w2, h: h2, x: vw - w2 * 0.95, y: vh - h2 + h2 * 0.05 };   // right-anchored, a little past the edge so the Monument clears the copy
+            R = { w: w2, h: h2, x: vw - w2 * 0.95, y: vh - h2 + h2 * 0.05 - vh * 0.05 };   // right-anchored, lifted a touch off the fold,, a little past the edge so the Monument clears the copy
           }
           if (!portrait()) {
             // desktop: ease toward the Capitol and settle it on the left
