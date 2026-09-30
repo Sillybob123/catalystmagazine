@@ -94,6 +94,7 @@ async function loadFragment(targetId, path) {
                     <nav class="nav-menu" aria-label="Primary">
                         <a href="/" class="nav-link">Home</a>
                         <a href="/articles" class="nav-link">Articles</a>
+                        <a href="/editions" class="nav-link">Editions</a>
                         <a href="/book-reviews" class="nav-link">Reviews</a>
                         <a href="/about" class="nav-link">About</a>
                         <a href="/collaborate" class="nav-link">Collaborate</a>
@@ -257,6 +258,8 @@ function setupMobileNav() {
         const href = link.getAttribute('href');
         if (href === '/' && (currentPath === '/' || currentPath === '' || currentPath.endsWith('index.html'))) {
             link.classList.add('active');
+        } else if (href === '/editions' && /^\/edition-/.test(currentPath)) {
+            link.classList.add('active');                     // every edition page lives under Editions
         } else if (href && href !== '/' && currentPath.includes(href)) {
             link.classList.add('active');
         }

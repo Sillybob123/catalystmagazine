@@ -20,10 +20,14 @@
 /sponsors.html           /sponsors                 301
 
 # ------ Beta pages promoted to the live home and about (2026-09-30) ------
+/homepage-beta           /                         301
+/homepage-beta.html      /                         301
 /about-beta              /about                    301
 /about-beta.html         /about                    301
-/editorial-overview      /edition-overview         301
-/editorial-overview.html /edition-overview         301
+/editorial-overview      /editions         301
+/editorial-overview.html /editions         301
+/edition-overview        /editions                 301
+/edition-overview.html   /editions                 301
 
 # ------ /investors → /sponsors (renamed 2026-05-08) ---------
 /investors               /sponsors                 301

@@ -41,6 +41,49 @@
     <priority>0.9</priority>
   </url>
 
+  <!-- the editions -->
+  <url>
+    <loc>https://www.catalyst-magazine.com/editions</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/edition-fall-2026</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/edition-spring-2026</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/edition-fall-2025</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/edition-spring-2025</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.catalyst-magazine.com/edition-winter-2025</loc>
+    <lastmod>2026-09-30</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
   <url>
     <loc>https://www.catalyst-magazine.com/book-reviews</loc>
     <lastmod>2026-05-11</lastmod>

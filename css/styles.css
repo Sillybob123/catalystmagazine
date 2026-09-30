@@ -6628,9 +6628,16 @@ body[data-page="editorial-studio"] .requires-editor {
 /* The dialog container takes focus on open (so Tab starts inside it); it
    isn't itself interactive, so it doesn't need a focus ring. */
 .welcome-popup-card:focus,
-.newsletter-modal-content:focus {
+.welcome-popup-card:focus-visible,
+.newsletter-modal-content:focus,
+.newsletter-modal-content:focus-visible {
     outline: none;
 }
+/* focus lands on the card when it opens: keep its shape (page styles once set a
+   4px radius on every focused element, which squared the card off) */
+.welcome-popup-card:focus-visible { border-radius: 22px; }
+.newsletter-modal-content:focus-visible { border-radius: 28px; }
+@media (max-width: 560px) { .welcome-popup-card:focus-visible { border-radius: 20px; } .newsletter-modal-content:focus-visible { border-radius: 24px; } }
 
 .welcome-popup.active .welcome-popup-card {
     animation: welcomePopIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;

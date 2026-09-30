@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- The homepage before the editions layout (replaced 2026-09-30). Kept for reference; not linked. -->
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -12,7 +13,7 @@
     <meta name="google-adsense-account" content="ca-pub-2354303171488552">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>The Catalyst Magazine (beta): Student Science Journalism from Washington, D.C.</title>
+    <title>The Catalyst Magazine | STEM in Washington D.C.</title>
     <meta name="description" content="The Catalyst Magazine is Washington, D.C.'s student-run STEM publication: profiles, interviews, and features on the science, research, and innovation shaping the capital.">
     <meta name="keywords" content="The Catalyst Magazine, Catalyst Magazine, Catalyst DC, The Catalyst, STEM magazine Washington DC, student-run science magazine, science journalism DC, research profiles, science interviews">
     <meta name="author" content="The Catalyst Magazine">
@@ -91,8 +92,6 @@
 
     <!-- Shared site stylesheet: the real header, footer and newsletter modal -->
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
-    <!-- page edges behind the magazine covers -->
-    <link rel="stylesheet" href="/css/magazine.css?v=7">
 
     <style>
       /* ============================================================
@@ -144,7 +143,7 @@
         position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
         overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
       }
-      :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 4px; }
+      :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }   /* the ring follows each element's own corners */
 
       .skip-link {
         position: fixed; left: 12px; top: -60px; z-index: 100;
@@ -398,138 +397,6 @@
       .load-error { padding: 32px 0; border-top: 1px solid var(--hair); color: var(--ink-2); font: 400 17px/1.6 var(--serif); }
       .load-error a { border-bottom: 1px solid currentColor; }
 
-      /* ---------- the magazine cover (same build as the edition pages) ---------- */
-      .ea-cover {
-        position: relative; margin: 0; width: 100%;
-        aspect-ratio: 3584 / 4800; container-type: inline-size;
-        border-radius: 3px; overflow: hidden; background: #fff;
-        box-shadow: var(--mag-pages), 0 2px 6px rgba(15, 23, 42, .12), 0 36px 70px -30px rgba(15, 23, 42, .45);
-      }
-      .ea-cover .art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-      .ea-cover::after {
-        content: ""; position: absolute; inset: 0; pointer-events: none;
-        background:
-          linear-gradient(90deg, rgba(15,23,42,.16), rgba(15,23,42,0) 2.5%, rgba(255,255,255,.18) 3.5%, rgba(255,255,255,0) 7%),
-          linear-gradient(calc(115deg + var(--sheen, 0deg)), rgba(255,255,255,0) 35%, rgba(255,255,255,.2) 50%, rgba(255,255,255,0) 65%);
-        mix-blend-mode: screen;
-      }
-      .ea-mast { position: absolute; left: 6.5cqw; right: 6.5cqw; top: 5cqw; }
-      .ea-mast img { display: block; width: 100%; height: auto; }
-      .ea-dateline {
-        display: flex; justify-content: space-between; gap: 1em;
-        margin-top: 2.2cqw; padding-top: 1.6cqw; border-top: 1px solid rgba(15,23,42,.55);
-        font: 600 2.35cqw/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: #0f172a;
-      }
-      .ea-cover-title {
-        position: absolute; left: 6.5cqw; width: 42cqw; top: 30cqw; margin: 0;
-        font: italic 400 7.4cqw/1.02 var(--serif); color: #0f172a; letter-spacing: -0.015em;
-      }
-      .ea-cover-lines { position: absolute; left: 6.5cqw; right: 6.5cqw; bottom: 6cqw; display: grid; gap: 1.8cqw; }
-      .ea-cover-lines::before {
-        content: ""; position: absolute; z-index: -1; left: -6.5cqw; right: -6.5cqw; bottom: -6cqw; height: calc(100% + 22cqw);
-        background: linear-gradient(0deg, rgba(251,252,252,.94) 45%, rgba(251,252,252,0));
-      }
-      .ea-cover-lines p { margin: 0; font: 600 3.1cqw/1.25 var(--sans); color: #0f172a; }
-      .ea-cover-lines p span { display: block; font: 500 2.1cqw/1.5 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--acc, #3b6e8f); }
-      /* a night sky: the masthead and title go white */
-      .ea-cover.is-night .ea-mast img { filter: invert(1) brightness(1.08); }
-      .ea-cover.is-night .ea-dateline { color: #f5f1ea; border-top-color: rgba(245,241,234,.6); }
-      .ea-cover.is-night .ea-cover-title { color: #f5f1ea; text-shadow: 0 1px 1.4cqw rgba(24, 22, 52, .55), 0 0 5cqw rgba(24, 22, 52, .35); }
-      .ea-cover.is-night .ea-dateline { text-shadow: 0 1px 1cqw rgba(24, 22, 52, .5); }
-
-
-      /* ============================================================
-         EDITIONS on the homepage (beta)
-         ============================================================ */
-      .meta .ed { color: var(--muted); }
-      .ed-tag { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 16px; font: 600 11px/1.3 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--ed-acc, var(--ink-2)); }
-      .ed-tag::before { content: ""; width: 18px; height: 1px; background: currentColor; }
-
-      /* the current edition: its season's photograph, the cover laid over it */
-      .ce { --acc: #334155; --tint: #f1efe8; position: relative; z-index: 2; padding-bottom: clamp(80px, 11vw, 150px); background: linear-gradient(180deg, var(--tint) 0, var(--tint) 60%, var(--paper) 100%); }
-      .ce-banner { position: relative; height: clamp(260px, 38vw, 560px); overflow: hidden; background: var(--tint); }
-      .ce-banner img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 60% 50%; }
-      .ce-banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,14,24,.28) 0, rgba(10,14,24,0) 30%), linear-gradient(180deg, rgba(0,0,0,0) 50%, var(--tint) 100%); }
-      .ce-grid { position: relative; margin-top: calc(-1 * clamp(170px, 19vw, 290px)); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 96px); align-items: start; }
-      .ce-cover { display: block; width: min(100%, 400px); perspective: 1600px; }
-      .ce-cover .ea-cover { box-shadow: 0 2px 6px rgba(15,23,42,.14), 0 50px 90px -34px color-mix(in srgb, var(--acc) 55%, rgba(15,23,42,.6)); transition: transform .6s var(--ease-out); }
-      .ce-cover:hover .ea-cover { transform: translateY(-6px) rotate(-.6deg); }
-      .ce-copy { padding-top: calc(clamp(170px, 19vw, 290px) + clamp(18px, 2.4vw, 34px)); max-width: 640px; }
-      .ce-kicker { color: var(--acc); }
-      .ce-title { margin: 18px 0 0; font: 700 clamp(38px, 4.8vw, 68px)/.98 var(--sans); letter-spacing: -0.04em; }
-      .ce-title em { display: block; margin-top: .12em; font: italic 400 .86em/1.05 var(--serif); letter-spacing: -0.01em; color: var(--acc); }
-      .ce-lede { margin: 22px 0 0; font: 400 clamp(17px, 1.35vw, 20px)/1.6 var(--serif); color: var(--ink-2); }
-      .ce-toc-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; margin: 34px 0 0; padding: 12px 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--hair); font: 600 11px/1.3 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
-      .ce-toc { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
-      .ce-toc li { border-bottom: 1px solid var(--hair-2); counter-increment: toc; }
-      .ce-toc a { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: baseline; gap: 14px; padding: 15px 0; }
-      .ce-toc a::before { content: counter(toc, decimal-leading-zero); font: 500 13px/1 var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
-      .ce-toc b { font: 600 clamp(16px, 1.25vw, 18px)/1.3 var(--sans); letter-spacing: -0.01em; text-wrap: balance; transition: color .2s; }
-      .ce-toc span { font: 400 14px/1.4 var(--serif); color: var(--muted); white-space: nowrap; }
-      .ce-toc a:hover b { color: var(--acc); }
-      .ce-actions { margin-top: 30px; }
-      .ce-open { background: var(--acc); border-color: var(--acc); }
-
-      /* every edition, on a shelf */
-      .eds-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px clamp(32px, 6vw, 96px); align-items: end; margin-bottom: clamp(40px, 5vw, 64px); }
-      .eds-head .h2 { margin-bottom: 0; }
-      .eds-intro p { margin: 0 0 14px; font: 400 clamp(17px, 1.3vw, 19px)/1.6 var(--serif); color: var(--ink-2); }
-      .eds-intro p:last-child { margin: 0; color: var(--muted); }
-      .shelf { list-style: none; margin: 0; padding: 18px 0 30px; display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); gap: clamp(18px, 2.4vw, 36px); border-bottom: 1px solid var(--ink); }
-      .shelf a { display: grid; gap: 14px; color: inherit; }
-      .shelf .ea-cover { transition: transform .55s var(--ease-out), box-shadow .55s var(--ease-out); }
-      .shelf a:hover .ea-cover { transform: translateY(-10px); box-shadow: 0 4px 10px rgba(15,23,42,.14), 0 44px 70px -28px rgba(15,23,42,.55); }
-      .shelf-no { display: flex; justify-content: space-between; gap: 8px; font: 600 11px/1.3 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-      .shelf-no b { color: var(--acc, var(--ink)); font-weight: 600; }
-      .shelf-t { margin: -6px 0 0; font: italic 400 clamp(17px, 1.3vw, 19px)/1.3 var(--serif); color: var(--ink); text-wrap: balance; }
-      .shelf-c { font: 500 13px/1.3 var(--sans); color: var(--muted); }
-      .shelf a:hover .shelf-t { text-decoration: underline; text-decoration-color: var(--acc); text-underline-offset: .18em; text-decoration-thickness: 1px; }
-      .eds-foot { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: clamp(20px, 3vw, 48px); align-items: stretch; margin-top: clamp(40px, 5vw, 64px); }
-      .eds-all { align-content: start; }
-      .peek {
-        position: relative; isolation: isolate; overflow: hidden;
-        display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: clamp(18px, 2.6vw, 36px);
-        padding: clamp(22px, 2.6vw, 30px) clamp(22px, 3vw, 40px); border-radius: 10px; background: #0b1526; color: #f3f7fb;
-        box-shadow: 0 2px 6px rgba(11,21,38,.15), 0 40px 80px -40px rgba(11,21,38,.6);
-      }
-      .peek-bg { position: absolute; inset: 0; z-index: -2; background: url('/editions/winter/hero-1600.webp?v=2') 70% 55% / cover; transition: transform 1.4s var(--ease-out); }
-      .peek::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(11,21,38,.97) 0%, rgba(11,21,38,.88) 45%, rgba(11,21,38,.5) 100%); }
-      .peek:hover .peek-bg { transform: scale(1.04); }
-      .peek-cover { display: block; width: clamp(78px, 7vw, 104px); transform: rotate(-4deg); transition: transform .6s var(--ease-out); }
-      .peek:hover .peek-cover { transform: rotate(-1deg) translateY(-5px); }
-      .peek-cover .ea-cover { display: block; }
-      .peek-cover .ea-cover-title { display: block; }
-      .peek-text { display: grid; gap: 6px; min-width: 0; }
-      .peek-kicker { font: 600 11px/1.2 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: #a8cde8; }
-      .peek-title { font: 700 clamp(19px, 1.7vw, 24px)/1.15 var(--sans); letter-spacing: -0.02em; }
-      .peek-title em { font: italic 400 1em/1.1 var(--serif); color: #dbe9f5; }
-      .peek-dek { font: 400 15px/1.5 var(--serif); color: rgba(243,247,251,.75); }
-      .peek-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 999px; white-space: nowrap; background: #f3f7fb; color: #0b1526; font: 600 14px/1 var(--sans); }
-      .peek-cta svg { width: 16px; height: 16px; transition: transform .3s var(--ease-out); }
-      .peek:hover .peek-cta svg { transform: translateX(3px); }
-      .ce-cover:focus-visible, .shelf a:focus-visible, .peek:focus-visible, .ce-toc a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
-
-      @media (max-width: 960px) {
-        .ce-grid { grid-template-columns: 1fr; gap: 26px; margin-top: calc(-1 * 30vw); }
-        .ce-cover { width: min(60vw, 300px); }
-        .ce-copy { padding-top: 0; }
-        .ce-banner { height: 56vw; }
-        .eds-head { grid-template-columns: 1fr; }
-        .shelf { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(44vw, 200px); overflow-x: auto; scroll-snap-type: x mandatory; padding-top: 22px; scrollbar-width: none; margin: 0 calc(-1 * var(--gutter)); padding-left: var(--gutter); padding-right: var(--gutter); }
-        .shelf::-webkit-scrollbar { display: none; }
-        .shelf li { scroll-snap-align: start; }
-        .eds-foot { grid-template-columns: 1fr; }
-        .peek { grid-template-columns: auto minmax(0, 1fr); }
-        .peek-cta { grid-column: 1 / -1; justify-content: center; }
-      }
-      @media (max-width: 560px) {
-        .ce-toc a { grid-template-columns: 30px minmax(0, 1fr); }
-        .ce-toc span { grid-column: 2; white-space: normal; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .ce-cover .ea-cover, .shelf .ea-cover, .peek-bg, .peek-cover { transition: none; }
-      }
-
       /* ---------- Archive search ---------- */
       .search-sec { padding-top: clamp(40px, 6vh, 72px); }
       .search-bar { display: grid; grid-template-columns: minmax(0, 560px) 1fr; gap: 20px 32px; align-items: start; }
@@ -655,12 +522,12 @@
                         <span class="line"><span>STEM in the</span></span>
                         <span class="line"><span>Nation&rsquo;s <em>Capital.</em></span></span>
                     </h1>
-                    <p class="lede">Profiles, interviews, and features on the science shaping D.C. &mdash; reported, edited, and designed by students, and bound each season into an edition.</p>
+                    <p class="lede">Profiles, interviews, and features on the science shaping D.C. &mdash; reported, edited, and designed by the students at the front of the room.</p>
                     <div class="hb-actions">
                         <a href="#latest" class="hb-btn hb-btn-ink">Read the latest
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                         </a>
-                        <a href="#edition" class="hb-btn hb-btn-line">The current edition</a>
+                        <a href="/about" class="hb-btn hb-btn-line">Our mission</a>
                     </div>
                 </div>
                 <!-- desktop: once the drawing settles on the Capitol, the
@@ -715,74 +582,6 @@
                     </div>
                 </div>
                 <ol class="latest-list" id="latest-list" aria-label="More recent stories"></ol>
-            </div>
-        </section>
-
-        <!-- ================ THE CURRENT EDITION (from /editions/editions.json) ================ -->
-        <section class="ce" id="edition" aria-labelledby="ce-title" hidden>
-            <div class="ce-banner" aria-hidden="true"><img id="ce-banner" alt="" loading="lazy" decoding="async"></div>
-            <div class="wrap ce-grid">
-                <a class="ce-cover" id="ce-cover-link" data-reveal>
-                    <figure class="ea-cover" id="ce-cover">
-                        <img class="art" id="ce-art" alt="" loading="lazy" decoding="async">
-                        <div class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span id="ce-date"></span><span>Washington, D.C.</span></div></div>
-                        <p class="ea-cover-title" id="ce-cover-title" aria-hidden="true"></p>
-                        <div class="ea-cover-lines" id="ce-cover-lines" aria-hidden="true"></div>
-                    </figure>
-                </a>
-                <div class="ce-copy" data-reveal style="--delay:.08s">
-                    <p class="hb-eyebrow ce-kicker" id="ce-kicker"></p>
-                    <h2 class="ce-title" id="ce-title"></h2>
-                    <p class="ce-lede" id="ce-lede"></p>
-                    <p class="ce-toc-head"><span>In this edition</span><span id="ce-count"></span></p>
-                    <ol class="ce-toc" id="ce-toc"></ol>
-                    <div class="hb-actions ce-actions">
-                        <a class="hb-btn hb-btn-ink ce-open" id="ce-open">Open the edition
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                        </a>
-                        <a class="hb-btn hb-btn-line" href="#editions">Past editions</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ========================= THE EDITIONS ========================= -->
-        <section class="hb-section eds" id="editions" aria-labelledby="eds-title">
-            <div class="wrap">
-                <div class="eds-head">
-                    <div>
-                        <p class="hb-eyebrow" data-reveal>The editions</p>
-                        <h2 class="h2" id="eds-title" data-reveal>Every season, <em>an edition.</em></h2>
-                    </div>
-                    <div class="eds-intro" data-reveal style="--delay:.08s">
-                        <p>We publish as we report, all year long. Then, at the turn of each season, the stories are bound together into an edition: a cover drawn for the issue, and a title that names what the season was about.</p>
-                        <p>Five editions so far, from our first issue in the winter of 2025. Each one is a record of what students in Washington were asking that season.</p>
-                    </div>
-                </div>
-                <ol class="shelf" id="shelf" aria-label="Every edition"></ol>
-                <div class="eds-foot">
-                    <!-- the next edition, before it is out (update when a new one is announced) -->
-                    <a class="peek" href="/edition-winter" data-reveal>
-                        <span class="peek-bg" aria-hidden="true"></span>
-                        <span class="peek-cover" aria-hidden="true">
-                            <span class="ea-cover">
-                                <img class="art" src="/editions/winter/cover-700.webp?v=1" alt="" width="700" height="937" loading="lazy" decoding="async">
-                                <span class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><span class="ea-dateline"><span>Winter 2027</span><span>No. 06</span></span></span>
-                                <span class="ea-cover-title">Medical Innovation in the Capital</span>
-                            </span>
-                        </span>
-                        <span class="peek-text">
-                            <span class="peek-kicker">Coming December 2026</span>
-                            <span class="peek-title">The Winter 2027 Edition. <em>Medical Innovation in the Capital.</em></span>
-                            <span class="peek-dek">The labs, clinics and classrooms where Washington is building the next generation of medicine.</span>
-                        </span>
-                        <span class="peek-cta">A sneak peek <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-                    </a>
-                    <a class="more-link eds-all" href="/edition-overview" data-reveal style="--delay:.08s">
-                        <h3>The edition archive <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></h3>
-                        <p>Every edition in one place: the covers, the themes and the stories inside them, season by season.</p>
-                    </a>
-                </div>
             </div>
         </section>
 
@@ -1546,13 +1345,12 @@
           cat: cat,
           tags: ((f.tags && f.tags.arrayValue && f.tags.arrayValue.values) || []).map(function (v) { return v.stringValue; }).filter(Boolean),
           img: img || FALLBACK_IMG,
-          href: '/article/' + encodeURIComponent(slug),
-          slug: slug, t: dt && !isNaN(dt) ? dt.getTime() : 0
+          href: '/article/' + encodeURIComponent(slug)
         };
       }
 
       function loadStories() {
-        var KEY = 'catalyst_beta_stories_v3';
+        var KEY = 'catalyst_beta_stories_v2';
         try { var c = sessionStorage.getItem(KEY); if (c) return Promise.resolve(JSON.parse(c)); } catch (e) {}
         var fields = ['title', 'authorName', 'author', 'publishedAt', 'createdAt', 'coverImage', 'deck', 'dek', 'excerpt', 'category', 'tags', 'slug'];
         var body = {
@@ -1594,7 +1392,6 @@
           '<a class="lead-link" href="' + esc(lead.href) + '">' +
             figure(lead, [800, 1200, 1600], '(max-width: 960px) 100vw, 58vw', false) +
             '<div class="lead-body" data-reveal>' +
-              edTag(lead) +
               '<p class="meta"><span class="cat">' + esc(catLabel(lead.cat)) + '</span>' + (lead.date ? ' &middot; ' + esc(lead.date) : '') + '</p>' +
               '<h3>' + esc(lead.title) + '</h3>' +
               (lead.deck ? '<p class="deck">' + esc(lead.deck) + '</p>' : '') +
@@ -1605,7 +1402,7 @@
         document.getElementById('latest-list').innerHTML = rest.map(function (s, i) {
           return '<li data-reveal style="--delay:' + (i * 0.08) + 's"><a href="' + esc(s.href) + '">' +
             figure(s, [400, 640, 960], '(max-width: 560px) 104px, (max-width: 960px) 50vw, 25vw') +
-            '<div><p class="meta"><span class="cat">' + esc(catLabel(s.cat)) + '</span>' + edMeta(s) + '</p><h4>' + esc(s.title) + '</h4>' +
+            '<div><p class="meta"><span class="cat">' + esc(catLabel(s.cat)) + '</span></p><h4>' + esc(s.title) + '</h4>' +
             '<p class="by">' + esc(s.author) + (s.date ? ' &middot; ' + esc(s.date) : '') + '</p></div>' +
           '</a></li>';
         }).join('');
@@ -1636,8 +1433,8 @@
         grid.innerHTML = shown.length ? shown.map(function (s, i) {
           return '<article class="card" data-reveal style="--delay:' + (i % 3) * 0.07 + 's"><a href="' + esc(s.href) + '">' +
             figure(s, [480, 720, 1080], '(max-width: 560px) 100vw, (max-width: 960px) 50vw, 33vw') +
-            '<div><p class="meta"><span class="cat">' + esc(catLabel(s.cat)) + '</span>' + (edMeta(s) || (s.date ? ' &middot; ' + esc(s.date) : '')) + '</p>' +
-            '<h4>' + esc(s.title) + '</h4><p class="by">By ' + esc(s.author) + (edMeta(s) && s.date ? ' &middot; ' + esc(s.date) : '') + '</p></div>' +
+            '<div><p class="meta"><span class="cat">' + esc(catLabel(s.cat)) + '</span>' + (s.date ? ' &middot; ' + esc(s.date) : '') + '</p>' +
+            '<h4>' + esc(s.title) + '</h4><p class="by">By ' + esc(s.author) + '</p></div>' +
           '</a></article>';
         }).join('') : '<p class="empty">No articles match that yet. Try a broader term, or <a href="/articles">browse every article</a>.</p>';
         observeReveals(grid);
@@ -1698,89 +1495,7 @@
         try { fetch('/api/analytics/visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function () {}); } catch (e) {}
       })();
 
-
-      /* ============================================================
-         EDITIONS — /editions/editions.json (written by the edition
-         build): which edition each story belongs to, the current
-         edition's spread and the shelf of every edition. A story
-         opened from here reads in its edition's design (?edition=).
-         ============================================================ */
-      var EDS = null, bySlug = {};
-      function edFor(s) {
-        if (!EDS) return null;
-        if (bySlug[s.slug]) return bySlug[s.slug];
-        // published since the last build: the edition whose season it falls in
-        for (var id in EDS) {
-          var e = EDS[id], a = Date.parse(e.start), b = Date.parse(e.end);
-          if (s.t && s.t >= a && s.t < b) return e;
-        }
-        return null;
-      }
-      function edLink(s) { var e = edFor(s); return e ? s.href + '?edition=' + encodeURIComponent(e.id) : s.href; }
-      function edTag(s) { var e = edFor(s); return e ? '<p class="ed-tag" style="--ed-acc:' + e.acc + '">From the ' + esc(e.label) + ' edition &middot; No. ' + esc(e.no) + '</p>' : ''; }
-      function edMeta(s) { var e = edFor(s); return e ? '<span class="ed"> &middot; ' + esc(e.label) + ' edition</span>' : ''; }
-      function coverTitle(e) { return esc(e.title); }
-
-      function renderEditionSpread() {
-        var cur = null;
-        for (var id in EDS) if (EDS[id].current) cur = EDS[id];
-        if (!cur) return;
-        var sec = document.getElementById('edition');
-        sec.style.setProperty('--acc', cur.acc); sec.style.setProperty('--tint', cur.paper);
-        var $ = function (i) { return document.getElementById(i); };
-        $('ce-banner').src = cur.banner.replace('hero-1600', 'hero-1600');
-        $('ce-banner').srcset = cur.banner + ' 1600w, ' + cur.banner.replace('hero-1600', 'hero-2600') + ' 2600w';
-        $('ce-banner').sizes = '100vw';
-        $('ce-art').src = cur.cover.replace('cover-700', 'cover-1100');
-        $('ce-art').alt = 'The ' + cur.label + ' edition cover.';
-        if (cur.night) $('ce-cover').classList.add('is-night');
-        $('ce-date').textContent = cur.label;
-        $('ce-cover-title').textContent = cur.title;
-        $('ce-cover-lines').innerHTML = cur.stories.slice(0, 2).map(function (s) { return '<p><span>' + esc(s.kicker) + '</span>' + esc(s.title) + '</p>'; }).join('');
-        $('ce-cover-link').href = cur.page; $('ce-cover-link').setAttribute('aria-label', 'Open the ' + cur.label + ' edition');
-        $('ce-kicker').innerHTML = 'The current edition &middot; ' + esc(cur.label) + ' &middot; No. ' + esc(cur.no);
-        var t = cur.title.replace(/ in the Capital$/, '');
-        $('ce-title').innerHTML = esc(t) + ' <em>in the Capital.</em>';
-        $('ce-lede').textContent = cur.lede;
-        $('ce-count').textContent = cur.count + (cur.count === 1 ? ' story' : ' stories') + ' · ' + cur.span;
-        $('ce-toc').innerHTML = cur.stories.slice(0, 5).map(function (s) {
-          return '<li><a href="/article/' + encodeURIComponent(s.slug) + '?edition=' + encodeURIComponent(cur.id) + '"><b>' + esc(s.title) + '</b><span>' + esc(s.author) + '</span></a></li>';
-        }).join('');
-        $('ce-open').href = cur.page;
-        sec.hidden = false;
-        observeReveals(sec);
-      }
-
-      function renderShelf() {
-        var list = Object.keys(EDS).map(function (id) { return EDS[id]; });   // oldest first, as they were published
-        var shelf = document.getElementById('shelf');
-        shelf.style.setProperty('--n', list.length);
-        shelf.innerHTML = list.map(function (e, i) {
-          return '<li data-reveal style="--delay:' + (i * 0.06).toFixed(2) + 's; --acc:' + e.acc + '"><a href="' + esc(e.page) + '" aria-label="The ' + esc(e.label) + ' edition: ' + esc(e.title) + '">' +
-            '<span class="ea-cover' + (e.night ? ' is-night' : '') + '">' +
-              '<img class="art" src="' + esc(e.cover) + '" alt="" width="700" height="937" loading="lazy" decoding="async">' +
-              '<span class="ea-mast"><img src="/editions/winter/masthead.webp?v=1" alt="" width="1400" height="234"><span class="ea-dateline"><span>' + esc(e.label) + '</span><span>No. ' + esc(e.no) + '</span></span></span>' +
-              '<span class="ea-cover-title">' + esc(e.title) + '</span>' +
-            '</span>' +
-            '<span class="shelf-no"><b>No. ' + esc(e.no) + '</b><span>' + esc(e.label) + (e.current ? ' · Current' : '') + '</span></span>' +
-            '<span class="shelf-t">' + esc(e.title) + '</span>' +
-            '<span class="shelf-c">' + e.count + ' stories</span>' +
-          '</a></li>';
-        }).join('');
-        observeReveals(shelf);
-      }
-
-      var editionsReady = fetch('/editions/editions.json').then(function (r) { if (!r.ok) throw new Error('editions ' + r.status); return r.json(); })
-        .then(function (d) {
-          EDS = d;
-          Object.keys(d).forEach(function (id) { d[id].id = id; d[id].stories.forEach(function (s) { bySlug[s.slug] = d[id]; }); });
-          renderEditionSpread(); renderShelf();
-        })
-        .catch(function (e) { console.warn('[beta] editions', e); document.getElementById('editions').hidden = true; });
-
-      Promise.all([loadStories(), editionsReady]).then(function (r) {
-        var list = r[0];
-        list.forEach(function (s) { s.href = edLink(s); });
+      loadStories().then(function (list) {
         if (!list.length) throw new Error('empty');
         renderLatest(list);
         archive.all = list;

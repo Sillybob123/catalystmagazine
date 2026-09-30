@@ -104,7 +104,7 @@
           '<span class="ed-next__ed-title">' + esc(ed.title) + '</span>' +
           '<span class="ed-next__ed-meta">' + n + ' stories &middot; ' + esc(ed.span) + '</span>' +
           '<span class="ed-next__ed-btn">Open the edition' + ARROW + '</span></span></a>' +
-        '<a class="ed-next__all" href="/edition-overview">Every edition of The Catalyst' + ARROW + '</a>' +
+        '<a class="ed-next__all" href="/editions">Every edition of The Catalyst' + ARROW + '</a>' +
       '</section>';
     var share = root.querySelector('.article-share');
     if (share) share.insertAdjacentHTML('afterend', html);

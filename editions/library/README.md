@@ -37,7 +37,7 @@ its hero photo is dark, whether the cover's sky is dark, and its status.
      masthead turns light.
 5. Weather: `data-weather="snow"` for winter, `"petals"` for spring, none for
    summer and fall.
-6. Add the edition to `edition-overview.html` (hero fan, year rail, a chapter).
+6. Add the edition to `editions.html` (hero fan, year rail, a chapter).
 
 Covers get their page edges (the pages showing behind the cover, so it looks
 like a real magazine) from `css/magazine.css`: every cover component already
