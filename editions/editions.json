@@ -1,0 +1,498 @@
+{
+ "winter-2025": {
+  "label": "Winter 2025",
+  "no": "01",
+  "title": "Science in the Capital",
+  "page": "/edition-winter-2025",
+  "cover": "/editions/winter-2025/cover-700.webp?v=1",
+  "banner": "/editions/winter-2025/hero-1600.webp?v=1",
+  "span": "December 2024 – February 2025",
+  "acc": "#3b6e8f",
+  "paper": "#f3f6f8",
+  "deep": "#0b1526",
+  "current": false,
+  "night": false,
+  "stories": [
+   {
+    "slug": "an-ode-to-microglia",
+    "title": "An Ode to Microglia",
+    "kicker": "Op-Ed",
+    "author": "Naama Ben-Dor",
+    "img": "/editions/winter-2025/stories/an-ode-to-microglia-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/an-ode-to-microglia-1300.webp?v=1"
+   },
+   {
+    "slug": "from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy",
+    "title": "From Music to Nuclear Policy: Professor Christopher Cahill’s unexpected Journey in Science and Policy",
+    "kicker": "Profile",
+    "author": "Lori Preci and Yair Ben-Dor",
+    "img": "/editions/winter-2025/stories/from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy-1300.webp?v=1"
+   },
+   {
+    "slug": "the-district-a-sustainable-city",
+    "title": "The District: A Sustainable City?",
+    "kicker": "Feature",
+    "author": "Ginger Taurek",
+    "img": "/editions/winter-2025/stories/the-district-a-sustainable-city-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/the-district-a-sustainable-city-1300.webp?v=1"
+   },
+   {
+    "slug": "understanding-science-to-learn-science-dopamine-and-why-you-should-care",
+    "title": "Understanding Science to Learn Science: Dopamine and Why You Should Care",
+    "kicker": "Op-Ed",
+    "author": "Naama Ben-Dor",
+    "img": "/editions/winter-2025/stories/understanding-science-to-learn-science-dopamine-and-why-you-should-care-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/understanding-science-to-learn-science-dopamine-and-why-you-should-care-1300.webp?v=1"
+   },
+   {
+    "slug": "from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry",
+    "title": "From Fluorine to Forensics: The Road From Academia to Forensic Chemistry",
+    "kicker": "Interview",
+    "author": "Naama Ben-Dor",
+    "img": "/editions/winter-2025/stories/from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry-1300.webp?v=1"
+   },
+   {
+    "slug": "everything-sings-the-science-of-systems",
+    "title": "Everything Sings: The Science of Systems",
+    "kicker": "Op-Ed",
+    "author": "Aidan Schurr",
+    "img": "/editions/winter-2025/stories/everything-sings-the-science-of-systems-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/everything-sings-the-science-of-systems-1300.webp?v=1"
+   },
+   {
+    "slug": "a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells",
+    "title": "A Universe of Plasma: How one Scientist Connects his World from Satellites to Cells.",
+    "kicker": "Interview",
+    "author": "Aidan Schurr",
+    "img": "/editions/winter-2025/stories/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells-1300.webp?v=1"
+   },
+   {
+    "slug": "how-cutting-edge-research-in-washington-dc-is-reshaping-science-and-medicine",
+    "title": "How Cutting-Edge Research in Washington, D.C. is Reshaping Science and Medicine",
+    "kicker": "Feature",
+    "author": "Yair Ben-Dor",
+    "img": "/editions/winter-2025/stories/how-cutting-edge-research-in-washington-dc-is-reshaping-science-and-medicine-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/how-cutting-edge-research-in-washington-dc-is-reshaping-science-and-medicine-1300.webp?v=1"
+   },
+   {
+    "slug": "from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-research",
+    "title": "From Brain to Bench to Bedside and Beyond: How a DC Neuroscientist is Changing Brain Disease Research",
+    "kicker": "Profile",
+    "author": "Aidan Schurr",
+    "img": "/editions/winter-2025/stories/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-research-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/from-brain-to-bench-to-bedside-and-beyond-how-a-dc-neuroscientist-is-changing-brain-disease-research-1300.webp?v=1"
+   },
+   {
+    "slug": "chromatic-chemistry-transition-metals-and-natures-hidden-color-palette",
+    "title": "Chromatic Chemistry: Transition Metals and Nature’s Hidden Color Palette",
+    "kicker": "Op-Ed",
+    "author": "Lori Preci",
+    "img": "/editions/winter-2025/stories/chromatic-chemistry-transition-metals-and-natures-hidden-color-palette-900.webp?v=1",
+    "art": "/editions/winter-2025/stories/chromatic-chemistry-transition-metals-and-natures-hidden-color-palette-1300.webp?v=1"
+   }
+  ]
+ },
+ "spring-2025": {
+  "label": "Spring 2025",
+  "no": "02",
+  "title": "Discovery in the Capital",
+  "page": "/edition-spring-2025",
+  "cover": "/editions/spring-2025/cover-700.webp?v=1",
+  "banner": "/editions/spring-2025/hero-1600.webp?v=1",
+  "span": "March – May 2025",
+  "acc": "#a8436a",
+  "paper": "#fbf5f3",
+  "deep": "#3a1f33",
+  "current": false,
+  "night": false,
+  "stories": [
+   {
+    "slug": "serendipity-and-science-the-journey-of-dr-john-hawdon",
+    "title": "Serendipity and Science: The Journey of Dr. John Hawdon",
+    "kicker": "Profile",
+    "author": "Lori Preci",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Fstatic.wixstatic.com%2Fmedia%2F44031f_75620e6213e04a56b298580689208fce~mv2.jpeg%2Fv1%2Ffill%2Fw_702%2Ch_407%2Cal_c%2Cq_80%2Cusm_0.66_1.00_0.01%2Cenc_avif%2Cquality_auto%2Fshutterstock_1898354080.jpeg&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "how-the-world-of-genetics-shapes-evolution",
+    "title": "How The World of Genetics Shapes Evolution",
+    "kicker": "Profile",
+    "author": "Alex Carter",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Fstatic.wixstatic.com%2Fmedia%2F11b1c4_9e5fcb3b2c194aba87fb93241ade3b8b~mv2.jpeg%2Fv1%2Ffill%2Fw_702%2Ch_407%2Cal_c%2Cq_80%2Cusm_0.66_1.00_0.01%2Cenc_avif%2Cquality_auto%2Fshutterstock_1898354080.jpeg&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "sciences-silly-lexicon-wacky-words-to-brighten-your-day-and-casually-drop-into-conversation",
+    "title": "Science’s Silly Lexicon: Wacky Words to Brighten Your Day (and Casually Drop Into Conversation)",
+    "kicker": "Op-Ed",
+    "author": "Naama Ben-Dor",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Fstatic.wixstatic.com%2Fmedia%2F11b1c4_cbb1af6fc4d14f7e9234a01bd9d802ac~mv2.jpeg%2Fv1%2Ffill%2Fw_585%2Ch_327%2Cal_c%2Cq_80%2Cusm_0.66_1.00_0.01%2Cenc_avif%2Cquality_auto%2Fshutterstock_1898354080.jpeg&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-significance-of-genetics-in-insect-coloration-and-evolution",
+    "title": "The Significance of Genetics in Insect Coloration and Evolution",
+    "kicker": "Feature",
+    "author": "Alex Carter",
+    "img": "/postimages/insectcolor.webp",
+    "art": null
+   },
+   {
+    "slug": "how-one-engineer-is-changing-sustainable-fuels",
+    "title": "How One Engineer is Changing Sustainable Fuels",
+    "kicker": "Profile",
+    "author": "Aidan Schurr",
+    "img": "/postimages/howone.webp",
+    "art": null
+   },
+   {
+    "slug": "pollution-to-solution-dr-song-gao-on-science-policy-and-environmental-sustainability",
+    "title": "Pollution to Solution: Dr. Song Gao on Science, Policy, and Environmental Sustainability",
+    "kicker": "Feature",
+    "author": "Naama Ben-Dor",
+    "img": "/postimages/poltosol.webp",
+    "art": null
+   },
+   {
+    "slug": "the-fascinating-role-of-paradoxes-in-science",
+    "title": "The Fascinating Role of Paradoxes in Science",
+    "kicker": "Feature",
+    "author": "Lori Preci",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fbf5e1a447925619c4f06199cb3298685644e1190d41c577dbf197720aa805515.webp%3Falt%3Dmedia%26token%3D62566678-3dd0-4079-9302-0c8784ff0229&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-role-of-science-communication-in-todays-discourse",
+    "title": "The Role of Science Communication in Today's Discourse",
+    "kicker": "Feature",
+    "author": "Alex Carter and Aidan Schurr",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F9f0a5a20f7965a9037260905423dd2c9ad1dbac8abc42320c0d1320e07201d29.webp%3Falt%3Dmedia%26token%3De25c21b9-66b9-4fe3-8d36-64ae68d8892a&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-declarativeprocedural-model-understanding-language-and-memory",
+    "title": "The Declarative/Procedural Model: Understanding Language and Memory",
+    "kicker": "Feature",
+    "author": "Yair Ben-Dor",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fdf49ac74da70a53b3bd146471c3c6a29de5d6a1a8c3c487063f954b2c9b1f895.webp%3Falt%3Dmedia%26token%3D0990207e-5de8-421e-85a0-b2d0c5a1a105&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   }
+  ]
+ },
+ "fall-2025": {
+  "label": "Fall 2025",
+  "no": "03",
+  "title": "Health & the Mind in the Capital",
+  "page": "/edition-fall-2025",
+  "cover": "/editions/fall-2025/cover-700.webp?v=1",
+  "banner": "/editions/fall-2025/hero-1600.webp?v=1",
+  "span": "June – November 2025",
+  "acc": "#a4562a",
+  "paper": "#f6f1ea",
+  "deep": "#0e1628",
+  "current": false,
+  "night": true,
+  "stories": [
+   {
+    "slug": "scott-sklars-vision-for-renewable-energy",
+    "title": "Scott Sklar's Vision for Renewable Energy",
+    "kicker": "Profile",
+    "author": "Ginger Taurek",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fa4a82a60ac8e663222bc2d9798e1e9a3f5b074de96e18e095fbda7b90dbf1102.webp%3Falt%3Dmedia%26token%3De897ba68-a417-4f42-849c-143d0e7f56f2&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "from-battling-a-rare-bioweapon-pathogen-to-pioneering-global-health-security",
+    "title": "From Battling a Rare Bioweapon Pathogen to Pioneering Global Health Security",
+    "kicker": "Profile",
+    "author": "Aidan Schurr",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F4250445a5edb6cf34391794a4273eab433fcea0f2722c10cc846357ed42c80fd.webp%3Falt%3Dmedia%26token%3D314a2df6-cfdd-40a3-97c6-44122ab7dd19&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "how-coastal-trees-adapt-amid-rising-seas",
+    "title": "How Coastal Trees Adapt Amid Rising Seas",
+    "kicker": "Feature",
+    "author": "Aidan Brown",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fd4fd2ab7f4e96fc1508a3400ff29ea8497d6936213fae77c3656611a719b8002.webp%3Falt%3Dmedia%26token%3Dfe238b0a-0caf-44ec-9cbf-34928243b794&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-star-of-the-nervous-system-an-ode-to-the-astrocyte",
+    "title": "The Star of the Nervous System: An Ode to the Astrocyte",
+    "kicker": "Op-Ed",
+    "author": "Naama Ben-Dor",
+    "img": "/postimages/astrocyte.webp",
+    "art": null
+   },
+   {
+    "slug": "how-dr-brandon-kohrt-is-expanding-access-to-mental-health-care",
+    "title": "How Dr. Brandon Kohrt is Expanding Access to Mental Health Care",
+    "kicker": "Feature",
+    "author": "Lori Preci and Aidan Schurr",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F9d24f15ca8d12a9fd39517c5869dc4a7fb3f39ebc9c2ee4d1bc2fc523e9a3b87.webp%3Falt%3Dmedia%26token%3D03ac0636-e15e-446a-acff-83fc37428ca1&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "charting-the-future-of-myasthenia-gravis-therapy-with-dr-henry-kaminski",
+    "title": "Charting the Future of Myasthenia Gravis Therapy With Dr. Henry Kaminski",
+    "kicker": "Feature",
+    "author": "Alex Carter",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F21118c70a8e56ac9ef4fb0cdc7d11533e2352cb5a7e61561c26cc51bd19a6f08.webp%3Falt%3Dmedia%26token%3Dca41d1b8-6c32-4d32-b29b-2d1b52410678&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-cosmic-journey-of-dr-duilia-de-mello",
+    "title": "The Cosmic Journey of Dr. Duilia De Mello",
+    "kicker": "Profile",
+    "author": "Layla Abdoulaye",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fe7d108dd158b12855a9b9ba99d7c8a5365304900c8f8f83c0eaf465fd0103ca0.webp%3Falt%3Dmedia%26token%3D5d351a5f-12c6-4cf7-ae85-ea4e48149c54&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "how-community-led-science-is-revolutionizing-research",
+    "title": "How Community-Led Science is Revolutionizing Research",
+    "kicker": "Feature",
+    "author": "Aidan Brown",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F401aff29866cfb4f9526ad241bfef850419e3a655255724d0c835a13a2832ff4.webp%3Falt%3Dmedia%26token%3D5c8686f9-d345-4bec-bed1-b3843bc45ef2&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-geography-of-risk-how-dc-neighborhoods-shape-childrens-health",
+    "title": "The Geography of Risk: How D.C. Neighborhoods Shape Children's Health",
+    "kicker": "Feature",
+    "author": "Alexis Tamm",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F16facbc45d25436e3bea3be00e0bf9b342dc1a34e95f2258569366b5907507ff.webp%3Falt%3Dmedia%26token%3D054ab06c-a30b-4bfa-a2af-7bbbd95c5738&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "i-am-therefore-i-see-how-the-brain-edits-reality-on-the-fly",
+    "title": "I Am, therefore I See: How The Brain Edits Reality on The Fly",
+    "kicker": "Feature",
+    "author": "Le Nguyen",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fdc7ec2d0ac36ef0b5837cee6785ad62724aee03ed42e6396b9ff98135991b706.webp%3Falt%3Dmedia%26token%3D77890f40-164d-4ad6-9730-bf55286c8a2c&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "decoding-demyelination-a-look-inside-dr-jeffrey-huangs-innovative-research-on-ms",
+    "title": "Decoding Demyelination: A Look Inside Dr. Jeffrey Huang's Innovative Research on MS",
+    "kicker": "Interview",
+    "author": "Naama Ben-Dor",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F49b5d979192af66c693c1fe850f6a3fe3c82df84314c611a6f72ced7357203c5.webp%3Falt%3Dmedia%26token%3Dcad08dc7-d40f-47b0-9583-5dec3554a188&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-imerse-lab-a-new-era-of-autonomous-surgical-robotics",
+    "title": "The IMERSE Lab: A New Era of Autonomous Surgical Robotics",
+    "kicker": "Feature",
+    "author": "Lori Preci",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F8b500f57ed70f3ca5650d6b13fbf284744f22c5dabc4f3458137da41252ef629.webp%3Falt%3Dmedia%26token%3D922dc0ce-14d3-4cb2-add5-f946cc443966&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "can-ai-transform-speech-therapy-welcome-to-worlds-of-hello",
+    "title": "Can AI transform speech therapy? Welcome to Worlds of Hello",
+    "kicker": "Feature",
+    "author": "Alexis Tamm",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Ff74eb3568db96ea1a720eee28bc862dd8506e8062a31b23e516e3367d660ced2.webp%3Falt%3Dmedia%26token%3Ddf29d3f8-acc7-40c2-bfcb-a74f36f07229&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   }
+  ]
+ },
+ "spring-2026": {
+  "label": "Spring 2026",
+  "no": "04",
+  "title": "Minds, Machines & Microbes in the Capital",
+  "page": "/edition-spring-2026",
+  "cover": "/editions/spring-2026/cover-700.webp?v=1",
+  "banner": "/editions/spring-2026/hero-1600.webp?v=1",
+  "span": "December 2025 – May 2026",
+  "acc": "#9b3a6e",
+  "paper": "#fbf5f3",
+  "deep": "#33192b",
+  "current": false,
+  "night": false,
+  "stories": [
+   {
+    "slug": "a-paradim-shift",
+    "title": "A PARADIM Shift",
+    "kicker": "Feature",
+    "author": "Sydney Reiser",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F1776464650856-Crystal_edited.jpg%3Falt%3Dmedia%26token%3D51ae82a8-d368-4595-9ed5-71de2f025cc9&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-pros-and-cons-of-protons",
+    "title": "The Pros and Cons of Protons",
+    "kicker": "Feature",
+    "author": "Layla Abdoulaye",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F1776475477137-AdobeStock_1927404706.jpeg%3Falt%3Dmedia%26token%3Db2e793c2-1424-4c09-8f7c-d63baa2d4dfa&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "why-forgetting-is-healthy-how-research-is-reshaping-our-understanding-of-how-we-",
+    "title": "Why Forgetting is Healthy: How Research is Reshaping Our Understanding of How We Forget",
+    "kicker": "Feature",
+    "author": "Belinda Li",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F1776464721806-Curve-of-forgetting-hero-image-eworks-article_edited.jpg%3Falt%3Dmedia%26token%3D906d7830-ae00-4608-8973-8cbfbfa9d304&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "a-model-for-the-future-ai-in-higher-education",
+    "title": "A Model for the Future: AI in Higher Education",
+    "kicker": "Feature",
+    "author": "Aidan Brown",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F2760dce664ee537f89adbffb4be4e9f914c9d1d24777ec084cab5a5cc508174a.webp%3Falt%3Dmedia%26token%3D021a7579-011e-47dd-9d94-d36ecd264d3c&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "from-simple-questions-to-scalable-solutions-inside-gw-s-next-healthcare-innovato",
+    "title": "Beyond the Bedside: Aditya Loganathan’s Quest to Fix Healthcare’s Invisible Systems",
+    "kicker": "Profile",
+    "author": "Jada Traynor",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F1776464610293-AdobeStock_551617472.webp%3Falt%3Dmedia%26token%3D8014b002-3b14-4b48-bee7-af7236998e99&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "unfolding-the-mystery-of-misfolded-proteins-dr-kathy-maguire-zeisss-research-on-neurodegeneration",
+    "title": "Unfolding the Mystery of Misfolded Proteins: Dr. Kathy Maguire-Zeiss’s Research on Neurodegeneration",
+    "kicker": "Interview",
+    "author": "Naama Ben-Dor",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F40f2a2e22b33f668b16c56d78595330b4497afc2b374d1e46f03725446453252.webp%3Falt%3Dmedia%26token%3Dbcb03e99-9ab1-4535-bf75-037a42c25834&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "microbes-as-a-mechanism-for-environmental-adaptation",
+    "title": "Microbes as a Mechanism for Environmental Adaptation",
+    "kicker": "Feature",
+    "author": "Izzy Lubinsky",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fbc83978c8b7e9897e76f7a125b9f08d7c288dd949ae7958702303be1a727df04.webp%3Falt%3Dmedia%26token%3D1805f52e-5af0-405d-ac04-10407e74ed67&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "snap-back-for-food-security",
+    "title": "The AI Defense: Savoring the Future of Food Security",
+    "kicker": "Feature",
+    "author": "Aidan Brown",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F3f95003ce53e823632b2c787c885c8334acf8675da57a4c467892ecc6448d0c0.png%3Falt%3Dmedia%26token%3D3ee03b03-0b8d-46a6-8d60-9ad1d4a24f60&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "science-technology-and-international-affairs-at-georgetown-university",
+    "title": "Dismantling the \"Safe from Science\" Myth: How Georgetown is Closing the Policy Translation Gap",
+    "kicker": "Feature",
+    "author": "Alexis Tamm",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F1a7fcaa34174e63707526557a3c112717d5ac1340befa65310c373c9b3934bed.webp%3Falt%3Dmedia%26token%3D7666417e-3ead-498c-bf6e-918a1c6f0e6f&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "different-flavors-of-thirst",
+    "title": "The Hidden Thirst Killing Coastal Forests",
+    "kicker": "Op-Ed",
+    "author": "Juan Martinez",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F694ad663beb5ddb665f1e5d2d74eb1ef52703031d4fed009ee92d5764ed30c15.webp%3Falt%3Dmedia%26token%3Df637740d-d705-4b2c-9045-1a82fbf9ffd2&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   }
+  ]
+ },
+ "fall-2026": {
+  "label": "Fall 2026",
+  "no": "05",
+  "title": "New Frontiers in the Capital",
+  "page": "/edition-fall-2026",
+  "cover": "/editions/fall-2026/cover-700.webp?v=1",
+  "banner": "/editions/fall-2026/hero-1600.webp?v=1",
+  "span": "June – November 2026",
+  "acc": "#9a5a2e",
+  "paper": "#f7f1e8",
+  "deep": "#2a1d14",
+  "current": true,
+  "night": false,
+  "stories": [
+   {
+    "slug": "whats-on-your-plate",
+    "title": "What's on Your Plate?",
+    "kicker": "Op-Ed",
+    "author": "Cameron Fields",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F116e35073be955277301b0a2b46c054a996305820e1f20e16b8070bf3f2aa5f2.webp%3Falt%3Dmedia%26token%3D97b87153-9879-4271-b444-f8625bc6ae33&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "tackling-anthelmintic-resistance",
+    "title": "Tackling Anthelmintic Resistance",
+    "kicker": "Feature",
+    "author": "Sienna Halstead",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fc80236c98902181446dc0ce804155dd05f98b376b5fb84169a0f8eb1c6681c46.webp%3Falt%3Dmedia%26token%3Def09ea8f-6015-455b-acf7-13414f08068a&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "making-algae-dance-how-collaboration-across-disciplines-could-transform-algae-harvesting",
+    "title": "Making Algae “Dance”: How Fluid Dynamics Could Transform Microalgae Harvesting",
+    "kicker": "Feature",
+    "author": "Jada Traynor",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fa8f5052dd5efa49b758de6fd7a2bb563b46a0894fd0b2dbf7af1400174b1ef70.webp%3Falt%3Dmedia%26token%3D26ebd852-95e2-4b7e-933e-c59f5631d910&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "parallels-of-physics-and-creativity-exploring-a-common-misconception",
+    "title": "Parallels of Physics and Creativity: Exploring a Common Misconception",
+    "kicker": "Op-Ed",
+    "author": "LaMyla Hill",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252Fa8d44003ae46caed713c34e70cef6d3c02410d5f41a4a09a300a5f1c80114bfa.webp%3Falt%3Dmedia%26token%3D4690cfe7-adb9-42de-a64d-3251b1c36909&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "is-alzheimers-really-a-brain-disease-or-a-metabolic-one-the-research-rewriting-how-we-think-about-dementia",
+    "title": "Is Alzheimer’s Really a Brain Disease—or a Metabolic One? The Research Rewriting How We Think About Dementia",
+    "kicker": "Science",
+    "author": "Yahav Gutman",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FEEA00zbqxKZNmL00G2KyQesxrxw1%252Fimages%252F1994975acfb9061e83bb9662fd9082a1d42b37096517b5e4f49bfe3d3a7af7ba.jpg%3Falt%3Dmedia%26token%3Daa9c119d-1ca1-4e43-80f8-4189a15ea065&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "saving-the-good-guys-the-quest-for-target-specific-antibiotics",
+    "title": "Saving the Good Guys: The Quest for Target-Specific Antibiotics",
+    "kicker": "Feature",
+    "author": "Sienna Halstead",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F5a74002b5b3a4c7a31c08431dbf6060bd0b530b585fad0877e5271424281a371.webp%3Falt%3Dmedia%26token%3Dbd629e69-b38d-4518-8e20-16fb2fe6539f&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "the-breakthrough-that-began-with-a-blast",
+    "title": "Born from a Blast: How a Special Forces Veteran Built an \"EKG for the Brain\"",
+    "kicker": "Feature",
+    "author": "Jada Traynor",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F6bc8f9794e3b8f2d280f7c0f1d75b04b6e6a6a39c2a20dfd883a6890da222abb.webp%3Falt%3Dmedia%26token%3D7cba9e6a-697d-41a1-9912-918c8a9dfd57&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "nasa-davinci-what-the-mission-to-venus-says-about-humanitys-place-in-space",
+    "title": "NASA DAVINCI: What the Mission To Venus Says About Humanity's Place in Space",
+    "kicker": "Feature",
+    "author": "Josh Shapo",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F0e1ab43463b1340ed72edb16915795fb157178bdc41f6dcc1578b6add9f6be68.webp%3Falt%3Dmedia%26token%3D16cba7c4-d13b-4be8-a8bc-403e4ee99c22&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "weaving-an-innovative-future",
+    "title": "Weaving an Innovative Future",
+    "kicker": "Profile",
+    "author": "Ginger Taurek",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F5206c98772209ff0229462ce3297c4ef01acdb31afd5af8aae306e25caa903f1.webp%3Falt%3Dmedia%26token%3D4bcad5b6-414e-4052-904c-16ea6493b427&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   },
+   {
+    "slug": "an-anthropologists-take-on-public-health-the-simple-art-of-listening",
+    "title": "An Anthropologist's Take on Public Health: The Simple Art of Listening",
+    "kicker": "Feature",
+    "author": "Sienna Halstead",
+    "img": "https://wsrv.nl/?url=https%3A%2F%2Ffirebasestorage.googleapis.com%2Fv0%2Fb%2Fcatalystwriters-5ce43.firebasestorage.app%2Fo%2Fstories%252FKt9ysKREfoZqC8c2Cm4ZB7cQjTb2%252Fimages%252F301fca4f1f2e5d5d2621307f3ae454c8fec0f089e4763cc3b78bd3939a1f2be1.webp%3Falt%3Dmedia%26token%3Dfdeaad67-7608-450c-bed9-1e6d6a9857d2&w=600&q=82&output=webp&fit=cover&we=",
+    "art": null
+   }
+  ]
+ }
+}

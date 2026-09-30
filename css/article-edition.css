@@ -1,0 +1,150 @@
+/* ============================================================
+   Article, read from an edition (body.in-edition, set by
+   js/article-edition.js). The edition's colours come in as
+   --ed-acc / --ed-paper / --ed-deep; everything else is the
+   normal article page (css/article-premium.css).
+   ============================================================ */
+body[data-page="article"].in-edition {
+  --accent: var(--ed-acc);
+  --accent-soft: var(--ed-acc);
+  --paper: var(--ed-paper);
+  --paper-tint: var(--ed-paper);
+  --line: color-mix(in srgb, var(--ed-acc) 18%, #e6e6e6);
+  background: var(--ed-paper);
+}
+
+/* ---------- hero: the edition's night falls at the foot ---------- */
+.in-edition .article-hero::before {
+  background: linear-gradient(180deg,
+    rgba(0,0,0,0) 0%, rgba(0,0,0,.1) 32%,
+    color-mix(in srgb, var(--ed-deep) 70%, transparent) 76%,
+    var(--ed-deep) 100%);
+}
+.in-edition .ed-folio {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center;
+  max-width: 560px; margin: 0 0 22px; padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.34);
+  font: 600 11px/1.3 "Poppins", var(--sans); letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(255,255,255,.88);
+}
+.in-edition .ed-folio span + span::before { content: ""; display: inline-block; width: 18px; height: 1px; margin: 0 14px 3px 0; background: currentColor; vertical-align: middle; opacity: .6; }
+.in-edition .article-hero__category { background: var(--ed-acc); border-color: var(--ed-acc); }
+
+/* ---------- the "in this edition" ribbon ---------- */
+.ed-ribbon {
+  display: block; background: var(--ed-deep); color: #fbf8f3; text-decoration: none;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.ed-ribbon__in {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 20px;
+  max-width: 880px; margin: 0 auto; padding: 16px 24px 18px;
+}
+.ed-ribbon__text { display: grid; gap: 2px; min-width: 0; }
+.ed-ribbon__kicker { font: 600 11px/1.3 "Poppins", var(--sans); letter-spacing: .2em; text-transform: uppercase; color: color-mix(in srgb, var(--ed-acc) 45%, #fff); }
+.ed-ribbon__title { font: italic 400 20px/1.25 var(--serif); color: #fbf8f3; }
+.ed-ribbon__meta { display: grid; justify-items: end; gap: 4px; font: 500 12.5px/1.3 "Poppins", var(--sans); color: rgba(251,248,243,.7); white-space: nowrap; }
+.ed-ribbon__go { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #fbf8f3; }
+.ed-ribbon__go svg { width: 15px; height: 15px; transition: transform .25s cubic-bezier(.16,1,.3,1); }
+.ed-ribbon:hover .ed-ribbon__go svg { transform: translateX(3px); }
+.ed-ribbon:focus-visible { outline: 2px solid var(--ed-acc); outline-offset: -4px; }
+
+/* ---------- a small magazine cover ---------- */
+.ed-cover {
+  position: relative; display: block; flex: none; aspect-ratio: 3584 / 4800; container-type: inline-size;
+  overflow: hidden; border-radius: 2px; background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25), 0 14px 30px -14px rgba(0,0,0,.6);
+}
+.ed-cover--sm { width: 58px; }
+.ed-cover--md { width: 150px; }
+.ed-cover__art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ed-cover__mast { position: absolute; left: 6.5cqw; right: 6.5cqw; top: 5cqw; }
+.ed-cover__mast img { display: block; width: 100%; height: auto; }
+.ed-cover__date {
+  display: flex; justify-content: space-between; margin-top: 2.2cqw; padding-top: 1.6cqw;
+  border-top: 1px solid rgba(15,23,42,.55);
+  font: 600 2.6cqw/1 "Poppins", sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #0f172a;
+}
+.ed-cover__title { position: absolute; left: 6.5cqw; width: 46cqw; top: 30cqw; font: italic 400 7.4cqw/1.02 var(--serif); color: #0f172a; }
+.ed-cover--sm .ed-cover__date, .ed-cover--sm .ed-cover__title { display: none; }
+.ed-cover.is-night .ed-cover__mast img { filter: invert(1) brightness(1.08); }
+.ed-cover.is-night .ed-cover__date { color: #f5f1ea; border-top-color: rgba(245,241,234,.6); }
+.ed-cover.is-night .ed-cover__title { color: #f5f1ea; text-shadow: 0 1px 1.4cqw rgba(24,22,52,.55); }
+
+/* ---------- the body, in the edition's colours ---------- */
+.in-edition .article-body > p:first-of-type::first-letter { color: var(--ed-acc); font-size: 5.2em; }
+.in-edition .article-body h2::before {
+  content: ""; display: block; width: 36px; height: 2px; margin-bottom: 16px; background: var(--ed-acc);
+}
+.in-edition .article-body figure.rt-pullquote,
+.in-edition .article-body blockquote { border-top-color: var(--ed-acc); border-bottom-color: var(--ed-acc); }
+.in-edition .article-byline__avatar { background: var(--ed-acc); color: #fff; }
+
+/* ---------- continue reading this edition ---------- */
+.ed-next {
+  max-width: 880px; margin: 72px auto 8px; padding-top: 22px;
+  border-top: 2px solid var(--ed-deep);
+}
+.ed-next__head {
+  display: flex; justify-content: space-between; gap: 16px;
+  font: 600 11.5px/1.2 "Poppins", var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-muted);
+}
+.ed-next__h { margin: 26px 0 30px; font: 700 clamp(30px, 3.6vw, 44px)/1.05 "Poppins", var(--sans); letter-spacing: -0.035em; color: var(--ink); }
+.ed-next__h em { font: italic 400 1em/1 var(--serif); letter-spacing: -0.01em; color: var(--ed-acc); }
+.ed-next__grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 36px); }
+.ed-next__card { display: grid; gap: 8px; align-content: start; color: inherit; text-decoration: none; }
+.ed-next__card:last-child { text-align: right; }
+.ed-next__img { display: block; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 4px; background: color-mix(in srgb, var(--ed-acc) 12%, #eee); box-shadow: 0 2px 4px rgba(0,0,0,.06), 0 26px 50px -30px rgba(0,0,0,.4); }
+.ed-next__img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .7s cubic-bezier(.16,1,.3,1); }
+.ed-next__card:hover .ed-next__img img { transform: scale(1.04); }
+.ed-next__dir { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font: 600 11.5px/1.2 "Poppins", var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-muted); }
+.ed-next__card:last-child .ed-next__dir { justify-content: flex-end; }
+.ed-next__dir svg { width: 14px; height: 14px; }
+.ed-next__kicker { font: 600 11px/1.2 "Poppins", var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--ed-acc); }
+.ed-next__title { font: 600 clamp(18px, 1.6vw, 21px)/1.25 "Poppins", var(--sans); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; }
+.ed-next__card:hover .ed-next__title { text-decoration: underline; text-decoration-color: var(--ed-acc); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+.ed-next__by { font: 500 13.5px/1.4 "Poppins", var(--sans); color: var(--ink-muted); }
+
+.ed-next__edition {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: clamp(20px, 3vw, 36px);
+  margin-top: 48px; padding: clamp(22px, 3.4vw, 36px); border-radius: 8px;
+  color: #fbf8f3; text-decoration: none; background: var(--ed-deep);
+}
+.ed-next__edition::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(90deg, var(--ed-deep) 12%, color-mix(in srgb, var(--ed-deep) 55%, transparent) 55%, color-mix(in srgb, var(--ed-deep) 25%, transparent)), var(--ed-banner) center / cover;
+  transition: transform 1.2s cubic-bezier(.16,1,.3,1);
+}
+.ed-next__edition:hover::before { transform: scale(1.03); }
+.ed-next__ed-text { display: grid; gap: 6px; }
+.ed-next__ed-kicker { font: 600 11px/1.2 "Poppins", var(--sans); letter-spacing: .2em; text-transform: uppercase; color: color-mix(in srgb, var(--ed-acc) 45%, #fff); }
+.ed-next__ed-title { font: italic 400 clamp(24px, 2.8vw, 32px)/1.12 var(--serif); }
+.ed-next__ed-meta { font: 500 13.5px/1.4 "Poppins", var(--sans); color: rgba(251,248,243,.75); }
+.ed-next__ed-btn {
+  justify-self: start; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 10px; padding: 0 20px;
+  border-radius: 999px; background: #fbf8f3; color: var(--ed-deep); font: 600 14px/1 "Poppins", var(--sans);
+}
+.ed-next__ed-btn svg { width: 16px; height: 16px; transition: transform .25s cubic-bezier(.16,1,.3,1); }
+.ed-next__edition:hover .ed-next__ed-btn svg { transform: translateX(3px); }
+.ed-next__all {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 14px;
+  font: 600 14px/1 "Poppins", var(--sans); color: var(--ink); text-decoration: none;
+}
+.ed-next__all svg { width: 15px; height: 15px; color: var(--ed-acc); transition: transform .25s cubic-bezier(.16,1,.3,1); }
+.ed-next__all:hover svg { transform: translateX(3px); }
+.ed-next__card:focus-visible, .ed-next__edition:focus-visible, .ed-next__all:focus-visible { outline: 2px solid var(--ed-acc); outline-offset: 4px; }
+
+@media (max-width: 700px) {
+  .ed-ribbon__in { grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 14px 18px; }
+  .ed-ribbon__meta { grid-column: 1 / -1; grid-auto-flow: column; justify-content: space-between; justify-items: start; }
+  .ed-ribbon__title { font-size: 17px; }
+  .ed-next { margin-top: 56px; }
+  .ed-next__grid { grid-template-columns: 1fr; }
+  .ed-next__card:last-child { text-align: left; }
+  .ed-next__card:last-child .ed-next__dir { justify-content: flex-start; }
+  .ed-next__edition { grid-template-columns: 1fr; }
+  .ed-cover--md { width: 112px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-next__img img, .ed-next__edition::before, .ed-ribbon__go svg, .ed-next__ed-btn svg, .ed-next__all svg { transition: none; }
+}

@@ -141,7 +141,7 @@
       .ea-facts span { font: 500 12px/1.3 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
       .ea-hero .ea-btn { margin-top: 30px; }
 
-      .ea-fan-box { --cw: clamp(160px, 17vw, 250px); --step: 5.8deg; --mid: 2.5; }
+      .ea-fan-box { --cw: clamp(160px, 16vw, 236px); --step: 9deg; --mid: 2.5; }
       .ea-fan { position: relative; height: calc(var(--cw) * 1.34 + 70px); margin: 0; padding: 0; list-style: none; }
       /* the (untilted) list boxes all overlap in the middle, so they must
          not catch the pointer; only the tilted covers do */
@@ -166,7 +166,7 @@
       }
       /* one caption under the whole fan, so no cover can hide it */
       .ea-fan-caption {
-        min-height: 22px; margin: 18px 0 0; text-align: center;
+        min-height: 22px; margin: 46px 0 0; text-align: center;
         font: 600 12px/1.5 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--ink);
       }
       .ea-fan-caption em { margin-left: 8px; font: italic 400 16px/1.5 var(--serif); letter-spacing: 0; text-transform: none; color: var(--ink-2); }
@@ -285,10 +285,10 @@
       @media (max-width: 899px) {
         .ea-hero { padding-top: 112px; }
         .ea-hero-grid { grid-template-columns: 1fr; gap: 12px; }
-        .ea-fan-box { --cw: min(36vw, 180px); --step: 4.6deg; order: -1; }
+        .ea-fan-box { --cw: min(32vw, 160px); --step: 8deg; order: -1; }
         .ea-fan { height: calc(var(--cw) * 1.34 + 56px); }
         .ea-fan li { bottom: 18px; }
-        .ea-fan-caption { margin-top: 10px; }
+        .ea-fan-caption { margin-top: 30px; }
         .ea-fan-caption em { display: block; margin: 2px 0 0; }
         .ea-facts b { font-size: 22px; }
         .ea-rail { top: 86px; }
@@ -530,9 +530,9 @@
                         <h2 id="fall-2026-title">New Frontiers <em>in the Capital.</em></h2>
                         <p class="ea-ed-dek">A mission to Venus, antibiotics that choose their targets, algae that dance and a new look at Alzheimer&rsquo;s.</p>
                         <ul class="ea-ed-inside" aria-label="Inside this edition">
-                            <li><span>Feature</span><a href="/article/nasa-davinci-what-the-mission-to-venus-says-about-humanitys-place-in-space"><b>NASA DAVINCI: What the Mission To Venus Says About Humanity's Place in Space</b></a></li>
-                            <li><span>Feature</span><a href="/article/saving-the-good-guys-the-quest-for-target-specific-antibiotics"><b>Saving the Good Guys: The Quest for Target-Specific Antibiotics</b></a></li>
-                            <li><span>Science</span><a href="/article/is-alzheimers-really-a-brain-disease-or-a-metabolic-one-the-research-rewriting-how-we-think-about-dementia"><b>Is Alzheimer’s Really a Brain Disease—or a Metabolic One? The Research Rewriting How We Think About Dementia</b></a></li>
+                            <li><span>Feature</span><a href="/article/nasa-davinci-what-the-mission-to-venus-says-about-humanitys-place-in-space?edition=fall-2026"><b>NASA DAVINCI: What the Mission To Venus Says About Humanity's Place in Space</b></a></li>
+                            <li><span>Feature</span><a href="/article/saving-the-good-guys-the-quest-for-target-specific-antibiotics?edition=fall-2026"><b>Saving the Good Guys: The Quest for Target-Specific Antibiotics</b></a></li>
+                            <li><span>Science</span><a href="/article/is-alzheimers-really-a-brain-disease-or-a-metabolic-one-the-research-rewriting-how-we-think-about-dementia?edition=fall-2026"><b>Is Alzheimer’s Really a Brain Disease—or a Metabolic One? The Research Rewriting How We Think About Dementia</b></a></li>
                         </ul>
                         <div class="ea-ed-foot">
                             <a class="ea-btn" href="/edition-fall-2026">Read the current edition
@@ -567,9 +567,9 @@
                         <h2 id="spring-2026-title">Minds, Machines &amp; Microbes <em>in the Capital.</em></h2>
                         <p class="ea-ed-dek">Memory and misfolded proteins, AI in the classroom and the kitchen, microbes that help life adapt, and the physics of protons.</p>
                         <ul class="ea-ed-inside" aria-label="Inside this edition">
-                            <li><span>Feature</span><a href="/article/why-forgetting-is-healthy-how-research-is-reshaping-our-understanding-of-how-we-"><b>Why Forgetting is Healthy: How Research is Reshaping Our Understanding of How We Forget</b></a></li>
-                            <li><span>Interview</span><a href="/article/unfolding-the-mystery-of-misfolded-proteins-dr-kathy-maguire-zeisss-research-on-neurodegeneration"><b>Unfolding the Mystery of Misfolded Proteins: Dr. Kathy Maguire-Zeiss’s Research on Neurodegeneration</b></a></li>
-                            <li><span>Feature</span><a href="/article/snap-back-for-food-security"><b>The AI Defense: Savoring the Future of Food Security</b></a></li>
+                            <li><span>Feature</span><a href="/article/why-forgetting-is-healthy-how-research-is-reshaping-our-understanding-of-how-we-?edition=spring-2026"><b>Why Forgetting is Healthy: How Research is Reshaping Our Understanding of How We Forget</b></a></li>
+                            <li><span>Interview</span><a href="/article/unfolding-the-mystery-of-misfolded-proteins-dr-kathy-maguire-zeisss-research-on-neurodegeneration?edition=spring-2026"><b>Unfolding the Mystery of Misfolded Proteins: Dr. Kathy Maguire-Zeiss’s Research on Neurodegeneration</b></a></li>
+                            <li><span>Feature</span><a href="/article/snap-back-for-food-security?edition=spring-2026"><b>The AI Defense: Savoring the Future of Food Security</b></a></li>
                         </ul>
                         <div class="ea-ed-foot">
                             <a class="ea-btn" href="/edition-spring-2026">Open the edition
@@ -613,9 +613,9 @@
                         <h2 id="fall-2025-title">Health &amp; the Mind <em>in the Capital.</em></h2>
                         <p class="ea-ed-dek">Mental health care, myasthenia gravis and demyelination, a brain that edits reality and robots that operate.</p>
                         <ul class="ea-ed-inside" aria-label="Inside this edition">
-                            <li><span>Feature</span><a href="/article/how-dr-brandon-kohrt-is-expanding-access-to-mental-health-care"><b>How Dr. Brandon Kohrt is Expanding Access to Mental Health Care</b></a></li>
-                            <li><span>Feature</span><a href="/article/i-am-therefore-i-see-how-the-brain-edits-reality-on-the-fly"><b>I Am, therefore I See: How The Brain Edits Reality on The Fly</b></a></li>
-                            <li><span>Feature</span><a href="/article/the-imerse-lab-a-new-era-of-autonomous-surgical-robotics"><b>The IMERSE Lab: A New Era of Autonomous Surgical Robotics</b></a></li>
+                            <li><span>Feature</span><a href="/article/how-dr-brandon-kohrt-is-expanding-access-to-mental-health-care?edition=fall-2025"><b>How Dr. Brandon Kohrt is Expanding Access to Mental Health Care</b></a></li>
+                            <li><span>Feature</span><a href="/article/i-am-therefore-i-see-how-the-brain-edits-reality-on-the-fly?edition=fall-2025"><b>I Am, therefore I See: How The Brain Edits Reality on The Fly</b></a></li>
+                            <li><span>Feature</span><a href="/article/the-imerse-lab-a-new-era-of-autonomous-surgical-robotics?edition=fall-2025"><b>The IMERSE Lab: A New Era of Autonomous Surgical Robotics</b></a></li>
                         </ul>
                         <div class="ea-ed-foot">
                             <a class="ea-btn" href="/edition-fall-2025">Open the edition
@@ -650,9 +650,9 @@
                         <h2 id="spring-2025-title">Discovery <em>in the Capital.</em></h2>
                         <p class="ea-ed-dek">Genes, fuels and big ideas: evolution, cleaner energy, paradoxes and the way science talks to the public.</p>
                         <ul class="ea-ed-inside" aria-label="Inside this edition">
-                            <li><span>Profile</span><a href="/article/how-one-engineer-is-changing-sustainable-fuels"><b>How One Engineer is Changing Sustainable Fuels</b></a></li>
-                            <li><span>Feature</span><a href="/article/the-fascinating-role-of-paradoxes-in-science"><b>The Fascinating Role of Paradoxes in Science</b></a></li>
-                            <li><span>Profile</span><a href="/article/how-the-world-of-genetics-shapes-evolution"><b>How The World of Genetics Shapes Evolution</b></a></li>
+                            <li><span>Profile</span><a href="/article/how-one-engineer-is-changing-sustainable-fuels?edition=spring-2025"><b>How One Engineer is Changing Sustainable Fuels</b></a></li>
+                            <li><span>Feature</span><a href="/article/the-fascinating-role-of-paradoxes-in-science?edition=spring-2025"><b>The Fascinating Role of Paradoxes in Science</b></a></li>
+                            <li><span>Profile</span><a href="/article/how-the-world-of-genetics-shapes-evolution?edition=spring-2025"><b>How The World of Genetics Shapes Evolution</b></a></li>
                         </ul>
                         <div class="ea-ed-foot">
                             <a class="ea-btn" href="/edition-spring-2025">Open the edition
@@ -687,9 +687,9 @@
                         <h2 id="winter-2025-title">Science <em>in the Capital.</em></h2>
                         <p class="ea-ed-dek">Where The Catalyst began: the researchers, labs and questions that make Washington a science city.</p>
                         <ul class="ea-ed-inside" aria-label="Inside this edition">
-                            <li><span>Op-Ed</span><a href="/article/an-ode-to-microglia"><b>An Ode to Microglia</b></a></li>
-                            <li><span>Profile</span><a href="/article/from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy"><b>From Music to Nuclear Policy: Professor Christopher Cahill’s unexpected Journey in Science and Policy</b></a></li>
-                            <li><span>Interview</span><a href="/article/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells"><b>A Universe of Plasma: How one Scientist Connects his World from Satellites to Cells.</b></a></li>
+                            <li><span>Op-Ed</span><a href="/article/an-ode-to-microglia?edition=winter-2025"><b>An Ode to Microglia</b></a></li>
+                            <li><span>Profile</span><a href="/article/from-music-to-nuclear-policy-professor-christopher-cahills-unexpected-journey-in-science-and-policy?edition=winter-2025"><b>From Music to Nuclear Policy: Professor Christopher Cahill’s unexpected Journey in Science and Policy</b></a></li>
+                            <li><span>Interview</span><a href="/article/a-universe-of-plasma-how-one-scientist-connects-his-world-from-satellites-to-cells?edition=winter-2025"><b>A Universe of Plasma: How one Scientist Connects his World from Satellites to Cells.</b></a></li>
                         </ul>
                         <div class="ea-ed-foot">
                             <a class="ea-btn" href="/edition-winter-2025">Open the edition

@@ -388,7 +388,7 @@
         var have = {}, titles = {};
         stories().forEach(function (s) {
           var l = s.querySelector('a'), h = s.querySelector('h3');
-          if (l) have[l.getAttribute('href')] = 1;
+          if (l) have[l.getAttribute('href').split('?')[0]] = 1;
           if (h) titles[norm(h.textContent)] = 1;
         });
         var add = (Array.isArray(rows) ? rows : []).map(function (r) { return r.document; }).filter(Boolean).map(function (d) {
@@ -402,7 +402,8 @@
           if (!tagged && !inSpan) return null;
           if (titles[norm(str('title'))]) return null;
           var href = (cat === 'book-review' ? '/book-review/' : '/article/') + encodeURIComponent(str('slug') || slugify(str('title')));
-          if (have[href]) return null;
+          if (body.dataset.editionId && cat !== 'book-review') href += '?edition=' + encodeURIComponent(body.dataset.editionId);
+          if (have[href.split('?')[0]]) return null;
           var img = str('coverImage');
           if (img && !/^https?:\/\//i.test(img)) img = location.origin + '/' + img.replace(/^\/+/, '');
           titles[norm(str('title'))] = 1;
