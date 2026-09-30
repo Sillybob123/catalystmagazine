@@ -121,6 +121,11 @@
   var def = document.getElementById('ab-def');
   var missionIn = document.getElementById('ab-mission-in');
   var cue = document.getElementById('ab-cue');
+  var more = document.getElementById('ab-more');
+  more.addEventListener('click', function () {
+    var next = hero.nextElementSibling;
+    if (next) window.scrollTo({ top: next.getBoundingClientRect().top + window.scrollY - headerBottom(), behavior: REDUCED ? 'auto' : 'smooth' });
+  });
   var DOME = { x: 0.672, tip: 0.1 };
   var mShift = 0;                                   // phones: px the hero composition has glided up
   // desktop: the line the statue's tip and the tops of "Catalyst" / the
@@ -259,6 +264,7 @@
       dome.render();
       if (!REDUCED) {
         cue.style.opacity = String(1 - map(p, 0, 0.08));
+        more.classList.toggle('on', p > 0.62);
         // the definition leaves upward, the mission rises into its place
         var out = ease(map(p, 0.4, 0.52));
         def.style.opacity = String(1 - out);
@@ -301,10 +307,11 @@
      ------------------------------------------------------------ */
   function heroAutoplay() {
     var root = document.documentElement;
-    var glide = function (t) { return 0.5 - 0.5 * Math.cos(Math.PI * t); };
     var playing = false, swallow = false, lastWheel = 0, start = 0, from = 0, to = 0, dur = 0, raf = 0, touchY = null;
+    // starts moving at once, lands softly
+    var launch = function (t) { return 1 - (1 - t) * (1 - t); };
     // the definition stays up a little longer so it can be read
-    var SLOW = 1.6, slowA = 0, slowB = 0, cost = 0;
+    var SLOW = 1.4, slowA = 0, slowB = 0, cost = 0;
     var DOWN_KEYS = { ArrowDown: 1, PageDown: 1, ' ': 1, Spacebar: 1 };
     var UP_KEYS = { ArrowUp: 1, PageUp: 1, Home: 1 };
     function atTop() { return window.scrollY < 8; }
@@ -315,10 +322,10 @@
       from = window.scrollY;
       to = top + span;
       if (to <= from + 4) return;
-      slowA = clamp(top + 0.12 * span, from, to);
+      slowA = clamp(top + 0.18 * span, from, to);
       slowB = clamp(top + 0.4 * span, slowA, to);
       cost = (to - from) + (SLOW - 1) * (slowB - slowA);
-      dur = portrait() ? 4400 : 5000;
+      dur = portrait() ? 3800 : 4200;
       playing = true; start = performance.now();
       root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
       raf = requestAnimationFrame(step);
@@ -333,7 +340,7 @@
     }
     function step(now) {
       var k = Math.min(1, (now - start) / dur);
-      window.scrollTo(0, yAt(glide(k) * cost));
+      window.scrollTo(0, yAt(launch(k) * cost));
       if (k < 1) raf = requestAnimationFrame(step); else stop();
     }
     function stop() { cancelAnimationFrame(raf); playing = false; root.style.scrollBehavior = ''; }

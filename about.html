@@ -449,6 +449,19 @@
       }
       .ab-cue::after { content: ""; width: 1px; height: 34px; background: linear-gradient(var(--ink-2), transparent); transform-origin: top; animation: ab-cue 2.4s var(--ease-out) infinite; }
       @keyframes ab-cue { 0% { transform: scaleY(0); } 70%, 100% { transform: scaleY(1); opacity: 0; } }
+      /* once the mission is up: a nudge to keep going */
+      .ab-more {
+        position: absolute; z-index: 2; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 8px);
+        display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px;
+        border: 0; background: none; cursor: pointer;
+        font: 600 11px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-2);
+        opacity: 0; visibility: hidden; transition: opacity .5s var(--ease-out), transform .5s var(--ease-out), visibility 0s .5s, color .2s;
+      }
+      .ab-more.on { opacity: 1; visibility: visible; transform: translate(-50%, 0); transition: opacity .5s var(--ease-out), transform .5s var(--ease-out), visibility 0s, color .2s; }
+      .ab-more:hover { color: var(--ink); }
+      .ab-more:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 10px; }
+      .ab-more svg { width: 20px; height: 20px; animation: ab-more 1.8s ease-in-out infinite; }
+      @keyframes ab-more { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 
       @media (max-width: 760px), (max-aspect-ratio: 9/10) {
         .ab-hero { height: 280vh; }
@@ -649,7 +662,7 @@
         [data-reveal], .ab-rise { opacity: 1 !important; transform: none !important; transition: none !important; }
         .ab-statement .w { opacity: 1; }
         .ab-ribbon-track { animation: none; }
-        .ab-cue { display: none; }
+        .ab-cue, .ab-more { display: none; }
         .ab-act { opacity: 1; }
       }
     </style>
@@ -681,6 +694,7 @@
                     <p class="ab-statement" id="ab-statement">We give a platform to the next generation of researchers, innovators and critical thinkers, and tell the stories that move ideas from the lab <em>into the public conversation.</em></p>
                 </div>
                 <div class="ab-cue" id="ab-cue" aria-hidden="true">Scroll</div>
+                <button type="button" class="ab-more" id="ab-more">Scroll down<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>
             </div>
         </section>
 
@@ -839,6 +853,6 @@
     <script defer src="/js/data.js"></script>
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
     <script defer src="/js/main.js?v=20260925-review"></script>
-    <script defer src="/js/about.js?v=14"></script>
+    <script defer src="/js/about.js?v=15"></script>
 </body>
 </html>
