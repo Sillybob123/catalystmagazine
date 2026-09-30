@@ -381,6 +381,7 @@
                 <div class="an-spotlight-meta">
                     <span>${escapeHtml(article.author)}</span>
                     ${article.date ? `<span class="an-dot"></span><span>${escapeHtml(formatDate(article.date))}</span>` : ''}
+                    ${editionMeta(article)}
                 </div>
                 <a class="an-spotlight-cta" href="${href}">
                     Read the story
@@ -402,6 +403,52 @@
             return `this.onerror=null;this.src='${fb}';this.classList.add('loaded');`;
         }
         return `this.onerror=function(){this.onerror=null;this.src='${fb}';this.classList.add('loaded');};this.src='${raw}';`;
+    }
+
+    // ---------- Editions ----------
+    // Which edition a story belongs to, from /edition-art/editions.json (the
+    // edition build): by slug, or for a story newer than the build, by the
+    // season its date falls in. Shown as a quiet note in the byline row.
+    let EDITIONS = null;
+    const edBySlug = {};
+    fetch('/edition-art/editions.json')
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => {
+            if (!d) return;
+            EDITIONS = d;
+            Object.keys(d).forEach(id => { d[id].id = id; (d[id].stories || []).forEach(st => { edBySlug[st.slug] = d[id]; }); });
+            decorateEditions();
+        })
+        .catch(() => {});
+    function editionFor(article) {
+        if (!EDITIONS || !article) return null;
+        let slug = String(article.link || '').split('?')[0].split('/').pop() || '';
+        try { slug = decodeURIComponent(slug); } catch (e) {}
+        if (edBySlug[slug]) return edBySlug[slug];
+        const t = Date.parse(article.date || '');
+        if (isNaN(t)) return null;
+        for (const id in EDITIONS) {
+            const ed = EDITIONS[id];
+            if (t >= Date.parse(ed.start) && t < Date.parse(ed.end)) return ed;
+        }
+        return null;
+    }
+    function editionMeta(article) {
+        const ed = editionFor(article);
+        return ed ? `<span class="an-ed-wrap"><span class="an-dot"></span><span class="an-ed" title="From the ${escapeHtml(ed.label)} edition">${escapeHtml(ed.label)} edition</span></span>` : '';
+    }
+    // cards painted before the edition data arrived pick it up here
+    function decorateEditions() {
+        const byLink = {};
+        allArticles.forEach(a => { byLink[String(a.link || '').split('?')[0]] = a; });
+        document.querySelectorAll('.articlesnew-body .an-card, .articlesnew-body .an-spotlight-body').forEach(el => {
+            const meta = el.querySelector('.an-card-meta, .an-spotlight-meta');
+            if (!meta || meta.querySelector('.an-ed')) return;
+            const linkEl = el.matches('a') ? el : el.querySelector('a[href]');
+            const link = linkEl ? linkEl.getAttribute('href') : '';
+            const a = byLink[String(link || '').split('?')[0]];
+            if (a) meta.insertAdjacentHTML('beforeend', editionMeta(a));
+        });
     }
 
     // ---------- Cards ----------
@@ -429,6 +476,7 @@
                     <div class="an-card-meta">
                         <span>${escapeHtml(article.author)}</span>
                         ${article.date ? `<span class="an-dot"></span><span>${escapeHtml(formatDate(article.date))}</span>` : ''}
+                        ${editionMeta(article)}
                     </div>
                 </div>
             </a>
