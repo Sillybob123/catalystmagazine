@@ -121,7 +121,31 @@
   var def = document.getElementById('ab-def');
   var missionIn = document.getElementById('ab-mission-in');
   var cue = document.getElementById('ab-cue');
-  var DOME = { x: 0.672, tip: 0.1 };                   // dome centre / statue tip in plate coordinates
+  var DOME = { x: 0.672, tip: 0.1 };
+  // desktop: the line the statue's tip and the tops of "Catalyst" / the
+  // mission headline share — low enough that the small kickers above them
+  // clear the fixed site header
+  var TIP_Y = 136;
+  function tipY() {
+    var h = document.querySelector('.header');
+    var hb = h ? h.getBoundingClientRect().bottom : 76;
+    var kick = Math.max(defWord.offsetTop, statementEl.offsetTop);   // kicker + gap above the big line
+    return Math.round(hb + 24 + kick);
+  }                   // dome centre / statue tip in plate coordinates
+  // right edge of the widest rendered line of hero text (definition or
+  // mission), not the width of their boxes
+  var defWord = def.querySelector('.ab-word');
+  var statementEl = document.getElementById('ab-statement');
+  function textRight() {
+    var r = 0;
+    [defWord, def.querySelector('.ab-pron')].forEach(function (el) { if (el) r = Math.max(r, el.getBoundingClientRect().left + el.scrollWidth); });
+    var range = document.createRange();
+    [statementEl].concat(Array.prototype.slice.call(def.querySelectorAll('.ab-senses li'))).forEach(function (el) {
+      range.selectNodeContents(el);
+      Array.prototype.forEach.call(range.getClientRects(), function (q) { r = Math.max(r, q.right); });
+    });
+    return r;
+  }
   var dome = new Plate(hero, '/beta/about-dome/', {
     ghost: 0.22,
     inkAt: function (p) { return REDUCED ? 1.04 : lerp(0.2, 1.04, map(p, 0, 0.42)); },
@@ -131,17 +155,21 @@
         var w = vw * 1.75 * s, h = w * AR;
         return { w: w, h: h, x: vw * 0.5 - DOME.x * w, y: 70 - DOME.tip * h * 0.55 };
       }
-      // size the drawing so its leftmost line (the horizontal measurement
-      // line, ≈0.26 of the plate's width left of the dome's axis) always
-      // clears the text column by 56px
-      var cx = vw * 0.72;
-      var textRight = Math.max(def.offsetLeft + def.offsetWidth, missionIn.offsetLeft + missionIn.offsetWidth);
-      var maxW = (cx - textRight - 56) / 0.26;
-      var h2 = Math.min(vh * 0.9, maxW * AR) * s, w2 = h2 / AR;
-      // centred vertically in the space under the header (the drawing
-      // runs from the statue at ~0.10 to the base at ~0.90 of the plate)
-      var top = 72, y = top + (vh - top) / 2 - 0.5 * h2;
-      return { w: w2, h: h2, x: cx - DOME.x * w2, y: Math.max(y, 86 - DOME.tip * h2) };
+      // The statue's tip sits a little under the header (TIP_Y); the text
+      // on the left lines up with it. The drawing is as large as it can be
+      // while its leftmost line (the horizontal measurement line, ≈0.26 of
+      // the plate's width left of the dome's axis) clears the widest line
+      // of text by 44px, its right wing (≈0.29 right of the axis) stays on
+      // screen, and its base (≈0.80 below the tip) stays above the bottom.
+      // Balance the dome between the text and the right edge: its leftmost
+      // line clears the text by 44px, and the outer right wing may feather
+      // just past the edge (0.25 of the plate right of the axis stays on).
+      var tr = textRight(), L = tr + 44, Rr = vw - 8;
+      var w2 = (Rr - L) / (0.26 + 0.25);
+      var cx = L + 0.26 * w2;
+      w2 = Math.min(w2, (vh - TIP_Y - 12) / (0.8 * AR)) * s;
+      var h2 = w2 * AR;
+      return { w: w2, h: h2, x: cx - DOME.x * w2, y: TIP_Y - DOME.tip * h2 };
     }
   });
   dome.load();
@@ -213,6 +241,7 @@
     var r = hero.getBoundingClientRect();
     if (r.bottom > -50) {
       var p = heroProgress();
+      if (!portrait()) TIP_Y = tipY();
       dome.sp = REDUCED ? 1 : (Math.abs(p - dome.sp) < 0.0005 ? p : lerp(dome.sp, p, 0.14));
       dome.render();
       if (!REDUCED) {
@@ -220,14 +249,14 @@
         // the definition leaves upward, the mission rises into its place
         var out = ease(map(p, 0.4, 0.52));
         def.style.opacity = String(1 - out);
-        def.style.transform = (portrait() ? '' : 'translateY(-46%) ') + 'translate3d(0,' + (-out * 60).toFixed(1) + 'px,0)';
+        if (!portrait()) def.style.top = (TIP_Y - defWord.offsetTop).toFixed(1) + 'px'; else def.style.top = '';
+        def.style.transform = 'translate3d(0,' + (-out * 60).toFixed(1) + 'px,0)';
         def.style.visibility = out >= 1 ? 'hidden' : '';
         var inn = ease(map(p, 0.47, 0.6));
         missionIn.style.opacity = String(inn);
         if (!portrait()) {
           // top of the mission block sits level with the tip of the statue
-          var c = dome.canvas, R = dome.rect(c.clientWidth, c.clientHeight, dome.sp);
-          missionIn.style.top = (R.y + DOME.tip * R.h).toFixed(1) + 'px';
+          missionIn.style.top = (TIP_Y - statementEl.offsetTop).toFixed(1) + 'px';
         } else missionIn.style.top = '';
         missionIn.style.transform = 'translate3d(0,' + ((1 - inn) * 70).toFixed(1) + 'px,0)';
       }
