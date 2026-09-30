@@ -53,7 +53,7 @@
     var ctx = canvas.getContext('2d');
     var dpr = Math.min(window.devicePixelRatio || 1, 2), W = 0, H = 0, flakes = [];
     var small = window.innerWidth < 700;
-    var COUNT = small ? 26 : 55;                  // light, unhurried snowfall
+    var COUNT = small ? 21 : 44;                  // light, unhurried snowfall
 
     // --- sprites -------------------------------------------------
     function crystal(size, seed) {
@@ -108,7 +108,7 @@
       var near = z > 0.82;
       return {
         x: Math.random() * W, y: top ? -40 : Math.random() * H, z: z,
-        size: near ? (small ? 12 : 15) + (z - 0.82) / 0.18 * (small ? 12 : 18) : 2 + z * 8,
+        size: near ? (small ? 9 : 10) + (z - 0.82) / 0.18 * (small ? 6 : 8) : 2 + z * 7,
         sprite: near ? CRYSTALS[(Math.random() * CRYSTALS.length) | 0] : SOFT,
         vy: 0.16 + z * 0.95, ph: Math.random() * 6.28, sway: 0.2 + Math.random() * 0.5,
         rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.01,
