@@ -1,50 +1,62 @@
 /* ============================================================
-   Magazine page edges — the pages behind a cover, showing along
-   its fore-edge (right) and foot, so a flat cover reads as a real
-   magazine with some thickness. Light falls from the top left.
+   Magazine page block — the pages behind a cover, so a flat
+   cover reads as a real magazine.
 
-   Use: put one of these first in a cover's box-shadow, before its
-   drop shadow:
-       box-shadow: var(--mag-pages), 0 30px 60px -30px rgba(...);
-   --mag-pages-lg  big covers (edition hero, overview chapters)
-   --mag-pages     mid-size covers (the overview fan)
-   --mag-pages-sm  thumbnails (teasers, article badges)
-   Every edition cover component already does this, so a new cover
-   gets its pages automatically.
+   Seen from a little to the right and below: the fore-edge (the
+   right side) shows as a slab of paper with fine sheet lines,
+   shaded where it meets the cover and lit across the middle; the
+   foot (the bottom) shows the pages' underside, darker, and tapers
+   to nothing at the spine on the left, where the pages are bound.
+   Sizes follow the cover (cqw), so a thumbnail and a hero cover
+   keep the same proportions.
+
+   Every cover component in the site gets it here: the overview
+   (.ea-cover), the edition pages (.wx-cover) and the article
+   badges (.ed-cover). A new kind of cover: add its class to the
+   three selector lists below.
    ============================================================ */
 :root {
-  --mag-crease: rgba(40, 32, 20, .24);   /* where the cover meets the pages */
-  --mag-sheet: #fbf8f1;                   /* a page edge catching the light */
-  --mag-sheet-2: #f2ede3;
-  --mag-gap: #dcd4c5;                     /* the shade between pages */
-  --mag-gap-2: #cfc6b5;
-  --mag-under: rgba(40, 32, 20, .2);      /* the stack's own soft shadow */
-
-  --mag-pages-lg:
-    .5px .5px 0 var(--mag-crease),
-    1.6px 1.1px 0 var(--mag-sheet),
-    2.8px 2px 0 var(--mag-gap),
-    4px 2.9px 0 var(--mag-sheet),
-    5.2px 3.8px 0 var(--mag-gap),
-    6.4px 4.7px 0 var(--mag-sheet-2),
-    7.6px 5.6px 0 var(--mag-gap),
-    8.8px 6.5px 0 var(--mag-sheet-2),
-    10px 7.4px 0 var(--mag-gap-2),
-    10.6px 8px 2px var(--mag-under);
-  --mag-pages:
-    .5px .5px 0 var(--mag-crease),
-    1.4px 1px 0 var(--mag-sheet),
-    2.4px 1.7px 0 var(--mag-gap),
-    3.4px 2.4px 0 var(--mag-sheet),
-    4.4px 3.1px 0 var(--mag-gap),
-    5.4px 3.8px 0 var(--mag-sheet-2),
-    6.4px 4.5px 0 var(--mag-gap-2),
-    7px 5px 1.5px var(--mag-under);
-  --mag-pages-sm:
-    .5px .5px 0 var(--mag-crease),
-    1.2px .9px 0 var(--mag-sheet),
-    2px 1.5px 0 var(--mag-gap),
-    2.8px 2.1px 0 var(--mag-sheet-2),
-    3.4px 2.6px 0 var(--mag-gap-2),
-    3.8px 3px 1px var(--mag-under);
+  /* the earlier box-shadow page edges, kept as no-op hooks */
+  --mag-pages-lg: 0 0 0 0 transparent;
+  --mag-pages: 0 0 0 0 transparent;
+  --mag-pages-sm: 0 0 0 0 transparent;
 }
+
+/* the pages sit outside the cover's box, so the cover no longer clips;
+   the artwork keeps the rounded corners itself */
+.ea-cover, .wx-cover, .ed-cover { overflow: visible !important; isolation: isolate; }
+.ea-cover .art, .wx-cover img.art, .ed-cover__art { border-radius: inherit; }
+.ea-cover-lines::before, .wx-cover-lines::before { border-radius: 0 0 3px 3px; }
+
+.ea-cover::before, .wx-cover::before, .ed-cover::before {
+  --fore: max(1.8px, 2.3cqw);            /* depth of the page block at the fore-edge */
+  --foot: max(1.3px, 1.5cqw);            /* at the fore-edge corner; nothing at the spine */
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  left: 0; top: 0; right: calc(-1 * var(--fore)); bottom: calc(-1 * var(--foot));
+  border-radius: 0 2px 3px 0;
+  /* cover's top right corner, down the fore-edge, back along the foot to the spine */
+  clip-path: polygon(0 0, calc(100% - var(--fore)) 0, 100% calc(var(--foot) * .85), 100% 100%, 0 calc(100% - var(--foot)));
+  background:
+    /* fore-edge light: shade against the cover, lit across the middle, a soft lip outside,
+       and a little less light toward the foot */
+    linear-gradient(180deg, rgba(64, 48, 28, 0) 50%, rgba(64, 48, 28, .14))
+      right top / var(--fore) 100% no-repeat,
+    linear-gradient(90deg,
+      rgba(64, 48, 28, .34) 0, rgba(64, 48, 28, .08) 20%, rgba(255, 252, 245, .08) 45%,
+      rgba(255, 252, 245, .38) 68%, rgba(64, 48, 28, .04) 88%, rgba(64, 48, 28, .2) 100%)
+      right top / var(--fore) 100% no-repeat,
+    /* the pages themselves: a macro photograph of real page edges */
+    url("/editions/paper-edge-v.webp") right top / var(--fore) auto repeat-y,
+    /* foot: the underside, in shadow, deepest against the cover and toward the spine */
+    linear-gradient(180deg, rgba(50, 37, 22, .44), rgba(50, 37, 22, .18) 55%, rgba(50, 37, 22, .3))
+      left bottom / 100% var(--foot) no-repeat,
+    linear-gradient(90deg, rgba(36, 27, 16, .35), rgba(36, 27, 16, 0) 50%)
+      left bottom / 100% var(--foot) no-repeat,
+    url("/editions/paper-edge-h.webp") left bottom / auto var(--foot) repeat-x,
+    /* the paper */
+    #f3eee4;
+}
+
+/* the edition pages' cover tilts toward the pointer: keep it flat inside so the
+   page block stays behind the cover */
+.wx-cover { transform-style: flat !important; }
