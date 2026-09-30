@@ -182,10 +182,18 @@ html:has(body.wx) { background: var(--wx-bg); }
 @keyframes wx-cue { 0% { transform: scaleY(0); } 70%, 100% { transform: scaleY(1); opacity: 0; } }
 
 @media (max-width: 899px) {
-  .wx-hero { align-items: flex-start; min-height: 0; }
-  .wx-backdrop img, .wx-backdrop video { object-position: 50% 100%; transform-origin: 50% 80%; }
+  /* phones and tablets: the scene sits still behind the magazine — no
+     scroll parallax, which lags the finger on mobile and made it jump —
+     framed on the building, and melts into the hero colour before the
+     headline starts */
+  .wx-hero {
+    --wx-bd-h: calc(96px + min(62vw, 300px) * 1.339 + 130px);   /* nav gap + cover + a little below */
+    align-items: flex-start; min-height: 0; background: var(--wx-hero-end, var(--wx-bg));
+  }
+  body.wx .wx-hero .wx-backdrop { inset: 0 0 auto 0; height: var(--wx-bd-h); transform: none; will-change: auto; }
+  .wx-backdrop img, .wx-backdrop video { object-position: 50% 85%; transform-origin: 50% 75%; }
   .wx-hero::after {
-    background: linear-gradient(180deg, rgba(var(--wx-scrim),.78) 0%, rgba(var(--wx-scrim),.5) 38%, rgba(var(--wx-scrim),.1) 62%, rgba(var(--wx-scrim),.2) var(--wx-fade-start-m, 85%), var(--wx-hero-end, var(--wx-bg)) 100%);
+    background: linear-gradient(180deg, rgba(var(--wx-scrim),.5) 0, rgba(var(--wx-scrim),0) 120px, rgba(var(--wx-scrim),0) calc(var(--wx-bd-h) * .62), var(--wx-hero-end, var(--wx-bg)) var(--wx-bd-h));
   }
   .wx-hero-grid { grid-template-columns: 1fr; gap: 32px; padding-top: 96px; padding-bottom: 64px; }
   .wx-hero h1 { font-size: clamp(40px, 11vw, 64px); }

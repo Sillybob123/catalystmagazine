@@ -255,6 +255,11 @@
      Main loop
      ------------------------------------------------------------ */
   var lastY = window.scrollY, tilt = { x: 0, y: 0 }, running = true;
+  // phones/tablets: no scroll-linked movement in the hero. Script reads of
+  // the scroll position trail the finger on mobile, so anything moved from
+  // here visibly jitters against the page; the hero just scrolls normally.
+  var mqStill = window.matchMedia('(max-width: 899px)');
+  var moved = false;
   document.addEventListener('visibilitychange', function () { running = !document.hidden; if (running) requestAnimationFrame(loop); });
 
   function loop() {
@@ -264,7 +269,8 @@
     P.sx = lerp(P.sx, P.x, 0.06); P.sy = lerp(P.sy, P.y, 0.06);
 
     var hh = hero ? hero.offsetHeight : 1, hp = clamp(y / hh, 0, 1);
-    if (!REDUCED && hp < 1) {
+    var still = mqStill.matches;
+    if (!REDUCED && hp < 1 && !still) {
       if (cover) {
         tilt.y = lerp(tilt.y, P.sx * 7, 0.08); tilt.x = lerp(tilt.x, -P.sy * 5 + hp * 8, 0.08);
         cover.style.setProperty('--tilt-x', tilt.x.toFixed(2) + 'deg');
@@ -282,6 +288,13 @@
         heroCopy.style.opacity = String(1 - clamp((hp - 0.25) / 0.45, 0, 1));
       }
       if (cue) cue.style.opacity = String(1 - clamp(y / 120, 0, 1));
+      moved = true;
+    } else if (still && moved) {
+      // e.g. a tablet turned to portrait: drop whatever was applied
+      moved = false;
+      if (cover) ['--tilt-x', '--tilt-y', '--lift', '--sheen'].forEach(function (k) { cover.style.removeProperty(k); });
+      if (backdrop) { backdrop.style.removeProperty('--wx-py'); backdrop.style.removeProperty('--wx-px'); }
+      if (heroCopy) { heroCopy.style.transform = ''; heroCopy.style.opacity = ''; }
     }
     Weather.frame(REDUCED ? 0 : clamp(dy, -40, 40));
     requestAnimationFrame(loop);
