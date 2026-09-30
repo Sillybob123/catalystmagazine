@@ -951,6 +951,20 @@
         bRule.style.opacity = String(map(p, 0.8, 0.84));
         mallCanvas.style.opacity = String(1 - 0.72 * ease(map(p, 0.66, 0.86)));
       }
+      // Desktop hero frame: the header pill's right edge (it is centred,
+      // width min(100% - 64px, 1400px)) and a line just clear of the copy.
+      var heroFrameKey = '', heroFrameVal = null;
+      function heroFrame(vw, vh) {
+        var key = vw + '|' + vh;
+        if (key !== heroFrameKey) {
+          var rg = document.createRange(); rg.selectNodeContents(heroCopy);
+          heroFrameVal = { right: vw / 2 + Math.min(vw - 64, 1400) / 2, clear: rg.getBoundingClientRect().right + 28, top: heroCopy.offsetTop };
+          heroFrameKey = key;
+        }
+        return heroFrameVal;
+      }
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { heroFrameKey = ''; mall.key = ''; });
+
       var mall = new Plate({
         id: 'mall', ghost: 0.26,
         inkAt: function (p) { return lerp(0.24, 1.04, map(p, 0, portrait() ? 0.56 : 0.32)); },
@@ -963,8 +977,15 @@
             var w = vw * 1.75, h = w * AR;
             R = { w: w, h: h, x: vw * 0.5 - 0.63 * w, y: 76 - 0.19 * h };
           } else {
-            var w2 = Math.min(vw * 0.96, vh * 1.78), h2 = w2 * AR;
-            R = { w: w2, h: h2, x: vw - w2 * 0.95, y: vh - h2 + h2 * 0.05 - vh * 0.05 };   // right-anchored, lifted a touch off the fold,, a little past the edge so the Monument clears the copy
+            // the drawing's east edge (the Capitol wing, plate x ≈ 0.96)
+            // stops at the header's right edge, like everything else on the
+            // page; it only shrinks if the Monument (x ≈ 0.40) would
+            // otherwise run into the copy
+            var F = heroFrame(vw, vh);
+            var w0 = Math.min(vw * 0.96, vh * 1.78);
+            var w2 = Math.max(w0 * 0.45, Math.min(w0, (F.right - F.clear) / 0.56)), h2 = w2 * AR;
+            // the drawing's top (plate y ≈ 0.19) sits just under the top of the copy
+            R = { w: w2, h: h2, x: F.right - 0.96 * w2, y: F.top + 36 - 0.19 * h2, k: 1.55 * w0 / w2 };
           }
           if (!portrait()) {
             // desktop: ease toward the Capitol and settle it on the left
@@ -973,7 +994,7 @@
             if (m > 0) {
               // anchor on the tip of the dome (plate 0.787, 0.386): it rises
               // as it zooms, finishing level with the top of the kicker line
-              var dx = 0.787, dy = 0.386, k = 1 + 0.55 * m;
+              var dx = 0.787, dy = 0.386, k = lerp(1, R.k, m);   // ends at the same size whatever the start
               var tx = lerp(R.x + dx * R.w, vw * 0.27, m), ty = lerp(R.y + dy * R.h, heroCopy.offsetTop, m);
               R = { w: R.w * k, h: R.h * k };
               R.x = tx - dx * R.w; R.y = ty - dy * R.h;
