@@ -38,18 +38,23 @@ export function toast(message, type = "info", ms = 3200) {
   }, ms);
 }
 
-export function openModal({ title, bodyHtml, body, footer, onClose } = {}) {
+// Pop-ups. By default a new pop-up replaces whatever is open. With
+// `stack: true` it opens on top instead (confirmations, checklists opened from
+// inside another pop-up), and closing it reveals the one underneath.
+// `size: "wide"` gives a two-column-sized dialog. Escape closes the top one.
+export function openModal({ title, bodyHtml, body, footer, onClose, stack = false, size } = {}) {
   const root = document.getElementById("modal-root");
   if (!root) return null;
-  root.innerHTML = "";
+  if (!stack) root.innerHTML = "";
 
-  const backdrop = el("div", { class: "modal-backdrop", onclick: (e) => {
+  const backdrop = el("div", { class: "modal-backdrop" + (stack ? " is-stacked" : ""), onclick: (e) => {
     if (e.target === backdrop) close();
   }});
-  const modal = el("div", { class: "modal" });
+  const modal = el("div", { class: "modal" + (size ? ` modal--${size}` : ""), role: "dialog", "aria-modal": "true" });
+  const titleEl = el("div", { class: "modal-title" }, title || "");
   const header = el("div", { class: "modal-header" }, [
-    el("div", { class: "modal-title" }, title || ""),
-    el("button", { class: "btn btn-ghost btn-xs", onclick: close, "aria-label": "Close" }, "\u2715"),
+    titleEl,
+    el("button", { class: "btn btn-ghost btn-xs modal-close", onclick: close, "aria-label": "Close" }, "\u2715"),
   ]);
   const bodyEl = el("div", { class: "modal-body" });
   if (bodyHtml) bodyEl.innerHTML = bodyHtml;
@@ -65,25 +70,39 @@ export function openModal({ title, bodyHtml, body, footer, onClose } = {}) {
   backdrop.appendChild(modal);
   root.appendChild(backdrop);
 
+  const onKey = (e) => {
+    if (e.key !== "Escape") return;
+    if (root.lastElementChild !== backdrop) return;   // only the top pop-up
+    e.stopPropagation();
+    close();
+  };
+  document.addEventListener("keydown", onKey);
+
+  let closed = false;
   function close() {
-    root.innerHTML = "";
+    if (closed) return;
+    closed = true;
+    document.removeEventListener("keydown", onKey);
+    backdrop.remove();
     if (typeof onClose === "function") onClose();
   }
-  return { close, backdrop, modal, bodyEl, footerEl };
+  return { close, backdrop, modal, bodyEl, footerEl, titleEl };
 }
 
 export function confirmDialog(message, { confirmText = "Confirm", danger = false } = {}) {
   return new Promise((resolve) => {
     const m = openModal({
       title: "Confirm",
+      stack: true,
       body: el("div", {}, [message]),
       footer: [
         el("button", { class: "btn btn-secondary", onclick: () => { m.close(); resolve(false); } }, "Cancel"),
         el("button", {
           class: `btn ${danger ? "btn-danger" : "btn-primary"}`,
-          onclick: () => { m.close(); resolve(true); },
+          onclick: () => { resolve(true); m.close(); },
         }, confirmText),
       ],
+      onClose: () => resolve(false),
     });
   });
 }

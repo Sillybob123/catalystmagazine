@@ -157,7 +157,7 @@ function openChecklistModal(cfg) {
     const confirmBtn = el("button", { class: "btn btn-accent" }, cfg.confirmLabel);
     confirmBtn.disabled = true;
 
-    const m = openModal({ title: cfg.modalTitle, body, footer: [cancelBtn, confirmBtn] });
+    const m = openModal({ title: cfg.modalTitle, body, footer: [cancelBtn, confirmBtn], stack: true, onClose: () => resolve(null) });
 
     const progressLabel = body.querySelector("#cl-progress-label");
     const allBoxes = () => [...body.querySelectorAll(".cl-cb")];
@@ -179,8 +179,8 @@ function openChecklistModal(cfg) {
         items: cfg.items,
         checkedAt: new Date().toISOString(),
       };
-      m.close();
       resolve(payload);
+      m.close();
     };
   });
 }
@@ -234,7 +234,7 @@ function openInterviewDateModal({ existingDate } = {}) {
     const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
     const saveBtn = el("button", { class: "btn btn-accent" }, "Save interview date");
 
-    const m = openModal({ title: "Schedule the interview", body, footer: [cancelBtn, saveBtn] });
+    const m = openModal({ title: "Schedule the interview", body, footer: [cancelBtn, saveBtn], stack: true, onClose: () => resolve(null) });
 
     cancelBtn.onclick = () => { m.close(); resolve(null); };
     saveBtn.onclick = () => {
@@ -251,8 +251,8 @@ function openInterviewDateModal({ existingDate } = {}) {
         err.style.display = "block";
         return;
       }
-      m.close();
       resolve({ interviewDate: value });
+      m.close();
     };
   });
 }
@@ -381,6 +381,8 @@ let _editionsLoaded = false;
 // Selected tab on the Story Tracker: ED_ALL, ED_NONE, or an edition name.
 // null until the first settings snapshot picks a default.
 let _editionFilter = null;
+let _focus = "all";        // "all" | "attention" | "mine" (Story Tracker quick filter)
+const _expandedCols = new Set();
 let _view        = "all"; // "all" | "mine"
 let _uid         = null;
 let _role        = null;
@@ -390,97 +392,8 @@ let _ctx         = null;
 // ─── Inject guaranteed styles (once) ─────────────────────────────────────────
 
 function ensureKanbanStyles() {
-  if (document.getElementById("kanban-styles")) return;
-  const s = document.createElement("style");
-  s.id = "kanban-styles";
-  s.textContent = `
-    .kb-page { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    .kb-header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
-      background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px;
-      margin-bottom:20px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
-    .kb-header-title { font-size:18px; font-weight:800; color:#0b1220; margin:0 0 2px; }
-    .kb-header-sub { font-size:13px; color:#64748b; margin:0; }
-    .kb-header-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
-    .kb-scroll { width:100%; overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; padding-bottom:20px; }
-    .kb-board { display:flex; flex-direction:row; flex-wrap:nowrap; gap:14px; align-items:flex-start; }
-    .kb-col { flex:0 0 272px; width:272px; background:#fff; border:1px solid #e5e7eb; border-radius:12px;
-      overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(15,23,42,.06); }
-    .kb-col-head { padding:12px 14px; background:#f8fafc; border-bottom:1px solid #e5e7eb;
-      display:flex; align-items:center; justify-content:space-between; gap:8px; }
-    .kb-col-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#374151; }
-    .kb-col-count { background:#e5e7eb; color:#6b7280; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; }
-    .kb-col-body { padding:10px; display:flex; flex-direction:column; gap:8px; flex:1; min-height:200px; }
-    .kb-empty { font-size:12px; color:#9ca3af; text-align:center; padding:24px 8px; }
-    .kb-card { background:#fff; border:1px solid #e5e7eb; border-left:3px solid #94a3b8;
-      border-radius:8px; padding:12px 14px; cursor:pointer;
-      transition:box-shadow .15s, transform .12s; }
-    .kb-card:hover { box-shadow:0 4px 14px rgba(15,118,110,.13); transform:translateY(-2px); }
-    .kb-card.s-green  { border-left-color:#15803d; }
-    .kb-card.s-yellow { border-left-color:#f59e0b; }
-    .kb-card.s-blue   { border-left-color:#3b82f6; }
-    .kb-card.s-red    { border-left-color:#b91c1c; }
-    .kb-card.s-dim    { opacity:.75; }
-    /* Fully edited but not yet published — the admin's cue to push it live.
-       Whole container goes purple; once the story is live it reverts to the
-       plain white "completed" card like everything else. */
-    .kb-card.s-purple { border-left-color:#7c3aed; background:#f5f3ff; border-color:#ddd6fe; }
-    .kb-card.s-purple:hover { box-shadow:0 4px 14px rgba(124,58,237,.22); }
-    .kb-badge-publish { background:#ede9fe; color:#6d28d9; }
-    .kb-badge-live { background:#dcfce7; color:#15803d; }
-    .kb-card-title { font-size:13px; font-weight:600; color:#0b1220; line-height:1.4; margin:0 0 5px; }
-    .kb-card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 6px; }
-    .kb-badge { font-size:10px; font-weight:700; background:#f1f5f9; color:#64748b;
-      padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:.05em; }
-    .kb-badge-idle { background:#fee2e2; color:#b91c1c; }
-    .kb-status { font-size:11px; color:#6b7280; }
-    .kb-progress { height:3px; background:#e5e7eb; border-radius:99px; margin:6px 0; overflow:hidden; }
-    .kb-progress-fill { height:100%; background:var(--ink,#0f172a); border-radius:99px; }
-    .kb-card-foot { display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:8px; }
-    .kb-author { display:flex; align-items:center; gap:6px; font-size:12px; color:#6b7280; min-width:0; overflow:hidden; }
-    .kb-author span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .kb-avatar { width:22px; height:22px; border-radius:50%; color:#fff; font-size:11px; font-weight:700;
-      display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .kb-due { font-size:11px; font-weight:600; color:#94a3b8; white-space:nowrap; }
-    .kb-due.overdue { color:#b91c1c; }
-    .kb-due.soon { color:#f59e0b; }
-    .kb-avail-chip { display:flex; align-items:center; gap:10px; padding:8px 10px;
-      border-radius:8px; border:1px solid #e5e7eb; background:#f8fafc; }
-    .kb-avail-name { font-size:12px; font-weight:600; color:#1f2937; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .kb-avail-role { font-size:11px; color:#6b7280; }
-    .kb-priority { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; color:#fff; letter-spacing:.05em; }
-    .kb-desc { font-size:12px; color:#6b7280; margin:4px 0 6px; line-height:1.4; }
-    /* Edition filter — one tab per edition above the Story Tracker board. */
-    .kb-editions { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #e5e7eb;
-      border-radius:12px; padding:6px 8px 6px 14px; margin-bottom:16px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
-    .kb-ed-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#64748b; flex-shrink:0; }
-    .kb-ed-tabs { display:flex; gap:4px; flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-    .kb-ed-tabs::-webkit-scrollbar { display:none; }
-    .kb-ed-tab { min-height:44px; padding:0 14px; border:0; border-radius:8px; background:transparent; cursor:pointer;
-      display:inline-flex; align-items:center; gap:7px; white-space:nowrap; flex-shrink:0;
-      font:600 13px/1 'Inter',-apple-system,BlinkMacSystemFont,sans-serif; color:#475569; transition:background .12s, color .12s; }
-    .kb-ed-tab:hover { background:#f1f5f9; color:#0b1220; }
-    .kb-ed-tab[aria-pressed="true"] { background:var(--accent-soft,#ccfbf1); color:var(--accent,#0f766e); }
-    .kb-ed-tab:focus-visible, .kb-ed-manage:focus-visible { outline:2px solid var(--accent,#0f766e); outline-offset:2px; }
-    .kb-ed-count { font-size:11px; font-weight:700; background:#e5e7eb; color:#6b7280; padding:2px 7px; border-radius:999px; }
-    .kb-ed-tab[aria-pressed="true"] .kb-ed-count { background:#fff; color:var(--accent,#0f766e); }
-    .kb-ed-now { font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--accent,#0f766e); }
-    .kb-ed-manage { flex-shrink:0; min-height:44px; }
-    .kb-badge-edition { background:#ecfeff; color:#0e7490; text-transform:none; letter-spacing:0; }
-    .kb-ed-row { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid #e5e7eb; border-radius:8px; background:#f8fafc; }
-    .kb-ed-row + .kb-ed-row { margin-top:6px; }
-    .kb-ed-row-name { flex:1; min-width:0; font-size:13.5px; font-weight:600; color:#1f2937; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .kb-ed-row-meta { font-size:12px; color:#64748b; white-space:nowrap; }
-    .kb-ed-row label { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#475569; cursor:pointer; min-height:44px; }
-    @media (max-width: 640px) {
-      .kb-editions { flex-wrap:wrap; padding:8px; }
-      .kb-ed-label { width:100%; padding:2px 6px 0; }
-      .kb-ed-manage { width:100%; justify-content:center; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .kb-ed-tab { transition:none; }
-    }
-  `;
-  document.head.appendChild(s);
+  // The board and story pop-up are styled in css/suite.css (loaded by the
+  // dashboard shell), so the Overview snapshot gets the same look.
 }
 
 // ─── Mount ────────────────────────────────────────────────────────────────────
@@ -499,19 +412,21 @@ export async function mount(ctx, container) {
   container.innerHTML = "";
   container.className = (container.className || "") + " kb-page";
 
-  const viewTitle = _view === "mine" ? "My Assignments" : "Story Tracker";
-  const viewSub   = _view === "mine" ? "All your active projects and tasks." : "Every story in an edition moves left-to-right through the editorial lifecycle.";
 
-  const header = el("div", { class: "kb-header" });
+  _focus = "all";
+  const header = el("div", { class: "kb-toolbar" });
   header.innerHTML = `
-    <div>
-      <div class="kb-header-title">${esc(viewTitle)}</div>
-      <div class="kb-header-sub">${esc(viewSub)}</div>
-    </div>
+    <div class="kb-focus" id="pl-focus" role="group" aria-label="Show"></div>
     <div class="kb-header-actions">
-      ${_view !== "mine" && canPropose() ? `<button class="btn btn-accent btn-sm" id="pl-new-btn">Propose a new story</button>` : ""}
       ${_role === "admin" ? `<button class="btn btn-secondary btn-sm" id="pl-report-btn">Status report</button>` : ""}
+      ${_view !== "mine" && canPropose() ? `<button class="btn btn-primary btn-sm" id="pl-new-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Propose a story</button>` : ""}
     </div>`;
+  header.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-focus]");
+    if (!b) return;
+    _focus = b.dataset.focus;
+    renderBoard();
+  });
   container.appendChild(header);
 
   if (_view === "all") {
@@ -757,6 +672,13 @@ async function loadUsers() {
 
 // ─── Board rendering ──────────────────────────────────────────────────────────
 
+function filterProjectsMineBase() {
+  const saved = _focus; _focus = "all";
+  const list = filterProjects();
+  _focus = saved;
+  return list;
+}
+
 function filterProjects() {
   if (_view === "mine") {
     const mine = _allProjects.filter(p => p.authorId === _uid || p.editorId === _uid);
@@ -768,14 +690,62 @@ function filterProjects() {
       );
       const map = new Map();
       [...mine, ...needsEditor].forEach(p => map.set(p.id, p));
-      return [...map.values()];
+      return _focus === "attention" ? [...map.values()].filter(p => attentionFor(p)) : [...map.values()];
     }
-    return mine;
+    return _focus === "attention" ? mine.filter(p => attentionFor(p)) : mine;
   }
+  return applyFocus(editionProjects());
+}
+
+function editionProjects() {
   const f = activeEditionFilter();
   if (f === ED_ALL) return _allProjects;
   if (f === ED_NONE) return _allProjects.filter(p => !projectEdition(p));
   return _allProjects.filter(p => projectEdition(p) === f);
+}
+
+function applyFocus(list) {
+  if (_focus === "attention") return list.filter(p => attentionFor(p));
+  if (_focus === "mine") return list.filter(p => p.authorId === _uid || p.editorId === _uid);
+  return list;
+}
+
+// Why a story needs someone to act, if it does (most pressing first).
+function attentionFor(p) {
+  const completed = isProjectCompleted(p);
+  if (completed) {
+    const published = isProjectPublished(p, _publishedTitles);
+    return (!published && _publishedTitlesLoaded) ? { text: "Ready to publish", tone: "purple" } : null;
+  }
+  if (p.proposalStatus === "rejected") return null;
+  if (p.deadlineRequest?.status === "pending" || p.deadlineChangeRequest?.status === "pending") return { text: "Deadline change asked", tone: "warn" };
+  if (p.proposalStatus !== "approved") return { text: "Pitch to approve", tone: "warn" };
+  const tl = p.timeline || {};
+  if (tl["Article Writing Complete"] && !p.editorId) return { text: "Needs an editor", tone: "warn" };
+  const d = daysUntil(pubDeadline(p));
+  if (d !== null && d < 0) return { text: `${-d}d past publication`, tone: "red" };
+  const idle = daysInactive(p);
+  if (idle > 9) return { text: `Quiet for ${idle}d`, tone: "red" };
+  if (d !== null && d <= 3) return { text: d === 0 ? "Publishes today" : `Publishes in ${d}d`, tone: "warn" };
+  return null;
+}
+
+function renderFocusBar() {
+  const bar = document.getElementById("pl-focus");
+  if (!bar) return;
+  const base = _view === "mine" ? filterProjectsMineBase() : editionProjects();
+  const live = base.filter(p => p.proposalStatus !== "rejected");
+  const counts = {
+    all: live.length,
+    attention: live.filter(p => attentionFor(p)).length,
+    mine: live.filter(p => p.authorId === _uid || p.editorId === _uid).length,
+  };
+  const opts = _view === "mine"
+    ? [["all", "Everything"], ["attention", "Needs attention"]]
+    : [["all", "All stories"], ["attention", "Needs attention"], ["mine", "Mine"]];
+  bar.innerHTML = opts.map(([k, label]) =>
+    `<button type="button" data-focus="${k}" aria-pressed="${_focus === k}"${k === "attention" && counts.attention ? ' class="has-alert"' : ""}>${label}<span>${counts[k]}</span></button>`
+  ).join("");
 }
 
 function renderBoard() {
@@ -785,6 +755,7 @@ function renderBoard() {
   // story and then snap to the current edition a moment later.
   if (_view === "all" && !_editionsLoaded) return;
   board.innerHTML = "";
+  renderFocusBar();
 
   const projects = filterProjects();
   const columns = VIEW_COLUMNS[_view] || VIEW_COLUMNS.all;
@@ -813,22 +784,48 @@ const COL_COLORS = {
   [COL.DONE]:                  "#10b981",
 };
 
+const COL_HINTS = {
+  [COL.TOPIC_PROPOSAL]:        "Pitches waiting for approval",
+  [COL.INTERVIEW_STAGE]:       "Setting up and doing interviews",
+  [COL.WRITING_STAGE]:         "Drafts being written",
+  [COL.IN_REVIEW]:             "With an editor",
+  [COL.REVIEWING_SUGGESTIONS]: "Writer making the edits",
+  [COL.COMPLETED]:             "Edited and ready, or live",
+  [COL.TODO]:                  "Not started yet",
+  [COL.IN_PROGRESS]:           "You're working on it",
+  [COL.MY_REVIEW]:             "Waiting on someone else",
+  [COL.DONE]:                  "Finished",
+};
+const COL_LABELS = { [COL.REVIEWING_SUGGESTIONS]: "Making edits", [COL.TOPIC_PROPOSAL]: "Pitches", [COL.INTERVIEW_STAGE]: "Interviewing", [COL.WRITING_STAGE]: "Writing" };
+const FOLD_AT = 6;
+
 function renderColumn(name, projects) {
-  const color = COL_COLORS[name] || "#94a3b8";
-  const colEl = el("div", { class: "kb-col" });
+  const colEl = el("section", { class: "kb-col", "aria-label": `${COL_LABELS[name] || name}: ${projects.length}` });
   colEl.innerHTML = `
-    <div class="kb-col-head" style="border-top:3px solid ${color}">
-      <span class="kb-col-title">${esc(name)}</span>
+    <header class="kb-col-head">
+      <div class="kb-col-titles">
+        <span class="kb-col-title">${esc(COL_LABELS[name] || name)}</span>
+        <span class="kb-col-hint">${esc(COL_HINTS[name] || "")}</span>
+      </div>
       <span class="kb-col-count">${projects.length}</span>
-    </div>
+    </header>
     <div class="kb-col-body"></div>`;
   const body = colEl.querySelector(".kb-col-body");
   if (!projects.length) {
-    body.innerHTML = `<div class="kb-empty">No projects here</div>`;
-  } else {
-    projects
-      .sort((a, b) => dueTime(a) - dueTime(b))
-      .forEach(p => body.appendChild(renderCard(p)));
+    body.innerHTML = `<div class="kb-empty">${_focus === "attention" ? "Nothing needs attention here" : "Nothing here yet"}</div>`;
+    return colEl;
+  }
+  const isDone = name === COL.COMPLETED || name === COL.DONE;
+  // Live work: soonest deadline first. Finished work: most recent first.
+  const sorted = isDone
+    ? projects.sort((a, b) => toMs(b.publishedAt || b.lastActivity || b.updatedAt) - toMs(a.publishedAt || a.lastActivity || a.updatedAt))
+    : projects.sort((a, b) => (attentionFor(b) ? 1 : 0) - (attentionFor(a) ? 1 : 0) || dueTime(a) - dueTime(b));
+  const fold = isDone && sorted.length > FOLD_AT && !_expandedCols.has(name);
+  (fold ? sorted.slice(0, FOLD_AT) : sorted).forEach(p => body.appendChild(renderCard(p)));
+  if (fold) {
+    const more = el("button", { type: "button", class: "kb-more" }, `Show all ${sorted.length}`);
+    more.addEventListener("click", () => { _expandedCols.add(name); renderBoard(); });
+    body.appendChild(more);
   }
   return colEl;
 }
@@ -841,67 +838,55 @@ function dueTime(p) {
 
 function renderCard(project) {
   const state = getProjectState(project, _view, _uid);
-  const progress = calcProgress(project.timeline);
   const due = pubDeadline(project);
   const days = daysUntil(due);
-  const isOverdue = days !== null && days < 0;
-  const isDueSoon = days !== null && days >= 0 && days <= 3;
-  const inactive = daysInactive(project);
-  const isInactive = inactive > 9 && state.column !== COL.COMPLETED && state.column !== COL.DONE;
-  const hasDeadlineRequest = (project.deadlineRequest?.status === "pending") || (project.deadlineChangeRequest?.status === "pending");
-
-  // Publish state only matters once the workflow is fully done: purple means
-  // "edited, reviewed, waiting on you to publish"; published cards stay plain.
   const completed = isProjectCompleted(project);
   const published = completed && isProjectPublished(project, _publishedTitles);
-  // Wait for the published-title fetch before painting purple, so completed
-  // cards don't flash "needs publishing" and immediately flip back on load.
-  // (Projects already stamped with publishedAt never depend on the fetch.)
   const awaitingPublish = completed && !published && _publishedTitlesLoaded;
+  const attention = attentionFor(project);
+  const hasDeadlineRequest = (project.deadlineRequest?.status === "pending") || (project.deadlineChangeRequest?.status === "pending");
 
-  const stateClass = awaitingPublish
-    ? "s-purple"
-    : ({ green: "s-green", yellow: "s-yellow", blue: "s-blue", red: "s-red" }[state.color] || "");
-  const card = el("div", {
-    class: `kb-card ${stateClass}${isInactive ? " s-dim" : ""}`,
-    onclick: () => openDetailModal(project.id),
+  const skipInterview = project.type === "Op-Ed" || !!project.noInterview;
+  const steps = TIMELINE_STEPS.filter(st => !(skipInterview && (st === "Interview Scheduled" || st === "Interview Complete")));
+  const tl = project.timeline || {};
+  const doneCount = steps.filter(st => tl[st]).length;
+
+  const card = el("article", {
+    class: `kb-card${attention ? " is-" + attention.tone : ""}${published ? " is-live" : ""}${project.proposalStatus === "rejected" ? " is-declined" : ""}`,
+    tabindex: "0",
+    role: "button",
+    "aria-label": `${project.title}. ${state.status}. Open details`,
   });
+  card.addEventListener("click", () => openDetailModal(project.id));
+  card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetailModal(project.id); } });
 
-  const authorInitial = (project.authorName || "?")[0].toUpperCase();
-  const statusLabel = awaitingPublish ? "Ready to Publish" : published ? "Published" : state.status;
-  // Edition badge is redundant when the board is already filtered to it.
   const edition = projectEdition(project);
   const showEdition = edition && !(_view === "all" && activeEditionFilter() === edition);
+  const statusLabel = awaitingPublish ? "Ready to publish" : published ? "Live on the site" : project.proposalStatus === "rejected" ? "Pitch declined" : state.status;
+  const dueLabel = !due ? "" : completed ? fmtShort(due)
+    : days < 0 ? `${fmtShort(due)} · ${-days}d late` : days === 0 ? "Today" : days <= 14 ? `${fmtShort(due)} · ${days}d` : fmtShort(due);
+  const people = [project.authorName, project.editorName].filter(Boolean);
 
   card.innerHTML = `
-    <div class="kb-card-title">${esc(project.title)}${hasDeadlineRequest ? " ⏰" : ""}</div>
-    <div class="kb-card-meta">
-      ${showEdition ? `<span class="kb-badge kb-badge-edition">${esc(edition)}</span>` : ""}
-      <span class="kb-badge">${esc(project.type || "")}</span>
-      <span class="kb-status">${esc(statusLabel)}</span>
-      ${awaitingPublish ? `<span class="kb-badge kb-badge-publish">Needs publishing</span>` : ""}
-      ${published ? `<span class="kb-badge kb-badge-live">Live</span>` : ""}
-      ${isInactive ? `<span class="kb-badge kb-badge-idle">${inactive}d idle</span>` : ""}
+    <div class="kb-card-top">
+      <span class="kb-type">${esc(project.type || "Story")}</span>
+      ${showEdition ? `<span class="kb-type is-edition">${esc(edition)}</span>` : ""}
+      ${due ? `<span class="kb-due${!completed && days < 0 ? " is-late" : !completed && days <= 3 ? " is-soon" : ""}">${esc(dueLabel)}</span>` : ""}
     </div>
-    <div class="kb-progress"><div class="kb-progress-fill" style="width:${progress}%"></div></div>
+    <h4 class="kb-card-title">${esc(project.title || "Untitled")}</h4>
+    <p class="kb-card-status">${attention ? `<span class="kb-flag is-${attention.tone}">${esc(attention.text)}</span>` : ""}<span>${esc(statusLabel)}</span>${hasDeadlineRequest && attention?.text !== "Deadline change asked" ? ` <span class="kb-flag is-warn">Deadline change asked</span>` : ""}</p>
     <div class="kb-card-foot">
-      <div class="kb-author">
-        <div class="kb-avatar" style="background:${stringToColor(project.authorName)}">${authorInitial}</div>
-        <span>${esc(project.authorName || "")}</span>
-      </div>
-      <div class="kb-due${isOverdue ? " overdue" : isDueSoon ? " soon" : ""}">
-        ${due ? fmtShort(due) : "—"}
-      </div>
+      <span class="kb-people">${people.map(n => `<span class="kb-avatar" title="${esc(n)}" style="background:${stringToColor(n)}">${esc(n[0].toUpperCase())}</span>`).join("")}<span class="kb-people-names">${esc(project.authorName || "No writer")}${project.editorName ? ` <i>&amp; ${esc(project.editorName.split(" ")[0])}</i>` : ""}</span></span>
+      <span class="kb-steps" title="${doneCount} of ${steps.length} steps done" aria-label="${doneCount} of ${steps.length} steps done">${steps.map(st => `<i${tl[st] ? ' class="is-done"' : ""}></i>`).join("")}</span>
     </div>`;
-
   return card;
 }
 
 function renderAvailabilityColumn() {
-  const colEl = el("div", { class: "kb-col", style: { flex: "0 0 220px", width: "220px" } });
+  const colEl = el("section", { class: "kb-col kb-col-team" });
   colEl.innerHTML = `
-    <div class="kb-col-head" style="border-top:3px solid #64748b">
-      <span class="kb-col-title">Team</span>
+    <div class="kb-col-head">
+      <div class="kb-col-titles"><span class="kb-col-title">Team</span><span class="kb-col-hint">Stories each person is on</span></div>
       <span class="kb-col-count">${_allUsers.filter(u => ["writer","editor","admin"].includes(u.role)).length}</span>
     </div>
     <div class="kb-col-body" style="overflow-y:auto; max-height:600px;"></div>`;
@@ -911,18 +896,49 @@ function renderAvailabilityColumn() {
     body.innerHTML = `<div class="kb-empty">No team members loaded</div>`;
   } else {
     for (const u of writers) {
-      const activeCount = _allProjects.filter(p => p.authorId === u.id || p.editorId === u.id).length;
+      const activeCount = _allProjects.filter(p => (p.authorId === u.id || p.editorId === u.id) && !isProjectCompleted(p) && p.proposalStatus !== "rejected").length;
       const chip = el("div", { class: "kb-avail-chip" });
       chip.innerHTML = `
         <div class="kb-avatar" style="background:${stringToColor(u.name || u.email)}">${(u.name || u.email || "?")[0].toUpperCase()}</div>
         <div style="min-width:0;flex:1;">
           <div class="kb-avail-name">${esc(u.name || u.email)}</div>
-          <div class="kb-avail-role">${esc(u.role || "")} · ${activeCount} active</div>
+          <div class="kb-avail-role">${esc(u.role || "")} · ${activeCount ? `${activeCount} in progress` : "free"}</div>
         </div>`;
       body.appendChild(chip);
     }
   }
   return colEl;
+}
+
+// Plain-language steps: who owns each one and which deadline it answers to.
+const STEP_META = {
+  "Topic Proposal Complete":  { label: "Pitch approved",         owner: "Admin" },
+  "Interview Scheduled":      { label: "Interview scheduled",    owner: "Writer", deadline: "contact" },
+  "Interview Complete":       { label: "Interview done",         owner: "Writer", deadline: "interview" },
+  "Article Writing Complete": { label: "Draft finished",         owner: "Writer", deadline: "draft" },
+  "Review Complete":          { label: "Editor's review done",   owner: "Editor", deadline: "review" },
+  "Suggestions Reviewed":     { label: "Edits made",             owner: "Writer", deadline: "edits" },
+};
+
+// One sentence: what has to happen next, and who has to do it.
+function nextStepFor(p, state, { awaitingPublish, published } = {}) {
+  const w = esc(p.authorName || "The writer");
+  const e = esc(p.editorName || "the editor");
+  const tl = p.timeline || {};
+  if (published) return { html: `Live on the site${p.publishedAt ? ` since ${esc(fmtDate(p.publishedAt))}` : ""}.`, tone: "good" };
+  if (awaitingPublish) return { html: "Fully edited. An admin publishes it.", owner: "Admin", tone: "purple" };
+  if (p.proposalStatus === "rejected") return { html: "The pitch was declined. Edit it and an admin can look again.", owner: p.authorName || "Writer", tone: "red" };
+  if (p.proposalStatus !== "approved") return { html: "An admin reads the pitch and approves or declines it.", owner: "Admin" };
+  if (p.type === "Interview" && !p.noInterview && !tl["Interview Complete"]) {
+    return tl["Interview Scheduled"]
+      ? { html: `${w} interviews the source${p.interviewDate ? ` on <strong>${esc(fmtShort(p.interviewDate))}</strong>` : ""}, then ticks &ldquo;Interview done&rdquo;.`, owner: p.authorName || "Writer" }
+      : { html: `${w} contacts the source and schedules the interview.`, owner: p.authorName || "Writer" };
+  }
+  if (!tl["Article Writing Complete"]) return { html: `${w} writes the draft, then ticks &ldquo;Draft finished&rdquo;.`, owner: p.authorName || "Writer" };
+  if (!p.editorId) return { html: "The draft is done. An admin assigns an editor.", owner: "Admin", tone: "warn" };
+  if (!tl["Review Complete"]) return { html: `${e} reviews the draft and leaves suggestions.`, owner: p.editorName || "Editor" };
+  if (!tl["Suggestions Reviewed"]) return { html: `${w} works through ${e}'s suggestions.`, owner: p.authorName || "Writer" };
+  return { html: "All steps are done.", tone: "good" };
 }
 
 // ─── Project Detail Modal ─────────────────────────────────────────────────────
@@ -967,182 +983,179 @@ function openDetailModal(projectId) {
   const inactive  = daysInactive(project);
   const isInactive = inactive > 9 && state.column !== COL.COMPLETED && state.column !== COL.DONE;
 
-  // Status pill colors
-  const pillBg = { green:"#dcfce7", yellow:"#fef3c7", blue:"#dbeafe", red:"#fee2e2", default:"#f1f5f9" }[state.color] || "#f1f5f9";
-  const pillFg = { green:"#15803d", yellow:"#b45309", blue:"#1d4ed8", red:"#b91c1c", default:"#475569" }[state.color] || "#475569";
-
-  // Timeline checklist — each step enabled only for users who own that step.
-  // Op-Eds and no-interview stories skip the interview-specific steps.
+  const me = _profile.name || _ctx.user.email;
+  const next = nextStepFor(project, state, { awaitingPublish, published });
   const skipInterviewSteps = project.type === "Op-Ed" || !!project.noInterview;
   const relevantSteps = TIMELINE_STEPS.filter(step =>
     !(skipInterviewSteps && (step === "Interview Scheduled" || step === "Interview Complete"))
   );
-  const stepsHtml = relevantSteps.map(step => {
+  const currentStep = relevantSteps.find(st => !tl[st]) || null;
+
+  // When was each step ticked, and by whom? (latest "completed: <step>").
+  const doneInfo = {};
+  for (const a of (project.activity || [])) {
+    const m = /^completed: (.+)$/.exec(a.text || "");
+    if (m) doneInfo[m[1]] = { who: a.authorName, when: a.timestamp };
+  }
+
+  // Steps: plain-language label, who owns it, its deadline, and when it was done.
+  const stepsHtml = relevantSteps.map((step, i) => {
+    const meta = STEP_META[step] || { label: step, owner: "" };
     const checked  = !!tl[step];
     const editable = canToggleStep(step);
-    return `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:${checked?"#f0fdf4":"#f8fafc"};border:1px solid ${checked?"#86efac":"#e5e7eb"};cursor:${editable?"pointer":"default"};user-select:none;transition:background .1s;">
-      <input type="checkbox" data-step="${esc(step)}" ${checked?"checked":""} ${editable?"":"disabled"} style="width:15px;height:15px;flex-shrink:0;accent-color:var(--ink,#0f172a);${editable?"":"opacity:.4;"}">
-      <span style="font-size:13px;color:${checked?"#6b7280":"#1f2937"};${checked?"text-decoration:line-through;":""}">${esc(step)}</span>
-    </label>`;
+    const isCurrent = step === currentStep;
+    const dl = meta.deadline ? (meta.deadline === "interview" ? (deadlines.interview || project.interviewDate) : deadlines[meta.deadline]) : null;
+    const dDays = dl ? daysUntil(dl) : null;
+    const late = !checked && dDays !== null && dDays < 0;
+    const done = doneInfo[step];
+    const ownerName = meta.owner === "Writer" ? (project.authorName || "Writer")
+      : meta.owner === "Editor" ? (project.editorName || "Editor (not assigned)") : meta.owner;
+    const sub = checked
+      ? (done?.when ? `Done ${fmtActivityTime(done.when)}${done.who ? ` · ${esc(done.who)}` : ""}` : "Done")
+      : `${esc(ownerName)}${dl ? ` · due ${fmtShort(dl)}${late ? ` <b class="pm-late">${-dDays}d late</b>` : dDays === 0 ? " (today)" : ""}` : ""}`;
+    return `<li class="pm-step${checked ? " is-done" : ""}${isCurrent ? " is-current" : ""}">
+      <label class="pm-step-row${editable ? "" : " is-locked"}" title="${editable ? (checked ? "Untick if this isn't done" : "Tick when this is done") : `Only the ${meta.owner.toLowerCase() || "owner"} or an admin can tick this`}">
+        <input type="checkbox" data-step="${esc(step)}" ${checked ? "checked" : ""} ${editable ? "" : "disabled"}>
+        <span class="pm-step-mark" aria-hidden="true">${checked ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : i + 1}</span>
+        <span class="pm-step-text">
+          <span class="pm-step-label">${esc(meta.label)}${isCurrent ? ` <span class="pm-now">Now</span>` : ""}</span>
+          <span class="pm-step-sub">${sub}</span>
+        </span>
+      </label>
+    </li>`;
   }).join("");
 
-  // Deadlines
+  // Deadlines (admins edit; everyone else reads, and can ask for a change)
   const hasRequest = project.deadlineRequest?.status === "pending" || project.deadlineChangeRequest?.status === "pending";
   const req = project.deadlineRequest || project.deadlineChangeRequest;
-  const dlStyle = `display:flex;align-items:center;gap:12px;margin-bottom:10px;`;
-  const dlLabelStyle = `font-size:12px;font-weight:600;color:#64748b;width:150px;flex-shrink:0;`;
-  const dlInputStyle = `flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;`;
-
+  const dlRow = (key, label, value, strong) => {
+    const d = value ? daysUntil(value) : null;
+    return `<div class="pm-dl${strong ? " is-strong" : ""}">
+      <label for="dl-${key}">${esc(label)}${value && d !== null && d < 0 && !(key === "publication" && completed) ? ` <span class="pm-dl-flag">late</span>` : ""}</label>
+      <input type="date" id="dl-${key}" class="dl-input" data-dlkey="${esc(key)}" value="${esc(value || "")}" ${isAdmin ? "" : "disabled"}>
+    </div>`;
+  };
   const deadlineRows = DEADLINE_FIELDS
     .filter(f => !(skipInterviewSteps && (f.key === "contact" || f.key === "interview")))
-    .map(f => {
-      // Conduct Interview falls back to project.interviewDate so projects
-      // that were scheduled before the deadlines mirror existed still show
-      // the date in the grid. Once the writer reschedules, deadlines.interview
-      // is written and takes precedence on its own.
-      const fallback = f.key === "interview" ? (project.interviewDate || "") : "";
-      const value = deadlines[f.key] || fallback;
-      return `<div style="${dlStyle}">
-        <label style="${dlLabelStyle}">${esc(f.label)}</label>
-        <input type="date" class="dl-input" data-dlkey="${esc(f.key)}" value="${esc(value)}" ${isAdmin?"":"disabled"} style="${dlInputStyle}${!isAdmin?"background:#f8fafc;color:#94a3b8;":""}">
-      </div>`;
-    }).join("");
-
-  const pubDeadlineHtml = `<div style="${dlStyle}">
-    <label style="${dlLabelStyle}font-weight:700;color:#374151;">Publication</label>
-    <input type="date" class="dl-input" data-dlkey="publication" value="${esc(deadlines.publication||project.deadline||"")}" ${isAdmin?"":"disabled"} style="${dlInputStyle}font-weight:600;${!isAdmin?"background:#f8fafc;color:#94a3b8;":""}">
-  </div>`;
-
+    .map(f => dlRow(f.key, f.label, deadlines[f.key] || (f.key === "interview" ? (project.interviewDate || "") : ""), false))
+    .join("");
   const reqDatesHtml = req?.requestedDeadlines && Object.keys(req.requestedDeadlines).length
-    ? `<div style="color:#78350f;margin-top:4px;">Requested dates: ${Object.entries(req.requestedDeadlines).map(([k,v])=>`<strong>${esc(k)}</strong>: ${esc(v)}`).join(" · ")}</div>`
-    : (req?.requestedDate ? `<div style="color:#78350f;margin-top:4px;">Requested publication: <strong>${esc(req.requestedDate)}</strong></div>` : "");
-
+    ? `<p>Asked for: ${Object.entries(req.requestedDeadlines).map(([k, v]) => `<strong>${esc((DEADLINE_FIELDS.find(f => f.key === k) || { label: k }).label)}</strong> ${esc(fmtShort(v))}`).join(" · ")}</p>`
+    : (req?.requestedDate ? `<p>Asked for publication on <strong>${esc(fmtShort(req.requestedDate))}</strong></p>` : "");
   const deadlineRequestHtml = hasRequest ? `
-    <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;">
-      <div style="font-weight:700;color:#92400e;margin-bottom:6px;">⏳ Pending deadline change request</div>
-      <div style="color:#78350f;">Requested by: <strong>${esc(req.requestedBy||"")}</strong></div>
-      <div style="color:#78350f;margin-top:2px;">Reason: ${esc(req.reason||"—")}</div>
+    <div class="pm-note is-warn">
+      <p class="pm-note-title">Deadline change requested</p>
+      <p>${esc(req.requestedBy || "Someone")}: ${esc(req.reason || "no reason given")}</p>
       ${reqDatesHtml}
-      ${isAdmin?`<div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="btn btn-accent btn-xs" id="dl-approve-req">Approve</button>
-        <button class="btn btn-secondary btn-xs" id="dl-reject-req" style="color:#b91c1c;">Reject</button>
-      </div>`:`<div style="color:#b45309;margin-top:6px;font-size:12px;">Awaiting admin approval…</div>`}
+      ${isAdmin ? `<div class="pm-note-actions"><button class="btn btn-primary btn-xs" id="dl-approve-req">Approve</button><button class="btn btn-secondary btn-xs" id="dl-reject-req">Decline</button></div>`
+                : `<p class="pm-muted">Waiting for an admin.</p>`}
     </div>` : "";
 
-  // Activity feed
+  // Comments + history in one feed; comments read as messages.
   const acts = [...(project.activity || [])].reverse();
-  const actHtml = acts.length
-    ? acts.map(a => `
-        <div style="display:flex;align-items:baseline;gap:6px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #e5e7eb;font-size:12.5px;line-height:1.4;">
-          <span style="font-weight:700;color:#1f2937;white-space:nowrap;">${esc(a.authorName||"Someone")}</span>
-          <span style="color:#374151;flex:1;">${esc(a.text||"")}</span>
-          <span style="color:#94a3b8;white-space:nowrap;font-size:11px;">${a.timestamp?fmtActivityTime(a.timestamp):""}</span>
-        </div>`).join("")
-    : `<div style="color:#9ca3af;font-size:13px;padding:12px 0;">No activity yet.</div>`;
+  const actHtml = acts.length ? acts.map(a => {
+    const t = a.text || "";
+    const cm = /^commented: "([\s\S]*)"$/.exec(t);
+    return cm
+      ? `<li class="pm-act is-comment"><span class="pm-act-who">${esc(a.authorName || "Someone")}</span><span class="pm-act-when">${a.timestamp ? fmtActivityTime(a.timestamp) : ""}</span><p class="pm-act-msg">${esc(cm[1])}</p></li>`
+      : `<li class="pm-act"><span class="pm-act-who">${esc(a.authorName || "Someone")}</span> <span class="pm-act-text">${esc(t)}</span><span class="pm-act-when">${a.timestamp ? fmtActivityTime(a.timestamp) : ""}</span></li>`;
+  }).join("") : `<li class="pm-empty">Nothing yet. Comments and every change to this story show up here.</li>`;
 
-  // Editor dropdown
   const editorOptions = _allEditors.map(e =>
-    `<option value="${esc(e.id)}" ${e.id===project.editorId?"selected":""}>${esc(e.name||e.email)}</option>`
+    `<option value="${esc(e.id)}" ${e.id === project.editorId ? "selected" : ""}>${esc(e.name || e.email)}</option>`
   ).join("");
 
-  // Section heading helper
-  const sec = (label, extra="") =>
-    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin:0 0 10px;display:flex;align-items:center;gap:8px;">${label}${extra}</div>`;
-  const divider = `<div style="height:1px;background:#f1f5f9;margin:18px 0;"></div>`;
+  const person = (role, name, extra = "") => `
+    <div class="pm-person">
+      <span class="pm-avatar" style="background:${name ? stringToColor(name) : "#cbd5e1"}">${esc((name || "?")[0].toUpperCase())}</span>
+      <span class="pm-person-text"><span class="pm-person-role">${role}</span><span class="pm-person-name">${name ? esc(name) : `<i>Not assigned</i>`}</span></span>
+      ${extra}
+    </div>`;
 
-  const body = el("div", { style: { fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif", lineHeight:"1.5" }});
-
+  const body = el("div", { class: "pm" });
   body.innerHTML = `
-    ${isInactive&&(isAdmin||isAuthor)?`<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;color:#b91c1c;display:flex;align-items:center;gap:8px;margin-bottom:16px;">⚠ Inactive for <strong>${inactive} days</strong> — no recent progress.</div>`:""}
-
-    <!-- Status + meta -->
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <span style="background:${pillBg};color:${pillFg};padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${esc(state.status)}</span>
-      <span style="background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">${esc(project.type||"Article")}</span>
-      ${awaitingPublish ? `<span style="background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Needs publishing</span>` : ""}
-      ${published ? `<span style="background:#dcfce7;color:#15803d;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;">Live${project.publishedAt ? ` · ${fmtDate(project.publishedAt)}` : ""}</span>` : ""}
-    </div>
-    ${awaitingPublish && isAdmin ? `<div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#5b21b6;">
-      Editing is done — this piece is waiting on you to publish it. Head to
-      <a href="#/admin/articles" style="color:#6d28d9;font-weight:700;">All articles &amp; approvals</a> to push it live,
-      or use “Mark as published” below if it's already up.
-    </div>` : ""}
-    <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:#6b7280;margin-bottom:0;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e5e7eb;">
-      <span>Edition: <strong style="color:#1f2937;">${esc(projectEdition(project)||"Not assigned")}</strong></span>
-      <span>Author: <strong style="color:#1f2937;">${esc(project.authorName||"—")}</strong></span>
-      <span>Editor: <strong style="color:#1f2937;">${esc(project.editorName||"Not assigned")}</strong></span>
-      ${due?`<span>Due: <strong style="color:#1f2937;">${fmtDate(due+"T00:00:00")}</strong></span>`:""}
+    <div class="pm-chips">
+      <span class="pm-chip is-${state.color}">${esc(awaitingPublish ? "Ready to publish" : published ? "Published" : state.status)}</span>
+      <span class="pm-chip">${esc(project.type || "Article")}</span>
+      ${projectEdition(project) ? `<span class="pm-chip">${esc(projectEdition(project))}</span>` : ""}
+      ${due ? `<span class="pm-chip${!completed && daysUntil(due) < 0 ? " is-red" : ""}">Publishes ${esc(fmtShort(due))}</span>` : ""}
+      ${isInactive ? `<span class="pm-chip is-red">No activity for ${inactive} days</span>` : ""}
     </div>
 
-    ${project.proposal?`
-    ${divider}
-    ${sec("Pitch / Proposal", canEdit?`<button class="btn btn-ghost btn-xs" id="edit-proposal-btn" style="margin-left:auto;">Edit</button>`:"")}
-    <div id="proposal-display" style="font-size:13.5px;line-height:1.65;color:#374151;white-space:pre-wrap;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;">${esc(project.proposal)}</div>
-    `:(canEdit?`
-    ${divider}
-    ${sec("Pitch / Proposal", `<button class="btn btn-ghost btn-xs" id="edit-proposal-btn" style="margin-left:auto;">Add pitch</button>`)}
-    `:``)
-    }
-
-    ${divider}
-    ${sec("Progress")}
-    ${project.interviewDate && project.type === "Interview" && !project.noInterview ? `
-      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#1e3a8a;display:flex;align-items:center;gap:8px;">
-        <span style="font-weight:700;">📅 Interview scheduled:</span>
-        <span>${fmtDate(project.interviewDate + "T00:00:00")}</span>
-      </div>` : ""}
-    <div id="tl-steps" style="display:flex;flex-direction:column;gap:6px;">${stepsHtml}</div>
-
-    ${isAdmin?`
-    ${divider}
-    ${sec("Assign Editor")}
-    <div style="display:flex;gap:8px;align-items:center;">
-      <select id="editor-select" style="flex:1;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;">
-        <option value="">— Choose editor —</option>
-        ${editorOptions}
-      </select>
-      <button class="btn btn-accent btn-sm" id="assign-editor-btn">${project.editorId?"Reassign":"Assign"}</button>
+    <div class="pm-next${next.tone ? " is-" + next.tone : ""}">
+      <span class="pm-next-label">${published ? "Status" : "What happens next"}</span>
+      <p class="pm-next-text">${next.html}</p>
+      ${next.owner ? `<span class="pm-next-owner">${esc(next.owner)}</span>` : ""}
     </div>
 
-    ${divider}
-    ${sec("Edition")}
-    <div style="display:flex;gap:8px;align-items:center;">
-      <select id="edition-select" aria-label="Edition" style="flex:1;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;">
-        ${editionOptionsHtml(projectEdition(project), { includeNone: true, noneLabel: "— No edition —" })}
-      </select>
-      <button class="btn btn-accent btn-sm" id="set-edition-btn">Move</button>
-    </div>`:""}
+    <div class="pm-grid">
+      <div class="pm-main">
+        <section class="pm-sec">
+          <div class="pm-sec-head"><h3>Pitch</h3>${canEdit ? `<button class="btn btn-ghost btn-xs" id="edit-proposal-btn">${project.proposal ? "Edit" : "Add pitch"}</button>` : ""}</div>
+          ${project.proposal ? `<p id="proposal-display" class="pm-pitch">${esc(project.proposal)}</p>` : `<p class="pm-muted">No pitch written yet.</p>`}
+        </section>
 
-    ${divider}
-    ${sec("Deadlines", `<div style="margin-left:auto;display:flex;gap:6px;">
-      ${isAdmin?`<button class="btn btn-accent btn-xs" id="save-deadlines-btn">Save</button>`:""}
-      ${(isAuthor||isEditor)&&!hasRequest?`<button class="btn btn-ghost btn-xs" id="req-deadline-btn">Request change</button>`:""}
-    </div>`)}
-    ${pubDeadlineHtml}
-    ${deadlineRows}
-    ${deadlineRequestHtml}
-    ${(deadlines.publication || project.deadline || deadlines.interview) ? `
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn-secondary btn-xs" id="cal-export-btn" type="button">📅 Save to calendar</button>
-        <span style="font-size:11px;color:var(--muted,#64748b);">.ics or Google Calendar · 5-day reminder</span>
-      </div>` : ""}
+        <section class="pm-sec">
+          <div class="pm-sec-head"><h3>Steps</h3><span class="pm-muted">${relevantSteps.filter(st => tl[st]).length} of ${relevantSteps.length} done</span></div>
+          ${project.interviewDate && project.type === "Interview" && !project.noInterview && !tl["Interview Complete"] ? `<p class="pm-note">Interview on <strong>${esc(fmtDate(project.interviewDate + "T00:00:00"))}</strong></p>` : ""}
+          <ol id="tl-steps" class="pm-steps">${stepsHtml}</ol>
+          <p class="pm-hint">Tick a step when it's done. Finishing the draft and the review each ask for a short checklist first.</p>
+        </section>
 
-    ${divider}
-    ${sec("Leave a comment")}
-    <div style="display:flex;gap:8px;">
-      <input id="comment-input" placeholder="Write a note…" style="flex:1;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;color:#0b1220;background:#fff;outline:none;">
-      <button class="btn btn-accent btn-sm" id="post-comment-btn">Post</button>
+        <section class="pm-sec">
+          <div class="pm-sec-head"><h3>Comments &amp; history</h3></div>
+          <div class="pm-compose">
+            <input id="comment-input" placeholder="Write a comment for the team…" aria-label="Comment">
+            <button class="btn btn-primary btn-sm" id="post-comment-btn">Post</button>
+          </div>
+          <p class="pm-hint">${project.authorId && project.authorId !== _uid ? `${esc(project.authorName || "The writer")} gets an email copy.` : "Admins see every comment."}</p>
+          <ul id="act-feed" class="pm-feed">${actHtml}</ul>
+        </section>
+      </div>
+
+      <aside class="pm-side">
+        <section class="pm-card">
+          <h3>People</h3>
+          ${person("Writer", project.authorName)}
+          ${isAdmin ? `
+            <div class="pm-field">
+              <label for="editor-select">Editor</label>
+              <div class="pm-inline">
+                <select id="editor-select"><option value="">Choose an editor…</option>${editorOptions}</select>
+                <button class="btn btn-primary btn-sm" id="assign-editor-btn">${project.editorId ? "Change" : "Assign"}</button>
+              </div>
+              <p class="pm-hint">They get an email with the draft deadline.</p>
+            </div>` : person("Editor", project.editorName)}
+        </section>
+
+        ${isAdmin ? `
+        <section class="pm-card">
+          <h3>Edition</h3>
+          <div class="pm-inline">
+            <select id="edition-select" aria-label="Edition">${editionOptionsHtml(projectEdition(project), { includeNone: true, noneLabel: "No edition yet" })}</select>
+            <button class="btn btn-secondary btn-sm" id="set-edition-btn">Move</button>
+          </div>
+        </section>` : ""}
+
+        <section class="pm-card">
+          <div class="pm-sec-head"><h3>Deadlines</h3>
+            ${(isAuthor || isEditor) && !isAdmin && !hasRequest ? `<button class="btn btn-ghost btn-xs" id="req-deadline-btn">Ask to change</button>` : ""}
+          </div>
+          ${dlRow("publication", "Publication", deadlines.publication || project.deadline || "", true)}
+          ${deadlineRows}
+          ${isAdmin ? `<button class="btn btn-secondary btn-sm pm-block" id="save-deadlines-btn">Save deadlines</button>` : ""}
+          ${deadlineRequestHtml}
+          ${(deadlines.publication || project.deadline || deadlines.interview) ? `<button class="btn btn-ghost btn-xs pm-block" id="cal-export-btn" type="button">Add to my calendar</button>` : ""}
+        </section>
+        ${awaitingPublish && isAdmin ? `<p class="pm-note is-purple">Editing is done. Publish it from <a href="#/admin/articles">Articles &amp; approvals</a>, or use &ldquo;Mark as published&rdquo; if it's already live.</p>` : ""}
+      </aside>
     </div>
-
-    ${divider}
-    ${sec("Activity")}
-    <div id="act-feed" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;">${actHtml}</div>
   `;
 
   // Footer buttons
   const footerBtns = [];
   if (isAdmin && project.proposalStatus === "pending") {
-    const approveBtn = el("button", { class: "btn btn-accent btn-sm" }, "Approve proposal");
+    const approveBtn = el("button", { class: "btn btn-primary btn-sm" }, "Approve pitch");
     approveBtn.onclick = async () => {
       approveBtn.disabled = true;
       try {
@@ -1176,9 +1189,11 @@ function openDetailModal(projectId) {
     footerBtns.push(approveBtn);
   }
   if (isAdmin && project.proposalStatus !== "rejected") {
-    const rejectBtn = el("button", { class: "btn btn-secondary btn-sm", style: { color: "var(--danger)" } }, "Reject");
+    const rejectBtn = el("button", { class: "btn btn-secondary btn-sm", style: { color: "var(--danger)" } }, project.proposalStatus === "pending" ? "Decline pitch" : "Drop story");
     rejectBtn.onclick = async () => {
-      const ok = await confirmDialog("Reject this proposal?", { confirmText: "Reject", danger: true });
+      const ok = await confirmDialog(project.proposalStatus === "pending"
+        ? "Decline this pitch? The writer can edit it and ask again."
+        : "Drop this story? It goes back to the pitch column marked as declined.", { confirmText: project.proposalStatus === "pending" ? "Decline" : "Drop story", danger: true });
       if (!ok) return;
       rejectBtn.disabled = true;
       try {
@@ -1209,7 +1224,7 @@ function openDetailModal(projectId) {
     // Manual override for the purple state: if the story is already live (or
     // was published under a different title, so the auto-match missed it),
     // the admin can clear the "needs publishing" flag right here.
-    const pubBtn = el("button", { class: "btn btn-accent btn-sm", style: { background: "#7c3aed", borderColor: "#7c3aed" } }, "Mark as published");
+    const pubBtn = el("button", { class: "btn btn-primary btn-sm" }, "Mark as published");
     pubBtn.onclick = async () => {
       const ok = await confirmDialog(
         "Mark this project as published? Do this once the article is live on the site — the card will turn back to a normal completed card.",
@@ -1230,10 +1245,10 @@ function openDetailModal(projectId) {
     };
     footerBtns.push(pubBtn);
   }
-  const closeBtn = el("button", { class: "btn btn-secondary btn-sm" }, "Close");
+  const closeBtn = el("button", { class: "btn btn-secondary btn-sm" }, "Done");
   footerBtns.push(closeBtn);
 
-  const m = openModal({ title: esc(project.title), body, footer: footerBtns });
+  const m = openModal({ title: esc(project.title), body, footer: footerBtns, size: "wide" });
   closeBtn.onclick = m.close;
 
   // The "needs publishing" banner links into All articles & approvals — close
@@ -1561,8 +1576,9 @@ function openDetailModal(projectId) {
       });
       // Optimistic feed update
       const feed = body.querySelector("#act-feed");
-      const row = el("div", { class: "act-row" });
-      row.innerHTML = `<span class="act-author">${esc(_profile.name || _ctx.user.email)}</span> <span class="act-text">commented: "${esc(text)}"</span> <span class="act-when"> · just now</span>`;
+      const row = el("li", { class: "pm-act is-comment" });
+      row.innerHTML = `<span class="pm-act-who">${esc(_profile.name || _ctx.user.email)}</span><span class="pm-act-when">just now</span><p class="pm-act-msg">${esc(text)}</p>`;
+      feed.querySelector(".pm-empty")?.remove();
       feed.insertBefore(row, feed.firstChild);
       commentInput.value = "";
       toast("Comment posted.", "success");
@@ -1763,7 +1779,7 @@ function openDeadlineRequestModal(project, parentModal) {
 
   const submitBtn = el("button", { class: "btn btn-accent" }, "Submit request");
   const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
-  const m = openModal({ title: "Request deadline change", body, footer: [cancelBtn, submitBtn] });
+  const m = openModal({ title: "Request deadline change", body, footer: [cancelBtn, submitBtn], stack: true });
   cancelBtn.onclick = m.close;
 
   submitBtn.onclick = async () => {

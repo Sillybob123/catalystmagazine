@@ -242,7 +242,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=edition-1"),
+    loader: () => import("./overview.js?v=tracker-2"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.
@@ -252,7 +252,7 @@ const ROUTES = {
     icon: ICONS.board,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js?v=edition-1"),
+    loader: () => import("./pipeline.js?v=tracker-2"),
     mountKey: "all",
   },
   // Old split-board hashes — kept so bookmarks, saved pins, and links in
@@ -265,7 +265,7 @@ const ROUTES = {
     icon: ICONS.clipboard,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js?v=edition-1"),
+    loader: () => import("./pipeline.js?v=tracker-2"),
     mountKey: "mine",
   },
   "#/tasks": {
