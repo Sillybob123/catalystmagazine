@@ -69,7 +69,8 @@ const excludedExtensions = new Set([
 const shippedVideoPatterns = [
   /^edition-art\/[^/]+\/[^/]+\.mp4$/,
   /^beta\/articles\/[^/]+\.mp4$/,
-  /^beta\/book-reviews\/[^/]+\.mp4$/
+  /^beta\/book-reviews\/[^/]+\.mp4$/,
+  /^beta\/brain-teaser\/[^/]+\.mp4$/
 ];
 
 // Credentials must never reach the public bundle, even when they sit in the

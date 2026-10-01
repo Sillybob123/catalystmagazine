@@ -13,13 +13,13 @@
   <meta name="google-adsense-account" content="ca-pub-2354303171488552">
 
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Catalyst Vault — four riddles, one 4-digit code, one attempt. Crack it to unlock The Catalyst Magazine's exclusive Winners' Lounge.">
-  <meta name="keywords" content="brain teaser, riddle, word puzzle, logic puzzle, lateral thinking, Catalyst Magazine">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="The Catalyst Vault — a classified brain teaser, new every couple of weeks. Decode the intercepts, key in the code, one attempt. Crack it to reach the Winners' Lounge.">
+  <meta name="keywords" content="brain teaser, riddle, cipher, word puzzle, logic puzzle, Catalyst Magazine">
   <meta name="author" content="The Catalyst Magazine">
   <meta name="robots" content="index, follow">
-  <meta name="theme-color" content="#0f172a">
-  <title>The Catalyst Riddle | The Catalyst Magazine</title>
+  <meta name="theme-color" content="#04060b">
+  <title>The Catalyst Vault | The Catalyst Magazine</title>
   <link rel="canonical" href="https://www.catalyst-magazine.com/brain-teaser">
 
   <!-- Open Graph / Social Media -->
@@ -27,889 +27,202 @@
   <meta property="og:site_name" content="The Catalyst Magazine">
   <meta property="og:locale" content="en_US">
   <meta property="og:url" content="https://www.catalyst-magazine.com/brain-teaser">
-  <meta property="og:title" content="The Catalyst Riddle | The Catalyst Magazine">
-  <meta property="og:description" content="Four riddles, one code, one attempt. Crack the vault and earn your place in the Winners' Lounge.">
-  <meta property="og:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+  <meta property="og:title" content="The Catalyst Vault — classified brain teaser">
+  <meta property="og:description" content="Decode the intercepts. Key in the code. One attempt. Crack the vault and reach the Winners' Lounge.">
+  <meta property="og:image" content="https://www.catalyst-magazine.com/beta/brain-teaser/og.jpg?v=1">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="The Catalyst Magazine brain teaser challenge">
+  <meta property="og:image:alt" content="A glowing round vault door with rings of numerals">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://www.catalyst-magazine.com/brain-teaser">
-  <meta name="twitter:title" content="The Catalyst Riddle | The Catalyst Magazine">
-  <meta name="twitter:description" content="Four riddles, one code, one attempt. Crack the vault and earn your place in the Winners' Lounge.">
-  <meta name="twitter:image" content="https://www.catalyst-magazine.com/NewLogoShape.png">
+  <meta name="twitter:title" content="The Catalyst Vault — classified brain teaser">
+  <meta name="twitter:description" content="Decode the intercepts. Key in the code. One attempt.">
+  <meta name="twitter:image" content="https://www.catalyst-magazine.com/beta/brain-teaser/og.jpg?v=1">
 
   <!-- Favicons -->
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet"></noscript>
-  <link rel="preload" href="/css/styles.css?v=20260925-review" as="style">
-  <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
 
-
-  <style>
-    /* ════════════════════════════════════════════════════════════════
-       THE CATALYST VAULT — high-tech "breach the vault" terminal UI
-       ════════════════════════════════════════════════════════════════ */
-    :root {
-      --bg:        #05070d;
-      --bg-2:      #080b14;
-      --panel:     rgba(13, 20, 34, 0.66);
-      --panel-2:   rgba(9, 14, 24, 0.72);
-      --edge:      rgba(94, 234, 212, 0.14);
-      --edge-2:    rgba(94, 234, 212, 0.32);
-      --grid:      rgba(94, 234, 212, 0.05);
-      --text-1:    #e9fbf6;
-      --text-2:    #7fa7a0;
-      --text-3:    #4a6560;
-      --cyan:      #5eead4;
-      --cyan-hot:  #2dd4bf;
-      --amber:     #fbbf24;
-      --green:     #34d399;
-      --red:       #fb7185;
-      --mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, 'Menlo', 'Consolas', monospace;
-      --sans: 'Poppins', sans-serif;
-      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html { background: var(--bg); }
-
-    body {
-      font-family: var(--sans);
-      background: var(--bg);
-      color: var(--text-1);
-      min-height: 100dvh;
-      /* No fixed site header on this page, so we only need enough top room to
-         clear the floating "Exit" button. 32px sides keep the vault (max 1400)
-         the same width the shared header pill would have been. */
-      padding: 84px 32px 64px;
-      overflow-x: hidden;
-      position: relative;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* ── Background stack: code-rain canvas + drifting grid + vignette ── */
-    #code-rain {
-      position: fixed; inset: 0;
-      width: 100%; height: 100%;
-      z-index: 0;
-      opacity: 0.5;
-      pointer-events: none;
-    }
-
-    .bg-grid {
-      position: fixed; inset: -2px;
-      z-index: 0;
-      pointer-events: none;
-      background-image:
-        linear-gradient(var(--grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-      background-size: 46px 46px;
-      mask-image: radial-gradient(ellipse 85% 70% at 50% 38%, #000 25%, transparent 100%);
-      animation: gridDrift 24s linear infinite;
-    }
-    @keyframes gridDrift {
-      from { background-position: 0 0, 0 0; }
-      to   { background-position: 46px 46px, 46px 46px; }
-    }
-
-    .bg-glow {
-      position: fixed; top: -22%; left: 50%;
-      width: 1100px; height: 640px;
-      transform: translateX(-50%);
-      background: radial-gradient(ellipse, rgba(45, 212, 191, 0.14) 0%, transparent 68%);
-      z-index: 0; pointer-events: none;
-      animation: glowPulse 7s ease-in-out infinite;
-    }
-    @keyframes glowPulse {
-      0%, 100% { opacity: 0.7; }
-      50%      { opacity: 1; }
-    }
-
-    .bg-vignette {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background: radial-gradient(ellipse 120% 90% at 50% 30%, transparent 50%, rgba(0,0,0,0.55) 100%);
-    }
-
-    main {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      align-items: flex-start;
-      justify-content: center;
-    }
-
-    /* ── Exit / back link (replaces the site header) ─────────────── */
-    .exit-vault {
-      position: fixed;
-      top: 22px; left: 22px;
-      z-index: 50;
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 9px 16px 9px 12px;
-      font-family: var(--mono); font-size: 0.72rem; font-weight: 700;
-      letter-spacing: 0.16em; text-transform: uppercase;
-      color: var(--cyan); text-decoration: none;
-      background: rgba(7,11,20,0.7);
-      border: 1px solid var(--edge-2); border-radius: 10px;
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 6px 22px rgba(0,0,0,0.45);
-      transition: color 0.2s ease, border-color 0.2s ease, transform 0.18s ease, box-shadow 0.25s ease, background 0.2s ease;
-    }
-    .exit-vault svg { width: 16px; height: 16px; transition: transform 0.2s ease; }
-    .exit-vault:hover {
-      color: #fff; border-color: var(--cyan);
-      background: rgba(45,212,191,0.12);
-      transform: translateX(-2px);
-      box-shadow: 0 8px 28px rgba(45,212,191,0.28);
-    }
-    .exit-vault:hover svg { transform: translateX(-3px); }
-    .exit-vault:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
-
-    /* ── The vault shell ─────────────────────────────────────────── */
-    .vault {
-      /* Match the shared site header geometry: width: calc(100% - 64px),
-         max-width: 1400px (see css/styles.css .header). The 20px body
-         padding already insets us, so subtract the remainder to line the
-         vault's edges up with the header pill on desktop. */
-      width: 100%;
-      max-width: 1400px;
-      position: relative;
-      background:
-        linear-gradient(180deg, rgba(18,28,46,0.55), rgba(7,11,20,0.86));
-      border: 1px solid var(--edge-2);
-      border-radius: 18px;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      box-shadow:
-        0 0 0 1px rgba(94,234,212,0.06),
-        0 0 80px rgba(45,212,191,0.10),
-        0 40px 90px rgba(0,0,0,0.7);
-      overflow: hidden;
-      animation: bootUp 0.8s var(--ease-out) both;
-    }
-    @keyframes bootUp {
-      from { opacity: 0; transform: translateY(26px) scale(0.99); }
-      to   { opacity: 1; transform: none; }
-    }
-
-    /* moving scanline sheen across the whole shell */
-    .vault::before {
-      content: '';
-      position: absolute; inset: 0; z-index: 6; pointer-events: none;
-      background: repeating-linear-gradient(
-        0deg, rgba(255,255,255,0.022) 0 1px, transparent 1px 3px);
-      mix-blend-mode: overlay;
-    }
-    .vault::after {
-      content: '';
-      position: absolute; left: 0; right: 0; top: 0; height: 30%;
-      z-index: 6; pointer-events: none;
-      background: linear-gradient(180deg, rgba(94,234,212,0.06), transparent);
-      animation: sweep 6s linear infinite;
-    }
-    @keyframes sweep {
-      0%   { transform: translateY(-110%); opacity: 0; }
-      8%   { opacity: 1; }
-      92%  { opacity: 1; }
-      100% { transform: translateY(360%); opacity: 0; }
-    }
-
-    /* corner brackets */
-    .corner { position: absolute; width: 22px; height: 22px; z-index: 7; border: 2px solid var(--cyan); opacity: 0.65; }
-    .corner.tl { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
-    .corner.tr { top: 12px; right: 12px; border-left: 0; border-bottom: 0; }
-    .corner.bl { bottom: 12px; left: 12px; border-right: 0; border-top: 0; }
-    .corner.br { bottom: 12px; right: 12px; border-left: 0; border-top: 0; }
-
-    /* ── Top HUD bar ─────────────────────────────────────────────── */
-    .hud {
-      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-      padding: 16px 40px;
-      border-bottom: 1px solid var(--edge);
-      background: rgba(5,8,14,0.5);
-      font-family: var(--mono);
-      font-size: 0.7rem;
-      letter-spacing: 0.08em;
-    }
-    .hud-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--amber);
-      box-shadow: 0 0 10px var(--amber); animation: blink 1.6s steps(1) infinite; }
-    @keyframes blink { 0%,60%{opacity:1;} 61%,100%{opacity:0.25;} }
-    .hud-status { font-weight: 700; color: var(--amber); }
-    .hud-sep { color: var(--text-3); }
-    .hud-meta { color: var(--text-3); }
-    .hud-right { margin-left: auto; display: flex; gap: 16px; color: var(--text-3); }
-    .hud-right b { color: var(--cyan); font-weight: 700; }
-
-    .vault.is-working .hud-dot { background: var(--cyan); box-shadow: 0 0 12px var(--cyan); animation-duration: 0.4s; }
-    .vault.is-working .hud-status { color: var(--cyan); }
-    .vault.is-open .hud-dot { background: var(--green); box-shadow: 0 0 12px var(--green); animation: none; }
-    .vault.is-open .hud-status { color: var(--green); }
-    .vault.is-denied .hud-dot { background: var(--red); box-shadow: 0 0 12px var(--red); animation: none; }
-    .vault.is-denied .hud-status { color: var(--red); }
-
-    /* ── Terminal boot line ──────────────────────────────────────── */
-    .term {
-      font-family: var(--mono);
-      font-size: 0.82rem;
-      line-height: 1.7;
-      color: var(--cyan);
-      padding: 22px 40px 6px;
-      min-height: 86px;
-    }
-    .term .line { display: block; white-space: pre-wrap; }
-    .term .muted { color: var(--text-3); }
-    .term .ok { color: var(--green); }
-    .term-caret {
-      display: inline-block; width: 9px; height: 1.05em; vertical-align: -2px;
-      background: var(--cyan); margin-left: 2px; animation: caret 1s steps(1) infinite;
-    }
-    @keyframes caret { 0%,50%{opacity:1;} 51%,100%{opacity:0;} }
-
-    /* ── Headline ────────────────────────────────────────────────── */
-    .vault-head { padding: 8px 40px 26px; }
-    .eyebrow {
-      font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
-      letter-spacing: 0.28em; text-transform: uppercase; color: var(--text-2);
-    }
-    .title {
-      font-family: var(--sans); font-weight: 800;
-      font-size: clamp(2rem, 5vw, 3.1rem); line-height: 1.02;
-      letter-spacing: -0.035em; margin: 8px 0 12px;
-      background: linear-gradient(180deg, #fff 0%, #b8f5ea 60%, #5eead4 100%);
-      -webkit-background-clip: text; background-clip: text;
-      -webkit-text-fill-color: transparent; color: var(--cyan);
-      text-shadow: 0 0 40px rgba(94,234,212,0.25);
-    }
-    .subtitle { font-size: 0.95rem; line-height: 1.6; color: var(--text-2); max-width: 56ch; }
-    .subtitle strong { color: var(--text-1); font-weight: 600; }
-
-    /* ── Body grid ───────────────────────────────────────────────── */
-    /* Left pane (the cipher) takes the bulk of the extra desktop width; the
-       right pane (keypad) is capped so the keypad doesn't sprawl. */
-    .vault-body { display: grid; grid-template-columns: minmax(0,1fr) minmax(340px,420px); gap: 0;
-      border-top: 1px solid var(--edge); }
-    .pane { padding: 36px 40px; }
-    .pane.left { border-right: 1px solid var(--edge); }
-
-    .pane-label {
-      font-family: var(--mono); font-size: 0.66rem; font-weight: 700;
-      letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-3);
-      display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
-    }
-    .pane-label::before { content: '>'; color: var(--cyan); }
-    .pane-label::after { content: ''; flex: 1; height: 1px;
-      background: linear-gradient(90deg, var(--edge-2), transparent); }
-
-    /* ── Dial cards ──────────────────────────────────────────────── */
-    .dials { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .dial {
-      position: relative; overflow: hidden;
-      padding: 20px 20px 18px;
-      border: 1px solid var(--edge);
-      border-radius: 12px;
-      background: var(--panel);
-      transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-      opacity: 0; transform: translateY(10px);
-      animation: dialIn 0.5s var(--ease-out) forwards;
-    }
-    .dial:nth-child(1){animation-delay:.15s;} .dial:nth-child(2){animation-delay:.27s;}
-    .dial:nth-child(3){animation-delay:.39s;} .dial:nth-child(4){animation-delay:.51s;}
-    @keyframes dialIn { to { opacity: 1; transform: none; } }
-    .dial:hover { border-color: var(--edge-2); transform: translateY(-3px);
-      box-shadow: 0 10px 30px rgba(45,212,191,0.12); }
-    .dial::after { content: ''; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(115deg, transparent 40%, rgba(94,234,212,0.07) 50%, transparent 60%);
-      transform: translateX(-120%); }
-    .dial:hover::after { transform: translateX(120%); transition: transform 0.7s var(--ease-out); }
-
-    .dial-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .dial-no { font-family: var(--mono); font-size: 0.64rem; font-weight: 700;
-      letter-spacing: 0.16em; color: var(--cyan); }
-    .dial-readout {
-      font-family: var(--mono); font-weight: 800; font-size: 0.78rem;
-      color: var(--cyan-hot); min-width: 26px; text-align: center;
-      padding: 2px 7px; border: 1px solid var(--edge-2); border-radius: 6px;
-      background: rgba(45,212,191,0.06); text-shadow: 0 0 8px rgba(45,212,191,0.5);
-    }
-    .dial-clue { font-size: 0.96rem; line-height: 1.55; color: var(--text-1); }
-    .dial-clue em { font-style: normal; font-weight: 700; color: #fff;
-      border-bottom: 1px dashed var(--edge-2); }
-
-    /* ── Task note ───────────────────────────────────────────────── */
-    .task {
-      margin-top: 16px; padding: 14px 16px; border-radius: 10px;
-      border: 1px solid var(--edge); border-left: 2px solid var(--cyan);
-      background: var(--panel-2);
-      font-family: var(--mono); font-size: 0.76rem; line-height: 1.65; color: var(--text-2);
-    }
-    .task b { color: var(--text-1); font-weight: 700; }
-
-    /* ── Keypad ──────────────────────────────────────────────────── */
-    .keypad { display: flex; gap: 14px; justify-content: center; margin: 6px 0 4px; }
-    .code-box {
-      width: 100%; max-width: 78px; aspect-ratio: 3/4;
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--mono); font-weight: 800; font-size: 2rem;
-      color: var(--cyan-hot);
-      background: rgba(5,9,16,0.7);
-      border: 1.5px solid var(--edge-2); border-radius: 12px;
-      box-shadow: inset 0 2px 14px rgba(0,0,0,0.5);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.12s ease;
-      position: relative;
-    }
-    .code-box.filled { color: #fff; text-shadow: 0 0 14px var(--cyan);
-      border-color: var(--cyan); background: rgba(45,212,191,0.08); }
-    .code-box.active {
-      border-color: var(--cyan);
-      box-shadow: 0 0 0 3px rgba(94,234,212,0.14), inset 0 2px 14px rgba(0,0,0,0.5);
-    }
-    .code-box.active::after {
-      content: ''; width: 2px; height: 46%; background: var(--cyan);
-      animation: caret 1s steps(1) infinite;
-    }
-    .code-box.filled.active::after { display: none; }
-    .vault.is-open .code-box { border-color: var(--green); color: #fff;
-      text-shadow: 0 0 16px var(--green); }
-    .vault.is-denied .code-box { border-color: var(--red); color: var(--red); }
-    .keypad.shake { animation: shake 0.45s var(--ease-out); }
-    @keyframes shake {
-      0%,100%{transform:translateX(0);} 20%{transform:translateX(-9px);}
-      40%{transform:translateX(8px);} 60%{transform:translateX(-6px);} 80%{transform:translateX(4px);}
-    }
-    /* the real input is visually hidden but focusable, drives the keypad */
-    .code-hidden {
-      position: absolute; opacity: 0; pointer-events: none;
-      width: 1px; height: 1px; left: -9999px;
-    }
-    .keypad-hint { font-family: var(--mono); font-size: 0.7rem; color: var(--text-3);
-      text-align: center; margin-top: 12px; letter-spacing: 0.05em; }
-
-    /* ── Decrypt progress ────────────────────────────────────────── */
-    .decrypt { margin-top: 18px; display: none; }
-    .decrypt.show { display: block; }
-    .decrypt-track { height: 6px; border-radius: 4px; background: rgba(94,234,212,0.1);
-      overflow: hidden; border: 1px solid var(--edge); }
-    .decrypt-fill { height: 100%; width: 0%; border-radius: 4px;
-      background: linear-gradient(90deg, var(--cyan-hot), var(--cyan));
-      box-shadow: 0 0 12px var(--cyan); transition: width 0.1s linear; }
-    .decrypt-text { font-family: var(--mono); font-size: 0.72rem; color: var(--cyan);
-      margin-top: 8px; letter-spacing: 0.06em; }
-
-    /* ── Buttons ─────────────────────────────────────────────────── */
-    .btn-row { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
-    .submit-btn {
-      width: 100%; min-height: 56px; cursor: pointer;
-      font-family: var(--mono); font-weight: 800; font-size: 0.82rem;
-      letter-spacing: 0.14em; text-transform: uppercase; color: #05201b;
-      border: none; border-radius: 12px;
-      background: linear-gradient(180deg, #7df3df, var(--cyan-hot));
-      box-shadow: 0 0 0 1px rgba(94,234,212,0.5), 0 10px 30px rgba(45,212,191,0.35);
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      transition: transform 0.14s ease, box-shadow 0.25s ease, filter 0.2s ease;
-    }
-    .submit-btn:hover:not(:disabled) { transform: translateY(-2px);
-      box-shadow: 0 0 0 1px rgba(94,234,212,0.7), 0 14px 40px rgba(45,212,191,0.5); filter: brightness(1.05); }
-    .submit-btn:active:not(:disabled) { transform: translateY(0) scale(0.99); }
-    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
-    .submit-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
-    .submit-btn svg { width: 16px; height: 16px; }
-
-    /* ── Feedback ────────────────────────────────────────────────── */
-    .feedback { display: none; margin-top: 16px; padding: 14px 16px; border-radius: 12px;
-      font-family: var(--mono); font-size: 0.8rem; line-height: 1.6; }
-    .feedback.show { display: block; animation: feedIn 0.35s var(--ease-out); }
-    @keyframes feedIn { from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:none;} }
-    .feedback.success { background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.4); color: var(--green); }
-    .feedback.error   { background: rgba(251,113,133,0.08); border: 1px solid rgba(251,113,133,0.35); color: var(--red); }
-    .feedback strong { color: #fff; font-weight: 700; }
-
-    /* ── Winner button ───────────────────────────────────────────── */
-    .winner-btn { display: none; }
-    .winner-btn.visible { display: flex; }
-    .winner-btn {
-      width: 100%; min-height: 56px; text-decoration: none;
-      align-items: center; justify-content: center; gap: 10px;
-      font-family: var(--mono); font-weight: 800; font-size: 0.82rem;
-      letter-spacing: 0.12em; text-transform: uppercase; color: #042016;
-      border-radius: 12px; cursor: pointer;
-      background: linear-gradient(180deg, #6ee7b7, var(--green));
-      box-shadow: 0 0 0 1px rgba(52,211,153,0.6), 0 12px 36px rgba(52,211,153,0.45);
-      animation: winnerIn 0.6s var(--ease-out);
-    }
-    @keyframes winnerIn { from{opacity:0; transform:scale(0.94);} to{opacity:1; transform:none;} }
-    .winner-btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
-    .winner-btn:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
-    .icon-trophy { width: 18px; height: 18px; flex-shrink: 0; }
-
-    /* ── Telemetry footer strip ──────────────────────────────────── */
-    .telemetry {
-      display: flex; gap: 22px; flex-wrap: wrap;
-      padding: 16px 40px; border-top: 1px solid var(--edge);
-      background: rgba(5,8,14,0.5); font-family: var(--mono);
-    }
-    .tele { display: flex; flex-direction: column; gap: 2px; }
-    .tele-v { font-size: 1rem; font-weight: 800; color: var(--cyan); letter-spacing: 0.02em; }
-    .tele-l { font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-3); }
-
-    /* ── Fireworks ───────────────────────────────────────────────── */
-    .fireworks-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1000; display: none; }
-    .fireworks-overlay.active { display: block; }
-    .firework { position: absolute; width: 4px; height: 4px; border-radius: 50%;
-      animation: explode 1.4s var(--ease-out) forwards; }
-    @keyframes explode { 0%{transform:translate(0,0) scale(1); opacity:1;}
-      100%{transform:translate(var(--tx),var(--ty)) scale(0); opacity:0;} }
-
-    /* ── Reduced motion ──────────────────────────────────────────── */
-    @media (prefers-reduced-motion: reduce) {
-      .bg-grid, .bg-glow, .vault::after, .hud-dot, .term-caret, .code-box.active::after,
-      .vault, .dial { animation: none !important; }
-      #code-rain { display: none; }
-      .dial { opacity: 1; transform: none; }
-      .keypad.shake { animation: none !important; }
-      .fireworks-overlay { display: none !important; }
-      * { transition: none !important; }
-    }
-
-    /* ── Responsive ──────────────────────────────────────────────── */
-    /* Tablet & down: stack the two panes, dial back the generous desktop
-       padding so the narrower vault doesn't waste space. */
-    @media (max-width: 900px) {
-      body { padding: 90px 20px 56px; }
-      .vault-body { grid-template-columns: 1fr; }
-      .pane.left { border-right: none; border-bottom: 1px solid var(--edge); }
-      .pane { padding: 28px 26px; }
-      .hud, .term, .vault-head, .telemetry { padding-left: 26px; padding-right: 26px; }
-      .keypad { max-width: 360px; margin-left: auto; margin-right: auto; }
-    }
-    /* Phones */
-    @media (max-width: 560px) {
-      body { padding: 84px 12px 44px; }
-      .vault { border-radius: 14px; }
-      .dials { grid-template-columns: 1fr; }
-      .pane { padding: 22px 18px; }
-      .hud, .term, .vault-head, .telemetry { padding-left: 18px; padding-right: 18px; }
-      .hud { font-size: 0.6rem; gap: 8px; }
-      .hud-right { display: none; }
-      .term { font-size: 0.74rem; min-height: 70px; }
-      .telemetry { gap: 14px; }
-      .keypad { gap: 10px; max-width: 300px; }
-      .code-box { max-width: 64px; font-size: 1.7rem; border-radius: 10px; }
-      .corner { width: 16px; height: 16px; }
-      .exit-vault { top: 14px; left: 14px; padding: 8px 13px 8px 10px; font-size: 0.66rem; }
-    }
-    /* Very small phones — keep the 4 keypad boxes on one row */
-    @media (max-width: 380px) {
-      .keypad { gap: 7px; }
-      .code-box { font-size: 1.45rem; }
-      .title { font-size: 1.8rem; }
-    }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="/beta/brain-teaser/vault-1600.webp?v=1" imagesrcset="/beta/brain-teaser/vault-900.webp?v=1 900w, /beta/brain-teaser/vault-1600.webp?v=1 1600w" imagesizes="100vw">
+  <link rel="stylesheet" href="/css/brain-teaser.css?v=1">
 </head>
-<body data-page="brain-teaser">
+<body class="bt">
   <!-- Google Tag Manager (noscript) -->
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
 
-  <!-- Background layers -->
-  <canvas id="code-rain" aria-hidden="true"></canvas>
-  <div class="bg-grid" aria-hidden="true"></div>
-  <div class="bg-glow" aria-hidden="true"></div>
-  <div class="bg-vignette" aria-hidden="true"></div>
+  <a class="bt-skip" href="#bt-lock">Skip to the lock</a>
 
-  <!-- Standalone "exit the vault" link — no site header, to keep the
-       full-screen vault illusion. Returns to the home page. -->
-  <a href="/" class="exit-vault" aria-label="Back to The Catalyst home page">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
-    </svg>
-    <span>Exit</span>
-  </a>
+  <!-- ── Backdrop: the vault (still → looping film), grid, net, scanlines ── -->
+  <div class="bt-bg" aria-hidden="true">
+    <figure class="bt-stage" id="bt-stage">
+      <img class="bt-still" id="bt-still" alt=""
+           src="/beta/brain-teaser/vault-1600.webp?v=1"
+           srcset="/beta/brain-teaser/vault-900.webp?v=1 900w, /beta/brain-teaser/vault-1600.webp?v=1 1600w"
+           sizes="100vw" fetchpriority="high" decoding="async">
+      <video class="bt-loop" id="bt-loop" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1"
+             data-src="/beta/brain-teaser/vault-loop.mp4?v=1" data-src-sm="/beta/brain-teaser/vault-loop-sm.mp4?v=1"></video>
+    </figure>
+    <div class="bt-shade"></div>
+    <div class="bt-gridlines"></div>
+    <canvas class="bt-net" id="bt-net"></canvas>
+    <div class="bt-spot" id="bt-spot"></div>
+    <div class="bt-scan"></div>
+    <div class="bt-grain"></div>
+  </div>
+  <div class="bt-alarm" id="bt-alarm" aria-hidden="true"></div>
 
-  <!-- Fireworks overlay -->
-  <div class="fireworks-overlay" id="fireworks" aria-hidden="true"></div>
+  <!-- ── Success film (door opens) ── -->
+  <div class="bt-opening" id="bt-opening" aria-hidden="true">
+    <video id="bt-open-video" muted playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1"
+           data-src="/beta/brain-teaser/vault-open.mp4?v=1" data-src-sm="/beta/brain-teaser/vault-open-sm.mp4?v=1"></video>
+    <div class="bt-opening-flash"></div>
+  </div>
 
-  <main>
-    <section class="vault" id="vault" aria-label="The Catalyst Vault puzzle">
-      <span class="corner tl" aria-hidden="true"></span>
-      <span class="corner tr" aria-hidden="true"></span>
-      <span class="corner bl" aria-hidden="true"></span>
-      <span class="corner br" aria-hidden="true"></span>
+  <!-- ── Intro: biometric check, then the blast doors part ── -->
+  <div class="bt-intro" id="bt-intro" aria-hidden="true">
+    <div class="bt-door bt-door-top"><span class="bt-door-label">Classified</span></div>
+    <div class="bt-door bt-door-bottom"><span class="bt-door-label">Authorized personnel only</span></div>
+    <div class="bt-scanner">
+      <svg class="bt-reticle" viewBox="0 0 200 200">
+        <circle class="r1" cx="100" cy="100" r="92"/>
+        <circle class="r2" cx="100" cy="100" r="80"/>
+        <circle class="r3" cx="100" cy="100" r="68"/>
+        <g class="bt-print">
+          <path d="M70 118c0-22 13-38 30-38s30 16 30 38"/>
+          <path d="M78 124c0-19 9-34 22-34s22 15 22 34"/>
+          <path d="M86 128c0-16 6-28 14-28s14 12 14 28"/>
+          <path d="M94 132c0-12 2-22 6-22s6 10 6 22"/>
+          <path d="M62 110c2-30 18-48 38-48s36 18 38 48"/>
+          <path d="M68 96c6-18 18-28 32-28s26 10 32 28"/>
+        </g>
+        <rect class="bt-scanbar" x="56" y="60" width="88" height="3" rx="1.5"/>
+      </svg>
+      <div class="bt-log" id="bt-log"></div>
+      <div class="bt-intro-bar"><span id="bt-intro-fill"></span></div>
+      <button type="button" class="bt-intro-skip" id="bt-intro-skip">Skip <kbd>esc</kbd></button>
+    </div>
+  </div>
 
-      <!-- HUD -->
-      <div class="hud" aria-hidden="true">
-        <span class="hud-dot"></span>
-        <span class="hud-status" id="hud-status">VAULT&nbsp;LOCKED</span>
-        <span class="hud-sep">//</span>
-        <span class="hud-meta">CTLST-SEC · ISSUE&nbsp;NO.&nbsp;04</span>
-        <span class="hud-right">
-          <span>ENCRYPTION&nbsp;<b>AES-256</b></span>
-          <span>ATTEMPTS&nbsp;<b id="hud-attempts">1</b></span>
-        </span>
-      </div>
+  <!-- ── HUD ── -->
+  <header class="bt-hud">
+    <a class="bt-brand" href="/" aria-label="The Catalyst, home">
+      <span class="bt-brand-mark">The Catalyst</span>
+      <span class="bt-brand-sub">// Classified archive</span>
+    </a>
+    <div class="bt-hud-mid" aria-hidden="true">
+      <span class="bt-status" id="bt-status"><i></i><b id="bt-status-text">Vault locked</b></span>
+      <span class="bt-hud-case" id="bt-hud-case">Case —</span>
+    </div>
+    <div class="bt-hud-right">
+      <span class="bt-clock" aria-hidden="true"><span id="bt-utc">--:--:--</span> UTC</span>
+      <button type="button" class="bt-sound" id="bt-sound" aria-pressed="false" aria-label="Sound effects">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="w1" d="M16 9.5a3.5 3.5 0 0 1 0 5"/><path class="w2" d="M18.5 7a7 7 0 0 1 0 10"/><path class="x" d="M17 9l5 6M22 9l-5 6"/></svg>
+      </button>
+      <a class="bt-exit" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span>Exit</span></a>
+    </div>
+  </header>
 
-      <!-- Terminal boot -->
-      <div class="term" id="term" aria-hidden="true"></div>
+  <main id="bt-main">
+    <!-- ── Briefing ── -->
+    <section class="bt-hero" aria-labelledby="bt-title">
+      <p class="bt-eyebrow"><span class="bt-dot"></span><span id="bt-class">Top Secret // Eyes Only</span><span class="bt-sep">·</span><span id="bt-caseno">Case 04</span></p>
+      <h1 class="bt-title" id="bt-title" data-text="Operation Silent River">Operation Silent River</h1>
+      <p class="bt-brief" id="bt-brief"></p>
+      <dl class="bt-meta">
+        <div class="bt-meta-item bt-countdown">
+          <dt>Next transmission</dt>
+          <dd id="bt-countdown"><span data-u="d">--</span><i>d</i><span data-u="h">--</span><i>h</i><span data-u="m">--</span><i>m</i><span data-u="s">--</span><i>s</i></dd>
+        </div>
+        <div class="bt-meta-item"><dt>Attempts</dt><dd id="bt-attempts">1</dd></div>
+        <div class="bt-meta-item"><dt>Odds by guessing</dt><dd id="bt-odds">1 in 10,000</dd></div>
+        <div class="bt-meta-item"><dt>Session</dt><dd id="bt-session">00:00</dd></div>
+      </dl>
+    </section>
 
-      <!-- Headline -->
-      <div class="vault-head">
-        <p class="eyebrow">Challenge · Crack the cipher</p>
-        <h1 class="title">The Catalyst Vault</h1>
-        <p class="subtitle">Four riddles guard the Winners' Lounge. Each one resolves to a single English word &mdash; and the <strong>number of letters</strong> in that word is the dial's digit. Solve all four, key in the code, and the vault opens. <strong>You get one attempt.</strong></p>
-      </div>
-
-      <!-- Body -->
-      <div class="vault-body">
-
-        <!-- Left: the cipher -->
-        <div class="pane left">
-          <p class="pane-label">Encrypted — 4 dials</p>
-
-          <div class="dials">
-            <div class="dial">
-              <div class="dial-top"><span class="dial-no">DIAL 01</span><span class="dial-readout" data-readout="0">_</span></div>
-              <p class="dial-clue">The one who makes me has no need of me. The one who buys me will never use me. The one who uses me will never see me &mdash; nor know that I <em>hold</em> them.</p>
-            </div>
-            <div class="dial">
-              <div class="dial-top"><span class="dial-no">DIAL 02</span><span class="dial-readout" data-readout="1">_</span></div>
-              <p class="dial-clue">I have no mouth, yet I answer every call in the caller's <em>own</em> voice. Born of stone and distance, I live a single moment &mdash; and I die if you stand too close.</p>
-            </div>
-            <div class="dial">
-              <div class="dial-top"><span class="dial-no">DIAL 03</span><span class="dial-readout" data-readout="2">_</span></div>
-              <p class="dial-clue">Every creature can make me, yet none may keep me while speaking of me. The instant I am <em>named</em> aloud, I am broken.</p>
-            </div>
-            <div class="dial">
-              <div class="dial-top"><span class="dial-no">DIAL 04</span><span class="dial-readout" data-readout="3">_</span></div>
-              <p class="dial-clue">I wear a bed I never sleep in, keep a mouth that never speaks, hold banks that store no coin &mdash; and the greatest of my kind <em>split</em> continents.</p>
-            </div>
+    <!-- ── Operations: the case file + the lock ── -->
+    <section class="bt-ops">
+      <article class="bt-file" aria-labelledby="bt-file-title">
+        <header class="bt-file-head">
+          <div>
+            <p class="bt-label">Case file</p>
+            <h2 id="bt-file-title" class="bt-file-title">Intercepted transmissions</h2>
           </div>
+          <span class="bt-stamp" aria-hidden="true">Top secret</span>
+        </header>
+        <ol class="bt-intercepts" id="bt-intercepts"></ol>
+        <p class="bt-file-foot"><span>// Read every intercept before you breach.</span><span id="bt-file-id">REF CTLST-04</span></p>
+      </article>
 
-          <div class="task">
-            <b>// task:</b> each riddle resolves to a single English word. <b>Count the letters</b> in that word — the count is the dial's digit (0&ndash;9). Read the four dials in order to form the <b>4-digit code</b>. You have <b>one</b> attempt, so be certain of every word before you breach.
+      <aside class="bt-lock" id="bt-lock" aria-labelledby="bt-lock-title">
+        <p class="bt-label" id="bt-lock-title">Access lock</p>
+        <div class="bt-dial-wrap" id="bt-dial-wrap">
+          <svg class="bt-dial" id="bt-dial" viewBox="-200 -200 400 400" aria-hidden="true"></svg>
+          <div class="bt-hub" id="bt-hub">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path class="shackle" d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5" y="11" width="14" height="10" rx="2.2"/><path d="M12 15v2.5"/></svg>
           </div>
         </div>
 
-        <!-- Right: the keypad -->
-        <div class="pane right">
-          <p class="pane-label">Access code</p>
+        <div class="bt-entry" id="bt-entry"></div>
+        <p class="bt-hint" id="bt-hint" aria-live="polite"></p>
 
-          <div class="keypad" id="keypad" role="group" aria-label="Four digit code">
-            <div class="code-box" data-box="0"></div>
-            <div class="code-box" data-box="1"></div>
-            <div class="code-box" data-box="2"></div>
-            <div class="code-box" data-box="3"></div>
-          </div>
-          <input class="code-hidden" id="answer-input" type="text" inputmode="numeric"
-                 maxlength="4" autocomplete="off" spellcheck="false"
-                 aria-label="Enter the 4-digit vault code" aria-describedby="feedback">
-          <p class="keypad-hint" id="keypad-hint">Type four digits to arm the breach</p>
+        <button type="button" class="bt-breach" id="bt-breach" disabled>
+          <span class="bt-breach-fill" id="bt-breach-fill"></span>
+          <span class="bt-breach-label" id="bt-breach-label">Hold to breach</span>
+        </button>
 
-          <!-- Decrypt progress -->
-          <div class="decrypt" id="decrypt">
-            <div class="decrypt-track"><div class="decrypt-fill" id="decrypt-fill"></div></div>
-            <p class="decrypt-text" id="decrypt-text">DECRYPTING…</p>
-          </div>
+        <div class="bt-result" id="bt-result" role="status" aria-live="polite"></div>
+        <a class="bt-winners" id="bt-winners" href="#" rel="nofollow noopener" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9H4a2 2 0 0 1-2-2V5h4M18 9h2a2 2 0 0 0 2-2V5h-4M6 3h12v8a6 6 0 0 1-12 0V3zM9 21h6M12 17v4"/></svg>
+          Enter the Winners’ Lounge
+        </a>
+      </aside>
+    </section>
 
-          <div class="btn-row">
-            <button class="submit-btn" id="submit-btn" type="button">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-              <span class="submit-btn-label">Breach the Vault</span>
-            </button>
-
-            <div class="feedback" id="feedback" role="alert" aria-live="polite"></div>
-
-            <a href="/q7x9m2k5p8wl4n6r1t3vb" class="winner-btn" id="winner-btn" rel="nofollow noopener" aria-label="Enter the Winners' Lounge">
-              <svg class="icon-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/>
-                <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
-                <path d="M6 3h12v10a6 6 0 0 1-12 0V3z"/>
-                <path d="M9 21h6"/><path d="M12 17v4"/>
-              </svg>
-              Enter the Winners' Lounge
-            </a>
-          </div>
-        </div>
-
-      </div><!-- /.vault-body -->
-
-      <!-- Telemetry -->
-      <div class="telemetry" aria-hidden="true">
-        <div class="tele"><span class="tele-v">4</span><span class="tele-l">Sealed Dials</span></div>
-        <div class="tele"><span class="tele-v">1</span><span class="tele-l">Attempt</span></div>
-        <div class="tele"><span class="tele-v">10,000:1</span><span class="tele-l">Brute-Force Odds</span></div>
-        <div class="tele"><span class="tele-v" id="tele-clock">00:00:00</span><span class="tele-l">Session Time</span></div>
+    <!-- ── Declassified archive ── -->
+    <section class="bt-archive" aria-labelledby="bt-archive-title">
+      <div class="bt-section-head">
+        <p class="bt-label">Declassified</p>
+        <h2 id="bt-archive-title">Past cases</h2>
+        <p>Every case is retired when the next transmission lands. Tap a file to lift the redaction.</p>
       </div>
+      <div class="bt-archive-list" id="bt-archive"></div>
+    </section>
 
+    <!-- ── Next transmission sign-up ── -->
+    <section class="bt-signup" aria-labelledby="bt-signup-title">
+      <div class="bt-signup-copy">
+        <p class="bt-label">Secure channel</p>
+        <h2 id="bt-signup-title">Get the next transmission</h2>
+        <p>A new case drops every couple of weeks. Join The Catalyst newsletter and the next one reaches you first.</p>
+      </div>
+      <form class="bt-form" id="bt-form" novalidate>
+        <label><span>First name</span><input name="firstName" autocomplete="given-name" required></label>
+        <label><span>Last name</span><input name="lastName" autocomplete="family-name" required></label>
+        <label class="wide"><span>Email</span><input name="email" type="email" autocomplete="email" required></label>
+        <button type="submit" class="bt-form-btn">Open the channel</button>
+        <p class="bt-form-msg" id="bt-form-msg" role="status" aria-live="polite"></p>
+      </form>
     </section>
   </main>
 
-  <script>
-    /* ════════════════════════════════════════════════════════════════
-       THE CATALYST VAULT — controller
-         Riddles (answer word → letter count = digit):
-                 01 COFFIN  → 6
-                 02 ECHO    → 4
-                 03 SILENCE → 7
-                 04 RIVER   → 5   → CODE 6475
-       ════════════════════════════════════════════════════════════════ */
-    const vault       = document.getElementById('vault');
-    const answerInput = document.getElementById('answer-input');
-    const keypad      = document.getElementById('keypad');
-    const boxes       = Array.from(keypad.querySelectorAll('.code-box'));
-    const readouts    = Array.from(document.querySelectorAll('.dial-readout'));
-    const submitBtn   = document.getElementById('submit-btn');
-    const submitLabel = submitBtn.querySelector('.submit-btn-label');
-    const feedback    = document.getElementById('feedback');
-    const winnerBtn   = document.getElementById('winner-btn');
-    const fireworksEl = document.getElementById('fireworks');
-    const hudStatus   = document.getElementById('hud-status');
-    const hudAttempts = document.getElementById('hud-attempts');
-    const keypadHint  = document.getElementById('keypad-hint');
-    const decryptWrap = document.getElementById('decrypt');
-    const decryptFill = document.getElementById('decrypt-fill');
-    const decryptText = document.getElementById('decrypt-text');
-    const term        = document.getElementById('term');
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  <footer class="bt-foot">
+    <span>© The Catalyst Magazine</span>
+    <span class="bt-foot-sep">//</span>
+    <a href="/">Return to the magazine</a>
+    <span class="bt-foot-sep">//</span>
+    <a href="/articles">Read the stories</a>
+  </footer>
 
-    const CORRECT_CODE = '6475';
-    const SOLUTION_HTML =
-      'DIAL&nbsp;01 — a <strong>coffin</strong>: 6 letters → <strong>6</strong>. ' +
-      'DIAL&nbsp;02 — an <strong>echo</strong>: 4 letters → <strong>4</strong>. ' +
-      'DIAL&nbsp;03 — <strong>silence</strong>: 7 letters → <strong>7</strong>. ' +
-      'DIAL&nbsp;04 — a <strong>river</strong>: 5 letters → <strong>5</strong>. ' +
-      'Code: <strong>6475</strong>.';
-
-    /* v7 keys — new riddle cipher; prior solvers re-attempt the new puzzle */
-    const KEY_SOLVED    = 'catalystVaultSolved_v7';
-    const KEY_ATTEMPTED = 'catalystVaultAttempted_v7';
-    const solved    = localStorage.getItem(KEY_SOLVED)    === 'true';
-    const attempted = localStorage.getItem(KEY_ATTEMPTED) === 'true';
-
-    function setStatus(state) {
-      vault.classList.remove('is-open','is-denied','is-working');
-      if (state === 'open')   { vault.classList.add('is-open');   hudStatus.innerHTML = 'VAULT&nbsp;OPEN'; }
-      else if (state === 'denied')  { vault.classList.add('is-denied'); hudStatus.innerHTML = 'ACCESS&nbsp;DENIED'; }
-      else if (state === 'working') { vault.classList.add('is-working'); hudStatus.innerHTML = 'DECRYPTING…'; }
-      else { hudStatus.innerHTML = 'VAULT&nbsp;LOCKED'; }
-    }
-
-    /* ── Keypad rendering (drives boxes + dial readouts from the input) ── */
-    function syncKeypad() {
-      const v = answerInput.value.replace(/\D/g, '').slice(0, 4);
-      answerInput.value = v;
-      boxes.forEach((b, i) => {
-        const ch = v[i] || '';
-        b.textContent = ch;
-        b.classList.toggle('filled', !!ch);
-        b.classList.toggle('active', !solved && !attempted && i === v.length);
-      });
-      readouts.forEach((r, i) => {
-        const ch = v[i];
-        r.textContent = ch || '_';
-        r.style.color = ch ? '#fff' : '';
-      });
-      if (!solved && !attempted) {
-        keypadHint.textContent = v.length === 4
-          ? 'Code armed — hit Breach the Vault'
-          : `Type four digits to arm the breach  ·  ${v.length}/4`;
-      }
-    }
-
-    /* Clicking the keypad focuses the hidden input so mobile keyboards open */
-    keypad.addEventListener('click', () => { if (!solved && !attempted) answerInput.focus(); });
-    answerInput.addEventListener('input', syncKeypad);
-    answerInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !solved && !attempted) handleSubmit();
-    });
-
-    function lockForm() { answerInput.disabled = true; submitBtn.disabled = true; }
-
-    /* ── Boot terminal typing effect ─────────────────────────────── */
-    const bootLines = [
-      '<span class="muted">$</span> ./breach --target catalyst.vault',
-      '<span class="muted">></span> establishing secure channel ......... <span class="ok">[ ok ]</span>',
-      '<span class="muted">></span> handshake AES-256 .................... <span class="ok">[ ok ]</span>',
-      '<span class="muted">></span> 4 dials detected · status: <span style="color:var(--amber)">LOCKED</span>',
-      '<span class="muted">></span> awaiting operator input<span class="term-caret"></span>'
-    ];
-    function runBoot() {
-      if (reduceMotion) { term.innerHTML = bootLines.map(l => `<span class="line">${l}</span>`).join(''); return; }
-      let i = 0;
-      (function next() {
-        if (i >= bootLines.length) return;
-        const span = document.createElement('span');
-        span.className = 'line';
-        span.innerHTML = bootLines[i];
-        term.appendChild(span);
-        i++;
-        setTimeout(next, 360);
-      })();
-    }
-
-    /* ── Falling code rain ───────────────────────────────────────── */
-    function startCodeRain() {
-      if (reduceMotion) return;
-      const canvas = document.getElementById('code-rain');
-      const ctx = canvas.getContext('2d');
-      let w, h, cols, drops, fontSize = 16;
-      const glyphs = '01░▒█▌▐<>/\\{}[]=+*ｱｲｳｴ8526エ$#';
-      function resize() {
-        w = canvas.width = window.innerWidth;
-        h = canvas.height = window.innerHeight;
-        cols = Math.floor(w / fontSize);
-        drops = new Array(cols).fill(0).map(() => Math.random() * -50);
-      }
-      resize();
-      window.addEventListener('resize', resize);
-      let last = 0;
-      function draw(t) {
-        if (t - last > 55) {
-          last = t;
-          ctx.fillStyle = 'rgba(5,7,13,0.16)';
-          ctx.fillRect(0, 0, w, h);
-          ctx.font = fontSize + 'px JetBrains Mono, monospace';
-          for (let i = 0; i < cols; i++) {
-            const ch = glyphs[(Math.random() * glyphs.length) | 0];
-            const x = i * fontSize, y = drops[i] * fontSize;
-            ctx.fillStyle = Math.random() > 0.975 ? 'rgba(255,255,255,0.85)' : 'rgba(45,212,191,0.55)';
-            ctx.fillText(ch, x, y);
-            if (y > h && Math.random() > 0.975) drops[i] = 0;
-            drops[i]++;
-          }
-        }
-        requestAnimationFrame(draw);
-      }
-      requestAnimationFrame(draw);
-    }
-
-    /* ── Session clock (telemetry flavor) ────────────────────────── */
-    (function clock() {
-      const el = document.getElementById('tele-clock');
-      const start = Date.now();
-      setInterval(() => {
-        const s = Math.floor((Date.now() - start) / 1000);
-        const hh = String(Math.floor(s / 3600)).padStart(2, '0');
-        const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-        const ss = String(s % 60).padStart(2, '0');
-        el.textContent = `${hh}:${mm}:${ss}`;
-      }, 1000);
-    })();
-
-    /* ── Fireworks ───────────────────────────────────────────────── */
-    function launchFireworks() {
-      if (reduceMotion) return;
-      fireworksEl.classList.add('active');
-      const palette = ['#5eead4','#34d399','#fbbf24','#a78bfa','#f0f2f8'];
-      for (let wave = 0; wave < 6; wave++) {
-        setTimeout(() => {
-          const x = 15 + Math.random() * 70, y = 10 + Math.random() * 55;
-          const color = palette[(Math.random() * palette.length) | 0];
-          for (let i = 0; i < 28; i++) {
-            const dot = document.createElement('div');
-            dot.className = 'firework';
-            dot.style.left = x + 'vw'; dot.style.top = y + 'vh'; dot.style.background = color;
-            const angle = (Math.PI * 2 * i) / 28, velocity = 80 + Math.random() * 90;
-            dot.style.setProperty('--tx', (Math.cos(angle) * velocity) + 'px');
-            dot.style.setProperty('--ty', (Math.sin(angle) * velocity) + 'px');
-            fireworksEl.appendChild(dot);
-            setTimeout(() => dot.remove(), 1400);
-          }
-        }, wave * 350);
-      }
-      setTimeout(() => { fireworksEl.classList.remove('active'); fireworksEl.innerHTML = ''; }, 4500);
-    }
-
-    /* ── Submit / breach flow ────────────────────────────────────── */
-    submitBtn.addEventListener('click', handleSubmit);
-
-    function handleSubmit() {
-      if (solved || attempted) return;
-      const digits = answerInput.value.replace(/\D/g, '');
-      if (digits.length < 4) {
-        keypad.classList.remove('shake'); void keypad.offsetWidth; keypad.classList.add('shake');
-        keypadHint.textContent = 'Enter all four digits first';
-        return;
-      }
-
-      /* consume the one attempt immediately */
-      localStorage.setItem(KEY_ATTEMPTED, 'true');
-      lockForm();
-      boxes.forEach(b => b.classList.remove('active'));
-      hudAttempts.textContent = '0';
-
-      const isCorrect = digits === CORRECT_CODE;
-      setStatus('working');
-      submitLabel.textContent = 'Decrypting…';
-      decryptWrap.classList.add('show');
-
-      const total = reduceMotion ? 1 : 1500;
-      const t0 = performance.now();
-      const hex = '0123456789ABCDEF';
-      (function tick(now) {
-        const p = Math.min(1, (now - t0) / total);
-        decryptFill.style.width = (p * 100) + '%';
-        if (!reduceMotion) {
-          let scr = '';
-          for (let i = 0; i < 8; i++) scr += hex[(Math.random() * 16) | 0];
-          decryptText.textContent = `DECRYPTING… 0x${scr}  ${Math.floor(p * 100)}%`;
-        }
-        if (p < 1) { requestAnimationFrame(tick); }
-        else { reveal(isCorrect); }
-      })(t0);
-    }
-
-    function reveal(isCorrect) {
-      decryptWrap.classList.remove('show');
-      if (isCorrect) {
-        localStorage.setItem(KEY_SOLVED, 'true');
-        setStatus('open');
-        submitLabel.textContent = 'Vault Open';
-        feedback.className = 'feedback success show';
-        feedback.innerHTML = '<strong>ACCESS GRANTED.</strong> ' + SOLUTION_HTML + ' Welcome to the Winners\' Lounge.';
-        winnerBtn.classList.add('visible');
-        launchFireworks();
-      } else {
-        setStatus('denied');
-        submitLabel.textContent = 'Access Denied';
-        feedback.className = 'feedback error show';
-        feedback.innerHTML = '<strong>ACCESS DENIED</strong> — that was your one attempt. ' + SOLUTION_HTML;
-      }
-    }
-
-    /* ── Restore prior state ─────────────────────────────────────── */
-    function restore() {
-      if (solved) {
-        answerInput.value = CORRECT_CODE; syncKeypad();
-        lockForm(); setStatus('open');
-        submitLabel.textContent = 'Vault Open';
-        hudAttempts.textContent = '0';
-        keypadHint.textContent = 'Vault already breached';
-        feedback.className = 'feedback success show';
-        feedback.textContent = "You've already cracked this one. The code was 6475.";
-        winnerBtn.classList.add('visible');
-      } else if (attempted) {
-        lockForm(); setStatus('denied');
-        submitLabel.textContent = 'Attempt Used';
-        hudAttempts.textContent = '0';
-        keypadHint.textContent = 'Attempt already used';
-        feedback.className = 'feedback error show';
-        feedback.textContent = 'You already used your one attempt. The code was 6475.';
-      }
-    }
-
-    /* ── Init ────────────────────────────────────────────────────── */
-    runBoot();
-    startCodeRain();
-    syncKeypad();
-    restore();
-  </script>
+  <script src="/js/brain-teaser-case.js?v=1"></script>
+  <script src="/js/brain-teaser.js?v=1" defer></script>
 </body>
 </html>

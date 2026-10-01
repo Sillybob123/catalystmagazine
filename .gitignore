@@ -70,6 +70,7 @@ build/
 !/edition-art/*/*.mp4
 !/beta/articles/*.mp4
 !/beta/book-reviews/*.mp4
+!/beta/brain-teaser/*.mp4
 
 # Local source PNGs for hero book covers — converted to /images/book-reviews/*.webp
 # which is what actually ships. Keep the heavy originals out of the repo.
