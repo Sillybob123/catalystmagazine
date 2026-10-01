@@ -1658,7 +1658,7 @@ function renderArticleDetail(article) {
     });
 
     // --- Content ----------------------------------------------------------
-    const contentHtml = rootRelativePaths(article.blocks?.length
+    const contentHtml = cleanStoryHtml(article.blocks?.length
         ? renderContentBlocks(article.blocks)
         : (article.content || `<p>${article.excerpt || ''}</p>`));
     const readingTime = article.readingTime || estimateReadingTime(article);
@@ -2048,7 +2048,7 @@ function renderBookReviewDetail(article, container) {
     // decide.js still get the nicer treatment.
     bodyHtml = promotePullquotes(bodyHtml);
 
-    const contentHtml = rootRelativePaths(bodyHtml);
+    const contentHtml = cleanStoryHtml(bodyHtml);
     const readingTime = article.readingTime || estimateReadingTime(article);
     const rating = (typeof article.rating === 'number' && article.rating >= 0 && article.rating <= 5) ? article.rating : null;
     const ratingPct = rating != null ? Math.round((rating / 5) * 100) : null;
@@ -3026,6 +3026,17 @@ function rootRelativePaths(html) {
     );
 }
 
+// Older stories carry Wix-era photos (posts/insidearticleimages/...) and
+// "Term Targeter" game iframes (posts/games/articleN.html) that no longer
+// hold up; drop those blocks, then root any other relative paths.
+function cleanStoryHtml(html) {
+    return rootRelativePaths(String(html || '')
+        .replace(/<figure\b[^>]*>\s*<img\b[^>]*\ssrc=["']\/?posts\/insidearticleimages\/[^"']*["'][^>]*>[\s\S]*?<\/figure>/gi, '')
+        .replace(/<img\b[^>]*\ssrc=["']\/?posts\/insidearticleimages\/[^"']*["'][^>]*>/gi, '')
+        .replace(/<div\b[^>]*\barticle-game\b[^>]*>\s*<iframe\b[^>]*\ssrc=["']\/?posts\/games\/article\d+\.html["'][^>]*>\s*<\/iframe>\s*<\/div>/gi, '')
+        .replace(/<iframe\b[^>]*\ssrc=["']\/?posts\/games\/article\d+\.html["'][^>]*>\s*<\/iframe>/gi, ''));
+}
+
 function viewArticle(linkOrId) {
     if (!linkOrId) return;
     const decoded = decodeURIComponent(linkOrId);
@@ -3823,6 +3834,7 @@ function renderContentBlocks(blocks = []) {
             }
             case 'game': {
                 const src = block.src || '';
+                if (/posts\/games\/article\d+\.html/.test(src)) return '';   // retired Term Targeter games
                 const title = block.title || 'Interactive Game';
                 const height = block.height || '600';
                 if (!src) return '';

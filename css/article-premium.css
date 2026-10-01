@@ -170,8 +170,9 @@ body[data-page="article"] .article-page {
 }
 body[data-page="article"] .back-link {
   position: absolute;
-  top: 88px;
-  left: clamp(20px, 4vw, 40px);
+  top: 92px;
+  /* on the header pill's left edge (styles.css .header: 100% - 64px, max 1400px, centred) */
+  left: max(32px, calc((100% - 1400px) / 2));
   z-index: 20;
   display: inline-flex;
   align-items: center;
@@ -210,10 +211,15 @@ body[data-page="article"] .back-link:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.7);
   outline-offset: 3px;
 }
+@media (max-width: 1180px) {
+  body[data-page="article"] .back-link { left: 16px; }
+}
+@media (max-width: 480px) {
+  body[data-page="article"] .back-link { left: 12px; }
+}
 @media (max-width: 700px) {
   body[data-page="article"] .back-link {
     top: 76px;
-    left: 16px;
     font-size: 12px;
     padding: 8px 13px 8px 11px;
   }
@@ -634,6 +640,11 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
    Docs paste) from squishing the image into the wrong aspect ratio once
    max-width kicks in. */
 .article-body img { height: auto; }
+/* Story image blocks share the .article-image class with the card thumbnails
+   (styles.css: height 240px, overflow hidden, object-fit cover); undo that
+   here so photos in a story are never cropped. */
+.article-body .article-image { height: auto; overflow: visible; contain: none; }
+.article-body .article-image img { width: auto; max-width: 100%; height: auto; object-fit: contain; }
 .article-body figure img { height: auto; }
 .article-body figure { text-align: center; }
 /* Editorial figure caption — matches the compose editor so WYSIWYG holds.
