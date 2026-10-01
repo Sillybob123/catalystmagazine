@@ -76,7 +76,7 @@
     };
   }
   function loadStories() {
-    var KEY = 'catalyst_articles_page_v1';
+    var KEY = 'catalyst_articles_page_v2';
     try { var c = sessionStorage.getItem(KEY); if (c) return Promise.resolve(JSON.parse(c)); } catch (e) {}
     var fields = ['title', 'authorName', 'author', 'publishedAt', 'createdAt', 'coverImage', 'deck', 'dek', 'excerpt', 'category', 'tags', 'slug'];
     return fetch('https://firestore.googleapis.com/v1/projects/catalystwriters-5ce43/databases/(default)/documents:runQuery', {
