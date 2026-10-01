@@ -387,7 +387,7 @@
     render();
   }).catch(function (err) {
     console.warn('[articles] load failed', err);
-    $('ar-count').textContent = 'The archive didn’t load. Please refresh the page.';
+    $('ar-count').textContent = 'The articles didn’t load. Please refresh the page.';
     $('ar-latest').innerHTML = '';
   });
 })();
