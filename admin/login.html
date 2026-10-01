@@ -13,203 +13,107 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400&display=swap" rel="stylesheet">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+        /* Staff sign-in, in the site's paper and ink. */
+        :root {
+            --paper: #f8f7f3; --paper-2: #f1efe8; --card: #fdfcf9;
+            --ink: #0f172a; --ink-2: #334155; --muted: #5b6678;
+            --hair: rgba(15,23,42,.14); --danger: #a3322b; --good: #2f6b4f;
+            --sans: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+            --serif: 'Source Serif 4', Georgia, serif;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; }
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #f5f5f7;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            color: #1d1d1f;
+            min-height: 100dvh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+            background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased;
         }
+        [hidden] { display: none !important; }
 
-        /* ── Card ── */
-        .login-card {
-            background: #fff;
-            border-radius: 24px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 12px 48px rgba(0,0,0,0.08);
-            padding: 52px 48px 44px;
-            width: 100%;
-            max-width: 420px;
+        .login-aside {
+            position: relative; display: flex; flex-direction: column; justify-content: space-between;
+            padding: 40px clamp(32px, 5vw, 72px); background: var(--paper); border-right: 1px solid rgba(15,23,42,.09); overflow: hidden;
         }
+        .login-brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; font-weight: 600; letter-spacing: -.01em; }
+        .login-brand img { width: 34px; height: 34px; }
+        .login-art { margin: 24px auto; width: min(100%, 460px); }
+        .login-art img { display: block; width: 100%; height: auto; }
+        .login-quote { margin: 0; max-width: 440px; font: italic 400 21px/1.45 var(--serif); color: var(--ink-2); }
+        .login-quote small { display: block; margin-top: 12px; font: 600 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; font-style: normal; color: var(--muted); }
 
-        /* ── Logo + header ── */
-        .login-logo {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 28px;
-        }
-        .login-logo img {
-            width: 52px;
-            height: auto;
-        }
-        .login-title {
-            font-size: 1.65rem;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-            text-align: center;
-            color: #1d1d1f;
-            margin-bottom: 6px;
-        }
-        .login-sub {
-            font-size: 0.875rem;
-            color: #6e6e73;
-            text-align: center;
-            margin-bottom: 36px;
-            line-height: 1.5;
-        }
+        .login-main { display: grid; place-items: center; padding: 40px 24px; background: var(--card); }
+        .login-card { width: 100%; max-width: 380px; }
+        .login-logo { display: none; }
+        .login-kicker { margin: 0 0 14px; display: inline-flex; align-items: center; gap: 10px; font: 600 11px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+        .login-kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; }
+        .login-title { margin: 0; font: 700 36px/1.05 var(--sans); letter-spacing: -.04em; }
+        .login-sub { margin: 12px 0 30px; font: 400 17px/1.55 var(--serif); color: var(--muted); }
 
-        /* ── Form views ── */
         .view { display: none; }
         .view.active { display: block; }
-
-        /* ── Fields ── */
-        .field { margin-bottom: 16px; }
-        .field label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: #1d1d1f;
-            margin-bottom: 7px;
-        }
-        .input-wrap { position: relative; }
+        .field { margin-bottom: 18px; }
+        .field label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 500; color: var(--ink-2); }
         .field input {
-            width: 100%;
-            padding: 13px 16px;
-            font-size: 0.97rem;
-            font-family: inherit;
-            border: 1.5px solid #d2d2d7;
-            border-radius: 12px;
-            background: #fafafa;
-            color: #1d1d1f;
-            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+            width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 12px;
+            background: var(--card); color: var(--ink); font: 400 16px/1 var(--sans); transition: border-color .15s, box-shadow .15s;
         }
-        .field input:focus {
-            outline: none;
-            border-color: #1d1d1f;
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(29,29,31,0.08);
-        }
+        .field input::placeholder { color: #8b93a3; }
+        .field input:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(15,23,42,.12); }
+        .input-wrap { position: relative; }
+        .input-wrap input { padding-right: 72px; }
         .toggle-pw {
-            position: absolute;
-            right: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #6366f1;
-            cursor: pointer;
-            font-family: inherit;
-            padding: 0;
+            position: absolute; right: 6px; top: 50%; transform: translateY(-50%); min-height: 36px; padding: 0 12px;
+            border: 0; border-radius: 8px; background: none; color: var(--ink-2); font: 500 13px/1 var(--sans); cursor: pointer;
         }
-        .caps-warn {
-            font-size: 0.75rem;
-            color: #dc2626;
-            font-weight: 600;
-            margin-top: 5px;
-            display: none;
+        .toggle-pw:hover { background: rgba(15,23,42,.05); color: var(--ink); }
+        .caps-warn { display: none; margin-top: 7px; font-size: 12.5px; color: #8a5a12; }
+        .caps-warn.show { display: block; }
+        .forgot-link, .back-link {
+            display: inline-flex; align-items: center; gap: 6px; min-height: 32px; margin: -4px 0 20px; padding: 0;
+            border: 0; background: none; color: var(--ink-2); font: 500 13px/1 var(--sans); cursor: pointer;
+            text-decoration: underline; text-decoration-color: rgba(15,23,42,.25); text-underline-offset: .2em;
         }
-
-        /* ── Forgot password link ── */
-        .forgot-link {
-            display: block;
-            text-align: right;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #6366f1;
-            text-decoration: none;
-            margin-top: -8px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            background: none;
-            border: none;
-            font-family: inherit;
-        }
-        .forgot-link:hover { text-decoration: underline; }
-
-        /* ── Submit button ── */
+        .forgot-link:hover, .back-link:hover { color: var(--ink); text-decoration-color: currentColor; }
+        .back-link { margin: 0 0 22px; text-decoration: none; }
         .btn-submit {
-            width: 100%;
-            padding: 14px;
-            border-radius: 100px;
-            border: none;
-            background: #1d1d1f;
-            color: #fff;
-            font-size: 0.97rem;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.15s;
-            margin-top: 4px;
+            width: 100%; min-height: 50px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper);
+            font: 600 15px/1 var(--sans); cursor: pointer; transition: background-color .2s;
         }
-        .btn-submit:hover { opacity: 0.85; transform: scale(0.99); }
-        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        /* ── Alerts ── */
-        .alert {
-            border-radius: 12px;
-            padding: 11px 14px;
-            font-size: 0.875rem;
-            line-height: 1.5;
-            margin-bottom: 18px;
-            display: none;
-        }
+        .btn-submit:hover { background: #1e293b; }
+        .btn-submit:disabled { opacity: .6; cursor: wait; }
+        .btn-submit:focus-visible, .toggle-pw:focus-visible, .forgot-link:focus-visible, .back-link:focus-visible, .login-footer a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+        .alert { display: none; margin-bottom: 18px; padding: 12px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; }
         .alert.show { display: block; }
-        .alert-error   { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-        .alert-success { background: #f0fdf4; color: #047857; border: 1px solid #bbf7d0; }
+        .alert-error { background: #f8e4e1; color: var(--danger); }
+        .alert-success { background: #e3eee7; color: var(--good); }
+        .login-footer { margin: 26px 0 0; padding-top: 20px; border-top: 1px solid rgba(15,23,42,.08); font-size: 13.5px; line-height: 1.55; color: var(--muted); }
+        .login-footer a { color: var(--ink); font-weight: 500; text-underline-offset: .2em; }
 
-        /* ── Back link ── */
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: #6e6e73;
-            cursor: pointer;
-            background: none;
-            border: none;
-            font-family: inherit;
-            margin-bottom: 24px;
-            padding: 0;
-        }
-        .back-link:hover { color: #1d1d1f; }
-
-        /* ── Footer note ── */
-        .login-footer {
-            margin-top: 28px;
-            font-size: 0.8rem;
-            color: #8e8e93;
-            text-align: center;
-            line-height: 1.6;
-        }
-        .login-footer a {
-            color: #6366f1;
-            font-weight: 600;
-            text-decoration: none;
-        }
-        .login-footer a:hover { text-decoration: underline; }
-
-        @media (max-width: 480px) {
-            .login-card { padding: 40px 28px 36px; }
+        @media (max-width: 900px) {
+            body { grid-template-columns: 1fr; }
+            .login-aside { display: none; }
+            .login-main { align-items: start; padding-top: 56px; }
+            .login-logo { display: block; margin-bottom: 26px; }
+            .login-logo img { width: 40px; height: 40px; }
+            .login-title { font-size: 32px; }
         }
     </style>
 </head>
 <body>
+    <aside class="login-aside" aria-hidden="true">
+        <a class="login-brand" href="/" tabindex="-1"><img src="/NewLogoShape.png" alt="">The Catalyst</a>
+        <figure class="login-art"><img src="/beta/collab/desk-700.webp" alt="" width="700" height="869"></figure>
+        <p class="login-quote">&ldquo;The stories that spark scientific curiosity, written and edited here.&rdquo;<small>The Catalyst &middot; Editorial Suite</small></p>
+    </aside>
+    <main class="login-main">
     <div class="login-card">
         <div class="login-logo">
             <img src="/NewLogoShape.png" alt="The Catalyst Magazine">
         </div>
-        <h1 class="login-title">Staff Login</h1>
-        <p class="login-sub">Sign in to the editorial workspace.<br>Staff accounts only.</p>
+        <p class="login-kicker">Editorial Suite</p>
+        <h1 class="login-title">Welcome back.</h1>
+        <p class="login-sub">Sign in with your staff account to plan, write and edit.</p>
 
         <!-- ── Sign-in view ── -->
         <div class="view active" id="view-login">
@@ -232,11 +136,11 @@
 
                 <button type="button" class="forgot-link" id="show-reset">Forgot password?</button>
 
-                <button type="submit" class="btn-submit" id="login-btn">Sign In</button>
+                <button type="submit" class="btn-submit" id="login-btn">Sign in</button>
             </form>
 
             <p class="login-footer">
-                No account? <a href="mailto:stemcatalystmagazine@gmail.com?subject=Editorial%20Access%20Request">Request access</a>
+                New to the team? <a href="mailto:stemcatalystmagazine@gmail.com?subject=Editorial%20Suite%20access">Ask an editor for an account</a>.
             </p>
         </div>
 
@@ -255,7 +159,7 @@
                     <label for="reset-email">Email address</label>
                     <input type="email" id="reset-email" placeholder="you@example.com" autocomplete="email" required>
                 </div>
-                <button type="submit" class="btn-submit" id="reset-btn">Send Reset Link</button>
+                <button type="submit" class="btn-submit" id="reset-btn">Email me a reset link</button>
             </form>
 
             <p class="login-footer" style="margin-top: 20px;">
@@ -263,6 +167,7 @@
             </p>
         </div>
     </div>
+    </main>
 
     <script type="module">
         import { auth, db } from '/js/firebase-config.js';
@@ -377,7 +282,7 @@
             } catch (err) {
                 showAlert(loginError, friendlyError(err));
                 loginBtn.disabled = false;
-                loginBtn.textContent = 'Sign In';
+                loginBtn.textContent = 'Sign in';
             }
         });
 
@@ -400,7 +305,7 @@
                 showAlert(resetError, friendlyError(err));
             } finally {
                 resetBtn.disabled = false;
-                resetBtn.textContent = 'Send Reset Link';
+                resetBtn.textContent = 'Email me a reset link';
             }
         });
 
