@@ -1048,6 +1048,8 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
         const g = p.querySelector("#ds-covers");
         if (!g) return;
         g.innerHTML = covers.map((c) => `<button type="button" class="ds-btile is-photo" data-photo="${esc(c.src)}" title="${esc(c.title)}"><img src="${esc(proxied(c.src))}" alt="" loading="lazy"></button>`).join("") || `<p class="ds-panel-hint">No covers found.</p>`;
+        // A cover that no longer exists shouldn't leave an empty tile.
+        g.querySelectorAll("img").forEach((img) => img.addEventListener("error", () => img.closest("button")?.remove(), { once: true }));
       });
     } else if (panel === "layers") {
       const ls = [...page().layers].reverse();
