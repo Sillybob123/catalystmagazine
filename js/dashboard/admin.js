@@ -352,19 +352,18 @@ async function loadUsers(mount, ctx, reload) {
     // Scroll wrapper so the table never breaks the card layout on any screen size.
     const scrollWrap = el("div", { style: { overflowX: "auto", width: "100%" } });
 
-    const table = el("table", { class: "table" });
+    const table = el("table", { class: "table ua-table" });
     // colgroup lets us set proportional widths without fighting auto-layout.
     table.style.cssText = "table-layout:fixed;min-width:860px;";
     table.innerHTML = `
       <colgroup>
-        <col style="width:12%"><!-- User -->
-        <col style="width:18%"><!-- Email -->
-        <col style="width:12%"><!-- Role -->
-        <col style="width:8%"> <!-- Status -->
-        <col style="width:16%"><!-- Bot reminders -->
-        <col style="width:9%"> <!-- Created -->
-        <col style="width:13%"><!-- Last seen -->
-        <col style="width:12%"><!-- Actions -->
+        <col style="width:14%"><!-- User -->
+        <col style="width:20%"><!-- Email -->
+        <col style="width:13%"><!-- Role -->
+        <col style="width:9%"> <!-- Status -->
+        <col style="width:11%"><!-- Bot reminders -->
+        <col style="width:12%"><!-- Last seen -->
+        <col style="width:21%"><!-- Actions -->
       </colgroup>
       <thead><tr>
         <th>User</th>
@@ -372,7 +371,6 @@ async function loadUsers(mount, ctx, reload) {
         <th>Role</th>
         <th>Status</th>
         <th>Bot reminders</th>
-        <th>Created</th>
         <th>Last seen</th>
         <th>Actions</th>
       </tr></thead><tbody></tbody>`;
@@ -402,17 +400,18 @@ async function loadUsers(mount, ctx, reload) {
         </td>
         <td data-label="Status"><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}" style="font-size:11px;">${esc(u.status || "active")}</span></td>
         <td data-label="Bot reminders">${renderBotReminderStatus(reminderStatus)}</td>
-        <td data-label="Created" style="font-size:12px;color:var(--muted);white-space:nowrap;">${u.createdAt ? fmtDate(u.createdAt) : "—"}</td>
-        <td data-label="Last seen" style="white-space:nowrap;">
+        <td data-label="Last seen" style="white-space:nowrap;" title="${u.createdAt ? "Joined " + escAttr(fmtDate(u.createdAt)) : ""}">
           ${last
             ? `<div style="font-size:12px;color:var(--ink-2);">${fmtRelative(last)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(last)}</div>`
             : `<span style="color:var(--muted);">—</span>`}
         </td>
         <td data-label="Actions">
-          <div style="display:flex;flex-direction:column;gap:5px;">
-            <button class="btn btn-secondary btn-xs" data-action="extra-access" data-id="${esc(d.id)}" style="white-space:nowrap;" title="Grant access to specific dashboard pages">Extra access${Array.isArray(u.extraAccess) && u.extraAccess.length ? ` <span style="opacity:.7;">(${u.extraAccess.length})</span>` : ""}</button>
-            <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}" style="white-space:nowrap;">Edit bot</button>
-            <button class="btn btn-ghost btn-xs" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid ? "disabled" : ""} style="color:var(--danger);white-space:nowrap;">Delete</button>
+          <div class="ua-actions">
+            <button class="btn btn-secondary btn-xs" data-action="extra-access" data-id="${esc(d.id)}" title="Give this person access to specific pages beyond their role">Pages${Array.isArray(u.extraAccess) && u.extraAccess.length ? ` <span class="ua-count">${u.extraAccess.length}</span>` : ""}</button>
+            <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}" title="Pause or resume the reminder bot's emails to this person">Reminders</button>
+            <button class="btn btn-ghost btn-xs ua-delete" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid ? "disabled" : ""} title="Remove this account" aria-label="Delete ${escAttr(u.name || u.email || "user")}">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
+            </button>
           </div>
         </td>`;
       tbody.appendChild(tr);
@@ -595,7 +594,7 @@ function openExtraAccessModal(ctx, user, onSaved) {
     <div id="ea-msg" class="hint" style="color:var(--danger);margin-top:10px;"></div>`;
 
   const modal = openModal({
-    title: `Extra access — ${user.name || user.email}`,
+    title: `Page access — ${user.name || user.email}`,
     body,
     footer: [cancelBtn, saveBtn],
   });

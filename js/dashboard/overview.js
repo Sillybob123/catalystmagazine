@@ -18,12 +18,12 @@ import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 // Shortcuts at the top of Overview, per role: the three or four things that
 // person opens most. Only routes they can reach are listed.
 const SHORTCUTS = {
-  admin:              [["#/admin/articles", "Articles & approvals"], ["#/pipeline/all", "Story Tracker"], ["#/admin/submissions", "Submissions inbox"], ["#/newsletter/builder", "Newsletter"]],
-  editor:             [["#/editor/queue", "Editing queue"], ["#/pipeline/mine", "My assignments"], ["#/writer/draft", "Write a draft"], ["#/tasks", "My tasks"]],
+  admin:              [["#/admin/articles", "Articles & approvals"], ["#/pipeline/all", "Story Tracker"], ["#/admin/tasks", "Action items"], ["#/admin/submissions", "Submissions inbox"]],
+  editor:             [["#/editor/queue", "Editing queue"], ["#/pipeline/mine", "My assignments"], ["#/writer/draft", "Write a draft"], ["#/tasks", "Team tasks"]],
   writer:             [["#/writer/draft", "Write a draft"], ["#/writer/mine", "My articles"], ["#/pipeline/mine", "My assignments"], ["#/writer/guidelines", "Editorial standards"]],
-  marketing:          [["#/planner", "Planner"], ["#/marketing/social", "Social media posts"], ["#/marketing/analytics", "Subscribers & growth"], ["#/tasks", "My tasks"]],
-  social_media:       [["#/planner", "Planner"], ["#/marketing/social", "Social media posts"], ["#/tasks", "My tasks"]],
-  newsletter_builder: [["#/newsletter/builder", "Newsletter builder"], ["#/newsletter/history", "Campaign history"], ["#/tasks", "My tasks"]],
+  marketing:          [["#/planner", "Planner"], ["#/marketing/social", "Social media posts"], ["#/marketing/analytics", "Subscribers & growth"], ["#/tasks", "Team tasks"]],
+  social_media:       [["#/planner", "Planner"], ["#/marketing/social", "Social media posts"], ["#/tasks", "Team tasks"]],
+  newsletter_builder: [["#/newsletter/builder", "Newsletter builder"], ["#/newsletter/history", "Campaign history"], ["#/tasks", "Team tasks"]],
 };
 
 function greetingFor(name) {
@@ -41,7 +41,7 @@ export async function mount(ctx, container) {
   // Greeting + shortcuts
   const hello = el("section", { class: "ov-hello" });
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
-  const shortcuts = SHORTCUTS[ctx.role] || [["#/pipeline/all", "Story Tracker"], ["#/tasks", "My tasks"], ["#/directory", "Team & messages"]];
+  const shortcuts = SHORTCUTS[ctx.role] || [["#/pipeline/all", "Story Tracker"], ["#/tasks", "Team tasks"], ["#/directory", "Team & messages"]];
   hello.innerHTML = `
     <div class="ov-hello-text">
       <p class="ov-date">${esc(today)}</p>

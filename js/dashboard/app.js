@@ -269,8 +269,8 @@ const ROUTES = {
     mountKey: "mine",
   },
   "#/tasks": {
-    label: "My tasks",
-    desc: "Everything waiting on you, most urgent first. Clear a task by doing it, or snooze it.",
+    label: "Team tasks",
+    desc: "The team's task board: propose a task, get it approved, and move it to done.",
     icon: ICONS.list,
     roles: ["*"],
     group: "main",
@@ -450,8 +450,8 @@ const ROUTES = {
   // Tasks — the admin's to-do / review / approve queue. Full-page sibling of
   // the "Your tasks" panel on Activity; both share task-engine.js.
   "#/admin/tasks": {
-    label: "Team tasks",
-    desc: "Tasks assigned across the team: propose, approve and track them to done.",
+    label: "Action items",
+    desc: "Everything waiting on you as an admin, most urgent first. Do it, or snooze it.",
     icon: ICONS.check,
     roles: ["admin"],
     group: "admin",

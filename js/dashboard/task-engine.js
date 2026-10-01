@@ -463,7 +463,7 @@ export function buildAdminTasks(projects, users, overrides = {}, extras = {}) {
       key: "global:book-reviews",
       priority: "normal",
       headline: `Review ${n} pending book review${n === 1 ? "" : "s"} from readers`,
-      detail: `Reader-submitted reviews are waiting in The Catalyzers queue. Approve the good ones to feature them, or decline.`,
+      detail: `Reader-submitted reviews are waiting in the reader submissions queue. Approve the good ones to feature them, or decline.`,
       context: "Public submissions",
       href: "#/admin/book-reviews",
       actionLabel: "Open queue",

@@ -31,7 +31,7 @@ export async function mount(ctx, container) {
       <div>
         <div class="card-title">Book reviews — community submissions</div>
         <div class="card-subtitle">
-          Reader-submitted reviews for The Catalyst Reviews. Approve to publish under "From the Catalyzers,"
+          Book reviews sent in by readers. Approve to publish them as reader picks on Book Reviews,
           or reject to dismiss. Approved submissions appear on
           <a href="/book-reviews" target="_blank" rel="noopener">/book-reviews</a>.
         </div>
@@ -234,7 +234,7 @@ async function decide(sub, action, row, reload) {
 
     toast(
       action === "approve"
-        ? `Published "${sub.bookTitle}" on The Catalyst Reviews.`
+        ? `Published "${sub.bookTitle}" on Book Reviews.`
         : `Rejected "${sub.bookTitle}".`,
       "success"
     );

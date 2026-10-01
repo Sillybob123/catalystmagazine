@@ -47,6 +47,9 @@
 body { background: var(--surface-2); color: var(--ink); font-size: 14px; line-height: 1.5; letter-spacing: -0.003em; }
 ::selection { background: rgba(15, 23, 42, 0.14); }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* the hidden attribute always wins (some components set display: flex on
+   elements that are hidden until needed, e.g. the cover upload progress) */
+[hidden] { display: none !important; }
 
 /* ---------------------------------------------------------------- shell */
 .sidebar { background: var(--surface-3); border-right: 1px solid var(--hairline-2); }
@@ -378,3 +381,52 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
   .bl-detail { padding-left: 16px; }
   .ov-bot-stat { display: none; }
 }
+
+/* ==========================================================================
+   ARTICLES & APPROVALS — one line per story
+   ========================================================================== */
+.ar-row {
+  display: grid !important; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px;
+  padding: 16px 24px !important; border-top: 1px solid var(--hairline-2); background: none !important; border-radius: 0 !important;
+}
+.ar-row:hover { background: rgba(15,23,42,.02) !important; }
+.ar-main { min-width: 0; }
+.ar-title { font: 500 14.5px/1.4 var(--font); color: var(--ink); letter-spacing: -0.01em; }
+.ar-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 5px; font-size: 12.5px; color: var(--muted); }
+.ar-meta .category-chip { font: 600 10px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 6px; background: var(--surface-3); border: 0; color: var(--ink-2); }
+.ar-side { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 14px; flex-wrap: nowrap; }
+.ar-status-editor { display: flex !important; align-items: center; gap: 10px; flex-direction: row !important; }
+.ar-status-editor .pill { min-width: 84px; text-align: center; }
+.ar-editor-select { width: 180px !important; min-height: 34px !important; font-size: 13px !important; padding: 0 30px 0 10px !important; }
+.ar-actions { display: flex !important; align-items: center; gap: 4px; flex-wrap: nowrap; justify-content: flex-end; }
+.ar-actions .ar-danger { color: var(--danger) !important; }
+@media (max-width: 1200px) {
+  .ar-row { grid-template-columns: 1fr; }
+  .ar-side { flex-wrap: wrap; justify-content: space-between; }
+}
+
+/* ==========================================================================
+   USERS & ROLES
+   ========================================================================== */
+.ua-actions { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; }
+.ua-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--ink); color: var(--surface-2); font-size: 10.5px; }
+.ua-delete { color: var(--danger) !important; width: 30px; padding: 0 !important; justify-content: center; }
+.ua-delete:hover { background: var(--danger-soft) !important; }
+.ua-delete:disabled { visibility: hidden; }
+
+/* ==========================================================================
+   EDITORIAL STANDARDS — site palette
+   ========================================================================== */
+.standards-page {
+  --standards-font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  --standards-accent: #0f172a;
+  --standards-accent-soft: #f1efe8;
+}
+
+.ua-table { font-size: 13px; }
+.ua-table th, .ua-table td { padding: 12px 10px !important; vertical-align: middle !important; }
+.ua-table td:first-child { font-weight: 500; }
+.ua-table td[data-label="Email"] > div:first-child { font-family: var(--font) !important; font-size: 12.5px !important; color: var(--muted) !important; max-width: 210px; }
+.ua-table td[data-label="Role"] .select { min-height: 34px !important; min-width: 130px; font-size: 13px !important; }
+.ua-table td[data-label="Status"] .pill { background: none; color: var(--ink-2); padding: 0; letter-spacing: .06em; }
+.ua-table td[data-label="Status"] .pill-published::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--good); vertical-align: 0; }
