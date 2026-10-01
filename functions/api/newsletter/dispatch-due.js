@@ -18,6 +18,7 @@ import {
   fromFirestoreDoc,
 } from "../../_utils/firebase.js";
 import { dispatchCampaign } from "../../_utils/newsletter-send.js";
+import { flushActivityQueues } from "../../_utils/activity-digest.js";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -112,7 +113,16 @@ export const onRequestPost = async ({ request, env }) => {
       }
     }
 
-    return json({ ok: true, dispatched, skipped, processed: dispatched.length });
+    // Same 5-minute tick: send any tracker-activity batches that have
+    // settled (see functions/_utils/activity-digest.js). Best-effort.
+    let activity = null;
+    try {
+      activity = await flushActivityQueues(env, { siteUrl: env.SITE_URL || "https://www.catalyst-magazine.com" });
+    } catch (err) {
+      activity = { error: err?.message || String(err) };
+    }
+
+    return json({ ok: true, dispatched, skipped, processed: dispatched.length, activity });
   } catch (err) {
     return serverError(err);
   }

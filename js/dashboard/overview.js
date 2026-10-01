@@ -422,10 +422,37 @@ function renderBotResult(r) {
       ${w.errors?.length ? `<div style="margin-top:10px;font-size:12px;color:#991b1b;"><strong>Errors:</strong> ${w.errors.map(e => esc(e.error)).join("; ")}</div>` : ""}
     </div>
 
+    ${r.policy ? renderPolicy(r.policy) : ""}
     ${items.length ? renderPlannedReminders(items) : ""}
     ${skipped.length ? renderSkippedReminders(skipped) : ""}
     ${d.rows ? renderDigestPreview(d) : ""}
   `;
+}
+
+// What the nudge policy decided this run, in plain words.
+const HOLD_REASON = {
+  "one-nudge-per-story": "Another reminder about the same story went instead",
+  "waiting-on-admin": "Not their move: waiting on an admin",
+  "waiting-on-editor": "Not their move: waiting on the editor",
+  "waiting-on-writer": "Not their move: waiting on the writer",
+  "pitch-not-approved": "Pitch not approved yet",
+  "story-declined": "Story was declined",
+  "story-finished": "Story is finished",
+  "backing-off": "Backing off: the last reminder hasn't been answered",
+  "stopped-after-3-unanswered": "Stopped: 3+ reminders unanswered (admins told instead)",
+  "weekend": "Weekend: routine reminders wait for Monday",
+};
+function renderPolicy(pol) {
+  const held = Array.isArray(pol.held) ? pol.held : [];
+  const esc8 = Array.isArray(pol.escalations) ? pol.escalations : [];
+  if (!held.length && !esc8.length) return "";
+  return `
+    <div class="bot-policy">
+      <p class="bot-policy-title">Held back today (${held.length})</p>
+      ${held.length ? `<ul>${held.map((h) => `<li><strong>${esc(h.projectTitle || "Story")}</strong> · ${esc(h.recipientEmail || "")}<span>${esc(HOLD_REASON[h.reason] || h.reason)}${h.nextInDays ? ` (next possible in ${h.nextInDays}d)` : ""}</span></li>`).join("")}</ul>` : `<p class="pm-muted">Nothing held back.</p>`}
+      ${esc8.length ? `<p class="bot-policy-title">Needs a person (${esc8.length})</p>
+        <ul>${esc8.map((x) => `<li><strong>${esc(x.personName)}</strong> on ${esc(x.projectTitle)}<span>${x.unanswered} reminders since ${esc(String(x.firstUnansweredAt).slice(0, 10))} with no change. The bot has stopped emailing them about it.</span></li>`).join("")}</ul>` : ""}
+    </div>`;
 }
 
 function renderPlannedReminders(items) {

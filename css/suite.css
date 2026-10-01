@@ -630,3 +630,12 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
   .kb-header-actions { justify-content: flex-end; }
   .kb-col { flex-basis: 84vw; width: 84vw; }
 }
+
+/* notification bell: day groups */
+.notif-day { padding: 12px 12px 4px; font: 600 10.5px/1 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); list-style: none; }
+.notif-item.is-unread .notif-dot { background: var(--ink); }
+.bot-policy { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--hairline); border-radius: 12px; background: var(--surface); }
+.bot-policy-title { margin: 0 0 8px; font: 600 11px/1.2 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.bot-policy ul { list-style: none; margin: 0 0 12px; padding: 0; }
+.bot-policy li { padding: 8px 0; border-top: 1px solid var(--hairline-2); font-size: 13px; }
+.bot-policy li span { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }

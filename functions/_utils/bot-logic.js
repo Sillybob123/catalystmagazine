@@ -1199,3 +1199,173 @@ export function groupRemindersByRecipient(reminders) {
   }
   return { single, bundled };
 }
+
+// ─── Nudge policy ────────────────────────────────────────────────────────────
+//
+// The rules above say what *could* be sent today. This decides what *should*
+// be, using what has already been sent (bot_email_log) and whether anything
+// has happened on the story since:
+//
+//   • One nudge per story per person per run: the most important one.
+//   • Only live stories: no nudges about pitches still waiting for approval
+//     or declined ones (the admin owns those).
+//   • Back off when a nudge goes unanswered (nothing changed on the story
+//     since it was sent): wait 2, then 5, then 10 days before the next one.
+//   • After 3 unanswered nudges, stop emailing that person about that story
+//     and hand it to the admins instead (escalations) — more email is not
+//     going to work.
+//   • Time-critical reminders (interview in 1–2 days, deadline tomorrow,
+//     a review just assigned or due soon) skip the back-off, but never the
+//     stop after 3.
+//   • No routine nudges on Saturday or Sunday (New York time); urgent ones
+//     still go out.
+
+export const NUDGE_GAP_DAYS = [2, 5, 10];       // wait after 0 / 1 / 2 unanswered nudges
+export const MAX_UNANSWERED_NUDGES = 3;
+export const URGENT_REMINDER_KINDS = new Set([
+  "interview-prep", "deadline-1d", "editor-deadline-soon", "editor-just-assigned",
+]);
+// Higher wins when one story has several reminders queued for the same person.
+const KIND_RANK = {
+  "interview-prep": 100, "deadline-1d": 95, "editor-just-assigned": 92, "editor-deadline-soon": 90,
+  "interview-followup": 80, "deadline-3d": 75, "editor-review-overdue": 70, "deadline-overdue": 60,
+  "interview-not-scheduled": 55, "proposal-no-schedule": 50, "editor-idle": 45, "idle": 40,
+};
+
+// Whose move is it on this story? Only that person gets nudged.
+export function whoseTurn(project) {
+  const tl = project.timeline || {};
+  if (tl["Suggestions Reviewed"]) return "none";
+  if (project.proposalStatus && project.proposalStatus !== "approved") return "admin";
+  if (!tl["Article Writing Complete"]) return "writer";          // interview + drafting
+  if (!project.editorId) return "admin";                          // needs an editor
+  if (!tl["Review Complete"]) return "editor";
+  return "writer";                                                 // working through edits
+}
+
+function isWeekendIn(timeZone, now) {
+  const wd = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(now);
+  return wd === "Sat" || wd === "Sun";
+}
+
+export function applyNudgePolicy({ reminders, projects, emailLog = [], now }) {
+  const kept = [];
+  const held = [];
+  const escalations = [];
+  const projectById = new Map(projects.map((p) => [p.id, p]));
+  const weekend = isWeekendIn(BOT_REMINDER_EXEMPTION_TIMEZONE, now);
+
+  // Group by (story, recipient) and keep the highest-ranked reminder.
+  const groups = new Map();
+  for (const r of reminders) {
+    const person = r.editor || r.writer;
+    const email = String(person?.email || "").toLowerCase();
+    const gk = `${r.projectId}|${email}`;
+    if (!groups.has(gk)) groups.set(gk, []);
+    groups.get(gk).push(r);
+  }
+
+  for (const [, list] of groups) {
+    list.sort((a, b) => (KIND_RANK[b.kind] || 0) - (KIND_RANK[a.kind] || 0));
+    const [r, ...rest] = list;
+    for (const x of rest) held.push({ ...summarize(x), reason: "one-nudge-per-story", instead: r.kind });
+
+    const project = projectById.get(r.projectId) || r.project || {};
+    const person = r.editor || r.writer;
+    const email = String(person?.email || "").toLowerCase();
+
+    // Only nudge the person whose move it is. A writer whose draft is with
+    // the editor (or waiting for one) isn't "overdue"; their editor or the
+    // admins are.
+    const turn = whoseTurn(project);
+    const role = r.editor ? "editor" : "writer";
+    if (turn !== role) {
+      const why = project.proposalStatus === "rejected" ? "story-declined"
+        : project.proposalStatus && project.proposalStatus !== "approved" ? "pitch-not-approved"
+        : turn === "admin" ? "waiting-on-admin" : turn === "editor" ? "waiting-on-editor"
+        : turn === "writer" ? "waiting-on-writer" : "story-finished";
+      held.push({ ...summarize(r), reason: why });
+      continue;
+    }
+
+    const lastAct = lastActivityDate(project);
+    const history = emailLog
+      .filter((e) => e && e.projectId === r.projectId && String(e.recipientEmail || "").toLowerCase() === email)
+      .map((e) => toDate(e.sentAt))
+      .filter(Boolean)
+      .sort((a, b) => b - a);
+    const unanswered = history.filter((t) => !lastAct || t > lastAct);
+    const lastSent = history[0] || null;
+    const urgent = URGENT_REMINDER_KINDS.has(r.kind);
+
+    if (unanswered.length >= MAX_UNANSWERED_NUDGES) {
+      held.push({ ...summarize(r), reason: "stopped-after-3-unanswered", unanswered: unanswered.length });
+      escalations.push({
+        projectId: r.projectId,
+        projectTitle: project.title || "(untitled)",
+        role: r.editor ? "editor" : "writer",
+        personName: person?.name || person?.email || "",
+        personEmail: person?.email || "",
+        unanswered: unanswered.length,
+        firstUnansweredAt: unanswered[unanswered.length - 1].toISOString(),
+        lastSentAt: lastSent ? lastSent.toISOString() : null,
+      });
+      continue;
+    }
+
+    if (!urgent) {
+      if (weekend) { held.push({ ...summarize(r), reason: "weekend" }); continue; }
+      const gap = NUDGE_GAP_DAYS[Math.min(unanswered.length, NUDGE_GAP_DAYS.length - 1)];
+      if (lastSent && daysBetween(now, lastSent) < gap) {
+        held.push({ ...summarize(r), reason: "backing-off", unanswered: unanswered.length, nextInDays: gap - daysBetween(now, lastSent) });
+        continue;
+      }
+    }
+    kept.push({ ...r, unansweredBefore: unanswered.length });
+  }
+
+  return { reminders: kept, held, escalations };
+
+  function summarize(x) {
+    const p = x.editor || x.writer;
+    return { projectId: x.projectId, projectTitle: x.project?.title || null, kind: x.kind, recipientEmail: p?.email || null };
+  }
+}
+
+// People who have stopped responding: on a live story where it's their move,
+// they've had MAX_UNANSWERED_NUDGES or more reminders since anything changed.
+// Read straight from the email history so it doesn't depend on whether a
+// reminder happens to be due today.
+export function computeStalledPeople({ projects, emailLog = [], now }) {
+  const byId = new Map(projects.map((p) => [p.id, p]));
+  const groups = new Map();
+  for (const e of emailLog) {
+    if (!e || !e.projectId || !e.recipientEmail) continue;
+    const k = `${e.projectId}|${String(e.recipientEmail).toLowerCase()}`;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(e);
+  }
+  const out = [];
+  for (const [, list] of groups) {
+    const p = byId.get(list[0].projectId);
+    if (!p || isProjectComplete(p)) continue;
+    const role = list[0].role === "editor" ? "editor" : "writer";
+    if (whoseTurn(p) !== role) continue;
+    const lastAct = lastActivityDate(p);
+    const sent = list.map((e) => toDate(e.sentAt)).filter(Boolean).sort((a, b) => b - a);
+    const unanswered = sent.filter((t) => !lastAct || t > lastAct);
+    if (unanswered.length < MAX_UNANSWERED_NUDGES) continue;
+    out.push({
+      projectId: p.id,
+      projectTitle: p.title || "(untitled)",
+      role,
+      personName: list[0].recipientName || list[0].recipientEmail,
+      personEmail: list[0].recipientEmail,
+      unanswered: unanswered.length,
+      firstUnansweredAt: unanswered[unanswered.length - 1].toISOString(),
+      lastSentAt: sent[0].toISOString(),
+      daysQuiet: lastAct ? daysBetween(now, lastAct) : null,
+    });
+  }
+  return out.sort((a, b) => b.unanswered - a.unanswered);
+}

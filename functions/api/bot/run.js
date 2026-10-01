@@ -21,6 +21,7 @@
 // }
 
 import { json, badRequest, serverError, unauthorized } from "../../_utils/http.js";
+import { flushActivityQueues } from "../../_utils/activity-digest.js";
 import {
   firestoreRunQuery,
   firestoreGet,
@@ -36,6 +37,8 @@ import {
   computeAdminTasks,
   computeAdminTaskReminders,
   groupRemindersByRecipient,
+  applyNudgePolicy,
+  computeStalledPeople,
   lastActivityDate,
 } from "../../_utils/bot-logic.js";
 import {
@@ -94,6 +97,8 @@ export const onRequestPost = async ({ request, env }) => {
     }
 
     const now = new Date();
+    _emailLogCache = null;   // always read the current email log for this run
+    _runEscalations = [];
     const mode = body.mode || "auto";
     const dryRun = !!body.dryRun;
     const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
@@ -163,8 +168,19 @@ export const onRequestPost = async ({ request, env }) => {
       result.editorReminders.skippedCount = editorOut.skipped.length;
       result.editorReminders.skipped = editorOut.skipped;
 
+      // The nudge policy decides what actually goes out (one per story, only
+      // to whoever's turn it is, backing off when ignored, stopping after 3
+      // unanswered and escalating to admins, quiet on weekends).
+      const emailHistory = await loadEmailLog(env);
+      const policy = applyNudgePolicy({
+        reminders: [...writerOut.reminders, ...editorOut.reminders],
+        projects, emailLog: emailHistory, now,
+      });
+      _runEscalations = computeStalledPeople({ projects, emailLog: emailHistory, now });
+      result.policy = { kept: policy.reminders.length, held: policy.held, escalations: _runEscalations };
+
       // Per-recipient bundling: anyone with 2+ items gets one bundled email.
-      const allReminders = [...writerOut.reminders, ...editorOut.reminders];
+      const allReminders = policy.reminders;
       const { single, bundled } = groupRemindersByRecipient(allReminders);
       result.bundled.planned = bundled.length;
 
@@ -812,6 +828,35 @@ export const onRequestPost = async ({ request, env }) => {
       }
     }
 
+    // ── Escalations: people who've stopped responding ────────────────────────
+    // The policy stops emailing someone after 3 unanswered nudges about a
+    // story. Tell the admins (bell, once per story/person per month) so a
+    // human can step in: reassign, call them, or drop the story.
+    if ((mode === "auto" || mode === "writers") && _runEscalations.length && !dryRun) {
+      const admins = await getAdminUsers(env, notifCache);
+      const month = now.toISOString().slice(0, 7);
+      for (const x of _runEscalations) {
+        for (const a of admins) {
+          if (!a.uid) continue;
+          await createNotification(env, {
+            recipientId: a.uid,
+            type: "event",
+            eventType: "escalation",
+            title: `${x.personName} hasn't responded about “${x.projectTitle}”`,
+            body: `${x.unanswered} reminders since ${x.firstUnansweredAt.slice(0, 10)} with no change. The bot has stopped emailing them about it; consider reaching out, reassigning or dropping the story.`,
+            actorName: "Catalyst bot",
+            actionHash: "#/pipeline/all",
+          }, `notif_escalation_${x.projectId}_${String(x.personEmail).replace(/[^a-z0-9]/gi, "_")}_${month}_${a.uid}`);
+        }
+      }
+    }
+
+    // ── Tracker activity batches left waiting ────────────────────────────────
+    if (mode === "auto" && !dryRun) {
+      try { result.activityFlush = await flushActivityQueues(env, { siteUrl, force: true }); }
+      catch (err) { result.activityFlush = { error: err?.message || String(err) }; }
+    }
+
     // ── Admin digest ─────────────────────────────────────────────────────────
     //
     // Four ways the digest runs:
@@ -829,7 +874,8 @@ export const onRequestPost = async ({ request, env }) => {
     if (shouldRunDigest) {
       const rows = computeAdminDigest({ projects, users, now });
       const adminTasks = computeAdminTasks({ projects, users, now });
-      const { subject, html } = adminDigestEmail({ rows, adminTasks, now, siteUrl });
+      if (!_runEscalations.length) _runEscalations = computeStalledPeople({ projects, emailLog: await loadEmailLog(env), now });
+      const { subject, html } = adminDigestEmail({ rows, adminTasks, escalations: _runEscalations, now, siteUrl });
       result.adminDigest.adminTasks = adminTasks;
       const adminRecipients = Array.isArray(body.adminEmails) && body.adminEmails.length
         ? body.adminEmails
@@ -1092,6 +1138,7 @@ const EMAIL_LOG_MAX_ENTRIES = 200;
 const EMAIL_LOG_MAX_DAYS = 50;
 
 let _emailLogCache = null;
+let _runEscalations = [];
 async function loadEmailLog(env) {
   if (_emailLogCache !== null) return _emailLogCache;
   try {

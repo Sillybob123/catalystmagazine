@@ -346,7 +346,7 @@ function buildStatusBlock({ rows, tone }) {
 
 // ─── Admin Saturday digest ───────────────────────────────────────────────────
 
-export function adminDigestEmail({ rows, adminTasks = [], now, siteUrl }) {
+export function adminDigestEmail({ rows, adminTasks = [], escalations = [], now, siteUrl }) {
   const dateLabel = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   const totalProjects = rows.reduce((n, r) => n + r.projects.length, 0);
   const flaggedWriters = rows.filter((r) => r.projects.some((p) => p.flags.length)).length;
@@ -354,6 +354,7 @@ export function adminDigestEmail({ rows, adminTasks = [], now, siteUrl }) {
 
   const writerBlocks = rows.map((row) => renderWriterBlock(row, siteUrl)).join("");
   const adminTasksBlock = renderAdminTasksBlock(adminTasks, siteUrl);
+  const escalationBlock = renderEscalationBlock(escalations, siteUrl);
 
   const body = `
     <div style="text-align:left;">
@@ -376,6 +377,8 @@ export function adminDigestEmail({ rows, adminTasks = [], now, siteUrl }) {
       </tr>
     </table>
 
+    ${escalationBlock}
+
     ${adminTasksBlock}
 
     <div style="margin:32px 0 0 0;">
@@ -396,6 +399,27 @@ export function adminDigestEmail({ rows, adminTasks = [], now, siteUrl }) {
     subject,
     html: shell({ title: subject, preheader, body, siteUrl }),
   };
+}
+
+// People the bot has stopped emailing: 3+ reminders about a story, nothing
+// changed since. More email won't help; a person should.
+function renderEscalationBlock(items, siteUrl) {
+  if (!items || !items.length) return "";
+  const rows = items.map((x) => `
+      <div style="padding:14px 0;border-bottom:1px solid ${COLORS.hairline};">
+        <div style="font-size:15px;font-weight:600;color:${COLORS.ink};line-height:1.4;">${escapeHtml(x.personName)} <span style="font-weight:400;color:${COLORS.muted};">(${escapeHtml(x.role)})</span></div>
+        <div style="font-size:14px;color:${COLORS.inkSoft};margin-top:3px;">${escapeHtml(x.projectTitle)}</div>
+        <div style="font-size:13px;color:${COLORS.muted};margin-top:4px;">${x.unanswered} reminders since ${escapeHtml(String(x.firstUnansweredAt).slice(0, 10))}, no change${x.daysQuiet != null ? ` · quiet for ${x.daysQuiet} days` : ""}</div>
+      </div>`).join("");
+  return `
+    <div style="margin:32px 0 0 0;padding:20px 22px;border:1px solid ${COLORS.hairline};border-radius:14px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.2em;color:${COLORS.muted};text-transform:uppercase;">Stopped nudging</div>
+      <p style="margin:8px 0 6px 0;font-size:15px;line-height:1.55;color:${COLORS.inkSoft};">
+        The bot has stopped emailing these people about these stories: three or more reminders went unanswered. Reach out yourself, reassign the story, or drop it.
+      </p>
+      ${rows}
+      <p style="margin:14px 0 0 0;font-size:14px;"><a href="${siteUrl}/admin/#/pipeline/all" style="color:${COLORS.ink};font-weight:600;">Open the Story Tracker</a></p>
+    </div>`;
 }
 
 function renderAdminTasksBlock(tasks, siteUrl) {

@@ -24,7 +24,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { el, toast, initials, openModal } from "./ui.js";
-import { initNotificationBell } from "./notifications.js?v=clear-1";
+import { initNotificationBell } from "./notifications.js?v=notify-1";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -242,7 +242,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=tracker-2"),
+    loader: () => import("./overview.js?v=notify-1"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.

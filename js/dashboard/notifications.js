@@ -10,13 +10,19 @@
 
 import { db } from "../firebase-config.js";
 import {
-  collection, query, where, limit, onSnapshot, doc, updateDoc, writeBatch,
+  collection, query, where, limit, orderBy, onSnapshot, doc, updateDoc, writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { esc, fmtRelative } from "./ui.js";
 
-// Newest-first sort done client-side so we don't need a composite Firestore
-// index (recipientId == … + orderBy createdAt). 50 is plenty for a bell.
-const MAX = 50;
+// Newest first, server-side (index: recipientId + createdAt desc). Without
+// the order, a person with 50+ stored notifications could get an arbitrary
+// 50 and miss the newest. Falls back to the unordered query if the index
+// isn't available yet.
+const MAX = 80;
+// Bot items (reminders, admin nudges, digests) repeat; show only the newest
+// of each, and let them fade out after three weeks.
+const BOT_TYPES = new Set(["reminder", "admin-task", "digest", "task-reminder", "escalation", "social-due"]);
+const BOT_MAX_AGE_DAYS = 21;
 
 // getCtx() returns the live context each call so navigation respects the
 // current preview state (admin previewing a teammate, etc.).
@@ -29,32 +35,70 @@ export function initNotificationBell(ctx, getCtx) {
   let panel = null;
 
   // ---- real-time listener ----
-  const q = query(
-    collection(db, "notifications"),
-    where("recipientId", "==", ctx.user.uid),
-    limit(MAX),
-  );
-  const unsub = onSnapshot(
-    q,
-    (snap) => {
-      items = snap.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-      paintBadge();
-      if (panel) renderPanel(); // keep an open panel live
+  const onData = (snap) => {
+    items = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+    paintBadge();
+    if (panel) renderPanel(); // keep an open panel live
+  };
+  let unsub = onSnapshot(
+    query(collection(db, "notifications"), where("recipientId", "==", ctx.user.uid), orderBy("createdAt", "desc"), limit(MAX)),
+    onData,
+    (err) => {
+      console.warn("[notifications] ordered listen failed, using fallback:", err?.message || err);
+      unsub = onSnapshot(
+        query(collection(db, "notifications"), where("recipientId", "==", ctx.user.uid), limit(MAX)),
+        onData,
+        (e2) => console.warn("[notifications] listen failed:", e2?.message || e2),
+      );
     },
-    (err) => console.warn("[notifications] listen failed:", err?.message || err),
   );
 
   // Cleared notifications stay in Firestore (deleting them would break the
   // server's dedupe — a bot reminder with the same dedupeId would come back)
   // but disappear from the bell entirely.
+  // One row per thing worth seeing: bot repeats folded into their newest
+  // (with a count), stale bot items dropped. Each row remembers every doc it
+  // stands for so opening / clearing it covers them all.
   function visibleItems() {
-    return items.filter((n) => !n.cleared);
+    const cutoff = Date.now() - BOT_MAX_AGE_DAYS * 86400000;
+    const rows = [];
+    const byKey = new Map();
+    for (const n of items) {
+      if (n.cleared) continue;
+      const bot = BOT_TYPES.has(n.eventType) || n.actorName === "Catalyst bot";
+      if (bot && Date.parse(n.createdAt || "") < cutoff) continue;
+      const key = !bot ? null
+        : (n.eventType === "admin-task" || n.eventType === "digest") ? `t:${n.eventType}`
+        : `t:${n.eventType}|${n.title || ""}`;
+      if (key && byKey.has(key)) {
+        const row = byKey.get(key);
+        row.memberIds.push(n.id);
+        row.count++;
+        if (!n.read) row.read = false;
+        continue;
+      }
+      const row = { ...n, memberIds: [n.id], count: 1 };
+      rows.push(row);
+      if (key) byKey.set(key, row);
+    }
+    return rows;
   }
 
   function unreadCount() {
     return visibleItems().filter((n) => !n.read).length;
+  }
+
+  function dayLabel(iso) {
+    const t = Date.parse(iso || "");
+    if (!Number.isFinite(t)) return "Earlier";
+    const d = new Date(t), now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    if (t >= start) return "Today";
+    if (t >= start - 86400000) return "Yesterday";
+    if (t >= start - 6 * 86400000) return "This week";
+    return "Earlier";
   }
 
   function paintBadge() {
@@ -131,15 +175,21 @@ export function initNotificationBell(ctx, getCtx) {
     if (!visible.length) {
       listHtml = `<div class="notif-empty">You're all caught up.</div>`;
     } else {
-      listHtml = `<ul class="notif-list">` + visible.map((n) => `
+      let lastDay = null;
+      listHtml = `<ul class="notif-list">` + visible.map((n) => {
+        const day = dayLabel(n.createdAt);
+        const head = day !== lastDay ? `<li class="notif-day" aria-hidden="true">${day}</li>` : "";
+        lastDay = day;
+        return `${head}
         <li class="notif-item ${n.read ? "" : "is-unread"}" data-id="${esc(n.id)}" tabindex="0" role="button">
           <span class="notif-dot" aria-hidden="true"></span>
           <span class="notif-text">
             <span class="notif-title">${esc(n.title || "Notification")}</span>
             ${n.body ? `<span class="notif-body">${esc(n.body)}</span>` : ""}
-            <span class="notif-time">${esc(fmtRelative(n.createdAt) || "")}</span>
+            <span class="notif-time">${esc(fmtRelative(n.createdAt) || "")}${n.count > 1 ? ` · ${n.count} like this` : ""}${n.actorName ? ` · ${esc(n.actorName)}` : ""}</span>
           </span>
-        </li>`).join("") + `</ul>`;
+        </li>`;
+      }).join("") + `</ul>`;
     }
     panel.innerHTML = header + listHtml;
 
@@ -157,9 +207,9 @@ export function initNotificationBell(ctx, getCtx) {
   }
 
   async function onItemClick(id) {
-    const n = items.find((x) => x.id === id);
+    const n = visibleItems().find((x) => x.id === id);
     if (!n) return;
-    if (!n.read) markRead(id); // fire-and-forget; listener will refresh
+    if (!n.read) n.memberIds.forEach((mid) => { const it = items.find((x) => x.id === mid); if (it && !it.read) markRead(mid); });
     closePanel();
     const hash = n.actionHash || "";
     const navigate = (getCtx && getCtx().navigate) || ctx.navigate;
@@ -178,12 +228,12 @@ export function initNotificationBell(ctx, getCtx) {
   }
 
   async function markAllRead() {
-    const unread = visibleItems().filter((n) => !n.read);
+    const unread = items.filter((n) => !n.cleared && !n.read);
     if (!unread.length) return;
     try {
       const batch = writeBatch(db);
       const now = new Date().toISOString();
-      unread.forEach((n) => batch.update(doc(db, "notifications", n.id), { read: true, readAt: now }));
+      unread.slice(0, 450).forEach((n) => batch.update(doc(db, "notifications", n.id), { read: true, readAt: now }));
       await batch.commit();
     } catch (err) {
       console.warn("[notifications] markAllRead failed:", err?.message || err);
@@ -194,7 +244,8 @@ export function initNotificationBell(ctx, getCtx) {
   // (a soft flag — the docs stay for server-side dedupe, they just never show
   // in the bell again). Optimistic so the panel empties instantly.
   async function clearAllNotifs() {
-    const visible = visibleItems();
+    // Everything listed, including folded repeats and faded bot items.
+    const visible = items.filter((n) => !n.cleared);
     if (!visible.length) return;
     const now = new Date().toISOString();
     visible.forEach((n) => { n.cleared = true; if (!n.read) n.read = true; });
@@ -202,7 +253,7 @@ export function initNotificationBell(ctx, getCtx) {
     renderPanel();
     try {
       const batch = writeBatch(db);
-      visible.forEach((n) => batch.update(doc(db, "notifications", n.id), {
+      visible.slice(0, 450).forEach((n) => batch.update(doc(db, "notifications", n.id), {
         read: true, readAt: n.readAt || now, cleared: true, clearedAt: now,
       }));
       await batch.commit();
