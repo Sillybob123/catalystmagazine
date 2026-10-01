@@ -401,8 +401,18 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ar-actions { display: flex !important; align-items: center; gap: 4px; flex-wrap: nowrap; justify-content: flex-end; }
 .ar-actions .ar-danger { color: var(--danger) !important; }
 @media (max-width: 1200px) {
-  .ar-row { grid-template-columns: 1fr; }
-  .ar-side { flex-wrap: wrap; justify-content: space-between; }
+  .ar-row { grid-template-columns: minmax(0, 1fr); }
+  .ar-side { flex-wrap: wrap !important; justify-content: flex-start; }
+}
+.articles-list { margin: 0 -24px; }
+@media (max-width: 700px) {
+  .articles-list { margin: 0 -16px; }
+  .ar-row { padding: 16px !important; margin: 0 !important; width: auto !important; }
+  .ar-actions .btn { padding: 0 11px; }
+  .ar-side { flex-direction: column !important; align-items: stretch !important; gap: 10px; }
+  .ar-status-editor { justify-content: space-between; }
+  .ar-editor-select { width: auto !important; flex: 1; min-width: 0; }
+  .ar-actions { flex-wrap: wrap !important; justify-content: flex-start; }
 }
 
 /* ==========================================================================
