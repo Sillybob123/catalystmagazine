@@ -243,6 +243,13 @@ function setupMobileNav() {
         link.addEventListener('click', closeMenu);
     });
 
+    // Tap anywhere outside the menu (or its button) to close it.
+    document.addEventListener('click', (e) => {
+        if (!navMenu.classList.contains('open')) return;
+        if (navMenu.contains(e.target) || menuToggle.contains(e.target)) return;
+        closeMenu();
+    });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && navMenu.classList.contains('open')) {
             closeMenu();

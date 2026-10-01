@@ -7008,3 +7008,103 @@ body[data-page="editorial-studio"] .requires-editor {
         animation: none;
     }
 }
+
+/* ============================================
+   MOBILE MENU (2026-10) — a compact dropdown under the menu button, in the
+   site's paper and ink: left-aligned links on hairlines, a quiet dot for the
+   current page, the button morphs into a close mark. Same rules for the
+   1180px media query and the runtime body.nav-force-mobile guard.
+   ============================================ */
+@keyframes cat-menu-in { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
+@media (max-width: 1180px) {
+  /* the dropdown hangs from the right of the bar, under the menu button */
+  .nav-container > nav {
+    left: auto; right: 0; top: calc(100% + 10px);
+    width: min(300px, calc(100vw - 24px));
+  }
+  .nav-menu {
+    gap: 0; margin: 0; padding: 8px;
+    background: rgba(250, 249, 246, 0.94);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 22px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06), 0 26px 60px -20px rgba(15, 23, 42, 0.38);
+    transform-origin: top right;
+  }
+  .nav-menu.open { display: flex; animation: cat-menu-in 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+  .nav-menu li + li { border-top: 1px solid rgba(15, 23, 42, 0.07); }
+  .nav-menu .nav-link {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 48px; padding: 12px 14px;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px; font-weight: 500; letter-spacing: -0.01em; text-align: left;
+    color: #0f172a; background: none; border-radius: 12px;
+  }
+  .nav-menu .nav-link::after {
+    content: ""; flex: none; width: 7px; height: 7px; margin-right: 2px;
+    border-top: 1.6px solid currentColor; border-right: 1.6px solid currentColor;
+    transform: rotate(45deg); opacity: 0.28; transition: opacity 0.2s ease, transform 0.25s ease;
+  }
+  .nav-menu .nav-link:hover { background: rgba(15, 23, 42, 0.045); color: #0f172a; }
+  .nav-menu .nav-link:hover::after { opacity: 0.6; transform: translateX(2px) rotate(45deg); }
+  /* the page you're on: a quiet ink dot, not a filled bar */
+  .nav-menu .nav-link.active { background: none; color: #0f172a; font-weight: 600; }
+  .nav-menu .nav-link.active::after { width: 7px; height: 7px; border: 0; border-radius: 50%; background: #0f172a; transform: none; opacity: 1; }
+  .nav-menu .nav-link:focus-visible { outline: 2px solid #0f172a; outline-offset: -2px; }
+  /* the menu button turns into a close mark while open */
+  .menu-toggle { border-radius: 999px; transition: background-color 0.2s ease; }
+  .menu-toggle span { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease; transform-origin: center; }
+  .menu-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .menu-toggle.active span:nth-child(2) { opacity: 0; }
+  .menu-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .menu-toggle:focus-visible { outline: 2px solid #0f172a; outline-offset: 2px; }
+}
+
+  /* the dropdown hangs from the right of the bar, under the menu button */
+body.nav-force-mobile .nav-container > nav {
+    left: auto; right: 0; top: calc(100% + 10px);
+    width: min(300px, calc(100vw - 24px));
+  }
+body.nav-force-mobile .nav-menu {
+    gap: 0; margin: 0; padding: 8px;
+    background: rgba(250, 249, 246, 0.94);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 22px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06), 0 26px 60px -20px rgba(15, 23, 42, 0.38);
+    transform-origin: top right;
+  }
+body.nav-force-mobile .nav-menu.open { display: flex; animation: cat-menu-in 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
+body.nav-force-mobile .nav-menu li + li { border-top: 1px solid rgba(15, 23, 42, 0.07); }
+body.nav-force-mobile .nav-menu .nav-link {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 48px; padding: 12px 14px;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 16px; font-weight: 500; letter-spacing: -0.01em; text-align: left;
+    color: #0f172a; background: none; border-radius: 12px;
+  }
+body.nav-force-mobile .nav-menu .nav-link::after {
+    content: ""; flex: none; width: 7px; height: 7px; margin-right: 2px;
+    border-top: 1.6px solid currentColor; border-right: 1.6px solid currentColor;
+    transform: rotate(45deg); opacity: 0.28; transition: opacity 0.2s ease, transform 0.25s ease;
+  }
+body.nav-force-mobile .nav-menu .nav-link:hover { background: rgba(15, 23, 42, 0.045); color: #0f172a; }
+body.nav-force-mobile .nav-menu .nav-link:hover::after { opacity: 0.6; transform: translateX(2px) rotate(45deg); }
+  /* the page you're on: a quiet ink dot, not a filled bar */
+body.nav-force-mobile .nav-menu .nav-link.active { background: none; color: #0f172a; font-weight: 600; }
+body.nav-force-mobile .nav-menu .nav-link.active::after { width: 7px; height: 7px; border: 0; border-radius: 50%; background: #0f172a; transform: none; opacity: 1; }
+body.nav-force-mobile .nav-menu .nav-link:focus-visible { outline: 2px solid #0f172a; outline-offset: -2px; }
+  /* the menu button turns into a close mark while open */
+body.nav-force-mobile .menu-toggle { border-radius: 999px; transition: background-color 0.2s ease; }
+body.nav-force-mobile .menu-toggle span { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease; transform-origin: center; }
+body.nav-force-mobile .menu-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+body.nav-force-mobile .menu-toggle.active span:nth-child(2) { opacity: 0; }
+body.nav-force-mobile .menu-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+body.nav-force-mobile .menu-toggle:focus-visible { outline: 2px solid #0f172a; outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-menu.open { animation: none !important; }
+  .menu-toggle span { transition: none !important; }
+}
