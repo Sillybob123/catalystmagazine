@@ -111,7 +111,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://wsrv.nl" crossorigin>
-    <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://firebasestorage.googleapis.com">
+    <!-- A returning reader: start fetching last visit's featured cover now,
+         before any script runs (js/book-reviews.js stores its URL). -->
+    <script>try{var c=localStorage.getItem('catalyst_br_featured_cover');if(c&&/^https:\/\//.test(c)){var l=document.createElement('link');l.rel='preload';l.as='image';l.href=c;l.fetchPriority='high';document.head.appendChild(l);}}catch(e){}</script>
 
     <link rel="preload" as="image" href="/WebLogo.png" fetchpriority="high">
     <link rel="preload" as="image" href="/beta/book-reviews/nook-1280.webp?v=1" imagesrcset="/beta/book-reviews/nook-800.webp?v=1 800w, /beta/book-reviews/nook-1280.webp?v=1 1280w" imagesizes="(max-width: 899px) 94vw, 50vw">
@@ -120,7 +124,7 @@
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
     <link rel="stylesheet" href="/css/book-reviews.css?v=20260925-review">
     <!-- The page in the site's own paper, ink and type (Poppins + Source Serif). -->
-    <link rel="stylesheet" href="/css/book-reviews-editorial.css?v=1">
+    <link rel="stylesheet" href="/css/book-reviews-editorial.css?v=2">
 </head>
 <body data-page="book-reviews">
     <!-- Google Tag Manager (noscript) -->
@@ -139,7 +143,7 @@
                     <p class="bx-lede" data-reveal style="--d:.12s">Short, honest recommendations from Catalyst writers and readers: what the book is about, who it&rsquo;s for, and whether it&rsquo;s worth picking up. From the cosmos to the cell.</p>
                     <div class="bx-hero-actions" data-reveal style="--d:.18s">
                         <a class="bx-btn" href="#br-writers-section">Browse the reviews</a>
-                        <a class="bx-text-link" href="#br-community-section">Recommend a book <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                        <button type="button" class="bx-btn-line" data-open-submit aria-haspopup="dialog">Recommend a book <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
                     </div>
                 </div>
                 <figure class="bx-hero-art" data-reveal-art>
@@ -301,7 +305,11 @@
                 <div>
                     <h2 id="bx-about-t">One reader <em>to another.</em></h2>
                     <p>Every month, a Catalyst writer picks a science book they actually enjoyed and tells you about it: what it is, what&rsquo;s good about it, and whether it&rsquo;s worth your evening. The reviews are short and personal, less a verdict than a friend handing you the book they just finished.</p>
-                    <p class="bx-about-more">Want to write one? <a href="/collaborate">Pitch The Catalyst</a> or <button type="button" class="bx-inline-btn" data-open-submit>recommend a book</button>.</p>
+                    <p>Read something worth passing on? Recommend it, and it may run here as a reader pick. Want to write the monthly review yourself? Pitch us.</p>
+                    <div class="bx-about-actions">
+                        <button type="button" class="bx-btn" data-open-submit aria-haspopup="dialog">Recommend a book</button>
+                        <a class="bx-btn-line" href="/collaborate">Pitch The Catalyst <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                    </div>
                 </div>
             </div>
         </section>
@@ -549,7 +557,7 @@
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/lqip-manifest.js"></script>
     <script defer src="/js/data.js?v=2"></script>
-    <script defer src="/js/book-reviews.js?v=20261001"></script>
-    <script defer src="/js/book-reviews-page.js?v=1"></script>
+    <script defer src="/js/book-reviews.js?v=20261001b"></script>
+    <script defer src="/js/book-reviews-page.js?v=2"></script>
 </body>
 </html>

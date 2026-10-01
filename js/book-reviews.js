@@ -13,7 +13,10 @@
     const PAGE_SIZE      = 9;
     // Own key: this page selects review bodies, a different shape from the
     // home/articles listing caches.
-    const CACHE_KEY      = 'catalyst_fs_reviews_cache_v1';
+    // localStorage (not session) so a returning reader gets the shelf instantly;
+    // the fresh Firestore fetch still runs and repaints. v2: reviews only.
+    const CACHE_KEY      = 'catalyst_fs_reviews_cache_v2';
+    const FEATURED_KEY   = 'catalyst_br_featured_cover';
 
     // ---------- DOM refs ----------
     const featuredEl   = document.getElementById('br-featured');
@@ -277,7 +280,7 @@
     // page before the network probe resolves.
     function loadCachedReviews() {
         try {
-            const cached = sessionStorage.getItem(CACHE_KEY);
+            const cached = localStorage.getItem(CACHE_KEY);
             if (!cached) return [];
             const parsed = JSON.parse(cached);
             if (!Array.isArray(parsed)) return [];
@@ -296,14 +299,21 @@
         const body = {
             structuredQuery: {
                 from: [{ collectionId: 'stories' }],
+                // Only published book reviews: the page used to pull every
+                // story (article bodies and all, ~230 KB) and throw the
+                // articles away. Sorted client-side (sortReviews), so no
+                // orderBy and no composite index needed.
                 where: {
-                    fieldFilter: {
-                        field: { fieldPath: 'status' },
-                        op: 'EQUAL',
-                        value: { stringValue: 'published' }
+                    compositeFilter: {
+                        op: 'AND',
+                        filters: [
+                            { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'published' } } },
+                            { fieldFilter: { field: { fieldPath: 'category' }, op: 'IN', value: { arrayValue: { values: [
+                                { stringValue: 'book-review' }, { stringValue: 'bookreview' }
+                            ] } } } }
+                        ]
                     }
                 },
-                orderBy: [{ field: { fieldPath: 'publishedAt' }, direction: 'DESCENDING' }],
                 select: {
                     fields: [
                         { fieldPath: 'title' },
@@ -348,7 +358,7 @@
         if (!Array.isArray(rows)) return [];
 
         const docs = rows.map(r => r.document).filter(Boolean).map(firestoreDocToArticle).filter(Boolean);
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(docs)); } catch {}
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(docs)); } catch {}
         return docs.map(normalizeReview).filter(Boolean);
     }
 
@@ -459,6 +469,7 @@
         // quality on a featured-sized cover).
         const resized = getCoverImageUrl(raw, 1200, 92);
         const score = Math.round((review.rating / 5) * 100);
+        try { localStorage.setItem(FEATURED_KEY, resized); } catch {}
 
         featuredEl.innerHTML = `
             <div class="br-featured-grid">

@@ -70,6 +70,15 @@ body[data-page="book-reviews"] .br-hero::before, body[data-page="book-reviews"] 
     transition: background-color .25s ease, transform .25s var(--ease-out);
 }
 .bx-btn:hover { background: #1e293b; transform: translateY(-1px); }
+.bx-btn-line {
+    display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: 999px;
+    background: none; border: 1px solid var(--ink); color: var(--ink); font: 600 15px/1 var(--sans); text-decoration: none; cursor: pointer;
+    transition: background-color .25s ease, color .25s ease;
+}
+.bx-btn-line svg { width: 16px; height: 16px; }
+.bx-btn-line:hover { background: var(--ink); color: var(--paper); }
+.bx-btn-line:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+button.bx-btn { border: 0; cursor: pointer; }
 .bx-text-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 600 15px/1 var(--sans); color: var(--ink); text-decoration: none; }
 .bx-text-link svg { width: 16px; height: 16px; transition: transform .25s var(--ease-out); }
 .bx-text-link:hover svg { transform: translateX(3px); }
@@ -222,7 +231,7 @@ body[data-page="book-reviews"] .br-community-status { font: 500 13px/1.4 var(--s
 .bx-about h2 em { font: italic 400 1em/1 var(--serif); letter-spacing: -0.01em; color: var(--text-muted); }
 .bx-about-grid > .bx-kicker { align-self: start; margin-top: 14px; }
 .bx-about-grid > div > p { max-width: 640px; margin: 22px 0 0; font: 400 19px/1.65 var(--serif); color: var(--text-muted); }
-.bx-about-grid > div > .bx-about-more { font-size: 17px; }
+.bx-about-actions { display: flex; flex-wrap: wrap; gap: 12px 14px; margin-top: 30px; }
 .bx-about a, .bx-inline-btn { color: var(--ink); font: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .18em; }
 .bx-inline-btn { padding: 0; border: 0; background: none; cursor: pointer; }
 .bx-about a:focus-visible, .bx-inline-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
@@ -231,6 +240,26 @@ body[data-page="book-reviews"] .br-community-status { font: 500 13px/1.4 var(--s
 body[data-page="book-reviews"] .br-modal { background: var(--paper); color: var(--ink); font-family: var(--sans); }
 body[data-page="book-reviews"] .br-modal-title { font-weight: 600; letter-spacing: -0.01em; }
 body[data-page="book-reviews"] .br-modal-backdrop { background: rgba(15, 23, 42, 0.42); }
+/* the submission form: wider, and never wider than its own box. Safari gives
+   form controls a large minimum width, so a bare 1fr column overflowed and
+   the pop-up scrolled sideways. */
+body[data-page="book-reviews"] #br-submit-modal .br-modal { max-width: 760px; max-height: calc(100dvh - 48px); overflow-x: hidden; outline: none; }
+body[data-page="book-reviews"] .br-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* the close button sat under the form header (z-index auto); keep it on top and easy to hit */
+body[data-page="book-reviews"] #br-submit-modal .br-modal-close {
+    z-index: 3; width: 44px; height: 44px; top: 14px; right: 14px; border-radius: 999px;
+    background: var(--paper); border: 1px solid var(--hair); color: var(--ink); cursor: pointer;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+body[data-page="book-reviews"] #br-submit-modal .br-modal-close:hover { background: var(--ink); color: var(--paper); }
+body[data-page="book-reviews"] #br-submit-modal .br-modal-close:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+body[data-page="book-reviews"] #br-submit-modal .br-modal-head { padding-right: 72px; }
+body[data-page="book-reviews"] .br-form-field { min-width: 0; }
+body[data-page="book-reviews"] .br-form-field :is(input, select, textarea) { min-width: 0; width: 100%; max-width: 100%; font-size: 16px; }
+@media (max-width: 600px) {
+    body[data-page="book-reviews"] .br-form-grid { grid-template-columns: minmax(0, 1fr); }
+    body[data-page="book-reviews"] #br-submit-modal .br-modal { max-height: calc(100dvh - 24px); }
+}
 
 /* ---------- smaller screens ---------- */
 @media (max-width: 1100px) {
