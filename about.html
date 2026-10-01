@@ -415,7 +415,7 @@
       /* ============================================================
          HERO — the definition, beside a Capitol dome that draws itself
          ============================================================ */
-      .ab-hero { position: relative; height: 330vh; }
+      .ab-hero { position: relative; height: 240vh; }
       .ab-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; background: var(--paper); }
       @supports (height: 100svh) { .ab-stage { height: 100svh; } }
       .ab-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .6s; }
@@ -464,7 +464,7 @@
       @keyframes ab-more { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
 
       @media (max-width: 760px), (max-aspect-ratio: 9/10) {
-        .ab-hero { height: 280vh; }
+        .ab-hero { height: 210vh; }
         .ab-def { left: var(--gutter); right: var(--gutter); max-width: none; top: calc(var(--nav-h) + 66vw); transform: none; }
         .ab-def::before { inset: -20px -24px -40px; }
         .ab-word { font-size: clamp(54px, 16vw, 84px); }
@@ -921,7 +921,7 @@
     <script defer src="/js/data.js"></script>
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
     <script defer src="/js/main.js?v=20260925-review"></script>
-    <script defer src="/js/about.js?v=17"></script>
+    <script defer src="/js/about.js?v=18"></script>
     <script>
     /* In-page menu: shows once the opening is behind you, lights the section in
        the middle of the screen, glides to a section on click, steps aside for the footer */

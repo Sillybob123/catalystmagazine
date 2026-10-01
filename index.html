@@ -589,6 +589,54 @@
       #latest, #edition, #editions, #search, #sections { scroll-margin-top: 130px; }
       @media (prefers-reduced-motion: reduce) { .pnav { transition: opacity .2s; transform: translate(-50%, 0); } }
 
+      /* ---------- The Vault: the brain teaser, in a porthole ---------- */
+      .vb-sec { padding-top: clamp(24px, 4vh, 48px); padding-bottom: 0; }
+      .vb { position: relative; display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: clamp(28px, 5vw, 80px);
+        padding: clamp(28px, 4.5vw, 64px); border-radius: 28px; overflow: hidden; isolation: isolate;
+        background: radial-gradient(120% 140% at 0% 0%, #1b2740 0%, #0f172a 55%, #0b1120 100%); color: #f3efe4;
+        box-shadow: 0 40px 90px -45px rgba(15, 23, 42, .65); transition: transform .5s var(--ease-out), box-shadow .5s var(--ease-out); }
+      .vb::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .5;
+        background-image: radial-gradient(rgba(243, 239, 228, .08) 1px, transparent 1px); background-size: 22px 22px;
+        -webkit-mask-image: radial-gradient(80% 90% at 75% 50%, #000, transparent); mask-image: radial-gradient(80% 90% at 75% 50%, #000, transparent); }
+      .vb:hover { transform: translateY(-4px); box-shadow: 0 50px 100px -45px rgba(15, 23, 42, .75); }
+      .vb:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+      .vb-port { position: relative; width: min(100%, 440px); aspect-ratio: 1; justify-self: center; border-radius: 50%; overflow: hidden; background: #f6efe1;
+        box-shadow: 0 0 0 10px rgba(168, 132, 58, .22), 0 0 0 11px rgba(201, 165, 92, .55), 0 30px 70px -20px rgba(0, 0, 0, .7), inset 0 0 40px rgba(60, 40, 10, .25); }
+      .vb-art { position: absolute; left: 50%; top: 50%; width: 258%; height: auto; max-width: none; transform: translate(-50%, -51%); transition: transform 1.2s var(--ease-out); }
+      .vb:hover .vb-art { transform: translate(-50%, -51%) scale(1.04); }
+      .vb-loop { opacity: 0; transition: opacity 1.2s ease, transform 1.2s var(--ease-out); }
+      .vb-loop.is-playing { opacity: 1; }
+      .vb-ring { position: absolute; inset: 8px; border-radius: 50%; border: 1px dashed rgba(168, 132, 58, .55); animation: vb-spin 40s linear infinite; }
+      @keyframes vb-spin { to { transform: rotate(360deg); } }
+      .vb-body { display: grid; gap: 18px; justify-items: start; }
+      .vb-kicker { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font: 600 11.5px/1 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: #c9a55c; }
+      .vb-kicker > span:first-child { white-space: nowrap; }
+      .vb-kicker i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .7; }
+      .vb-kicker span + i + span { color: rgba(243, 239, 228, .62); }
+      .vb-title { margin: 0; font: 700 clamp(34px, 4.4vw, 60px)/1.02 var(--sans); letter-spacing: -0.035em; color: #fbf8f0; }
+      .vb-title em { font: italic 400 1.04em/1 var(--serif); letter-spacing: -0.01em; color: #e9d3a2; }
+      .vb-teaser { max-width: 46ch; font: 400 clamp(17px, 1.35vw, 19px)/1.6 var(--serif); color: rgba(243, 239, 228, .82); }
+      .vb-teaser q { quotes: "“" "”"; font-style: italic; color: #fbf8f0; }
+      .vb-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+      .vb-meta > span { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(243, 239, 228, .16); font: 500 13px/1 var(--sans); color: rgba(243, 239, 228, .78); }
+      .vb-meta b { color: #fbf8f0; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .vb-meta > span:empty { display: none; }
+      .vb-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 4px; }
+      .vb-btn { display: inline-flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 26px; border-radius: 999px; background: #f3efe4; color: #0f172a; font: 600 15px/1 var(--sans); transition: background-color .25s; }
+      .vb-btn svg { width: 18px; height: 18px; transition: transform .3s var(--ease-out); }
+      .vb:hover .vb-btn { background: #fff; }
+      .vb:hover .vb-btn svg { transform: translateX(4px); }
+      .vb-note { font: italic 400 15px/1.4 var(--serif); color: rgba(243, 239, 228, .62); }
+      .vb.solved .vb-note { color: #a7d7b6; font-style: normal; font-family: var(--sans); font-size: 13px; }
+      @media (max-width: 860px) {
+        .vb { grid-template-columns: 1fr; text-align: left; padding: 26px 22px 30px; border-radius: 22px; gap: 26px; }
+        .vb-port { width: min(78%, 300px); }
+        .vb-title { font-size: clamp(30px, 8.4vw, 40px); }
+        .vb-btn { width: 100%; justify-content: center; }
+      }
+      @media (prefers-reduced-motion: reduce) { .vb-ring { animation: none; } .vb, .vb-art { transition: none; } .vb:hover { transform: none; } }
+      #vault { scroll-margin-top: 110px; }
+
       /* ---------- Archive search ---------- */
       .search-sec { padding-top: clamp(40px, 6vh, 72px); }
       .search-bar { display: grid; grid-template-columns: minmax(0, 560px) 1fr; gap: 20px 32px; align-items: start; }
@@ -883,6 +931,33 @@
             </div>
         </section>
 
+        <!-- ======================== THE VAULT (brain teaser) ======================== -->
+        <section class="hb-section vb-sec" id="vault" aria-labelledby="vb-title">
+            <div class="wrap">
+                <a class="vb" href="/brain-teaser" id="vb" data-reveal aria-describedby="vb-teaser">
+                    <span class="vb-port" aria-hidden="true">
+                        <img class="vb-art" id="vb-still" src="/beta/brain-teaser/vault-sketch-900.webp?v=1" srcset="/beta/brain-teaser/vault-sketch-900.webp?v=1 900w, /beta/brain-teaser/vault-sketch-1600.webp?v=1 1600w" sizes="(max-width: 760px) 160vw, 900px" alt="" loading="lazy" decoding="async">
+                        <video class="vb-art vb-loop" id="vb-loop" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1" data-src="/beta/brain-teaser/vault-idle-sm.mp4?v=2"></video>
+                        <span class="vb-ring"></span>
+                    </span>
+                    <span class="vb-body">
+                        <span class="vb-kicker"><span>The Vault</span><i></i><span id="vb-case">A new riddle every two weeks</span></span>
+                        <h2 class="vb-title" id="vb-title">Can you <em>open the vault?</em></h2>
+                        <span class="vb-teaser" id="vb-teaser">One very hard riddle. One answer. One attempt. Solve it and the door opens onto the Winners’ Lounge.</span>
+                        <span class="vb-meta">
+                            <span><b>1</b> attempt</span>
+                            <span><b>14</b> days per riddle</span>
+                            <span id="vb-next"></span>
+                        </span>
+                        <span class="vb-cta">
+                            <span class="vb-btn" id="vb-btn">Try this week’s riddle<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                            <span class="vb-note" id="vb-note">Very hard. Think sideways.</span>
+                        </span>
+                    </span>
+                </a>
+            </div>
+        </section>
+
         <!-- ======================== SECTIONS ======================== -->
         <section class="hb-section" id="sections" aria-labelledby="sections-title">
             <div class="wrap">
@@ -963,6 +1038,7 @@
         <a href="#edition" data-sec="edition"><span class="pn-l">This edition</span><i aria-hidden="true"></i></a>
         <a href="#editions" data-sec="editions"><span class="pn-l">Editions</span><i aria-hidden="true"></i></a>
         <a href="#search" data-sec="search"><span class="pn-l">Search</span><i aria-hidden="true"></i></a>
+        <a href="#vault" data-sec="vault"><span class="pn-l">The Vault</span><i aria-hidden="true"></i></a>
         <a href="#sections" data-sec="sections"><span class="pn-l">Sections</span><i aria-hidden="true"></i></a>
         <a href="#newsletter" data-sec="newsletter"><span class="pn-l">Newsletter</span><i aria-hidden="true"></i></a>
     </nav>
@@ -970,6 +1046,59 @@
     <div id="site-footer"></div>
 
     <script src="/js/layout.js?v=20260925-review" defer></script>
+    <script src="/js/brain-teaser-case.js?v=2" defer></script>
+    <script>
+    /* The Vault band: this fortnight's case from the riddle schedule, a countdown,
+       and the door turning in its porthole while it's on screen */
+    document.addEventListener('DOMContentLoaded', function () {
+      var CFG = window.CATALYST_VAULT, CASES = window.CATALYST_CASES, card = document.getElementById('vb');
+      if (!card) return;
+      if (CFG && CASES && CASES.length) {
+        var DAY = 864e5, P = (CFG.periodDays || 14) * DAY, start = Date.parse(CFG.start);
+        var i = Math.max(0, Math.min(CASES.length - 1, Math.floor((Date.now() - start) / P)));
+        var c = CASES[i], no = String(c.n).padStart(2, '0');
+        document.getElementById('vb-case').textContent = 'Case ' + no + ' · ' + c.codename;
+        var plain = String(c.riddle).replace(/<[^>]+>/g, ''), parts = plain.match(/[^.?!]+[.?!]+/g) || [plain], first = '';
+        // quote the opening of the riddle: enough to hook, never the whole thing
+        for (var k = 0; k < parts.length && first.length < 70; k++) first += (first ? ' ' : '') + parts[k].trim();
+        if (first.length > 170) first = first.slice(0, 160).replace(/\s+\S*$/, '') + '…';
+        if (first.length < plain.trim().length && !/…$/.test(first)) first += ' …';
+        document.getElementById('vb-teaser').innerHTML = '<q>' + first.replace(/[&<>]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]; }) + '</q> One answer, one attempt. Solve it and the door opens onto the Winners’ Lounge.';
+        var left = start + (i + 1) * P - Date.now();
+        if (left > 0) {
+          var d = Math.floor(left / DAY), h = Math.floor(left % DAY / 36e5);
+          document.getElementById('vb-next').innerHTML = 'Next riddle in <b>' + (d > 0 ? d + 'd ' + h + 'h' : h + 'h') + '</b>';
+        }
+        var solved = false, tried = false;
+        try { solved = localStorage.getItem('catalystVault_case' + no + '_solved') === 'true'; tried = localStorage.getItem('catalystVault_case' + no + '_attempted') === 'true'; } catch (e) {}
+        if (solved) {
+          card.classList.add('solved'); card.href = CFG.winnersUrl || '/brain-teaser';
+          document.getElementById('vb-btn').firstChild.textContent = 'Back to the Winners’ Lounge';
+          document.getElementById('vb-note').textContent = 'You opened this one.';
+        } else if (tried) {
+          document.getElementById('vb-btn').firstChild.textContent = 'See this week’s answer';
+          document.getElementById('vb-note').textContent = 'A new riddle soon.';
+        }
+      }
+      // the wheel turns while the card is on screen (Safari plays the mp4 through <img>)
+      var v = document.getElementById('vb-loop'), conn = navigator.connection || {};
+      if (!v || window.matchMedia('(prefers-reduced-motion: reduce)').matches || conn.saveData || !('IntersectionObserver' in window)) return;
+      var started = false;
+      new IntersectionObserver(function (es, io) {
+        if (!es[0].isIntersecting || started) return;
+        started = true; io.disconnect();
+        if (/Apple/.test(navigator.vendor || '')) {
+          var img = new Image(); img.className = 'vb-art vb-loop'; img.alt = '';
+          img.onload = function () { v.replaceWith(img); requestAnimationFrame(function () { requestAnimationFrame(function () { img.classList.add('is-playing'); }); }); };
+          img.src = v.dataset.src;
+        } else {
+          v.muted = true; v.src = v.dataset.src;
+          v.addEventListener('playing', function () { v.classList.add('is-playing'); }, { once: true });
+          var pr = v.play(); if (pr && pr.catch) pr.catch(function () {});
+        }
+      }, { rootMargin: '200px 0px' }).observe(card);
+    });
+    </script>
     <script src="/js/newsletter-handler.js" defer></script>
     <script>
     (function () {

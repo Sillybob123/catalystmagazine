@@ -311,7 +311,7 @@
     // starts moving at once, lands softly
     var launch = function (t) { return 1 - (1 - t) * (1 - t); };
     // the definition stays up a little longer so it can be read
-    var SLOW = 1.4, slowA = 0, slowB = 0, cost = 0;
+    var SLOW = 1.2, slowA = 0, slowB = 0, cost = 0;
     var DOWN_KEYS = { ArrowDown: 1, PageDown: 1, ' ': 1, Spacebar: 1 };
     var UP_KEYS = { ArrowUp: 1, PageUp: 1, Home: 1 };
     function atTop() { return window.scrollY < 8; }
@@ -325,7 +325,7 @@
       slowA = clamp(top + 0.18 * span, from, to);
       slowB = clamp(top + 0.4 * span, slowA, to);
       cost = (to - from) + (SLOW - 1) * (slowB - slowA);
-      dur = portrait() ? 3800 : 4200;
+      dur = portrait() ? 2200 : 2400;
       playing = true; start = performance.now();
       root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
       raf = requestAnimationFrame(step);
