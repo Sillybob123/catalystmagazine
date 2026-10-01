@@ -40,9 +40,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="/beta/brain-teaser/vault-sketch-1600.webp?v=1" imagesrcset="/beta/brain-teaser/vault-sketch-900.webp?v=1 900w, /beta/brain-teaser/vault-sketch-1600.webp?v=1 1600w" imagesizes="(max-width: 1240px) 100vw, 1180px">
+  <link rel="preload" as="image" href="/beta/brain-teaser/vault-sketch-1600.webp?v=1" imagesrcset="/beta/brain-teaser/vault-sketch-900.webp?v=1 900w, /beta/brain-teaser/vault-sketch-1600.webp?v=1 1600w, /beta/brain-teaser/vault-sketch-2400.webp?v=1 2400w" imagesizes="(max-width: 980px) 100vw, 56vw">
   <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
-  <link rel="stylesheet" href="/css/brain-teaser.css?v=2">
+  <link rel="stylesheet" href="/css/brain-teaser.css?v=3">
 </head>
 <body data-page="vault" data-suppress-welcome="1">
   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
@@ -51,41 +51,43 @@
   <div id="site-header"></div>
 
   <main class="vt">
-    <header class="vt-head">
-      <p class="vt-kicker"><span>The Vault</span><span class="vt-dot" aria-hidden="true"></span><span id="vt-caseno">Case 05</span></p>
-      <h1 class="vt-title" id="vt-title">The Vanishing Word</h1>
-      <p class="vt-sub">A very hard riddle, new every two weeks. <span id="vt-next">Next one in <b>—</b></span></p>
-    </header>
+    <div class="vt-grid">
+      <figure class="vt-stage" id="vt-stage" aria-hidden="true">
+        <img class="vt-still" id="vt-still" alt=""
+             src="/beta/brain-teaser/vault-sketch-1600.webp?v=1"
+             srcset="/beta/brain-teaser/vault-sketch-900.webp?v=1 900w, /beta/brain-teaser/vault-sketch-1600.webp?v=1 1600w, /beta/brain-teaser/vault-sketch-2400.webp?v=1 2400w"
+             sizes="(max-width: 980px) 100vw, 56vw" fetchpriority="high" decoding="async">
+        <video class="vt-idle" id="vt-idle" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1"
+               data-src="/beta/brain-teaser/vault-idle.mp4?v=2" data-src-sm="/beta/brain-teaser/vault-idle-sm.mp4?v=2"></video>
+        <span class="vt-stamp vt-stamp-ok" id="vt-stamp-ok">Opened</span>
+      </figure>
+      <div class="vt-side">
+        <header class="vt-head">
+          <p class="vt-kicker"><span>The Vault</span><span class="vt-dot" aria-hidden="true"></span><span id="vt-caseno">Case 05</span></p>
+          <h1 class="vt-title" id="vt-title">The Vanishing Word</h1>
+          <p class="vt-sub">A new riddle every two weeks · <span id="vt-next">Next one in <b>—</b></span></p>
+        </header>
+        <section class="vt-card" id="vt-card" aria-labelledby="vt-riddle-label">
+          <p class="vt-card-kicker" id="vt-riddle-label"><span>Classified</span><span id="vt-card-no">Case 05</span></p>
+          <p class="vt-riddle" id="vt-riddle"></p>
 
-    <figure class="vt-stage" id="vt-stage" aria-hidden="true">
-      <img class="vt-still" id="vt-still" alt=""
-           src="/beta/brain-teaser/vault-sketch-1600.webp?v=1"
-           srcset="/beta/brain-teaser/vault-sketch-900.webp?v=1 900w, /beta/brain-teaser/vault-sketch-1600.webp?v=1 1600w"
-           sizes="(max-width: 1240px) 100vw, 1180px" fetchpriority="high" decoding="async">
-      <video class="vt-idle" id="vt-idle" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1"
-             data-src="/beta/brain-teaser/vault-idle.mp4?v=1" data-src-sm="/beta/brain-teaser/vault-idle-sm.mp4?v=1"></video>
-      <span class="vt-stamp vt-stamp-ok" id="vt-stamp-ok">Opened</span>
-    </figure>
+          <form class="vt-answer" id="vt-form" autocomplete="off" novalidate>
+            <label class="vt-field">
+              <span class="vt-field-label">Your answer</span>
+              <input id="vt-input" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="One word or number">
+            </label>
+            <button type="button" class="vt-unlock" id="vt-unlock" disabled>
+              <span class="vt-unlock-fill" id="vt-unlock-fill"></span>
+              <span class="vt-unlock-label" id="vt-unlock-label">Hold to unlock</span>
+            </button>
+          </form>
+          <p class="vt-note" id="vt-note" aria-live="polite">One attempt. Think sideways: the obvious answer is usually the trap.</p>
 
-    <section class="vt-card" id="vt-card" aria-labelledby="vt-riddle-label">
-      <p class="vt-card-kicker" id="vt-riddle-label"><span>Classified</span><span id="vt-card-no">Case 05</span></p>
-      <p class="vt-riddle" id="vt-riddle"></p>
-
-      <form class="vt-answer" id="vt-form" autocomplete="off" novalidate>
-        <label class="vt-field">
-          <span class="vt-field-label">Your answer</span>
-          <input id="vt-input" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="One word or number">
-        </label>
-        <button type="button" class="vt-unlock" id="vt-unlock" disabled>
-          <span class="vt-unlock-fill" id="vt-unlock-fill"></span>
-          <span class="vt-unlock-label" id="vt-unlock-label">Hold to unlock</span>
-        </button>
-      </form>
-      <p class="vt-note" id="vt-note" aria-live="polite">One attempt. Think sideways: the obvious answer is usually the trap.</p>
-
-      <div class="vt-result" id="vt-result" role="status" aria-live="polite" hidden></div>
-      <span class="vt-stamp vt-stamp-no" id="vt-stamp-no" aria-hidden="true">Denied</span>
-    </section>
+          <div class="vt-result" id="vt-result" role="status" aria-live="polite" hidden></div>
+          <span class="vt-stamp vt-stamp-no" id="vt-stamp-no" aria-hidden="true">Denied</span>
+        </section>
+      </div>
+    </div>
 
     <details class="vt-past" id="vt-past">
       <summary><span>Past cases</span><span class="vt-past-count" id="vt-past-count"></span></summary>
@@ -96,8 +98,8 @@
   <!-- the door opens and carries you through -->
   <div class="vt-through" id="vt-through" aria-hidden="true">
     <video id="vt-open" muted playsinline preload="none" disablepictureinpicture disableremoteplayback tabindex="-1"
-           data-src="/beta/brain-teaser/vault-open.mp4?v=2" data-src-sm="/beta/brain-teaser/vault-open-sm.mp4?v=2"></video>
-    <img class="vt-through-end" id="vt-open-end" alt="" src="/beta/brain-teaser/vault-open-end.webp?v=1" decoding="async">
+           data-src="/beta/brain-teaser/vault-open.mp4?v=3" data-src-sm="/beta/brain-teaser/vault-open-sm.mp4?v=3"></video>
+    <img class="vt-through-end" id="vt-open-end" alt="" src="/beta/brain-teaser/vault-open-end.webp?v=2" decoding="async">
     <div class="vt-through-glow"></div>
   </div>
 
@@ -105,6 +107,6 @@
 
   <script defer src="/js/layout.js?v=20260925-review"></script>
   <script src="/js/brain-teaser-case.js?v=2"></script>
-  <script src="/js/brain-teaser.js?v=2" defer></script>
+  <script src="/js/brain-teaser.js?v=3" defer></script>
 </body>
 </html>

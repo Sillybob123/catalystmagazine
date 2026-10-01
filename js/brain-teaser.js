@@ -160,7 +160,7 @@
     store.setItem(KEY_TRIED, 'true');     // one attempt, spent the moment you try
     label.textContent = 'Checking…';
     hash(guess).then(function (h) { return (CASE.hashes || []).indexOf(h) !== -1; }, function () { return false; })
-      .then(function (ok) { setTimeout(function () { ok ? granted() : denied(); }, REDUCED ? 0 : 450); });
+      .then(function (ok) { setTimeout(function () { ok ? granted() : denied(); }, REDUCED ? 0 : 250); });
   }
 
   function answerText() {
@@ -193,37 +193,48 @@
   /* ── the door opens and you walk through it ────────────────────────── */
   var through = $('vt-through'), openVid = $('vt-open'), endImg = $('vt-open-end');
   function src(v) { return (window.matchMedia('(max-width: 899px)').matches && v.dataset.srcSm) || v.dataset.src; }
+  // where the lit doorway sits in the open-door frame (fractions of the picture)
+  var DOOR = { x: 0.52, y: 0.48 }, FILM_RATIO = 1284 / 716, FILM_MS = 3300;
+  function aimAtDoor() {
+    // the film fills the screen (object-fit: cover); work out where the doorway lands
+    var W = through.clientWidth, H = through.clientHeight;
+    var rw = Math.max(W, H * FILM_RATIO), rh = rw / FILM_RATIO;
+    var ox = (W - rw) / 2 + DOOR.x * rw, oy = (H - rh) / 2 + DOOR.y * rh;
+    through.style.setProperty('--ox', (ox / W * 100).toFixed(2) + '%');
+    through.style.setProperty('--oy', (oy / H * 100).toFixed(2) + '%');
+  }
   function goThrough() {
-    if (REDUCED) { setTimeout(function () { location.href = winnersUrl; }, 1600); return; }
-    var stage = $('vt-stage');
-    stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(function () { $('vt-stamp-ok').classList.add('in'); }, 250);
+    if (REDUCED) { setTimeout(function () { location.href = winnersUrl; }, 1400); return; }
+    var stage = $('vt-stage'), r = stage.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > innerHeight) stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    $('vt-stamp-ok').classList.add('in');
     setTimeout(function () {
       document.body.classList.add('is-through');
+      aimAtDoor();
       through.classList.add('on');
       var done = false;
       function walk() {
         if (done) return; done = true;
         through.classList.add('ended');
         requestAnimationFrame(function () { requestAnimationFrame(function () { through.classList.add('go'); }); });
-        setTimeout(function () { location.href = winnersUrl + (winnersUrl.indexOf('?') < 0 ? '?' : '&') + 'from=vault'; }, 2300);
+        setTimeout(function () { location.href = winnersUrl + (winnersUrl.indexOf('?') < 0 ? '?' : '&') + 'from=vault'; }, 1150);
       }
       if (/Apple/.test(navigator.vendor || '')) {
         // Safari plays an mp4 through <img> with no play button; it loops, so stop at its length
         var img = new Image(); img.alt = '';
-        img.onload = function () { through.insertBefore(img, endImg); setTimeout(walk, 5000); };
+        img.onload = function () { through.insertBefore(img, endImg); setTimeout(walk, FILM_MS); };
         img.onerror = walk;
         img.src = src(openVid);
-        setTimeout(function () { if (!img.complete) walk(); }, 3500);
+        setTimeout(function () { if (!img.complete) walk(); }, 3000);
       } else {
         openVid.src = src(openVid); openVid.muted = true;
         openVid.addEventListener('ended', walk, { once: true });
         openVid.addEventListener('error', walk, { once: true });
         var p = openVid.play(); if (p && p.catch) p.catch(walk);
-        setTimeout(function () { if (openVid.currentTime < 0.2) walk(); }, 3500);
-        setTimeout(walk, 8000);
+        setTimeout(function () { if (openVid.currentTime < 0.2) walk(); }, 3000);
+        setTimeout(walk, FILM_MS + 2500);
       }
-    }, 1100);
+    }, 550);
   }
 
   /* ── restore an earlier result ─────────────────────────────────────── */

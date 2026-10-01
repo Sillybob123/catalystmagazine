@@ -22,65 +22,82 @@
     <link rel="stylesheet" href="css/styles.css?v=20260925-review">
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
-        /* The Winners' Lounge: the room behind the vault door (paper + ink, like the rest of the site) */
-        body[data-page="winners"] { --paper: #f8f7f3; --paper-off: #f1efe8; --ink: #0f172a; --ink-2: #334155; --muted: #5b6678;
-            --hair: rgba(15, 23, 42, 0.14); --hair-2: rgba(15, 23, 42, 0.07); --brass: #a8843a; --ok: #2f6b4f;
-            --serif: 'Source Serif Pro', Georgia, serif; background: var(--paper); color: var(--ink); font-family: 'Poppins', sans-serif; margin: 0; }
-        html:has(body[data-page="winners"]) { background: var(--paper); }
+        /* The Winners' Lounge: you are standing in the room behind the vault door; the chat sits on its wall */
+        body[data-page="winners"] { --paper: #f8f7f3; --ink: #0f172a; --ink-2: #334155; --muted: #5b6678;
+            --hair: rgba(15, 23, 42, 0.14); --hair-2: rgba(15, 23, 42, 0.08); --ok: #2f6b4f;
+            --serif: 'Source Serif Pro', Georgia, serif; background: #3a2414; color: var(--ink); font-family: 'Poppins', sans-serif; margin: 0; }
+        html:has(body[data-page="winners"]) { background: #3a2414; }
         body[data-page="winners"] main *, body[data-page="winners"] main *::before, body[data-page="winners"] main *::after { box-sizing: border-box; }
         body[data-page="winners"] #site-footer .footer { margin-top: 0; }
-        .lg { width: min(1100px, 100% - 32px); margin: 0 auto; padding: clamp(96px, 13vh, 132px) 0 clamp(56px, 9vh, 90px); }
-        .lg-hero { position: relative; text-align: center; }
-        .lg-art { position: relative; margin: 0 auto; max-width: 1100px; aspect-ratio: 16 / 9; overflow: hidden; }
-        .lg-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .lg-art::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-            background: linear-gradient(90deg, var(--paper), transparent 8%, transparent 92%, var(--paper)),
-                        linear-gradient(180deg, var(--paper), transparent 18%, transparent 88%, var(--paper)); }
-        .lg-copy { max-width: 720px; margin: 0 auto clamp(14px, 3vh, 28px); padding: 0 16px; }
-        .lg-kicker { display: inline-flex; align-items: center; gap: 10px; margin: 0; font: 600 12px/1 'Poppins', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ok); }
-        .lg-kicker::before, .lg-kicker::after { content: ""; width: 28px; height: 1px; background: currentColor; opacity: 0.6; }
-        .lg-title { margin: 14px 0 10px; font: 600 clamp(2.3rem, 5.4vw, 4rem)/1.04 var(--serif); letter-spacing: -0.02em; }
-        .lg-sub { margin: 0 auto; max-width: 52ch; font-size: 1rem; line-height: 1.6; color: var(--ink-2); }
+
+        .lg { position: relative; min-height: 100vh; min-height: 100dvh; padding: clamp(92px, 12vh, 118px) clamp(16px, 4vw, 56px) clamp(32px, 6vh, 56px); display: flex; justify-content: flex-end; align-items: flex-start; }
+        .lg-bg { position: fixed; inset: 0; z-index: 0; }
+        .lg-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 60%; display: block; animation: lg-settle 2.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        @keyframes lg-settle { from { transform: scale(1.06); } }
+        /* warm the room toward the panel so the paper reads, keep the furniture clear */
+        .lg-shade { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background: linear-gradient(90deg, rgba(40, 22, 10, 0) 35%, rgba(40, 22, 10, 0.28) 100%), linear-gradient(180deg, rgba(40, 22, 10, 0.25) 0%, rgba(40, 22, 10, 0) 22%); }
+
+        .lg-panel { position: relative; z-index: 1; width: min(520px, 100%); margin-right: clamp(0px, 4vw, 64px);
+            padding: clamp(20px, 2.6vw, 30px); border-radius: 14px;
+            background: rgba(250, 247, 240, 0.84); border: 1px solid rgba(255, 255, 255, 0.55);
+            -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1);
+            box-shadow: 0 30px 80px -30px rgba(30, 15, 5, 0.65), 0 2px 6px rgba(30, 15, 5, 0.12);
+            animation: lg-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+        @keyframes lg-in { from { opacity: 0; transform: translateY(16px); } }
+        .lg-kicker { display: inline-flex; align-items: center; gap: 8px; margin: 0; font: 600 10.5px/1 'Poppins', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ok); }
+        .lg-kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; opacity: 0.6; }
+        .lg-title { margin: 10px 0 6px; font: 600 clamp(1.7rem, 2.6vw, 2.2rem)/1.1 var(--serif); letter-spacing: -0.015em; }
+        .lg-sub { margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--ink-2); }
+        .lg-head { padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid var(--hair); }
+
         /* arriving from the vault: the lamplight fades into the room */
-        .lg-arrive { position: fixed; inset: 0; z-index: 3000; pointer-events: none; background: radial-gradient(circle at 52% 48%, #fff6dc 0%, #f8ebc6 40%, var(--paper) 75%); animation: lg-arrive 1.6s ease forwards; }
+        .lg-arrive { position: fixed; inset: 0; z-index: 3000; pointer-events: none; background: radial-gradient(circle at 50% 50%, #fff6dc 0%, #f8ebc6 45%, #f3dfae 80%); animation: lg-arrive 1.3s ease forwards; }
         @keyframes lg-arrive { to { opacity: 0; visibility: hidden; } }
-        .lg-room { max-width: 760px; margin: clamp(-40px, -3vw, -16px) auto 0; position: relative; z-index: 2; padding: clamp(22px, 4vw, 40px); background: #fdfcf9; border: 1px solid var(--hair); border-radius: 6px;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 22px 50px -28px rgba(15, 23, 42, 0.35); }
-        .chat-header { margin-bottom: 18px; }
-        .chat-title { margin: 0 0 6px; font: 600 1.6rem/1.2 var(--serif); }
-        .chat-description { margin: 0; color: var(--muted); line-height: 1.55; }
-        .messages-area { max-height: 520px; overflow-y: auto; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); margin: 0 -4px; padding: 0 4px; }
-        .loading-message { padding: 28px 0; text-align: center; color: var(--muted); font-style: italic; font-family: var(--serif); }
-        .message { padding: 16px 0; border-bottom: 1px solid var(--hair-2); animation: lg-in 0.35s ease both; }
+
+        .chat-container { margin-top: 14px; }
+        .chat-header { margin-bottom: 10px; }
+        .chat-title { margin: 0 0 4px; font: 600 1.15rem/1.25 var(--serif); }
+        .chat-description { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+        .messages-area { max-height: min(34vh, 360px); overflow-y: auto; overscroll-behavior: contain; margin: 0 -6px; padding: 0 6px; border-top: 1px solid var(--hair-2); border-bottom: 1px solid var(--hair-2);
+            scrollbar-width: thin; scrollbar-color: rgba(15, 23, 42, 0.25) transparent; }
+        .loading-message { padding: 22px 0; text-align: center; color: var(--muted); font-style: italic; font-family: var(--serif); }
+        .message { padding: 13px 0; border-bottom: 1px solid var(--hair-2); animation: lg-msg 0.35s ease both; }
         .message:last-child { border-bottom: 0; }
-        @keyframes lg-in { from { opacity: 0; transform: translateY(4px); } }
-        .message-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
-        .message-author { font-weight: 600; font-size: 0.95rem; color: var(--ink); }
-        .message-time { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-        .message-text { font: 400 1.05rem/1.55 var(--serif); color: var(--ink-2); word-wrap: break-word; }
-        .message-actions { margin-top: 8px; }
-        .like-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border: 1px solid var(--hair); border-radius: 999px; background: transparent; color: var(--muted); font: 500 13px/1 'Poppins', sans-serif; cursor: pointer; }
+        @keyframes lg-msg { from { opacity: 0; transform: translateY(4px); } }
+        .message-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 3px; }
+        .message-author { font-weight: 600; font-size: 0.9rem; color: var(--ink); }
+        .message-time { font-size: 0.76rem; color: var(--muted); white-space: nowrap; }
+        .message-text { font: 400 1rem/1.5 var(--serif); color: var(--ink-2); word-wrap: break-word; }
+        .message-actions { margin-top: 6px; }
+        .like-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; border: 1px solid var(--hair); border-radius: 999px; background: rgba(255, 255, 255, 0.5); color: var(--muted); font: 500 12.5px/1 'Poppins', sans-serif; cursor: pointer; }
         .like-btn:hover:not(:disabled) { border-color: var(--ink); color: var(--ink); }
         .like-btn.liked { color: #8f2d2d; border-color: rgba(143, 45, 45, 0.35); }
         .like-btn:disabled { cursor: default; }
-        .message-form { margin-top: 20px; display: grid; gap: 10px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .form-input, .form-textarea { width: 100%; min-height: 48px; padding: 12px 14px; border: 1px solid var(--hair); border-radius: 8px; background: var(--paper); color: var(--ink); font: 400 15px/1.4 'Poppins', sans-serif; }
-        .form-textarea { min-height: 96px; resize: vertical; font-family: var(--serif); font-size: 1.02rem; }
-        .form-input:focus, .form-textarea:focus { outline: 0; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08); }
-        .submit-btn { justify-self: start; min-height: 48px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 14px/1 'Poppins', sans-serif; cursor: pointer; }
+        .message-form { margin-top: 14px; display: grid; gap: 8px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .form-input, .form-textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--hair); border-radius: 8px; background: rgba(255, 255, 255, 0.72); color: var(--ink); font: 400 15px/1.4 'Poppins', sans-serif; }
+        .form-input::placeholder, .form-textarea::placeholder { color: #6b7385; }
+        .form-textarea { min-height: 78px; resize: vertical; font-family: var(--serif); font-size: 1rem; }
+        .form-input:focus, .form-textarea:focus { outline: 0; border-color: var(--ink); background: #fff; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08); }
+        .submit-btn { justify-self: start; min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 14px/1 'Poppins', sans-serif; cursor: pointer; }
         .submit-btn:hover { background: #1e293b; }
         .submit-btn:disabled { opacity: 0.6; cursor: wait; }
         .submit-btn:focus-visible, .like-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-        .user-id { margin-top: 16px; font-size: 0.78rem; color: var(--muted); }
+        .user-id { margin-top: 12px; font-size: 0.74rem; color: var(--muted); }
         .user-id-value { font-family: ui-monospace, Menlo, monospace; }
-        .lg-back { display: block; max-width: 760px; margin: 22px auto 0; text-align: center; font-size: 0.92rem; color: var(--muted); }
+        .lg-back { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--hair-2); font-size: 0.86rem; color: var(--muted); }
         .lg-back a { color: var(--ink); font-weight: 600; }
-        @media (max-width: 720px) {
-            .lg-art { aspect-ratio: 4 / 3; margin: 0 -16px; }
+
+        @media (max-width: 760px) {
+            .lg { display: block; padding: 84px 12px 24px; }
+            .lg-bg img { object-position: 50% 100%; }
+            .lg-shade { background: linear-gradient(180deg, rgba(40, 22, 10, 0.22) 0%, rgba(40, 22, 10, 0) 30%); }
+            .lg-panel { width: 100%; margin: 0; background: rgba(250, 247, 240, 0.86); }
+            .messages-area { max-height: 40vh; }
             .form-row { grid-template-columns: 1fr; }
         }
-        @media (prefers-reduced-motion: reduce) { .lg-arrive { display: none; } .message { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .lg-arrive { display: none; } .message, .lg-panel, .lg-bg img { animation: none; } }
     </style>
 </head>
 <body data-page="winners">
@@ -100,16 +117,21 @@
     </script>
 
     <main class="lg">
-        <section class="lg-hero">
-            <div class="lg-copy">
+        <!-- the room you walked into: it fills the screen, the chat sits on its wall -->
+        <picture class="lg-bg" aria-hidden="true">
+            <source media="(max-width: 760px)" srcset="/beta/brain-teaser/room-tall-1080.webp?v=1">
+            <img src="/beta/brain-teaser/room-wide-1400.webp?v=1" srcset="/beta/brain-teaser/room-wide-1400.webp?v=1 1400w, /beta/brain-teaser/room-wide-2400.webp?v=1 2400w" sizes="100vw" alt="" fetchpriority="high" decoding="async">
+        </picture>
+        <div class="lg-shade" aria-hidden="true"></div>
+
+        <section class="lg-panel">
+            <header class="lg-head">
                 <p class="lg-kicker">You opened the vault</p>
                 <h1 class="lg-title">The Winners’ Lounge</h1>
-                <p class="lg-sub">Only the people who cracked a riddle get through that door. Pull up a chair and leave your mark.</p>
-            </div>
-            <figure class="lg-art"><img src="/beta/brain-teaser/lounge-1600.webp?v=1" srcset="/beta/brain-teaser/lounge-900.webp?v=1 900w, /beta/brain-teaser/lounge-1600.webp?v=1 1600w" sizes="(max-width: 1132px) 100vw, 1100px" alt="An ink and watercolour drawing of a cosy wood-panelled lounge with leather armchairs, a lamp and a brass trophy" fetchpriority="high"></figure>
-        </section>
+                <p class="lg-sub">Only people who cracked a riddle get through that door. Pull up a chair.</p>
+            </header>
 
-        <div class="chat-container lg-room">
+        <div class="chat-container">
             <div class="chat-header">
                 <h2 class="chat-title">The winners’ chat</h2>
                 <p class="chat-description">Say hello to everyone else who got in. Be kind, and no spoilers for the current riddle.</p>
@@ -132,7 +154,8 @@
                 Your Winner ID: <span class="user-id-value" id="user-id-display">Connecting...</span>
             </div>
         </div>
-        <p class="lg-back">A new riddle opens every two weeks. <a href="/brain-teaser">Back to the vault →</a></p>
+            <p class="lg-back">A new riddle opens every two weeks. <a href="/brain-teaser">Back to the vault →</a></p>
+        </section>
     </main>
 
     <div id="site-footer"></div>
