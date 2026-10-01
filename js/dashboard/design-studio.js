@@ -425,7 +425,7 @@ const TEMPLATES = [
   { id: "hiring-writers", name: "Writers wanted", cat: "Announcement", bg: "wash-blush",
     build: (W, H, c) => [
       ...brandLine(W),
-      T({ type: "image", src: "/beta/social/el/people-writer.webp?v=1", x: W - 88 - 520, y: H - 60 - 560, w: 520, h: 560, fit: "contain", name: "Writer" }),
+      T({ type: "image", src: "/beta/social/el/people-writer.webp?v=2", x: W - 88 - 520, y: H - 60 - 560, w: 520, h: 560, fit: "contain", name: "Writer" }),
       ...kicker(c.kicker || "Join the newsroom", 88, 160),
       txt({ text: c.headline || "Love science? *Write about it.*", x: 88, y: 206, w: W - 176, size: 86, weight: 700, lh: 1.04, ls: -0.035, name: "Headline", maxH: Math.round(H * 0.3), minSize: 52 }),
       txt({ text: c.sub || "No experience needed. We train every new writer.", x: 88, y: 0, w: W - 400, size: 32, font: "serif", color: "#334155", name: "Line", after: ["Headline", 22] }),
@@ -433,7 +433,7 @@ const TEMPLATES = [
   { id: "speaker-event", name: "Talk / speaker", cat: "Announcement", bg: "wash-paper",
     build: (W, H, c) => [
       ...brandLine(W),
-      T({ type: "image", src: "/beta/social/el/people-speaker.webp?v=1", x: W / 2 - 230, y: H - 60 - 470, w: 460, h: 470, fit: "contain", name: "Speaker" }),
+      T({ type: "image", src: "/beta/social/el/people-speaker.webp?v=2", x: W / 2 - 230, y: H - 60 - 470, w: 460, h: 470, fit: "contain", name: "Speaker" }),
       txt({ text: c.kicker || "Thursday · 6 pm · Science & Engineering Hall", x: 88, y: 160, w: W - 176, size: 23, weight: 600, ls: 0.12, upper: true, align: "center", color: "#5b6678", markup: false, name: "Kicker" }),
       txt({ text: c.headline || "How a vaccine *gets made*", x: 88, y: 208, w: W - 176, size: 88, weight: 700, lh: 1.04, ls: -0.035, align: "center", name: "Title", maxH: Math.round(H * 0.3), minSize: 52 }),
       txt({ text: c.sub || "A talk with Dr. Maya Chen · free and open to all", x: 88, y: 0, w: W - 176, size: 30, font: "serif", italic: true, align: "center", color: "#334155", markup: false, name: "Line", after: ["Title", 22] }),
@@ -441,7 +441,7 @@ const TEMPLATES = [
   { id: "body-fact", name: "Body fact", cat: "Data", bg: "wash-sage",
     build: (W, H, c) => [
       ...brandLine(W),
-      T({ type: "image", src: "/beta/social/el/med-heart.webp?v=1", x: W - 88 - 360, y: H - 80 - 420, w: 360, h: 420, fit: "contain", name: "Heart" }),
+      T({ type: "image", src: "/beta/social/el/med-heart.webp?v=2", x: W - 88 - 360, y: H - 80 - 420, w: 360, h: 420, fit: "contain", name: "Heart" }),
       ...kicker(c.kicker || "Your body, explained", 88, 160),
       txt({ text: c.headline || "100,000", x: 80, y: 210, w: W - 160, size: 200, weight: 700, lh: 1, ls: -0.05, name: "Number" }),
       txt({ text: c.sub || "times a day, your heart beats, without you thinking about it once.", x: 88, y: 0, w: W - 520, size: 40, font: "serif", lh: 1.3, color: "#334155", name: "Explanation", after: ["Number", 24] }),
@@ -642,7 +642,7 @@ const TEMPLATES = [
   { id: "book-pick", name: "Book pick", cat: "People", bg: "wash-blush",
     build: (W, H, c) => [
       ...brandLine(W),
-      T({ type: "image", src: "/beta/social/el/el-books.webp?v=1", x: W / 2 - 260, y: 170, w: 520, h: 370, fit: "contain", name: "Books" }),
+      T({ type: "image", src: "/beta/social/el/el-books.webp?v=2", x: W / 2 - 260, y: 170, w: 520, h: 370, fit: "contain", name: "Books" }),
       ...kicker(c.kicker || "Book review", W / 2 - 140, 600, "#5b6678", 300),
       txt({ text: c.headline || "*The Gene*, by Siddhartha Mukherjee", x: 100, y: 646, w: W - 200, size: 64, weight: 700, lh: 1.08, ls: -0.03, align: "center", name: "Title", maxH: 220, minSize: 40 }),
       txt({ text: c.sub || "“A history that reads like a thriller.”", x: 100, y: 0, w: W - 200, size: 34, font: "serif", italic: true, align: "center", color: "#334155", markup: false, name: "Line", after: ["Title", 24] }),
@@ -651,14 +651,14 @@ const TEMPLATES = [
   { id: "newsletter", name: "Newsletter", cat: "Announcement", bg: "wash-sage",
     build: (W, H, c) => [
       ...brandLine(W),
-      T({ type: "image", src: "/beta/social/el/el-envelope.webp?v=1", x: W / 2 - 210, y: Math.round(H * 0.42), w: 420, h: 483, fit: "contain", name: "Envelope" }),
+      T({ type: "image", src: "/beta/social/el/el-envelope.webp?v=2", x: W / 2 - 210, y: Math.round(H * 0.42), w: 420, h: 483, fit: "contain", name: "Envelope" }),
       txt({ text: c.headline || "Science news, *in your inbox*", x: 88, y: 170, w: W - 176, size: 84, weight: 700, lh: 1.04, ls: -0.035, align: "center", name: "Headline", maxH: Math.round(H * 0.42) - 170 - 110, minSize: 48 }),
       txt({ text: c.sub || "Subscribe free · link in bio", x: 88, y: 0, w: W - 176, size: 32, font: "serif", align: "center", color: "#334155", markup: false, name: "Line", after: ["Headline", 22] }),
     ] },
   { id: "brain-teaser", name: "Brain teaser", cat: "Engagement", bg: "wash-lavender",
     build: (W, H, c) => [
       ...brandLine(W),
-      T({ type: "image", src: "/beta/social/el/el-brain.webp?v=1", x: W - 88 - 330, y: H - 88 - 283, w: 330, h: 283, fit: "contain", name: "Brain" }),
+      T({ type: "image", src: "/beta/social/el/el-brain.webp?v=2", x: W - 88 - 330, y: H - 88 - 283, w: 330, h: 283, fit: "contain", name: "Brain" }),
       ...kicker(c.kicker || "Brain teaser", 88, 160),
       txt({ text: c.headline || "I have keys but open *no locks.* What am I?", x: 88, y: 206, w: W - 176, size: 80, weight: 700, lh: 1.06, ls: -0.035, name: "Question", maxH: Math.round(H * 0.45), minSize: 48 }),
       txt({ text: c.sub || "Answer in tomorrow’s story.", x: 88, y: 0, w: W - 176, size: 32, font: "serif", italic: true, color: "#5b6678", markup: false, name: "Line", after: ["Question", 26] }),
