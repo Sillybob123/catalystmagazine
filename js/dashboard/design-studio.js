@@ -446,6 +446,111 @@ const TEMPLATES = [
       txt({ text: c.headline || "100,000", x: 80, y: 210, w: W - 160, size: 200, weight: 700, lh: 1, ls: -0.05, name: "Number" }),
       txt({ text: c.sub || "times a day, your heart beats, without you thinking about it once.", x: 88, y: 0, w: W - 520, size: 40, font: "serif", lh: 1.3, color: "#334155", name: "Explanation", after: ["Number", 24] }),
     ] },
+  { id: "ask-doctor", name: "Ask a doctor", cat: "Health", bg: "wash-paper",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", elId: "med-consult", x: 88, y: Math.round(H * 0.5), w: W - 176, h: Math.round(H * 0.42), fit: "contain" }),
+      T({ type: "rect", x: 88, y: 150, w: 230, h: 52, radius: 26, fill: "#3b6e8f", name: "Pill" }),
+      txt({ text: c.kicker || "Ask a doctor", x: 88, y: 160, w: 230, size: 21, weight: 600, align: "center", color: "#fdfcf9", markup: false, name: "Pill text" }),
+      txt({ text: c.headline || "Is it a cold, *or the flu?*", x: 88, y: 232, w: W - 176, size: 86, weight: 700, lh: 1.04, ls: -0.035, name: "Question", maxH: Math.round(H * 0.22), minSize: 50 }),
+      txt({ text: c.sub || "A GW physician answers. Read it at the link in bio.", x: 88, y: 0, w: W - 176, size: 30, font: "serif", color: "#334155", name: "Line", after: ["Question", 20] }),
+    ] },
+  { id: "myth-fact", name: "Myth vs fact", cat: "Health", bg: "wash-paper",
+    build: (W, H, c) => {
+      const mid = Math.round(H * 0.56);
+      return [
+        ...brandLine(W),
+        ...kicker(c.kicker || "Health myths", 88, 150),
+        T({ type: "rect", x: 88, y: 210, w: 150, h: 50, radius: 25, fill: "#7a2e3a", name: "Myth pill" }),
+        txt({ text: "MYTH", x: 88, y: 220, w: 150, size: 21, weight: 700, ls: 0.16, align: "center", color: "#fdfcf9", markup: false, name: "Myth label" }),
+        txt({ text: c.headline || "You lose most of your body heat *through your head.*", x: 88, y: 284, w: W - 176, size: 54, font: "serif", lh: 1.22, color: "#5b6678", name: "Myth", maxH: mid - 284 - 50, minSize: 34 }),
+        T({ type: "line", x: 88, y: mid, w: W - 176, h: 2, sw: 1.5, fill: "rgba(15,23,42,.2)", name: "Divider" }),
+        T({ type: "rect", x: 88, y: mid + 46, w: 150, h: 50, radius: 25, fill: "#5f7a61", name: "Fact pill" }),
+        txt({ text: "FACT", x: 88, y: mid + 56, w: 150, size: 21, weight: 700, ls: 0.16, align: "center", color: "#fdfcf9", markup: false, name: "Fact label" }),
+        txt({ text: c.sub || "Your head loses heat like any other uncovered part of your body: about *10 percent.*", x: 88, y: mid + 120, w: W - 176, size: 54, weight: 600, lh: 1.18, ls: -0.02, name: "Fact", maxH: H - mid - 120 - 80, minSize: 34 }),
+      ];
+    } },
+  { id: "know-the-signs", name: "Know the signs", cat: "Health", bg: "wash-blush",
+    build: (W, H, c) => {
+      const items = c.items || [["F", "Face drooping on one side"], ["A", "Arm weakness or numbness"], ["S", "Speech that is slurred or strange"], ["T", "Time to call 911, right away"]];
+      const top = Math.round(H * 0.33), gap = Math.round((H - top - 110) / items.length);
+      return [
+        ...brandLine(W),
+        ...kicker(c.kicker || "Know the signs", 88, 150),
+        txt({ text: c.headline || "Stroke? Think *FAST.*", x: 88, y: 196, w: W - 176, size: 84, weight: 700, lh: 1.04, ls: -0.035, name: "Headline", maxH: top - 196 - 30, minSize: 50 }),
+        ...items.flatMap(([n, t], i) => [
+          T({ type: "ellipse", x: 88, y: top + i * gap, w: 96, h: 96, fill: "#7a2e3a", name: `Badge ${i + 1}` }),
+          txt({ text: n, x: 88, y: top + i * gap + 20, w: 96, size: 46, weight: 700, align: "center", color: "#fdfcf9", markup: false, name: `Letter ${i + 1}` }),
+          txt({ text: t, x: 214, y: top + i * gap + 24, w: W - 302, size: 38, font: "serif", lh: 1.3, name: `Item ${i + 1}` }),
+        ]),
+      ];
+    } },
+  { id: "research-breakthrough", name: "New research", cat: "Health", bg: "med-bg-lab",
+    build: (W, H, c, ink) => [
+      ...brandLine(W), ...kicker(c.kicker || "New research", 88, 150),
+      txt({ text: c.headline || "A blood test that spots Alzheimer’s *years earlier*", x: 88, y: 196, w: W - 176, size: 80, weight: 700, lh: 1.05, ls: -0.035, name: "Headline", maxH: ink - 196 - 110, minSize: 48 }),
+      txt({ text: c.sub || "What it could mean for patients, and what it can’t do yet.", x: 88, y: 0, w: W - 260, size: 32, font: "serif", color: "#334155", name: "Line", after: ["Headline", 22] }),
+    ] },
+  { id: "mental-health", name: "Mental health", cat: "Health", bg: "wash-lavender",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", elId: "med-mental-health", x: W / 2 - 260, y: Math.round(H * 0.5), w: 520, h: Math.round(H * 0.44), fit: "contain" }),
+      txt({ text: c.kicker || "Mental health matters", x: 100, y: 170, w: W - 200, size: 23, weight: 600, ls: 0.16, upper: true, align: "center", color: "#6b5b8a", markup: false, name: "Kicker" }),
+      txt({ text: c.headline || "It’s okay to *not be okay.*", x: 100, y: 220, w: W - 200, size: 88, weight: 700, lh: 1.04, ls: -0.035, align: "center", name: "Headline", maxH: Math.round(H * 0.24), minSize: 52 }),
+      txt({ text: c.sub || "Free, confidential support: call or text 988, any time.", x: 120, y: 0, w: W - 240, size: 30, font: "serif", align: "center", color: "#334155", name: "Line", after: ["Headline", 20] }),
+    ] },
+  { id: "clinician", name: "Meet the clinician", cat: "Health", bg: "wash-sage",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", elId: "med-surgeon", x: W / 2 - 280, y: 150, w: 560, h: Math.round(H * 0.46), fit: "contain" }),
+      ...kicker(c.kicker || "Meet the clinician", W / 2 - 160, Math.round(H * 0.46) + 190, "#5b6678", 320),
+      txt({ text: c.headline || "Dr. Amara *Okafor*", x: 88, y: Math.round(H * 0.46) + 236, w: W - 176, size: 76, weight: 700, align: "center", ls: -0.03, name: "Name", maxH: 170, minSize: 48 }),
+      txt({ text: c.sub || "Trauma surgeon · on what the first hour after an injury decides", x: 120, y: 0, w: W - 240, size: 30, font: "serif", italic: true, align: "center", color: "#334155", markup: false, name: "Role", after: ["Name", 16] }),
+    ] },
+  { id: "public-health-stat", name: "Public health number", cat: "Health", bg: "wash-lavender",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", elId: "med-global-health", x: W - 88 - 380, y: H - 80 - 400, w: 380, h: 400, fit: "contain", anchorX: 1 }),
+      ...kicker(c.kicker || "Public health, by the numbers", 88, 170),
+      txt({ text: c.headline || "1 in 3", x: 80, y: 220, w: W - 160, size: 240, weight: 700, lh: 1, ls: -0.05, color: "#1e3a5f", name: "Number" }),
+      txt({ text: c.sub || "children in some D.C. neighborhoods live with asthma. Where you grow up shapes how you breathe.", x: 88, y: 0, w: W - 300, size: 38, font: "serif", lh: 1.32, color: "#334155", name: "Explanation", after: ["Number", 20] }),
+    ] },
+  { id: "brain-fact", name: "Brain fact", cat: "Health", bg: "med-bg-brain",
+    build: (W, H, c, ink) => [
+      ...brandLine(W),
+      txt({ text: c.kicker || "Brain fact", x: 88, y: 150, w: W - 176, size: 52, font: "serif", italic: true, color: "#6b5b8a", markup: false, name: "Kicker" }),
+      txt({ text: c.headline || "Forgetting isn’t a flaw. Your brain *clears space on purpose.*", x: 88, y: 230, w: W - 176, size: 64, weight: 600, lh: 1.12, ls: -0.025, name: "Fact", maxH: ink - 230 - 40, minSize: 40 }),
+    ] },
+  { id: "nutrition-tip", name: "Nutrition tip", cat: "Health", bg: "wash-sage",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", elId: "med-plate", x: W / 2 - 280, y: Math.round(H * 0.46), w: 560, h: Math.round(H * 0.46), fit: "contain" }),
+      ...kicker(c.kicker || "Eat well", 88, 160),
+      txt({ text: c.headline || "Fill *half* your plate with vegetables and fruit.", x: 88, y: 206, w: W - 176, size: 76, weight: 700, lh: 1.05, ls: -0.035, name: "Headline", maxH: Math.round(H * 0.24), minSize: 46 }),
+      txt({ text: c.sub || "What the new U.S. Dietary Guidelines actually say.", x: 88, y: 0, w: W - 176, size: 30, font: "serif", color: "#334155", name: "Line", after: ["Headline", 20] }),
+    ] },
+  { id: "word-of-week", name: "Science word", cat: "Health", bg: "wash-paper",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", elId: "neuro-myelin", x: W / 2 - 320, y: Math.round(H * 0.58), w: 640, h: Math.round(H * 0.34), fit: "contain" }),
+      ...kicker(c.kicker || "Word of the week", 88, 170),
+      txt({ text: c.headline || "Myelin", x: 80, y: 220, w: W - 160, size: 150, font: "serif", weight: 600, lh: 1, ls: -0.02, name: "Word" }),
+      txt({ text: c.pron || "/ˈmaɪ.ə.lɪn/ · noun", x: 88, y: 0, w: W - 176, size: 28, color: "#5b6678", markup: false, name: "Pronunciation", after: ["Word", 14] }),
+      txt({ text: c.sub || "The fatty coat around nerve fibres that lets signals travel fast. In MS, the immune system attacks it.", x: 88, y: 0, w: W - 176, size: 36, font: "serif", lh: 1.35, color: "#334155", name: "Definition", after: ["Pronunciation", 30] }),
+    ] },
+  { id: "inside-hospital", name: "Inside the hospital", cat: "Health", bg: "med-bg-corridor",
+    build: (W, H, c, ink) => [
+      ...brandLine(W), ...kicker(c.kicker || "Inside the hospital", 88, 150),
+      txt({ text: c.headline || "The night shift that *keeps D.C. alive*", x: 88, y: 196, w: W - 176, size: 82, weight: 700, lh: 1.04, ls: -0.035, name: "Headline", maxH: ink - 196 - 110, minSize: 48 }),
+      txt({ text: c.sub || "Twelve hours with the nurses of a downtown ER.", x: 88, y: 0, w: W - 260, size: 32, font: "serif", color: "#334155", name: "Line", after: ["Headline", 22] }),
+    ] },
+  { id: "heart-explainer", name: "Health, explained", cat: "Health", bg: "med-bg-heart",
+    build: (W, H, c, ink) => [
+      ...brandLine(W),
+      txt({ text: c.kicker || "HEALTH, EXPLAINED", x: 88, y: 150, w: W - 176, size: 23, weight: 600, ls: 0.18, align: "center", color: "#9a4a4a", markup: false, name: "Kicker" }),
+      txt({ text: c.headline || "What actually happens *in a heart attack*", x: 88, y: 196, w: W - 176, size: 80, font: "serif", lh: 1.06, align: "center", name: "Headline", maxH: ink - 196 - 110, minSize: 48 }),
+      txt({ text: c.sub || "Swipe for the 60-second version →", x: 88, y: 0, w: W - 176, size: 28, weight: 500, align: "center", color: "#5b6678", markup: false, name: "Line", after: ["Headline", 22] }),
+    ] },
   { id: "event", name: "Event / date", cat: "Announcement", bg: "wash-ochre",
     build: (W, H, c, ink) => [
       ...brandLine(W),
@@ -616,8 +721,23 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     return settleLayout({
       id: uid(),
       bg: bgFrom(b, format, { focusY }),
-      layers: t.build(fmt.w, fmt.h, content, Math.round(ink)).map((L) => ({ ...L, id: uid() })),
+      layers: t.build(fmt.w, fmt.h, content, Math.round(ink)).map((L) => fitElement({ ...L, id: uid() })),
     });
+  }
+
+  // Template image layers can name a library element (elId): fit it inside
+  // the template's box at its real proportions (anchored to the box bottom).
+  const elById = Object.fromEntries(lib.elements.map((e) => [e.id, e]));
+  function fitElement(L) {
+    if (L.type !== "image" || !L.elId) return L;
+    const e = elById[L.elId];
+    if (!e) return L;
+    const k = Math.min(L.w / (e.w || 1), L.h / (e.h || 1));
+    const w = Math.round((e.w || L.w) * k), h = Math.round((e.h || L.h) * k);
+    const ax = L.anchorX ?? 0.5;
+    const out = { ...L, src: e.image, x: Math.round(L.x + (L.w - w) * ax), y: Math.round(L.y + L.h - h), w, h, name: L.name || e.title };
+    delete out.elId; delete out.anchorX;
+    return out;
   }
 
   const page = () => design.pages[pageIdx];
@@ -1124,7 +1244,8 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   async function paintPanel() {
     const p = $("#ds-panel");
     if (panel === "templates") {
-      const cats = [...new Set(TEMPLATES.map((t) => t.cat))];
+      const ORDER = ["Health", "Story", "Edition", "Data", "Quote", "Announcement", "People", "Engagement", "Carousel"];
+      const cats = [...new Set(TEMPLATES.map((t) => t.cat))].sort((x, y) => (ORDER.indexOf(x) + 1 || 99) - (ORDER.indexOf(y) + 1 || 99));
       p.innerHTML = `<h3>Templates</h3><p class="ds-panel-hint">Click one to lay it out on this page. Everything stays editable.</p>` +
         cats.map((c) => `<h4>${esc(c)}</h4><div class="ds-tgrid">${TEMPLATES.filter((t) => t.cat === c).map((t) => `
           <button type="button" class="ds-ttile" data-tpl="${t.id}"><span class="ds-tthumb" data-thumb="${t.id}" style="aspect-ratio:${fmt().w}/${fmt().h}"></span><span>${esc(t.name)}</span></button>`).join("")}</div>`).join("");
