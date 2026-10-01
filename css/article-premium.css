@@ -170,60 +170,62 @@ body[data-page="article"] .article-page {
 }
 body[data-page="article"] .back-link {
   position: absolute;
-  top: 92px;
-  /* on the header pill's left edge (styles.css .header: 100% - 64px, max 1400px, centred) */
-  left: max(32px, calc((100% - 1400px) / 2));
+  top: 94px;
+  /* on the header's content edge, in line with the logo and the title */
+  left: calc((100% - var(--hero-frame)) / 2);
   z-index: 20;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 14px 9px 12px;
-  font-family: var(--sans);
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #fff;
-  /* Dark translucent glass — reads cleanly against the hero scrim
-     and never blends into the photo regardless of cover brightness. */
-  background: rgba(15, 20, 28, 0.42);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  gap: 8px;
+  height: 38px;
+  padding: 0 17px 0 13px;
+  font-family: 'Poppins', var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #0f172a;
+  /* the same frosted glass as the header pill */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.68));
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 999px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14), 0 1px 3px rgba(15, 23, 42, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.55);
   text-decoration: none;
-  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
 }
+/* 44px touch target around the 38px pill */
+body[data-page="article"] .back-link::after { content: ""; position: absolute; inset: -3px -2px; }
 body[data-page="article"] .back-link svg {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.22s cubic-bezier(.16,1,.3,1);
+  width: 15px;
+  height: 15px;
+  color: #475569;
+  transition: transform 0.25s cubic-bezier(.16,1,.3,1), color 0.25s ease;
 }
 body[data-page="article"] .back-link:hover {
-  background: rgba(15, 20, 28, 0.58);
-  border-color: rgba(255, 255, 255, 0.28);
-  transform: translateY(-1px);
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18), 0 1px 3px rgba(15, 23, 42, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.6);
 }
 body[data-page="article"] .back-link:hover svg {
   transform: translateX(-3px);
+  color: #0f172a;
 }
 body[data-page="article"] .back-link:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline: 2px solid #0f172a;
   outline-offset: 3px;
-}
-@media (max-width: 1180px) {
-  body[data-page="article"] .back-link { left: 16px; }
-}
-@media (max-width: 480px) {
-  body[data-page="article"] .back-link { left: 12px; }
 }
 @media (max-width: 700px) {
   body[data-page="article"] .back-link {
-    top: 76px;
-    font-size: 12px;
-    padding: 8px 13px 8px 11px;
+    top: 80px;
+    height: 34px;
+    font-size: 12.5px;
+    padding: 0 14px 0 11px;
   }
-  body[data-page="article"] .back-link svg { width: 13px; height: 13px; }
+  body[data-page="article"] .back-link::after { inset: -5px -2px; }
+  body[data-page="article"] .back-link svg { width: 14px; height: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="article"] .back-link, body[data-page="article"] .back-link svg { transition: none; }
 }
 
 /* Book-review pages — no hero photo, cream paper background.
@@ -287,6 +289,13 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
 }
 
 /* --- Hero section (full-bleed) -------------------------------------------- */
+/* The hero, back link and edition strip sit in the same frame as the
+   header's content (logo .. Subscribe): 1152px at most, 93px in from each
+   side on desktop, matching the nav at every width. */
+body[data-page="article"] { --hero-frame: min(1152px, calc(100% - 186px)); }
+@media (max-width: 1180px) { body[data-page="article"] { --hero-frame: calc(100% - 64px); } }
+@media (max-width: 600px)  { body[data-page="article"] { --hero-frame: calc(100% - 48px); } }
+
 .article-hero {
   position: relative;
   width: 100%;
@@ -301,7 +310,7 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
      top of the stack — is guaranteed to sit below ~140px from page
      top regardless of title length, so the header / back-link can
      never clip the chip. */
-  padding: 140px 24px 60px;
+  padding: 148px 0 56px;
   overflow: hidden;
   color: #fff;
   isolation: isolate;
@@ -316,7 +325,11 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
 .article-hero::before {
   content: "";
   position: absolute; inset: 0;
-  background: linear-gradient(
+  background:
+  /* a soft shade behind the left-aligned text column, so the tag and the
+     title's first lines hold up on bright covers */
+  linear-gradient(90deg, rgba(0,0,0,0.34) 0%, rgba(0,0,0,0.2) 38%, rgba(0,0,0,0) 72%),
+  linear-gradient(
     180deg,
     rgba(0,0,0,0.0) 0%,
     rgba(0,0,0,0.08) 35%,
@@ -397,8 +410,8 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
   background: rgba(255,255,255,0.72);
 }
 .article-hero__inner {
-  width: 100%;
-  max-width: 880px;
+  width: var(--hero-frame);
+  max-width: none;
   text-align: left;
 }
 .article-hero__surface {
@@ -416,14 +429,18 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
   border-radius: 2px;
   margin-bottom: 22px;
   color: #fff;
+  background: rgba(8, 12, 20, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 .article-hero__title {
   font-family: var(--serif);
   font-weight: 700;
-  font-size: clamp(2rem, 5.2vw, 4rem);
-  line-height: 1.05;
-  letter-spacing: -0.01em;
-  margin: 0 0 20px 0;
+  font-size: clamp(2.1rem, 5vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  max-width: 1040px;
+  margin: 0 0 22px 0;
   color: #fff;
   text-wrap: balance;
   text-shadow: 0 2px 20px rgba(0,0,0,0.25);
@@ -434,9 +451,9 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
   font-weight: 400;
   font-size: clamp(1.1rem, 1.8vw, 1.4rem);
   line-height: 1.5;
-  max-width: 780px;
+  max-width: 820px;
   color: rgba(255,255,255,0.92);
-  margin: 0 0 28px 0;
+  margin: 0 0 34px 0;
   text-wrap: balance;
 }
 .article-hero__meta {
@@ -444,6 +461,9 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
+  /* a hairline across the full frame, like a magazine's byline rule */
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,0.24);
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 500;
@@ -1051,8 +1071,8 @@ body[data-page="article"].is-book-review .back-link:focus-visible {
     min-height: 65vh;
     /* Mobile safe-zone: header ~64px + back-link bottom edge ~108px,
        plus 16px comfort gap = 124px. */
-    padding-top: 124px;
-    padding-bottom: 44px;
+    padding-top: 128px;
+    padding-bottom: 40px;
   }
   .article-hero--light-cover .article-hero__surface {
     display: flex;
