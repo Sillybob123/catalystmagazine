@@ -101,19 +101,16 @@ async function mountComposer(ctx, container) {
             <div class="hint">Optional. Lets us auto-fetch the cover later.</div>
           </div>
           <div class="brw-field">
-            <label class="label" for="brw-rating-input">Your rating</label>
-            <div class="brw-rating-slider" id="brw-rating-slider" data-value="0" role="group" aria-label="Your rating, on a 0 to 5 scale">
-              <div class="brw-rating-slider-track" aria-hidden="true">
-                <input type="range" class="brw-rating-slider-input" id="brw-rating-input"
-                       min="0" max="5" step="0.1" value="0" aria-label="Slide to set your rating">
-                <div class="brw-rating-slider-stars">
-                  <div class="brw-rating-slider-stars-base"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
-                  <div class="brw-rating-slider-stars-fill"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
-                </div>
+            <span class="label" id="brw-rating-label">Your rating <span class="brw-optional">optional</span></span>
+            <div class="brw-stars" id="brw-rating-slider" data-value="0">
+              <div class="brw-stars-row" role="slider" tabindex="0" aria-labelledby="brw-rating-label"
+                   aria-valuemin="0" aria-valuemax="5" aria-valuenow="0" aria-valuetext="No rating">
+                <span class="brw-star" aria-hidden="true"><svg class="brw-star-base" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><span class="brw-star-fill"><svg viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></span></span><span class="brw-star" aria-hidden="true"><svg class="brw-star-base" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><span class="brw-star-fill"><svg viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></span></span><span class="brw-star" aria-hidden="true"><svg class="brw-star-base" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><span class="brw-star-fill"><svg viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></span></span><span class="brw-star" aria-hidden="true"><svg class="brw-star-base" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><span class="brw-star-fill"><svg viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></span></span><span class="brw-star" aria-hidden="true"><svg class="brw-star-base" viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg><span class="brw-star-fill"><svg viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg></span></span>
               </div>
-              <div class="brw-rating-slider-value">— Optional —</div>
+              <span class="brw-stars-value" aria-hidden="true">No rating</span>
+              <button type="button" class="brw-stars-clear" hidden>Clear</button>
             </div>
-            <span class="hint brw-rating-slider-flavor">Drag to set a rating from 0 to 5. Optional.</span>
+            <span class="hint brw-rating-slider-flavor">Click or drag across the stars. Half stars work too.</span>
             <input type="hidden" id="brw-rating" name="rating" value="">
           </div>
 
@@ -593,39 +590,86 @@ function flavorForRating(n) {
   return "";
 }
 function wireRatingSlider(card) {
-  const root    = card.querySelector("#brw-rating-slider");
-  const input   = card.querySelector("#brw-rating-input");
-  const valueEl = card.querySelector(".brw-rating-slider-value");
-  const flavor  = card.querySelector(".brw-rating-slider-flavor");
-  const hidden  = card.querySelector("#brw-rating");
-  if (!root || !input || !hidden) return () => {};
+  const root   = card.querySelector("#brw-rating-slider");
+  const row    = root?.querySelector(".brw-stars-row");
+  const stars  = root ? [...root.querySelectorAll(".brw-star")] : [];
+  const valueEl = root?.querySelector(".brw-stars-value");
+  const clear  = root?.querySelector(".brw-stars-clear");
+  const flavor = card.querySelector(".brw-rating-slider-flavor");
+  const hidden = card.querySelector("#brw-rating");
+  if (!root || !row || !stars.length || !hidden) return () => {};
 
-  const render = () => {
-    const raw = parseFloat(input.value);
-    const n = Number.isFinite(raw) ? Math.round(raw * 10) / 10 : 0;
-    const pct = Math.max(0, Math.min(100, (n / 5) * 100));
-    root.style.setProperty("--brw-pct", String(pct));
+  const HINT = "Click or drag across the stars. Half stars work too.";
+  let value = 0;
+
+  // Paint any value (also 0.1-precision ratings saved by the old slider).
+  const paint = (n, preview = false) => {
+    stars.forEach((st, i) => {
+      const f = Math.max(0, Math.min(1, n - i));
+      st.style.setProperty("--fill", `${f * 100}%`);
+    });
     root.dataset.value = n > 0 ? String(n) : "0";
-    if (valueEl) {
-      if (n > 0) valueEl.innerHTML = `${n.toFixed(1)}<small>/ 5</small>`;
-      else valueEl.textContent = "— Optional —";
-    }
-    if (flavor) {
-      flavor.textContent = flavorForRating(n) || "Drag to set a rating from 0 to 5. Optional.";
-    }
-    hidden.value = n > 0 ? n.toFixed(1) : "";
+    root.classList.toggle("is-preview", preview);
+    if (valueEl) valueEl.innerHTML = n > 0 ? `${fmt(n)}<small> / 5</small>` : "No rating";
+    if (flavor) flavor.textContent = n > 0 ? flavorForRating(n) : HINT;
+  };
+  const fmt = (n) => (Math.round(n * 10) / 10).toFixed(Number.isInteger(n) ? 0 : 1);
+
+  const set = (n) => {
+    value = Math.max(0, Math.min(5, Math.round(n * 10) / 10));
+    hidden.value = value > 0 ? value.toFixed(1) : "";
+    row.setAttribute("aria-valuenow", String(value));
+    row.setAttribute("aria-valuetext", value > 0 ? `${fmt(value)} out of 5, ${flavorForRating(value)}` : "No rating");
+    if (clear) clear.hidden = value <= 0;
+    paint(value);
   };
 
-  input.addEventListener("input", render);
-  input.addEventListener("change", render);
-  render();
+  // Pointer position → half-star value (left half of a star = .5).
+  const valueAt = (clientX) => {
+    const r = row.getBoundingClientRect();
+    const x = Math.max(0, Math.min(r.width - 0.01, clientX - r.left));
+    const per = r.width / stars.length;
+    const idx = Math.floor(x / per);
+    const half = (x - idx * per) < per / 2;
+    return idx + (half ? 0.5 : 1);
+  };
+
+  let dragging = false;
+  row.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    row.setPointerCapture?.(e.pointerId);
+    set(valueAt(e.clientX));
+    row.focus({ preventScroll: true });
+  });
+  row.addEventListener("pointermove", (e) => {
+    if (dragging) set(valueAt(e.clientX));
+    else if (e.pointerType === "mouse") paint(valueAt(e.clientX), true);
+  });
+  const end = () => { dragging = false; };
+  row.addEventListener("pointerup", end);
+  row.addEventListener("pointercancel", end);
+  row.addEventListener("pointerleave", () => { if (!dragging) paint(value); });
+
+  row.addEventListener("keydown", (e) => {
+    const step = 0.5;
+    let n = null;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") n = Math.floor(value / step) * step + step;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") n = Math.ceil(value / step) * step - step;
+    else if (e.key === "Home") n = 0;
+    else if (e.key === "End") n = 5;
+    else if (/^[0-5]$/.test(e.key)) n = Number(e.key);
+    else if (e.key === "Backspace" || e.key === "Delete") n = 0;
+    if (n === null) return;
+    e.preventDefault();
+    set(n);
+  });
+
+  clear?.addEventListener("click", () => { set(0); row.focus(); });
+
+  set(0);
 
   // Sync from external value (used by prefill on edit).
-  return (n) => {
-    const safe = Number.isFinite(n) && n >= 0 && n <= 5 ? n : 0;
-    input.value = String(safe);
-    render();
-  };
+  return (n) => set(Number.isFinite(n) && n >= 0 && n <= 5 ? n : 0);
 }
 
 // Wires the lightweight formatting toolbar above the review textarea.

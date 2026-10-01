@@ -639,3 +639,29 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .bot-policy ul { list-style: none; margin: 0 0 12px; padding: 0; }
 .bot-policy li { padding: 8px 0; border-top: 1px solid var(--hairline-2); font-size: 13px; }
 .bot-policy li span { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+/* ==========================================================================
+   BOOK REVIEW — star rating (js/dashboard/book-reviews-writer.js)
+   ========================================================================== */
+.brw-optional { margin-left: 6px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.brw-stars { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; min-height: 48px; margin-top: 6px; }
+.brw-stars-row {
+  display: inline-flex; gap: 4px; padding: 4px; margin: -4px; border-radius: 10px;
+  cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.brw-stars-row:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.brw-star { position: relative; display: block; width: 34px; height: 34px; transition: transform .15s var(--ease-out); }
+.brw-stars-row:hover .brw-star { transform: none; }
+.brw-star svg { display: block; width: 34px; height: 34px; }
+.brw-star-base path { fill: rgba(15, 23, 42, 0.1); stroke: rgba(15, 23, 42, 0.22); stroke-width: 1; stroke-linejoin: round; }
+.brw-star-fill { position: absolute; inset: 0; width: var(--fill, 0%); overflow: hidden; }
+.brw-star-fill svg { width: 34px; height: 34px; }
+.brw-star-fill path { fill: #c9962e; stroke: #a87a1d; stroke-width: 1; stroke-linejoin: round; }
+.brw-stars.is-preview .brw-star-fill path { fill: #e3c27a; stroke: #c9962e; }
+.brw-stars-value { min-width: 64px; font: 600 18px/1 var(--font); letter-spacing: -0.02em; color: var(--ink); }
+.brw-stars-value small { font-size: 13px; font-weight: 500; color: var(--muted); }
+.brw-stars[data-value="0"] .brw-stars-value { font-size: 13px; font-weight: 500; color: var(--muted); }
+.brw-stars-clear { min-height: 32px; padding: 0 12px; border: 1px solid var(--hairline); border-radius: 999px; background: none; color: var(--ink-2); font: 500 12.5px/1 var(--font); cursor: pointer; }
+.brw-stars-clear:hover { background: var(--surface-3); color: var(--ink); }
+.brw-stars:not([data-value="0"]) ~ .brw-rating-slider-flavor { color: var(--ink); font-style: italic; }
+@media (prefers-reduced-motion: reduce) { .brw-star { transition: none; } }
