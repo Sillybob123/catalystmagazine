@@ -22,82 +22,120 @@
     <link rel="stylesheet" href="css/styles.css?v=20260925-review">
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
-        /* The Winners' Lounge: you are standing in the room behind the vault door; the chat sits on its wall */
+        /* The Winners' Lounge: you stand in the room behind the vault door; the chat hangs on its wall.
+           The room is a fixed-height scene: only the message list scrolls, never the page. */
         body[data-page="winners"] { --paper: #f8f7f3; --ink: #0f172a; --ink-2: #334155; --muted: #5b6678;
-            --hair: rgba(15, 23, 42, 0.14); --hair-2: rgba(15, 23, 42, 0.08); --ok: #2f6b4f;
-            --serif: 'Source Serif Pro', Georgia, serif; background: #3a2414; color: var(--ink); font-family: 'Poppins', sans-serif; margin: 0; }
-        html:has(body[data-page="winners"]) { background: #3a2414; }
+            --hair: rgba(15, 23, 42, 0.13); --hair-2: rgba(15, 23, 42, 0.07); --ok: #2f6b4f; --brass: #a8843a;
+            --serif: 'Source Serif Pro', Georgia, serif; --hud: 84px;
+            background: #3a2414; color: var(--ink); font-family: 'Poppins', sans-serif; margin: 0;
+            height: 100vh; height: 100dvh; overflow: hidden; }
+        html:has(body[data-page="winners"]) { background: #3a2414; overflow: hidden; }
         body[data-page="winners"] main *, body[data-page="winners"] main *::before, body[data-page="winners"] main *::after { box-sizing: border-box; }
-        body[data-page="winners"] #site-footer .footer { margin-top: 0; }
+        body[data-page="winners"] #site-footer { display: none; }
 
-        .lg { position: relative; min-height: 100vh; min-height: 100dvh; padding: clamp(92px, 12vh, 118px) clamp(16px, 4vw, 56px) clamp(32px, 6vh, 56px); display: flex; justify-content: flex-end; align-items: flex-start; }
+        .lg { position: relative; height: 100vh; height: 100dvh; padding: calc(var(--hud) + 14px) clamp(16px, 4vw, 56px) clamp(16px, 3vh, 28px); display: flex; justify-content: flex-end; }
         .lg-bg { position: fixed; inset: 0; z-index: 0; }
         .lg-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 30% 60%; display: block; animation: lg-settle 2.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
         @keyframes lg-settle { from { transform: scale(1.06); } }
-        /* warm the room toward the panel so the paper reads, keep the furniture clear */
         .lg-shade { position: fixed; inset: 0; z-index: 0; pointer-events: none;
-            background: linear-gradient(90deg, rgba(40, 22, 10, 0) 35%, rgba(40, 22, 10, 0.28) 100%), linear-gradient(180deg, rgba(40, 22, 10, 0.25) 0%, rgba(40, 22, 10, 0) 22%); }
+            background: linear-gradient(90deg, rgba(40, 22, 10, 0) 30%, rgba(40, 22, 10, 0.32) 100%), linear-gradient(180deg, rgba(40, 22, 10, 0.25) 0%, rgba(40, 22, 10, 0) 20%); }
 
-        .lg-panel { position: relative; z-index: 1; width: min(520px, 100%); margin-right: clamp(0px, 4vw, 64px);
-            padding: clamp(20px, 2.6vw, 30px); border-radius: 14px;
-            background: rgba(250, 247, 240, 0.84); border: 1px solid rgba(255, 255, 255, 0.55);
-            -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1);
-            box-shadow: 0 30px 80px -30px rgba(30, 15, 5, 0.65), 0 2px 6px rgba(30, 15, 5, 0.12);
-            animation: lg-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+        /* the panel: head / messages (the only scroller) / composer */
+        .lg-panel { position: relative; z-index: 1; width: min(680px, 52vw); height: 100%; display: flex; flex-direction: column; min-height: 0;
+            border-radius: 18px; overflow: hidden;
+            background: rgba(251, 248, 241, 0.86); border: 1px solid rgba(255, 255, 255, 0.6);
+            -webkit-backdrop-filter: blur(16px) saturate(1.1); backdrop-filter: blur(16px) saturate(1.1);
+            box-shadow: 0 40px 90px -30px rgba(30, 15, 5, 0.7), 0 2px 8px rgba(30, 15, 5, 0.14);
+            animation: lg-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }
         @keyframes lg-in { from { opacity: 0; transform: translateY(16px); } }
+
+        .lg-head { flex: none; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 22px 26px 16px; border-bottom: 1px solid var(--hair); }
         .lg-kicker { display: inline-flex; align-items: center; gap: 8px; margin: 0; font: 600 10.5px/1 'Poppins', sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ok); }
         .lg-kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; opacity: 0.6; }
-        .lg-title { margin: 10px 0 6px; font: 600 clamp(1.7rem, 2.6vw, 2.2rem)/1.1 var(--serif); letter-spacing: -0.015em; }
-        .lg-sub { margin: 0; font-size: 0.9rem; line-height: 1.55; color: var(--ink-2); }
-        .lg-head { padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid var(--hair); }
+        .lg-title { margin: 8px 0 4px; font: 600 clamp(1.5rem, 2.2vw, 1.95rem)/1.1 var(--serif); letter-spacing: -0.015em; }
+        .lg-sub { margin: 0; font-size: 0.86rem; line-height: 1.5; color: var(--ink-2); }
+        .lg-back { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 999px; color: var(--ink); text-decoration: none; font: 500 13px/1 'Poppins', sans-serif; background: rgba(255, 255, 255, 0.5); transition: border-color 0.2s, background 0.2s; }
+        .lg-back svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .lg-back:hover { border-color: var(--ink); background: #fff; }
+
+        .messages-area { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 26px 18px; scroll-behavior: smooth;
+            scrollbar-width: thin; scrollbar-color: rgba(15, 23, 42, 0.22) transparent;
+            -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 18px, #000 calc(100% - 10px), transparent 100%);
+                    mask-image: linear-gradient(180deg, transparent 0, #000 18px, #000 calc(100% - 10px), transparent 100%); }
+        .messages-area:focus-visible { outline: 2px solid var(--ink); outline-offset: -4px; }
+        .loading-message { padding: 40px 0; text-align: center; color: var(--muted); font-style: italic; font-family: var(--serif); }
+        .day-sep { display: flex; align-items: center; gap: 12px; margin: 18px 0 6px; font: 600 10.5px/1 'Poppins', sans-serif; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+        .day-sep::before, .day-sep::after { content: ""; flex: 1; height: 1px; background: var(--hair); }
+
+        .message { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 10px; margin: 0 -10px; border-radius: 12px; transition: background 0.2s; animation: lg-msg 0.35s ease both; }
+        .message:hover { background: rgba(255, 255, 255, 0.55); }
+        .message.mine { background: rgba(168, 132, 58, 0.08); }
+        @keyframes lg-msg { from { opacity: 0; transform: translateY(4px); } }
+        .message-avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--av); color: #fbf8f1; font: 600 15px/1 var(--serif); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25); }
+        .message-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-bottom: 2px; }
+        .message-author { font-weight: 600; font-size: 0.92rem; color: var(--ink); }
+        .message-title { font-size: 0.72rem; font-weight: 500; color: var(--brass); padding: 2px 8px; border-radius: 999px; background: rgba(168, 132, 58, 0.12); }
+        .message-time { font-size: 0.76rem; color: var(--muted); }
+        .message-text { margin: 0; font: 400 1.02rem/1.52 var(--serif); color: var(--ink-2); word-wrap: break-word; white-space: pre-wrap; }
+        .like-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 10px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--muted); font: 500 12.5px/1 'Poppins', sans-serif; cursor: pointer; transition: color 0.2s, border-color 0.2s, background 0.2s; }
+        .like-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+        .like-btn:hover:not(:disabled) { color: #8f2d2d; border-color: rgba(143, 45, 45, 0.25); background: rgba(143, 45, 45, 0.05); }
+        .like-btn.liked { color: #8f2d2d; }
+        .like-btn.liked svg { fill: currentColor; }
+        .like-btn:disabled { cursor: default; }
+
+        /* the composer, pinned to the bottom of the panel */
+        .message-form { flex: none; padding: 14px 18px 12px; border-top: 1px solid var(--hair); background: rgba(255, 255, 255, 0.42); display: grid; gap: 10px; }
+        .lg-who { display: flex; gap: 8px; }
+        .lg-chip { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 38px; padding: 0 12px; border: 1px solid var(--hair); border-radius: 999px; background: rgba(255, 255, 255, 0.7); transition: border-color 0.2s, box-shadow 0.2s; }
+        .lg-chip span { flex: none; font: 600 10px/1 'Poppins', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+        .lg-chip:focus-within { border-color: var(--ink); background: #fff; }
+        .lg-chip.need { border-color: #8f2d2d; box-shadow: 0 0 0 3px rgba(143, 45, 45, 0.12); animation: lg-nudge 0.4s ease; }
+        @keyframes lg-nudge { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+        .lg-chip .form-input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding: 0; font: 500 14px/1 'Poppins', sans-serif; color: var(--ink); }
+        .lg-compose { display: flex; align-items: flex-end; gap: 10px; padding: 6px 6px 6px 16px; border: 1px solid var(--hair); border-radius: 18px; background: #fff; transition: border-color 0.2s, box-shadow 0.2s; }
+        .lg-compose:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.07); }
+        .form-textarea { flex: 1; min-width: 0; min-height: 40px; max-height: 140px; padding: 9px 0; border: 0; outline: 0; resize: none; background: transparent; font: 400 1.02rem/1.45 var(--serif); color: var(--ink); }
+        /* beat the site-wide form styles: these fields live inside the rounded chips */
+        body[data-page="winners"] .lg-chip input.form-input, body[data-page="winners"] .lg-compose textarea.form-textarea {
+            background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 0; margin: 0; width: auto; }
+        body[data-page="winners"] .lg-chip input.form-input { padding: 0 !important; min-height: 0; height: 36px; }
+        body[data-page="winners"] .lg-compose textarea.form-textarea { padding: 9px 0 !important; }
+        .form-input::placeholder, .form-textarea::placeholder { color: #7a8091; }
+        .submit-btn { flex: none; width: 42px; height: 42px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--ink); color: var(--paper); cursor: pointer; transition: transform 0.15s, background 0.2s; }
+        .submit-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .submit-btn:hover { background: #1e293b; transform: translateX(1px); }
+        .submit-btn:disabled { opacity: 0.5; cursor: wait; }
+        .submit-btn.sending svg { animation: lg-send 0.6s ease infinite alternate; }
+        @keyframes lg-send { to { transform: translateX(3px); opacity: 0.5; } }
+        .submit-btn:focus-visible, .like-btn:focus-visible, .lg-back:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+        .lg-meta { display: flex; align-items: center; gap: 12px; padding: 0 6px; font-size: 0.72rem; color: var(--muted); }
+        .lg-hintkeys { margin-left: auto; }
+        .lg-count { font-variant-numeric: tabular-nums; }
+        .lg-count.near { color: #8f2d2d; font-weight: 600; }
+        .user-id-value { font-family: ui-monospace, Menlo, monospace; }
 
         /* arriving from the vault: the lamplight fades into the room */
         .lg-arrive { position: fixed; inset: 0; z-index: 3000; pointer-events: none; background: radial-gradient(circle at 50% 50%, #fff6dc 0%, #f8ebc6 45%, #f3dfae 80%); animation: lg-arrive 1.3s ease forwards; }
         @keyframes lg-arrive { to { opacity: 0; visibility: hidden; } }
 
-        .chat-container { margin-top: 14px; }
-        .chat-header { margin-bottom: 10px; }
-        .chat-title { margin: 0 0 4px; font: 600 1.15rem/1.25 var(--serif); }
-        .chat-description { margin: 0; font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
-        .messages-area { max-height: min(34vh, 360px); overflow-y: auto; overscroll-behavior: contain; margin: 0 -6px; padding: 0 6px; border-top: 1px solid var(--hair-2); border-bottom: 1px solid var(--hair-2);
-            scrollbar-width: thin; scrollbar-color: rgba(15, 23, 42, 0.25) transparent; }
-        .loading-message { padding: 22px 0; text-align: center; color: var(--muted); font-style: italic; font-family: var(--serif); }
-        .message { padding: 13px 0; border-bottom: 1px solid var(--hair-2); animation: lg-msg 0.35s ease both; }
-        .message:last-child { border-bottom: 0; }
-        @keyframes lg-msg { from { opacity: 0; transform: translateY(4px); } }
-        .message-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 3px; }
-        .message-author { font-weight: 600; font-size: 0.9rem; color: var(--ink); }
-        .message-time { font-size: 0.76rem; color: var(--muted); white-space: nowrap; }
-        .message-text { font: 400 1rem/1.5 var(--serif); color: var(--ink-2); word-wrap: break-word; }
-        .message-actions { margin-top: 6px; }
-        .like-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; border: 1px solid var(--hair); border-radius: 999px; background: rgba(255, 255, 255, 0.5); color: var(--muted); font: 500 12.5px/1 'Poppins', sans-serif; cursor: pointer; }
-        .like-btn:hover:not(:disabled) { border-color: var(--ink); color: var(--ink); }
-        .like-btn.liked { color: #8f2d2d; border-color: rgba(143, 45, 45, 0.35); }
-        .like-btn:disabled { cursor: default; }
-        .message-form { margin-top: 14px; display: grid; gap: 8px; }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .form-input, .form-textarea { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--hair); border-radius: 8px; background: rgba(255, 255, 255, 0.72); color: var(--ink); font: 400 15px/1.4 'Poppins', sans-serif; }
-        .form-input::placeholder, .form-textarea::placeholder { color: #6b7385; }
-        .form-textarea { min-height: 78px; resize: vertical; font-family: var(--serif); font-size: 1rem; }
-        .form-input:focus, .form-textarea:focus { outline: 0; border-color: var(--ink); background: #fff; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08); }
-        .submit-btn { justify-self: start; min-height: 44px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 14px/1 'Poppins', sans-serif; cursor: pointer; }
-        .submit-btn:hover { background: #1e293b; }
-        .submit-btn:disabled { opacity: 0.6; cursor: wait; }
-        .submit-btn:focus-visible, .like-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-        .user-id { margin-top: 12px; font-size: 0.74rem; color: var(--muted); }
-        .user-id-value { font-family: ui-monospace, Menlo, monospace; }
-        .lg-back { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--hair-2); font-size: 0.86rem; color: var(--muted); }
-        .lg-back a { color: var(--ink); font-weight: 600; }
-
-        @media (max-width: 760px) {
-            .lg { display: block; padding: 84px 12px 24px; }
+        @media (max-width: 900px) {
+            body[data-page="winners"] { --hud: 76px; }
+            .lg { padding: calc(var(--hud) + 8px) 10px 10px; justify-content: center; }
             .lg-bg img { object-position: 50% 100%; }
             .lg-shade { background: linear-gradient(180deg, rgba(40, 22, 10, 0.22) 0%, rgba(40, 22, 10, 0) 30%); }
-            .lg-panel { width: 100%; margin: 0; background: rgba(250, 247, 240, 0.86); }
-            .messages-area { max-height: 40vh; }
-            .form-row { grid-template-columns: 1fr; }
+            .lg-panel { width: 100%; max-width: 680px; border-radius: 16px; background: rgba(251, 248, 241, 0.88); }
+            .lg-head { padding: 16px 18px 12px; }
+            .lg-sub { display: none; }
+            .lg-back span { display: none; }
+            .lg-back { width: 40px; padding: 0; justify-content: center; }
+            .messages-area { padding: 4px 16px 14px; }
+            .message-form { padding: 10px 12px 10px; }
+            .lg-hintkeys { display: none; }
+            .user-id { display: none; }
+            .lg-count { margin-left: auto; }
         }
-        @media (prefers-reduced-motion: reduce) { .lg-arrive { display: none; } .message, .lg-panel, .lg-bg img { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .lg-arrive { display: none; } .message, .lg-panel, .lg-bg img { animation: none; } .messages-area { scroll-behavior: auto; } }
     </style>
 </head>
 <body data-page="winners">
@@ -124,37 +162,39 @@
         </picture>
         <div class="lg-shade" aria-hidden="true"></div>
 
-        <section class="lg-panel">
+        <section class="lg-panel" aria-labelledby="lg-title">
             <header class="lg-head">
-                <p class="lg-kicker">You opened the vault</p>
-                <h1 class="lg-title">The Winners’ Lounge</h1>
-                <p class="lg-sub">Only people who cracked a riddle get through that door. Pull up a chair.</p>
+                <div>
+                    <p class="lg-kicker">You opened the vault</p>
+                    <h1 class="lg-title" id="lg-title">The Winners’ Lounge</h1>
+                    <p class="lg-sub">Leave a note for everyone else who got in. No spoilers for the current riddle.</p>
+                </div>
+                <a class="lg-back" href="/brain-teaser" aria-label="Back to the vault">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg><span>The vault</span>
+                </a>
             </header>
 
-        <div class="chat-container">
-            <div class="chat-header">
-                <h2 class="chat-title">The winners’ chat</h2>
-                <p class="chat-description">Say hello to everyone else who got in. Be kind, and no spoilers for the current riddle.</p>
+            <div class="messages-area" id="messages-container" role="log" aria-live="polite" aria-label="Messages from winners" tabindex="0">
+                <div class="loading-message">Lighting the lamps…</div>
             </div>
 
-            <div class="messages-area" id="messages-container">
-                <div class="loading-message">Connecting to the Winners' Network...</div>
-            </div>
-
-            <form class="message-form" id="message-form">
-                <div class="form-row">
-                    <input type="text" class="form-input" id="username-input" placeholder="Your Name" required maxlength="50" autocomplete="off">
-                    <input type="text" class="form-input" id="title-input" placeholder="Your Title (optional)" maxlength="30" autocomplete="off">
+            <form class="message-form" id="message-form" novalidate>
+                <div class="lg-who">
+                    <label class="lg-chip"><span>Name</span><input type="text" class="form-input" id="username-input" placeholder="Your name" required maxlength="50" autocomplete="nickname"></label>
+                    <label class="lg-chip"><span>Title</span><input type="text" class="form-input" id="title-input" placeholder="optional, e.g. GW ’27" maxlength="30" autocomplete="off"></label>
                 </div>
-                <textarea class="form-textarea" id="message-input" placeholder="Share your thoughts with the winners..." required maxlength="500"></textarea>
-                <button type="submit" class="submit-btn" id="submit-btn">Send Message</button>
+                <div class="lg-compose">
+                    <textarea class="form-textarea" id="message-input" rows="1" placeholder="Write a note to the other winners…" required maxlength="500" aria-label="Your message"></textarea>
+                    <button type="submit" class="submit-btn" id="submit-btn" aria-label="Send message">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </button>
+                </div>
+                <div class="lg-meta">
+                    <span class="user-id">Winner ID <span class="user-id-value" id="user-id-display">connecting…</span></span>
+                    <span class="lg-hintkeys">Enter to send · Shift + Enter for a new line</span>
+                    <span class="lg-count" id="lg-count">0 / 500</span>
+                </div>
             </form>
-
-            <div class="user-id">
-                Your Winner ID: <span class="user-id-value" id="user-id-display">Connecting...</span>
-            </div>
-        </div>
-            <p class="lg-back">A new riddle opens every two weeks. <a href="/brain-teaser">Back to the vault →</a></p>
         </section>
     </main>
 
@@ -278,57 +318,105 @@
             return `${days}d ago`;
         }
 
+        // Warm ink colours for the initial avatars, picked from the name
+        const AVATAR = ['#8a5a2b', '#5f7a61', '#3b6e8f', '#7a2e3a', '#a8843a', '#4b5563', '#6b4f8a', '#2f6b4f'];
+        function avatarColor(name) { let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0; return AVATAR[h % AVATAR.length]; }
+        function dayLabel(date) {
+            const now = new Date(), d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const diff = Math.round((d0 - d) / 86400000);
+            if (diff === 0) return 'Today';
+            if (diff === 1) return 'Yesterday';
+            return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric' });
+        }
+
         function renderMessage(snap) {
             const data = snap.data();
             const hasLiked = localLikes.has(snap.id);
+            const name = data.username || 'Anonymous';
 
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
+            const messageDiv = document.createElement('article');
+            messageDiv.className = 'message' + (userId && data.userId === userId ? ' mine' : '');
             messageDiv.dataset.id = snap.id;
 
-            const safeName = escapeHtml(data.username || 'Anonymous');
-            const safeTitle = data.title ? ` • ${escapeHtml(data.title)}` : '';
+            const safeName = escapeHtml(name);
+            const safeTitle = data.title ? `<span class="message-title">${escapeHtml(data.title)}</span>` : '';
             const safeText = escapeHtml(data.message || '');
-            const displayName = `${safeName}${safeTitle}`;
+            const when = data.timestamp && data.timestamp.toDate ? data.timestamp.toDate() : new Date();
 
             messageDiv.innerHTML = `
-                <div class="message-header">
-                    <div class="message-author">${displayName}</div>
-                    <div class="message-time">${formatTimeAgo(data.timestamp)}</div>
+                <span class="message-avatar" style="--av:${avatarColor(name)}" aria-hidden="true">${escapeHtml(name.trim().charAt(0).toUpperCase() || '?')}</span>
+                <div class="message-body">
+                    <div class="message-header">
+                        <span class="message-author">${safeName}</span>${safeTitle}
+                        <time class="message-time" datetime="${when.toISOString()}" title="${when.toLocaleString('en-US')}">${formatTimeAgo(data.timestamp)}</time>
+                    </div>
+                    <p class="message-text">${safeText}</p>
                 </div>
-                <div class="message-text">${safeText}</div>
-                <div class="message-actions">
-                    <button class="like-btn ${hasLiked ? 'liked' : ''}" ${(!userId || hasLiked) ? 'disabled' : ''} aria-pressed="${hasLiked}" aria-label="Like this message">
-                        ♥ <span class="like-count">${data.likes || 0}</span>
-                    </button>
-                </div>
+                <button class="like-btn ${hasLiked ? 'liked' : ''}" ${(!userId || hasLiked) ? 'disabled' : ''} aria-pressed="${hasLiked}" aria-label="Like this message">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+                    <span class="like-count">${data.likes || 0}</span>
+                </button>
             `;
-
-            return messageDiv;
+            return { el: messageDiv, when };
         }
 
-        let unsubscribe = null;
+        let unsubscribe = null, firstPaint = true;
         function loadMessages() {
             if (unsubscribe) unsubscribe();
             const messagesCol = collection(db, COLLECTION);
             const q = query(messagesCol, orderBy("timestamp", "desc"), limit(100));
 
             unsubscribe = onSnapshot(q, (snapshot) => {
+                // keep the reader's place: stick to the bottom if they were there, otherwise hold position
+                const fromBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+                const atBottom = firstPaint || fromBottom < 80;
+                const keepTop = messagesContainer.scrollTop;
                 messagesContainer.innerHTML = '';
 
                 if (snapshot.empty) {
-                    messagesContainer.innerHTML = '<div class="loading-message">Be the first winner to leave a message!</div>';
+                    messagesContainer.innerHTML = '<div class="loading-message">Be the first winner to leave a note.</div>';
                     return;
                 }
 
-                snapshot.forEach(doc => {
-                    messagesContainer.appendChild(renderMessage(doc));
+                // oldest at the top, newest by the composer, with a divider for each day
+                const docs = []; snapshot.forEach(d => docs.push(d)); docs.reverse();
+                let lastDay = '';
+                docs.forEach(d => {
+                    const { el, when } = renderMessage(d);
+                    const label = dayLabel(when);
+                    if (label !== lastDay) {
+                        const sep = document.createElement('div');
+                        sep.className = 'day-sep'; sep.innerHTML = `<span>${label}</span>`;
+                        messagesContainer.appendChild(sep); lastDay = label;
+                    }
+                    messagesContainer.appendChild(el);
                 });
+
+                messagesContainer.style.scrollBehavior = 'auto';          // restore instantly, no glide
+                if (atBottom) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                else messagesContainer.scrollTop = keepTop;
+                messagesContainer.style.scrollBehavior = '';
+                firstPaint = false;
             }, (err) => {
                 console.error('Snapshot error:', err);
                 messagesContainer.innerHTML = '<div class="loading-message">Lost connection. Refresh to reconnect.</div>';
             });
         }
+
+        // the composer: grows with the text, Enter sends, Shift+Enter adds a line
+        const countEl = document.getElementById('lg-count');
+        function fitComposer() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 140) + 'px';
+            const n = messageInput.value.length;
+            countEl.textContent = `${n} / 500`;
+            countEl.classList.toggle('near', n > 440);
+        }
+        messageInput.addEventListener('input', fitComposer);
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); messageForm.requestSubmit(); }
+        });
 
         messagesContainer.addEventListener('click', async (e) => {
             const likeBtn = e.target.closest('.like-btn');
@@ -370,14 +458,15 @@
             const title = titleInput.value.trim();
             const message = messageInput.value.trim();
 
-            if (!username || !message) return;
+            if (!username) { const chip = usernameInput.closest('.lg-chip'); chip.classList.remove('need'); void chip.offsetWidth; chip.classList.add('need'); usernameInput.focus(); return; }
+            if (!message) { messageInput.focus(); return; }
 
             if (username.length > 50) { alert('Name must be 50 characters or less'); return; }
             if (message.length > 500) { alert('Message must be 500 characters or less'); return; }
             if (title && title.length > 30) { alert('Title must be 30 characters or less'); return; }
 
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Sending...';
+            submitBtn.classList.add('sending');
 
             try {
                 await addDoc(collection(db, COLLECTION), {
@@ -392,9 +481,9 @@
                 localStorage.setItem('catalystChatName', username);
                 localStorage.setItem('catalystChatTitle', title);
                 messageInput.value = '';
+                fitComposer();
                 messageInput.focus();
-
-                createFirework();
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             } catch (error) {
                 console.error("Error sending message:", error);
                 if (error.code === 'permission-denied') {
@@ -404,7 +493,7 @@
                 }
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Send Message';
+                submitBtn.classList.remove('sending');
             }
         });
     </script>

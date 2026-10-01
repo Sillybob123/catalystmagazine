@@ -665,6 +665,63 @@
         .ab-cue, .ab-more { display: none; }
         .ab-act { opacity: 1; }
       }
+      /* ---------- in-page menu (same as the home page) ----------
+         Desktop: a rail of ticks in the right margin, the current section's
+         tick longer and dark; pointing at it slides the labels in on frosted
+         glass. Phones: a faint glass bar at the foot of the screen. */
+      .pnav {
+        position: fixed; z-index: 900; right: 14px; top: 50%;
+        display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding: 10px 8px;
+        border-radius: 14px; border: 1px solid transparent;
+        opacity: 0; pointer-events: none; transform: translate(10px, -50%);
+        transition: opacity .45s var(--ease-out), transform .45s var(--ease-out), background-color .35s, border-color .35s, box-shadow .35s, color .35s;
+      }
+      .pnav.on { opacity: 1; pointer-events: auto; transform: translate(0, -50%); }
+      .pnav a {
+        display: flex; align-items: center; justify-content: flex-end; gap: 0; min-height: 30px; padding: 0 4px 0 10px;
+        font: 500 13px/1 var(--sans); color: var(--ink-2); white-space: nowrap; text-decoration: none; transition: color .3s;
+      }
+      .pnav i { flex: none; width: 14px; height: 1.5px; border-radius: 2px; background: currentColor; opacity: .4; transition: width .35s var(--ease-out), opacity .35s; }
+      .pnav a[aria-current="true"] { color: var(--ink); }
+      .pnav a[aria-current="true"] i { width: 28px; opacity: 1; }
+      .pnav .pn-l { max-width: 0; overflow: hidden; opacity: 0; transform: translateX(6px); transition: max-width .4s var(--ease-out), opacity .3s var(--ease-out), transform .35s var(--ease-out); }
+      .pnav.on:hover, .pnav.on:focus-within {
+        background: rgba(248, 247, 243, .9); border-color: var(--hair-2);
+        -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%);
+        box-shadow: 0 16px 40px -20px rgba(15, 23, 42, .35);
+      }
+      .pnav:hover .pn-l, .pnav:focus-within .pn-l { max-width: 140px; opacity: 1; transform: none; }
+      .pnav:hover a, .pnav:focus-within a { gap: 12px; }
+      .pnav a:hover { color: var(--ink); }
+      .pnav a:hover i { opacity: .8; }
+      .pnav a[aria-current="true"] .pn-l { font-weight: 600; }
+      .pnav a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 6px; }
+      /* over the dark closing picture the ticks turn to paper */
+      .pnav.on-dark:not(:hover):not(:focus-within) a { color: rgba(248, 247, 243, .75); }
+      .pnav.on-dark:not(:hover):not(:focus-within) a[aria-current="true"] { color: #fff; }
+
+      @media (max-width: 1099px), (hover: none) {
+        .pnav {
+          right: auto; left: 50%; top: auto; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+          flex-direction: row; align-items: center; gap: 2px; padding: 4px; max-width: calc(100vw - 150px);
+          border-radius: 999px; border-color: var(--hair-2); background: rgba(248, 247, 243, .78);
+          -webkit-backdrop-filter: blur(14px) saturate(160%); backdrop-filter: blur(14px) saturate(160%);
+          box-shadow: 0 10px 30px -16px rgba(15, 23, 42, .3);
+          overflow-x: auto; scrollbar-width: none; transform: translate(-50%, 12px);
+        }
+        .pnav::-webkit-scrollbar { display: none; }
+        .pnav.on { opacity: .9; transform: translate(-50%, 0); }
+        .pnav.on:hover, .pnav.on:focus-within { opacity: 1; }
+        .pnav a { flex: none; min-height: 36px; padding: 0 13px; border-radius: 999px; font-size: 13px; gap: 0; }
+        .pnav:hover a, .pnav:focus-within a { gap: 0; }
+        .pnav i { display: none; }
+        .pnav .pn-l { max-width: none; opacity: 1; transform: none; }
+        .pnav a[aria-current="true"] { background: var(--ink); color: var(--paper); }
+        .pnav.on-dark:not(:hover):not(:focus-within) a { color: var(--ink-2); }
+        .pnav.on-dark:not(:hover):not(:focus-within) a[aria-current="true"] { color: var(--paper); }
+      }
+      @media (prefers-reduced-motion: reduce) { .pnav, .pnav .pn-l, .pnav i { transition: opacity .2s; } }
+      #mission, #story, #numbers, #standards, #team, #join { scroll-margin-top: 96px; }
     </style>
 </head>
 <body data-page="about">
@@ -699,7 +756,7 @@
         </section>
 
         <!-- ============================== MISSION ============================== -->
-        <section class="ab-mission" aria-labelledby="ab-mission-title">
+        <section class="ab-mission" id="mission" aria-labelledby="ab-mission-title">
             <div class="ab-wrap">
                 <h2 class="sr-only" id="ab-mission-title">What we do</h2>
 
@@ -764,7 +821,7 @@
         </section>
 
         <!-- ============================== NUMBERS ============================== -->
-        <section class="ab-numbers" aria-label="The Catalyst in numbers">
+        <section class="ab-numbers" id="numbers" aria-label="The Catalyst in numbers">
             <div class="ab-wrap">
                 <div class="ab-stats">
                     <div class="ab-stat" data-reveal><b data-count="stories">&ndash;</b><span>stories published</span></div>
@@ -779,7 +836,7 @@
         </section>
 
         <!-- ============================= COMMITMENT ============================ -->
-        <section class="ab-commit" aria-labelledby="ab-commit-title">
+        <section class="ab-commit" id="standards" aria-labelledby="ab-commit-title">
             <div class="ab-wrap ab-commit-grid">
                 <div>
                     <p class="ab-kicker" data-reveal>Our commitment</p>
@@ -813,7 +870,7 @@
         </section>
 
         <!-- =============================== CLOSING =============================== -->
-        <section class="ab-close" aria-labelledby="ab-close-title">
+        <section class="ab-close" id="join" aria-labelledby="ab-close-title">
             <div class="ab-close-bg" aria-hidden="true">
                 <img id="ab-close-img" src="/beta/about-close-1600.webp?v=1"
                      srcset="/beta/about-close-1600.webp?v=1 1600w, /beta/about-close-2600.webp?v=1 2600w" sizes="100vw"
@@ -831,6 +888,17 @@
             </div>
         </section>
     </main>
+
+    <!-- in-page menu: a rail in the right margin (desktop), a small bar at the foot of the screen (phones) -->
+    <nav class="pnav" id="pnav" aria-label="On this page" hidden>
+        <a href="#mission" data-sec="mission"><span class="pn-l">What we do</span><i aria-hidden="true"></i></a>
+        <a href="#story" data-sec="story"><span class="pn-l">Our story</span><i aria-hidden="true"></i></a>
+        <a href="#numbers" data-sec="numbers"><span class="pn-l">In numbers</span><i aria-hidden="true"></i></a>
+        <a href="#standards" data-sec="standards"><span class="pn-l">Standards</span><i aria-hidden="true"></i></a>
+        <a href="#team" data-sec="team"><span class="pn-l">The team</span><i aria-hidden="true"></i></a>
+        <a href="#join" data-sec="join"><span class="pn-l">Join us</span><i aria-hidden="true"></i></a>
+    </nav>
+
 
     <dialog class="ab-bio" id="ab-bio" aria-labelledby="ab-bio-name">
         <div class="ab-bio-in">
@@ -854,5 +922,51 @@
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
     <script defer src="/js/main.js?v=20260925-review"></script>
     <script defer src="/js/about.js?v=17"></script>
+    <script>
+    /* In-page menu: shows once the opening is behind you, lights the section in
+       the middle of the screen, glides to a section on click, steps aside for the footer */
+    (function () {
+      var nav = document.getElementById('pnav');
+      if (!nav || !('IntersectionObserver' in window)) return;
+      nav.hidden = false;
+      var links = Array.prototype.slice.call(nav.querySelectorAll('a'));
+      var first = document.getElementById('mission');
+      var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function onScroll() {
+        var foot = document.getElementById('site-footer');
+        var past = first.getBoundingClientRect().top < window.innerHeight * 0.35;
+        var nearFoot = foot && foot.getBoundingClientRect().top < window.innerHeight * 0.9;
+        nav.classList.toggle('on', past && !nearFoot);
+      }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', onScroll);
+      onScroll();
+      function mark(id) {
+        nav.classList.toggle('on-dark', id === 'join');
+        links.forEach(function (a) {
+          var hit = a.dataset.sec === id;
+          a.setAttribute('aria-current', hit ? 'true' : 'false');
+          if (hit && nav.scrollWidth > nav.clientWidth) {
+            var nr = nav.getBoundingClientRect(), r = a.getBoundingClientRect();
+            if (r.left < nr.left + 6 || r.right > nr.right - 6) nav.scrollTo({ left: nav.scrollLeft + r.left - nr.left - (nr.width - r.width) / 2, behavior: reduced ? 'auto' : 'smooth' });
+          }
+        });
+      }
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) mark(e.target.id); });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      links.forEach(function (a) {
+        var el = document.getElementById(a.dataset.sec);
+        if (el) io.observe(el);
+        a.addEventListener('click', function (e) {
+          if (!el) return;
+          e.preventDefault();
+          el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+          history.replaceState(null, '', '#' + a.dataset.sec);
+          mark(a.dataset.sec);
+        });
+      });
+    })();
+    </script>
 </body>
 </html>
