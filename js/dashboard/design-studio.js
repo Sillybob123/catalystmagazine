@@ -210,7 +210,8 @@ export async function renderPage(ctx, page, fmt, { skip = null } = {}) {
       }
     } catch {}
   }
-  if (bg.tint) { ctx.fillStyle = bg.tint; ctx.fillRect(0, 0, W, H); }
+  if (bg.image && bg.tintColor && bg.tintAlpha > 0) { ctx.fillStyle = hexA(bg.tintColor, bg.tintAlpha); ctx.fillRect(0, 0, W, H); }
+  else if (bg.tint) { ctx.fillStyle = bg.tint; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
 
   for (const L of page.layers || []) {
@@ -399,6 +400,51 @@ const TEMPLATES = [
       txt({ text: c.kicker || "Coming in December", x: 88, y: 160, w: 290, size: 22, weight: 600, align: "center", color: "#f8f7f3", markup: false, name: "Pill text" }),
       txt({ text: c.headline || "The Winter 2027 *edition*", x: 88, y: 236, w: W - 176, size: 86, weight: 700, lh: 1.03, ls: -0.035, name: "Headline", maxH: ink - 236 - 90, minSize: 52 }),
       txt({ text: c.sub || "Medical Innovation in the Capital.", x: 88, y: 0, w: W - 176, size: 36, font: "serif", color: "#334155", name: "Line", after: ["Headline", 22] }),
+    ] },
+  { id: "season-fall", name: "Fall edition", cat: "Edition", bg: "season-fall-georgetown",
+    build: (W, H, c, ink) => [
+      ...brandLine(W, "#7a4a24"),
+      txt({ text: c.kicker || "Out now · The Fall Edition", x: 88, y: 150, w: W - 176, size: 24, weight: 600, ls: 0.16, upper: true, color: "#9a5a2e", markup: false, name: "Kicker" }),
+      txt({ text: c.headline || "New Frontiers *in the Capital*", x: 88, y: 196, w: W - 176, size: 90, weight: 700, lh: 1.03, ls: -0.04, name: "Headline", maxH: ink - 196 - 100, minSize: 52 }),
+      txt({ text: c.sub || "Twelve stories from the labs, clinics and museums of D.C.", x: 88, y: 0, w: W - 260, size: 32, font: "serif", color: "#334155", name: "Line", after: ["Headline", 22] }),
+    ] },
+  { id: "season-winter", name: "Winter edition", cat: "Edition", bg: "season-winter-library",
+    build: (W, H, c, ink) => [
+      ...brandLine(W, "#3b5b7a"),
+      T({ type: "rect", x: 88, y: 150, w: 300, h: 52, radius: 26, fill: "#1e3a5f", name: "Pill" }),
+      txt({ text: c.kicker || "The Winter Edition", x: 88, y: 160, w: 300, size: 21, weight: 600, align: "center", color: "#f8f7f3", markup: false, name: "Pill text" }),
+      txt({ text: c.headline || "Medicine for a *colder* season", x: 88, y: 232, w: W - 176, size: 88, weight: 700, lh: 1.04, ls: -0.04, color: "#1e2a3a", name: "Headline", maxH: ink - 232 - 100, minSize: 52 }),
+      txt({ text: c.sub || "Arriving in December · catalyst-magazine.com", x: 88, y: 0, w: W - 176, size: 30, font: "serif", italic: true, color: "#3b5b7a", markup: false, name: "Line", after: ["Headline", 22] }),
+    ] },
+  { id: "season-spring", name: "Spring edition", cat: "Edition", bg: "season-spring-tidal",
+    build: (W, H, c, ink) => [
+      txt({ text: c.kicker || "THE CATALYST · SPRING", x: 88, y: 110, w: W - 176, size: 23, weight: 600, ls: 0.22, align: "center", color: "#b0606e", markup: false, name: "Kicker" }),
+      txt({ text: c.headline || "Everything *in bloom*", x: 88, y: 168, w: W - 176, size: 100, font: "serif", weight: 400, lh: 1.02, ls: -0.02, align: "center", color: "#1e2a3a", name: "Headline", maxH: ink - 168 - 110, minSize: 56 }),
+      txt({ text: c.sub || "The Spring Edition · coming in March", x: 88, y: 0, w: W - 176, size: 30, weight: 500, align: "center", color: "#5b6678", markup: false, name: "Line", after: ["Headline", 24] }),
+    ] },
+  { id: "hiring-writers", name: "Writers wanted", cat: "Announcement", bg: "wash-blush",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", src: "/beta/social/el/people-writer.webp?v=1", x: W - 88 - 520, y: H - 60 - 560, w: 520, h: 560, fit: "contain", name: "Writer" }),
+      ...kicker(c.kicker || "Join the newsroom", 88, 160),
+      txt({ text: c.headline || "Love science? *Write about it.*", x: 88, y: 206, w: W - 176, size: 86, weight: 700, lh: 1.04, ls: -0.035, name: "Headline", maxH: Math.round(H * 0.3), minSize: 52 }),
+      txt({ text: c.sub || "No experience needed. We train every new writer.", x: 88, y: 0, w: W - 400, size: 32, font: "serif", color: "#334155", name: "Line", after: ["Headline", 22] }),
+    ] },
+  { id: "speaker-event", name: "Talk / speaker", cat: "Announcement", bg: "wash-paper",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", src: "/beta/social/el/people-speaker.webp?v=1", x: W / 2 - 230, y: H - 60 - 470, w: 460, h: 470, fit: "contain", name: "Speaker" }),
+      txt({ text: c.kicker || "Thursday · 6 pm · Science & Engineering Hall", x: 88, y: 160, w: W - 176, size: 23, weight: 600, ls: 0.12, upper: true, align: "center", color: "#5b6678", markup: false, name: "Kicker" }),
+      txt({ text: c.headline || "How a vaccine *gets made*", x: 88, y: 208, w: W - 176, size: 88, weight: 700, lh: 1.04, ls: -0.035, align: "center", name: "Title", maxH: Math.round(H * 0.3), minSize: 52 }),
+      txt({ text: c.sub || "A talk with Dr. Maya Chen · free and open to all", x: 88, y: 0, w: W - 176, size: 30, font: "serif", italic: true, align: "center", color: "#334155", markup: false, name: "Line", after: ["Title", 22] }),
+    ] },
+  { id: "body-fact", name: "Body fact", cat: "Data", bg: "wash-sage",
+    build: (W, H, c) => [
+      ...brandLine(W),
+      T({ type: "image", src: "/beta/social/el/med-heart.webp?v=1", x: W - 88 - 360, y: H - 80 - 420, w: 360, h: 420, fit: "contain", name: "Heart" }),
+      ...kicker(c.kicker || "Your body, explained", 88, 160),
+      txt({ text: c.headline || "100,000", x: 80, y: 210, w: W - 160, size: 200, weight: 700, lh: 1, ls: -0.05, name: "Number" }),
+      txt({ text: c.sub || "times a day, your heart beats, without you thinking about it once.", x: 88, y: 0, w: W - 520, size: 40, font: "serif", lh: 1.3, color: "#334155", name: "Explanation", after: ["Number", 24] }),
     ] },
   { id: "event", name: "Event / date", cat: "Announcement", bg: "wash-ochre",
     build: (W, H, c, ink) => [
@@ -658,8 +704,14 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   const ro = new ResizeObserver(() => fit());
   ro.observe(stage);
 
-  let drawing = 0;
+  // One render per frame, however fast sliders and pickers fire.
+  let drawing = 0, drawQueued = false;
   function draw() {
+    if (drawQueued) return;
+    drawQueued = true;
+    requestAnimationFrame(() => { drawQueued = false; drawNow(); });
+  }
+  function drawNow() {
     const token = ++drawing;
     const c2 = canvas.getContext("2d");
     const dpr = canvas.width / (fmt().w * scale);
@@ -874,22 +926,32 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   }
 
   // ── contextual toolbar ──
-  function swatches(cur, attr) {
-    return `<div class="ds-swatches">${PALETTE.map((c) => `<button type="button" class="ds-sw${cur === c ? " is-on" : ""}" data-${attr}="${c}" style="--c:${c}" aria-label="${c}"></button>`).join("")}<label class="ds-sw ds-sw-custom" title="Custom colour"><input type="color" data-${attr}-custom value="${/^#[0-9a-f]{6}$/i.test(cur || "") ? cur : "#0f172a"}"></label></div>`;
+  // Colours already used anywhere in the design (for quick matching).
+  function designColours() {
+    const out = new Set();
+    for (const pg of design.pages) {
+      if (/^#[0-9a-f]{6}$/i.test(pg.bg?.color || "")) out.add(pg.bg.color.toLowerCase());
+      for (const L of pg.layers) for (const c of [L.color, L.fill]) if (/^#[0-9a-f]{6}$/i.test(c || "")) out.add(c.toLowerCase());
+    }
+    return [...out].filter((c) => !PALETTE.includes(c)).slice(0, 8);
+  }
+  function swatches(cur, attr, { none = false } = {}) {
+    const hex = /^#[0-9a-f]{6}$/i.test(cur || "") ? cur.toLowerCase() : "";
+    const sw = (c) => `<button type="button" class="ds-sw${hex === c.toLowerCase() ? " is-on" : ""}" data-${attr}="${c}" style="--c:${c}" title="${c}" aria-label="Colour ${c}"></button>`;
+    const used = designColours();
+    return `<div class="ds-swatches">
+      ${none ? `<button type="button" class="ds-sw ds-sw-none${!cur ? " is-on" : ""}" data-${attr}="none" title="None" aria-label="No colour"></button>` : ""}
+      ${used.length ? used.map(sw).join("") + `<span class="ds-sw-sep" aria-hidden="true"></span>` : ""}
+      ${PALETTE.map(sw).join("")}
+      <label class="ds-sw ds-sw-custom" title="Pick any colour"><input type="color" data-${attr}-custom value="${hex || "#0f172a"}" aria-label="Pick any colour"></label>
+      <input class="ds-hex" type="text" maxlength="7" spellcheck="false" value="${hex}" placeholder="#hex" data-${attr}-hex aria-label="Hex colour">
+    </div>`;
   }
   function paintToolbar() {
     const tb = $("#ds-toolbar");
     const L = sel && layer(sel);
     if (!L) {
-      const bg = page().bg || {};
-      tb.innerHTML = `
-        <span class="ds-tb-label">Page ${pageIdx + 1}</span>
-        <span class="ds-tb-sep"></span>
-        <span class="ds-tb-label">Background</span>
-        ${swatches(bg.color, "bgc")}
-        ${bg.image ? `<button type="button" class="ds-ghost" data-act="bg-clear">Remove image</button>` : ""}
-        ${bg.image ? `<label class="ds-tb-field">Position<select data-act="bg-fit"><option value="cover"${bg.fit !== "bottom" ? " selected" : ""}>Fill</option><option value="bottom"${bg.fit === "bottom" ? " selected" : ""}>Fit width, bottom</option></select></label>` : ""}
-        <span class="ds-tb-hint">Click anything on the page to edit it. Double-click text to type.</span>`;
+      tb.innerHTML = bgControls();
       return;
     }
     const common = `
@@ -927,7 +989,79 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
         ${common}`;
     }
   }
+  // Background controls (toolbar when nothing is selected, and the top of
+  // the Backgrounds panel). A colour = a plain page; a wash tints the image.
+  function bgControls({ inPanel = false } = {}) {
+    const bg = page().bg || {};
+    const hasImg = !!bg.image;
+    return `
+      ${inPanel ? "" : `<span class="ds-tb-label">Page ${pageIdx + 1}</span><span class="ds-tb-sep"></span>`}
+      <div class="ds-bgctl">
+        <span class="ds-tb-label">${hasImg ? "Plain colour" : "Colour"}</span>
+        ${swatches(hasImg ? "" : bg.color, "bgc")}
+      </div>
+      ${hasImg ? `
+      <div class="ds-bgctl">
+        <span class="ds-tb-label">Wash over image</span>
+        ${swatches(bg.tintAlpha > 0 ? bg.tintColor : "", "tint", { none: true })}
+        <label class="ds-tb-field">Strength<input type="range" min="0" max="0.85" step="0.01" value="${bg.tintAlpha || 0}" data-bgprop="tintAlpha"></label>
+      </div>
+      <div class="ds-bgctl">
+        <label class="ds-tb-field">Position<select data-act="bg-fit"><option value="cover"${bg.fit !== "bottom" ? " selected" : ""}>Fill the page</option><option value="bottom"${bg.fit === "bottom" ? " selected" : ""}>Fit width, at the bottom</option></select></label>
+        <button type="button" class="ds-ghost" data-act="bg-clear">Remove image</button>
+      </div>` : ""}
+      ${inPanel ? "" : `<span class="ds-tb-hint">Click anything on the page to edit it. Double-click text to type.</span>`}`;
+  }
+  // Apply a colour from any swatch row. kind: color | fill | bgc | tint
+  function applyColour(kind, c, { live = false } = {}) {
+    const L = sel && layer(sel);
+    const bg = page().bg || (page().bg = {});
+    if (kind === "color" && L) L.color = c;
+    else if (kind === "fill" && L) L.fill = c;
+    else if (kind === "bgc") {
+      // A full-bleed image would hide the colour, so a colour means a plain page.
+      if (bg.image && bg.fit !== "bottom") bg.image = null;
+      bg.color = c;
+    } else if (kind === "tint") {
+      if (c === "none") bg.tintAlpha = 0;
+      else { bg.tintColor = c; if (!(bg.tintAlpha > 0)) bg.tintAlpha = 0.35; }
+    } else return;
+    draw();
+    if (live) commitSoon();
+    else { commit(); paintToolbar(); syncPanelBg(); }
+  }
+  function syncPanelBg() {
+    const box = container.querySelector("#ds-panel-bgctl");
+    if (box) box.innerHTML = bgControls({ inPanel: true });
+    container.querySelectorAll("[data-bg]").forEach((t) => t.classList.toggle("is-on", (bgById[t.dataset.bg]?.image || "") === (page().bg?.image || "-")));
+  }
+  function onColourInput(e) {
+    const t = e.target;
+    for (const kind of ["color", "fill", "bgc", "tint"]) {
+      if (t.matches(`[data-${kind}-custom]`)) { applyColour(kind, t.value, { live: true }); const hx = t.closest(".ds-swatches")?.querySelector(".ds-hex"); if (hx) hx.value = t.value; return true; }
+      if (t.matches(`[data-${kind}-hex]`)) {
+        let v = t.value.trim(); if (v && v[0] !== "#") v = "#" + v;
+        if (/^#[0-9a-f]{6}$/i.test(v)) applyColour(kind, v.toLowerCase(), { live: true });
+        return true;
+      }
+    }
+    if (t.dataset.bgprop) { page().bg[t.dataset.bgprop] = Number(t.value); if (t.dataset.bgprop === "tintAlpha" && !page().bg.tintColor) page().bg.tintColor = "#0f172a"; draw(); commitSoon(); return true; }
+    return false;
+  }
+  function onColourClick(b) {
+    for (const kind of ["color", "fill", "bgc", "tint"]) {
+      if (b.dataset[kind] != null && b.classList.contains("ds-sw")) { applyColour(kind, b.dataset[kind]); return true; }
+    }
+    if (b.dataset.act === "bg-clear") { page().bg.image = null; commit(); draw(); paintToolbar(); syncPanelBg(); return true; }
+    return false;
+  }
+  function onBgFit(t) {
+    if (t.dataset.act !== "bg-fit") return false;
+    page().bg.fit = t.value; draw(); commit(); paintToolbar(); syncPanelBg(); return true;
+  }
+
   $("#ds-toolbar").addEventListener("input", (e) => {
+    if (onColourInput(e)) return;
     const t = e.target;
     const L = sel && layer(sel);
     if (t.dataset.prop && L) {
@@ -935,25 +1069,21 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       L[t.dataset.prop] = t.dataset.prop === "weight" ? Number(v) : v;
       if (t.dataset.prop === "sw" && L.type !== "line" && !L.stroke) L.stroke = "#0f172a";
       draw(); commitSoon();
-    } else if (t.matches("[data-color-custom]") && L) { L.color = t.value; draw(); commitSoon(); }
-    else if (t.matches("[data-fill-custom]") && L) { L.fill = t.value; draw(); commitSoon(); }
-    else if (t.matches("[data-bgc-custom]")) { page().bg.color = t.value; draw(); commitSoon(); }
+    }
   });
   $("#ds-toolbar").addEventListener("change", (e) => {
     const t = e.target;
-    if (t.dataset.act === "bg-fit") { page().bg.fit = t.value; draw(); commit(); }
-    else if (t.tagName === "SELECT" && sel) paintToolbar();
+    if (onBgFit(t)) return;
+    if (t.matches("input[type=color], .ds-hex")) { paintToolbar(); syncPanelBg(); return; }   // picker closed / hex entered: refresh the "is-on" rings
+    if (t.tagName === "SELECT" && sel) paintToolbar();
   });
   $("#ds-toolbar").addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
     const L = sel && layer(sel);
-    if (b.dataset.color && L) { L.color = b.dataset.color; }
-    else if (b.dataset.fill && L) { L.fill = b.dataset.fill; }
-    else if (b.dataset.bgc) { page().bg.color = b.dataset.bgc; }
-    else if (b.dataset.toggle && L) { L[b.dataset.toggle] = !L[b.dataset.toggle]; }
+    if (onColourClick(b)) return;
+    if (b.dataset.toggle && L) { L[b.dataset.toggle] = !L[b.dataset.toggle]; }
     else if (b.dataset.align && L) { L.align = b.dataset.align; }
-    else if (b.dataset.act === "bg-clear") { page().bg.image = null; }
     else if (b.dataset.act === "del" && L) return removeLayer(L.id);
     else if (b.dataset.act === "dup" && L) return duplicateLayer(L.id);
     else if (b.dataset.act === "up" && L) return moveLayer(L.id, 1);
@@ -1003,12 +1133,15 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       }
     } else if (panel === "backgrounds") {
       const cats = [...new Set(lib.backgrounds.map((b) => b.cat))];
-      p.innerHTML = `<h3>Backgrounds</h3><p class="ds-panel-hint">Watercolour illustrations with room for text, washes and night scenes.</p>
+      p.innerHTML = `<h3>Background</h3>
+        <div class="ds-panel-bgctl" id="ds-panel-bgctl">${bgControls({ inPanel: true })}</div>
+        <h4>Illustrations</h4>
+        <p class="ds-panel-hint">Watercolour scenes with room for text, washes and night skies.</p>
         <div class="ds-chips">${["All", ...cats].map((c, i) => `<button type="button" data-bgcat="${esc(c)}" class="${i === 0 ? "is-on" : ""}">${esc(c)}</button>`).join("")}</div>
         <div class="ds-bgrid" id="ds-bgrid"></div>`;
       const paintBg = (cat) => {
         p.querySelector("#ds-bgrid").innerHTML = lib.backgrounds.filter((b) => cat === "All" || b.cat === cat).map((b) => `
-          <button type="button" class="ds-btile" data-bg="${esc(b.id)}" title="${esc(b.title)}"><img src="${esc(b.thumb || b.image)}" alt="" loading="lazy"></button>`).join("");
+          <button type="button" class="ds-btile${(page().bg?.image || "-") === b.image ? " is-on" : ""}" data-bg="${esc(b.id)}" title="${esc(b.title)}"><img src="${esc(b.thumb || b.image)}" alt="${esc(b.title)}" loading="lazy"></button>`).join("");
       };
       paintBg("All");
       p.querySelector(".ds-chips").addEventListener("click", (e) => {
@@ -1017,8 +1150,11 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
         paintBg(b.dataset.bgcat);
       });
     } else if (panel === "elements") {
+      const ecats = [...new Set(lib.elements.map((e) => e.cat || "Other"))];
       p.innerHTML = `<h3>Elements</h3>
-        <h4>Illustrations</h4><div class="ds-egrid">${lib.elements.map((e) => `<button type="button" class="ds-etile" data-el="${esc(e.id)}" title="${esc(e.title)}"><img src="${esc(e.thumb || e.image)}" alt="" loading="lazy"></button>`).join("") || `<p class="ds-panel-hint">Loading…</p>`}</div>
+        <input type="search" class="ds-search" id="ds-el-search" placeholder="Search ${lib.elements.length} illustrations…" aria-label="Search illustrations">
+        <div class="ds-chips" id="ds-el-cats">${["All", ...ecats].map((c, i) => `<button type="button" data-elcat="${esc(c)}" class="${i === 0 ? "is-on" : ""}">${esc(c)}</button>`).join("")}</div>
+        <div class="ds-egrid" id="ds-egrid"></div>
         <h4>Shapes</h4><div class="ds-shapes">
           <button type="button" data-shape="rect" title="Rectangle"><span style="border-radius:4px"></span></button>
           <button type="button" data-shape="round" title="Rounded card"><span style="border-radius:14px"></span></button>
@@ -1027,6 +1163,20 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
           <button type="button" data-shape="frame" title="Outline frame"><span style="background:none;border:2px solid currentColor;border-radius:6px"></span></button>
           <button type="button" data-shape="line" title="Line"><span style="height:3px"></span></button>
         </div>`;
+      let ecat = "All";
+      const paintEls = () => {
+        const q = p.querySelector("#ds-el-search").value.trim().toLowerCase();
+        const list = lib.elements.filter((e) => (ecat === "All" || (e.cat || "Other") === ecat) && (!q || `${e.title} ${e.cat} ${e.tags || ""}`.toLowerCase().includes(q)));
+        p.querySelector("#ds-egrid").innerHTML = list.map((e) => `<button type="button" class="ds-etile" data-el="${esc(e.id)}" title="${esc(e.title)}"><img src="${esc(e.thumb || e.image)}" alt="${esc(e.title)}" loading="lazy"></button>`).join("") || `<p class="ds-panel-hint">Nothing matches.</p>`;
+      };
+      paintEls();
+      p.querySelector("#ds-el-search").addEventListener("input", paintEls);
+      p.querySelector("#ds-el-cats").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-elcat]"); if (!b) return;
+        ecat = b.dataset.elcat;
+        p.querySelectorAll("#ds-el-cats button").forEach((x) => x.classList.toggle("is-on", x === b));
+        paintEls();
+      });
     } else if (panel === "text") {
       p.innerHTML = `<h3>Text</h3><p class="ds-panel-hint">Wrap a word in *asterisks* to set it in the serif italic, like our headlines.</p>
         <div class="ds-textpresets">
@@ -1065,9 +1215,15 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     }
   }
 
+  $("#ds-panel").addEventListener("input", (e) => { onColourInput(e); });
+  $("#ds-panel").addEventListener("change", (e) => {
+    if (onBgFit(e.target)) return;
+    if (e.target.matches("#ds-panel-bgctl input[type=color], #ds-panel-bgctl .ds-hex")) { paintToolbar(); syncPanelBg(); }
+  });
   $("#ds-panel").addEventListener("click", (e) => {
     const t = e.target.closest("button, li[data-layer]");
     if (!t) return;
+    if (t.closest("#ds-panel-bgctl")) { onColourClick(t); return; }
     const f = fmt();
     if (t.dataset.tpl) {
       const cur = page();
@@ -1077,7 +1233,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     } else if (t.dataset.bg) {
       const b = bgById[t.dataset.bg];
       page().bg = bgFrom(b, design.format, { focusY: page().bg?.focusY ?? 0.5 });
-      commit(); draw(); paintToolbar();
+      commit(); draw(); paintToolbar(); syncPanelBg();
     } else if (t.dataset.el) {
       const e2 = lib.elements.find((x) => x.id === t.dataset.el);
       const k = 440 / Math.max(e2.w || 1, e2.h || 1);

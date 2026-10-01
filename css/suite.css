@@ -754,6 +754,16 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ds-sw.is-on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
 .ds-sw-custom { display: inline-block; background: conic-gradient(#c97b84, #c9962e, #5f7a61, #3b6e8f, #7a2e3a, #c97b84); overflow: hidden; }
 .ds-sw-custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ds-sw-none { background: var(--surface) linear-gradient(135deg, transparent 45%, var(--danger) 45%, var(--danger) 55%, transparent 55%); }
+.ds-sw-sep { width: 1px; height: 18px; margin: 0 3px; background: var(--hairline); }
+.ds-hex { width: 88px; min-height: 30px; padding: 0 8px; border-radius: 8px; font: 500 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: lowercase; }
+.ds-bgctl { display: inline-flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; }
+.ds-panel-bgctl { display: flex; flex-direction: column; gap: 12px; margin: 10px 0 4px; padding: 12px; border: 1px solid var(--hairline-2); border-radius: 12px; background: var(--surface-2); }
+.ds-panel-bgctl .ds-bgctl { display: flex; flex-direction: column; align-items: flex-start; }
+.ds-panel-bgctl .ds-tb-field input[type="range"] { width: 150px; }
+.ds-panel-bgctl .ds-tb-field select { min-height: 34px; font: 500 12px/1 var(--font); border-radius: 8px; }
+.ds-btile.is-on { outline: 2px solid var(--ink); outline-offset: 2px; }
+.ds-search { width: 100%; min-height: 38px; margin-top: 8px; padding: 0 12px; border-radius: 10px; font: 400 13px/1 var(--font); }
 .ds-stage { flex: 1; display: grid; place-items: center; padding: 28px 24px; min-height: 480px; background-color: var(--surface-3); background-image: radial-gradient(rgba(15,23,42,.07) 1px, transparent 1px); background-size: 18px 18px; overflow: hidden; }
 .ds-artboard { position: relative; box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 24px 50px -20px rgba(15,23,42,.35); background: #f8f7f3; touch-action: none; user-select: none; -webkit-user-select: none; }
 .ds-artboard canvas { display: block; }

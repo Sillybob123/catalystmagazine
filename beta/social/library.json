@@ -1,6 +1,106 @@
 {
  "backgrounds": [
   {
+   "id": "season-fall-georgetown",
+   "title": "Georgetown in autumn",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-fall-georgetown.webp?v=1",
+   "thumb": "/beta/social/bg/season-fall-georgetown-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.396,
+   "paper": "#fbf4e8"
+  },
+  {
+   "id": "season-fall-mall",
+   "title": "The Mall in autumn",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-fall-mall.webp?v=1",
+   "thumb": "/beta/social/bg/season-fall-mall-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.365,
+   "paper": "#fbf7f0"
+  },
+  {
+   "id": "season-fall-still-life",
+   "title": "Autumn desk still life",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-fall-still-life.webp?v=1",
+   "thumb": "/beta/social/bg/season-fall-still-life-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.496,
+   "paper": "#fdf6eb"
+  },
+  {
+   "id": "season-winter-library",
+   "title": "Snowy Capitol at dusk",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-winter-library.webp?v=1",
+   "thumb": "/beta/social/bg/season-winter-library-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.367,
+   "paper": "#fbf7ef"
+  },
+  {
+   "id": "season-winter-desk",
+   "title": "Winter window desk",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-winter-desk.webp?v=1",
+   "thumb": "/beta/social/bg/season-winter-desk-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.295,
+   "paper": "#f9f2e7"
+  },
+  {
+   "id": "season-winter-night",
+   "title": "Snow over the Monument",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-winter-night.webp?v=1",
+   "thumb": "/beta/social/bg/season-winter-night-thumb.webp?v=1",
+   "tone": "dark",
+   "inkTop": 0.426,
+   "paper": "#0c1327"
+  },
+  {
+   "id": "season-spring-tidal",
+   "title": "Tidal Basin in bloom",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-spring-tidal.webp?v=1",
+   "thumb": "/beta/social/bg/season-spring-tidal-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.446,
+   "paper": "#fcf5ed"
+  },
+  {
+   "id": "season-spring-lab",
+   "title": "Spring in the lab",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-spring-lab.webp?v=1",
+   "thumb": "/beta/social/bg/season-spring-lab-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.438,
+   "paper": "#fcf5eb"
+  },
+  {
+   "id": "season-spring-rain",
+   "title": "Spring rain at the Capitol",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-spring-rain.webp?v=1",
+   "thumb": "/beta/social/bg/season-spring-rain-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.437,
+   "paper": "#f7f1e5"
+  },
+  {
+   "id": "season-summer-potomac",
+   "title": "Summer on the Potomac",
+   "cat": "Seasons",
+   "image": "/beta/social/bg/season-summer-potomac.webp?v=1",
+   "thumb": "/beta/social/bg/season-summer-potomac-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.546,
+   "paper": "#fbeee1"
+  },
+  {
    "id": "dc-air-space",
    "title": "Air and Space Museum",
    "cat": "D.C.",
@@ -363,60 +463,213 @@
  ],
  "elements": [
   {
+   "id": "people-astronaut",
+   "title": "Astronaut",
+   "cat": "People",
+   "tags": "nasa space",
+   "image": "/beta/social/el/people-astronaut.webp?v=1",
+   "thumb": "/beta/social/el/people-astronaut-thumb.webp?v=1",
+   "w": 646,
+   "h": 1000
+  },
+  {
+   "id": "people-doctor",
+   "title": "Doctor",
+   "cat": "People",
+   "tags": "physician medicine health woman",
+   "image": "/beta/social/el/people-doctor.webp?v=1",
+   "thumb": "/beta/social/el/people-doctor-thumb.webp?v=1",
+   "w": 380,
+   "h": 1000
+  },
+  {
+   "id": "people-engineer",
+   "title": "Engineer",
+   "cat": "People",
+   "tags": "engineering construction build",
+   "image": "/beta/social/el/people-engineer.webp?v=1",
+   "thumb": "/beta/social/el/people-engineer-thumb.webp?v=1",
+   "w": 394,
+   "h": 1000
+  },
+  {
+   "id": "people-field",
+   "title": "Field researcher",
+   "cat": "People",
+   "tags": "ecology biology nature fieldwork",
+   "image": "/beta/social/el/people-field.webp?v=1",
+   "thumb": "/beta/social/el/people-field-thumb.webp?v=1",
+   "w": 384,
+   "h": 1000
+  },
+  {
+   "id": "people-graduation",
+   "title": "Graduation",
+   "cat": "People",
+   "tags": "graduate celebrate college",
+   "image": "/beta/social/el/people-graduation.webp?v=1",
+   "thumb": "/beta/social/el/people-graduation-thumb.webp?v=1",
+   "w": 857,
+   "h": 1000
+  },
+  {
+   "id": "people-pen-hand",
+   "title": "Hand writing",
+   "cat": "People",
+   "tags": "write signature calligraphy",
+   "image": "/beta/social/el/people-pen-hand.webp?v=1",
+   "thumb": "/beta/social/el/people-pen-hand-thumb.webp?v=1",
+   "w": 1000,
+   "h": 683
+  },
+  {
+   "id": "people-interview",
+   "title": "Interview",
+   "cat": "People",
+   "tags": "conversation podcast q&a",
+   "image": "/beta/social/el/people-interview.webp?v=1",
+   "thumb": "/beta/social/el/people-interview-thumb.webp?v=1",
+   "w": 1000,
+   "h": 707
+  },
+  {
+   "id": "people-reader",
+   "title": "Reading",
+   "cat": "People",
+   "tags": "man reading magazine",
+   "image": "/beta/social/el/people-reader.webp?v=1",
+   "thumb": "/beta/social/el/people-reader-thumb.webp?v=1",
+   "w": 774,
+   "h": 1000
+  },
+  {
+   "id": "people-pipette",
+   "title": "Researcher",
+   "cat": "People",
+   "tags": "researcher lab experiment",
+   "image": "/beta/social/el/people-pipette.webp?v=1",
+   "thumb": "/beta/social/el/people-pipette-thumb.webp?v=1",
+   "w": 944,
+   "h": 1000
+  },
+  {
+   "id": "people-microscope",
+   "title": "Scientist at the microscope",
+   "cat": "People",
+   "tags": "scientist lab research man",
+   "image": "/beta/social/el/people-microscope.webp?v=1",
+   "thumb": "/beta/social/el/people-microscope-thumb.webp?v=1",
+   "w": 942,
+   "h": 970
+  },
+  {
+   "id": "people-speaker",
+   "title": "Speaker",
+   "cat": "People",
+   "tags": "talk lecture event conference",
+   "image": "/beta/social/el/people-speaker.webp?v=1",
+   "thumb": "/beta/social/el/people-speaker-thumb.webp?v=1",
+   "w": 707,
+   "h": 1000
+  },
+  {
+   "id": "people-student",
+   "title": "Student on campus",
+   "cat": "People",
+   "tags": "campus college walking",
+   "image": "/beta/social/el/people-student.webp?v=1",
+   "thumb": "/beta/social/el/people-student-thumb.webp?v=1",
+   "w": 502,
+   "h": 1000
+  },
+  {
+   "id": "people-studying",
+   "title": "Studying",
+   "cat": "People",
+   "tags": "student laptop study exam homework",
+   "image": "/beta/social/el/people-studying.webp?v=1",
+   "thumb": "/beta/social/el/people-studying-thumb.webp?v=1",
+   "w": 1000,
+   "h": 859
+  },
+  {
+   "id": "people-team",
+   "title": "Team",
+   "cat": "People",
+   "tags": "group collaboration meeting students staff",
+   "image": "/beta/social/el/people-team.webp?v=1",
+   "thumb": "/beta/social/el/people-team-thumb.webp?v=1",
+   "w": 1000,
+   "h": 660
+  },
+  {
+   "id": "people-typing",
+   "title": "Typing",
+   "cat": "People",
+   "tags": "computer work hands",
+   "image": "/beta/social/el/people-typing.webp?v=1",
+   "thumb": "/beta/social/el/people-typing-thumb.webp?v=1",
+   "w": 1000,
+   "h": 960
+  },
+  {
+   "id": "people-writer",
+   "title": "Writer at work",
+   "cat": "People",
+   "tags": "woman writing journalist author desk",
+   "image": "/beta/social/el/people-writer.webp?v=1",
+   "thumb": "/beta/social/el/people-writer-thumb.webp?v=1",
+   "w": 764,
+   "h": 1000
+  },
+  {
    "id": "el-atom",
    "title": "Atom",
    "image": "/beta/social/el/el-atom.webp?v=1",
    "thumb": "/beta/social/el/el-atom-thumb.webp?v=1",
    "w": 874,
+   "h": 1000,
+   "cat": "Science"
+  },
+  {
+   "id": "sci-bacteria",
+   "title": "Bacteria",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-bacteria.webp?v=1",
+   "thumb": "/beta/social/el/sci-bacteria-thumb.webp?v=1",
+   "w": 750,
+   "h": 717
+  },
+  {
+   "id": "sci-beaker",
+   "title": "Bubbling beaker",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-beaker.webp?v=1",
+   "thumb": "/beta/social/el/sci-beaker-thumb.webp?v=1",
+   "w": 696,
    "h": 1000
   },
   {
-   "id": "el-autumn",
-   "title": "Autumn leaves",
-   "image": "/beta/social/el/el-autumn.webp?v=1",
-   "thumb": "/beta/social/el/el-autumn-thumb.webp?v=1",
-   "w": 767,
+   "id": "sci-bunsen",
+   "title": "Bunsen burner",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-bunsen.webp?v=1",
+   "thumb": "/beta/social/el/sci-bunsen-thumb.webp?v=1",
+   "w": 442,
    "h": 1000
   },
   {
-   "id": "el-books",
-   "title": "Books and glasses",
-   "image": "/beta/social/el/el-books.webp?v=1",
-   "thumb": "/beta/social/el/el-books-thumb.webp?v=1",
+   "id": "sci-geode",
+   "title": "Crystal geode",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-geode.webp?v=1",
+   "thumb": "/beta/social/el/sci-geode-thumb.webp?v=1",
    "w": 1000,
-   "h": 712
-  },
-  {
-   "id": "el-brain",
-   "title": "Brain",
-   "image": "/beta/social/el/el-brain.webp?v=1",
-   "thumb": "/beta/social/el/el-brain-thumb.webp?v=1",
-   "w": 1000,
-   "h": 858
-  },
-  {
-   "id": "el-capitol",
-   "title": "The Capitol",
-   "image": "/beta/social/el/el-capitol.webp?v=1",
-   "thumb": "/beta/social/el/el-capitol-thumb.webp?v=1",
-   "w": 968,
-   "h": 929
-  },
-  {
-   "id": "el-cherry",
-   "title": "Cherry blossom branch",
-   "image": "/beta/social/el/el-cherry.webp?v=1",
-   "thumb": "/beta/social/el/el-cherry-thumb.webp?v=1",
-   "w": 1000,
-   "h": 718
-  },
-  {
-   "id": "el-coffee",
-   "title": "Coffee",
-   "image": "/beta/social/el/el-coffee.webp?v=1",
-   "thumb": "/beta/social/el/el-coffee-thumb.webp?v=1",
-   "w": 1000,
-   "h": 973
+   "h": 949
   },
   {
    "id": "el-dna",
@@ -424,23 +677,8 @@
    "image": "/beta/social/el/el-dna.webp?v=1",
    "thumb": "/beta/social/el/el-dna-thumb.webp?v=1",
    "w": 303,
-   "h": 1000
-  },
-  {
-   "id": "el-envelope",
-   "title": "Envelope",
-   "image": "/beta/social/el/el-envelope.webp?v=1",
-   "thumb": "/beta/social/el/el-envelope-thumb.webp?v=1",
-   "w": 869,
-   "h": 1000
-  },
-  {
-   "id": "el-fern",
-   "title": "Leaves and fern",
-   "image": "/beta/social/el/el-fern.webp?v=1",
-   "thumb": "/beta/social/el/el-fern-thumb.webp?v=1",
-   "w": 759,
-   "h": 1000
+   "h": 1000,
+   "cat": "Science"
   },
   {
    "id": "el-flask",
@@ -448,23 +686,28 @@
    "image": "/beta/social/el/el-flask.webp?v=1",
    "thumb": "/beta/social/el/el-flask-thumb.webp?v=1",
    "w": 717,
-   "h": 872
+   "h": 872,
+   "cat": "Science"
   },
   {
-   "id": "el-globe",
-   "title": "Globe",
-   "image": "/beta/social/el/el-globe.webp?v=1",
-   "thumb": "/beta/social/el/el-globe-thumb.webp?v=1",
-   "w": 696,
-   "h": 1000
-  },
-  {
-   "id": "el-magazine",
-   "title": "Magazine",
-   "image": "/beta/social/el/el-magazine.webp?v=1",
-   "thumb": "/beta/social/el/el-magazine-thumb.webp?v=1",
+   "id": "sci-goggles",
+   "title": "Goggles and gloves",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-goggles.webp?v=1",
+   "thumb": "/beta/social/el/sci-goggles-thumb.webp?v=1",
    "w": 1000,
-   "h": 723
+   "h": 644
+  },
+  {
+   "id": "sci-magnet",
+   "title": "Magnet",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-magnet.webp?v=1",
+   "thumb": "/beta/social/el/sci-magnet-thumb.webp?v=1",
+   "w": 1000,
+   "h": 600
   },
   {
    "id": "el-magnifier",
@@ -472,15 +715,8 @@
    "image": "/beta/social/el/el-magnifier.webp?v=1",
    "thumb": "/beta/social/el/el-magnifier-thumb.webp?v=1",
    "w": 898,
-   "h": 1000
-  },
-  {
-   "id": "el-mic",
-   "title": "Microphone",
-   "image": "/beta/social/el/el-mic.webp?v=1",
-   "thumb": "/beta/social/el/el-mic-thumb.webp?v=1",
-   "w": 677,
-   "h": 1000
+   "h": 1000,
+   "cat": "Science"
   },
   {
    "id": "el-microscope",
@@ -488,7 +724,8 @@
    "image": "/beta/social/el/el-microscope.webp?v=1",
    "thumb": "/beta/social/el/el-microscope-thumb.webp?v=1",
    "w": 532,
-   "h": 1000
+   "h": 1000,
+   "cat": "Science"
   },
   {
    "id": "el-molecule",
@@ -496,47 +733,127 @@
    "image": "/beta/social/el/el-molecule.webp?v=1",
    "thumb": "/beta/social/el/el-molecule-thumb.webp?v=1",
    "w": 1000,
-   "h": 892
+   "h": 892,
+   "cat": "Science"
   },
   {
-   "id": "el-monument",
-   "title": "Washington Monument",
-   "image": "/beta/social/el/el-monument.webp?v=1",
-   "thumb": "/beta/social/el/el-monument-thumb.webp?v=1",
-   "w": 575,
-   "h": 788
-  },
-  {
-   "id": "el-pen",
-   "title": "Notebook and pen",
-   "image": "/beta/social/el/el-pen.webp?v=1",
-   "thumb": "/beta/social/el/el-pen-thumb.webp?v=1",
+   "id": "sci-neuron",
+   "title": "Neuron",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-neuron.webp?v=1",
+   "thumb": "/beta/social/el/sci-neuron-thumb.webp?v=1",
    "w": 1000,
-   "h": 714
+   "h": 659
   },
   {
-   "id": "el-saturn",
-   "title": "Saturn",
-   "image": "/beta/social/el/el-saturn.webp?v=1",
-   "thumb": "/beta/social/el/el-saturn-thumb.webp?v=1",
+   "id": "sci-cradle",
+   "title": "Newton's cradle",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-cradle.webp?v=1",
+   "thumb": "/beta/social/el/sci-cradle-thumb.webp?v=1",
    "w": 1000,
-   "h": 572
+   "h": 923
   },
   {
-   "id": "el-snow",
-   "title": "Snowy branch",
-   "image": "/beta/social/el/el-snow.webp?v=1",
-   "thumb": "/beta/social/el/el-snow-thumb.webp?v=1",
+   "id": "sci-petri",
+   "title": "Petri dish",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-petri.webp?v=1",
+   "thumb": "/beta/social/el/sci-petri-thumb.webp?v=1",
    "w": 1000,
-   "h": 754
+   "h": 787
   },
   {
-   "id": "el-sprout",
-   "title": "Idea bulb with sprout",
-   "image": "/beta/social/el/el-sprout.webp?v=1",
-   "thumb": "/beta/social/el/el-sprout-thumb.webp?v=1",
-   "w": 618,
+   "id": "sci-protein",
+   "title": "Protein",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-protein.webp?v=1",
+   "thumb": "/beta/social/el/sci-protein-thumb.webp?v=1",
+   "w": 1000,
+   "h": 975
+  },
+  {
+   "id": "sci-test-tubes",
+   "title": "Test tube rack",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-test-tubes.webp?v=1",
+   "thumb": "/beta/social/el/sci-test-tubes-thumb.webp?v=1",
+   "w": 1000,
+   "h": 810
+  },
+  {
+   "id": "sci-virus",
+   "title": "Virus",
+   "cat": "Science",
+   "tags": "",
+   "image": "/beta/social/el/sci-virus.webp?v=1",
+   "thumb": "/beta/social/el/sci-virus-thumb.webp?v=1",
+   "w": 1000,
    "h": 1000
+  },
+  {
+   "id": "med-heart",
+   "title": "Anatomical heart",
+   "cat": "Medicine",
+   "tags": "",
+   "image": "/beta/social/el/med-heart.webp?v=1",
+   "thumb": "/beta/social/el/med-heart-thumb.webp?v=1",
+   "w": 683,
+   "h": 1000
+  },
+  {
+   "id": "el-brain",
+   "title": "Brain",
+   "image": "/beta/social/el/el-brain.webp?v=1",
+   "thumb": "/beta/social/el/el-brain-thumb.webp?v=1",
+   "w": 1000,
+   "h": 858,
+   "cat": "Medicine"
+  },
+  {
+   "id": "med-eye",
+   "title": "Eye",
+   "cat": "Medicine",
+   "tags": "",
+   "image": "/beta/social/el/med-eye.webp?v=1",
+   "thumb": "/beta/social/el/med-eye-thumb.webp?v=1",
+   "w": 859,
+   "h": 859
+  },
+  {
+   "id": "med-firstaid",
+   "title": "First aid kit",
+   "cat": "Medicine",
+   "tags": "",
+   "image": "/beta/social/el/med-firstaid.webp?v=1",
+   "thumb": "/beta/social/el/med-firstaid-thumb.webp?v=1",
+   "w": 1000,
+   "h": 801
+  },
+  {
+   "id": "med-lungs",
+   "title": "Lungs",
+   "cat": "Medicine",
+   "tags": "",
+   "image": "/beta/social/el/med-lungs.webp?v=1",
+   "thumb": "/beta/social/el/med-lungs-thumb.webp?v=1",
+   "w": 1000,
+   "h": 953
+  },
+  {
+   "id": "med-pills",
+   "title": "Pills",
+   "cat": "Medicine",
+   "tags": "drugs pharmacy antibiotics",
+   "image": "/beta/social/el/med-pills.webp?v=1",
+   "thumb": "/beta/social/el/med-pills-thumb.webp?v=1",
+   "w": 1000,
+   "h": 596
   },
   {
    "id": "el-stethoscope",
@@ -544,6 +861,106 @@
    "image": "/beta/social/el/el-stethoscope.webp?v=1",
    "thumb": "/beta/social/el/el-stethoscope-thumb.webp?v=1",
    "w": 973,
+   "h": 1000,
+   "cat": "Medicine"
+  },
+  {
+   "id": "med-vaccine",
+   "title": "Vaccine",
+   "cat": "Medicine",
+   "tags": "syringe shot immunology",
+   "image": "/beta/social/el/med-vaccine.webp?v=1",
+   "thumb": "/beta/social/el/med-vaccine-thumb.webp?v=1",
+   "w": 1000,
+   "h": 604
+  },
+  {
+   "id": "med-wellness",
+   "title": "Wellness",
+   "cat": "Medicine",
+   "tags": "health fitness nutrition exercise",
+   "image": "/beta/social/el/med-wellness.webp?v=1",
+   "thumb": "/beta/social/el/med-wellness-thumb.webp?v=1",
+   "w": 1000,
+   "h": 814
+  },
+  {
+   "id": "space-helmet",
+   "title": "Astronaut helmet",
+   "cat": "Space",
+   "tags": "",
+   "image": "/beta/social/el/space-helmet.webp?v=1",
+   "thumb": "/beta/social/el/space-helmet-thumb.webp?v=1",
+   "w": 931,
+   "h": 1000
+  },
+  {
+   "id": "space-comet",
+   "title": "Comet",
+   "cat": "Space",
+   "tags": "",
+   "image": "/beta/social/el/space-comet.webp?v=1",
+   "thumb": "/beta/social/el/space-comet-thumb.webp?v=1",
+   "w": 1000,
+   "h": 832
+  },
+  {
+   "id": "space-galaxy",
+   "title": "Galaxy",
+   "cat": "Space",
+   "tags": "",
+   "image": "/beta/social/el/space-galaxy.webp?v=1",
+   "thumb": "/beta/social/el/space-galaxy-thumb.webp?v=1",
+   "w": 1000,
+   "h": 946
+  },
+  {
+   "id": "space-moon",
+   "title": "Moon",
+   "cat": "Space",
+   "tags": "",
+   "image": "/beta/social/el/space-moon.webp?v=1",
+   "thumb": "/beta/social/el/space-moon-thumb.webp?v=1",
+   "w": 806,
+   "h": 710
+  },
+  {
+   "id": "space-rocket",
+   "title": "Rocket",
+   "cat": "Space",
+   "tags": "",
+   "image": "/beta/social/el/space-rocket.webp?v=1",
+   "thumb": "/beta/social/el/space-rocket-thumb.webp?v=1",
+   "w": 1000,
+   "h": 929
+  },
+  {
+   "id": "space-satellite",
+   "title": "Satellite",
+   "cat": "Space",
+   "tags": "",
+   "image": "/beta/social/el/space-satellite.webp?v=1",
+   "thumb": "/beta/social/el/space-satellite-thumb.webp?v=1",
+   "w": 1000,
+   "h": 760
+  },
+  {
+   "id": "el-saturn",
+   "title": "Saturn",
+   "image": "/beta/social/el/el-saturn.webp?v=1",
+   "thumb": "/beta/social/el/el-saturn-thumb.webp?v=1",
+   "w": 1000,
+   "h": 572,
+   "cat": "Space"
+  },
+  {
+   "id": "space-sun",
+   "title": "Sun",
+   "cat": "Space",
+   "tags": "",
+   "image": "/beta/social/el/space-sun.webp?v=1",
+   "thumb": "/beta/social/el/space-sun-thumb.webp?v=1",
+   "w": 1000,
    "h": 1000
   },
   {
@@ -552,7 +969,414 @@
    "image": "/beta/social/el/el-telescope.webp?v=1",
    "thumb": "/beta/social/el/el-telescope-thumb.webp?v=1",
    "w": 683,
+   "h": 1000,
+   "cat": "Space"
+  },
+  {
+   "id": "el-autumn",
+   "title": "Autumn leaves",
+   "image": "/beta/social/el/el-autumn.webp?v=1",
+   "thumb": "/beta/social/el/el-autumn-thumb.webp?v=1",
+   "w": 767,
+   "h": 1000,
+   "cat": "Nature"
+  },
+  {
+   "id": "nature-bee",
+   "title": "Bee",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-bee.webp?v=1",
+   "thumb": "/beta/social/el/nature-bee-thumb.webp?v=1",
+   "w": 630,
+   "h": 825
+  },
+  {
+   "id": "nature-butterfly",
+   "title": "Butterfly",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-butterfly.webp?v=1",
+   "thumb": "/beta/social/el/nature-butterfly-thumb.webp?v=1",
+   "w": 1000,
+   "h": 689
+  },
+  {
+   "id": "nature-cardinal",
+   "title": "Cardinal",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-cardinal.webp?v=1",
+   "thumb": "/beta/social/el/nature-cardinal-thumb.webp?v=1",
+   "w": 970,
    "h": 1000
+  },
+  {
+   "id": "el-cherry",
+   "title": "Cherry blossom branch",
+   "image": "/beta/social/el/el-cherry.webp?v=1",
+   "thumb": "/beta/social/el/el-cherry-thumb.webp?v=1",
+   "w": 1000,
+   "h": 718,
+   "cat": "Nature"
+  },
+  {
+   "id": "el-fern",
+   "title": "Leaves and fern",
+   "image": "/beta/social/el/el-fern.webp?v=1",
+   "thumb": "/beta/social/el/el-fern-thumb.webp?v=1",
+   "w": 759,
+   "h": 1000,
+   "cat": "Nature"
+  },
+  {
+   "id": "nature-mountains",
+   "title": "Mountains",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-mountains.webp?v=1",
+   "thumb": "/beta/social/el/nature-mountains-thumb.webp?v=1",
+   "w": 1000,
+   "h": 744
+  },
+  {
+   "id": "nature-mushrooms",
+   "title": "Mushrooms",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-mushrooms.webp?v=1",
+   "thumb": "/beta/social/el/nature-mushrooms-thumb.webp?v=1",
+   "w": 808,
+   "h": 1000
+  },
+  {
+   "id": "nature-turtle",
+   "title": "Sea turtle",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-turtle.webp?v=1",
+   "thumb": "/beta/social/el/nature-turtle-thumb.webp?v=1",
+   "w": 987,
+   "h": 1000
+  },
+  {
+   "id": "el-snow",
+   "title": "Snowy branch",
+   "image": "/beta/social/el/el-snow.webp?v=1",
+   "thumb": "/beta/social/el/el-snow-thumb.webp?v=1",
+   "w": 1000,
+   "h": 754,
+   "cat": "Nature"
+  },
+  {
+   "id": "nature-sunflower",
+   "title": "Sunflower",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-sunflower.webp?v=1",
+   "thumb": "/beta/social/el/nature-sunflower-thumb.webp?v=1",
+   "w": 570,
+   "h": 1000
+  },
+  {
+   "id": "nature-terrarium",
+   "title": "Terrarium",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-terrarium.webp?v=1",
+   "thumb": "/beta/social/el/nature-terrarium-thumb.webp?v=1",
+   "w": 640,
+   "h": 1000
+  },
+  {
+   "id": "nature-tree",
+   "title": "Tree and roots",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-tree.webp?v=1",
+   "thumb": "/beta/social/el/nature-tree-thumb.webp?v=1",
+   "w": 878,
+   "h": 1000
+  },
+  {
+   "id": "nature-wave",
+   "title": "Wave",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-wave.webp?v=1",
+   "thumb": "/beta/social/el/nature-wave-thumb.webp?v=1",
+   "w": 1000,
+   "h": 572
+  },
+  {
+   "id": "nature-turbine",
+   "title": "Wind turbine",
+   "cat": "Nature",
+   "tags": "",
+   "image": "/beta/social/el/nature-turbine.webp?v=1",
+   "thumb": "/beta/social/el/nature-turbine-thumb.webp?v=1",
+   "w": 729,
+   "h": 1000
+  },
+  {
+   "id": "tech-drone",
+   "title": "Drone",
+   "cat": "Tech",
+   "tags": "",
+   "image": "/beta/social/el/tech-drone.webp?v=1",
+   "thumb": "/beta/social/el/tech-drone-thumb.webp?v=1",
+   "w": 1000,
+   "h": 628
+  },
+  {
+   "id": "tech-laptop",
+   "title": "Laptop",
+   "cat": "Tech",
+   "tags": "code programming computer",
+   "image": "/beta/social/el/tech-laptop.webp?v=1",
+   "thumb": "/beta/social/el/tech-laptop-thumb.webp?v=1",
+   "w": 1000,
+   "h": 728
+  },
+  {
+   "id": "tech-chip",
+   "title": "Microchip",
+   "cat": "Tech",
+   "tags": "ai computing semiconductor",
+   "image": "/beta/social/el/tech-chip.webp?v=1",
+   "thumb": "/beta/social/el/tech-chip-thumb.webp?v=1",
+   "w": 1000,
+   "h": 994
+  },
+  {
+   "id": "tech-robot",
+   "title": "Robot arm",
+   "cat": "Tech",
+   "tags": "robotics automation",
+   "image": "/beta/social/el/tech-robot.webp?v=1",
+   "thumb": "/beta/social/el/tech-robot-thumb.webp?v=1",
+   "w": 707,
+   "h": 905
+  },
+  {
+   "id": "tech-phone",
+   "title": "Smartphone",
+   "cat": "Tech",
+   "tags": "",
+   "image": "/beta/social/el/tech-phone.webp?v=1",
+   "thumb": "/beta/social/el/tech-phone-thumb.webp?v=1",
+   "w": 727,
+   "h": 1000
+  },
+  {
+   "id": "tech-vr",
+   "title": "VR headset",
+   "cat": "Tech",
+   "tags": "",
+   "image": "/beta/social/el/tech-vr.webp?v=1",
+   "thumb": "/beta/social/el/tech-vr-thumb.webp?v=1",
+   "w": 1000,
+   "h": 731
+  },
+  {
+   "id": "el-books",
+   "title": "Books and glasses",
+   "image": "/beta/social/el/el-books.webp?v=1",
+   "thumb": "/beta/social/el/el-books-thumb.webp?v=1",
+   "w": 1000,
+   "h": 712,
+   "cat": "Study"
+  },
+  {
+   "id": "el-coffee",
+   "title": "Coffee",
+   "image": "/beta/social/el/el-coffee.webp?v=1",
+   "thumb": "/beta/social/el/el-coffee-thumb.webp?v=1",
+   "w": 1000,
+   "h": 973,
+   "cat": "Study"
+  },
+  {
+   "id": "study-geometry",
+   "title": "Geometry tools",
+   "cat": "Study",
+   "tags": "",
+   "image": "/beta/social/el/study-geometry.webp?v=1",
+   "thumb": "/beta/social/el/study-geometry-thumb.webp?v=1",
+   "w": 1000,
+   "h": 948
+  },
+  {
+   "id": "el-globe",
+   "title": "Globe",
+   "image": "/beta/social/el/el-globe.webp?v=1",
+   "thumb": "/beta/social/el/el-globe-thumb.webp?v=1",
+   "w": 696,
+   "h": 1000,
+   "cat": "Study"
+  },
+  {
+   "id": "study-hourglass",
+   "title": "Hourglass",
+   "cat": "Study",
+   "tags": "",
+   "image": "/beta/social/el/study-hourglass.webp?v=1",
+   "thumb": "/beta/social/el/study-hourglass-thumb.webp?v=1",
+   "w": 580,
+   "h": 1000
+  },
+  {
+   "id": "el-magazine",
+   "title": "Magazine",
+   "image": "/beta/social/el/el-magazine.webp?v=1",
+   "thumb": "/beta/social/el/el-magazine-thumb.webp?v=1",
+   "w": 1000,
+   "h": 723,
+   "cat": "Study"
+  },
+  {
+   "id": "el-pen",
+   "title": "Notebook and pen",
+   "image": "/beta/social/el/el-pen.webp?v=1",
+   "thumb": "/beta/social/el/el-pen-thumb.webp?v=1",
+   "w": 1000,
+   "h": 714,
+   "cat": "Study"
+  },
+  {
+   "id": "study-notebooks",
+   "title": "Notebooks and pencils",
+   "cat": "Study",
+   "tags": "",
+   "image": "/beta/social/el/study-notebooks.webp?v=1",
+   "thumb": "/beta/social/el/study-notebooks-thumb.webp?v=1",
+   "w": 1000,
+   "h": 815
+  },
+  {
+   "id": "study-open-book",
+   "title": "Open book",
+   "cat": "Study",
+   "tags": "",
+   "image": "/beta/social/el/study-open-book.webp?v=1",
+   "thumb": "/beta/social/el/study-open-book-thumb.webp?v=1",
+   "w": 1000,
+   "h": 736
+  },
+  {
+   "id": "study-quill",
+   "title": "Quill and ink",
+   "cat": "Study",
+   "tags": "",
+   "image": "/beta/social/el/study-quill.webp?v=1",
+   "thumb": "/beta/social/el/study-quill-thumb.webp?v=1",
+   "w": 523,
+   "h": 1000
+  },
+  {
+   "id": "study-typewriter",
+   "title": "Typewriter",
+   "cat": "Study",
+   "tags": "",
+   "image": "/beta/social/el/study-typewriter.webp?v=1",
+   "thumb": "/beta/social/el/study-typewriter-thumb.webp?v=1",
+   "w": 889,
+   "h": 1000
+  },
+  {
+   "id": "el-capitol",
+   "title": "The Capitol",
+   "image": "/beta/social/el/el-capitol.webp?v=1",
+   "thumb": "/beta/social/el/el-capitol-thumb.webp?v=1",
+   "w": 968,
+   "h": 929,
+   "cat": "D.C."
+  },
+  {
+   "id": "el-monument",
+   "title": "Washington Monument",
+   "image": "/beta/social/el/el-monument.webp?v=1",
+   "thumb": "/beta/social/el/el-monument-thumb.webp?v=1",
+   "w": 575,
+   "h": 788,
+   "cat": "D.C."
+  },
+  {
+   "id": "el-envelope",
+   "title": "Envelope",
+   "image": "/beta/social/el/el-envelope.webp?v=1",
+   "thumb": "/beta/social/el/el-envelope-thumb.webp?v=1",
+   "w": 869,
+   "h": 1000,
+   "cat": "Graphics"
+  },
+  {
+   "id": "el-sprout",
+   "title": "Idea bulb with sprout",
+   "image": "/beta/social/el/el-sprout.webp?v=1",
+   "thumb": "/beta/social/el/el-sprout-thumb.webp?v=1",
+   "w": 618,
+   "h": 1000,
+   "cat": "Graphics"
+  },
+  {
+   "id": "deco-laurel",
+   "title": "Laurel wreath",
+   "cat": "Graphics",
+   "tags": "award winner wreath",
+   "image": "/beta/social/el/deco-laurel.webp?v=1",
+   "thumb": "/beta/social/el/deco-laurel-thumb.webp?v=1",
+   "w": 1000,
+   "h": 918
+  },
+  {
+   "id": "deco-megaphone",
+   "title": "Megaphone",
+   "cat": "Graphics",
+   "tags": "announcement news",
+   "image": "/beta/social/el/deco-megaphone.webp?v=1",
+   "thumb": "/beta/social/el/deco-megaphone-thumb.webp?v=1",
+   "w": 1000,
+   "h": 638
+  },
+  {
+   "id": "el-mic",
+   "title": "Microphone",
+   "image": "/beta/social/el/el-mic.webp?v=1",
+   "thumb": "/beta/social/el/el-mic-thumb.webp?v=1",
+   "w": 677,
+   "h": 1000,
+   "cat": "Graphics"
+  },
+  {
+   "id": "deco-paper-plane",
+   "title": "Paper plane",
+   "cat": "Graphics",
+   "tags": "send newsletter message",
+   "image": "/beta/social/el/deco-paper-plane.webp?v=1",
+   "thumb": "/beta/social/el/deco-paper-plane-thumb.webp?v=1",
+   "w": 1000,
+   "h": 860
+  },
+  {
+   "id": "deco-sparkles",
+   "title": "Sparkles",
+   "cat": "Graphics",
+   "tags": "stars shine new",
+   "image": "/beta/social/el/deco-sparkles.webp?v=1",
+   "thumb": "/beta/social/el/deco-sparkles-thumb.webp?v=1",
+   "w": 967,
+   "h": 1000
+  },
+  {
+   "id": "deco-bubbles",
+   "title": "Speech bubbles",
+   "cat": "Graphics",
+   "tags": "speech chat quote comments",
+   "image": "/beta/social/el/deco-bubbles.webp?v=1",
+   "thumb": "/beta/social/el/deco-bubbles-thumb.webp?v=1",
+   "w": 1000,
+   "h": 630
   }
  ]
 }
