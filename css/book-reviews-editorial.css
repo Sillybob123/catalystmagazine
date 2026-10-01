@@ -1,0 +1,262 @@
+/* ============================================================
+   BOOK REVIEWS — editorial layer.
+   Loaded after css/book-reviews.css. Puts the page in the site's
+   own paper, ink and type (Poppins + Source Serif, as on the
+   homepage, Articles, Collaborate and the editions) and lays the
+   reviews out as books on a shelf. js/book-reviews.js renders the
+   reviews, the featured pick, the reader picks and both modals;
+   js/book-reviews-page.js does the reveals and the hero loop.
+   ============================================================ */
+body[data-page="book-reviews"] {
+    --paper: #f8f7f3; --paper-off: #f1efe8; --paper-3: #e7e4da;
+    --paper-line: rgba(15, 23, 42, 0.12);
+    --ink: #0f172a; --ink-deep: #0b1220; --ink-soft: #1e293b;
+    --text: #0f172a; --text-muted: #334155; --text-subtle: #5b6678;
+    --accent: #0f172a; --accent-soft: #5b6678; --accent-deep: #0f172a;
+    --hair: rgba(15, 23, 42, 0.14); --hair-2: rgba(15, 23, 42, 0.07);
+    --sans: 'Poppins', system-ui, -apple-system, sans-serif;
+    --serif: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+    --gutter: clamp(18px, 4.5vw, 64px);
+    --maxw: 1280px;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --book-shadow: 0 1px 2px rgba(15, 23, 42, 0.16), 0 10px 18px -8px rgba(15, 23, 42, 0.28), 0 30px 46px -26px rgba(15, 23, 42, 0.42);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+}
+html:has(body[data-page="book-reviews"]) { background: var(--paper); }
+body[data-page="book-reviews"] main *, body[data-page="book-reviews"] main *::before, body[data-page="book-reviews"] main *::after { box-sizing: border-box; }
+body[data-page="book-reviews"] main button, body[data-page="book-reviews"] main input, body[data-page="book-reviews"] main select { font-family: var(--sans); }
+body[data-page="book-reviews"] [hidden] { display: none !important; }
+body[data-page="book-reviews"] #site-footer .footer { margin-top: 0; }
+
+/* type: the old Playfair / Inter faces become the site's own */
+body[data-page="book-reviews"] :is(.br-section-title, .br-featured-title, .br-card-book, .br-empty h3, .br-form-success h3,
+  .br-modal-title, .br-marquee-item, .br-rating-dial-value, .br-card-rating, .br-reviews-modal-avg,
+  .br-aggregate-review-rating-num, .br-reviews-modal-item-stars, .br-rating-slider-stars, .br-rating-slider-value) { font-family: var(--serif); }
+body[data-page="book-reviews"] main .br-section .br-section-title { font-family: var(--sans); font-weight: 700; }
+
+/* ---------- shared bits ---------- */
+.bx-wrap, body[data-page="book-reviews"] .br-container { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gutter); }
+.bx-kicker { display: inline-flex; align-items: center; gap: 10px; margin: 0; font: 600 12px/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-subtle); }
+.bx-kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; }
+[data-reveal] { opacity: 0; transform: translateY(20px); transition: opacity .9s var(--ease-out), transform .9s var(--ease-out); transition-delay: var(--d, 0s); }
+[data-reveal].in { opacity: 1; transform: none; }
+body[data-page="book-reviews"] .br-section { padding: clamp(64px, 9vw, 120px) 0; }
+body[data-page="book-reviews"] .br-section-title {
+    margin: 18px 0 0; font: 700 clamp(34px, 4.2vw, 58px)/1.02 var(--sans); letter-spacing: -0.04em; color: var(--ink);
+}
+body[data-page="book-reviews"] .br-section-title em { font: italic 400 1em/1 var(--serif); letter-spacing: -0.01em; color: var(--text-muted); }
+body[data-page="book-reviews"] .br-section-lede { max-width: 620px; margin: 20px 0 0; font: 400 18px/1.65 var(--serif); color: var(--text-muted); }
+
+/* ---------- hero ---------- */
+body[data-page="book-reviews"] .br-hero {
+    min-height: 0; display: block; overflow: visible; isolation: auto;
+    background: none; color: var(--ink);
+    padding: calc(96px + clamp(24px, 5vh, 64px)) 0 clamp(48px, 7vh, 88px);
+}
+body[data-page="book-reviews"] .br-hero::before, body[data-page="book-reviews"] .br-hero::after { display: none; }
+.bx-hero-grid { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: clamp(28px, 5vw, 80px); align-items: center; }
+.bx-hero-copy h1 { margin: 20px 0 0; font: 700 clamp(44px, 5.4vw, 86px)/1 var(--sans); letter-spacing: -0.045em; color: var(--ink); }
+.bx-hero-copy h1 .nw { white-space: nowrap; }
+.bx-hero-copy h1 em { display: block; margin-top: .14em; font: italic 400 .5em/1.15 var(--serif); letter-spacing: -0.01em; color: var(--text-muted); text-wrap: balance; }
+.bx-lede { max-width: 520px; margin: 26px 0 0; font: 400 19px/1.65 var(--serif); color: var(--text-muted); }
+.bx-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; margin-top: 34px; }
+.bx-btn {
+    display: inline-flex; align-items: center; min-height: 48px; padding: 0 26px; border-radius: 999px;
+    background: var(--ink); color: var(--paper); font: 600 15px/1 var(--sans); text-decoration: none;
+    transition: background-color .25s ease, transform .25s var(--ease-out);
+}
+.bx-btn:hover { background: #1e293b; transform: translateY(-1px); }
+.bx-text-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font: 600 15px/1 var(--sans); color: var(--ink); text-decoration: none; }
+.bx-text-link svg { width: 16px; height: 16px; transition: transform .25s var(--ease-out); }
+.bx-text-link:hover svg { transform: translateX(3px); }
+.bx-btn:focus-visible, .bx-text-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+
+.bx-hero-art { position: relative; margin: 0; }
+.bx-hero-art .bx-still { display: block; width: 100%; height: auto; }
+[data-reveal-art] .bx-still { opacity: 0; transform: translateY(14px); transition: opacity 1s var(--ease-out) .1s, transform 1.1s var(--ease-out) .1s; }
+[data-reveal-art].in .bx-still { opacity: 1; transform: none; }
+.bx-loop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.4s ease; pointer-events: none; }
+.bx-loop.is-playing { opacity: 1; }
+/* Safari's <img> loop: fade its plain-paper rim into the still beneath */
+img.bx-loop {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent), linear-gradient(transparent, #000 4%, #000 96%, transparent); -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent), linear-gradient(transparent, #000 4%, #000 96%, transparent); mask-composite: intersect;
+}
+.bx-loop::-webkit-media-controls, .bx-loop::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+
+/* ---------- this month's pick ---------- */
+body[data-page="book-reviews"] .br-featured { background: none; border: 0; padding-top: clamp(24px, 4vw, 48px); }
+.bx-rule-head { padding-top: 18px; border-top: 1px solid var(--ink); margin-bottom: clamp(36px, 5vw, 60px); }
+body[data-page="book-reviews"] .br-featured-grid { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(36px, 7vw, 110px); align-items: center; }
+body[data-page="book-reviews"] .br-featured-cover {
+    position: relative; aspect-ratio: 2 / 3; max-width: 420px; width: 100%; justify-self: center; display: block;
+    background: none; box-shadow: none; border-radius: 0; overflow: visible; transform: none;
+}
+body[data-page="book-reviews"] .br-featured-cover img {
+    position: absolute; inset: auto 0 0 0; margin: 0 auto; width: auto; height: auto; max-width: 100%; max-height: 100%;
+    border-radius: 2px 5px 5px 2px; box-shadow: var(--book-shadow), inset 0 0 0 1px rgba(15,23,42,.06);
+    transition: transform .9s var(--ease-out), box-shadow .9s var(--ease-out);
+}
+body[data-page="book-reviews"] .br-featured-cover:hover img { transform: translateY(-8px) rotate(-1deg); box-shadow: 0 1px 2px rgba(15,23,42,.16), 0 18px 28px -10px rgba(15,23,42,.3), 0 50px 70px -30px rgba(15,23,42,.45); }
+body[data-page="book-reviews"] .br-featured-cover:hover { transform: none; }
+body[data-page="book-reviews"] .br-featured-tag { display: none; }
+body[data-page="book-reviews"] .br-featured-title { margin: 0; font: 600 clamp(32px, 3.8vw, 54px)/1.06 var(--serif); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; }
+body[data-page="book-reviews"] .br-featured-author { margin: 12px 0 0; font: italic 400 20px/1.4 var(--serif); color: var(--text-muted); }
+body[data-page="book-reviews"] .br-featured-dek { margin: 26px 0 0; max-width: 560px; font: 400 19px/1.65 var(--serif); color: var(--text-muted); }
+body[data-page="book-reviews"] .br-rating { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--hair); gap: 16px; }
+body[data-page="book-reviews"] .br-rating-dial { width: 56px; height: 56px; }
+body[data-page="book-reviews"] .br-rating-dial-value { font-size: 19px; font-weight: 600; color: var(--ink); }
+body[data-page="book-reviews"] .br-rating-label { font: 600 11.5px/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--ink); }
+body[data-page="book-reviews"] .br-featured-byline { margin-top: 18px; padding-top: 0; border: 0; font-family: var(--sans); }
+body[data-page="book-reviews"] .br-featured-byline strong { font: 600 15px/1.4 var(--sans); color: var(--ink); }
+body[data-page="book-reviews"] .br-featured-cta {
+    display: inline-flex; align-items: center; gap: 10px; min-height: 48px; margin-top: 30px; padding: 0 24px;
+    border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 15px/1 var(--sans); text-decoration: none; box-shadow: none;
+}
+body[data-page="book-reviews"] .br-featured-cta:hover { background: #1e293b; }
+body[data-page="book-reviews"] .br-featured-cta svg { transition: transform .25s var(--ease-out); }
+body[data-page="book-reviews"] .br-featured-cta:hover svg { transform: translateX(3px); }
+
+/* ---------- the running line of titles ---------- */
+body[data-page="book-reviews"] .br-marquee { background: none; color: var(--text-muted); border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); padding: 16px 0; }
+body[data-page="book-reviews"] .br-marquee::before, body[data-page="book-reviews"] .br-marquee::after { background: linear-gradient(90deg, var(--paper), transparent); }
+body[data-page="book-reviews"] .br-marquee::after { background: linear-gradient(270deg, var(--paper), transparent); }
+body[data-page="book-reviews"] .br-marquee-track { animation-duration: 90s; }
+body[data-page="book-reviews"] .br-marquee-item { font: italic 400 clamp(16px, 1.3vw, 19px)/1 var(--serif); color: var(--text-muted); }
+body[data-page="book-reviews"] .br-marquee-item::after { background: var(--faint, #94a3b8); color: var(--text-subtle); opacity: .7; }
+
+/* ---------- search + shelf ---------- */
+body[data-page="book-reviews"] .br-rail-wrap { background: color-mix(in srgb, var(--paper) 92%, transparent); border-bottom: 1px solid var(--hair-2); padding: 16px 0; }
+body[data-page="book-reviews"] :is(.br-community-search, .br-community-filter) {
+    min-height: 48px; border-radius: 999px; background: #fbfaf7; border: 1px solid var(--hair); box-shadow: none; color: var(--ink);
+}
+body[data-page="book-reviews"] :is(.br-community-search, .br-community-filter):focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(15,23,42,.08); }
+body[data-page="book-reviews"] .br-community-search input { font: 400 16px/1.2 var(--sans); color: var(--ink); }
+/* let the fields shrink to the column (a bare 1fr can't go below the input's own minimum) */
+body[data-page="book-reviews"] :is(.br-community-search, .br-community-filter) { min-width: 0; }
+body[data-page="book-reviews"] .br-community-search input { min-width: 0; width: 100%; }
+@media (max-width: 560px) { body[data-page="book-reviews"] .br-community-controls { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="book-reviews"] .br-community-search input::placeholder { color: var(--text-subtle); }
+body[data-page="book-reviews"] .br-community-filter-label { font: 600 10.5px/1 var(--sans); letter-spacing: .16em; color: var(--text-subtle); }
+body[data-page="book-reviews"] .br-community-filter select { font: 500 14.5px/1 var(--sans); color: var(--ink); }
+
+/* ---------- section heads ---------- */
+.bx-sec-head { margin-bottom: clamp(40px, 5vw, 64px); }
+body[data-page="book-reviews"] .br-feed { padding-top: clamp(56px, 7vw, 96px); }
+
+/* ---------- the shelf: every review as a book ---------- */
+body[data-page="book-reviews"] .br-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(44px, 5vw, 64px) clamp(24px, 3vw, 44px); align-items: start; }
+body[data-page="book-reviews"] .br-card, body[data-page="book-reviews"] .br-card-aggregate { grid-column: auto; height: auto; }
+/* a fixed 2:3 slot; each book stands on its bottom edge, so every row's
+   titles line up whatever the jacket's proportions */
+body[data-page="book-reviews"] :is(.br-card-media, .br-card-aggregate-media) {
+    position: relative; aspect-ratio: 2 / 3; display: block;
+    background: none; box-shadow: none; border-radius: 0; overflow: visible; margin-bottom: 22px;
+}
+body[data-page="book-reviews"] :is(.br-card-media, .br-card-aggregate-media) img {
+    position: absolute; inset: auto 0 0 0; margin: 0 auto; width: auto; height: auto; max-width: 100%; max-height: 100%;
+    border-radius: 2px 4px 4px 2px; box-shadow: var(--book-shadow), inset 0 0 0 1px rgba(15,23,42,.06);
+    transition: transform .8s var(--ease-out), box-shadow .8s var(--ease-out), opacity .5s ease;
+}
+body[data-page="book-reviews"] :is(.br-card, .br-card-aggregate):hover :is(.br-card-media, .br-card-aggregate-media) img {
+    transform: translateY(-8px);
+    box-shadow: 0 1px 2px rgba(15,23,42,.16), 0 18px 26px -10px rgba(15,23,42,.3), 0 44px 60px -28px rgba(15,23,42,.45);
+}
+body[data-page="book-reviews"] .br-card:hover { transform: none; }
+body[data-page="book-reviews"] .br-card-genre { display: none; }   /* the Shelf filter carries the discipline */
+body[data-page="book-reviews"] .br-card-body { padding: 0; }
+body[data-page="book-reviews"] .br-card-kicker { gap: 8px; margin-bottom: 10px; }
+body[data-page="book-reviews"] .br-card-rating { padding: 0; background: none; border: 0; font: 600 15px/1 var(--serif); color: var(--ink); }
+body[data-page="book-reviews"] .br-card-rating small { font-family: var(--sans); font-size: 11px; color: var(--text-subtle); }
+body[data-page="book-reviews"] .br-card-pick { background: none; border: 1px solid var(--hair); color: var(--text-muted); font: 600 10px/1 var(--sans); letter-spacing: .14em; }
+body[data-page="book-reviews"] .br-card-book { margin: 0; font: 600 20px/1.25 var(--serif); letter-spacing: -0.005em; color: var(--ink); text-wrap: balance; }
+body[data-page="book-reviews"] :is(.br-card, .br-card-aggregate):hover .br-card-book { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .18em; }
+body[data-page="book-reviews"] .br-card-author { margin: 6px 0 0; font: italic 400 15.5px/1.4 var(--serif); color: var(--text-muted); }
+body[data-page="book-reviews"] .br-card-blurb {
+    margin: 12px 0 0; font: 400 15.5px/1.55 var(--serif); color: var(--text-muted);
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+body[data-page="book-reviews"] .br-card-meta { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--hair-2); font: 500 12.5px/1.3 var(--sans); color: var(--text-subtle); }
+body[data-page="book-reviews"] .br-card-meta strong { font-weight: 600; color: var(--ink); }
+body[data-page="book-reviews"] :is(.br-card, .br-card-aggregate):focus-visible { outline: 2px solid var(--ink); outline-offset: 6px; border-radius: 2px; }
+
+body[data-page="book-reviews"] .br-loadmore {
+    min-height: 48px; padding: 0 26px; border-radius: 999px; background: none; border: 1px solid var(--ink);
+    font: 600 14.5px/1 var(--sans); color: var(--ink); box-shadow: none;
+}
+body[data-page="book-reviews"] .br-loadmore:hover { background: var(--ink); color: var(--paper); }
+body[data-page="book-reviews"] .br-empty { background: none; border: 1px dashed var(--hair); border-radius: 4px; }
+body[data-page="book-reviews"] .br-empty h3 { font: 600 24px/1.3 var(--serif); color: var(--ink); }
+body[data-page="book-reviews"] .br-empty p { font: 400 16px/1.6 var(--serif); color: var(--text-muted); }
+
+/* ---------- from our readers ---------- */
+body[data-page="book-reviews"] .br-community { background: var(--paper-off); border-top: 1px solid var(--hair-2); border-bottom: 1px solid var(--hair-2); }
+.bx-readers-head { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(28px, 5vw, 80px); align-items: center; margin-bottom: clamp(40px, 5vw, 64px); }
+.bx-readers-art { margin: 0; }
+.bx-readers-art img { display: block; width: 100%; height: auto; }   /* drawn on this section's own paper (#f1efe8) */
+body[data-page="book-reviews"] .br-submit-cta {
+    display: inline-flex; align-items: center; gap: 10px; min-height: 48px; margin-top: 30px; padding: 0 24px; width: auto;
+    border-radius: 999px; background: var(--ink); color: var(--paper); border: 0; box-shadow: none; font: 600 15px/1 var(--sans);
+}
+body[data-page="book-reviews"] .br-submit-cta:hover { background: #1e293b; transform: none; }
+body[data-page="book-reviews"] .br-submit-cta svg { transition: transform .25s var(--ease-out); }
+body[data-page="book-reviews"] .br-submit-cta:hover svg { transform: translateX(3px); }
+body[data-page="book-reviews"] .br-submit-cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+body[data-page="book-reviews"] .br-community-toolbar { margin-bottom: clamp(36px, 4vw, 52px); }
+body[data-page="book-reviews"] .br-community-status { font: 500 13px/1.4 var(--sans); color: var(--text-subtle); }
+
+/* ---------- about: one reader to another ---------- */
+.bx-about { padding: clamp(40px, 6vw, 80px) 0 clamp(72px, 9vw, 120px); }
+.bx-about-art { margin: 0 auto; max-width: 1600px; padding: 0 var(--gutter); }
+.bx-about-art img { display: block; width: 100%; height: auto; }
+.bx-about-grid {
+    display: grid; grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr); gap: clamp(24px, 5vw, 80px); margin-top: clamp(28px, 4vw, 52px); padding-top: 22px;
+    /* a rule across the content width only (the wrap's own padding stays clear) */
+    background: linear-gradient(var(--ink), var(--ink)) center top / calc(100% - 2 * var(--gutter)) 1px no-repeat;
+}
+.bx-about h2 { margin: 0; font: 700 clamp(34px, 4.2vw, 58px)/1.02 var(--sans); letter-spacing: -0.04em; color: var(--ink); }
+.bx-about h2 em { font: italic 400 1em/1 var(--serif); letter-spacing: -0.01em; color: var(--text-muted); }
+.bx-about-grid > .bx-kicker { align-self: start; margin-top: 14px; }
+.bx-about-grid > div > p { max-width: 640px; margin: 22px 0 0; font: 400 19px/1.65 var(--serif); color: var(--text-muted); }
+.bx-about-grid > div > .bx-about-more { font-size: 17px; }
+.bx-about a, .bx-inline-btn { color: var(--ink); font: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .18em; }
+.bx-inline-btn { padding: 0; border: 0; background: none; cursor: pointer; }
+.bx-about a:focus-visible, .bx-inline-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* ---------- the modals, in the same paper and ink ---------- */
+body[data-page="book-reviews"] .br-modal { background: var(--paper); color: var(--ink); font-family: var(--sans); }
+body[data-page="book-reviews"] .br-modal-title { font-weight: 600; letter-spacing: -0.01em; }
+body[data-page="book-reviews"] .br-modal-backdrop { background: rgba(15, 23, 42, 0.42); }
+
+/* ---------- smaller screens ---------- */
+@media (max-width: 1100px) {
+    body[data-page="book-reviews"] .br-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 899px) {
+    body[data-page="book-reviews"] .br-hero { padding-top: 104px; }
+    .bx-hero-grid { grid-template-columns: 1fr; }
+    .bx-hero-art { order: -1; max-width: 560px; width: 100%; margin: 0 auto; }
+    body[data-page="book-reviews"] .br-featured-grid { grid-template-columns: 1fr; }
+    body[data-page="book-reviews"] .br-featured-cover { max-width: 300px; }
+    body[data-page="book-reviews"] .br-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 44px 22px; }
+    .bx-readers-head { grid-template-columns: 1fr; }
+    .bx-readers-art { max-width: 420px; }
+    .bx-about-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+    .bx-hero-copy h1 { font-size: clamp(40px, 12vw, 56px); }
+    .bx-lede, .bx-about-grid > div > p, body[data-page="book-reviews"] .br-featured-dek { font-size: 17.5px; }
+    body[data-page="book-reviews"] .br-card-book { font-size: 17.5px; }
+    body[data-page="book-reviews"] .br-card-blurb { display: none; }
+    body[data-page="book-reviews"] .br-card-genre { display: none; }
+    body[data-page="book-reviews"] .br-rail { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    [data-reveal], [data-reveal-art] .bx-still { opacity: 1; transform: none; transition: none; }
+    body[data-page="book-reviews"] .br-marquee-track { animation: none; }
+    body[data-page="book-reviews"] :is(.br-card-media, .br-card-aggregate-media, .br-featured-cover) img { transition: none; }
+}

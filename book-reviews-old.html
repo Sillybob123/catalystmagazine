@@ -16,35 +16,36 @@
     <!-- Description sits comfortably under Google's ~160-char snippet cap
          so it survives without truncation; leads with the brand name +
          category for clearer SERP framing. -->
-    <meta name="description" content="Book Reviews from The Catalyst: short, honest recommendations of STEM books from our writers and readers. Astronomy, biology, chemistry, climate, physics and more.">
+    <meta name="description" content="The Catalyst Reviews: honest STEM book reviews from The Catalyst Magazine. Astronomy, biology, chemistry, climate, computer science, math, physics & memoir.">
     <meta name="keywords" content="The Catalyst Reviews, STEM book reviews, science book recommendations, best science books, popular science reading, biology books, physics books, chemistry books, climate books, mathematics books, computer science books, science memoir, book reviews, The Catalyst Magazine">
     <meta name="author" content="The Catalyst Magazine">
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
-    <meta name="theme-color" content="#f8f7f3">
-    <title>Book Reviews: STEM Books Worth Your Time | The Catalyst Magazine</title>
+    <meta name="robots" content="noindex, follow">
+    <meta name="theme-color" content="#0e1117">
+    <title>The Catalyst Reviews — STEM Book Reviews | The Catalyst Magazine</title>
     <link rel="canonical" href="https://www.catalyst-magazine.com/book-reviews">
+    <!-- The previous Book Reviews page, kept for reference (noindex). -->
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="The Catalyst Magazine">
     <meta property="og:url" content="https://www.catalyst-magazine.com/book-reviews">
-    <meta property="og:title" content="Book Reviews: the science books worth your time">
-    <meta property="og:description" content="Short, honest recommendations of STEM books from The Catalyst&rsquo;s writers and readers.">
+    <meta property="og:title" content="The Catalyst Reviews — STEM Book Reviews">
+    <meta property="og:description" content="The Catalyst Reviews: honest STEM book reviews from The Catalyst Magazine. Short, candid recommendations from one reader to another.">
     <!-- Preview card. 1200×1200 JPEG works across Facebook, LinkedIn,
          Twitter (summary card), iMessage, and Slack unfurls. -->
-    <meta property="og:image" content="https://www.catalyst-magazine.com/og-book-reviews.jpg?v=1">
-    <meta property="og:image:secure_url" content="https://www.catalyst-magazine.com/og-book-reviews.jpg?v=1">
+    <meta property="og:image" content="https://www.catalyst-magazine.com/images/social/book-reviews-preview.jpg">
+    <meta property="og:image:secure_url" content="https://www.catalyst-magazine.com/images/social/book-reviews-preview.jpg">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Book Reviews from The Catalyst Magazine: a watercolour reading nook by a Washington window">
+    <meta property="og:image:height" content="1200">
+    <meta property="og:image:alt" content="The Catalyst Reviews — STEM book reviews from The Catalyst Magazine">
     <!-- Twitter renders square images well with the summary card. The
          large-image card prefers 2:1 so we step back to "summary" here. -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Book Reviews: the science books worth your time">
-    <meta name="twitter:description" content="Short, honest recommendations of STEM books from The Catalyst&rsquo;s writers and readers.">
-    <meta name="twitter:image" content="https://www.catalyst-magazine.com/og-book-reviews.jpg?v=1">
-    <meta name="twitter:image:alt" content="Book Reviews from The Catalyst Magazine: a watercolour reading nook by a Washington window">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="The Catalyst Reviews — STEM Book Reviews">
+    <meta name="twitter:description" content="Honest STEM book reviews from The Catalyst Magazine. Short, candid recommendations from one reader to another.">
+    <meta name="twitter:image" content="https://www.catalyst-magazine.com/images/social/book-reviews-preview.jpg">
+    <meta name="twitter:image:alt" content="The Catalyst Reviews — STEM book reviews from The Catalyst Magazine">
 
     <!-- Schema.org structured data — helps Google understand that this is a
          book-review hub (CollectionPage) inside a magazine (Periodical).
@@ -53,9 +54,9 @@
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      "name": "Book Reviews — STEM books from The Catalyst",
+      "name": "The Catalyst Reviews — STEM book reviews",
       "alternateName": "Catalyst Book Reviews",
-      "headline": "Book Reviews: the science books worth your time",
+      "headline": "The Catalyst Reviews — STEM books that change how we see the world",
       "description": "Honest STEM book reviews from The Catalyst Magazine's contributors and readers. Short, candid recommendations across astronomy, biology, chemistry, climate, computer science, mathematics, physics, and science memoir.",
       "inLanguage": "en-US",
       "url": "https://www.catalyst-magazine.com/book-reviews",
@@ -95,7 +96,7 @@
           {
             "@type": "ListItem",
             "position": 2,
-            "name": "Book Reviews",
+            "name": "The Catalyst Reviews",
             "item": "https://www.catalyst-magazine.com/book-reviews"
           }
         ]
@@ -114,13 +115,37 @@
     <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
 
     <link rel="preload" as="image" href="/WebLogo.png" fetchpriority="high">
-    <link rel="preload" as="image" href="/beta/book-reviews/nook-1280.webp?v=1" imagesrcset="/beta/book-reviews/nook-800.webp?v=1 800w, /beta/book-reviews/nook-1280.webp?v=1 1280w" imagesizes="(max-width: 899px) 94vw, 50vw">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="/NewLogoShape.png" fetchpriority="high">
+    <!-- Hero stack book covers — RESPONSIVE preload. imagesrcset + imagesizes
+         mirrors the <img> srcset/sizes so the browser preloads exactly the
+         resource it would have fetched (1x on standard displays, @2x on
+         retina) — no duplicate-fetch when the <img> later parses. All three
+         are fetchpriority="high" so they paint with the LCP frame instead of
+         queuing behind less-important assets. -->
+    <link rel="preload" as="image" type="image/webp"
+          href="/images/book-reviews/hero-book-1.webp"
+          imagesrcset="/images/book-reviews/hero-book-1.webp 480w, /images/book-reviews/hero-book-1@2x.webp 960w"
+          imagesizes="(max-width: 960px) 280px, 420px"
+          fetchpriority="high">
+    <link rel="preload" as="image" type="image/webp"
+          href="/images/book-reviews/hero-book-2.webp"
+          imagesrcset="/images/book-reviews/hero-book-2.webp 480w, /images/book-reviews/hero-book-2@2x.webp 960w"
+          imagesizes="(max-width: 960px) 280px, 420px"
+          fetchpriority="high">
+    <link rel="preload" as="image" type="image/webp"
+          href="/images/book-reviews/hero-book-3.webp"
+          imagesrcset="/images/book-reviews/hero-book-3.webp 480w, /images/book-reviews/hero-book-3@2x.webp 960w"
+          imagesizes="(max-width: 960px) 280px, 420px"
+          fetchpriority="high">
 
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap">
+
+    <!-- Asset version bumped 2026-05-11. Browsers and CDN edges that
+         cached the previous `?v=uniform-cards` URL will treat this as a
+         different file and re-fetch — fixes the stale book-hero + rating
+         slider that some users were still seeing post-deploy. -->
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
     <link rel="stylesheet" href="/css/book-reviews.css?v=20260925-review">
-    <!-- The page in the site's own paper, ink and type (Poppins + Source Serif). -->
-    <link rel="stylesheet" href="/css/book-reviews-editorial.css?v=1">
 </head>
 <body data-page="book-reviews">
     <!-- Google Tag Manager (noscript) -->
@@ -130,33 +155,110 @@
     <div id="site-header"></div>
 
     <main>
-        <!-- ============ HERO — a reading nook by a D.C. window ============ -->
+        <!-- ============================================================
+             HERO — "The Catalyst Reviews"
+             ============================================================ -->
         <section class="br-hero" id="br-hero" aria-labelledby="br-hero-title">
-            <div class="bx-wrap bx-hero-grid">
-                <div class="bx-hero-copy">
-                    <p class="bx-kicker" data-reveal>The Catalyst &middot; Book Reviews</p>
-                    <h1 id="br-hero-title" data-reveal style="--d:.06s"><span class="nw">Book Reviews.</span> <em>The science books worth your time.</em></h1>
-                    <p class="bx-lede" data-reveal style="--d:.12s">Short, honest recommendations from Catalyst writers and readers: what the book is about, who it&rsquo;s for, and whether it&rsquo;s worth picking up. From the cosmos to the cell.</p>
-                    <div class="bx-hero-actions" data-reveal style="--d:.18s">
-                        <a class="bx-btn" href="#br-writers-section">Browse the reviews</a>
-                        <a class="bx-text-link" href="#br-community-section">Recommend a book <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <div class="br-orb br-orb-1" aria-hidden="true"></div>
+            <div class="br-orb br-orb-2" aria-hidden="true"></div>
+            <div class="br-orb br-orb-3" aria-hidden="true"></div>
+            <div class="br-hero-grain" aria-hidden="true"></div>
+
+            <div class="br-hero-inner">
+                <div>
+                    <div class="br-hero-eyebrow br-reveal">The Catalyst Reviews</div>
+                    <h1 class="br-hero-title br-reveal br-d1" id="br-hero-title">
+                        Books that <em>change</em><br>
+                        how we see<br>
+                        the world.
+                    </h1>
+                    <p class="br-hero-kicker br-reveal br-d2">
+                        A monthly STEM book column from The Catalyst. Short, honest
+                        recommendations from our contributors — what they read, why it
+                        moved them, and what to pick up next. From cosmology and
+                        consciousness to climate, code, and the math we live inside.
+                    </p>
+                    <div class="br-hero-meta br-reveal br-d3" role="list">
+                        <div class="br-hero-meta-item" role="listitem">
+                            <div class="br-hero-meta-label">Reviews on record</div>
+                            <div class="br-hero-meta-value" id="br-stat-count">—</div>
+                        </div>
+                        <div class="br-hero-meta-item" role="listitem">
+                            <div class="br-hero-meta-label">Disciplines covered</div>
+                            <div class="br-hero-meta-value" id="br-stat-genres">—</div>
+                        </div>
+                        <div class="br-hero-meta-item" role="listitem">
+                            <div class="br-hero-meta-label">Latest dispatch</div>
+                            <div class="br-hero-meta-value" id="br-stat-latest">—</div>
+                        </div>
                     </div>
                 </div>
-                <figure class="bx-hero-art" data-reveal-art>
-                    <img class="bx-still" src="/beta/book-reviews/nook-1280.webp?v=1" srcset="/beta/book-reviews/nook-800.webp?v=1 800w, /beta/book-reviews/nook-1280.webp?v=1 1280w"
-                         sizes="(max-width: 899px) 94vw, 50vw" width="1280" height="960" fetchpriority="high" decoding="async"
-                         alt="A watercolour drawing of a reading nook: an armchair by an open window, a stack of books, an open book with reading glasses and a cup of tea, cherry blossoms and the Washington Monument outside.">
-                    <!-- a calm 10s loop of the same drawing: the curtain stirs, petals drift in, steam rises (Higgsfield / Kling 3.0; first frame = last frame) -->
-                    <video class="bx-loop" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1" data-src="/beta/book-reviews/nook-loop.mp4?v=1" data-src-sm="/beta/book-reviews/nook-loop-sm.mp4?v=1"></video>
-                </figure>
+
+                <div class="br-hero-stack br-reveal br-d2" aria-hidden="true">
+                    <!-- Each book is its own positioned tile. The gradient on
+                         .br-stack-book-N is now a low-fi placeholder tinted to
+                         the book's dominant color — visible only while the
+                         WebP cover loads (or if it fails on a slow/old browser).
+                         Once the cover is in, the .br-stack-book-img layer
+                         fades over the gradient, and the gloss/scanline
+                         ::before stays on top so the parallax effect is
+                         preserved. -->
+                    <div class="br-stack-book br-stack-book-1">
+                        <img class="br-stack-book-img"
+                             src="/images/book-reviews/hero-book-1.webp"
+                             srcset="/images/book-reviews/hero-book-1.webp 480w, /images/book-reviews/hero-book-1@2x.webp 960w"
+                             sizes="(max-width: 960px) 280px, 420px"
+                             alt=""
+                             width="480" height="696"
+                             decoding="sync"
+                             fetchpriority="high"
+                             onload="this.classList.add('is-loaded');this.parentElement.dataset.loaded='true'">
+                    </div>
+                    <div class="br-stack-book br-stack-book-2">
+                        <img class="br-stack-book-img"
+                             src="/images/book-reviews/hero-book-2.webp"
+                             srcset="/images/book-reviews/hero-book-2.webp 480w, /images/book-reviews/hero-book-2@2x.webp 960w"
+                             sizes="(max-width: 960px) 280px, 420px"
+                             alt=""
+                             width="480" height="696"
+                             decoding="sync"
+                             fetchpriority="high"
+                             onload="this.classList.add('is-loaded');this.parentElement.dataset.loaded='true'">
+                    </div>
+                    <div class="br-stack-book br-stack-book-3">
+                        <img class="br-stack-book-img"
+                             src="/images/book-reviews/hero-book-3.webp"
+                             srcset="/images/book-reviews/hero-book-3.webp 480w, /images/book-reviews/hero-book-3@2x.webp 960w"
+                             sizes="(max-width: 960px) 280px, 420px"
+                             alt=""
+                             width="480" height="696"
+                             decoding="sync"
+                             fetchpriority="high"
+                             onload="this.classList.add('is-loaded');this.parentElement.dataset.loaded='true'">
+                    </div>
+                </div>
+                <!-- Catch images that were already in the browser cache (e.g.
+                     after a soft refresh) — the inline `onload` won't fire for
+                     a complete image at parse time, so we sweep once here. -->
+                <script>
+                    document.querySelectorAll('.br-stack-book-img').forEach(function (img) {
+                        if (img.complete && img.naturalWidth > 0) {
+                            img.classList.add('is-loaded');
+                            if (img.parentElement) img.parentElement.dataset.loaded = 'true';
+                        }
+                    });
+                </script>
             </div>
         </section>
 
-        <!-- ============ THIS MONTH'S PICK ============ -->
-        <section class="br-section br-featured" aria-labelledby="bx-featured-k">
+        <!-- ============================================================
+             FEATURED REVIEW — split-screen spotlight
+             ============================================================ -->
+        <section class="br-section br-featured">
             <div class="br-container">
-                <div class="bx-rule-head"><p class="bx-kicker" id="bx-featured-k">This month&rsquo;s pick</p></div>
+                <span class="br-section-eyebrow br-reveal">This month's pick</span>
                 <div id="br-featured" class="br-reveal br-d1">
+                    <!-- JS-rendered featured review -->
                     <div class="br-featured-grid">
                         <div class="br-featured-cover" aria-hidden="true"></div>
                         <div class="br-featured-body">
@@ -170,22 +272,36 @@
             </div>
         </section>
 
-        <!-- ============ ON THE SHELF — a quiet running line of titles ============ -->
-        <section class="br-marquee" aria-label="Books reviewed in The Catalyst">
-            <div class="br-marquee-track" id="br-marquee-track" role="list"></div>
+        <!-- ============================================================
+             MARQUEE — running ticker of reviewed titles
+             ============================================================ -->
+        <section class="br-marquee" aria-label="Books currently in The Catalyst Reviews">
+            <div class="br-marquee-track" id="br-marquee-track" role="list">
+                <!-- JS-rendered -->
+            </div>
         </section>
 
-        <!-- ============ SEARCH + SHELF FILTER ============ -->
+        <!-- ============================================================
+             FILTER RAIL — search + discipline dropdown
+             Mirrors the Catalyzers toolbar below for visual consistency.
+             ============================================================ -->
         <div class="br-rail-wrap">
             <div class="br-container">
                 <div class="br-rail" role="search">
                     <label class="br-community-search br-rail-search">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="search" id="br-search-input" placeholder="Search by book, author or reviewer" autocomplete="off" spellcheck="false" aria-label="Search book reviews">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="search" id="br-search-input" placeholder="Search reviews by book, author, or reviewer…" autocomplete="off" spellcheck="false" aria-label="Search book reviews">
                         <button type="button" class="br-community-search-clear" id="br-search-clear" aria-label="Clear search" hidden>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
                         </button>
                     </label>
+
                     <label class="br-community-filter br-rail-filter">
                         <span class="br-community-filter-label">Shelf</span>
                         <select id="br-rail-genre-select" aria-label="Filter reviews by discipline">
@@ -199,26 +315,38 @@
                             <option value="memoir">Memoir</option>
                             <option value="physics">Physics</option>
                         </select>
-                        <svg class="br-community-filter-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                        <svg class="br-community-filter-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
                     </label>
                 </div>
             </div>
         </div>
 
-        <!-- ============ FROM OUR WRITERS ============ -->
-        <section class="br-section br-feed" id="br-writers-section" aria-labelledby="bx-writers-t">
+        <!-- ============================================================
+             REVIEWS GRID — written by Catalyst contributors
+             ============================================================ -->
+        <section class="br-section br-feed" id="br-writers-section">
             <div class="br-container">
-                <header class="bx-sec-head">
-                    <p class="bx-kicker">From our writers</p>
-                    <h2 class="br-section-title" id="bx-writers-t">Reviewed by <em>The Catalyst.</em></h2>
-                    <p class="br-section-lede">Each one a short recommendation from a Catalyst writer: what the book is about, who it&rsquo;s for, and why it earned a place on the shelf.</p>
-                </header>
+                <span class="br-section-eyebrow">From our writers</span>
+                <h2 class="br-section-title">The Catalyst <em>library.</em></h2>
+                <p class="br-section-lede">
+                    Filter by discipline or search for a title. Each card is a short
+                    recommendation from a Catalyst contributor — what the book's about,
+                    who it's for, and why it earned a spot on the shelf.
+                </p>
 
-                <div class="br-grid" id="br-feed" aria-live="polite"></div>
+                <div class="br-grid" id="br-feed" aria-live="polite">
+                    <!-- JS-rendered writer cards -->
+                </div>
 
                 <div class="br-empty" id="br-empty" hidden>
+                    <svg class="br-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
                     <h3>No reviews match that yet.</h3>
-                    <p>Try another discipline, or clear the search to see every review.</p>
+                    <p>Try another discipline or clear the search to see everything on the shelf.</p>
                 </div>
 
                 <div class="br-loadmore-wrap">
@@ -227,31 +355,64 @@
             </div>
         </section>
 
-        <!-- ============ FROM OUR READERS — community picks + the submission form ============ -->
+        <!-- ============================================================
+             FROM THE CATALYZERS — community submissions
+             Public readers ("Catalyzers") submit recommendations via the
+             modal below. The submission goes to the admin queue; once
+             approved it appears here with a "Reader pick" badge.
+             ============================================================ -->
         <section class="br-section br-community" id="br-community-section" aria-labelledby="br-community-title">
             <div class="br-container">
-                <div class="bx-readers-head">
-                    <figure class="bx-readers-art" aria-hidden="true">
-                        <img src="/beta/book-reviews/note-700.webp?v=1" srcset="/beta/book-reviews/note-700.webp?v=1 700w, /beta/book-reviews/note-1100.webp?v=1 1100w" sizes="(max-width: 899px) 80vw, 34vw" width="1100" height="800" loading="lazy" decoding="async" alt="">
-                    </figure>
-                    <div class="bx-readers-copy">
-                        <p class="bx-kicker">From our readers</p>
-                        <h2 class="br-section-title" id="br-community-title">Reader <em>recommendations.</em></h2>
-                        <p class="br-section-lede">Read a science book you can&rsquo;t stop thinking about? Tell us the title, the author and a few sentences on why. Our editors read every recommendation and publish the best of them here.</p>
+                <div class="br-community-head">
+                    <div class="br-community-lockup">
+                        <div class="br-community-stamp" aria-hidden="true">
+                            <span class="br-community-stamp-mark">★</span>
+                            <span class="br-community-stamp-label">Reader<br>Picks</span>
+                        </div>
+                        <div class="br-community-copy">
+                            <span class="br-section-eyebrow">From the Catalyzers</span>
+                            <h2 class="br-section-title" id="br-community-title">Reader recommendations, <em>curated.</em></h2>
+                            <p class="br-section-lede br-community-lede">
+                                The Catalyzers are our readers. If a STEM book moved you, share
+                                it here — title, author, and a few sentences on why. Editors
+                                review every submission and publish the strongest as community picks.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="br-community-aside">
                         <button class="br-submit-cta" type="button" id="br-open-submit" aria-haspopup="dialog">
-                            Recommend a book
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                            Submit a review
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
                         </button>
+                        <dl class="br-community-stats" aria-label="Community stats">
+                            <div>
+                                <dt>Reader reviews</dt>
+                                <dd id="br-community-count">—</dd>
+                            </div>
+                            <div>
+                                <dt>Most-loved shelf</dt>
+                                <dd id="br-community-top-genre">—</dd>
+                            </div>
+                        </dl>
                     </div>
                 </div>
 
                 <div class="br-community-toolbar" role="search">
                     <div class="br-community-controls">
                         <label class="br-community-search">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            <input type="search" id="br-community-search-input" placeholder="Search reader picks" autocomplete="off" spellcheck="false" aria-label="Search reader recommendations">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <input type="search" id="br-community-search-input" placeholder="Search reader picks by book, author, or reviewer…" autocomplete="off" spellcheck="false" aria-label="Search reader-submitted book reviews">
                             <button type="button" class="br-community-search-clear" id="br-community-search-clear" aria-label="Clear search" hidden>
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
                             </button>
                         </label>
                         <label class="br-community-filter">
@@ -268,21 +429,33 @@
                                 <option value="physics">Physics</option>
                                 <option value="stem">Other STEM</option>
                             </select>
-                            <svg class="br-community-filter-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                            <svg class="br-community-filter-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
                         </label>
                     </div>
                     <p class="br-community-status" id="br-community-status" aria-live="polite"></p>
                 </div>
 
-                <div class="br-grid" id="br-community-feed" aria-live="polite"></div>
+                <div class="br-grid" id="br-community-feed" aria-live="polite">
+                    <!-- JS-rendered community cards -->
+                </div>
 
                 <div class="br-empty" id="br-community-empty" hidden>
-                    <h3>No reader picks yet.</h3>
-                    <p>Be the first: recommend a book you loved.</p>
+                    <svg class="br-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                    </svg>
+                    <h3>Be the first Catalyzer.</h3>
+                    <p>No reader picks here yet — tap "Submit a review" to send one in.</p>
                 </div>
+
                 <div class="br-empty" id="br-community-no-match" hidden>
+                    <svg class="br-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
                     <h3>No reader picks match that search.</h3>
-                    <p>Try a different title, author or reviewer, or clear the search to see them all.</p>
+                    <p>Try a different title, author, or reviewer — or clear the search to browse them all.</p>
                 </div>
 
                 <div class="br-loadmore-wrap" id="br-community-loadmore-wrap" hidden>
@@ -291,18 +464,23 @@
             </div>
         </section>
 
-        <!-- ============ ABOUT — one reader to another ============ -->
-        <section class="bx-about" aria-labelledby="bx-about-t">
-            <figure class="bx-about-art" aria-hidden="true">
-                <img src="/beta/book-reviews/reading-room-1800.webp?v=1" srcset="/beta/book-reviews/reading-room-1100.webp?v=1 1100w, /beta/book-reviews/reading-room-1800.webp?v=1 1800w, /beta/book-reviews/reading-room-2600.webp?v=1 2600w" sizes="100vw" width="2600" height="1103" loading="lazy" decoding="async" alt="">
-            </figure>
-            <div class="bx-wrap bx-about-grid">
-                <p class="bx-kicker">About Book Reviews</p>
-                <div>
-                    <h2 id="bx-about-t">One reader <em>to another.</em></h2>
-                    <p>Every month, a Catalyst writer picks a science book they actually enjoyed and tells you about it: what it is, what&rsquo;s good about it, and whether it&rsquo;s worth your evening. The reviews are short and personal, less a verdict than a friend handing you the book they just finished.</p>
-                    <p class="bx-about-more">Want to write one? <a href="/collaborate">Pitch The Catalyst</a> or <button type="button" class="bx-inline-btn" data-open-submit>recommend a book</button>.</p>
-                </div>
+        <!-- ============================================================
+             ABOUT THE COLUMN — what The Catalyst Reviews is, in plain language.
+             The studio is gated, so there's no public CTA here; this
+             is just context for readers landing on the page.
+             ============================================================ -->
+        <section class="br-section br-pitch">
+            <div class="br-container">
+                <span class="br-section-eyebrow br-reveal" style="color:var(--accent-soft);">About The Catalyst Reviews</span>
+                <h2 class="br-section-title br-reveal br-d1">A monthly book recommendation, <em>from one reader to another.</em></h2>
+                <p class="br-section-lede br-reveal br-d2" style="margin-bottom:0;">
+                    The Catalyst Reviews is our monthly book column. Every month, a Catalyst
+                    writer picks a STEM book they actually liked and tells you
+                    about it: what the book is, what's good about it, and whether
+                    it's worth reading. The reviews are short and pretty casual.
+                    Think of them less as reviews and more as a friend recommending
+                    something they just finished.
+                </p>
             </div>
         </section>
     </main>
@@ -326,7 +504,7 @@
                 <h2 class="br-modal-title" id="br-modal-title">Recommend a book.</h2>
                 <p class="br-modal-sub">
                     A few sentences on why you loved it, why it matters, and who should read it.
-                    Our editors review every submission and publish the best of them on Book Reviews.
+                    Our editors review every submission and publish the best of them on The Catalyst Reviews.
                 </p>
             </header>
 
@@ -455,7 +633,7 @@
                         </svg>
                     </div>
                     <h3>Thank you — your recommendation is in the editors' queue.</h3>
-                    <p>If it's a good fit, you'll see it under Reader recommendations on Book Reviews. We'll reach out by email if we need anything else.</p>
+                    <p>If it's a good fit, you'll see it land on The Catalyst Reviews under "From the Catalyzers." We'll reach out by email if we need anything else.</p>
                     <button class="br-btn br-btn-ghost" type="button" id="br-modal-done">Close</button>
                 </div>
             </div>
@@ -549,7 +727,6 @@
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/lqip-manifest.js"></script>
     <script defer src="/js/data.js?v=2"></script>
-    <script defer src="/js/book-reviews.js?v=20261001"></script>
-    <script defer src="/js/book-reviews-page.js?v=1"></script>
+    <script defer src="/js/book-reviews.js?v=20260925-review"></script>
 </body>
 </html>

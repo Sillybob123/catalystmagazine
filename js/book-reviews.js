@@ -444,7 +444,7 @@
                 <div class="br-featured-empty">
                     <h2 class="br-section-title">A new column, <em>just getting started.</em></h2>
                     <p class="br-section-lede">
-                        The Catalyst Reviews is The Catalyst's monthly book column — short, honest
+                        Book Reviews is The Catalyst's monthly book column — short, honest
                         write-ups on STEM books worth your shelf space. The first
                         recommendation lands soon. Check back, or browse the backlog below
                         as it fills in.

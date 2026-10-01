@@ -68,7 +68,8 @@ const excludedExtensions = new Set([
 // step with the mp4 exceptions in .gitignore.
 const shippedVideoPatterns = [
   /^edition-art\/[^/]+\/[^/]+\.mp4$/,
-  /^beta\/articles\/[^/]+\.mp4$/
+  /^beta\/articles\/[^/]+\.mp4$/,
+  /^beta\/book-reviews\/[^/]+\.mp4$/
 ];
 
 // Credentials must never reach the public bundle, even when they sit in the
