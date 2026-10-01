@@ -1837,8 +1837,67 @@
         }
         return '';
     }
+    // Star rating (current form): five stars, half-star steps. Same control
+    // as the dashboard's "Write a book review" (book-reviews-writer.js).
+    function wireStarRating({ root, hiddenInputId } = {}) {
+        const row = root.querySelector('.brw-stars-row');
+        const stars = [...root.querySelectorAll('.brw-star')];
+        const valueEl = root.querySelector('.brw-stars-value');
+        const clear = root.querySelector('.brw-stars-clear');
+        const flavor = document.getElementById('br-rating-flavor');
+        const hidden = hiddenInputId ? document.getElementById(hiddenInputId) : null;
+        const HINT = 'Click or drag across the stars. Half stars work too.';
+        let value = 0;
+        const fmt = (n) => (Math.round(n * 10) / 10).toFixed(Number.isInteger(n) ? 0 : 1);
+        const paint = (n, preview = false) => {
+            stars.forEach((st, i) => st.style.setProperty('--fill', `${Math.max(0, Math.min(1, n - i)) * 100}%`));
+            root.dataset.value = n > 0 ? String(n) : '0';
+            root.classList.toggle('is-preview', preview);
+            if (valueEl) valueEl.innerHTML = n > 0 ? `${fmt(n)}<small> / 5</small>` : 'No rating';
+            if (flavor) flavor.textContent = n > 0 ? flavorForRating(n) : HINT;
+        };
+        const set = (n) => {
+            value = Math.max(0, Math.min(5, Math.round(n * 10) / 10));
+            if (hidden) hidden.value = value > 0 ? value.toFixed(1) : '';
+            row.setAttribute('aria-valuenow', String(value));
+            row.setAttribute('aria-valuetext', value > 0 ? `${fmt(value)} out of 5, ${flavorForRating(value)}` : 'No rating');
+            if (clear) clear.hidden = value <= 0;
+            paint(value);
+        };
+        // Left half of a star = .5, right half = the whole star.
+        const valueAt = (clientX) => {
+            const r = row.getBoundingClientRect();
+            const x = Math.max(0, Math.min(r.width - 0.01, clientX - r.left));
+            const per = r.width / stars.length;
+            const idx = Math.floor(x / per);
+            return idx + ((x - idx * per) < per / 2 ? 0.5 : 1);
+        };
+        let dragging = false;
+        row.addEventListener('pointerdown', (e) => { dragging = true; row.setPointerCapture?.(e.pointerId); set(valueAt(e.clientX)); });
+        row.addEventListener('pointermove', (e) => { if (dragging) set(valueAt(e.clientX)); else if (e.pointerType === 'mouse') paint(valueAt(e.clientX), true); });
+        row.addEventListener('pointerup', () => { dragging = false; });
+        row.addEventListener('pointercancel', () => { dragging = false; });
+        row.addEventListener('pointerleave', () => { if (!dragging) paint(value); });
+        row.addEventListener('keydown', (e) => {
+            let n = null;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowUp') n = Math.floor(value / 0.5) * 0.5 + 0.5;
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') n = Math.ceil(value / 0.5) * 0.5 - 0.5;
+            else if (e.key === 'Home') n = 0;
+            else if (e.key === 'End') n = 5;
+            else if (/^[0-5]$/.test(e.key)) n = Number(e.key);
+            else if (e.key === 'Backspace' || e.key === 'Delete') n = 0;
+            if (n === null) return;
+            e.preventDefault();
+            set(n);
+        });
+        clear?.addEventListener('click', () => { set(0); row.focus(); });
+        root.__resetRatingSlider = () => set(0);
+        set(0);
+    }
+
     function wireRatingSlider({ root, hiddenInputId } = {}) {
         if (!root) return;
+        if (root.querySelector('.brw-stars-row')) return wireStarRating({ root, hiddenInputId });
         const input = root.querySelector('.br-rating-slider-input');
         const fill = root.querySelector('.br-rating-slider-stars-fill');
         const value = root.querySelector('.br-rating-slider-value');

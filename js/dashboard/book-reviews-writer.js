@@ -639,7 +639,6 @@ function wireRatingSlider(card) {
     dragging = true;
     row.setPointerCapture?.(e.pointerId);
     set(valueAt(e.clientX));
-    row.focus({ preventScroll: true });
   });
   row.addEventListener("pointermove", (e) => {
     if (dragging) set(valueAt(e.clientX));
