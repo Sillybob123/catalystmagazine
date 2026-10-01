@@ -2459,7 +2459,9 @@ async function mountSocialPosts(ctx, container) {
 
     // Drafts = unposted (any status that isn't "posted"). Show in their own
     // strip so they're easy to grab and finish.
-    const drafts = filtered.filter((p) => p.status !== "posted");
+    // Next to post first: soonest due date on top (undated drafts last).
+    const drafts = filtered.filter((p) => p.status !== "posted")
+      .sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999"));
     if (drafts.length) {
       draftsWrap.style.display = "block";
       draftsCount.textContent = `${drafts.length} draft${drafts.length === 1 ? "" : "s"}`;
