@@ -1,0 +1,558 @@
+{
+ "backgrounds": [
+  {
+   "id": "dc-air-space",
+   "title": "Air and Space Museum",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-air-space.webp?v=1",
+   "thumb": "/beta/social/bg/dc-air-space-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.387,
+   "paper": "#fbf6ee"
+  },
+  {
+   "id": "dc-botanic",
+   "title": "U.S. Botanic Garden",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-botanic.webp?v=1",
+   "thumb": "/beta/social/bg/dc-botanic-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.394,
+   "paper": "#f8f4e8"
+  },
+  {
+   "id": "dc-canal",
+   "title": "Georgetown canal in autumn",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-canal.webp?v=1",
+   "thumb": "/beta/social/bg/dc-canal-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.381,
+   "paper": "#fcf6ed"
+  },
+  {
+   "id": "dc-jefferson",
+   "title": "Jefferson Memorial in blossom",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-jefferson.webp?v=1",
+   "thumb": "/beta/social/bg/dc-jefferson-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.466,
+   "paper": "#f8f4e9"
+  },
+  {
+   "id": "dc-kennedy",
+   "title": "Kennedy Center and the Potomac",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-kennedy.webp?v=1",
+   "thumb": "/beta/social/bg/dc-kennedy-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.363,
+   "paper": "#fbf4e8"
+  },
+  {
+   "id": "dc-lincoln",
+   "title": "Lincoln Memorial at dusk",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-lincoln.webp?v=1",
+   "thumb": "/beta/social/bg/dc-lincoln-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.408,
+   "paper": "#faf4ea"
+  },
+  {
+   "id": "dc-metro",
+   "title": "The Metro",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-metro.webp?v=1",
+   "thumb": "/beta/social/bg/dc-metro-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.399,
+   "paper": "#fbf5ec"
+  },
+  {
+   "id": "dc-monument",
+   "title": "Washington Monument",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-monument.webp?v=1",
+   "thumb": "/beta/social/bg/dc-monument-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.456,
+   "paper": "#fbf5ea"
+  },
+  {
+   "id": "dc-natural-history",
+   "title": "Natural History rotunda",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-natural-history.webp?v=1",
+   "thumb": "/beta/social/bg/dc-natural-history-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.337,
+   "paper": "#f7f3ea"
+  },
+  {
+   "id": "dc-reading-room",
+   "title": "Library of Congress reading room",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-reading-room.webp?v=1",
+   "thumb": "/beta/social/bg/dc-reading-room-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.332,
+   "paper": "#fcf6ee"
+  },
+  {
+   "id": "dc-union-station",
+   "title": "Union Station",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-union-station.webp?v=1",
+   "thumb": "/beta/social/bg/dc-union-station-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.35,
+   "paper": "#fbf3ea"
+  },
+  {
+   "id": "dc-zoo",
+   "title": "National Zoo panda",
+   "cat": "D.C.",
+   "image": "/beta/social/bg/dc-zoo.webp?v=1",
+   "thumb": "/beta/social/bg/dc-zoo-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.358,
+   "paper": "#fdf5ec"
+  },
+  {
+   "id": "sci-cells",
+   "title": "Cells under the microscope",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-cells.webp?v=1",
+   "thumb": "/beta/social/bg/sci-cells-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.344,
+   "paper": "#f8f4e9"
+  },
+  {
+   "id": "sci-chip",
+   "title": "Brain, tree and chip",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-chip.webp?v=1",
+   "thumb": "/beta/social/bg/sci-chip-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.365,
+   "paper": "#fcf4ea"
+  },
+  {
+   "id": "sci-dna",
+   "title": "DNA and cells",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-dna.webp?v=1",
+   "thumb": "/beta/social/bg/sci-dna-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.399,
+   "paper": "#fcf8f2"
+  },
+  {
+   "id": "sci-earth",
+   "title": "Earth from orbit",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-earth.webp?v=1",
+   "thumb": "/beta/social/bg/sci-earth-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.033,
+   "paper": "#fdf9f3"
+  },
+  {
+   "id": "sci-energy",
+   "title": "Wind and solar",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-energy.webp?v=1",
+   "thumb": "/beta/social/bg/sci-energy-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.368,
+   "paper": "#faf5ec"
+  },
+  {
+   "id": "sci-fungi",
+   "title": "Seedling and fungi",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-fungi.webp?v=1",
+   "thumb": "/beta/social/bg/sci-fungi-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.379,
+   "paper": "#fcf8f0"
+  },
+  {
+   "id": "sci-glassware",
+   "title": "Lab glassware",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-glassware.webp?v=1",
+   "thumb": "/beta/social/bg/sci-glassware-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.404,
+   "paper": "#fbf8f0"
+  },
+  {
+   "id": "sci-heart",
+   "title": "Heart and stethoscope",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-heart.webp?v=1",
+   "thumb": "/beta/social/bg/sci-heart-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.424,
+   "paper": "#f9f3e7"
+  },
+  {
+   "id": "sci-prism",
+   "title": "Atom, wave and prism",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-prism.webp?v=1",
+   "thumb": "/beta/social/bg/sci-prism-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.286,
+   "paper": "#f6f2e8"
+  },
+  {
+   "id": "sci-reef",
+   "title": "Coral reef",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-reef.webp?v=1",
+   "thumb": "/beta/social/bg/sci-reef-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.361,
+   "paper": "#fcf7ef"
+  },
+  {
+   "id": "sci-rocket",
+   "title": "Rocket launch",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-rocket.webp?v=1",
+   "thumb": "/beta/social/bg/sci-rocket-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.441,
+   "paper": "#f9f4e7"
+  },
+  {
+   "id": "sci-telescope",
+   "title": "Telescope and the night sky",
+   "cat": "Science",
+   "image": "/beta/social/bg/sci-telescope.webp?v=1",
+   "thumb": "/beta/social/bg/sci-telescope-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.425,
+   "paper": "#f9f3e7"
+  },
+  {
+   "id": "wash-blue",
+   "title": "Slate-blue wash",
+   "cat": "Washes",
+   "image": "/beta/social/bg/wash-blue.webp?v=1",
+   "thumb": "/beta/social/bg/wash-blue-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.03,
+   "paper": "#c0c6c7"
+  },
+  {
+   "id": "wash-blush",
+   "title": "Blush wash",
+   "cat": "Washes",
+   "image": "/beta/social/bg/wash-blush.webp?v=1",
+   "thumb": "/beta/social/bg/wash-blush-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.526,
+   "paper": "#faf9f3"
+  },
+  {
+   "id": "wash-lavender",
+   "title": "Lavender and peach",
+   "cat": "Washes",
+   "image": "/beta/social/bg/wash-lavender.webp?v=1",
+   "thumb": "/beta/social/bg/wash-lavender-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.321,
+   "paper": "#f8f3ec"
+  },
+  {
+   "id": "wash-ochre",
+   "title": "Ochre wash",
+   "cat": "Washes",
+   "image": "/beta/social/bg/wash-ochre.webp?v=1",
+   "thumb": "/beta/social/bg/wash-ochre-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.497,
+   "paper": "#faf5ea"
+  },
+  {
+   "id": "wash-paper",
+   "title": "Plain paper",
+   "cat": "Washes",
+   "image": "/beta/social/bg/wash-paper.webp?v=1",
+   "thumb": "/beta/social/bg/wash-paper-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.993,
+   "paper": "#f1ece5"
+  },
+  {
+   "id": "wash-sage",
+   "title": "Sage wash",
+   "cat": "Washes",
+   "image": "/beta/social/bg/wash-sage.webp?v=1",
+   "thumb": "/beta/social/bg/wash-sage-thumb.webp?v=1",
+   "tone": "light",
+   "inkTop": 0.192,
+   "paper": "#fbfaf3"
+  },
+  {
+   "id": "night-capitol",
+   "title": "The Capitol at night",
+   "cat": "Night & dark",
+   "image": "/beta/social/bg/night-capitol.webp?v=1",
+   "thumb": "/beta/social/bg/night-capitol-thumb.webp?v=1",
+   "tone": "dark",
+   "inkTop": 0.324,
+   "paper": "#09112a"
+  },
+  {
+   "id": "night-lab",
+   "title": "The lab at night",
+   "cat": "Night & dark",
+   "image": "/beta/social/bg/night-lab.webp?v=1",
+   "thumb": "/beta/social/bg/night-lab-thumb.webp?v=1",
+   "tone": "dark",
+   "inkTop": 0.363,
+   "paper": "#060f22"
+  },
+  {
+   "id": "night-observatory",
+   "title": "Observatory under the Milky Way",
+   "cat": "Night & dark",
+   "image": "/beta/social/bg/night-observatory.webp?v=1",
+   "thumb": "/beta/social/bg/night-observatory-thumb.webp?v=1",
+   "tone": "dark",
+   "inkTop": 0.338,
+   "paper": "#080f25"
+  },
+  {
+   "id": "dark-burgundy",
+   "title": "Burgundy watercolour",
+   "cat": "Night & dark",
+   "image": "/beta/social/bg/dark-burgundy.webp?v=1",
+   "thumb": "/beta/social/bg/dark-burgundy-thumb.webp?v=1",
+   "tone": "dark",
+   "inkTop": 0.03,
+   "paper": "#9a7678"
+  },
+  {
+   "id": "dark-forest",
+   "title": "Forest watercolour",
+   "cat": "Night & dark",
+   "image": "/beta/social/bg/dark-forest.webp?v=1",
+   "thumb": "/beta/social/bg/dark-forest-thumb.webp?v=1",
+   "tone": "dark",
+   "inkTop": 0.03,
+   "paper": "#345738"
+  },
+  {
+   "id": "dark-navy",
+   "title": "Navy watercolour",
+   "cat": "Night & dark",
+   "image": "/beta/social/bg/dark-navy.webp?v=1",
+   "thumb": "/beta/social/bg/dark-navy-thumb.webp?v=1",
+   "tone": "dark",
+   "inkTop": 0.03,
+   "paper": "#3e485b"
+  }
+ ],
+ "elements": [
+  {
+   "id": "el-atom",
+   "title": "Atom",
+   "image": "/beta/social/el/el-atom.webp?v=1",
+   "thumb": "/beta/social/el/el-atom-thumb.webp?v=1",
+   "w": 874,
+   "h": 1000
+  },
+  {
+   "id": "el-autumn",
+   "title": "Autumn leaves",
+   "image": "/beta/social/el/el-autumn.webp?v=1",
+   "thumb": "/beta/social/el/el-autumn-thumb.webp?v=1",
+   "w": 767,
+   "h": 1000
+  },
+  {
+   "id": "el-books",
+   "title": "Books and glasses",
+   "image": "/beta/social/el/el-books.webp?v=1",
+   "thumb": "/beta/social/el/el-books-thumb.webp?v=1",
+   "w": 1000,
+   "h": 712
+  },
+  {
+   "id": "el-brain",
+   "title": "Brain",
+   "image": "/beta/social/el/el-brain.webp?v=1",
+   "thumb": "/beta/social/el/el-brain-thumb.webp?v=1",
+   "w": 1000,
+   "h": 858
+  },
+  {
+   "id": "el-capitol",
+   "title": "The Capitol",
+   "image": "/beta/social/el/el-capitol.webp?v=1",
+   "thumb": "/beta/social/el/el-capitol-thumb.webp?v=1",
+   "w": 968,
+   "h": 929
+  },
+  {
+   "id": "el-cherry",
+   "title": "Cherry blossom branch",
+   "image": "/beta/social/el/el-cherry.webp?v=1",
+   "thumb": "/beta/social/el/el-cherry-thumb.webp?v=1",
+   "w": 1000,
+   "h": 718
+  },
+  {
+   "id": "el-coffee",
+   "title": "Coffee",
+   "image": "/beta/social/el/el-coffee.webp?v=1",
+   "thumb": "/beta/social/el/el-coffee-thumb.webp?v=1",
+   "w": 1000,
+   "h": 973
+  },
+  {
+   "id": "el-dna",
+   "title": "DNA helix",
+   "image": "/beta/social/el/el-dna.webp?v=1",
+   "thumb": "/beta/social/el/el-dna-thumb.webp?v=1",
+   "w": 303,
+   "h": 1000
+  },
+  {
+   "id": "el-envelope",
+   "title": "Envelope",
+   "image": "/beta/social/el/el-envelope.webp?v=1",
+   "thumb": "/beta/social/el/el-envelope-thumb.webp?v=1",
+   "w": 869,
+   "h": 1000
+  },
+  {
+   "id": "el-fern",
+   "title": "Leaves and fern",
+   "image": "/beta/social/el/el-fern.webp?v=1",
+   "thumb": "/beta/social/el/el-fern-thumb.webp?v=1",
+   "w": 759,
+   "h": 1000
+  },
+  {
+   "id": "el-flask",
+   "title": "Flask and test tube",
+   "image": "/beta/social/el/el-flask.webp?v=1",
+   "thumb": "/beta/social/el/el-flask-thumb.webp?v=1",
+   "w": 717,
+   "h": 872
+  },
+  {
+   "id": "el-globe",
+   "title": "Globe",
+   "image": "/beta/social/el/el-globe.webp?v=1",
+   "thumb": "/beta/social/el/el-globe-thumb.webp?v=1",
+   "w": 696,
+   "h": 1000
+  },
+  {
+   "id": "el-magazine",
+   "title": "Magazine",
+   "image": "/beta/social/el/el-magazine.webp?v=1",
+   "thumb": "/beta/social/el/el-magazine-thumb.webp?v=1",
+   "w": 1000,
+   "h": 723
+  },
+  {
+   "id": "el-magnifier",
+   "title": "Magnifying glass",
+   "image": "/beta/social/el/el-magnifier.webp?v=1",
+   "thumb": "/beta/social/el/el-magnifier-thumb.webp?v=1",
+   "w": 898,
+   "h": 1000
+  },
+  {
+   "id": "el-mic",
+   "title": "Microphone",
+   "image": "/beta/social/el/el-mic.webp?v=1",
+   "thumb": "/beta/social/el/el-mic-thumb.webp?v=1",
+   "w": 677,
+   "h": 1000
+  },
+  {
+   "id": "el-microscope",
+   "title": "Microscope",
+   "image": "/beta/social/el/el-microscope.webp?v=1",
+   "thumb": "/beta/social/el/el-microscope-thumb.webp?v=1",
+   "w": 532,
+   "h": 1000
+  },
+  {
+   "id": "el-molecule",
+   "title": "Molecule",
+   "image": "/beta/social/el/el-molecule.webp?v=1",
+   "thumb": "/beta/social/el/el-molecule-thumb.webp?v=1",
+   "w": 1000,
+   "h": 892
+  },
+  {
+   "id": "el-monument",
+   "title": "Washington Monument",
+   "image": "/beta/social/el/el-monument.webp?v=1",
+   "thumb": "/beta/social/el/el-monument-thumb.webp?v=1",
+   "w": 575,
+   "h": 788
+  },
+  {
+   "id": "el-pen",
+   "title": "Notebook and pen",
+   "image": "/beta/social/el/el-pen.webp?v=1",
+   "thumb": "/beta/social/el/el-pen-thumb.webp?v=1",
+   "w": 1000,
+   "h": 714
+  },
+  {
+   "id": "el-saturn",
+   "title": "Saturn",
+   "image": "/beta/social/el/el-saturn.webp?v=1",
+   "thumb": "/beta/social/el/el-saturn-thumb.webp?v=1",
+   "w": 1000,
+   "h": 572
+  },
+  {
+   "id": "el-snow",
+   "title": "Snowy branch",
+   "image": "/beta/social/el/el-snow.webp?v=1",
+   "thumb": "/beta/social/el/el-snow-thumb.webp?v=1",
+   "w": 1000,
+   "h": 754
+  },
+  {
+   "id": "el-sprout",
+   "title": "Idea bulb with sprout",
+   "image": "/beta/social/el/el-sprout.webp?v=1",
+   "thumb": "/beta/social/el/el-sprout-thumb.webp?v=1",
+   "w": 618,
+   "h": 1000
+  },
+  {
+   "id": "el-stethoscope",
+   "title": "Stethoscope",
+   "image": "/beta/social/el/el-stethoscope.webp?v=1",
+   "thumb": "/beta/social/el/el-stethoscope-thumb.webp?v=1",
+   "w": 973,
+   "h": 1000
+  },
+  {
+   "id": "el-telescope",
+   "title": "Telescope",
+   "image": "/beta/social/el/el-telescope.webp?v=1",
+   "thumb": "/beta/social/el/el-telescope-thumb.webp?v=1",
+   "w": 683,
+   "h": 1000
+  }
+ ]
+}

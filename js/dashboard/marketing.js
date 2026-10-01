@@ -602,6 +602,7 @@ async function firestoreQuery(authedFetch, structuredQuery) {
       articleTitle: str("articleTitle"),
       coverImageUrl: str("coverImageUrl"),
       backgroundId: str("backgroundId"),
+      designJson: str("designJson"),
       studio: (() => {
         const m = f.studio?.mapValue?.fields;
         if (!m) return null;
@@ -642,9 +643,12 @@ async function firestoreQueryArticles(authedFetch, structuredQuery) {
   });
 }
 
+// Partial update: only the given fields change (a PATCH without an
+// updateMask would replace the whole document).
 async function firestoreWrite(authedFetch, path, fields) {
+  const mask = Object.keys(fields).map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`).join("&");
   const res = await authedFetch(
-    `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/${path}`,
+    `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/${path}?${mask}`,
     { method: "PATCH", body: JSON.stringify({ fields: toFsFields(fields) }) }
   );
   if (!res.ok) throw new Error(`Firestore write failed ${res.status}: ${await res.text()}`);
@@ -2093,7 +2097,7 @@ async function mountSocialPosts(ctx, container) {
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
           <div>
             <h2 style="font-size:20px;font-weight:800;margin:0;letter-spacing:-.01em;">Social media</h2>
-            <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Drafts ready to post, a Studio to put text over our illustrations, and a carousel maker for articles.</p>
+            <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Drafts ready to post, a design Studio with templates, illustrations and photos, and a carousel maker for articles.</p>
           </div>
         </div>
         <div role="tablist" style="display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;">
@@ -2159,7 +2163,7 @@ async function mountSocialPosts(ctx, container) {
         </div>
       </section>
 
-      <!-- STUDIO VIEW — put text over a Catalyst illustration (post-studio.js) -->
+      <!-- STUDIO VIEW — the design editor (design-studio.js) -->
       <section id="sp-studio-view" style="display:none;"></section>
 
       <!-- CREATE VIEW (inline — no modal) -->
@@ -2342,27 +2346,40 @@ async function mountSocialPosts(ctx, container) {
   let studio = null;
   async function ensureStudio() {
     if (studio) return studio;
-    const { mountPostStudio } = await import("./post-studio.js?v=1");
-    studio = await mountPostStudio(ctx, studioView, {
+    const { mountDesignStudio } = await import("./design-studio.js?v=1");
+    studio = await mountDesignStudio(ctx, studioView, {
       onSaved: () => loadPosts(),
-      savePost: (post) => firestoreAdd(ctx.authedFetch, "social_posts", {
-        ...post,
-        status: "proposed",
-        proposerId: ctx.user.uid,
-        proposerName: ctx.profile.name || ctx.user.email,
-        assigneeId: null,
-        assigneeName: null,
-        deadline: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
-        createdAt: new Date().toISOString(),
-        activity: [{ text: "created in Post Studio", authorName: ctx.profile.name || ctx.user.email, timestamp: new Date().toISOString() }],
-      }),
+      // New design → new draft on the board; re-saving an opened post updates it.
+      savePost: async ({ id, ...post }) => {
+        if (id) {
+          try {
+            await firestoreWrite(ctx.authedFetch, `social_posts/${id}`, post);
+            return { id };
+          } catch (err) {
+            // Not allowed to edit someone else's post: save a copy as a new draft.
+            console.warn("[studio] update failed, saving a copy", err);
+          }
+        }
+        const newId = await firestoreAdd(ctx.authedFetch, "social_posts", {
+          ...post,
+          status: "proposed",
+          proposerId: ctx.user.uid,
+          proposerName: ctx.profile.name || ctx.user.email,
+          assigneeId: null,
+          assigneeName: null,
+          deadline: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
+          createdAt: new Date().toISOString(),
+          activity: [{ text: "designed in the Studio", authorName: ctx.profile.name || ctx.user.email, timestamp: new Date().toISOString() }],
+        });
+        return { id: newId };
+      },
     });
     return studio;
   }
   async function openInStudio(p) {
     setActiveTab("studio");
     const s = await ensureStudio();
-    await s.open({ backgroundId: p.backgroundId, studio: p.studio, caption: p.content });
+    await s.open(p);
   }
 
   function setActiveTab(which) {
@@ -2624,7 +2641,7 @@ async function mountSocialPosts(ctx, container) {
     const footer = detailModal.querySelector("#sp-detail-footer");
     footer.innerHTML = "";
 
-    if (p.backgroundId) {
+    if (p.backgroundId || p.designJson) {
       const studioBtn = el("button", { class: "btn btn-primary btn-sm" });
       studioBtn.textContent = "Open in Studio";
       studioBtn.addEventListener("click", () => { closeDetail(); openInStudio(p); });
