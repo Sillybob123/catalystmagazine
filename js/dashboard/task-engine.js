@@ -661,7 +661,7 @@ export function ensureTaskStyles() {
     .admin-task:hover { box-shadow:0 2px 8px rgba(15,23,42,.07); transform:translateY(-1px); }
     .admin-task-urgent { border-left-color:#dc2626; background:#fffafa; }
     .admin-task-high   { border-left-color:#d97706; background:#fffdf7; }
-    .admin-task-normal { border-left-color:#0d9488; }
+    .admin-task-normal { border-left-color:rgba(15,23,42,.25); }
 
     .admin-task-icon {
       flex-shrink:0; width:30px; height:30px; border-radius:8px;
@@ -679,7 +679,7 @@ export function ensureTaskStyles() {
     }
     .admin-task-badge-urgent { background:#fee2e2; color:#b91c1c; }
     .admin-task-badge-high   { background:#fef3c7; color:#92400e; }
-    .admin-task-badge-normal { background:#ccfbf1; color:#0f766e; }
+    .admin-task-badge-normal { background:var(--surface-3,#f1efe8); color:var(--ink,#0f172a); }
     .admin-task-context { font-size:11.5px; color:#94a3b8; }
     .admin-task-due { font-weight:700; }
     .admin-task-due-over { color:#b91c1c; }
@@ -704,10 +704,10 @@ export function ensureTaskStyles() {
     .admin-task-action:hover svg { transform:translateX(2px); }
 
     .admin-task-copy {
-      color:#0f766e; border:1px solid #99f6e4; background:#f0fdfa;
+      color:var(--ink,#0f172a); border:1px solid rgba(15,23,42,.18); background:var(--surface,#fdfcf9);
     }
-    .admin-task-copy:hover { background:#0f766e; color:#fff; border-color:#0f766e; }
-    .admin-task-copy:focus-visible { outline:2px solid #0f766e; outline-offset:2px; }
+    .admin-task-copy:hover { background:var(--ink,#0f172a); color:#fff; border-color:var(--ink,#0f172a); }
+    .admin-task-copy:focus-visible { outline:2px solid var(--ink,#0f172a); outline-offset:2px; }
     .admin-task-copy-done { background:#dcfce7 !important; color:#15803d !important; border-color:#86efac !important; }
 
     .admin-tasks-clear { display:flex; align-items:center; gap:14px; padding:6px 2px; }

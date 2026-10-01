@@ -203,6 +203,19 @@ function savePins(pins) {
 
 function isPinned(hash) { return state.pins.includes(hash); }
 
+// ---------- folded nav groups (per-user, local) ----------
+const NAV_COLLAPSE_PREFIX = "catalyst.dashboard.navCollapsed.";
+function loadCollapsedGroups(fallback) {
+  try {
+    const raw = localStorage.getItem(NAV_COLLAPSE_PREFIX + (state.user?.uid || "anon"));
+    if (raw !== null) { const v = JSON.parse(raw); if (Array.isArray(v)) return v; }
+  } catch {}
+  return fallback || [];
+}
+function saveCollapsedGroups(ids) {
+  try { localStorage.setItem(NAV_COLLAPSE_PREFIX + (state.user?.uid || "anon"), JSON.stringify(ids)); } catch {}
+}
+
 function togglePin(hash) {
   const next = isPinned(hash)
     ? state.pins.filter((h) => h !== hash)
@@ -225,6 +238,7 @@ function getActiveRole() {
 const ROUTES = {
   "#/overview": {
     label: "Overview",
+    desc: "What needs you today, the editorial calendar and the latest from the newsroom.",
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
@@ -234,6 +248,7 @@ const ROUTES = {
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.
   "#/pipeline/all": {
     label: "Story Tracker",
+    desc: "Every story in progress, from pitch to published. Open a card to see its checklist, dates and people.",
     icon: ICONS.board,
     roles: ["*"],
     group: "main",
@@ -246,6 +261,7 @@ const ROUTES = {
   "#/pipeline/opeds":      { hidden: true, roles: ["*"], redirect: "#/pipeline/all" },
   "#/pipeline/mine": {
     label: "My assignments",
+    desc: "The stories you're attached to, by stage.",
     icon: ICONS.clipboard,
     roles: ["*"],
     group: "main",
@@ -253,7 +269,8 @@ const ROUTES = {
     mountKey: "mine",
   },
   "#/tasks": {
-    label: "Tasks",
+    label: "My tasks",
+    desc: "Everything waiting on you, most urgent first. Clear a task by doing it, or snooze it.",
     icon: ICONS.list,
     roles: ["*"],
     group: "main",
@@ -262,14 +279,16 @@ const ROUTES = {
   // Directory — the whole team with roles + emails, plus private messaging
   // (each chat message is also emailed to the recipient via /api/notify/dm).
   "#/directory": {
-    label: "Directory/Team Messages",
+    label: "Team & messages",
+    desc: "Everyone on staff with their role and contact details, plus private messages (each one is also emailed).",
     icon: ICONS.addressBook,
     roles: ["*"],
     group: "main",
     loader: () => import("./directory.js?v=chat-4"),
   },
   "#/writer/draft": {
-    label: "Submit a draft",
+    label: "Write a draft",
+    desc: "Write or paste your story. Save as you go; submit when it's ready for an editor.",
     icon: ICONS.pen,
     roles: ["admin", "editor", "writer"],
     group: "write",
@@ -278,6 +297,7 @@ const ROUTES = {
   },
   "#/writer/mine": {
     label: "My articles",
+    desc: "Everything you've written: drafts, stories in review and published pieces.",
     icon: ICONS.pages,
     roles: ["admin", "editor", "writer"],
     group: "write",
@@ -286,6 +306,7 @@ const ROUTES = {
   },
   "#/writer/feed": {
     label: "Articles in the works",
+    desc: "What the whole newsroom is working on right now. Read-only.",
     icon: ICONS.feed,
     roles: ["admin", "editor", "writer"],
     group: "write",
@@ -294,6 +315,7 @@ const ROUTES = {
   },
   "#/writer/guidelines": {
     label: "Editorial standards",
+    desc: "How we write at The Catalyst: audience, structure, sourcing and style.",
     icon: ICONS.bookOpen,
     roles: ["admin", "editor", "writer"],
     group: "write",
@@ -306,6 +328,7 @@ const ROUTES = {
   // Reviews page rather than the regular article pipeline.
   "#/book-reviews/write": {
     label: "Write a book review",
+    desc: "A short, honest review of a STEM book. Save a draft or submit it to an editor.",
     icon: ICONS.bookPen,
     roles: ["admin", "editor", "writer"],
     group: "book-reviews",
@@ -314,6 +337,7 @@ const ROUTES = {
   },
   "#/book-reviews/mine": {
     label: "My book reviews",
+    desc: "Your book reviews: drafts, in review and published.",
     icon: ICONS.bookmark,
     roles: ["admin", "editor", "writer"],
     group: "book-reviews",
@@ -321,7 +345,8 @@ const ROUTES = {
     mountKey: "mine",
   },
   "#/admin/book-reviews": {
-    label: "Reader-submitted reviews",
+    label: "Reader submissions",
+    desc: "Book reviews sent in by readers. Approve to publish them as reader picks, or reject.",
     icon: ICONS.library,
     roles: ["admin"],
     group: "book-reviews",
@@ -329,6 +354,7 @@ const ROUTES = {
   },
   "#/editor/queue": {
     label: "Editing queue",
+    desc: "Drafts waiting for an editor, and the ones assigned to you.",
     icon: ICONS.check,
     roles: ["admin", "editor"],
     group: "edit",
@@ -337,6 +363,7 @@ const ROUTES = {
   },
   "#/newsletter/builder": {
     label: "Newsletter builder",
+    desc: "Build the newsletter from recent stories, preview it, send a test, then send or schedule it.",
     icon: ICONS.send,
     roles: ["admin", "newsletter_builder"],
     group: "newsletter",
@@ -346,6 +373,7 @@ const ROUTES = {
   },
   "#/newsletter/history": {
     label: "Campaign history",
+    desc: "Every newsletter that has gone out, with recipients and status.",
     icon: ICONS.history,
     roles: ["admin", "newsletter_builder", "marketing"],
     group: "newsletter",
@@ -356,6 +384,7 @@ const ROUTES = {
   // soon, what social work is due, who to talk to, and what just went live.
   "#/planner": {
     label: "Planner",
+    desc: "Plan social posts and content: what's going out, where, who owns it and when.",
     icon: ICONS.planner,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
@@ -363,6 +392,7 @@ const ROUTES = {
   },
   "#/marketing/analytics": {
     label: "Subscribers & growth",
+    desc: "Newsletter subscribers over time: totals, new sign-ups and trends.",
     icon: ICONS.chart,
     roles: ["admin", "marketing", "newsletter_builder", "social_media"],
     group: "marketing",
@@ -371,6 +401,7 @@ const ROUTES = {
   },
   "#/marketing/subscribers": {
     label: "Subscriber list",
+    desc: "Everyone on the mailing list. Search, filter and check where they signed up.",
     icon: ICONS.users,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
@@ -379,6 +410,7 @@ const ROUTES = {
   },
   "#/marketing/collabs": {
     label: "Collaboration requests",
+    desc: "People who asked to work with The Catalyst through the Collaborate page.",
     icon: ICONS.handshake,
     roles: ["admin", "marketing"],
     group: "marketing",
@@ -387,6 +419,7 @@ const ROUTES = {
   },
   "#/marketing/social": {
     label: "Social media posts",
+    desc: "Instagram and LinkedIn posts for published stories: drafts, ready and posted.",
     icon: ICONS.share,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
@@ -395,6 +428,7 @@ const ROUTES = {
   },
   "#/marketing/searchability": {
     label: "Searchability",
+    desc: "How readers find The Catalyst on Google: clicks, impressions, queries and pages.",
     icon: ICONS.search,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
@@ -406,7 +440,8 @@ const ROUTES = {
   // and a digest of every change since the admin last marked themselves
   // caught up. First stop after time off.
   "#/admin/briefing": {
-    label: "Your briefing",
+    label: "Briefing",
+    desc: "What changed since you last looked, and what to do next.",
     icon: ICONS.compass,
     roles: ["admin"],
     group: "admin",
@@ -415,14 +450,16 @@ const ROUTES = {
   // Tasks — the admin's to-do / review / approve queue. Full-page sibling of
   // the "Your tasks" panel on Activity; both share task-engine.js.
   "#/admin/tasks": {
-    label: "Tasks",
+    label: "Team tasks",
+    desc: "Tasks assigned across the team: propose, approve and track them to done.",
     icon: ICONS.check,
     roles: ["admin"],
     group: "admin",
     loader: () => import("./tasks-admin.js?v=noiv-1"),
   },
   "#/admin/articles": {
-    label: "All articles & approvals",
+    label: "Articles & approvals",
+    desc: "Every story and book review. Assign editors, approve, reject, edit or unpublish.",
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
@@ -434,6 +471,7 @@ const ROUTES = {
   // see all the fields a submitter filled in, mark as reviewed, reply.
   "#/admin/submissions": {
     label: "Submissions inbox",
+    desc: "Join-the-team applications and story pitches from the public site.",
     icon: ICONS.inbox,
     roles: ["admin"],
     group: "admin",
@@ -441,6 +479,7 @@ const ROUTES = {
   },
   "#/admin/games": {
     label: "Games",
+    desc: "Attach a short quiz game to a published story; readers find it at the bottom of the article.",
     icon: ICONS.game,
     roles: ["admin"],
     group: "admin",
@@ -448,6 +487,7 @@ const ROUTES = {
   },
   "#/admin/users": {
     label: "Users & roles",
+    desc: "Staff accounts: roles, access, bot reminders. Add or remove people.",
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
@@ -456,6 +496,7 @@ const ROUTES = {
   },
   "#/admin/images": {
     label: "Image library",
+    desc: "Every image uploaded to storage. Copy a link, or clean up ones nothing uses.",
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
@@ -464,6 +505,7 @@ const ROUTES = {
   },
   "#/admin/advanced": {
     label: "Advanced tools",
+    desc: "Rare, powerful tools that write straight to the live site. Use one at a time.",
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
@@ -472,6 +514,7 @@ const ROUTES = {
   },
   "#/admin/activity": {
     label: "Activity",
+    desc: "Who did what and when: activity, idle stories and the bot's reminder emails.",
     icon: ICONS.activity,
     roles: ["admin"],
     group: "admin",
@@ -651,6 +694,7 @@ function buildNavLink(hash, route, { pinned, isDefault } = {}) {
     "data-route": hash,
   });
   link.innerHTML = `${route.icon}<span class="nav-link-label">${route.label}</span>`;
+  if (route.desc) link.title = route.desc;
 
   if (isDefault) {
     // Role-pinned: show a filled, non-interactive tack so it reads as
@@ -714,14 +758,33 @@ function renderSidebar() {
 
   // Regular groups — every allowed route stays in its normal section too, so
   // pinning is purely additive (the item is still findable where it lives).
+  // Groups fold open/closed. With a long menu (admins see ~30 links) every
+  // group but Workspace starts folded; the group holding the current page is
+  // always open. Choices are remembered per person.
+  const totalLinks = [...byGroup.values()].reduce((n, a) => n + a.length, 0);
+  const collapsed = loadCollapsedGroups(totalLinks > 14 ? GROUPS.filter((g) => g.id !== "main").map((g) => g.id) : []);
+  const activeGroup = ROUTES[(location.hash || "").split("?")[0]]?.group;
   for (const g of GROUPS) {
     const items = byGroup.get(g.id);
     if (!items || !items.length) continue;
-    const group = el("div", { class: "nav-group" });
-    group.appendChild(el("div", { class: "nav-group-title" }, g.label));
+    const isOpen = g.id === activeGroup || !collapsed.includes(g.id);
+    const group = el("div", { class: "nav-group" + (isOpen ? "" : " is-collapsed"), "data-group": g.id });
+    const listId = `nav-group-${g.id}`;
+    const title = el("button", { type: "button", class: "nav-group-title", "aria-expanded": isOpen ? "true" : "false", "aria-controls": listId });
+    title.innerHTML = `<span>${g.label}</span><span class="nav-group-count">${items.length}</span><svg class="nav-group-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
+    title.addEventListener("click", () => {
+      const open = group.classList.toggle("is-collapsed") === false;
+      title.setAttribute("aria-expanded", open ? "true" : "false");
+      const now = new Set(loadCollapsedGroups(collapsed));
+      if (open) now.delete(g.id); else now.add(g.id);
+      saveCollapsedGroups([...now]);
+    });
+    group.appendChild(title);
+    const list = el("div", { class: "nav-group-links", id: listId });
     for (const item of items) {
-      group.appendChild(buildNavLink(item.hash, ROUTES[item.hash], { pinned: false }));
+      list.appendChild(buildNavLink(item.hash, ROUTES[item.hash], { pinned: false }));
     }
+    group.appendChild(list);
     frag.appendChild(group);
   }
   nav.innerHTML = "";
@@ -775,8 +838,25 @@ async function handleRoute() {
   document.querySelectorAll(".nav-link").forEach((a) => a.classList.toggle("active", a.dataset.route === hashPath));
   const labelPath = route.label;
   document.getElementById("page-title-text").textContent = labelPath;
+  const descEl = document.getElementById("page-title-desc");
+  const infoEl = document.getElementById("page-info");
+  if (descEl && infoEl) {
+    descEl.textContent = route.desc || "";
+    infoEl.hidden = !route.desc;
+    infoEl.classList.remove("is-open");
+    infoEl.querySelector(".page-info-btn")?.setAttribute("aria-expanded", "false");
+  }
+  const kickerEl = document.getElementById("page-kicker");
+  if (kickerEl) kickerEl.textContent = GROUPS.find((g) => g.id === route.group)?.label || "";
+  document.title = `${labelPath} · Editorial Suite · The Catalyst`;
+  const activeGroupEl = document.querySelector(`.nav-group[data-group="${route.group}"]`);
+  if (activeGroupEl && activeGroupEl.classList.contains("is-collapsed")) {
+    activeGroupEl.classList.remove("is-collapsed");
+    activeGroupEl.querySelector(".nav-group-title")?.setAttribute("aria-expanded", "true");
+  }
 
   const content = document.getElementById("content");
+  content.className = "content";   // drop any page-specific class the last module added
   content.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>`;
 
   // Run cleanup on previous module
@@ -1282,6 +1362,19 @@ function attachGlobalHandlers() {
       openChangePasswordModal();
     });
   }
+
+  const pageInfo = document.getElementById("page-info");
+  pageInfo?.querySelector(".page-info-btn")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = pageInfo.classList.toggle("is-open");
+    e.currentTarget.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  document.addEventListener("click", () => {
+    if (pageInfo?.classList.contains("is-open")) {
+      pageInfo.classList.remove("is-open");
+      pageInfo.querySelector(".page-info-btn")?.setAttribute("aria-expanded", "false");
+    }
+  });
 
   const sidebar = document.getElementById("sidebar");
   const scrim = document.getElementById("sidebar-scrim");

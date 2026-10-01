@@ -329,7 +329,7 @@ function ensureTasksPageStyles() {
     .tasks-comment-name { font-weight:700; color:#0b1220; }
     .tasks-comment-on { color:#94a3b8; }
     .tasks-comment-proj {
-      font-weight:600; color:#0f766e; text-decoration:none;
+      font-weight:600; color:var(--ink,#0f172a); text-decoration:none;
       max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     }
     .tasks-comment-proj:hover { text-decoration:underline; }

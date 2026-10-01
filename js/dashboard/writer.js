@@ -3169,7 +3169,7 @@ function ensureDriveGateStyles() {
     }
     .drive-gate-confirm input[type=checkbox] {
       margin-top:2px; width:16px; height:16px; flex-shrink:0;
-      accent-color:#0f766e; cursor:pointer;
+      accent-color:var(--ink,#0f172a); cursor:pointer;
     }
   `;
   document.head.appendChild(s);

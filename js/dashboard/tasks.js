@@ -102,7 +102,7 @@ function ensureKanbanStyles() {
     .kb-badge-idle { background:#fee2e2; color:#b91c1c; }
     .kb-status { font-size:11px; color:#6b7280; }
     .kb-progress { height:3px; background:#e5e7eb; border-radius:99px; margin:6px 0; overflow:hidden; }
-    .kb-progress-fill { height:100%; background:linear-gradient(90deg,#14b8a6,#0f766e); border-radius:99px; }
+    .kb-progress-fill { height:100%; background:var(--ink,#0f172a); border-radius:99px; }
     .kb-card-foot { display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:8px; }
     .kb-author { display:flex; align-items:center; gap:6px; font-size:12px; color:#6b7280; min-width:0; overflow:hidden; }
     .kb-author span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

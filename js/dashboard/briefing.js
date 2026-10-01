@@ -671,7 +671,7 @@ function ensureBriefingStyles() {
     .brief-section { margin-top:16px; }
     .brief-section .card-title { display:flex; align-items:center; gap:8px; }
     .brief-more { margin-top:12px; font-size:13px; }
-    .brief-more a { color:#0f766e; font-weight:700; text-decoration:none; }
+    .brief-more a { color:var(--ink,#0f172a); font-weight:700; text-decoration:none; }
     .brief-more a:hover { text-decoration:underline; }
 
     .brief-pill-purple { display:inline-flex; align-items:center; justify-content:center;
@@ -701,9 +701,9 @@ function ensureBriefingStyles() {
     .brief-person-role { font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
       background:#f1f5f9; color:#64748b; padding:3px 8px; border-radius:999px; }
     .brief-person-email { font-size:12px; color:#94a3b8; }
-    .brief-person-dm { margin-left:auto; font-size:12.5px; font-weight:700; color:#0f766e; text-decoration:none;
-      padding:7px 10px; border:1px solid #99f6e4; border-radius:8px; background:#f0fdfa; min-height:36px; display:inline-flex; align-items:center; }
-    .brief-person-dm:hover { background:#0f766e; color:#fff; border-color:#0f766e; }
+    .brief-person-dm { margin-left:auto; font-size:12.5px; font-weight:700; color:var(--ink,#0f172a); text-decoration:none;
+      padding:7px 10px; border:1px solid rgba(15,23,42,.18); border-radius:8px; background:var(--surface,#fdfcf9); min-height:36px; display:inline-flex; align-items:center; }
+    .brief-person-dm:hover { background:var(--ink,#0f172a); color:#fff; border-color:var(--ink,#0f172a); }
     .brief-person-items { margin-top:10px; display:flex; flex-direction:column; gap:7px; }
     .brief-person-item { display:flex; align-items:center; gap:9px; flex-wrap:wrap; font-size:13px; color:#334155; line-height:1.5; }
     .brief-person-dot { width:8px; height:8px; border-radius:50%; background:#cbd5e1; flex-shrink:0; }
@@ -718,8 +718,8 @@ function ensureBriefingStyles() {
     }
     .brief-person-open { color:#0f172a; border:1px solid #cbd5e1; background:#f8fafc; }
     .brief-person-open:hover { background:#0f172a; color:#fff; border-color:#0f172a; }
-    .brief-person-copy { color:#0f766e; border:1px solid #99f6e4; background:#f0fdfa; }
-    .brief-person-copy:hover { background:#0f766e; color:#fff; border-color:#0f766e; }
+    .brief-person-copy { color:var(--ink,#0f172a); border:1px solid rgba(15,23,42,.18); background:var(--surface,#fdfcf9); }
+    .brief-person-copy:hover { background:var(--ink,#0f172a); color:#fff; border-color:var(--ink,#0f172a); }
     .brief-person-copy.is-done { background:#dcfce7; color:#15803d; border-color:#86efac; }
 
     /* Digest */
@@ -728,7 +728,7 @@ function ensureBriefingStyles() {
     .brief-digest-head { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
     .brief-digest-title { font-size:14px; font-weight:800; color:#0b1220; text-decoration:none;
       overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .brief-digest-title:hover { color:#0f766e; text-decoration:underline; }
+    .brief-digest-title:hover { color:var(--ink,#0f172a); text-decoration:underline; }
     .brief-digest-when { margin-left:auto; flex-shrink:0; font-size:11.5px; color:#94a3b8; }
     .brief-digest-row { display:flex; align-items:baseline; gap:9px; padding:5px 0; font-size:13px; color:#334155; line-height:1.55; }
     .brief-digest-tick { width:7px; height:7px; border-radius:50%; background:#cbd5e1; flex-shrink:0; position:relative; top:-1px; }

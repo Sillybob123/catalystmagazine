@@ -15,16 +15,77 @@ import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
 import { renderPipeline } from "./pipeline.js?v=edition-1";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 
+// Shortcuts at the top of Overview, per role: the three or four things that
+// person opens most. Only routes they can reach are listed.
+const SHORTCUTS = {
+  admin:              [["#/admin/articles", "Articles & approvals"], ["#/pipeline/all", "Story Tracker"], ["#/admin/submissions", "Submissions inbox"], ["#/newsletter/builder", "Newsletter"]],
+  editor:             [["#/editor/queue", "Editing queue"], ["#/pipeline/mine", "My assignments"], ["#/writer/draft", "Write a draft"], ["#/tasks", "My tasks"]],
+  writer:             [["#/writer/draft", "Write a draft"], ["#/writer/mine", "My articles"], ["#/pipeline/mine", "My assignments"], ["#/writer/guidelines", "Editorial standards"]],
+  marketing:          [["#/planner", "Planner"], ["#/marketing/social", "Social media posts"], ["#/marketing/analytics", "Subscribers & growth"], ["#/tasks", "My tasks"]],
+  social_media:       [["#/planner", "Planner"], ["#/marketing/social", "Social media posts"], ["#/tasks", "My tasks"]],
+  newsletter_builder: [["#/newsletter/builder", "Newsletter builder"], ["#/newsletter/history", "Campaign history"], ["#/tasks", "My tasks"]],
+};
+
+function greetingFor(name) {
+  const h = new Date().getHours();
+  const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  const first = String(name || "").trim().split(/\s+/)[0];
+  return first ? `${part}, ${first}.` : `${part}.`;
+}
+
 export async function mount(ctx, container) {
   container.innerHTML = "";
   const isAdmin = ctx.role === "admin";
+  container.classList.add("ov");
 
-  // Staff announcements — admin-authored red banners at the very top of
-  // everyone's Overview ("meeting today — Zoom link", "fill out the
-  // When2meet"). Loaded best-effort so a failure never blanks the page.
+  // Greeting + shortcuts
+  const hello = el("section", { class: "ov-hello" });
+  const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const shortcuts = SHORTCUTS[ctx.role] || [["#/pipeline/all", "Story Tracker"], ["#/tasks", "My tasks"], ["#/directory", "Team & messages"]];
+  hello.innerHTML = `
+    <div class="ov-hello-text">
+      <p class="ov-date">${esc(today)}</p>
+      <h2 class="ov-greeting">${esc(greetingFor(ctx.profile?.name || ctx.user?.displayName))}</h2>
+      <p class="ov-lede">Here&rsquo;s the newsroom at a glance. Every section is in the menu; pin the pages you use most.</p>
+    </div>
+    <nav class="ov-shortcuts" aria-label="Shortcuts">
+      ${shortcuts.map(([href, label]) => `<a class="ov-shortcut" href="${href}"><span>${esc(label)}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`).join("")}
+    </nav>`;
+  container.appendChild(hello);
+
+  // Staff announcements — admin-authored banners everyone on staff sees.
+  // Loaded best-effort so a failure never blanks the page.
   const announceMount = el("div", { id: "overview-announcements" });
   container.appendChild(announceMount);
   loadAnnouncements(announceMount, ctx);
+
+  // Admin + newsletter builder: the latest stories beside the newsletter
+  // status, side by side.
+  if (isAdmin || ctx.role === "newsletter_builder") {
+    const row = el("div", { class: "ov-row" });
+    if (isAdmin) {
+      const recent = el("div", { class: "card ov-recent" });
+      recent.innerHTML = `
+        <div class="card-header">
+          <div>
+            <div class="card-title">Latest from the newsroom</div>
+            <div class="card-subtitle">The six most recently updated stories.</div>
+          </div>
+          <a class="btn btn-ghost btn-sm" href="#/writer/feed">See all</a>
+        </div>
+        <div class="card-body card-body--flush" id="recent-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
+      row.appendChild(recent);
+      loadRecentArticles(recent.querySelector("#recent-body"), ctx);
+    }
+    const side = el("div", { class: "ov-side" });
+    const nlCard = el("div", { class: "card" });
+    nlCard.innerHTML = `<div class="card-body" id="nl-reminder"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
+    side.appendChild(nlCard);
+    loadNewsletterReminder(nlCard.querySelector("#nl-reminder"), ctx);
+    side.appendChild(directoryCard());
+    row.appendChild(side);
+    container.appendChild(row);
+  }
 
   // Editorial calendar — every staff member sees the month's publish dates,
   // ready-by dates (publish − 1 week, for the social team), interviews, and
@@ -37,81 +98,52 @@ export async function mount(ctx, container) {
     }
   }
 
-  // Recent activity — admin only. Writers/editors land on their own
-  // calendar + deadlines, not the whole newsroom's feed.
-  if (isAdmin) {
-    const recent = el("div", { class: "card", style: { marginTop: "20px" } });
-    recent.innerHTML = `
-      <div class="card-header">
-        <div>
-          <div class="card-title">Recent articles</div>
-          <div class="card-subtitle">The last 6 updates from the newsroom</div>
-        </div>
-        <a class="btn btn-ghost btn-sm" href="#/writer/feed">See all &rarr;</a>
-      </div>
-      <div class="card-body" id="recent-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-    container.appendChild(recent);
-    loadRecentArticles(recent.querySelector("#recent-body"), ctx);
-  }
+  if (!isAdmin && ctx.role !== "newsletter_builder") container.appendChild(directoryCard());
 
-  // Newsletter reminder (admin + newsletter builder)
-  if (ctx.role === "admin" || ctx.role === "newsletter_builder") {
-    const nlCard = el("div", { class: "card", style: { marginTop: "20px" } });
-    nlCard.innerHTML = `<div class="card-body" id="nl-reminder"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-    container.appendChild(nlCard);
-    loadNewsletterReminder(nlCard.querySelector("#nl-reminder"), ctx);
-  }
-
-  // The team list lives in its own Directory tab now (#/directory) — point
-  // everyone there instead of repeating it here.
-  const directoryHint = el("div", { class: "card", style: { marginTop: "20px" } });
-  directoryHint.innerHTML = `
-    <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div style="display:flex;align-items:center;gap:14px;">
-        <div style="width:44px;height:44px;border-radius:12px;background:#eef2ff;border:1px solid #c7d2fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4338ca" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8.5 15.5a3.5 3.5 0 0 1 7 0"/></svg>
-        </div>
-        <div>
-          <div style="font-weight:700;font-size:15px;color:var(--ink);">Looking for a teammate?</div>
-          <div style="font-size:13px;color:var(--muted);margin-top:2px;">The team directory has everyone's role, email, and a private message button.</div>
-        </div>
-      </div>
-      <a class="btn btn-secondary btn-sm" href="#/directory">Open the directory &rarr;</a>
-    </div>`;
-  container.appendChild(directoryHint);
-
-  // For non-admins the Overview ends here — the workflow snapshot below is
-  // the admin's newsroom-wide view.
+  // For non-admins the Overview ends here — the snapshot and the bot below
+  // are the admin's newsroom-wide view.
   if (!isAdmin) return;
 
-  // Catalyst bot (admin only) — writer reminders + Saturday digest
-  if (ctx.role === "admin") {
-    const botCard = el("div", { class: "card", style: { marginTop: "20px" } });
-    botCard.innerHTML = `<div class="card-body" id="bot-panel"></div>`;
-    container.appendChild(botCard);
-    mountBotPanel(botCard.querySelector("#bot-panel"), ctx);
-
-    // Bot email activity — what the bot sent recently, with rows highlighted
-    // red when the recipient hasn't moved their project since the email.
-    const emailLogCard = el("div", { class: "card", style: { marginTop: "20px" } });
-    emailLogCard.innerHTML = `<div class="card-body" id="bot-email-log"></div>`;
-    container.appendChild(emailLogCard);
-    mountBotEmailLog(emailLogCard.querySelector("#bot-email-log"), ctx);
-  }
-
-  // Shared pipeline (admin only)
-  const pipeline = el("div", { class: "card", style: { marginTop: "20px" } });
+  const pipeline = el("div", { class: "card" });
   pipeline.innerHTML = `
     <div class="card-header">
       <div>
-        <div class="card-title">Story Tracker — Editorial workflow</div>
-        <div class="card-subtitle">Live from the scheduler database</div>
+        <div class="card-title">Story Tracker</div>
+        <div class="card-subtitle">Where every story stands right now.</div>
       </div>
-      <a class="btn btn-ghost btn-sm" href="#/pipeline/all">Full view &rarr;</a>
+      <a class="btn btn-ghost btn-sm" href="#/pipeline/all">Open the tracker</a>
     </div>
     <div id="pipeline-mount"></div>`;
   container.appendChild(pipeline);
   renderPipeline(pipeline.querySelector("#pipeline-mount"), ctx, { compact: true });
+
+  // Catalyst bot (admin only): the controls and its email log, folded into
+  // one panel so they don't push the rest of the page down.
+  const bot = el("details", { class: "card ov-bot" });
+  bot.innerHTML = `
+    <summary class="ov-bot-summary">
+      <span class="ov-bot-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M8.5 13.5h.01M15.5 13.5h.01M9 17h6"/></svg></span>
+      <span class="ov-bot-text">
+        <span class="card-title">Reminder bot</span>
+        <span class="card-subtitle">Daily nudges to writers and editors, a Saturday digest for admins, and every email it has sent.</span>
+      </span>
+      <span class="ov-bot-stat" id="ov-bot-stat"></span>
+      <svg class="ov-bot-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+    </summary>
+    <div class="card-body" id="bot-panel"></div>
+    <div class="card-body ov-bot-log" id="bot-email-log"></div>`;
+  container.appendChild(bot);
+  mountBotPanel(bot.querySelector("#bot-panel"), ctx);
+  mountBotEmailLog(bot.querySelector("#bot-email-log"), ctx);
+}
+
+function directoryCard() {
+  const c = el("a", { class: "card ov-link-card", href: "#/directory" });
+  c.innerHTML = `
+    <span class="ov-link-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18.5 19a5 5 0 0 0-2.6-4.4"/></svg></span>
+    <span><span class="card-title">Team &amp; messages</span><span class="card-subtitle">Everyone&rsquo;s role and contact details, and a private message button.</span></span>
+    <svg class="ov-link-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
+  return c;
 }
 
 // ─── Staff announcement banners ──────────────────────────────────────────────
@@ -239,33 +271,17 @@ async function loadNewsletterReminder(mount, ctx) {
     const overdue = !lastDate || (now - lastDate.getTime()) > TWO_WEEKS;
     const daysSince = lastDate ? Math.floor((now - lastDate.getTime()) / (24 * 60 * 60 * 1000)) : null;
 
-    const bannerColor = overdue ? "var(--accent, #e85d04)" : "var(--success, #0f766e)";
-    const bannerBg   = overdue ? "#fff7ed" : "#f0fdf4";
-    const bannerBorder = overdue ? "#fed7aa" : "#bbf7d0";
-
     mount.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div style="width:44px;height:44px;border-radius:12px;background:${bannerBg};border:1px solid ${bannerBorder};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${bannerColor}" stroke-width="2"><path d="M4 4h16v16H4z"/><polyline points="22,6 12,13 2,6"/></svg>
-          </div>
-          <div>
-            <div style="font-weight:700;font-size:15px;color:var(--ink);">
-              ${overdue
-                ? (lastDate ? `Newsletter overdue — last sent ${daysSince} day${daysSince === 1 ? "" : "s"} ago` : "No newsletter has been sent yet")
-                : `Newsletter sent ${daysSince === 0 ? "today" : daysSince + " day" + (daysSince === 1 ? "" : "s") + " ago"}`}
-            </div>
-            <div style="font-size:13px;color:var(--muted);margin-top:2px;">
-              ${last
-                ? `Last issue: <strong>${esc(last.subject || "(no subject)")}</strong> · ${last.recipientCount || 0} recipients · sent by ${esc(last.createdBy || "unknown")}`
-                : "Send your first newsletter to keep subscribers engaged."}
-            </div>
-          </div>
-        </div>
-        <a class="btn ${overdue ? "btn-accent" : "btn-secondary"} btn-sm" href="#/newsletter/builder">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><polyline points="22,6 12,13 2,6"/></svg>
-          ${overdue ? "Send newsletter now" : "Build next issue"}
-        </a>
+      <div class="ov-nl">
+        <p class="ov-nl-kicker"><span class="ov-dot ${overdue ? "is-late" : "is-ok"}" aria-hidden="true"></span>Newsletter</p>
+        <p class="ov-nl-title">${overdue
+          ? (lastDate ? `Last sent ${daysSince} day${daysSince === 1 ? "" : "s"} ago` : "No issue sent yet")
+          : `Sent ${daysSince === 0 ? "today" : daysSince + " day" + (daysSince === 1 ? "" : "s") + " ago"}`}</p>
+        <p class="ov-nl-meta">${last
+          ? `${esc(last.subject || "(no subject)")} · ${last.recipientCount || 0} recipients`
+          : "Send the first issue to keep subscribers engaged."}</p>
+        <p class="ov-nl-meta">${overdue ? "We aim to send one every two weeks." : "On schedule (every two weeks)."}</p>
+        <a class="btn ${overdue ? "btn-primary" : "btn-secondary"} btn-sm" href="#/newsletter/builder">${overdue ? "Build the next issue" : "Open the builder"}</a>
       </div>`;
   } catch (err) {
     mount.innerHTML = `<div class="hint">Could not load newsletter status.</div>`;
@@ -280,22 +296,17 @@ async function loadRecentArticles(mount, ctx) {
       mount.innerHTML = `<div class="empty-state">No articles yet. Be the first to submit a draft.</div>`;
       return;
     }
-    const list = el("div", {});
+    const list = el("div", { class: "ov-stories" });
     snap.forEach((d) => {
       const a = d.data();
-      const row = el("div", { class: "article-row" });
+      const live = a.status === "published" && a.url;
+      const row = el(live ? "a" : "div", { class: "ov-story", ...(live ? { href: a.url, target: "_blank", rel: "noopener" } : {}) });
       row.innerHTML = `
-        <div>
-          <div class="article-title">${esc(a.title || "Untitled")}</div>
-          <div class="article-meta">
-            by ${esc(a.authorName || a.author || "Unknown")} · ${fmtRelative(a.updatedAt)} · ${statusPill(a.status)}
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          ${a.status === "published" && a.url
-            ? `<a class="btn btn-secondary btn-xs" href="${esc(a.url)}" target="_blank" rel="noopener">View</a>`
-            : ""}
-        </div>`;
+        <span class="ov-story-main">
+          <span class="ov-story-title">${esc(a.title || "Untitled")}</span>
+          <span class="ov-story-meta">${esc(a.authorName || a.author || "Unknown")} · ${fmtRelative(a.updatedAt)}</span>
+        </span>
+        ${statusPill(a.status)}`;
       list.appendChild(row);
     });
     mount.innerHTML = "";
@@ -666,10 +677,8 @@ function mountBotEmailLog(mount, ctx) {
     const headerHtml = `
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
-          <div style="font-weight:700;font-size:15px;color:var(--ink);">Bot email activity</div>
-          <div style="font-size:13px;color:var(--muted);margin-top:2px;">
-            Recent writer/editor emails the bot has sent. Rows in red mean the recipient was emailed but the project hasn't moved since — they may be ignoring the nudge.
-          </div>
+          <div class="card-title">Emails the bot has sent</div>
+          <div class="card-subtitle">Open a row to see why it was sent and the full message. &ldquo;No change since&rdquo; means the story hasn&rsquo;t moved since that nudge.</div>
         </div>
         <button class="btn btn-ghost btn-sm" data-email-log-action="refresh">Refresh</button>
       </div>
@@ -684,18 +693,25 @@ function mountBotEmailLog(mount, ctx) {
       body.innerHTML = `<div class="error-state">${esc(err?.message || err || "Could not load email log.")}</div>`;
     } else if (state === "ready") {
       body.innerHTML = renderBotEmailLog(data);
-      // Each row has a "Show details" button that flips its detail panel.
-      // Done via delegation on the body so we don't double-bind on refresh.
+      const entries = Array.isArray(data.entries) ? data.entries : [];
+      const ignored = entries.filter((e) => e.ignored).length;
+      const stat = document.getElementById("ov-bot-stat");
+      if (stat) stat.textContent = entries.length ? `${entries.length} sent${ignored ? ` · ${ignored} unanswered` : ""}` : "";
+      // Each row opens to show why it was sent and the full message.
       body.querySelectorAll("[data-email-log-toggle]").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const idx = btn.getAttribute("data-email-log-toggle");
-          const panel = body.querySelector(`[data-email-log-detail="${CSS.escape(idx)}"]`);
+          const panel = body.querySelector(`[data-email-log-detail="${CSS.escape(btn.getAttribute("data-email-log-toggle"))}"]`);
           if (!panel) return;
-          const open = panel.style.display !== "none" && panel.style.display !== "";
-          panel.style.display = open ? "none" : "block";
-          btn.textContent = open ? "Show details" : "Hide details";
+          panel.hidden = !panel.hidden;
+          btn.setAttribute("aria-expanded", panel.hidden ? "false" : "true");
         });
       });
+      const list = body.querySelector(".bl-list");
+      body.querySelector(".bl-more")?.addEventListener("click", (ev) => { list.dataset.collapsed = "0"; ev.currentTarget.remove(); });
+      body.querySelectorAll("[data-bl-filter]").forEach((b) => b.addEventListener("click", () => {
+        body.querySelectorAll("[data-bl-filter]").forEach((x) => x.classList.toggle("is-on", x === b));
+        list.dataset.filter = b.dataset.blFilter;
+      }));
     }
 
     mount.querySelector("[data-email-log-action='refresh']")?.addEventListener("click", load);
@@ -719,79 +735,48 @@ function mountBotEmailLog(mount, ctx) {
 function renderBotEmailLog(data) {
   const entries = Array.isArray(data.entries) ? data.entries : [];
   if (!entries.length) {
-    return `<div class="empty-state">No bot emails on file yet.</div>`;
+    return `<div class="empty-state">The bot hasn&rsquo;t sent any emails yet.</div>`;
   }
-
   const ignoredCount = entries.filter((e) => e.ignored).length;
 
   const rows = entries.map((e, idx) => {
-    const kindBadge = kindLabel(e.kind);
-    const ignored = !!e.ignored;
-    const rowBg = ignored ? "#fef2f2" : "transparent";
-    const rowBorder = ignored ? "#fecaca" : "var(--hairline,#e5e7eb)";
-    const ignoredFlag = ignored
-      ? `<span style="display:inline-block;background:#fee2e2;color:#9b1c1c;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-left:8px;vertical-align:middle;">Ignored — no change in ${Math.floor(e.daysSinceSent)}d</span>`
-      : "";
-    const meta = [
-      e.daysUntilDeadline != null ? `${e.daysUntilDeadline}d to deadline` : null,
-      e.daysInactive != null ? `${e.daysInactive}d idle at send` : null,
-      e.bundled ? "bundled" : null,
-      e.role && e.role !== "writer" ? e.role : null,
-    ].filter(Boolean).join(" · ");
-
-    // Older entries logged before the bodyText/reason fields existed will
-    // miss those — fall back gracefully so the row still expands cleanly.
+    const k = kindLabel(e.kind);
     const reason = e.reason || reasonFromLogEntry(e);
     const bodyText = e.bodyText || "";
-    const hasDetail = !!(reason || bodyText);
-
-    const detailPanelStyle = `display:none;margin-top:10px;padding:12px 14px;border-top:1px dashed #e5e7eb;background:#fafafa;border-radius:0 0 8px 8px;`;
-    const reasonHtml = reason
-      ? `<div style="font-size:12px;color:#3730a3;background:#eef2ff;border:1px solid #c7d2fe;border-radius:6px;padding:8px 10px;margin-bottom:10px;">
-           <strong style="display:block;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:#4338ca;margin-bottom:2px;">Why the bot sent this</strong>
-           ${esc(reason)}
-         </div>`
-      : "";
-    const bodyHtml = bodyText
-      ? `<div style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:#6b7280;font-weight:700;margin-bottom:4px;">Full message</div>
-         <pre style="white-space:pre-wrap;word-wrap:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.5;color:#0b1220;background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;margin:0;max-height:420px;overflow:auto;">${esc(bodyText)}</pre>`
-      : `<div style="font-size:12px;color:#9ca3af;font-style:italic;">No body on file (this email pre-dates message capture).</div>`;
-    const detailPanel = hasDetail
-      ? `<div data-email-log-detail="${idx}" style="${detailPanelStyle}">
-           ${reasonHtml}${bodyHtml}
-         </div>`
-      : "";
-    const toggleBtn = `<button type="button" data-email-log-toggle="${idx}" class="btn btn-ghost btn-xs" style="font-size:11px;padding:4px 10px;flex-shrink:0;">Show details</button>`;
-
+    const facts = [
+      e.daysUntilDeadline != null ? (e.daysUntilDeadline < 0 ? `${-e.daysUntilDeadline}d past deadline` : `${e.daysUntilDeadline}d to deadline`) : null,
+      e.daysInactive != null ? `${e.daysInactive}d idle` : null,
+      e.projectMissing ? "project deleted" : null,
+      e.projectComplete ? "story finished" : null,
+    ].filter(Boolean).join(" · ");
     return `
-      <div style="border:1px solid ${rowBorder};background:${rowBg};border-radius:10px;margin-top:8px;overflow:hidden;">
-        <div style="padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-          <div style="min-width:0;flex:1;">
-            <div style="font-weight:600;font-size:13.5px;color:var(--ink,#111);line-height:1.4;">
-              <span style="display:inline-block;background:${kindBadge.bg};color:${kindBadge.ink};font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">${esc(kindBadge.text)}</span>
-              Bot emailed <strong>${esc(e.recipientName || e.recipientEmail || "(unknown)")}</strong>${e.projectTitle ? ` about <em>${esc(e.projectTitle)}</em>` : ""}
-              ${ignoredFlag}
-            </div>
-            <div style="margin-top:3px;font-size:12px;color:var(--muted,#6b7280);">
-              <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${esc(e.recipientEmail || "")}</span>
-              · sent ${esc(fmtShort(e.sentAt))}${meta ? ` · ${esc(meta)}` : ""}
-              ${e.projectMissing ? ` · <span style="color:#9b1c1c;">project deleted</span>` : ""}
-              ${e.projectComplete ? ` · <span style="color:#0f766e;">story finished</span>` : ""}
-            </div>
-            ${e.subject ? `<div style="margin-top:4px;font-size:12.5px;color:var(--ink-2,#374151);"><strong>Subject:</strong> ${esc(e.subject)}</div>` : ""}
-          </div>
-          ${toggleBtn}
+      <li class="bl-row${e.ignored ? " is-ignored" : ""}" data-ignored="${e.ignored ? "1" : "0"}">
+        <button type="button" class="bl-head" aria-expanded="false" data-email-log-toggle="${idx}">
+          <span class="bl-kind" style="--k-bg:${k.bg};--k-ink:${k.ink}">${esc(k.text)}</span>
+          <span class="bl-who"><strong>${esc(e.recipientName || e.recipientEmail || "(unknown)")}</strong>${e.projectTitle ? ` <span class="bl-about">· ${esc(e.projectTitle)}</span>` : ""}</span>
+          <span class="bl-facts">${esc(facts)}</span>
+          ${e.ignored ? `<span class="bl-flag">No change in ${Math.floor(e.daysSinceSent)}d</span>` : `<span class="bl-flag bl-flag--quiet"></span>`}
+          <span class="bl-date">${esc(fmtShort(e.sentAt))}</span>
+        </button>
+        <div class="bl-detail" data-email-log-detail="${idx}" hidden>
+          ${e.subject ? `<p class="bl-subject"><span>Subject</span> ${esc(e.subject)}</p>` : ""}
+          ${e.recipientEmail ? `<p class="bl-subject"><span>To</span> ${esc(e.recipientEmail)}</p>` : ""}
+          ${reason ? `<p class="bl-why"><span>Why it was sent</span>${esc(reason)}</p>` : ""}
+          ${bodyText ? `<pre class="bl-body">${esc(bodyText)}</pre>` : `<p class="bl-none">No message body on file (sent before messages were saved).</p>`}
         </div>
-        ${detailPanel}
-      </div>`;
+      </li>`;
   }).join("");
 
-  const summary = `
-    <div style="font-size:12px;color:var(--muted,#6b7280);margin-bottom:6px;">
-      ${entries.length} email${entries.length === 1 ? "" : "s"} on file (last 50 days)${ignoredCount ? ` · <strong style="color:#9b1c1c;">${ignoredCount} ignored</strong>` : ""}
-    </div>`;
-
-  return `${summary}${rows}`;
+  return `
+    <div class="bl-bar">
+      <p class="bl-summary">${entries.length} email${entries.length === 1 ? "" : "s"} in the last 50 days${ignoredCount ? ` · <strong>${ignoredCount} with no change since</strong>` : ""}</p>
+      <div class="bl-filter" role="group" aria-label="Show">
+        <button type="button" class="is-on" data-bl-filter="all">All</button>
+        <button type="button" data-bl-filter="ignored">No change since</button>
+      </div>
+    </div>
+    <ul class="bl-list" data-collapsed="1">${rows}</ul>
+    ${entries.length > 8 ? `<button type="button" class="btn btn-secondary btn-sm bl-more">Show all ${entries.length}</button>` : ""}`;
 }
 
 // Backfill a "why" string for old log rows that pre-date the `reason` field.

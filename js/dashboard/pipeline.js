@@ -206,7 +206,7 @@ function ensureChecklistStyles() {
     .checklist-item:hover { background:#f1f5f9; }
     .checklist-item.checked { background:#f0fdf4; border-color:#86efac; color:#15803d; }
     .checklist-item input[type=checkbox] {
-      margin-top:2px; width:16px; height:16px; flex-shrink:0; accent-color:#0f766e; cursor:pointer;
+      margin-top:2px; width:16px; height:16px; flex-shrink:0; accent-color:var(--ink,#0f172a); cursor:pointer;
     }
   `;
   document.head.appendChild(s);
@@ -434,7 +434,7 @@ function ensureKanbanStyles() {
     .kb-badge-idle { background:#fee2e2; color:#b91c1c; }
     .kb-status { font-size:11px; color:#6b7280; }
     .kb-progress { height:3px; background:#e5e7eb; border-radius:99px; margin:6px 0; overflow:hidden; }
-    .kb-progress-fill { height:100%; background:linear-gradient(90deg,#14b8a6,#0f766e); border-radius:99px; }
+    .kb-progress-fill { height:100%; background:var(--ink,#0f172a); border-radius:99px; }
     .kb-card-foot { display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:8px; }
     .kb-author { display:flex; align-items:center; gap:6px; font-size:12px; color:#6b7280; min-width:0; overflow:hidden; }
     .kb-author span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -981,7 +981,7 @@ function openDetailModal(projectId) {
     const checked  = !!tl[step];
     const editable = canToggleStep(step);
     return `<label style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:${checked?"#f0fdf4":"#f8fafc"};border:1px solid ${checked?"#86efac":"#e5e7eb"};cursor:${editable?"pointer":"default"};user-select:none;transition:background .1s;">
-      <input type="checkbox" data-step="${esc(step)}" ${checked?"checked":""} ${editable?"":"disabled"} style="width:15px;height:15px;flex-shrink:0;accent-color:#0f766e;${editable?"":"opacity:.4;"}">
+      <input type="checkbox" data-step="${esc(step)}" ${checked?"checked":""} ${editable?"":"disabled"} style="width:15px;height:15px;flex-shrink:0;accent-color:var(--ink,#0f172a);${editable?"":"opacity:.4;"}">
       <span style="font-size:13px;color:${checked?"#6b7280":"#1f2937"};${checked?"text-decoration:line-through;":""}">${esc(step)}</span>
     </label>`;
   }).join("");
@@ -1641,7 +1641,7 @@ function openProposalModal(existing) {
     </div>
     <div class="field" id="pm-nointerview-wrap" style="${(p.type || "Interview") === "Interview" ? "" : "display:none;"}">
       <label style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;user-select:none;font-size:13px;line-height:1.5;color:#1f2937;">
-        <input type="checkbox" id="pm-nointerview" ${p.noInterview ? "checked" : ""} style="margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:#0f766e;cursor:pointer;">
+        <input type="checkbox" id="pm-nointerview" ${p.noInterview ? "checked" : ""} style="margin-top:2px;width:15px;height:15px;flex-shrink:0;accent-color:var(--ink,#0f172a);cursor:pointer;">
         <span><strong>No interview for this story</strong> — there's no one to interview, so skip the interview steps and deadlines. The story goes straight to the writing stage once approved.</span>
       </label>
     </div>

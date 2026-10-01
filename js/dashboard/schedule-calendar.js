@@ -390,7 +390,7 @@ function ensureStyles() {
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sc-pcard-meta { font-size:11.5px; color:var(--muted,#64748b); margin-bottom:7px; }
     .sc-bar { height:4px; background:var(--hairline,#e5e7eb); border-radius:99px; overflow:hidden; margin-bottom:7px; }
-    .sc-bar-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,#14b8a6,#0f766e); }
+    .sc-bar-fill { height:100%; border-radius:99px; background:var(--ink,#0f172a); }
     .sc-nudge { font-size:11.5px; line-height:1.45; border-radius:7px; padding:6px 8px; }
     .sc-nudge.ok     { background:var(--surface-2,#f8fafc); color:var(--ink-2,#374151); }
     .sc-nudge.good   { background:#dcfce7; color:#15803d; }

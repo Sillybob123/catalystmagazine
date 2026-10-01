@@ -995,7 +995,7 @@ function ensureStyles() {
     .act-proj { padding:8px 10px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px; }
     .act-proj-title { font-size:13px; font-weight:600; color:#0b1220; display:flex; align-items:center; gap:8px; }
     .act-proj-role { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
-      color:#0f766e; background:#ccfbf1; padding:2px 6px; border-radius:4px; }
+      color:var(--ink,#0f172a); background:var(--surface-3,#f1efe8); padding:2px 6px; border-radius:4px; }
     .act-proj-link { color:inherit; text-decoration:none; }
     .act-proj-link:hover { text-decoration:underline; }
     .act-proj-meta { font-size:11px; color:#64748b; margin-top:4px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
@@ -1035,7 +1035,7 @@ function ensureStyles() {
       font-size:11.5px; color:#64748b;
     }
     .act-feed-project {
-      font-weight:600; color:#0f766e; max-width:340px;
+      font-weight:600; color:var(--ink,#0f172a); max-width:340px;
       white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
     .act-feed-dot { color:#cbd5e1; }
