@@ -290,7 +290,10 @@ function setupNewsletterModal() {
         newsletterModal.classList.add('active');
         newsletterModal.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
-        setTimeout(() => (firstField || modalContent)?.focus({ preventScroll: true }), 120);
+        // On touch screens focus the card, not the first field, so the
+        // keyboard doesn't jump up before the reader has seen the pop-up.
+        const touch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+        setTimeout(() => ((touch ? modalContent : firstField) || modalContent)?.focus({ preventScroll: true }), 120);
     };
     const closeModal = () => {
         const active = document.activeElement;

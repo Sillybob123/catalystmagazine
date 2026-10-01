@@ -793,10 +793,12 @@ img {
 }
 
 .newsletter-modal-eyebrow {
-  margin: 0 44px 8px 0;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 700;
+  margin: 0 44px 10px 0;
+  color: #5b6678;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .newsletter-modal-title {
@@ -844,8 +846,8 @@ img {
 .newsletter-modal-content .form-input-glass:hover,
 .newsletter-modal-content .form-input-glass:focus {
   background: #ffffff;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  border-color: #0f172a;
+  box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.1);
   transform: none;
 }
 
@@ -872,27 +874,30 @@ img {
 }
 
 @media (max-width: 560px) {
+  /* Phones: a centred card with even margins (it used to sit at the bottom
+     like a sheet). Scrolls inside itself if the screen is short. */
   .newsletter-modal-content {
-    top: auto;
-    bottom: 12px;
-    left: 12px;
-    right: 12px;
+    top: 50%;
+    bottom: auto;
+    left: 16px;
+    right: 16px;
     width: auto;
     max-width: none;
-    max-height: calc(100vh - 24px);
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
     overflow: hidden auto;
-    transform: none;
+    transform: translateY(-50%);
     padding: 34px 22px 24px;
     border-radius: 24px;
   }
 
   .newsletter-modal.active .newsletter-modal-content {
-    animation: modalSheetIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: modalCenterIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  @keyframes modalSheetIn {
-    from { opacity: 0; transform: translateY(18px); }
-    to { opacity: 1; transform: translateY(0); }
+  @keyframes modalCenterIn {
+    from { opacity: 0; transform: translateY(calc(-50% + 14px)); }
+    to { opacity: 1; transform: translateY(-50%); }
   }
 
   .newsletter-modal-title {
