@@ -601,6 +601,13 @@ async function firestoreQuery(authedFetch, structuredQuery) {
       articleSlug: str("articleSlug"),
       articleTitle: str("articleTitle"),
       coverImageUrl: str("coverImageUrl"),
+      backgroundId: str("backgroundId"),
+      studio: (() => {
+        const m = f.studio?.mapValue?.fields;
+        if (!m) return null;
+        const v = (k) => m[k]?.stringValue ?? (m[k]?.integerValue != null ? Number(m[k].integerValue) : m[k]?.booleanValue);
+        return { kicker: v("kicker") || "", headline: v("headline") || "", sub: v("sub") || "", align: v("align") || "left", size: v("size") || 84, brand: v("brand") !== false };
+      })(),
       activity: arr("activity"),
     };
   });
@@ -2086,12 +2093,13 @@ async function mountSocialPosts(ctx, container) {
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
           <div>
             <h2 style="font-size:20px;font-weight:800;margin:0;letter-spacing:-.01em;">Social media</h2>
-            <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Design Instagram &amp; LinkedIn posts from your published articles.</p>
+            <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Drafts ready to post, a Studio to put text over our illustrations, and a carousel maker for articles.</p>
           </div>
         </div>
         <div role="tablist" style="display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;">
           <button role="tab" id="sp-tab-board" class="sp-tab" style="padding:8px 16px;border:0;background:var(--surface);color:var(--ink);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:var(--shadow-sm);">Board</button>
-          <button role="tab" id="sp-tab-create" class="sp-tab" style="padding:8px 16px;border:0;background:transparent;color:var(--muted);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Create post</button>
+          <button role="tab" id="sp-tab-studio" class="sp-tab" style="padding:8px 16px;border:0;background:transparent;color:var(--muted);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Studio</button>
+          <button role="tab" id="sp-tab-create" class="sp-tab" style="padding:8px 16px;border:0;background:transparent;color:var(--muted);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Article carousel</button>
         </div>
       </div>
 
@@ -2150,6 +2158,9 @@ async function mountSocialPosts(ctx, container) {
           <div id="sp-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
         </div>
       </section>
+
+      <!-- STUDIO VIEW — put text over a Catalyst illustration (post-studio.js) -->
+      <section id="sp-studio-view" style="display:none;"></section>
 
       <!-- CREATE VIEW (inline — no modal) -->
       <section id="sp-create-view" style="display:none;">
@@ -2326,20 +2337,48 @@ async function mountSocialPosts(ctx, container) {
   const boardView  = container.querySelector("#sp-board-view");
   const createView = container.querySelector("#sp-create-view");
 
+  const tabStudio = container.querySelector("#sp-tab-studio");
+  const studioView = container.querySelector("#sp-studio-view");
+  let studio = null;
+  async function ensureStudio() {
+    if (studio) return studio;
+    const { mountPostStudio } = await import("./post-studio.js?v=1");
+    studio = await mountPostStudio(ctx, studioView, {
+      onSaved: () => loadPosts(),
+      savePost: (post) => firestoreAdd(ctx.authedFetch, "social_posts", {
+        ...post,
+        status: "proposed",
+        proposerId: ctx.user.uid,
+        proposerName: ctx.profile.name || ctx.user.email,
+        assigneeId: null,
+        assigneeName: null,
+        deadline: new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0],
+        createdAt: new Date().toISOString(),
+        activity: [{ text: "created in Post Studio", authorName: ctx.profile.name || ctx.user.email, timestamp: new Date().toISOString() }],
+      }),
+    });
+    return studio;
+  }
+  async function openInStudio(p) {
+    setActiveTab("studio");
+    const s = await ensureStudio();
+    await s.open({ backgroundId: p.backgroundId, studio: p.studio, caption: p.content });
+  }
+
   function setActiveTab(which) {
-    const isBoard = which === "board";
-    tabBoard.classList.toggle("active", isBoard);
-    tabCreate.classList.toggle("active", !isBoard);
-    tabBoard.style.background  = isBoard ? "var(--surface)" : "transparent";
-    tabBoard.style.color       = isBoard ? "var(--ink)" : "var(--muted)";
-    tabBoard.style.boxShadow   = isBoard ? "var(--shadow-sm)" : "none";
-    tabCreate.style.background = !isBoard ? "var(--surface)" : "transparent";
-    tabCreate.style.color      = !isBoard ? "var(--ink)" : "var(--muted)";
-    tabCreate.style.boxShadow  = !isBoard ? "var(--shadow-sm)" : "none";
-    boardView.style.display  = isBoard ? "flex" : "none";
-    createView.style.display = !isBoard ? "block" : "none";
+    const tabs = { board: [tabBoard, boardView, "flex"], studio: [tabStudio, studioView, "block"], create: [tabCreate, createView, "block"] };
+    for (const [k, [tab, view, disp]] of Object.entries(tabs)) {
+      const on = k === which;
+      tab.classList.toggle("active", on);
+      tab.setAttribute("aria-selected", on ? "true" : "false");
+      tab.style.background = on ? "var(--surface)" : "transparent";
+      tab.style.color      = on ? "var(--ink)" : "var(--muted)";
+      tab.style.boxShadow  = on ? "var(--shadow-sm)" : "none";
+      view.style.display   = on ? disp : "none";
+    }
   }
   tabBoard.addEventListener("click",  () => setActiveTab("board"));
+  tabStudio.addEventListener("click", () => { setActiveTab("studio"); ensureStudio(); });
   tabCreate.addEventListener("click", () => { setActiveTab("create"); ensureCreateInitialized(); });
   container.querySelector("#sp-goto-create").addEventListener("click", () => { setActiveTab("create"); ensureCreateInitialized(); });
 
@@ -2582,6 +2621,13 @@ async function mountSocialPosts(ctx, container) {
 
     const footer = detailModal.querySelector("#sp-detail-footer");
     footer.innerHTML = "";
+
+    if (p.backgroundId) {
+      const studioBtn = el("button", { class: "btn btn-primary btn-sm" });
+      studioBtn.textContent = "Open in Studio";
+      studioBtn.addEventListener("click", () => { closeDetail(); openInStudio(p); });
+      footer.appendChild(studioBtn);
+    }
 
     const copyBtn = el("button", { class: "btn btn-secondary btn-sm" });
     copyBtn.textContent = "Copy caption";

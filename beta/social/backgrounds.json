@@ -1,0 +1,428 @@
+{
+ "backgrounds": [
+  {
+   "id": "art-listening",
+   "group": "article",
+   "title": "An Anthropologist's Take on Public Health: The Simple Art of",
+   "image": "/beta/social/art-listening.webp?v=1",
+   "thumb": "/beta/social/art-listening-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "n5UbTKpIAtI1YoDz8A9j",
+   "articleSlug": "an-anthropologists-take-on-public-health-the-simple-art-of-listening",
+   "articleTitle": "An Anthropologist's Take on Public Health: The Simple Art of Listening",
+   "preset": {
+    "kicker": "New feature",
+    "headline": "The simple art of *listening*",
+    "sub": "How anthropology is changing public health."
+   },
+   "caption": "Public health has a lot to learn from anthropologists. Professor Mark Edberg is one of those pushing the field forward, and his tool of choice is surprisingly simple: listening.\n\nSienna Halstead reports.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #PublicHealth #Anthropology",
+   "inkTop": 0.282
+  },
+  {
+   "id": "art-weaving",
+   "group": "article",
+   "title": "Weaving an Innovative Future",
+   "image": "/beta/social/art-weaving.webp?v=1",
+   "thumb": "/beta/social/art-weaving-thumb.webp?v=1",
+   "textZone": 0.408,
+   "tone": "dark",
+   "articleId": "Cy28Dw5l19TihbTbbzM1",
+   "articleSlug": "weaving-an-innovative-future",
+   "articleTitle": "Weaving an Innovative Future",
+   "preset": {
+    "kicker": "Profile",
+    "headline": "Weaving an *innovative* future",
+    "sub": "Pineapple fibers, shrimp-shell leather and the future of what we wear."
+   },
+   "caption": "From pineapple fibers to shrimp-shell leather, scientists and designers are rethinking the materials in our wardrobes. Professor Katrina Orsini on how biology, engineering and centuries-old textile traditions are coming together.\n\nBy Ginger Taurek.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #Materials #Sustainability",
+   "inkTop": 0.438
+  },
+  {
+   "id": "art-venus",
+   "group": "article",
+   "title": "NASA DAVINCI: What the Mission To Venus Says About Humanity'",
+   "image": "/beta/social/art-venus.webp?v=1",
+   "thumb": "/beta/social/art-venus-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "ZOyAQXXx86QccA3CbVNF",
+   "articleSlug": "nasa-davinci-what-the-mission-to-venus-says-about-humanitys-place-in-space",
+   "articleTitle": "NASA DAVINCI: What the Mission To Venus Says About Humanity's Place in Space",
+   "preset": {
+    "kicker": "Feature",
+    "headline": "What Venus says about *us*",
+    "sub": "NASA’s DAVINCI mission and humanity’s place in space."
+   },
+   "caption": "Why go back to Venus? A conversation with Dr. James Garvin, principal investigator of NASA’s DAVINCI mission and Chief Scientist at NASA Goddard, about what our neighbor can tell us about our own planet.\n\nBy Josh Shapo.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #NASA #Venus #Space",
+   "inkTop": 0.386
+  },
+  {
+   "id": "art-brain-injury",
+   "group": "article",
+   "title": "Born from a Blast: How a Special Forces Veteran Built an \"EK",
+   "image": "/beta/social/art-brain-injury.webp?v=1",
+   "thumb": "/beta/social/art-brain-injury-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "eZqlYbjbzKPHSAvb8aKT",
+   "articleSlug": "the-breakthrough-that-began-with-a-blast",
+   "articleTitle": "Born from a Blast: How a Special Forces Veteran Built an \"EKG for the Brain\"",
+   "preset": {
+    "kicker": "Feature",
+    "headline": "An EKG for the *brain*",
+    "sub": "Born from a blast: bringing brain-injury detection into the field."
+   },
+   "caption": "A Special Forces veteran turned biomedical engineering PhD student is building a way to detect brain injuries outside the hospital, right where they happen.\n\nJada Traynor tells the story.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #Neuroscience #BiomedicalEngineering",
+   "inkTop": 0.396
+  },
+  {
+   "id": "art-antibiotics",
+   "group": "article",
+   "title": "Saving the Good Guys: The Quest for Target-Specific Antibiot",
+   "image": "/beta/social/art-antibiotics.webp?v=1",
+   "thumb": "/beta/social/art-antibiotics-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "FxpkS4NyyzpCH5kQEttS",
+   "articleSlug": "saving-the-good-guys-the-quest-for-target-specific-antibiotics",
+   "articleTitle": "Saving the Good Guys: The Quest for Target-Specific Antibiotics",
+   "preset": {
+    "kicker": "Feature",
+    "headline": "Saving the *good* guys",
+    "sub": "The quest for antibiotics that only hit their target."
+   },
+   "caption": "Antibiotics often wipe out the good bacteria in your gut along with the bad, and that fuels resistance. A team at George Washington University is working on drugs that choose their targets.\n\nBy Sienna Halstead.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #Microbiome #Antibiotics",
+   "inkTop": 0.346
+  },
+  {
+   "id": "art-alzheimers",
+   "group": "article",
+   "title": "Is Alzheimer’s Really a Brain Disease—or a Metabolic One? Th",
+   "image": "/beta/social/art-alzheimers.webp?v=1",
+   "thumb": "/beta/social/art-alzheimers-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "xlpvTVWbNQU0sQyXMNif",
+   "articleSlug": "is-alzheimers-really-a-brain-disease-or-a-metabolic-one-the-research-rewriting-how-we-think-about-dementia",
+   "articleTitle": "Is Alzheimer’s Really a Brain Disease—or a Metabolic One? The Research Rewriting How We Think About Dementia",
+   "preset": {
+    "kicker": "Science",
+    "headline": "Is Alzheimer’s a *metabolic* disease?",
+    "sub": "The research rewriting how we think about dementia."
+   },
+   "caption": "What if Alzheimer’s disease does not always begin in the brain? Yahav Gutman looks at the research connecting metabolism and dementia.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #Alzheimers #Neuroscience",
+   "inkTop": 0.4
+  },
+  {
+   "id": "art-physics-creativity",
+   "group": "article",
+   "title": "Parallels of Physics and Creativity: Exploring a Common Misc",
+   "image": "/beta/social/art-physics-creativity.webp?v=1",
+   "thumb": "/beta/social/art-physics-creativity-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "Sg9YvdO3re2VQ38XEAb6",
+   "articleSlug": "parallels-of-physics-and-creativity-exploring-a-common-misconception",
+   "articleTitle": "Parallels of Physics and Creativity: Exploring a Common Misconception",
+   "preset": {
+    "kicker": "Op-Ed",
+    "headline": "Physics is a *creative* act",
+    "sub": "Rethinking a common misconception."
+   },
+   "caption": "Physics is often called rigid and serious. LaMyla Hill argues it is just as much a creative discipline, and makes the case through its history and its pioneers.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #Physics #Creativity",
+   "inkTop": 0.41
+  },
+  {
+   "id": "art-algae",
+   "group": "article",
+   "title": "Making Algae “Dance”: How Fluid Dynamics Could Transform Mic",
+   "image": "/beta/social/art-algae.webp?v=1",
+   "thumb": "/beta/social/art-algae-thumb.webp?v=1",
+   "textZone": 0.41,
+   "tone": "dark",
+   "articleId": "PDhQD5UJVuHU7JEsknfz",
+   "articleSlug": "making-algae-dance-how-collaboration-across-disciplines-could-transform-algae-harvesting",
+   "articleTitle": "Making Algae “Dance”: How Fluid Dynamics Could Transform Microalgae Harvesting",
+   "preset": {
+    "kicker": "Feature",
+    "headline": "Making algae *dance*",
+    "sub": "How fluid dynamics could transform microalgae harvesting."
+   },
+   "caption": "Gentle motion instead of chemicals. GW startup Algae-n-Roll combines fluid dynamics and marine biology in a rotating tank that could make microalgae harvesting much cleaner.\n\nBy Jada Traynor.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #Startups #MarineBiology",
+   "inkTop": 0.44
+  },
+  {
+   "id": "art-hookworm",
+   "group": "article",
+   "title": "Tackling Anthelmintic Resistance",
+   "image": "/beta/social/art-hookworm.webp?v=1",
+   "thumb": "/beta/social/art-hookworm-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "zBGBeI9lNvORvTinvNPb",
+   "articleSlug": "tackling-anthelmintic-resistance",
+   "articleTitle": "Tackling Anthelmintic Resistance",
+   "preset": {
+    "kicker": "Feature",
+    "headline": "When the cure stops *working*",
+    "sub": "Tackling resistance to the drugs that fight hookworm."
+   },
+   "caption": "Hookworms still infect hundreds of millions of people worldwide, and the drugs used to control them may be losing their power. Sienna Halstead on the scientists working to stay ahead.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #GlobalHealth #Parasitology",
+   "inkTop": 0.38
+  },
+  {
+   "id": "art-plate",
+   "group": "article",
+   "title": "What's on Your Plate?",
+   "image": "/beta/social/art-plate.webp?v=1",
+   "thumb": "/beta/social/art-plate-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "RLvePp6QsxMtDZPTZgvS",
+   "articleSlug": "whats-on-your-plate",
+   "articleTitle": "What's on Your Plate?",
+   "preset": {
+    "kicker": "Op-Ed",
+    "headline": "What’s on your *plate*?",
+    "sub": "The 2025–2030 Dietary Guidelines, reviewed."
+   },
+   "caption": "Where do the new Dietary Guidelines for Americans succeed, and where do they fall short? Cameron Fields takes a close look.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #Nutrition #PublicHealth",
+   "inkTop": 0.352
+  },
+  {
+   "id": "art-ghost-forest",
+   "group": "article",
+   "title": "The Hidden Thirst Killing Coastal Forests",
+   "image": "/beta/social/art-ghost-forest.webp?v=1",
+   "thumb": "/beta/social/art-ghost-forest-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "QA1QdLo8RZEaUDm5vGwo",
+   "articleSlug": "different-flavors-of-thirst",
+   "articleTitle": "The Hidden Thirst Killing Coastal Forests",
+   "preset": {
+    "kicker": "Op-Ed",
+    "headline": "The hidden *thirst* of coastal forests",
+    "sub": "Surrounded by water, and dying of thirst."
+   },
+   "caption": "A tree can stand in flooded soil and still die of thirst. As sea levels rise, saltwater is creeping into coastal forests. Juan Martinez explains why they are disappearing.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #ClimateChange #Ecology",
+   "inkTop": 0.366
+  },
+  {
+   "id": "art-georgetown",
+   "group": "article",
+   "title": "Dismantling the \"Safe from Science\" Myth: How Georgetown is ",
+   "image": "/beta/social/art-georgetown.webp?v=1",
+   "thumb": "/beta/social/art-georgetown-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "articleId": "PrXaNH2hGYaxdF63VSon",
+   "articleSlug": "science-technology-and-international-affairs-at-georgetown-university",
+   "articleTitle": "Dismantling the \"Safe from Science\" Myth: How Georgetown is Closing the Policy Translation Gap",
+   "preset": {
+    "kicker": "Feature",
+    "headline": "Not *safe* from science",
+    "sub": "How Georgetown is closing the policy translation gap."
+   },
+   "caption": "Georgetown’s School of Foreign Service was once jokingly called “Safe from Science.” Today its STIA program trains leaders who speak both languages. Alexis Tamm reports.\n\nRead the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #SciencePolicy #Georgetown",
+   "inkTop": 0.31
+  },
+  {
+   "id": "ed-fall-2026",
+   "group": "edition",
+   "title": "Fall 2026 edition",
+   "image": "/beta/social/ed-fall-2026.webp?v=1",
+   "thumb": "/beta/social/ed-fall-2026-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "preset": {
+    "kicker": "The Fall 2026 edition",
+    "headline": "New Frontiers *in the Capital*",
+    "sub": "A mission to Venus, antibiotics that choose their targets, algae that dance."
+   },
+   "caption": "The Fall 2026 edition of The Catalyst is here: New Frontiers in the Capital.\n\nA mission to Venus, antibiotics that choose their targets, algae that dance and a new look at Alzheimer’s. Reporting from the edges of research, by students in Washington, D.C.\n\nRead the edition at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst",
+   "edition": "fall-2026",
+   "inkTop": 0.418
+  },
+  {
+   "id": "ed-winter-2027",
+   "group": "edition",
+   "title": "Winter 2027 edition (coming)",
+   "image": "/beta/social/ed-winter-2027.webp?v=1",
+   "thumb": "/beta/social/ed-winter-2027-thumb.webp?v=1",
+   "textZone": 0.408,
+   "tone": "dark",
+   "preset": {
+    "kicker": "Coming this December",
+    "headline": "The Winter 2027 *edition*",
+    "sub": "Medical Innovation in the Capital."
+   },
+   "caption": "Coming this December: the Winter 2027 edition of The Catalyst, Medical Innovation in the Capital.\n\nNew stories on the people and ideas changing medicine in Washington, D.C. Subscribe to the newsletter (link in bio) to read it first.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst",
+   "edition": "winter-2027",
+   "inkTop": 0.438
+  },
+  {
+   "id": "ed-spring-2027",
+   "group": "edition",
+   "title": "Spring 2027 edition (later)",
+   "image": "/beta/social/ed-spring-2027.webp?v=1",
+   "thumb": "/beta/social/ed-spring-2027-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "preset": {
+    "kicker": "Coming this spring",
+    "headline": "The Spring 2027 *edition*",
+    "sub": "Climate & Ecology in the Capital."
+   },
+   "caption": "Coming this spring: the Spring 2027 edition of The Catalyst, Climate & Ecology in the Capital.\n\nIf you are researching climate, ecology or the environment in D.C. and want your work covered, get in touch through the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst",
+   "edition": "spring-2027",
+   "inkTop": 0.366
+  },
+  {
+   "id": "ed-every-edition",
+   "group": "edition",
+   "title": "Every edition",
+   "image": "/beta/social/ed-every-edition.webp?v=1",
+   "thumb": "/beta/social/ed-every-edition-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "preset": {
+    "kicker": "The Catalyst",
+    "headline": "Every season, *an edition.*",
+    "sub": "Five editions of science in Washington, D.C., and counting."
+   },
+   "caption": "The Catalyst publishes each season as an edition: a set of stories on the science shaping Washington, D.C., reported, edited and designed by students.\n\nBrowse every edition at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst",
+   "inkTop": 0.37
+  },
+  {
+   "id": "series-pitch",
+   "group": "series",
+   "title": "Pitch us",
+   "image": "/beta/social/series-pitch.webp?v=1",
+   "thumb": "/beta/social/series-pitch-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "preset": {
+    "kicker": "Write for The Catalyst",
+    "headline": "Got a story *in you?*",
+    "sub": "We’re looking for students who want to report on science in D.C."
+   },
+   "caption": "Know a researcher whose work deserves a wider audience? Have an idea you can’t stop thinking about? Pitch it to The Catalyst.\n\nWe help first-time writers report, interview and publish. Pitch us at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #WriteForUs",
+   "inkTop": 0.332
+  },
+  {
+   "id": "series-newsletter",
+   "group": "series",
+   "title": "Newsletter",
+   "image": "/beta/social/series-newsletter.webp?v=1",
+   "thumb": "/beta/social/series-newsletter-thumb.webp?v=1",
+   "textZone": 0.47,
+   "tone": "dark",
+   "preset": {
+    "kicker": "The Catalyst newsletter",
+    "headline": "Science stories, *in your inbox.*",
+    "sub": "Our strongest stories and D.C. STEM spotlights. No spam."
+   },
+   "caption": "Get The Catalyst in your inbox: our strongest stories, D.C. STEM spotlights and interviews with curious people. A short note, never spam.\n\nSign up at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst",
+   "inkTop": 0.5
+  },
+  {
+   "id": "series-book",
+   "group": "series",
+   "title": "Book of the month",
+   "image": "/beta/social/series-book.webp?v=1",
+   "thumb": "/beta/social/series-book-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "preset": {
+    "kicker": "Book of the month",
+    "headline": "This month’s *pick*",
+    "sub": "Short, honest reviews of science books worth your time."
+   },
+   "caption": "Book of the month: [title] by [author].\n\n[One or two sentences on why it’s worth reading.]\n\nRead the full review, and recommend your own, at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #BookReview #ScienceBooks",
+   "inkTop": 0.416
+  },
+  {
+   "id": "series-brain-teaser",
+   "group": "series",
+   "title": "Brain teaser",
+   "image": "/beta/social/series-brain-teaser.webp?v=1",
+   "thumb": "/beta/social/series-brain-teaser-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "preset": {
+    "kicker": "The Catalyst brain teaser",
+    "headline": "Can you crack *the vault?*",
+    "sub": "A new puzzle in every issue."
+   },
+   "caption": "This issue’s brain teaser is live. Crack the code to open the vault, then tell us how long it took you.\n\nPlay at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #BrainTeaser #Puzzle",
+   "inkTop": 0.36
+  },
+  {
+   "id": "series-writer",
+   "group": "series",
+   "title": "Writer spotlight",
+   "image": "/beta/social/series-writer.webp?v=1",
+   "thumb": "/beta/social/series-writer-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "preset": {
+    "kicker": "Meet the writer",
+    "headline": "[Name], *[school]*",
+    "sub": "[Major or year] · [what they cover]"
+   },
+   "caption": "Meet [name], who writes for The Catalyst about [topic]. [One line on what drew them to science journalism.]\n\nRead their stories at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #MeetTheTeam",
+   "inkTop": 0.348
+  },
+  {
+   "id": "series-quote",
+   "group": "series",
+   "title": "Quote card",
+   "image": "/beta/social/series-quote.webp?v=1",
+   "thumb": "/beta/social/series-quote-thumb.webp?v=1",
+   "textZone": 0.62,
+   "tone": "dark",
+   "preset": {
+    "kicker": "From the story",
+    "headline": "“[A line from the story that stops you]”",
+    "sub": "— [Name], [title]"
+   },
+   "caption": "“[The quote.]”\n\n[Who said it and where it comes from.] Read the full story at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst",
+   "inkTop": 0.7
+  },
+  {
+   "id": "series-smithsonian",
+   "group": "series",
+   "title": "Science in the Capital",
+   "image": "/beta/social/series-smithsonian.webp?v=1",
+   "thumb": "/beta/social/series-smithsonian-thumb.webp?v=1",
+   "textZone": 0.404,
+   "tone": "dark",
+   "preset": {
+    "kicker": "Science in the Capital",
+    "headline": "Where D.C. *does science*",
+    "sub": "The labs, museums and people behind the research in our city."
+   },
+   "caption": "Science in the Capital: [place]. [Two sentences about the research that happens there, or a story we’ve told about it.]\n\nMore at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst",
+   "inkTop": 0.434
+  },
+  {
+   "id": "series-join",
+   "group": "series",
+   "title": "Join the team",
+   "image": "/beta/social/series-join.webp?v=1",
+   "thumb": "/beta/social/series-join-thumb.webp?v=1",
+   "textZone": 0.4,
+   "tone": "dark",
+   "preset": {
+    "kicker": "Now recruiting",
+    "headline": "Join *The Catalyst*",
+    "sub": "Writers, editors, designers and social media."
+   },
+   "caption": "We’re growing. The Catalyst is a student-run science magazine in Washington, D.C., and we’re looking for writers, editors, designers and social media leads.\n\nNo experience needed. Apply at the link in bio.\n\n#ScienceInDC #STEM #StudentJournalism #TheCatalyst #JoinUs",
+   "inkTop": 0.38
+  }
+ ],
+ "updated": "2026-10-01"
+}
