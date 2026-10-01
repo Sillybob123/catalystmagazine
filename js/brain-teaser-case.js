@@ -1,75 +1,73 @@
 /* ════════════════════════════════════════════════════════════════════
-   THE CATALYST VAULT — the case file
+   THE CATALYST VAULT — the riddle schedule  (/brain-teaser)
    ────────────────────────────────────────────────────────────────────
-   This is the ONLY file to edit when the brain teaser changes.
+   A new case opens every 14 days on its own; nothing needs editing.
+   Case 05 opened on START; case 05 + k opens START + 14k days.
 
-   New case, step by step:
-     1. Move the current case into ARCHIVE (top of the list), with its
-        answer written out in `answer` and `explain`.
-     2. Fill in CASE below: number, codename, dates, clues, answer.
-     3. Answer: the page never stores it in plain text. Open
-        /brain-teaser, open the browser console and run
-            await CatalystVault.hash('your answer')
-        then paste the result into `answer.hashes` (add one hash per
-        accepted spelling for a word answer).
-     4. Solution text shown after the attempt: run
-            CatalystVault.encode('The answer was <strong>…</strong>')
-        and paste it into `solution64`.
-     5. Bump `storageKey` (e.g. 'case-05') so everyone gets a fresh
-        attempt, and set `nextDropAt` to roughly two weeks out.
+   Answers are stored only as SHA-256 hashes, so the page source never
+   gives one away. `reveal64` (base64 of {answer, explain}) is only
+   decoded after a player's attempt, or once the case is in the past.
 
-   answer.type:
-     'code'  → a numeric lock (set `length`); the vault rings turn.
-     'text'  → a passphrase (any word or number); matched without
-               case, spaces or punctuation.
+   Adding more riddles later: append to CASES with the next number.
+   To hash an answer, open /brain-teaser, open the browser console and run
+       await CatalystVault.hash('answer')            → paste into hashes
+       CatalystVault.encode(JSON.stringify({answer: 'ANSWER', explain: 'Why'}))
+                                                      → paste into reveal64
    ════════════════════════════════════════════════════════════════════ */
 
-window.CATALYST_CASE = {
-  number: 4,
-  codename: 'Operation Silent River',
-  classification: 'Top Secret // Eyes Only',
-  releasedAt: '2026-09-28',
-  nextDropAt: '2026-10-12T14:00:00Z',
-
-  brief: 'Four intercepted riddles guard the Winners’ Lounge. Each resolves to a single English word — and the <strong>number of letters</strong> in that word is that dial’s digit. Read the four dials in order. <strong>One attempt.</strong>',
-
-  clues: [
-    { tag: 'Intercept 01', text: 'The one who makes me has no need of me. The one who buys me will never use me. The one who uses me will never see me — nor know that I <em>hold</em> them.' },
-    { tag: 'Intercept 02', text: 'I have no mouth, yet I answer every call in the caller’s <em>own</em> voice. Born of stone and distance, I live a single moment — and I die if you stand too close.' },
-    { tag: 'Intercept 03', text: 'Every creature can make me, yet none may keep me while speaking of me. The instant I am <em>named</em> aloud, I am broken.' },
-    { tag: 'Intercept 04', text: 'I wear a bed I never sleep in, keep a mouth that never speaks, hold banks that store no coin — and the greatest of my kind <em>split</em> continents.' }
-  ],
-
-  answer: {
-    type: 'code',
-    length: 4,
-    hashes: ['a7b2c0f85074def3fe9a2bd5f37564bb1622b529e0ac43d7a1fe120763147b7c']
-  },
-  solution64: 'SW50ZXJjZXB0Jm5ic3A7MDEgaXMgYSA8c3Ryb25nPmNvZmZpbjwvc3Ryb25nPiAoNiBsZXR0ZXJzKSwgMDIgYW4gPHN0cm9uZz5lY2hvPC9zdHJvbmc+ICg0KSwgMDMgPHN0cm9uZz5zaWxlbmNlPC9zdHJvbmc+ICg3KSwgMDQgYSA8c3Ryb25nPnJpdmVyPC9zdHJvbmc+ICg1KS4gVGhlIGNvZGUgd2FzIDxzdHJvbmc+NjQ3NTwvc3Ryb25nPi4=',
-
-  // Kept from the previous page so returning players keep their result.
-  storageKey: 'v7',
+window.CATALYST_VAULT = {
+  start: '2026-09-28T04:00:00Z',       // case 05 opens (midnight, Washington)
+  periodDays: 14,
   winnersUrl: '/q7x9m2k5p8wl4n6r1t3vb'
 };
 
-/* Past cases, newest first. Shown as "Declassified". */
-window.CATALYST_ARCHIVE = [
-  {
-    number: 3, codename: 'Four Sealed Dials', kind: 'Number cipher',
-    prompt: 'Days in a week, notes in an octave, wonders of the ancient world · the largest digit whose square’s digits add back to itself · the smallest perfect number · two squared, and the sides of a square.',
-    answer: '7964',
-    explain: '7 · 9 (81 → 8 + 1) · 6 (1 + 2 + 3) · 4.'
-  },
-  {
-    number: 2, codename: 'The Endless Letter', kind: 'Riddle',
-    prompt: 'I am the beginning of eternity, the end of time and space, the beginning of every end, and the end of every place. What am I?',
-    answer: 'The letter E',
-    explain: 'E begins “eternity”, ends “time”, “space” and “place”, and begins “end”.'
-  },
-  {
-    number: 1, codename: 'The Exponential Sequence', kind: 'Sequence',
-    prompt: '3, 7, 15, 31, 63, … what comes next?',
-    answer: '127',
-    explain: 'Each term doubles and adds one (2ⁿ⁺¹ − 1): 63 × 2 + 1 = 127.'
-  }
+window.CATALYST_CASES = [
+  {"n": 5, "codename": "The Vanishing Word", "riddle": "I am an eight-letter word. Take away one letter and I am still a word. Take away another, and another, one at a time, all the way down to a single letter, and every step along the way is still a real English word. Fittingly, I am where every journey begins.", "hashes": ["442adeaf8e61f00ea370f9e4283a5716a69266d06a2a9eb0c96cf54c2a04cbc3"], "reveal64": "eyJhbnN3ZXIiOiAiU1RBUlRJTkciLCAiZXhwbGFpbiI6ICJzdGFydGluZyDihpIgc3RhcmluZyDihpIgc3RyaW5nIOKGkiBzdGluZyDihpIgc2luZyDihpIgc2luIOKGkiBpbiDihpIgSS4ifQ=="},
+  {"n": 6, "codename": "The Missing Dozen", "riddle": "I am a word of six letters. Take one letter away and only twelve remain.", "hashes": ["f5500f5e7a1dd7fbe50c540302a345c1ad44d8b26af82a8c354a1ee98ffea5eb"], "reveal64": "eyJhbnN3ZXIiOiAiRE9aRU5TIiwgImV4cGxhaW4iOiAiUmVtb3ZlIHRoZSBTIGZyb20gRE9aRU5TIGFuZCB5b3UgYXJlIGxlZnQgd2l0aCBhIERPWkVOOiB0d2VsdmUuIn0="},
+  {"n": 7, "codename": "The Orderly Number", "riddle": "Spell me out and my letters stand in perfect alphabetical order, the only number that can make that claim. What am I?", "hashes": ["13cac20a9efa4df562ea4132194b49aeb98ce94b7c3704d000331186f3de6a3e", "f24bb3203b56af6e64afc015f42060c68db34ed13fb818021f28e9f9afa10ac8"], "reveal64": "eyJhbnN3ZXIiOiAiRk9SVFkiLCAiZXhwbGFpbiI6ICJGLU8tUi1ULVk6IGV2ZXJ5IGxldHRlciBjb21lcyBhZnRlciB0aGUgb25lIGJlZm9yZSBpdCBpbiB0aGUgYWxwaGFiZXQuIn0="},
+  {"n": 8, "codename": "The Line at the Stop", "riddle": "Five vowels stand inside me in an unbroken line, though half the people who write me leave one out. I am what you are doing while you wait your turn for the bus.", "hashes": ["fb773f202f75c7aef89056d273df64afa3ffd9f0798d141c8771c96a6eac996d"], "reveal64": "eyJhbnN3ZXIiOiAiUVVFVUVJTkciLCAiZXhwbGFpbiI6ICJRLVVFVUVJLU5HOiBmaXZlIHZvd2VscyBpbiBhIHJvdyAodGhlIHNob3J0ZXIgc3BlbGxpbmcsIHF1ZXVpbmcsIGhhcyBmb3VyKS4ifQ=="},
+  {"n": 9, "codename": "The Ledger Keeper", "riddle": "Three pairs of twins stand shoulder to shoulder in me, double, double, double, with no one between them. I keep accounts for a living.", "hashes": ["394cb6d9ba74753d5d56ce1a5627d03ebdadfbe9ef7fbf5c49e0fb36a7f674bb", "72a44e1c3f6212ef2cc870046eb21761b6ddef030226f886cd9ac6dd8eb3a555", "f66afa64116050cfcc289aff2f96d9fea506fa9238ccd9394c623459f90d71f3"], "reveal64": "eyJhbnN3ZXIiOiAiQk9PS0tFRVBFUiIsICJleHBsYWluIjogImItT08tS0stRUUtcGVyOiB0aHJlZSBjb25zZWN1dGl2ZSBkb3VibGUgbGV0dGVycy4ifQ=="},
+  {"n": 10, "codename": "The Patient Wife", "riddle": "A woman shoots her husband. Then she holds him under water for five minutes. Finally, she hangs him. An hour later they go out to dinner together, and he has never been happier. What is she?", "hashes": ["329470fee743c15589bd0c32067f4f5e7dbeab42646a6395ddb5dfaf402de0f6", "3d8fd92822c2b7adc0d5445338b1d2dff233a9c12132482b9a1f20ec379668bb", "5b5ba39aade30b14351eb1df66d78f93e5037ee20070e4eef252a394586ae1de", "87e2df430883b98d564565c8c3c17023df2f6e34f5fb785bb8f547c8d6f0cf88", "d5c1e2a04829f412415248d0e1a8e81d0582b4e5754d28ad364b92dc3f24c4c2"], "reveal64": "eyJhbnN3ZXIiOiAiQSBQSE9UT0dSQVBIRVIiLCAiZXhwbGFpbiI6ICJTaGUgc2hvb3RzIGEgcGhvdG8sIGRldmVsb3BzIGl0IGluIGEgYmF0aCBvZiBjaGVtaWNhbHMsIGFuZCBoYW5ncyBpdCB1cCB0byBkcnkuIn0="},
+  {"n": 11, "codename": "The Bankrupt Driver", "riddle": "A man pushes his car up to a hotel and tells the owner he is bankrupt. He never once started the engine, and nobody in the room is surprised. What are they playing?", "hashes": ["6e2ca8342d0d7712d96c0046fdd4cc5666a82fdd2b1b600341da736b153942b9"], "reveal64": "eyJhbnN3ZXIiOiAiTU9OT1BPTFkiLCAiZXhwbGFpbiI6ICJIZSBpcyBhIGNhciB0b2tlbiBpbiBNb25vcG9seSwgYW5kIGhlIGhhcyBsYW5kZWQgb24gYSBob3RlbCBoZSBjYW5ub3QgcGF5IGZvci4ifQ=="},
+  {"n": 12, "codename": "The Highest Peak", "riddle": "Before surveyors in the nineteenth century measured it and named it, what was the highest mountain on Earth?", "hashes": ["46b3097eefd53cfcb396721d9ba938f96b7e09e00889e13a3b8bf48587a82d5b", "a63421c11a765896b978f2a6920bf96e96e1ab8fee2ba570c939a32d0e09e462", "f5479e310e217ff9187bfa6775b6c24692193facc21f0def1140bee3f0a1fd59"], "reveal64": "eyJhbnN3ZXIiOiAiRVZFUkVTVCIsICJleHBsYWluIjogIkl0IHdhcyBzdGlsbCBFdmVyZXN0LiBJdCB3YXMgdGhlIGhpZ2hlc3Qgd2hldGhlciBvciBub3QgYW55b25lIGhhZCBtZWFzdXJlZCBpdC4ifQ=="},
+  {"n": 13, "codename": "The Odd One Out", "riddle": "I am an odd number. Take away one of my letters and I become even.", "hashes": ["8645498e72575565163788ac3115025bf2f075295ec5c4123a0a06ae7b18a450", "f6b8ad31722db052ed30692bd0f6c9f5eaeba1f9df03f0941f9f51a8ec2281a9"], "reveal64": "eyJhbnN3ZXIiOiAiU0VWRU4iLCAiZXhwbGFpbiI6ICJSZW1vdmUgdGhlIFMgZnJvbSBTRVZFTiBhbmQgeW91IGFyZSBsZWZ0IHdpdGggRVZFTi4ifQ=="},
+  {"n": 14, "codename": "The Honest Number", "riddle": "I am the only number whose name has exactly as many letters as the value it names.", "hashes": ["2e165f240dd7d8c7776d7f7fefc455d5dde3601254316633dca15f911cd50bb9", "c95a62e4c0039d4dd1d5f3d3b8760c733b209d3786b01d2207cff291dd172e86"], "reveal64": "eyJhbnN3ZXIiOiAiRk9VUiIsICJleHBsYWluIjogIkYtTy1VLVIgaGFzIGZvdXIgbGV0dGVycy4gTm8gb3RoZXIgbnVtYmVyIG5hbWUgbWF0Y2hlcyBpdHMgb3duIHZhbHVlLiJ9"},
+  {"n": 15, "codename": "The Crowd Problem", "riddle": "Two is company. Three is a crowd. So what are four and five?", "hashes": ["0dc61ce80f7f4f6e74cf70522181dd330fd481be53cc98b59a4df3c7c9e40efc", "94e0d8bb9d4c960aa0d2ea0ecfaa495c66f3001c53e05e3fab12efa640fb44d0"], "reveal64": "eyJhbnN3ZXIiOiAiTklORSIsICJleHBsYWluIjogIkZvdXIgYW5kIGZpdmUgbWFrZSBuaW5lLiBUaGUgcXVlc3Rpb24gaXMgb25seSBhcml0aG1ldGljLiJ9"},
+  {"n": 16, "codename": "The Distress Call", "riddle": "Turn me half a turn, hold me to a mirror, or read me backward: I never change. Three letters long, I have saved more lives than most doctors.", "hashes": ["8aa60ad0d3d40e6a74431ad91fad92bfd6e3d076539cf0d4a5dd454f68bedf49"], "reveal64": "eyJhbnN3ZXIiOiAiU09TIiwgImV4cGxhaW4iOiAiU09TIHJlYWRzIHRoZSBzYW1lIHJvdGF0ZWQsIG1pcnJvcmVkIGFuZCByZXZlcnNlZCwgYW5kIGl0IGlzIHRoZSBpbnRlcm5hdGlvbmFsIGRpc3RyZXNzIHNpZ25hbC4ifQ=="},
+  {"n": 17, "codename": "The Midday Mirror", "riddle": "I am a four-letter word you can write forward, backward, or upside down, and still read left to right. The sun is highest when you say me.", "hashes": ["613bd0934e86de2c6814def97a966c3e2ff3bcf64b862f6c01fd121af1dba6f4"], "reveal64": "eyJhbnN3ZXIiOiAiTk9PTiIsICJleHBsYWluIjogIk5PT04gaXMgYSBwYWxpbmRyb21lIHRoYXQgYWxzbyBzdXJ2aXZlcyBiZWluZyB0dXJuZWQgdXBzaWRlIGRvd24uIn0="},
+  {"n": 18, "codename": "The Sorrowful Letter", "riddle": "I am the beginning of sorrow and the end of sickness. You cannot express happiness without me, yet I sit in the middle of crosses. I am always in risk, but never in danger.", "hashes": ["284fea8ee83dcde73547d697ceaa18dcf178cdd50a57d77c4109fe0b5ef9fe52", "4514d00d287e33dffdbaf39f02bfa0ee27f3d7503c41072553821f1a93a109d9", "80bcd3473d6aa3e21da65afe64310f30fbaf9a9f2d9f290997bbbc7c56c4a906"], "reveal64": "eyJhbnN3ZXIiOiAiVEhFIExFVFRFUiBTIiwgImV4cGxhaW4iOiAiU29ycm93LCBzaWNrbmVzcywgaGFwcGluZXNzLCBjcm9zc2VzLCByaXNrOiBTIGlzIGluIGV2ZXJ5IG9uZSwgYW5kIG5vd2hlcmUgaW4gZGFuZ2VyLiJ9"},
+  {"n": 19, "codename": "The Corner Room", "riddle": "Two in a corner, one in a room, none in a house, but one in a shelter.", "hashes": ["ad4292649c079da87379b9e54497a569784074cbb7b88d6745710d8e64d0a92a", "ef0a4c7d2c0f1a04e082bd17d4cd923da89c158555c3f0e2a1784a6df61677a1", "f73bf5b7589c386e58844645d9ce1703a7d41827910960c728662b827c3827c0"], "reveal64": "eyJhbnN3ZXIiOiAiVEhFIExFVFRFUiBSIiwgImV4cGxhaW4iOiAiQ291bnQgdGhlIFJzOiBjb1JuZVIgaGFzIHR3bywgUm9vbSBvbmUsIGhvdXNlIG5vbmUsIHNoZWx0ZVIgb25lLiJ9"},
+  {"n": 20, "codename": "The Counting Code", "riddle": "O, T, T, F, F, S, S, E … what letter comes next?", "hashes": ["4c2ed6841f3c1cb7cc52d184a770069b48b2650e13a379f4fc1325eb1a6a0032", "68e2055d7727ac990fb7ef02f1b836eb4b3660ed680cc2fb6a1e447766b03928", "94e0d8bb9d4c960aa0d2ea0ecfaa495c66f3001c53e05e3fab12efa640fb44d0", "e4f3cc74d44d732654c99ca5d8bf55fad5f1e29da34be18e0df68f0de88f786e"], "reveal64": "eyJhbnN3ZXIiOiAiTiIsICJleHBsYWluIjogIk9uZSwgVHdvLCBUaHJlZSwgRm91ciwgRml2ZSwgU2l4LCBTZXZlbiwgRWlnaHQsIE5pbmUuIFRoZSBuZXh0IGxldHRlciBpcyBOLiJ9"},
+  {"n": 21, "codename": "The Self-Describing Sequence", "riddle": "1 · 11 · 21 · 1211 · 111221 · ? What comes next?", "hashes": ["a481af4b187c87eb2c02a1b9be5b5555943e4a953931ebfa012b03da3380b1df"], "reveal64": "eyJhbnN3ZXIiOiAiMzEyMjExIiwgImV4cGxhaW4iOiAiRWFjaCB0ZXJtIHJlYWRzIHRoZSBvbmUgYmVmb3JlIGFsb3VkOiAxMTEyMjEgaXMgdGhyZWUgMXMsIHR3byAycywgb25lIDEg4oaSIDMxMjIxMS4ifQ=="},
+  {"n": 22, "codename": "The Seven-Letter Library", "riddle": "I am a word of only seven letters, yet I hold thousands of letters inside me, and on some days I am empty.", "hashes": ["33933d33e6efcafc2786549221694bf38a2138a168c1762858c5c30be1e48d56", "b9efb18ca7c1e339877dfdffcf40de62e233ff3e18b55e21e2eb684c84481c5e", "fcc3024ffc404b0e55d010f4d11a9e900da1ecb355bd938f59c49d93837c7e9b"], "reveal64": "eyJhbnN3ZXIiOiAiTUFJTEJPWCIsICJleHBsYWluIjogIkEgTUFJTEJPWDogc2V2ZW4gbGV0dGVycywgZnVsbCBvZiBsZXR0ZXJzLiJ9"},
+  {"n": 23, "codename": "The Weighty Word", "riddle": "Read me forward and I am heavy. Read me backward and I am not.", "hashes": ["f96bec52c401a96348988cd2315dec1302bc76342986c75bdf50523a6af0788b"], "reveal64": "eyJhbnN3ZXIiOiAiVE9OIiwgImV4cGxhaW4iOiAiVE9OIGlzIGhlYXZ5LiBCYWNrd2FyZCBpdCBzcGVsbHMgTk9ULiJ9"},
+  {"n": 24, "codename": "The Shrinking Addition", "riddle": "I am a word of three letters. Add two more, and fewer there will be.", "hashes": ["b533133ab7113634d9db11f2860e57fc5dd7a0ba9e4c1a5473e3d8358f33fc75"], "reveal64": "eyJhbnN3ZXIiOiAiRkVXIiwgImV4cGxhaW4iOiAiQWRkIC1FUiB0byBGRVcgYW5kIHlvdSBnZXQgRkVXRVIuIn0="},
+  {"n": 25, "codename": "The Infinite Digit", "riddle": "Lay me on my side and I am everything. Cut me in half and I am nothing.", "hashes": ["03234cb3fa92cdc5d4059f02ea31465069602bcb7a1135ec5efda30588b941af", "ed5ec4e023671f73443987b2ed9320b93c05b9cc94a0d88e5ba516f83f2d56db"], "reveal64": "eyJhbnN3ZXIiOiAiRUlHSFQiLCAiZXhwbGFpbiI6ICI4IG9uIGl0cyBzaWRlIGlzIOKIniwgaW5maW5pdHkuIEN1dCBpdCBhY3Jvc3MgdGhlIG1pZGRsZSBhbmQgeW91IGdldCAwLiJ9"},
+  {"n": 26, "codename": "The Rich Man’s Need", "riddle": "The poor have it. The rich need it. If you eat it, you will die. And it is greater than any god.", "hashes": ["85419b78275d5dabb821222cc057001c12c6b893f4f2202ec2f8468f726cde96"], "reveal64": "eyJhbnN3ZXIiOiAiTk9USElORyIsICJleHBsYWluIjogIlRoZSBwb29yIGhhdmUgbm90aGluZywgdGhlIHJpY2ggbmVlZCBub3RoaW5nLCBlYXQgbm90aGluZyBhbmQgeW91IGRpZSwgYW5kIG5vdGhpbmcgaXMgZ3JlYXRlciB0aGFuIEdvZC4ifQ=="},
+  {"n": 27, "codename": "The Shared Possession", "riddle": "If you have me, you want to share me. If you share me, you no longer have me.", "hashes": ["451293a3024a2a0683da5a707ef47e2442dad3b269f70b64cee1bf0c9a720cd2", "76c10c19ea342a019296c9cf0cf27b668252abdbc812dcb997f146c017d01dd1"], "reveal64": "eyJhbnN3ZXIiOiAiQSBTRUNSRVQiLCAiZXhwbGFpbiI6ICJPbmNlIGEgc2VjcmV0IGlzIHNoYXJlZCwgaXQgaXMgbm8gbG9uZ2VyIGEgc2VjcmV0LiJ9"},
+  {"n": 28, "codename": "The Four Verbs", "riddle": "I can be cracked, made, told and played. Some people are one. What am I?", "hashes": ["3f9320f09098d6012a07fa029e852c423ce5c047ada8172c814211fbf3624b09", "44fcb1717c771bca6017c104122de14500b6df896b3839b9f9b2b1391342e67f"], "reveal64": "eyJhbnN3ZXIiOiAiQSBKT0tFIiwgImV4cGxhaW4iOiAiWW91IGNyYWNrLCBtYWtlLCB0ZWxsIGFuZCBwbGF5IGEgam9rZSwgYW5kIHNvbWUgcGVvcGxlIGFyZSBvbmUuIn0="},
+  {"n": 29, "codename": "The Voiceless Cry", "riddle": "Voiceless it cries, wingless flutters, toothless bites, mouthless mutters.", "hashes": ["67451fcb72b4252f2b4f911e45c8d939fa51a7e2ec248770a42aefdfee2f8fcf", "d92510e1339a2cd939c38f382818aebc3fdea8bfd447300429a2f43709eaab90"], "reveal64": "eyJhbnN3ZXIiOiAiVEhFIFdJTkQiLCAiZXhwbGFpbiI6ICJUb2xraWVu4oCZcyByaWRkbGUgZnJvbSA8ZW0+VGhlIEhvYmJpdDwvZW0+OiB0aGUgd2luZC4ifQ=="},
+  {"n": 30, "codename": "The Cold Drinker", "riddle": "Alive without breath, as cold as death; never thirsty, ever drinking, all in mail never clinking.", "hashes": ["4dd0ab99f12b536b40b95f15fd434ea20c71f29f3940d05f2e98de94bd708f2b", "8316940c18c0e9c6aed5893fe25abbcf875ba0869bd8527167e788633d11cdfc"], "reveal64": "eyJhbnN3ZXIiOiAiQSBGSVNIIiwgImV4cGxhaW4iOiAiRnJvbSA8ZW0+VGhlIEhvYmJpdDwvZW0+OiBhIGZpc2ggYnJlYXRoZXMgbm8gYWlyLCBkcmlua3MgY29uc3RhbnRseSBhbmQgd2VhcnMgc2NhbGVzIGxpa2UgY2hhaW4gbWFpbC4ifQ=="},
+  {"n": 31, "codename": "The White Horses", "riddle": "Thirty white horses on a red hill. First they champ, then they stamp, then they stand still.", "hashes": ["198fa4444e08d9f16867bb26c2b7fe0c32f47b72bfcb1c8772a408aa8653b13c", "62c7d8d5db92f0d04eb5967f3e40beddaf16b9ad180fa396185fab6555f96ec3"], "reveal64": "eyJhbnN3ZXIiOiAiVEVFVEgiLCAiZXhwbGFpbiI6ICJGcm9tIDxlbT5UaGUgSG9iYml0PC9lbT46IHRlZXRoIG9uIHJlZCBndW1zLiJ9"},
+  {"n": 32, "codename": "The Unseen Roots", "riddle": "What has roots as nobody sees, is taller than trees? Up, up it goes, and yet never grows.", "hashes": ["2c107d3059c0fa4a25b92c582d892a7f1f3e34496a2e439a0e1960666220e5f9", "b446096cdeff9870f2352a60877b2a3c0b913fc67250035a4a7f7f48cc10d2ea", "ec027de0797ddb3420e839e10ec7d876dd9683d71c2c4d5a91660c82afd1bb16"], "reveal64": "eyJhbnN3ZXIiOiAiQSBNT1VOVEFJTiIsICJleHBsYWluIjogIkZyb20gPGVtPlRoZSBIb2JiaXQ8L2VtPjogYSBtb3VudGFpbi4ifQ=="},
+  {"n": 33, "codename": "The Inside-Out Meal", "riddle": "You throw away the outside and cook the inside. Then you eat the outside and throw away the inside.", "hashes": ["27f8902af8e023d9a95c2462bba1825e9223213e4f4fc13e04474b54a0fff6bb", "44d9c150c71a5e6ce35ecb1770c9ebc6bbdd486cb81a29fa83a4ae51f1463199", "60f883df69da7b24f88bb9315df598e76567d06c7e9d81eb27d45d1352167bb2", "996aba21a9e97cbeb0bb8fb39e01f573bc5e9a883e0297c51c89b418b615be21", "e2cfdb6280ecb1894e611f5eefd42d5346896116dfe64c311d2015d2d7addf3b"], "reveal64": "eyJhbnN3ZXIiOiAiQ09STiBPTiBUSEUgQ09CIiwgImV4cGxhaW4iOiAiSHVzayBpdCwgY29vayBpdCwgZWF0IHRoZSBrZXJuZWxzLCB0aHJvdyBhd2F5IHRoZSBjb2IuIn0="},
+  {"n": 34, "codename": "The Three Colours", "riddle": "Black when you buy me, red when you use me, grey when you throw me away.", "hashes": ["d0c0930e5dcef34dcafa08e4211306a29540d19696e56dc15d13ff75446cb85c", "fb21b2e16634d9f9911ccf8b90fde14b067f86c15d7e5d5997953b25acd958e8"], "reveal64": "eyJhbnN3ZXIiOiAiQ0hBUkNPQUwiLCAiZXhwbGFpbiI6ICJDaGFyY29hbCBpcyBibGFjaywgZ2xvd3MgcmVkIHdoZW4gaXQgYnVybnMgYW5kIGVuZHMgYXMgZ3JleSBhc2guIn0="},
+  {"n": 35, "codename": "The Bus-Stop Word", "riddle": "I am a word of five letters. Take away four of them and I still sound exactly the same.", "hashes": ["3e568fe6de5fe776c7ead2839efc531a8a69efa53bb7dd1b66fcde97755bd94b"], "reveal64": "eyJhbnN3ZXIiOiAiUVVFVUUiLCAiZXhwbGFpbiI6ICJRVUVVRSBtaW51cyBVLUUtVS1FIGlzIFEsIGFuZCBpdCBpcyBwcm9ub3VuY2VkIHRoZSBzYW1lLiJ9"},
+  {"n": 36, "codename": "The Relative Clock", "riddle": "I can be measured but never seen. I only ever move one way. Travel fast enough and I slow down for you; stand near something heavy enough and I slow down too.", "hashes": ["1bc6c61b6eba0d767835d4076fe0252e168e64806c8fa86b6a3759fe61b7fa3c"], "reveal64": "eyJhbnN3ZXIiOiAiVElNRSIsICJleHBsYWluIjogIlRpbWUsIGFuZCByZWxhdGl2aXR5OiBzcGVlZCBhbmQgZ3Jhdml0eSBib3RoIHNsb3cgYSBjbG9jayBkb3duLiJ9"},
+  {"n": 37, "codename": "The Faithful Follower", "riddle": "Everybody has one. It weighs nothing. Stand in the sun and it grows. Take away every light and it disappears completely.", "hashes": ["0ae56b27a2039ad7436a10d444445a7f3a65d806b81809daaaf1ccfa4ef6a30c", "e686546bdf00c27fc8873c3ee5e2bad93fae266cc7677177da79ff66ee9ba663", "e800e88a5688396b6dc03a584543bde6f4bead7e5cf6f11ae8b304a428277dfe"], "reveal64": "eyJhbnN3ZXIiOiAiQSBTSEFET1ciLCAiZXhwbGFpbiI6ICJBIHNoYWRvdyBuZWVkcyBsaWdodC4gSW4gdG90YWwgZGFya25lc3MgdGhlcmUgaXMgbm9uZS4ifQ=="},
+  {"n": 38, "codename": "The Complete Set", "riddle": "I hold every one of the twenty-six letters, yet I am spelled with only eight of my own.", "hashes": ["337107ba476eeaa9cee7e127d387d27f114828b673728e827ef3838d4d1faee2", "e37e9865651590b66978c76f3d21c7d263fbf8fe797d1afbbd53704e80fd1508"], "reveal64": "eyJhbnN3ZXIiOiAiVEhFIEFMUEhBQkVUIiwgImV4cGxhaW4iOiAiVGhlIEFMUEhBQkVUIGNvbnRhaW5zIGFsbCAyNiBsZXR0ZXJzIGFuZCBpcyBzcGVsbGVkIHdpdGggZWlnaHQuIn0="},
+  {"n": 39, "codename": "The Single Subtraction", "riddle": "How many times can you subtract five from twenty-five?", "hashes": ["192bd6a48694093176b5a9be10afcbc9b7efea3891005ecedbfcedc0a4cce2d4", "297faae3bde4e22f0b72fc633972e630f05ea777f3a77b25f148b589a4c09a17", "af617c8c3f2908df9ba21268af2396588a21159e4ba39090ec1be2a15ce26fc1", "b41e89c2eb5b6d9921e5b913c3eda31e9ea9f0a5358db9d88c01558747f82efd", "f82aabd99de24c8c14bf88e8cb29c3c25d5fd8ad7affafccbaaf783a9615d411"], "reveal64": "eyJhbnN3ZXIiOiAiT05DRSIsICJleHBsYWluIjogIk9uY2UuIEFmdGVyIHRoYXQgeW91IGFyZSBzdWJ0cmFjdGluZyBmaXZlIGZyb20gdHdlbnR5LiJ9"},
+  {"n": 40, "codename": "The Surgeon’s Son", "riddle": "A father and his son are in a car crash. The father dies; the boy is rushed to hospital. The surgeon looks at him and says, ‘I can’t operate on this boy. He is my son.’ Who is the surgeon?", "hashes": ["0bb2c99cdb1b5ac69b3865c66d98ec8dcfc30cb5ce1357d56b26b55d25bd691b", "2431e57791c6c06d267b113013a20a867194ea9f73cba844fcd6c1a7697fffc4", "7a6bc18c28a885d6f771e4ca1fc0feb76b3baf3c47e8e143ce4029e6093ff64e", "97c978267c3cd83ba22f36e29235ba78b8723805b35a6da7a9fcf4181363aaef", "9d5b33ad16df22dfd5555331e369ae0eae6354a5c2782e5ebd5e26a378b0354d"], "reveal64": "eyJhbnN3ZXIiOiAiSElTIE1PVEhFUiIsICJleHBsYWluIjogIlRoZSBzdXJnZW9uIGlzIHRoZSBib3nigJlzIG1vdGhlci4ifQ=="},
+  {"n": 41, "codename": "The Friday Rider", "riddle": "A cowboy rode into town on Friday. He stayed three nights and rode out again on Friday. How?", "hashes": ["50d912fc4927b9e6dfb89a31e091a7921dd7c520747dded2bd73751b62269737", "5360f6443be6dd2d9420b84e39d5583ba51c72e03b2aef8b83692047d459853c", "589a0c6ffe6ad786311e48ce9371bc01d99423af0d4949d8d77aec6afda7e936", "739753905ba2bf49bcefde395cd38247e767104de126423919b26cef8b2ef76c", "bbaa8b9f373928ceb16a9568924531234c886d89e518768d7888cae92c6779a6"], "reveal64": "eyJhbnN3ZXIiOiAiSElTIEhPUlNFIElTIE5BTUVEIEZSSURBWSIsICJleHBsYWluIjogIkZyaWRheSBpcyB0aGUgbmFtZSBvZiBoaXMgaG9yc2UuIn0="},
+  {"n": 42, "codename": "The Thirteen Hearts", "riddle": "I have thirteen hearts but no other organs, and I am always ready to be shuffled.", "hashes": ["1ad497bd5e1b513cb3bc95c023bb67939e2aee3543f084273123b07573c09c2b", "936c54e51bd92312e125bc5ca52a238901ff56b39ec383f5071c927562cc5322", "951b13942520f991143fbc0bf80a4f86729294e80578b866fcfd359b6856f172", "ac55206cc93837629b3771d075090bca30bd6a7f76fb8ec3e5e94a94fa76f8f5", "cd164a17f05af7221d44dbc97684811bb4d55c992f3e244dc4a47c15d22b8f83", "e779f3ea028d1b03d46abd515f1d8c8faea63dacb1d8bc4c1e7b87fe4bcea0bd"], "reveal64": "eyJhbnN3ZXIiOiAiQSBERUNLIE9GIENBUkRTIiwgImV4cGxhaW4iOiAiQSBzdGFuZGFyZCBkZWNrIGhhcyB0aGlydGVlbiBoZWFydHMuIn0="},
+  {"n": 43, "codename": "The Stationary Traveller", "riddle": "I can travel all the way around the world while staying in one corner.", "hashes": ["4314afadef57c353454e19d73ca35b6716beb3ab2ff74badd8d4191c18c25ac9", "5dc946421670c7a6d397bba4d717aad687cd350ccd69506bf4ba62f40ca993ef", "8bda1d36c0fd6cc57b78b77ed3f24fde9009b0e30a3925f46b44657ca0526a71"], "reveal64": "eyJhbnN3ZXIiOiAiQSBTVEFNUCIsICJleHBsYWluIjogIkEgcG9zdGFnZSBzdGFtcCBzaXRzIGluIHRoZSBjb3JuZXIgb2YgYW4gZW52ZWxvcGUuIn0="},
+  {"n": 44, "codename": "The Unreachable Day", "riddle": "It is always coming but never arrives. Everyone expects me, nobody has ever seen me, and the moment I come I take a different name.", "hashes": ["e288ee01bf1038bab131c8038fc05f112369e0798be54f130ad05c82594d7a95"], "reveal64": "eyJhbnN3ZXIiOiAiVE9NT1JST1ciLCAiZXhwbGFpbiI6ICJXaGVuIHRvbW9ycm93IGFycml2ZXMgaXQgaXMgY2FsbGVkIHRvZGF5LiJ9"}
+];
+
+/* Cases from before the schedule, answers public. */
+window.CATALYST_EARLY_CASES = [
+  { n: 4, codename: 'Silent River', riddle: 'Four riddles, four words; the number of letters in each was a digit of the code.', answer: '6475', explain: 'Coffin (6), echo (4), silence (7), river (5).' },
+  { n: 3, codename: 'Four Sealed Dials', riddle: 'Days in a week · the largest digit whose square’s digits add back to itself · the smallest perfect number · two squared.', answer: '7964', explain: '7 · 9 (81 → 8 + 1) · 6 (1 + 2 + 3) · 4.' },
+  { n: 2, codename: 'The Endless Letter', riddle: 'I am the beginning of eternity, the end of time and space, the beginning of every end, and the end of every place.', answer: 'The letter E', explain: 'E begins “eternity” and “end”, and ends “time”, “space” and “place”.' },
+  { n: 1, codename: 'The Exponential Sequence', riddle: '3, 7, 15, 31, 63, … what comes next?', answer: '127', explain: 'Double and add one: 63 × 2 + 1 = 127.' }
 ];
