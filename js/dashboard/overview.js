@@ -219,6 +219,7 @@ async function loadAnnouncements(mount, ctx) {
 function announcementBanner(a, ctx, isAdmin, { onDismiss, onRemove }) {
   const title = a.title || "Announcement";
   const wrap = el("div", {
+    class: "ov-announce",
     style: "margin-bottom:18px;background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #b91c1c;border-radius:12px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;",
   });
 

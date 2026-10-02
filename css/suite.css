@@ -127,6 +127,11 @@ div.nav-group-title { display: block; }  /* the Pinned title stays a plain label
 .page-info:hover .page-title-desc, .page-info:focus-within .page-title-desc, .page-info.is-open .page-title-desc { opacity: 1; transform: none; pointer-events: auto; }
 .topbar-actions { gap: 10px; flex-shrink: 0; }
 .topbar-actions > .btn { min-height: 38px; }
+/* Phones: "Public site" is icon-only (dashboard.css sets font-size 0);
+   drop the padding and gap so the icon isn't squeezed into 10px. */
+@media (max-width: 640px) {
+  .topbar-actions > .btn-ghost { width: 38px; height: 38px; min-height: 38px; padding: 0; gap: 0; }
+}
 .notif-bell { border-radius: 999px; }
 .user-chip { background: var(--surface); border: 1px solid var(--hairline); padding: 4px 12px 4px 4px; }
 .user-chip:hover, .user-chip[aria-expanded="true"] { background: var(--surface); border-color: rgba(15,23,42,.24); }
@@ -180,6 +185,13 @@ div.nav-group-title { display: block; }  /* the Pinned title stays a plain label
 .btn-sm { min-height: 34px; padding: 0 13px; font-size: 13px; }
 .btn-xs { min-height: 28px; padding: 0 10px; font-size: 12px; }
 .btn:disabled, .btn[disabled] { opacity: .45; cursor: not-allowed; }
+/* A pill with line-height 1 and no vertical padding can't hold two lines:
+   keep labels on one line and icons at their drawn size. Rows of buttons
+   wrap instead (see the row rules below). */
+.btn { white-space: nowrap; justify-content: center; }
+.btn > svg, .btn > .icon { flex-shrink: 0; }
+/* Opt-in for long labels in narrow columns: wraps with room for two lines. */
+.btn.btn-wrap { white-space: normal; line-height: 1.3; padding-top: 8px; padding-bottom: 8px; text-align: left; }
 
 /* ---------------------------------------------------------------- forms */
 .field { margin-bottom: 18px; }
@@ -386,7 +398,7 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
    ARTICLES & APPROVALS — one line per story
    ========================================================================== */
 .ar-row {
-  display: grid !important; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px 24px;
+  display: grid !important; grid-template-columns: minmax(240px, 1fr) auto; align-items: center; gap: 12px 24px;
   padding: 16px 24px !important; border-top: 1px solid var(--hairline-2); background: none !important; border-radius: 0 !important;
 }
 .ar-row:hover { background: rgba(15,23,42,.02) !important; }
@@ -394,10 +406,12 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ar-title { font: 500 14.5px/1.4 var(--font); color: var(--ink); letter-spacing: -0.01em; }
 .ar-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 5px; font-size: 12.5px; color: var(--muted); }
 .ar-meta .category-chip { font: 600 10px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; padding: 4px 7px; border-radius: 6px; background: var(--surface-3); border: 0; color: var(--ink-2); }
-.ar-side { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 14px; flex-wrap: nowrap; }
+/* wrap: when the row is tight the actions drop under the status + editor
+   instead of squeezing the editor select until names are cut off. */
+.ar-side { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px 14px; flex-wrap: wrap; justify-content: flex-end; }
 .ar-status-editor { display: flex !important; align-items: center; gap: 10px; flex-direction: row !important; }
 .ar-status-editor .pill { min-width: 84px; text-align: center; }
-.ar-editor-select { width: 180px !important; min-height: 34px !important; font-size: 13px !important; padding: 0 30px 0 10px !important; }
+.ar-editor-select { flex-shrink: 0; width: 256px !important; max-width: 100%; min-height: 34px !important; font-size: 13px !important; padding: 0 30px 0 10px !important; }
 .ar-actions { display: flex !important; align-items: center; gap: 4px; flex-wrap: nowrap; justify-content: flex-end; }
 .ar-actions .ar-danger { color: var(--danger) !important; }
 @media (max-width: 1200px) {
@@ -405,6 +419,10 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
   .ar-side { flex-wrap: wrap !important; justify-content: flex-start; }
 }
 .articles-list { margin: 0 -24px; }
+/* The list sits flush under the Stories / Book reviews tabs: no padded gap
+   and doubled hairline above the first row. */
+.card-body:has(> .articles-list) { padding-top: 0; }
+.articles-list > .ar-row:first-child { border-top: 0; }
 @media (max-width: 700px) {
   .articles-list { margin: 0 -16px; }
   .ar-row { padding: 16px !important; margin: 0 !important; width: auto !important; }
@@ -437,7 +455,7 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ua-table th, .ua-table td { padding: 12px 10px !important; vertical-align: middle !important; }
 .ua-table td:first-child { font-weight: 500; }
 .ua-table td[data-label="Email"] > div:first-child { font-family: var(--font) !important; font-size: 12.5px !important; color: var(--muted) !important; max-width: 210px; }
-.ua-table td[data-label="Role"] .select { min-height: 34px !important; min-width: 130px; font-size: 13px !important; }
+.ua-table td[data-label="Role"] .select { min-height: 34px !important; min-width: 168px; font-size: 13px !important; padding-right: 28px !important; }
 .ua-table td[data-label="Status"] .pill { background: none; color: var(--ink-2); padding: 0; letter-spacing: .06em; }
 .ua-table td[data-label="Status"] .pill-published::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--good); vertical-align: 0; }
 
@@ -625,9 +643,18 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
   .pm-next-owner { justify-self: start; }
 }
 @media (max-width: 640px) {
-  .kb-toolbar { flex-direction: column; align-items: stretch; }
-  .kb-focus { overflow-x: auto; }
-  .kb-header-actions { justify-content: flex-end; }
+  /* nowrap: a wrapping column sizes its line to the widest child's
+     max-content, which pushed both rows past the screen edge. */
+  .kb-toolbar { flex-direction: column; align-items: stretch; flex-wrap: nowrap; }
+  .kb-focus { overflow-x: auto; scrollbar-width: none; }
+  .kb-focus::-webkit-scrollbar { display: none; }
+  .kb-focus button { padding: 0 11px; flex-shrink: 0; }
+  .kb-header-actions { justify-content: flex-end; flex-wrap: wrap; }
+  /* Edition row: label + manage on top, the tab strip full width below,
+     so tabs aren't cut off mid-word behind the Manage button. */
+  .kb-editions { flex-wrap: wrap; row-gap: 8px; }
+  .kb-ed-tabs { order: 3; flex: 1 1 100%; }
+  .kb-ed-manage { margin-left: auto; }
   .kb-col { flex-basis: 84vw; width: 84vw; }
 }
 
@@ -687,7 +714,7 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 
 /* rail */
 .ds-rail { display: flex; flex-direction: column; gap: 2px; padding: 10px 6px; border-right: 1px solid var(--hairline-2); background: var(--surface-2); }
-.ds-rail button { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 58px; padding: 8px 2px; border: 0; border-radius: 10px; background: none; color: var(--muted); font: 500 10.5px/1.1 var(--font); cursor: pointer; transition: background .15s, color .15s; }
+.ds-rail button { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 58px; padding: 8px 2px; border: 0; border-radius: 10px; background: none; color: var(--muted); font: 500 10px/1.1 var(--font); letter-spacing: -0.01em; cursor: pointer; transition: background .15s, color .15s; }
 .ds-rail svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .ds-rail button:hover { color: var(--ink); background: var(--surface-3); }
 .ds-rail button.is-on { color: var(--ink); background: var(--surface); box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--hairline); }
@@ -812,4 +839,109 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 }
 @media (prefers-reduced-motion: reduce) {
   .ds-ttile .ds-tthumb, .ds-btile, .ds-etile, .ds-sw { transition: none; }
+}
+
+/* ---------------------------------------------------------------- fit fixes
+   Places where a row of buttons ran out of room and the labels wrapped,
+   overflowed or were cut off. */
+/* Write a draft: six commands don't fit one line below ~1240px. Wrap them
+   beside the eyebrow instead of squeezing labels onto two lines. */
+@media (min-width: 641px) and (max-width: 1240px) {
+  .compose-bar { align-items: flex-start; border-radius: 22px; }
+  .compose-bar-left { padding-top: 10px; }
+  .compose-bar-right { flex: 1 1 0; min-width: 0; flex-wrap: wrap; justify-content: flex-end; row-gap: 8px; }
+  /* Help links on the first row, Save + Submit together on the second
+     (the ::before is a full-width flex item acting as the line break). */
+  .compose-bar-right::before { content: ""; flex-basis: 100%; order: 1; }
+  .compose-bar-right > #save-draft-btn, .compose-bar-right > #submit-btn { order: 2; }
+}
+@media (max-width: 640px) {
+  /* Newsletter builder header: start-aligned so the first button isn't
+     pushed past the card's left edge; the divider has no row to divide. */
+  .nl-head-actions { justify-content: flex-start !important; gap: 10px !important; }
+  .nl-head-sep { display: none; }
+}
+/* Team tasks: four 278px columns overran the 1104px content area at 1440,
+   cutting off "Completed". Share the width; scroll only when they can't fit. */
+#tasks-board .kb-col { flex: 1 1 0; min-width: 240px; width: auto; }
+/* Team & messages: top-align the avatar with the name — centred, it floated
+   beside the action buttons on taller cards. */
+.staff-card { align-items: flex-start; }
+/* Cover picker (draft, book review, admin story editor) is a column flex,
+   which stretched "Upload from computer" into a full-width bar. */
+.cover-picker > .btn { align-self: flex-start; }
+/* .card + .card spacing is for stacked cards; side by side in a grid it
+   dropped the second card 20px below the first (Editing queue, Planner). */
+.grid > .card + .card { margin-top: 0; }
+/* Task cards (Briefing, Action items, Activity, Overview): actions sat in a
+   stacked column with the ⋮ menu alone underneath, leaving a tall empty band
+   in every card. One right-aligned row instead, in the suite's pill buttons. */
+.admin-task .admin-task-actions { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; max-width: 360px; }
+.admin-task .admin-task-action, .admin-task .admin-task-copy, .admin-task .admin-task-restore { min-height: 36px; padding: 0 14px; border-radius: 999px; font-weight: 600; }
+.admin-task .admin-task-manage-btn { border-radius: 999px; }
+@media (max-width: 560px) {
+  .admin-task .admin-task-actions { max-width: none; justify-content: flex-start; }
+}
+/* Games reuses .ar-row with a thumbnail first: give it thumb | text | actions
+   (the two-column articles grid pushed the button onto its own line and the
+   title off to the right). */
+.ar-row:has(> .ar-row-media) { grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px 18px; }
+@media (max-width: 700px) {
+  .ar-row:has(> .ar-row-media) { grid-template-columns: auto minmax(0, 1fr); }
+  .ar-row:has(> .ar-row-media) > .ar-row-actions { grid-column: 1 / -1; flex-wrap: wrap; }
+}
+/* Searchability: `.sc-card-head > div { flex: 1 }` also stretched the metric
+   toggle, leaving an empty grey tail after "Position". Size it to its buttons. */
+.sc-card-head > .sc-chart-toggle { flex: 0 0 auto; }
+@media (max-width: 760px) { .sc-card-head > .sc-chart-toggle { flex: 1 1 100%; } }
+/* Final review: the bar is ink, so the ink "Publish now" vanished into it and
+   the ghost link was grey-on-navy. Invert the buttons for the dark bar. */
+.final-review-bar .btn-accent, .final-review-bar .btn-primary { background: var(--surface-2); border-color: var(--surface-2); color: var(--ink); }
+.final-review-bar .btn-accent:hover, .final-review-bar .btn-primary:hover { background: #fff; border-color: #fff; }
+.final-review-bar .btn-secondary { background: transparent; border-color: rgba(248,247,243,.38); color: var(--surface-2); }
+.final-review-bar .btn-secondary:hover { background: rgba(248,247,243,.1); border-color: rgba(248,247,243,.6); }
+.final-review-bar .btn-ghost { color: rgba(248,247,243,.82); }
+.final-review-bar .btn-ghost:hover { background: rgba(248,247,243,.1); color: var(--surface-2); }
+.final-review-bar .btn:focus-visible { outline-color: var(--surface-2); }
+/* Overview, Story Tracker preview: columns had no basis, so on narrow
+   screens four of them squeezed into the card and clipped every word. */
+.pipeline-embed-grid > .pipeline-col { flex: 1 0 230px; min-width: 230px; }
+/* Overview, staff announcement on phones: "Remove for everyone" took a column
+   beside the headline and crushed it to a few words per line. Put it below. */
+@media (max-width: 640px) {
+  .ov-announce:has([data-act="remove"]) { flex-wrap: wrap; }
+  .ov-announce:has([data-act="remove"]) > :last-child { flex: 1 1 100%; align-items: flex-start; padding-left: 48px; }
+  .ov-announce [data-act="remove"] { padding-left: 0; }
+}
+/* A 1fr grid track grows to its widest card, so one long name pushed that
+   card past the section edge on phones; let the name ellipsis instead. */
+.staff-grid > .staff-card { min-width: 0; }
+@media (max-width: 640px) {
+  /* Users & roles as stacked cards: the email cell's inline max-width:0
+     (a desktop ellipsis trick) collapsed it to "EI" with no address. */
+  .ua-table td[data-label="Email"] { max-width: none !important; }
+  .ua-table td[data-label="Email"] > div { max-width: 100% !important; }
+  /* Planner "Suggested prep": the nowrap date crushed the task name into a
+     one-word column and ran off the card. Let the date drop below. */
+  .pl-cad { flex-wrap: wrap; row-gap: 2px; }
+  .pl-cad-label { flex: 1 1 150px; min-width: 0; }
+  /* Articles & approvals: stretched ghost buttons left "Delete" centred
+     alone on a line; keep buttons their own width, left-aligned. */
+  .ar-actions .btn { flex: 0 0 auto !important; }
+}
+/* Same flex:1 on the Countries / States & cities tabs: they shared the row
+   with the heading, wrapped to two lines and squeezed the title. */
+.sc-card-head > .sc-geo-tabs { flex: 0 0 auto; }
+.sc-geo-tab { white-space: nowrap; }
+@media (max-width: 480px) {
+  .sc-card-head:has(> .sc-geo-tabs) { flex-wrap: wrap; }
+  /* Five metric buttons fit a phone row once their padding is trimmed
+     ("Position" was cut off at the edge). */
+  .sc-chart-toggle-btn { padding: 6px 7px; }
+}
+/* Editions dialog on phones: the name shared one line with the count, the
+   Current radio and Remove, and was cut to "Fall 20…". Name gets its own line. */
+@media (max-width: 480px) {
+  .kb-ed-row { flex-wrap: wrap; row-gap: 0; }
+  .kb-ed-row-name { flex: 1 1 100%; }
 }

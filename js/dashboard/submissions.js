@@ -230,7 +230,7 @@ export async function mount(ctx, container) {
       .trim()
       .slice(0, 180);
     const header = `
-      <div style="padding:18px 22px;cursor:pointer;display:grid;grid-template-columns:48px 1fr auto;gap:16px;align-items:flex-start;" data-expand>
+      <div style="padding:18px 22px;cursor:pointer;display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:16px;align-items:flex-start;" data-expand>
         <!-- Avatar -->
         <div style="width:42px;height:42px;border-radius:50%;background:${isJoinTeam ? "var(--ink)" : "var(--surface-2)"};color:${isJoinTeam ? "#fff" : "var(--ink)"};border:1px solid var(--hairline);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;letter-spacing:0.02em;flex-shrink:0;">
           ${esc(initialsStr)}
@@ -245,7 +245,7 @@ export async function mount(ctx, container) {
             ${s.reviewerNote ? `<span title="${esc(s.reviewerNote)}" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);font-style:italic;">📝 internal note</span>` : ""}
           </div>
           <div style="color:var(--muted);font-size:12px;margin-bottom:8px;display:flex;gap:14px;flex-wrap:wrap;">
-            <span><a href="mailto:${esc(s.email)}" onclick="event.stopPropagation();" style="color:var(--ink-2);text-decoration:none;">${esc(s.email)}</a></span>
+            <span style="min-width:0;overflow-wrap:anywhere;"><a href="mailto:${esc(s.email)}" onclick="event.stopPropagation();" style="color:var(--ink-2);text-decoration:none;">${esc(s.email)}</a></span>
             ${s.phone ? `<span>📞 ${esc(s.phone)}</span>` : ""}
             ${s.role ? `<span>Role: <strong style="color:var(--ink-2);font-weight:600;">${esc(s.role)}</strong></span>` : ""}
             ${s.articleTitle ? `<span>Pitch: <em style="color:var(--ink-2);">${esc(s.articleTitle)}</em></span>` : ""}

@@ -1636,14 +1636,14 @@ async function mountImages(ctx, container) {
         <div class="card-title">Image library</div>
         <div class="card-subtitle">Every image uploaded by any writer. Click to copy the URL, hover to delete. Unused images are flagged so you can safely clean them up.</div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input class="input" id="img-search" placeholder="Filter by writer or filename" style="min-width:240px;" />
-        <select class="select" id="img-filter-usage" style="min-width:160px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+        <input class="input" id="img-search" placeholder="Filter by writer or filename" style="width:auto;flex:1 1 240px;min-width:0;max-width:300px;" />
+        <select class="select" id="img-filter-usage" style="width:auto;min-width:150px;">
           <option value="all">All images</option>
           <option value="unused">Unused only</option>
           <option value="used">Used only</option>
         </select>
-        <select class="select" id="img-sort" style="min-width:160px;">
+        <select class="select" id="img-sort" style="width:auto;min-width:150px;">
           <option value="newest">Newest first</option>
           <option value="oldest">Oldest first</option>
           <option value="largest">Largest first</option>

@@ -84,7 +84,7 @@ function ensureTrackerStyles() {
                box-shadow:0 1px 2px rgba(15,23,42,.05), 0 8px 24px -20px rgba(15,23,42,.25); }
     .ct-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
     table.ct { width:100%; border-collapse:separate; border-spacing:0; font-size:13px;
-               table-layout:fixed; }
+               table-layout:fixed; min-width:940px; }
     .ct thead th { background:#0f172a; color:#e2e8f0; text-align:left; padding:10px 10px;
                    font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -109,8 +109,10 @@ function ensureTrackerStyles() {
     .ct-owner span { overflow:hidden; text-overflow:ellipsis; }
     .ct-date { font-variant-numeric:tabular-nums; font-size:12px; color:#64748b; }
     .ct-date.urgent { color:#b91c1c; font-weight:700; }
-    .ct-status { appearance:none; -webkit-appearance:none; border-radius:999px; font-size:10.5px;
-                 font-weight:700; padding:4px 18px 4px 9px; cursor:pointer; line-height:1.2;
+    /* .ct select.ct-status — outranks the suite's .content select (40px, 14px). */
+    .ct select.ct-status { appearance:none; -webkit-appearance:none; border-radius:999px; font-size:10.5px;
+                 min-height:0; height:auto; font-family:inherit;
+                 font-weight:700; padding:4px 20px 4px 10px; cursor:pointer; line-height:1.2;
                  max-width:100%; overflow:hidden; text-overflow:ellipsis;
                  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%2364748b'/%3E%3C/svg%3E");
                  background-repeat:no-repeat; background-position:right 7px center; }
@@ -126,10 +128,12 @@ function ensureTrackerStyles() {
     .ct-new:hover td { background:#f8fafc; color:#334155; }
     /* Inline editor row */
     tr.ct-editing td { background:#fbfdff; padding:7px 6px; overflow:visible; white-space:normal; }
-    .ct-in { width:100%; box-sizing:border-box; padding:6px 8px; border:1px solid #cbd5e1;
+    /* .ct .ct-in outranks the suite's .content input/select (40px, 14px), which
+       cut "Instagram" and the date off in the inline edit row. */
+    .ct .ct-in, .ct-in { width:100%; box-sizing:border-box; padding:6px 8px; border:1px solid #cbd5e1; min-height:0;
              border-radius:7px; font:inherit; font-size:12px; background:#fff; color:#0f172a; }
     .ct-in:focus-visible { outline:2px solid #0f172a; outline-offset:0; border-color:#0f172a; }
-    select.ct-in { padding-right:4px; }
+    .ct select.ct-in { padding-right:4px; }
     /* Multi-owner picker: a details-popover of checkboxes, Sheets-chip style */
     .ct-owners { position:relative; }
     .ct-owners > summary { list-style:none; cursor:pointer; padding:6px 8px; border:1px solid #cbd5e1;
@@ -157,8 +161,9 @@ function ensureTrackerStyles() {
     @media (prefers-reduced-motion: reduce) {
       .ct tbody tr, .ct-seg button { transition:none; }
     }
-    /* Desktop fits with no sideways scroll; small screens scroll the sheet. */
-    @media (max-width: 860px) { table.ct { min-width:780px; } }
+    /* Wide screens fit with no sideways scroll; narrower ones scroll the
+       sheet rather than truncate every cell (table.ct min-width above). */
+    @media (max-width: 860px) { table.ct { min-width:940px; } }
   `;
   document.head.appendChild(s);
 }
@@ -290,9 +295,9 @@ export async function mount(ctx, container) {
               LinkedIn doesn't allow company feeds to be embedded, so use these jump links:
             </p>
             <div style="display:flex;flex-direction:column;gap:8px;">
-              <a href="${LINKEDIN_URL}posts/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">Recent posts — what's already been shared</a>
-              <a href="https://www.linkedin.com/company/catalystdc/admin/analytics/updates/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">Post analytics (admins of the page)</a>
-              <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://www.catalyst-magazine.com")}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">Share a Catalyst link to LinkedIn</a>
+              <a href="${LINKEDIN_URL}posts/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-wrap" style="justify-content:flex-start;">Recent posts — what's already been shared</a>
+              <a href="https://www.linkedin.com/company/catalystdc/admin/analytics/updates/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-wrap" style="justify-content:flex-start;">Post analytics (admins of the page)</a>
+              <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://www.catalyst-magazine.com")}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-wrap" style="justify-content:flex-start;">Share a Catalyst link to LinkedIn</a>
             </div>
             <p style="margin:0;font-size:12px;color:var(--muted);">
               Tip: cross-check "Just published" above against the posts page so nothing ships without an announcement.
@@ -443,7 +448,7 @@ function renderAssignments(ctx, mountEl, state, reload) {
   const th = (icon, label) => `<th>${icon || ""}${label}</th>`;
   table.innerHTML = `
   <colgroup>
-    <col style="width:9%"><col style="width:15%"><col style="width:25%"><col style="width:13%">
+    <col style="width:10.5%"><col style="width:13.5%"><col style="width:25%"><col style="width:13%">
     <col style="width:11%"><col style="width:10%"><col style="width:10%"><col style="width:7%">
   </colgroup>
   <thead><tr>
@@ -1189,9 +1194,9 @@ function renderPrepPlan(p, pubDate, stale, authorFirst) {
       <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Suggested prep — based on the ${esc(fmtDate(pubDate))} publication date</div>
       <div style="display:flex;flex-direction:column;gap:5px;">
         ${cadence.map((c) => `
-          <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;">
+          <div class="pl-cad" style="display:flex;align-items:center;gap:10px;font-size:12.5px;">
             ${cadenceDot(c.state)}
-            <span style="color:${c.state === "overdue" ? "var(--danger,#b91c1c)" : c.state === "today" ? "var(--ink)" : "var(--ink-2)"};${c.state === "today" || c.state === "overdue" ? "font-weight:700;" : ""}">${esc(c.label)}</span>
+            <span class="pl-cad-label" style="color:${c.state === "overdue" ? "var(--danger,#b91c1c)" : c.state === "today" ? "var(--ink)" : "var(--ink-2)"};${c.state === "today" || c.state === "overdue" ? "font-weight:700;" : ""}">${esc(c.label)}</span>
             <span style="margin-left:auto;color:var(--muted);white-space:nowrap;">${esc(c.when)} · ${esc(fmtDay(c.dateStr))}</span>
             ${c.state === "today" ? `<span class="pill pill-pending" style="font-size:10.5px;">do today</span>` : ""}
             ${c.state === "overdue" ? `<span class="pill pill-rejected" style="font-size:10.5px;">catch up</span>` : ""}

@@ -1845,10 +1845,10 @@ function openStatusReport() {
 
   const personRows = [...people.values()].sort((a, b) => (b.authored + b.editing) - (a.authored + a.editing)).map(p => `
     <tr>
-      <td><strong>${esc(p.name)}</strong></td>
-      <td>${p.authored}</td>
-      <td>${p.editing}</td>
-      <td>${p.overdue > 0 ? `<span style="color:var(--danger)">${p.overdue} overdue</span>` : "0"}</td>
+      <td data-label="Name"><strong>${esc(p.name)}</strong></td>
+      <td data-label="Authored">${p.authored}</td>
+      <td data-label="Editing">${p.editing}</td>
+      <td data-label="Overdue">${p.overdue > 0 ? `<span style="color:var(--danger)">${p.overdue} overdue</span>` : "0"}</td>
     </tr>`).join("");
 
   const body = el("div", {});

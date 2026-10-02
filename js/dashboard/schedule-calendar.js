@@ -432,6 +432,10 @@ function ensureStyles() {
     .sc-person:hover { background:var(--surface-2,#f8fafc); }
     .sc-person input { width:16px; height:16px; accent-color:var(--accent,#0f766e); flex-shrink:0; }
     .sc-person small { color:var(--muted,#64748b); }
+    /* Each row is a <label>, so ".sc-form label" (block, margins, grey 12px)
+       outranked .sc-person and ran the role and email together. */
+    .sc-form label.sc-person { display:flex; margin:0; font-size:13px; font-weight:500; color:var(--ink,#0f172a); }
+    .sc-person > span:last-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .sc-form-err { display:none; color:#b91c1c; font-size:12px; margin-top:10px; }
     .sc-hint { font-size:11.5px; color:var(--muted,#64748b); margin-top:5px; line-height:1.45; }
 
