@@ -767,7 +767,7 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 
 /* main */
 .ds-main { display: flex; flex-direction: column; min-width: 0; background: var(--surface-3); }
-.ds-toolbar { display: flex; align-items: center; gap: 6px 8px; flex-wrap: wrap; min-height: 56px; padding: 9px 14px; border-bottom: 1px solid var(--hairline-2); background: var(--surface); }
+.ds-toolbar { display: flex; align-items: center; align-content: center; gap: 6px 8px; flex-wrap: wrap; min-height: 56px; padding: 9px 14px; border-bottom: 1px solid var(--hairline-2); background: var(--surface); box-sizing: border-box; }
 .ds-toolbar select { min-height: 36px; padding: 0 28px 0 10px; font: 500 12.5px/1 var(--font); border-radius: 9px; }
 .ds-tb-label { font: 600 11px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .ds-tb-sep { width: 1px; height: 24px; background: var(--hairline); margin: 0 2px; }
@@ -797,6 +797,14 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ds-overlay { position: absolute; inset: 0; pointer-events: none; }
 .ds-sel { position: absolute; outline: 1.5px solid #3b6e8f; outline-offset: 1px; pointer-events: none; }
 .ds-sel.is-locked { outline-style: dashed; outline-color: var(--muted); }
+.ds-sel.is-member { outline-width: 1px; outline-color: rgba(59,110,143,.7); }
+.ds-sel.is-multi { outline: 1.5px dashed #3b6e8f; outline-offset: 4px; }
+.ds-sel.is-multi.is-group { outline-style: solid; }
+.ds-sel.is-multi .ds-h { margin: -10px 0 0 -10px; }
+.ds-sel.is-multi .ds-h-ne, .ds-sel.is-multi .ds-h-se { margin-left: -2px; }
+.ds-sel.is-multi .ds-h-sw, .ds-sel.is-multi .ds-h-se { margin-top: -2px; }
+.ds-marquee { position: absolute; border: 1px solid #3b6e8f; background: rgba(59,110,143,.08); pointer-events: none; }
+.ds-lgroup { margin-left: 4px; padding: 1px 5px; border-radius: 999px; background: var(--surface-3); color: var(--muted); font: 600 9.5px/1.4 var(--font); letter-spacing: .04em; text-transform: uppercase; }
 .ds-h { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fdfcf9; border: 1.5px solid #3b6e8f; box-shadow: 0 1px 3px rgba(15,23,42,.25); pointer-events: auto; }
 .ds-h-nw { left: 0; top: 0; cursor: nwse-resize; } .ds-h-ne { left: 100%; top: 0; cursor: nesw-resize; }
 .ds-h-sw { left: 0; top: 100%; cursor: nesw-resize; } .ds-h-se { left: 100%; top: 100%; cursor: nwse-resize; }

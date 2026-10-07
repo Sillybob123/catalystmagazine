@@ -702,7 +702,8 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   let design = null;
   try { design = JSON.parse(localStorage.getItem(AUTOSAVE) || "null"); } catch {}
   if (!design || !Array.isArray(design.pages) || !design.pages.length) design = newDesignFrom("headline-top");
-  let pageIdx = 0, sel = null, editingId = null, panel = "templates", postId = null;
+  // sel = the one selected layer; multi = ids when two or more are selected.
+  let pageIdx = 0, sel = null, multi = [], editingId = null, panel = "templates", postId = null;
   let postPlatform = null, postTitle = null;   // of the post opened from the board
   const undo = [], redo = [];
 
@@ -750,6 +751,79 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   const fmt = () => FORMATS[design.format] || FORMATS.post;
   const layer = (id) => page().layers.find((l) => l.id === id);
 
+  // ── selection (one layer, or several) ──
+  const selIds = () => (multi.length ? multi : sel ? [sel] : []);
+  const selLayers = () => selIds().map(layer).filter(Boolean);
+  function setSelection(ids) {
+    ids = [...new Set(ids)].filter((id) => layer(id));
+    if (ids.length === 1) { sel = ids[0]; multi = []; }
+    else { sel = null; multi = ids.length ? ids : []; }
+  }
+  // A grouped layer selects its whole group.
+  const withGroup = (L) => (L.group ? page().layers.filter((x) => x.group === L.group).map((x) => x.id) : [L.id]);
+  function bbox(ls) {
+    if (!ls.length) return { x: 0, y: 0, w: 0, h: 0 };
+    const x = Math.min(...ls.map((L) => L.x)), y = Math.min(...ls.map((L) => L.y));
+    const r = Math.max(...ls.map((L) => L.x + L.w)), b = Math.max(...ls.map((L) => L.y + (L.h || 10)));
+    return { x, y, w: r - x, h: b - y };
+  }
+  // Selected layers as units: a whole selected group moves/aligns as one.
+  function selUnits() {
+    const ls = selLayers().filter((L) => !L.locked), ids = new Set(ls.map((L) => L.id)), out = [], seen = new Set();
+    for (const L of ls) {
+      if (seen.has(L.id)) continue;
+      const g = L.group ? page().layers.filter((x) => x.group === L.group) : null;
+      const unit = g && g.every((x) => ids.has(x.id)) ? g.filter((x) => !x.locked) : [L];
+      unit.forEach((x) => seen.add(x.id));
+      out.push(unit);
+    }
+    return out;
+  }
+  const shiftUnit = (unit, dx, dy) => unit.forEach((L) => { L.x = Math.round(L.x + dx); L.y = Math.round(L.y + dy); });
+  // Align to each other (2+ units) or to the page margins (one unit).
+  function alignSelection(how) {
+    const units = selUnits();
+    if (!units.length) return;
+    const f = fmt(), M = 88;
+    const ref = units.length === 1 ? { x: M, y: M, w: f.w - 2 * M, h: f.h - 2 * M } : bbox(units.flat());
+    if (units.length === 1 && (how === "center" || how === "middle")) { ref.x = 0; ref.w = f.w; ref.y = 0; ref.h = f.h; }
+    for (const u of units) {
+      const b = bbox(u);
+      const dx = how === "left" ? ref.x - b.x : how === "center" ? ref.x + ref.w / 2 - (b.x + b.w / 2) : how === "right" ? ref.x + ref.w - (b.x + b.w) : 0;
+      const dy = how === "top" ? ref.y - b.y : how === "middle" ? ref.y + ref.h / 2 - (b.y + b.h / 2) : how === "bottom" ? ref.y + ref.h - (b.y + b.h) : 0;
+      shiftUnit(u, dx, dy);
+    }
+    commit(); draw(); paintToolbar();
+  }
+  // Even gaps between 3+ units, keeping the outer two where they are.
+  function distribute(axis) {
+    const units = selUnits().map((u) => ({ u, b: bbox(u) }));
+    if (units.length < 3) return;
+    const X = axis === "h";
+    units.sort((a, b) => (X ? a.b.x - b.b.x : a.b.y - b.b.y));
+    const first = units[0].b, last = units[units.length - 1].b;
+    const span = X ? last.x + last.w - first.x : last.y + last.h - first.y;
+    const total = units.reduce((t, x) => t + (X ? x.b.w : x.b.h), 0);
+    const gap = (span - total) / (units.length - 1);
+    let pos = X ? first.x : first.y;
+    for (const { u, b } of units) {
+      shiftUnit(u, X ? pos - b.x : 0, X ? 0 : pos - b.y);
+      pos += (X ? b.w : b.h) + gap;
+    }
+    commit(); draw(); paintToolbar();
+  }
+  function groupSelection() {
+    const ls = selLayers();
+    if (ls.length < 2) return;
+    const g = "g" + uid();
+    ls.forEach((L) => { L.group = g; });
+    commit(); draw(); paintToolbar(); paintPanelIfLayers();
+  }
+  function ungroupSelection() {
+    selLayers().forEach((L) => { delete L.group; });
+    commit(); draw(); paintToolbar(); paintPanelIfLayers();
+  }
+
   // ── history ──
   function commit() {
     undo.push(JSON.stringify({ design, pageIdx }));
@@ -760,7 +834,11 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   }
   let pendingCommit = 0;
   function commitSoon() { clearTimeout(pendingCommit); pendingCommit = setTimeout(commit, 400); }
-  function restore(snap) { const s = JSON.parse(snap); design = s.design; pageIdx = Math.min(s.pageIdx, design.pages.length - 1); sel = null; refreshAll(); }
+  function restore(snap) {
+    const s = JSON.parse(snap); design = s.design; pageIdx = Math.min(s.pageIdx, design.pages.length - 1); sel = null; multi = [];
+    try { localStorage.setItem(AUTOSAVE, JSON.stringify(design)); } catch {}   // keep the autosave in step with undo/redo
+    refreshAll();
+  }
   function doUndo() { if (undo.length < 2) return; redo.push(undo.pop()); restore(undo[undo.length - 1]); paintHistory(); }
   function doRedo() { if (!redo.length) return; const s = redo.pop(); undo.push(s); restore(s); paintHistory(); }
 
@@ -825,6 +903,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     canvas.height = Math.round(f.h * scale * dpr);
     canvas.style.width = artboard.style.width;
     canvas.style.height = artboard.style.height;
+    lockToolbarHeight();
     draw();
   }
   const ro = new ResizeObserver(() => fit());
@@ -855,11 +934,33 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   }
 
   // ── selection overlay ──
-  function paintSelection(guides = []) {
+  function paintSelection(guides = [], marquee = null) {
     if (editingId) return;   // the inline text editor lives in the overlay
     overlay.innerHTML = guides.map((g) => g.v
       ? `<div class="ds-guide is-v" style="left:${g.v * scale}px"></div>`
       : `<div class="ds-guide is-h" style="top:${g.h * scale}px"></div>`).join("");
+    if (marquee) {
+      const m = el("div", { class: "ds-marquee" });
+      Object.assign(m.style, { left: `${marquee.x * scale}px`, top: `${marquee.y * scale}px`, width: `${marquee.w * scale}px`, height: `${marquee.h * scale}px` });
+      overlay.appendChild(m);
+    }
+    // Several layers: a thin outline on each, one box around them all with
+    // corner handles (they resize together).
+    if (multi.length) {
+      const ls = selLayers();
+      for (const L of ls) {
+        const o = el("div", { class: "ds-sel is-member" + (L.locked ? " is-locked" : "") });
+        Object.assign(o.style, { left: `${L.x * scale}px`, top: `${L.y * scale}px`, width: `${L.w * scale}px`, height: `${(L.h || 10) * scale}px` });
+        overlay.appendChild(o);
+      }
+      const b = bbox(ls);
+      const grouped = ls.length > 1 && ls.every((L) => L.group && L.group === ls[0].group);
+      const box = el("div", { class: "ds-sel is-multi" + (grouped ? " is-group" : "") });
+      Object.assign(box.style, { left: `${b.x * scale}px`, top: `${b.y * scale}px`, width: `${b.w * scale}px`, height: `${b.h * scale}px` });
+      if (ls.some((L) => !L.locked)) ["nw", "ne", "sw", "se"].forEach((h) => box.appendChild(el("span", { class: `ds-h ds-h-${h}`, "data-h": h })));
+      overlay.appendChild(box);
+      return;
+    }
     const L = sel && layer(sel);
     if (!L || L.id === editingId) return;
     const box = el("div", { class: "ds-sel" + (L.locked ? " is-locked" : "") });
@@ -902,17 +1003,37 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   }
 
   let drag = null;
+  const DRAG_START = 3;   // screen px before a press becomes a drag (no jump on click)
   artboard.addEventListener("pointerdown", (e) => {
     if (editingId) return;
     const p = pt(e);
+    const additive = e.shiftKey || e.metaKey || e.ctrlKey;
     const handle = e.target.closest(".ds-h");
-    if (handle && sel) {
-      const L = layer(sel);
-      drag = { mode: "resize", h: handle.dataset.h, start: p, orig: clone(L) };
+    if (handle && multi.length) {
+      const ls = selLayers().filter((L) => !L.locked);
+      drag = { mode: "gresize", h: handle.dataset.h, start: p, box: bbox(ls), orig: ls.map(clone), moved: false };
+    } else if (handle && sel) {
+      drag = { mode: "resize", h: handle.dataset.h, start: p, orig: clone(layer(sel)), moved: false };
     } else {
       const L = hit(p);
-      sel = L ? L.id : null;
-      if (L && !L.locked) drag = { mode: "move", start: p, orig: clone(L) };
+      if (!L) {
+        // Empty page: drag a box to select (shift/⌘ adds to the selection).
+        const base = additive ? selIds() : [];
+        if (!additive) setSelection([]);
+        drag = { mode: "marquee", start: p, base, moved: false };
+      } else {
+        const ids = withGroup(L), cur = selIds();
+        const inSel = ids.every((id) => cur.includes(id));
+        let drill = false;
+        if (additive) setSelection(inSel ? cur.filter((id) => !ids.includes(id)) : [...cur, ...ids]);
+        else if (!inSel) setSelection(ids);
+        // Clicking inside an already-selected group (no drag) picks that one layer.
+        else drill = !!L.group && cur.length === ids.length && ids.length > 1;
+        const moving = selLayers().filter((x) => !x.locked);
+        if (selIds().includes(L.id) && moving.length) {
+          drag = { mode: "move", start: p, box: bbox(moving), orig: moving.map(clone), moved: false, drill: drill ? L.id : null };
+        }
+      }
       paintToolbar();
       paintPanelIfLayers();
     }
@@ -921,15 +1042,46 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   });
   artboard.addEventListener("pointermove", (e) => {
     if (!drag) return;
-    const p = pt(e), L = layer(sel);
-    if (!L) return;
-    const dx = p.x - drag.start.x, dy = p.y - drag.start.y, o = drag.orig;
+    const p = pt(e);
+    const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+    if (!drag.moved) {
+      if (Math.hypot(dx, dy) * scale < DRAG_START) return;
+      drag.moved = true;
+    }
     let guides = [];
+    if (drag.mode === "marquee") {
+      const m = { x: Math.min(drag.start.x, p.x), y: Math.min(drag.start.y, p.y), w: Math.abs(dx), h: Math.abs(dy) };
+      const touched = page().layers.filter((L) => !L.hidden && !L.locked &&
+        L.x < m.x + m.w && L.x + L.w > m.x && L.y < m.y + m.h && L.y + (L.h || 10) > m.y);
+      setSelection([...drag.base, ...touched.flatMap(withGroup)]);
+      paintSelection([], m);
+      return;
+    }
     if (drag.mode === "move") {
-      const s = snapMove(L, o.x + dx, o.y + dy);
-      L.x = Math.round(s.nx); L.y = Math.round(s.ny); guides = s.guides;
+      const b = drag.box;
+      const s2 = snapMove(b, b.x + dx, b.y + dy);
+      const ox = s2.nx - b.x, oy = s2.ny - b.y;
+      for (const o of drag.orig) { const L = layer(o.id); if (L) { L.x = Math.round(o.x + ox); L.y = Math.round(o.y + oy); } }
+      guides = s2.guides;
+    } else if (drag.mode === "gresize") {
+      // Scale everything together from the opposite corner.
+      const h = drag.h, b = drag.box;
+      const kx = (b.w + (h.includes("e") ? dx : -dx)) / Math.max(1, b.w);
+      const ky = (b.h + (h.includes("s") ? dy : -dy)) / Math.max(1, b.h);
+      const k = clamp(Math.abs(kx - 1) > Math.abs(ky - 1) ? kx : ky, 0.1, 8);
+      const ax = h.includes("w") ? b.x + b.w : b.x, ay = h.includes("n") ? b.y + b.h : b.y;
+      for (const o of drag.orig) {
+        const L = layer(o.id); if (!L) continue;
+        L.x = Math.round(ax + (o.x - ax) * k); L.y = Math.round(ay + (o.y - ay) * k);
+        L.w = Math.max(4, Math.round(o.w * k)); L.h = Math.max(2, Math.round((o.h || 10) * k));
+        if (o.type === "text") L.size = Math.round(o.size * k * 10) / 10;
+        if (o.sw) L.sw = Math.round(o.sw * k * 10) / 10;
+        if (o.radius) L.radius = Math.round(o.radius * k);
+      }
     } else {
-      const h = drag.h;
+      const L = layer(sel);
+      if (!L) return;
+      const o = drag.orig, h = drag.h;
       const ratio = o.w / Math.max(1, o.h || 1);
       if (L.type === "text") {
         if (h === "e") L.w = Math.max(60, o.w + dx);
@@ -959,10 +1111,17 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   });
   const endDrag = () => {
     if (!drag) return;
-    const changed = JSON.stringify(drag.orig) !== JSON.stringify(layer(sel));
+    const d = drag;
     drag = null;
+    if (!d.moved) {
+      // A plain click: nothing moves. Inside a selected group it drills in.
+      if (d.drill) setSelection([d.drill]);
+      paintSelection(); paintToolbar(); paintPanelIfLayers();
+      return;
+    }
+    if (d.mode === "marquee") { paintSelection(); paintToolbar(); paintPanelIfLayers(); return; }
     paintSelection();
-    if (changed) { commit(); paintToolbar(); }
+    commit(); paintToolbar();
   };
   artboard.addEventListener("pointerup", endDrag);
   artboard.addEventListener("pointercancel", endDrag);
@@ -973,7 +1132,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     if (L && L.type === "text" && !L.locked) startEditing(L);
   });
   function startEditing(L) {
-    sel = L.id; editingId = L.id;
+    setSelection([L.id]); editingId = L.id;
     const ta = el("textarea", { class: "ds-inline-edit", spellcheck: "true" });
     ta.value = L.text;
     Object.assign(ta.style, {
@@ -1010,14 +1169,17 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === "z") { if (typing) return; e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
     if (typing) return;
-    const L = sel && layer(sel);
-    if (!L) return;
-    if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeLayer(L.id); return; }
-    if (mod && e.key.toLowerCase() === "d") { e.preventDefault(); duplicateLayer(L.id); return; }
-    if (e.key === "Escape") { sel = null; paintSelection(); paintToolbar(); return; }
+    if (mod && e.key.toLowerCase() === "a") { e.preventDefault(); setSelection(page().layers.filter((L) => !L.hidden && !L.locked).map((L) => L.id)); paintSelection(); paintToolbar(); paintPanelIfLayers(); return; }
+    const ls = selLayers();
+    if (!ls.length) return;
+    if (mod && e.key.toLowerCase() === "g") { e.preventDefault(); e.shiftKey ? ungroupSelection() : groupSelection(); return; }
+    if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeLayers(ls.map((L) => L.id)); return; }
+    if (mod && e.key.toLowerCase() === "d") { e.preventDefault(); duplicateLayers(ls.map((L) => L.id)); return; }
+    if (e.key === "Escape") { setSelection([]); paintSelection(); paintToolbar(); paintPanelIfLayers(); return; }
     const step = e.shiftKey ? 10 : 1;
     const mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
-    if (mv && !L.locked) { e.preventDefault(); L.x += mv[0]; L.y += mv[1]; draw(); commitSoon(); }
+    const movable = ls.filter((L) => !L.locked);
+    if (mv && movable.length) { e.preventDefault(); movable.forEach((L) => { L.x += mv[0]; L.y += mv[1]; }); draw(); commitSoon(); }
   };
   document.addEventListener("keydown", onKey);
 
@@ -1028,20 +1190,27 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     if (L.x == null) L.x = Math.round((f.w - L.w) / 2);
     if (L.y == null) L.y = Math.round((f.h - (L.h || 100)) / 2);
     page().layers.push(L);
-    sel = L.id;
+    setSelection([L.id]);
     commit(); draw(); paintToolbar(); paintPanelIfLayers();
   }
-  function removeLayer(id) {
-    page().layers = page().layers.filter((l) => l.id !== id);
-    if (sel === id) sel = null;
+  function removeLayer(id) { removeLayers([id]); }
+  function removeLayers(ids) {
+    page().layers = page().layers.filter((l) => !ids.includes(l.id));
+    setSelection(selIds().filter((id) => !ids.includes(id)));
     commit(); draw(); paintToolbar(); paintPanelIfLayers();
   }
-  function duplicateLayer(id) {
-    const L = layer(id); if (!L) return;
-    const c = { ...clone(L), id: uid(), x: L.x + 24, y: L.y + 24 };
-    const i = page().layers.indexOf(L);
-    page().layers.splice(i + 1, 0, c);
-    sel = c.id; commit(); draw(); paintToolbar(); paintPanelIfLayers();
+  function duplicateLayer(id) { duplicateLayers([id]); }
+  // Copies keep their grouping (as a new group), offset down and right.
+  function duplicateLayers(ids) {
+    const regroup = {}, made = [];
+    for (const id of ids) {
+      const L = layer(id); if (!L) continue;
+      const c = { ...clone(L), id: uid(), x: L.x + 24, y: L.y + 24 };
+      if (L.group) c.group = regroup[L.group] || (regroup[L.group] = "g" + uid());
+      page().layers.splice(page().layers.indexOf(L) + 1, 0, c);
+      made.push(c.id);
+    }
+    setSelection(made); commit(); draw(); paintToolbar(); paintPanelIfLayers();
   }
   function moveLayer(id, dir) {
     const ls = page().layers, i = ls.findIndex((l) => l.id === id);
@@ -1073,13 +1242,56 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       <input class="ds-hex" type="text" maxlength="7" spellcheck="false" value="${hex}" placeholder="#hex" data-${attr}-hex aria-label="Hex colour">
     </div>`;
   }
-  function paintToolbar() {
+  function paintToolbar() { $("#ds-toolbar").innerHTML = toolbarHTML(); }
+  // Reserve the height of the tallest toolbar at this width, so selecting
+  // something never pushes the page up or down.
+  let lockedForW = 0;
+  function lockToolbarHeight(force = false) {
     const tb = $("#ds-toolbar");
-    const L = sel && layer(sel);
-    if (!L) {
-      tb.innerHTML = bgControls();
-      return;
+    const w = tb.clientWidth;
+    if (!w || (!force && w === lockedForW)) return;
+    lockedForW = w;
+    tb.style.minHeight = "";
+    let max = 0;
+    for (const [L, n] of [[null, 0], [txt({}), 1], [{ type: "image", fit: "contain", w: 100, h: 100 }, 1], [{ type: "rect", fill: "#0f172a", w: 100, h: 100 }, 1], [{ type: "line", w: 100, h: 14 }, 1], [null, 3]]) {
+      tb.innerHTML = toolbarHTML(L, n, true);
+      max = Math.max(max, tb.offsetHeight);
     }
+    tb.style.minHeight = `${max}px`;
+    paintToolbar();
+  }
+  const ICON_ALIGN = {
+    left: '<path d="M4 3v18"/><rect x="8" y="6" width="11" height="4" rx="1"/><rect x="8" y="14" width="7" height="4" rx="1"/>',
+    center: '<path d="M12 3v18"/><rect x="6" y="6" width="12" height="4" rx="1"/><rect x="8" y="14" width="8" height="4" rx="1"/>',
+    right: '<path d="M20 3v18"/><rect x="5" y="6" width="11" height="4" rx="1"/><rect x="9" y="14" width="7" height="4" rx="1"/>',
+    top: '<path d="M3 4h18"/><rect x="6" y="8" width="4" height="11" rx="1"/><rect x="14" y="8" width="4" height="7" rx="1"/>',
+    middle: '<path d="M3 12h18"/><rect x="6" y="6" width="4" height="12" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/>',
+    bottom: '<path d="M3 20h18"/><rect x="6" y="5" width="4" height="11" rx="1"/><rect x="14" y="9" width="4" height="7" rx="1"/>',
+  };
+  const alignButtons = (toPage) => ["left", "center", "right", "top", "middle", "bottom"].map((a) =>
+    `<button type="button" class="ds-icon" data-place="${a}" title="Align ${a}${toPage ? " to the page" : ""}" aria-label="Align ${a}${toPage ? " to the page" : ""}"><svg viewBox="0 0 24 24">${ICON_ALIGN[a]}</svg></button>`).join("");
+  // sample: every button shown, for measuring the toolbar's height.
+  function multiToolbar(n, sample = false) {
+    const ls = selLayers();
+    const grouped = !sample && ls.length > 1 && ls.every((L) => L.group && L.group === ls[0].group);
+    const anyGroup = sample || ls.some((L) => L.group);
+    const units = sample ? 3 : selUnits().length;
+    return `
+      <span class="ds-tb-label">${grouped ? "Group" : `${n || ls.length} selected`}</span><span class="ds-tb-sep"></span>
+      ${alignButtons(units <= 1)}
+      ${units >= 3 ? `<button type="button" class="ds-icon" data-act="dist-h" title="Space evenly across" aria-label="Space evenly across"><svg viewBox="0 0 24 24"><path d="M3 4v16M21 4v16"/><rect x="9" y="7" width="6" height="10" rx="1"/></svg></button>
+      <button type="button" class="ds-icon" data-act="dist-v" title="Space evenly down" aria-label="Space evenly down"><svg viewBox="0 0 24 24"><path d="M4 3h16M4 21h16"/><rect x="7" y="9" width="10" height="6" rx="1"/></svg></button>` : ""}
+      <span class="ds-tb-sep"></span>
+      ${grouped ? "" : `<button type="button" class="ds-ghost" data-act="group" title="Group (⌘G)">Group</button>`}
+      ${anyGroup ? `<button type="button" class="ds-ghost" data-act="ungroup" title="Ungroup (⇧⌘G)">Ungroup</button>` : ""}
+      <span class="ds-tb-sep"></span>
+      <button type="button" class="ds-icon" data-act="dup" title="Duplicate (⌘D)" aria-label="Duplicate"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
+      <button type="button" class="ds-icon is-danger" data-act="del" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+      <span class="ds-tb-hint">Shift- or ⌘-click to add or remove. Drag a corner to resize together.</span>`;
+  }
+  function toolbarHTML(L = sel && layer(sel), n = selIds().length, sample = false) {
+    if (n > 1) return multiToolbar(n, sample);
+    if (!L) return bgControls();
     const common = `
       <span class="ds-tb-sep"></span>
       <label class="ds-tb-field" title="Opacity">Opacity<input type="range" min="0.1" max="1" step="0.05" value="${L.opacity ?? 1}" data-prop="opacity"></label>
@@ -1087,9 +1299,11 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       <button type="button" class="ds-icon" data-act="down" title="Send backward" aria-label="Send backward"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg></button>
       <button type="button" class="ds-icon" data-act="dup" title="Duplicate (⌘D)" aria-label="Duplicate"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></button>
       <button type="button" class="ds-icon" data-act="lock" title="${L.locked ? "Unlock" : "Lock"}" aria-label="${L.locked ? "Unlock" : "Lock"}"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 ${L.locked ? "8 0v3" : "7.5-1.5"}"/></svg></button>
-      <button type="button" class="ds-icon is-danger" data-act="del" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>`;
+      <button type="button" class="ds-icon is-danger" data-act="del" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
+      <span class="ds-tb-sep"></span>
+      ${alignButtons(true)}`;
     if (L.type === "text") {
-      tb.innerHTML = `
+      return `
         <select data-prop="font" aria-label="Font">${Object.entries(FONTS).map(([k, f]) => `<option value="${k}"${L.font === k ? " selected" : ""}>${f.label}</option>`).join("")}</select>
         <select data-prop="weight" aria-label="Weight">${[400, 500, 600, 700].map((w) => `<option value="${w}"${Number(L.weight) === w ? " selected" : ""}>${{ 400: "Regular", 500: "Medium", 600: "Semibold", 700: "Bold" }[w]}</option>`).join("")}</select>
         <label class="ds-tb-field ds-size">Size<input type="number" min="8" max="400" value="${Math.round(L.size)}" data-prop="size"></label>
@@ -1102,13 +1316,13 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
         <button type="button" class="ds-ghost" data-act="edit">Edit text</button>
         ${common}`;
     } else if (L.type === "image") {
-      tb.innerHTML = `
+      return `
         <label class="ds-tb-field">Fit<select data-prop="fit"><option value="contain"${L.fit !== "cover" ? " selected" : ""}>Whole image</option><option value="cover"${L.fit === "cover" ? " selected" : ""}>Fill the box</option></select></label>
         <label class="ds-tb-field">Blend<select data-prop="blend"><option value="normal"${L.blend !== "multiply" ? " selected" : ""}>Normal</option><option value="multiply"${L.blend === "multiply" ? " selected" : ""}>Multiply (on paper)</option></select></label>
         <label class="ds-tb-field">Corners<input type="range" min="0" max="400" step="2" value="${L.radius || 0}" data-prop="radius"></label>
         ${common}`;
     } else {
-      tb.innerHTML = `
+      return `
         <span class="ds-tb-label">Fill</span>${swatches(L.fill, "fill")}
         ${L.type !== "line" ? `<label class="ds-tb-field">Corners<input type="range" min="0" max="300" step="2" value="${L.radius || 0}" data-prop="radius"></label>
         <label class="ds-tb-field">Outline<input type="range" min="0" max="20" step="0.5" value="${L.sw || 0}" data-prop="sw"></label>` : `<label class="ds-tb-field">Thickness<input type="range" min="1" max="20" step="0.5" value="${L.sw || 2}" data-prop="sw"></label>`}
@@ -1206,6 +1420,12 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   $("#ds-toolbar").addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
+    if (b.dataset.place) return alignSelection(b.dataset.place);
+    if (b.dataset.act === "dist-h" || b.dataset.act === "dist-v") return distribute(b.dataset.act === "dist-h" ? "h" : "v");
+    if (b.dataset.act === "group") return groupSelection();
+    if (b.dataset.act === "ungroup") return ungroupSelection();
+    if (multi.length && b.dataset.act === "del") return removeLayers(selIds());
+    if (multi.length && b.dataset.act === "dup") return duplicateLayers(selIds());
     const L = sel && layer(sel);
     if (onColourClick(b)) return;
     if (b.dataset.toggle && L) { L[b.dataset.toggle] = !L[b.dataset.toggle]; }
@@ -1332,9 +1552,9 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       const ls = [...page().layers].reverse();
       p.innerHTML = `<h3>Layers</h3><p class="ds-panel-hint">Top of the list is in front.</p>
         <ul class="ds-layers">${ls.map((L) => `
-          <li class="${L.id === sel ? "is-on" : ""}" data-layer="${L.id}">
+          <li class="${selIds().includes(L.id) ? "is-on" : ""}" data-layer="${L.id}">
             <span class="ds-ltype">${{ text: "T", image: "Img", rect: "Box", ellipse: "Circ", line: "Line" }[L.type] || ""}</span>
-            <span class="ds-lname">${esc(L.name || (L.type === "text" ? String(L.text).replace(/\*/g, "").slice(0, 32) : L.type))}</span>
+            <span class="ds-lname">${esc(L.name || (L.type === "text" ? String(L.text).replace(/\*/g, "").slice(0, 32) : L.type))}${L.group ? ` <span class="ds-lgroup" title="In a group">grouped</span>` : ""}</span>
             <button type="button" data-lact="hide" title="${L.hidden ? "Show" : "Hide"}">${L.hidden ? "Show" : "Hide"}</button>
             <button type="button" data-lact="up" title="Forward">↑</button>
             <button type="button" data-lact="down" title="Backward">↓</button>
@@ -1356,7 +1576,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       const cur = page();
       const keepText = {};
       design.pages[pageIdx] = { ...pageFromTemplate(t.dataset.tpl, design.format, keepText), id: cur.id };
-      sel = null; commit(); draw(); paintToolbar();
+      setSelection([]); commit(); draw(); paintToolbar();
     } else if (t.dataset.bg) {
       const b = bgById[t.dataset.bg];
       page().bg = bgFrom(b, design.format, { focusY: page().bg?.focusY ?? 0.5 });
@@ -1398,7 +1618,10 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       if (act === "hide") { L.hidden = !L.hidden; commit(); draw(); paintPanel(); return; }
       if (act === "up") return moveLayer(L.id, 1);
       if (act === "down") return moveLayer(L.id, -1);
-      sel = L.id; paintSelection(); paintToolbar(); paintPanel();
+      // The list picks single layers (even inside a group); shift/⌘ adds.
+      if (e.shiftKey || e.metaKey || e.ctrlKey) { const cur = selIds(); setSelection(cur.includes(L.id) ? cur.filter((id) => id !== L.id) : [...cur, L.id]); }
+      else setSelection([L.id]);
+      paintSelection(); paintToolbar(); paintPanel();
     }
   });
 
@@ -1465,15 +1688,15 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   $("#ds-pages").addEventListener("click", (e) => {
     const t = e.target.closest("button");
     if (!t) return;
-    if (t.dataset.goto) { pageIdx = Number(t.dataset.goto); sel = null; refreshAll(); }
+    if (t.dataset.goto) { pageIdx = Number(t.dataset.goto); setSelection([]); refreshAll(); }
     else if (t.dataset.pdel) {
       design.pages.splice(Number(t.dataset.pdel), 1);
-      pageIdx = Math.min(pageIdx, design.pages.length - 1); sel = null; commit(); refreshAll();
+      pageIdx = Math.min(pageIdx, design.pages.length - 1); setSelection([]); commit(); refreshAll();
     } else if (t.dataset.padd) {
       const np = t.dataset.padd === "dup" ? { ...clone(page()), id: uid() } : blankPage();
       if (t.dataset.padd === "dup") np.layers.forEach((l) => { l.id = uid(); });
       design.pages.splice(pageIdx + 1, 0, np);
-      pageIdx++; sel = null; commit(); refreshAll();
+      pageIdx++; setSelection([]); commit(); refreshAll();
     }
   });
 
@@ -1499,7 +1722,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   $("#ds-undo").addEventListener("click", doUndo);
   $("#ds-redo").addEventListener("click", doRedo);
   $("#ds-new").addEventListener("click", () => {
-    design = newDesignFrom("headline-top", design.format); pageIdx = 0; sel = null; postId = null; postPlatform = null; postTitle = null;
+    design = newDesignFrom("headline-top", design.format); pageIdx = 0; setSelection([]); postId = null; postPlatform = null; postTitle = null;
     $("#ds-caption-text").value = "";
     commit(); refreshAll();
   });
@@ -1577,6 +1800,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     $("#ds-format").value = design.format;
     fit();
     paintPages();
+    lockToolbarHeight(true);
     paintToolbar();
     paintPanel();
     paintHistory();
@@ -1601,7 +1825,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
         design = newDesignFrom("headline-top", "post", { kicker: s.kicker, headline: s.headline, sub: s.sub }, post.backgroundId);
       }
       $("#ds-caption-text").value = post.content || bgById[post.backgroundId]?.caption || "";
-      pageIdx = 0; sel = null;
+      pageIdx = 0; setSelection([]);
       commit(); refreshAll();
     },
     destroy() { document.removeEventListener("keydown", onKey); ro.disconnect(); },
