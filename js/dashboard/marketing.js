@@ -529,6 +529,38 @@ async function mountCollabs(ctx, container) {
 
 const FIRESTORE_PROJECT = "catalystwriters-5ce43";
 
+// Fetch an image (via the same-origin proxy for other hosts) and re-encode
+// it as JPEG; falls back to the original bytes if it can't be decoded.
+async function fetchAsJpeg(src) {
+  let url = src;
+  try {
+    const u = new URL(src, location.origin);
+    if (u.origin !== location.origin) url = `/api/image-proxy?url=${encodeURIComponent(u.href)}`;
+  } catch {}
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const blob = await res.blob();
+  if (blob.type === "image/jpeg") return blob;
+  try {
+    const bmp = await createImageBitmap(blob);
+    const c = document.createElement("canvas");
+    c.width = bmp.width; c.height = bmp.height;
+    const g = c.getContext("2d");
+    g.fillStyle = "#ffffff"; g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(bmp, 0, 0);
+    return await new Promise((r) => c.toBlob((b) => r(b || blob), "image/jpeg", 0.93));
+  } catch { return blob; }
+}
+function saveBlob(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
 const PLATFORM_META = {
   instagram: { label: "Instagram", icon: "IG", pill: "pill-reviewing" },
   linkedin:  { label: "LinkedIn",  icon: "IN", pill: "pill-approved"  },
@@ -601,6 +633,7 @@ async function firestoreQuery(authedFetch, structuredQuery) {
       articleSlug: str("articleSlug"),
       articleTitle: str("articleTitle"),
       coverImageUrl: str("coverImageUrl"),
+      imageUrls: (f.imageUrls?.arrayValue?.values || []).map((v) => v.stringValue || "").filter(Boolean),
       backgroundId: str("backgroundId"),
       designJson: str("designJson"),
       studio: (() => {
@@ -2346,7 +2379,7 @@ async function mountSocialPosts(ctx, container) {
   let studio = null;
   async function ensureStudio() {
     if (studio) return studio;
-    const { mountDesignStudio } = await import("./design-studio.js?v=5");
+    const { mountDesignStudio } = await import("./design-studio.js?v=6");
     studio = await mountDesignStudio(ctx, studioView, {
       onSaved: () => loadPosts(),
       // New design → new draft on the board; re-saving an opened post updates it.
@@ -2552,9 +2585,10 @@ async function mountSocialPosts(ctx, container) {
     setActiveTab("create");
     await ensureCreateInitialized();
     const idx = publishedArticles.findIndex((a) => a.id === articleId);
-    if (idx < 0) return;
+    if (idx < 0) return false;
     articleSelect.value = String(idx);
     onArticleChange();
+    return true;
   }
 
   // ── Load posts ─────────────────────────────────────────────────────────────
@@ -2607,17 +2641,28 @@ async function mountSocialPosts(ctx, container) {
     detailModal.querySelector("#sp-detail-title").textContent = p.title || "Post";
 
     const cover = p.coverImageUrl || "";
+    // Every image on the post (a carousel has one per slide).
+    const images = p.imageUrls && p.imageUrls.length ? p.imageUrls : (cover ? [cover] : []);
     detailModal.querySelector("#sp-detail-body").innerHTML = `
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
         <span class="pill ${pm.pill}">${esc(pm.label)}</span>
         <span class="pill ${sp}">${esc(p.status)}</span>
         ${p.deadline ? `<span class="pill pill-draft">Due ${esc(p.deadline)}</span>` : ""}
       </div>
-      ${cover ? `
+      ${images.length > 1 ? `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">${images.length} slides, in posting order</div>
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;">
+          ${images.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener" title="Open slide ${i + 1}" style="flex:none;position:relative;">
+            <img src="${esc(u)}" alt="Slide ${i + 1}" loading="lazy" style="display:block;height:132px;width:auto;border-radius:8px;border:1px solid var(--border);">
+            <span style="position:absolute;left:6px;bottom:6px;font:600 10.5px/1 var(--font, Poppins);background:rgba(248,247,243,.92);color:var(--ink);padding:4px 6px;border-radius:999px;">${i + 1}</span></a>`).join("")}
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px;">"Download all" saves every slide (numbered, as JPEGs) in one ZIP.${p.designJson ? ` "Open in Studio" edits the slides.` : ""}</div>
+      </div>` : cover ? `
       <div style="margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;">
         <img src="${esc(cover)}" alt="" style="width:120px;height:120px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">
         <div style="font-size:12px;color:var(--muted);line-height:1.5;">
-          Cover image saved with this draft. Use "Download image" below to grab it for posting, or "Open in editor" to re-render the carousel pages.
+          Image saved with this draft. Use "Download image" below to grab it for posting${p.designJson ? `, or "Open in Studio" to edit it` : ""}.
         </div>
       </div>` : ""}
       <div style="margin-bottom:16px;">
@@ -2686,33 +2731,37 @@ async function mountSocialPosts(ctx, container) {
     });
     footer.appendChild(saveCaptionBtn);
 
-    // Download the saved cover image so the user can post it directly. The
-    // image's CORS mode is "no-cors" since Wix media doesn't reliably set
-    // permissive headers, so we fetch as blob and offer a download link.
-    if (cover) {
+    // Download the post's images: one file, or every slide of a carousel as a
+    // numbered ZIP. Fetched through the same-origin image proxy (Storage
+    // doesn't send CORS headers) and saved as JPEG so Instagram takes them.
+    if (images.length) {
+      const multi = images.length > 1;
+      const dlLabel = multi ? `Download all ${images.length} (ZIP)` : "Download image";
       const dlBtn = el("button", { class: "btn btn-secondary btn-sm" });
-      dlBtn.textContent = "Download image";
+      dlBtn.textContent = dlLabel;
       dlBtn.addEventListener("click", async () => {
         dlBtn.disabled = true;
-        const original = dlBtn.textContent;
-        dlBtn.textContent = "Downloading…";
+        dlBtn.textContent = "Preparing…";
+        const base = `catalyst-${(p.articleSlug || "post").slice(0, 60)}`;
         try {
-          const res = await fetch(cover, { mode: "cors" });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          const ext = (blob.type.split("/")[1] || "jpg").split("+")[0];
-          a.download = `catalyst-${p.articleSlug || "post"}-cover.${ext}`;
-          a.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          if (!multi) {
+            saveBlob(await fetchAsJpeg(images[0]), `${base}.jpg`);
+          } else {
+            const JSZipMod = await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm");
+            const zip = new (JSZipMod.default || JSZipMod)();
+            for (let i = 0; i < images.length; i++) {
+              dlBtn.textContent = `Preparing ${i + 1}/${images.length}…`;
+              zip.file(`${String(i + 1).padStart(2, "0")}.jpg`, await fetchAsJpeg(images[i]));
+            }
+            saveBlob(await zip.generateAsync({ type: "blob" }), `${base}-carousel.zip`);
+          }
         } catch (err) {
-          // Fallback: open in a new tab so the user can right-click → save.
-          window.open(cover, "_blank", "noopener");
+          console.warn("[social] download failed", err);
+          ctx.toast("Could not download: " + (err.message || err) + ". Opening the image instead.", "error");
+          window.open(images[0], "_blank", "noopener");
         } finally {
           dlBtn.disabled = false;
-          dlBtn.textContent = original;
+          dlBtn.textContent = dlLabel;
         }
       });
       footer.appendChild(dlBtn);
@@ -2720,12 +2769,15 @@ async function mountSocialPosts(ctx, container) {
 
     // Re-open the Create tab pre-loaded with this draft's article and caption,
     // so the user can re-render the carousel pages and download fresh PNGs.
-    if (p.articleId) {
+    // Studio designs reopen in the Studio (above); this is for carousel-maker
+    // drafts, which can only be rebuilt from a published article.
+    if (p.articleId && !p.designJson && !p.backgroundId) {
       const editBtn = el("button", { class: "btn btn-accent btn-sm" });
       editBtn.textContent = "Open in editor";
       editBtn.addEventListener("click", async () => {
         closeDetail();
-        await startCreateForArticleId(p.articleId);
+        const found = await startCreateForArticleId(p.articleId);
+        if (!found) { ctx.toast("This story isn't published yet, so the carousel maker can't load it. Download the images above instead.", "error"); return; }
         // Replace the auto-built caption with the user's edited one so they
         // don't lose any tweaks they made in the draft.
         if (captionArea && captionEl.value) {

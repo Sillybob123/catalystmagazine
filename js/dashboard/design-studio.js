@@ -24,7 +24,12 @@ const FORMATS = {
   post:   { label: "Post 4:5",   w: 1080, h: 1350 },
   square: { label: "Square 1:1", w: 1080, h: 1080 },
   story:  { label: "Story 9:16", w: 1080, h: 1920 },
+  linkedin: { label: "LinkedIn 1.91:1", w: 1200, h: 627 },
+  wide:   { label: "X / wide 16:9", w: 1600, h: 900 },
 };
+// Which board platform a format posts to (the rest are Instagram).
+const FORMAT_PLATFORM = { linkedin: "linkedin", wide: "twitter" };
+const PLATFORM_LABEL = { instagram: "Instagram", linkedin: "LinkedIn", twitter: "X", facebook: "Facebook" };
 const FONTS = {
   sans:  { label: "Poppins",       css: "Poppins" },
   serif: { label: "Source Serif",  css: "'Source Serif 4'" },
@@ -698,6 +703,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   try { design = JSON.parse(localStorage.getItem(AUTOSAVE) || "null"); } catch {}
   if (!design || !Array.isArray(design.pages) || !design.pages.length) design = newDesignFrom("headline-top");
   let pageIdx = 0, sel = null, editingId = null, panel = "templates", postId = null;
+  let postPlatform = null, postTitle = null;   // of the post opened from the board
   const undo = [], redo = [];
 
   function newDesignFrom(tid, format = "post", content = {}, bgId) {
@@ -1493,7 +1499,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   $("#ds-undo").addEventListener("click", doUndo);
   $("#ds-redo").addEventListener("click", doRedo);
   $("#ds-new").addEventListener("click", () => {
-    design = newDesignFrom("headline-top", design.format); pageIdx = 0; sel = null; postId = null;
+    design = newDesignFrom("headline-top", design.format); pageIdx = 0; sel = null; postId = null; postPlatform = null; postTitle = null;
     $("#ds-caption-text").value = "";
     commit(); refreshAll();
   });
@@ -1538,20 +1544,25 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     const btn = $("#ds-save");
     btn.disabled = true; btn.textContent = "Saving…";
     try {
-      let coverUrl = "";
+      // Every page goes up as an image, so the board can download the whole
+      // carousel (not just page 1) without reopening the Studio.
+      let imageUrls = [];
       try {
         const { uploadToFirebase } = await import("./writer.js?v=topics-alt");
-        const blob = await exportPage(0);
-        coverUrl = await uploadToFirebase(new File([blob], "post.png", { type: "image/png" }), "image", ctx);
-      } catch (err) { console.warn("[studio] cover upload failed", err); }
+        imageUrls = await Promise.all(design.pages.map(async (_, i) =>
+          uploadToFirebase(new File([await exportPage(i)], `post-${i + 1}.png`, { type: "image/png" }), "image", ctx)));
+      } catch (err) { console.warn("[studio] page upload failed", err); imageUrls = []; }
       const head = design.pages[0].layers.find((l) => l.type === "text" && /headline|title|question|name|quote|number/i.test(l.name || ""));
+      // LinkedIn / X formats post there; otherwise keep the opened post's platform.
+      const platform = FORMAT_PLATFORM[design.format] || postPlatform || "instagram";
       const saved = await savePost({
         id: postId,
-        title: `Instagram: ${String(head?.text || "Studio design").replace(/\*/g, "").slice(0, 90)}${design.pages.length > 1 ? ` (${design.pages.length}-page carousel)` : ""}`,
-        platform: "instagram",
+        title: postTitle || `${PLATFORM_LABEL[platform] || "Instagram"}: ${String(head?.text || "Studio design").replace(/\*/g, "").slice(0, 90)}${design.pages.length > 1 ? ` (${design.pages.length}-page carousel)` : ""}`,
+        platform,
         content: $("#ds-caption-text").value,
-        notes: `Made in the Studio (${FORMATS[design.format].label}${design.pages.length > 1 ? `, ${design.pages.length} pages` : ""}). Open it in the Studio to edit or download.`,
-        coverImageUrl: coverUrl,
+        notes: `Made in the Studio (${FORMATS[design.format].label}${design.pages.length > 1 ? `, ${design.pages.length} pages` : ""}). Download it from the board, or open it in the Studio to edit.`,
+        coverImageUrl: imageUrls[0] || "",
+        imageUrls,
         designJson: JSON.stringify(design),
       });
       if (saved && saved.id) postId = saved.id;
@@ -1580,6 +1591,8 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     // a ready-made background + text (older Studio drafts).
     async open(post = {}) {
       postId = post.id || null;
+      postPlatform = post.platform || null;
+      postTitle = post.title || null;
       if (post.designJson) {
         try { design = JSON.parse(post.designJson); } catch {}
       } else if (post.backgroundId) {
