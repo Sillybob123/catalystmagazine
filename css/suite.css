@@ -811,9 +811,19 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ds-h-n { left: 50%; top: 0; cursor: ns-resize; } .ds-h-s { left: 50%; top: 100%; cursor: ns-resize; }
 .ds-h-w, .ds-h-e { top: 50%; width: 8px; height: 22px; margin: -11px 0 0 -4px; border-radius: 4px; cursor: ew-resize; }
 .ds-h-w { left: 0; } .ds-h-e { left: 100%; }
-.ds-guide { position: absolute; background: #c97b84; pointer-events: none; }
-.ds-guide.is-v { top: 0; bottom: 0; width: 1px; }
-.ds-guide.is-h { left: 0; right: 0; height: 1px; }
+/* Smart guides: red dashed alignment lines, red spacing markers. */
+.ds-guide { position: absolute; pointer-events: none; z-index: 3; }
+.ds-guide.is-v { width: 0; border-left: 1px dashed #e5484d; }
+.ds-guide.is-h { height: 0; border-top: 1px dashed #e5484d; }
+.ds-gap { position: absolute; pointer-events: none; z-index: 3; }
+.ds-gap.is-x { height: 0; border-top: 1px solid #e5484d; }
+.ds-gap.is-y { width: 0; border-left: 1px solid #e5484d; }
+.ds-gap::before, .ds-gap::after { content: ""; position: absolute; background: #e5484d; }
+.ds-gap.is-x::before, .ds-gap.is-x::after { top: -5px; width: 1px; height: 9px; }
+.ds-gap.is-x::before { left: 0; } .ds-gap.is-x::after { right: 0; }
+.ds-gap.is-y::before, .ds-gap.is-y::after { left: -5px; height: 1px; width: 9px; }
+.ds-gap.is-y::before { top: 0; } .ds-gap.is-y::after { bottom: 0; }
+.ds-gap span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 2px 5px; border-radius: 4px; background: #e5484d; color: #fff; font: 600 10px/1 var(--font); white-space: nowrap; }
 .ds-inline-edit { position: absolute; margin: 0; padding: 0; border: 0; outline: 1.5px solid #3b6e8f; outline-offset: 2px; background: rgba(253,252,249,.4); resize: none; overflow: hidden; pointer-events: auto; white-space: pre-wrap; }
 .ds-pages { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--hairline-2); background: var(--surface); overflow-x: auto; }
 .ds-ptile { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; gap: 3px; font: 500 10.5px/1 var(--font); color: var(--muted); }

@@ -794,6 +794,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       shiftUnit(u, dx, dy);
     }
     commit(); draw(); paintToolbar();
+    flashSelectionGuides();
   }
   // Even gaps between 3+ units, keeping the outer two where they are.
   function distribute(axis) {
@@ -811,6 +812,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       pos += (X ? b.w : b.h) + gap;
     }
     commit(); draw(); paintToolbar();
+    flashSelectionGuides();
   }
   function groupSelection() {
     const ls = selLayers();
@@ -934,11 +936,18 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   }
 
   // ── selection overlay ──
-  function paintSelection(guides = [], marquee = null) {
+  function paintSelection(guides = guidesNow, marquee = null) {
     if (editingId) return;   // the inline text editor lives in the overlay
-    overlay.innerHTML = guides.map((g) => g.v
-      ? `<div class="ds-guide is-v" style="left:${g.v * scale}px"></div>`
-      : `<div class="ds-guide is-h" style="top:${g.h * scale}px"></div>`).join("");
+    const S = (v) => `${(v * scale).toFixed(1)}px`;
+    overlay.innerHTML = guides.map((g) => {
+      if (g.axis === "x") return `<div class="ds-guide is-v${g.full ? " is-page" : ""}" style="left:${S(g.v)};top:${S(g.from)};height:${S(g.to - g.from)}"></div>`;
+      if (g.axis === "y") return `<div class="ds-guide is-h${g.full ? " is-page" : ""}" style="top:${S(g.v)};left:${S(g.from)};width:${S(g.to - g.from)}"></div>`;
+      const len = Math.round(g.b - g.a);
+      if (len <= 0) return "";
+      return g.gap === "x"
+        ? `<div class="ds-gap is-x" style="left:${S(g.a)};width:${S(g.b - g.a)};top:${S(g.at)}"><span>${len}</span></div>`
+        : `<div class="ds-gap is-y" style="top:${S(g.a)};height:${S(g.b - g.a)};left:${S(g.at)}"><span>${len}</span></div>`;
+    }).join("");
     if (marquee) {
       const m = el("div", { class: "ds-marquee" });
       Object.assign(m.style, { left: `${marquee.x * scale}px`, top: `${marquee.y * scale}px`, width: `${marquee.w * scale}px`, height: `${marquee.h * scale}px` });
@@ -987,19 +996,108 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     }
     return null;
   }
-  const SNAP = 8;
-  function snapMove(L, nx, ny) {
-    const f = fmt(), guides = [];
-    const cx = nx + L.w / 2, cy = ny + (L.h || 0) / 2;
-    const xs = [[f.w / 2, cx - L.w / 2, "c"], [88, nx, "l"], [f.w - 88, nx + L.w, "r"]];
-    for (const [g, v, kind] of xs) {
-      if (Math.abs(v - g) < SNAP / scale * 0.5 + 2 || Math.abs((kind === "c" ? cx : v) - g) < SNAP / Math.max(scale, 0.3)) {
-        if (kind === "c") nx = g - L.w / 2; else if (kind === "l") nx = g; else nx = g - L.w;
-        guides.push({ v: g }); break;
+  // ── smart guides (Canva-style) ──
+  // While dragging, a box snaps (within SNAP_PX on screen) to the page edges,
+  // centre and margins and to every other layer's edges and centre; it also
+  // snaps to even spacing between neighbours. Matching lines show as red
+  // dashed guides, equal gaps as red spacing markers. Hold Alt to move freely.
+  const SNAP_PX = 6, MARGIN = 88;
+  let guidesNow = [], guideTimer = 0;
+  function scene(exclude) {
+    return page().layers.filter((L) => !L.hidden && !exclude.has(L.id)).map((L) => ({ x: L.x, y: L.y, w: L.w, h: L.h || 10 }));
+  }
+  const ax = (X) => (X ? { p: "x", s: "w", cp: "y", cs: "h", size: fmt().w } : { p: "y", s: "h", cp: "x", cs: "w", size: fmt().h });
+  function lineTargets(others, X) {
+    const a = ax(X);
+    const t = [{ v: 0, page: 1 }, { v: a.size / 2, page: 1 }, { v: a.size, page: 1 }, { v: MARGIN, page: 1 }, { v: a.size - MARGIN, page: 1 }];
+    for (const o of others) t.push({ v: o[a.p], o }, { v: o[a.p] + o[a.s] / 2, o }, { v: o[a.p] + o[a.s], o });
+    return t;
+  }
+  // Positions along one axis that give equal gaps with neighbours in the same row/column.
+  function spacingCandidates(b, others, X) {
+    const a = ax(X), out = [];
+    const overlaps = (o, r) => o[a.cp] < r[a.cp] + r[a.cs] && o[a.cp] + o[a.cs] > r[a.cp];
+    const row = others.filter((o) => overlaps(o, b));
+    const mid = b[a.p] + b[a.s] / 2, end = (o) => o[a.p] + o[a.s];
+    const before = row.filter((o) => end(o) <= mid).sort((p, q) => end(q) - end(p));
+    const after = row.filter((o) => o[a.p] >= mid).sort((p, q) => p[a.p] - q[a.p]);
+    const A = before[0], C = after[0];
+    if (A && C && C[a.p] - end(A) >= b[a.s]) {
+      const pos = (end(A) + C[a.p] - b[a.s]) / 2;
+      out.push({ pos, marks: [[end(A), pos], [pos + b[a.s], C[a.p]]] });
+    }
+    if (A) {
+      const A2 = others.filter((o) => overlaps(o, A) && end(o) <= A[a.p]).sort((p, q) => end(q) - end(p))[0];
+      if (A2) { const g = A[a.p] - end(A2); if (g > 0) out.push({ pos: end(A) + g, marks: [[end(A2), A[a.p]], [end(A), end(A) + g]] }); }
+    }
+    if (C) {
+      const C2 = others.filter((o) => overlaps(o, C) && o[a.p] >= end(C)).sort((p, q) => p[a.p] - q[a.p])[0];
+      if (C2) { const g = C2[a.p] - end(C); if (g > 0) out.push({ pos: C[a.p] - g - b[a.s], marks: [[end(C), C2[a.p]], [C[a.p] - g, C[a.p]]] }); }
+    }
+    return out;
+  }
+  // How far to shift box b along an axis to snap the given edges (0 if none in reach).
+  function snapShift(b, others, X, edges, withSpacing) {
+    const a = ax(X), thr = SNAP_PX / scale;
+    const p = b[a.p], sz = b[a.s];
+    const ev = { start: p, mid: p + sz / 2, end: p + sz };
+    let best = null;
+    for (const t of lineTargets(others, X)) for (const e of edges) {
+      const d = t.v - ev[e];
+      if (Math.abs(d) <= thr && (best === null || Math.abs(d) < Math.abs(best))) best = d;
+    }
+    if (withSpacing) for (const c of spacingCandidates(b, others, X)) {
+      const d = c.pos - p;
+      if (Math.abs(d) <= thr && (best === null || Math.abs(d) < Math.abs(best) - 0.01)) best = d;
+    }
+    return best || 0;
+  }
+  // The guides that box b exactly lines up with right now.
+  function guidesFor(b, others, { spacing = true, edgesX = ["start", "mid", "end"], edgesY = ["start", "mid", "end"] } = {}) {
+    const out = [], seen = new Set(), tol = 0.75;
+    for (const X of [true, false]) {
+      const a = ax(X), edges = X ? edgesX : edgesY;
+      const ev = { start: b[a.p], mid: b[a.p] + b[a.s] / 2, end: b[a.p] + b[a.s] };
+      const crossSize = X ? fmt().h : fmt().w;
+      for (const t of lineTargets(others, X)) for (const e of edges) {
+        if (Math.abs(t.v - ev[e]) > tol) continue;
+        const v = Math.round(t.v * 2) / 2;
+        let from = 0, to = crossSize;
+        if (t.o) { from = Math.min(b[a.cp], t.o[a.cp]) - 12; to = Math.max(b[a.cp] + b[a.cs], t.o[a.cp] + t.o[a.cs]) + 12; }
+        const key = `${X ? "x" : "y"}${v}`;
+        const prev = out.find((g) => g.key === key);
+        if (prev) { if (!t.page && !prev.full) { prev.from = Math.min(prev.from, from); prev.to = Math.max(prev.to, to); } else if (t.page) { prev.from = 0; prev.to = crossSize; prev.full = 1; } continue; }
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ key, axis: X ? "x" : "y", v, from, to, full: t.page ? 1 : 0 });
+      }
+      if (spacing) for (const c of spacingCandidates(b, others, X)) {
+        if (Math.abs(c.pos - b[a.p]) > tol) continue;
+        const at = b[a.cp] + b[a.cs] / 2;
+        for (const [m0, m1] of c.marks) out.push({ gap: X ? "x" : "y", a: m0, b: m1, at });
+        break;
       }
     }
-    if (Math.abs(cy - f.h / 2) < SNAP / Math.max(scale, 0.3)) { ny = f.h / 2 - (L.h || 0) / 2; guides.push({ h: f.h / 2 }); }
-    return { nx, ny, guides };
+    return out;
+  }
+  // Show guides for a moment after a toolbar/keyboard move.
+  function flashGuides(g) {
+    clearTimeout(guideTimer);
+    guidesNow = g;
+    paintSelection();
+    guideTimer = setTimeout(() => { if (!drag) { guidesNow = []; paintSelection(); } }, 900);
+  }
+  function flashSelectionGuides() {
+    const units = selUnits();
+    if (!units.length) return;
+    const out = [];
+    for (const u of units) {
+      const uid2 = new Set(u.map((L) => L.id));
+      // match against the page and everything else (other selected units included)
+      const others = page().layers.filter((L) => !L.hidden && !uid2.has(L.id)).map((L) => ({ x: L.x, y: L.y, w: L.w, h: L.h || 10 }));
+      out.push(...guidesFor(bbox(u), others));
+    }
+    flashGuides(out);
   }
 
   let drag = null;
@@ -1058,11 +1156,16 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       return;
     }
     if (drag.mode === "move") {
-      const b = drag.box;
-      const s2 = snapMove(b, b.x + dx, b.y + dy);
-      const ox = s2.nx - b.x, oy = s2.ny - b.y;
-      for (const o of drag.orig) { const L = layer(o.id); if (L) { L.x = Math.round(o.x + ox); L.y = Math.round(o.y + oy); } }
-      guides = s2.guides;
+      const b0 = drag.box;
+      const nb = { x: b0.x + dx, y: b0.y + dy, w: b0.w, h: b0.h };
+      if (!drag.others) drag.others = scene(new Set(drag.orig.map((o) => o.id)));
+      if (!e.altKey) {
+        nb.x += snapShift(nb, drag.others, true, ["start", "mid", "end"], true);
+        nb.y += snapShift(nb, drag.others, false, ["start", "mid", "end"], true);
+      }
+      const ox = Math.round(nb.x - b0.x), oy = Math.round(nb.y - b0.y);
+      for (const o of drag.orig) { const L = layer(o.id); if (L) { L.x = o.x + ox; L.y = o.y + oy; } }
+      guides = e.altKey ? [] : guidesFor({ x: b0.x + ox, y: b0.y + oy, w: b0.w, h: b0.h }, drag.others);
     } else if (drag.mode === "gresize") {
       // Scale everything together from the opposite corner.
       const h = drag.h, b = drag.box;
@@ -1103,16 +1206,44 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
           nh = nw / ratio;
           if (h.includes("n")) ny = o.y + o.h - nh;
         }
+        // Snap the edges being dragged.
+        if (!e.altKey) {
+          if (!drag.others) drag.others = scene(new Set([L.id]));
+          const lockRatio = h.length === 2 && !e.shiftKey && L.type !== "rect" && L.type !== "line";
+          const bx = { x: nx, y: ny, w: nw, h: nh };
+          if (h.includes("e")) nw += snapShift(bx, drag.others, true, ["end"], false);
+          if (h.includes("w")) { const d = snapShift(bx, drag.others, true, ["start"], false); nx += d; nw -= d; }
+          if (lockRatio) { const nh2 = nw / ratio; if (h.includes("n")) ny = o.y + o.h - nh2; nh = nh2; }
+          else {
+            if (h.includes("s")) nh += snapShift(bx, drag.others, false, ["end"], false);
+            if (h.includes("n")) { const d = snapShift(bx, drag.others, false, ["start"], false); ny += d; nh -= d; }
+          }
+        }
         L.x = Math.round(nx); L.y = Math.round(ny); L.w = Math.max(10, Math.round(nw)); L.h = Math.max(L.type === "line" ? 4 : 10, Math.round(nh));
       }
+      if (!e.altKey) {
+        if (!drag.others) drag.others = scene(new Set([L.id]));
+        // Text side handles: snap the edge that moves.
+        if (L.type === "text" && (h === "e" || h === "w")) {
+          const bx = { x: L.x, y: L.y, w: L.w, h: L.h || 10 };
+          const d = snapShift(bx, drag.others, true, [h === "e" ? "end" : "start"], false);
+          if (h === "e") L.w += d; else { L.x += d; L.w -= d; }
+        }
+        const eX = [h.includes("w") ? "start" : null, h.includes("e") ? "end" : null].filter(Boolean);
+        const eY = [h.includes("n") ? "start" : null, h.includes("s") ? "end" : null].filter(Boolean);
+        guides = guidesFor({ x: L.x, y: L.y, w: L.w, h: L.h || 10 }, drag.others, { spacing: false, edgesX: eX, edgesY: eY });
+      }
     }
+    clearTimeout(guideTimer);
+    guidesNow = guides;
     draw();
-    paintSelection(guides);
+    paintSelection();
   });
   const endDrag = () => {
     if (!drag) return;
     const d = drag;
     drag = null;
+    guidesNow = [];
     if (!d.moved) {
       // A plain click: nothing moves. Inside a selected group it drills in.
       if (d.drill) setSelection([d.drill]);
@@ -1179,7 +1310,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     const step = e.shiftKey ? 10 : 1;
     const mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
     const movable = ls.filter((L) => !L.locked);
-    if (mv && movable.length) { e.preventDefault(); movable.forEach((L) => { L.x += mv[0]; L.y += mv[1]; }); draw(); commitSoon(); }
+    if (mv && movable.length) { e.preventDefault(); movable.forEach((L) => { L.x += mv[0]; L.y += mv[1]; }); draw(); commitSoon(); flashSelectionGuides(); }
   };
   document.addEventListener("keydown", onKey);
 
@@ -1350,7 +1481,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
         <label class="ds-tb-field">Position<select data-act="bg-fit"><option value="cover"${bg.fit !== "bottom" ? " selected" : ""}>Fill the page</option><option value="bottom"${bg.fit === "bottom" ? " selected" : ""}>Fit width, at the bottom</option></select></label>
         <button type="button" class="ds-ghost" data-act="bg-clear">Remove image</button>
       </div>` : ""}
-      ${inPanel ? "" : `<span class="ds-tb-hint">Click anything on the page to edit it. Double-click text to type.</span>`}`;
+      ${inPanel ? "" : `<span class="ds-tb-hint">Click anything to edit it, double-click text to type. Drag to move: red guides show when it lines up (hold Alt to skip snapping).</span>`}`;
   }
   // Apply a colour from any swatch row. kind: color | fill | bgc | tint
   function applyColour(kind, c, { live = false } = {}) {
