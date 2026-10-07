@@ -756,6 +756,44 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ds-upload span { font: 600 13px/1.2 var(--font); color: var(--ink); }
 .ds-upload small { font-size: 11.5px; color: var(--muted); }
 .ds-upload:hover { border-color: var(--ink); }
+.ds-upload.is-over { border-color: var(--ink); background: var(--surface-3); }
+.ds-uploads { margin-top: 8px; }
+.ds-utile { position: relative; }
+.ds-utile .ds-btile { width: 100%; }
+.ds-ubg { position: absolute; left: 6px; bottom: 6px; min-height: 24px; padding: 0 8px; border: 0; border-radius: 999px; background: rgba(248,247,243,.94); color: var(--ink); font: 600 10.5px/1 var(--font); cursor: pointer; opacity: 0; transition: opacity .15s; }
+.ds-utile:hover .ds-ubg, .ds-ubg:focus-visible { opacity: 1; }
+.ds-stage.is-dropping { outline: 2px dashed var(--ink); outline-offset: -10px; }
+/* font picker */
+.ds-fontbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; max-width: 190px; padding: 0 10px 0 12px; border: 1px solid rgba(15,23,42,.16); border-radius: 9px; background: var(--surface); color: var(--ink); font-size: 14px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds-fontbtn svg { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; }
+.ds-fontbtn:hover { border-color: rgba(15,23,42,.32); }
+.ds-fontbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.ds { position: relative; }
+.ds-fontpop { position: absolute; z-index: 60; width: 300px; max-height: min(520px, 70vh); display: flex; flex-direction: column; padding: 10px; border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-lg); }
+.ds-fontsearch { width: 100%; min-height: 36px; padding: 0 12px; border: 1px solid rgba(15,23,42,.16); border-radius: 9px; font: 400 13px/1 var(--font); }
+.ds-fontlist { overflow-y: auto; margin-top: 8px; padding-right: 2px; }
+.ds-fontgroup h5 { margin: 12px 6px 4px; font: 600 10px/1 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.ds-fontgroup:first-child h5 { margin-top: 4px; }
+.ds-fontlist [data-font] { display: block; width: 100%; min-height: 38px; padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: var(--ink); font-size: 18px; line-height: 1.2; text-align: left; cursor: pointer; }
+.ds-fontlist [data-font]:hover { background: var(--surface-3); }
+.ds-fontlist [data-font].is-on { background: var(--ink); color: var(--surface-2); }
+.ds-fontlist [data-font]:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.ds-fontrec { display: flex !important; flex-direction: column; gap: 3px; padding: 9px 10px !important; }
+.ds-fontrec span { font-size: 20px; }
+.ds-fontrec small { font-size: 13px; color: var(--muted); }
+.ds-fontrec.is-on small { color: rgba(248,247,243,.7); }
+.tp-font { font-size: 22px !important; }
+/* eraser */
+.ds-artboard.is-erasing { cursor: none; }
+.ds-brush { position: absolute; display: none; border-radius: 50%; border: 1.5px solid #fdfcf9; box-shadow: 0 0 0 1px rgba(15,23,42,.7), inset 0 0 0 1px rgba(15,23,42,.35); pointer-events: none; z-index: 5; }
+.ds-brush.is-restore { border-style: dashed; }
+.ds-seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-3); }
+.ds-seg button { min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: none; color: var(--ink-2); font: 500 12.5px/1 var(--font); cursor: pointer; }
+.ds-seg button.is-on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+.ds-seg button:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.ds-tb-field output { min-width: 26px; font: 500 11.5px/1 var(--font); color: var(--muted); font-variant-numeric: tabular-nums; }
+.ds-erase-btn { display: inline-flex; align-items: center; gap: 6px; }
+.ds-erase-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .ds-layers { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .ds-layers li { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 6px 4px 8px; border-radius: 9px; border: 1px solid transparent; cursor: pointer; font-size: 12.5px; color: var(--ink-2); }
 .ds-layers li:hover { background: var(--surface-3); }

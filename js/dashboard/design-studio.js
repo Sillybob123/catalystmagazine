@@ -30,10 +30,96 @@ const FORMATS = {
 // Which board platform a format posts to (the rest are Instagram).
 const FORMAT_PLATFORM = { linkedin: "linkedin", wide: "twitter" };
 const PLATFORM_LABEL = { instagram: "Instagram", linkedin: "LinkedIn", twitter: "X", facebook: "Facebook" };
+// Google Fonts the Studio can use. `rec` = recommended for The Catalyst
+// (Poppins and Source Serif are the site's own type; Fraunces and
+// Instrument Serif are editorial display serifs that sit well with them).
+// w = weights, it = italic weights (a font without italics borrows the
+// serif italic for *accent* words). Keys "sans"/"serif" are the originals.
 const FONTS = {
-  sans:  { label: "Poppins",       css: "Poppins" },
-  serif: { label: "Source Serif",  css: "'Source Serif 4'" },
+  sans: { label: "Poppins", css: "'Poppins', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [300, 400, 500, 600, 700, 800], rec: true },
+  serif: { label: "Source Serif 4", css: "'Source Serif 4', Georgia, serif", cat: "Serif", w: [400, 500, 600, 700], it: [400, 500, 600, 700], rec: true },
+  fraunces: { label: "Fraunces", css: "'Fraunces', Georgia, serif", cat: "Serif", w: [300, 400, 500, 600, 700, 800], it: [300, 400, 500, 600, 700, 800], rec: true },
+  playfair: { label: "Playfair Display", css: "'Playfair Display', Georgia, serif", cat: "Serif", w: [400, 500, 600, 700, 800], it: [400, 500, 600, 700, 800] },
+  instrument: { label: "Instrument Serif", css: "'Instrument Serif', Georgia, serif", cat: "Serif", w: [400], it: [400], rec: true },
+  cormorant: { label: "Cormorant Garamond", css: "'Cormorant Garamond', Georgia, serif", cat: "Serif", w: [300, 400, 500, 600, 700], it: [300, 400, 500, 600, 700] },
+  ebgaramond: { label: "EB Garamond", css: "'EB Garamond', Georgia, serif", cat: "Serif", w: [400, 500, 600, 700, 800], it: [400, 500, 600, 700, 800] },
+  newsreader: { label: "Newsreader", css: "'Newsreader', Georgia, serif", cat: "Serif", w: [300, 400, 500, 600, 700], it: [300, 400, 500, 600, 700] },
+  lora: { label: "Lora", css: "'Lora', Georgia, serif", cat: "Serif", w: [400, 500, 600, 700], it: [400, 500, 600, 700] },
+  baskerville: { label: "Libre Baskerville", css: "'Libre Baskerville', Georgia, serif", cat: "Serif", w: [400, 700], it: [400] },
+  dmserif: { label: "DM Serif Display", css: "'DM Serif Display', Georgia, serif", cat: "Serif", w: [400], it: [400] },
+  bodoni: { label: "Bodoni Moda", css: "'Bodoni Moda', Georgia, serif", cat: "Serif", w: [400, 500, 600, 700, 800], it: [400, 500, 600, 700, 800] },
+  dmsans: { label: "DM Sans", css: "'DM Sans', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [300, 400, 500, 600, 700, 800] },
+  jakarta: { label: "Plus Jakarta Sans", css: "'Plus Jakarta Sans', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [300, 400, 500, 600, 700, 800] },
+  manrope: { label: "Manrope", css: "'Manrope', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [] },
+  outfit: { label: "Outfit", css: "'Outfit', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [] },
+  spacegrotesk: { label: "Space Grotesk", css: "'Space Grotesk', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700], it: [] },
+  figtree: { label: "Figtree", css: "'Figtree', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [300, 400, 500, 600, 700, 800] },
+  montserrat: { label: "Montserrat", css: "'Montserrat', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [300, 400, 500, 600, 700, 800] },
+  sora: { label: "Sora", css: "'Sora', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [] },
+  plexsans: { label: "IBM Plex Sans", css: "'IBM Plex Sans', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700], it: [300, 400, 500, 600, 700] },
+  josefin: { label: "Josefin Sans", css: "'Josefin Sans', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700], it: [300, 400, 500, 600, 700] },
+  archivo: { label: "Archivo", css: "'Archivo', system-ui, sans-serif", cat: "Sans", w: [300, 400, 500, 600, 700, 800], it: [300, 400, 500, 600, 700, 800] },
+  bebas: { label: "Bebas Neue", css: "'Bebas Neue', Impact, sans-serif", cat: "Display", w: [400], it: [] },
+  anton: { label: "Anton", css: "'Anton', Impact, sans-serif", cat: "Display", w: [400], it: [] },
+  abril: { label: "Abril Fatface", css: "'Abril Fatface', Impact, sans-serif", cat: "Display", w: [400], it: [] },
+  syne: { label: "Syne", css: "'Syne', Impact, sans-serif", cat: "Display", w: [400, 500, 600, 700, 800], it: [] },
+  unbounded: { label: "Unbounded", css: "'Unbounded', Impact, sans-serif", cat: "Display", w: [300, 400, 500, 600, 700, 800], it: [] },
+  caveat: { label: "Caveat", css: "'Caveat', cursive", cat: "Handwritten", w: [400, 500, 600, 700], it: [] },
+  dancing: { label: "Dancing Script", css: "'Dancing Script', cursive", cat: "Handwritten", w: [400, 500, 600, 700], it: [] },
+  pacifico: { label: "Pacifico", css: "'Pacifico', cursive", cat: "Handwritten", w: [400], it: [] },
+  greatvibes: { label: "Great Vibes", css: "'Great Vibes', cursive", cat: "Handwritten", w: [400], it: [] },
+  homemade: { label: "Homemade Apple", css: "'Homemade Apple', cursive", cat: "Handwritten", w: [400], it: [] },
+  kalam: { label: "Kalam", css: "'Kalam', cursive", cat: "Handwritten", w: [300, 400, 700], it: [] },
+  jetbrains: { label: "JetBrains Mono", css: "'JetBrains Mono', ui-monospace, monospace", cat: "Mono", w: [300, 400, 500, 600, 700, 800], it: [300, 400, 500, 600, 700, 800] },
+  spacemono: { label: "Space Mono", css: "'Space Mono', ui-monospace, monospace", cat: "Mono", w: [400, 700], it: [400, 700] },
+  plexmono: { label: "IBM Plex Mono", css: "'IBM Plex Mono', ui-monospace, monospace", cat: "Mono", w: [300, 400, 500, 600, 700], it: [300, 400, 500, 600, 700] },
 };
+const FONT_CATS = ["Serif", "Sans", "Display", "Handwritten", "Mono"];
+const WEIGHT_NAMES = { 300: "Light", 400: "Regular", 500: "Medium", 600: "Semibold", 700: "Bold", 800: "Extra bold" };
+const fontOf = (k) => FONTS[k] || FONTS.sans;
+function nearestWeight(F, w) {
+  return F.w.reduce((b, x) => (Math.abs(x - w) < Math.abs(b - w) ? x : b), F.w[0]);
+}
+function fontCssUrl(keys, weightsOnly) {
+  const fam = keys.map((k) => {
+    const F = fontOf(k), n = F.label.replace(/ /g, "+");
+    if (weightsOnly) return `family=${n}:wght@${nearestWeight(F, 400)}`;
+    return F.it.length
+      ? `family=${n}:ital,wght@${[...F.w.map((x) => `0,${x}`), ...F.it.map((x) => `1,${x}`)].join(";")}`
+      : `family=${n}:wght@${F.w.join(";")}`;
+  });
+  return `https://fonts.googleapis.com/css2?${fam.join("&")}&display=swap`;
+}
+// Load a font's stylesheet once, then the faces a layer needs.
+const _fontSheets = new Map(), _fontFaces = new Map();
+function ensureFontSheet(k) {
+  if (!_fontSheets.has(k)) {
+    _fontSheets.set(k, new Promise((res) => {
+      const l = document.createElement("link");
+      l.rel = "stylesheet"; l.href = fontCssUrl([k]);
+      l.onload = () => res(); l.onerror = () => res();
+      document.head.appendChild(l);
+      setTimeout(res, 6000);
+    }));
+  }
+  return _fontSheets.get(k);
+}
+async function ensureFace(k, weight, italic) {
+  const id = `${k}|${weight}|${italic ? 1 : 0}`;
+  if (!_fontFaces.has(id)) {
+    _fontFaces.set(id, ensureFontSheet(k).then(() => document.fonts.load(`${italic ? "italic " : ""}${weight} 40px ${fontOf(k).css}`)).catch(() => null));
+  }
+  return _fontFaces.get(id);
+}
+async function ensureFontsFor(layers) {
+  const jobs = [];
+  for (const L of layers || []) {
+    if (L.type !== "text") continue;
+    const F = fontOf(L.font), w = nearestWeight(F, L.weight || 400);
+    jobs.push(ensureFace(L.font in FONTS ? L.font : "sans", w, !!L.italic && F.it.length > 0));
+  }
+  await Promise.all(jobs);
+}
 const PALETTE = ["#0f172a", "#334155", "#5b6678", "#f8f7f3", "#fdfcf9", "#c9962e", "#9a5a2e", "#7a2e3a", "#c97b84", "#5f7a61", "#3b6e8f", "#1e3a5f"];
 const PAPER = "#f8f7f3";
 
@@ -98,10 +184,13 @@ function fontsReady() {
 
 // ─── Text layout ────────────────────────────────────────────────────────────
 function fontFor(L, italicRun) {
-  const serif = L.font === "serif" || italicRun;
-  const italic = L.italic || italicRun;
-  const weight = italicRun && L.font !== "serif" ? 400 : (L.weight || 400);
-  return `${italic ? "italic " : ""}${weight} ${L.size * (italicRun && L.font !== "serif" ? 1.04 : 1)}px ${serif ? FONTS.serif.css : FONTS.sans.css}`;
+  const F = fontOf(L.font);
+  // *Accent* words: the brand serif italic, unless the font has its own italics
+  // (Poppins keeps the serif accent — it's the house style).
+  if (italicRun && (L.font === "sans" || !L.font || !F.it.length)) return `italic 400 ${L.size * 1.04}px ${FONTS.serif.css}`;
+  const italic = (L.italic || italicRun) && F.it.length > 0;
+  const weight = nearestWeight(F, L.weight || 400);
+  return `${italic ? "italic " : ""}${weight} ${L.size}px ${F.css}`;
 }
 function runsOf(L) {
   const text = L.upper ? String(L.text || "").toUpperCase() : String(L.text || "");
@@ -181,10 +270,88 @@ async function drawImageBox(ctx, src, x, y, w, h, fit = "cover", radius = 0, foc
   return img;
 }
 
+// ─── Eraser ─────────────────────────────────────────────────────────────────
+// Erasing is stored as brush strokes, never baked into the image, so it can
+// be undone and it follows the image when it's moved or resized.
+//   strokes: [{ m: "e" (erase) | "r" (restore), r: radius, s: softness 0–1,
+//               p: [u, v, u, v, …] }]
+// u/v are 0–1 across the image box; r is a fraction of the box width.
+const _maskCache = new Map();
+function strokesKey(strokes, w, h) {
+  return `${Math.round(w)}x${Math.round(h)}|` + strokes.map((k) => `${k.m}${k.r}${k.s}:${k.p.length}:${k.p[0]},${k.p[1]},${k.p[k.p.length - 2]},${k.p[k.p.length - 1]}`).join(";");
+}
+function stampLine(g, pts, rpx, soft, W, H) {
+  const dab = (x, y) => {
+    const grd = g.createRadialGradient(x, y, Math.max(0, rpx * (1 - soft)), x, y, rpx);
+    grd.addColorStop(0, "rgba(0,0,0,1)"); grd.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grd;
+    g.beginPath(); g.arc(x, y, rpx, 0, Math.PI * 2); g.fill();
+  };
+  const step = Math.max(1, rpx * (soft > 0.05 ? 0.18 : 0.3));
+  let px = pts[0] * W, py = pts[1] * H;
+  dab(px, py);
+  for (let i = 2; i < pts.length; i += 2) {
+    const x = pts[i] * W, y = pts[i + 1] * H, d = Math.hypot(x - px, y - py);
+    for (let t = step; t <= d; t += step) dab(px + (x - px) * (t / d), py + (y - py) * (t / d));
+    px = x; py = y;
+  }
+}
+function eraseMask(strokes, w, h) {
+  const key = strokesKey(strokes, w, h);
+  if (_maskCache.has(key)) return _maskCache.get(key);
+  const k = Math.min(1, 2048 / Math.max(w, h));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+  const g = c.getContext("2d");
+  for (const st of strokes) {
+    if (!st.p || st.p.length < 2) continue;
+    g.globalCompositeOperation = st.m === "r" ? "destination-out" : "source-over";
+    stampLine(g, st.p, Math.max(1, st.r * w * k), clamp(st.s ?? 0.35, 0, 0.95), c.width, c.height);
+  }
+  if (_maskCache.size > 40) _maskCache.delete(_maskCache.keys().next().value);
+  _maskCache.set(key, c);
+  return c;
+}
+// Draw `paint` into a w×h scratch canvas, cut the erased parts, then place it.
+async function drawErased(ctx, strokes, x, y, w, h, paint) {
+  const off = document.createElement("canvas");
+  off.width = Math.max(1, Math.ceil(w)); off.height = Math.max(1, Math.ceil(h));
+  const g = off.getContext("2d");
+  await paint(g);
+  g.globalCompositeOperation = "destination-out";
+  g.drawImage(eraseMask(strokes, w, h), 0, 0, off.width, off.height);
+  ctx.drawImage(off, x, y, w, h);
+}
+const hasErase = (o) => Array.isArray(o?.erase) && o.erase.some((k) => k.p && k.p.length >= 2);
+
+async function drawBgImage(ctx, bg, W, H) {
+  if (bg.fit === "bottom") {
+    // Fit the width, anchor to the bottom, paper colour above.
+    const img = await loadImg(bg.image);
+    const s = W / img.naturalWidth;
+    const dh = img.naturalHeight * s;
+    if (dh < H) {
+      ctx.fillStyle = bg.color || PAPER;
+      ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(img, 0, H - dh, W, dh);
+      // soft seam: fade the top edge of the image into the paper above
+      const g = ctx.createLinearGradient(0, H - dh, 0, H - dh + 120);
+      g.addColorStop(0, bg.color || PAPER);
+      g.addColorStop(1, hexA(bg.color || PAPER, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(0, H - dh, W, 120);
+    } else {
+      await drawImageBox(ctx, bg.image, 0, 0, W, H, "cover", 0, 1);
+    }
+  } else {
+    await drawImageBox(ctx, bg.image, 0, 0, W, H, "cover", 0, bg.focusY ?? 0.5);
+  }
+}
+
 // Draw one page into ctx (already scaled to page units). `skip` = layer id
 // not to draw (being edited in place).
 export async function renderPage(ctx, page, fmt, { skip = null } = {}) {
-  await fontsReady();
+  await Promise.all([fontsReady(), ensureFontsFor(page.layers)]);
   const W = fmt.w, H = fmt.h;
   const bg = page.bg || {};
   ctx.save();
@@ -192,27 +359,8 @@ export async function renderPage(ctx, page, fmt, { skip = null } = {}) {
   ctx.fillRect(0, 0, W, H);
   if (bg.image) {
     try {
-      if (bg.fit === "bottom") {
-        // Fit the width, anchor to the bottom, paper colour above.
-        const img = await loadImg(bg.image);
-        const s = W / img.naturalWidth;
-        const dh = img.naturalHeight * s;
-        if (dh < H) {
-          ctx.fillStyle = bg.color || PAPER;
-          ctx.fillRect(0, 0, W, H);
-          ctx.drawImage(img, 0, H - dh, W, dh);
-          // soft seam: fade the top edge of the image into the paper above
-          const g = ctx.createLinearGradient(0, H - dh, 0, H - dh + 120);
-          g.addColorStop(0, bg.color || PAPER);
-          g.addColorStop(1, hexA(bg.color || PAPER, 0));
-          ctx.fillStyle = g;
-          ctx.fillRect(0, H - dh, W, 120);
-        } else {
-          await drawImageBox(ctx, bg.image, 0, 0, W, H, "cover", 0, 1);
-        }
-      } else {
-        await drawImageBox(ctx, bg.image, 0, 0, W, H, "cover", 0, bg.focusY ?? 0.5);
-      }
+      if (hasErase(bg)) await drawErased(ctx, bg.erase, 0, 0, W, H, (g) => drawBgImage(g, bg, W, H));
+      else await drawBgImage(ctx, bg, W, H);
     } catch {}
   }
   if (bg.image && bg.tintColor && bg.tintAlpha > 0) { ctx.fillStyle = hexA(bg.tintColor, bg.tintAlpha); ctx.fillRect(0, 0, W, H); }
@@ -227,7 +375,8 @@ export async function renderPage(ctx, page, fmt, { skip = null } = {}) {
       if (L.type === "text") drawText(ctx, L);
       else if (L.type === "image") {
         if (L.blend === "multiply") ctx.globalCompositeOperation = "multiply";
-        await drawImageBox(ctx, L.src, L.x, L.y, L.w, L.h, L.fit || "contain", L.radius || 0);
+        if (hasErase(L)) await drawErased(ctx, L.erase, L.x, L.y, L.w, L.h, (g) => drawImageBox(g, L.src, 0, 0, L.w, L.h, L.fit || "contain", L.radius || 0));
+        else await drawImageBox(ctx, L.src, L.x, L.y, L.w, L.h, L.fit || "contain", L.radius || 0);
         if (L.stroke && L.sw) { ctx.globalCompositeOperation = "source-over"; ctx.strokeStyle = L.stroke; ctx.lineWidth = L.sw; roundRect(ctx, L.x, L.y, L.w, L.h, L.radius || 0); ctx.stroke(); }
       } else if (L.type === "rect") {
         roundRect(ctx, L.x, L.y, L.w, L.h, L.radius || 0);
@@ -704,6 +853,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   if (!design || !Array.isArray(design.pages) || !design.pages.length) design = newDesignFrom("headline-top");
   // sel = the one selected layer; multi = ids when two or more are selected.
   let pageIdx = 0, sel = null, multi = [], editingId = null, panel = "templates", postId = null;
+  let eraser = null, painting = null, lastBrushPt = null;   // eraser brush (see "eraser" below)
   let postPlatform = null, postTitle = null;   // of the post opened from the board
   const undo = [], redo = [];
 
@@ -756,6 +906,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   const selLayers = () => selIds().map(layer).filter(Boolean);
   function setSelection(ids) {
     ids = [...new Set(ids)].filter((id) => layer(id));
+    if (eraser && eraser.target === "layer" && !(ids.length === 1 && ids[0] === eraser.id)) { eraser = null; painting = null; artboard?.classList.remove("is-erasing"); }
     if (ids.length === 1) { sel = ids[0]; multi = []; }
     else { sel = null; multi = ids.length ? ids : []; }
   }
@@ -1257,6 +1408,118 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   artboard.addEventListener("pointerup", endDrag);
   artboard.addEventListener("pointercancel", endDrag);
 
+  // ── eraser ──
+  const brushEl = el("div", { class: "ds-brush", "aria-hidden": "true" });
+  artboard.appendChild(brushEl);
+  function eraserTarget() {
+    if (!eraser) return null;
+    return eraser.target === "bg" ? page().bg : layer(eraser.id);
+  }
+  function startEraser(target) {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem("catalyst.studio.brush") || "{}"); } catch {}
+    if (target === "layer") { const L = sel && layer(sel); if (!L || L.type !== "image") return; eraser = { target, id: L.id }; }
+    else { if (!page().bg?.image) return; eraser = { target: "bg" }; }
+    Object.assign(eraser, { mode: "e", size: saved.size || 60, soft: saved.soft ?? 0.35 });
+    artboard.classList.add("is-erasing");
+    paintToolbar(); paintSelection();
+  }
+  function stopEraser() {
+    eraser = null; painting = null;
+    artboard.classList.remove("is-erasing");
+    brushEl.style.display = "none";
+    paintToolbar(); paintSelection();
+  }
+  function moveBrush(p) {
+    if (!eraser || !p) { brushEl.style.display = "none"; return; }
+    lastBrushPt = p;
+    const r = eraser.size;
+    Object.assign(brushEl.style, { display: "block", left: `${(p.x - r) * scale}px`, top: `${(p.y - r) * scale}px`, width: `${2 * r * scale}px`, height: `${2 * r * scale}px` });
+    brushEl.classList.toggle("is-restore", eraser.mode === "r");
+  }
+  // Page point → the target's own 0–1 space (+ radius as a fraction of its width).
+  function toTarget(p) {
+    const T = eraserTarget(); if (!T) return null;
+    const f = fmt();
+    const box = eraser.target === "bg" ? { x: 0, y: 0, w: f.w, h: f.h } : { x: T.x, y: T.y, w: T.w, h: T.h || 10 };
+    return { u: (p.x - box.x) / box.w, v: (p.y - box.y) / box.h, r: eraser.size / box.w, box };
+  }
+  const r4 = (n) => Math.round(n * 10000) / 10000;
+  artboard.addEventListener("pointerdown", (e) => {
+    if (!eraser || editingId) return;
+    e.stopImmediatePropagation();
+    const T = eraserTarget(); if (!T) return stopEraser();
+    const q = toTarget(pt(e));
+    painting = { m: eraser.mode, r: r4(q.r), s: eraser.soft, p: [r4(q.u), r4(q.v)] };
+    (T.erase || (T.erase = [])).push(painting);
+    artboard.setPointerCapture(e.pointerId);
+    draw();
+  }, true);
+  artboard.addEventListener("pointermove", (e) => {
+    if (!eraser) return;
+    const p = pt(e);
+    moveBrush(p);
+    if (!painting) return;
+    const q = toTarget(p); if (!q) return;
+    const n = painting.p.length;
+    const du = (q.u - painting.p[n - 2]) * q.box.w, dv = (q.v - painting.p[n - 1]) * q.box.h;
+    if (Math.hypot(du, dv) < Math.max(1.5, eraser.size * 0.12)) return;
+    painting.p.push(r4(q.u), r4(q.v));
+    draw();
+  });
+  const endPaint = () => { if (!painting) return; painting = null; commit(); paintToolbar(); };
+  artboard.addEventListener("pointerup", endPaint);
+  artboard.addEventListener("pointercancel", endPaint);
+  artboard.addEventListener("pointerleave", () => { if (!painting) brushEl.style.display = "none"; });
+
+  // ── font picker ──
+  let fontPop = null;
+  function closeFontPicker() { fontPop?.remove(); fontPop = null; document.removeEventListener("pointerdown", onFontOutside, true); }
+  function onFontOutside(e) { if (fontPop && !fontPop.contains(e.target) && !e.target.closest('[data-act="font-pick"]')) closeFontPicker(); }
+  let _previewSheet = false;
+  function openFontPicker(btn) {
+    if (fontPop) return closeFontPicker();
+    const L = sel && layer(sel); if (!L || L.type !== "text") return;
+    if (!_previewSheet) {   // every family at one weight, for the previews
+      _previewSheet = true;
+      const l = document.createElement("link"); l.rel = "stylesheet";
+      l.href = fontCssUrl(Object.keys(FONTS), true);
+      document.head.appendChild(l);
+    }
+    const row = (k) => { const F = FONTS[k]; return `<button type="button" role="option" data-font="${k}" class="${L.font === k || (!L.font && k === "sans") ? "is-on" : ""}" style="font-family:${esc(F.css)};font-weight:${nearestWeight(F, 400)}">${esc(F.label)}</button>`; };
+    const recs = Object.keys(FONTS).filter((k) => FONTS[k].rec);
+    fontPop = el("div", { class: "ds-fontpop", role: "dialog", "aria-label": "Fonts" });
+    fontPop.innerHTML = `
+      <input type="search" class="ds-fontsearch" placeholder="Search fonts" aria-label="Search fonts">
+      <div class="ds-fontlist" role="listbox">
+        <div class="ds-fontgroup" data-group="rec"><h5>Recommended for The Catalyst</h5>
+          ${recs.map((k) => `<button type="button" role="option" data-font="${k}" class="ds-fontrec${L.font === k || (!L.font && k === "sans") ? " is-on" : ""}"><span style="font-family:${esc(FONTS[k].css)};font-weight:${k === "sans" ? 600 : 400}">${esc(FONTS[k].label)}</span><small style="font-family:${esc(FONTS[k].css)}">Science, told beautifully.</small></button>`).join("")}
+        </div>
+        ${FONT_CATS.map((c) => `<div class="ds-fontgroup"><h5>${c}</h5>${Object.keys(FONTS).filter((k) => FONTS[k].cat === c).map(row).join("")}</div>`).join("")}
+      </div>`;
+    container.querySelector(".ds").appendChild(fontPop);
+    const r = btn.getBoundingClientRect(), host = container.querySelector(".ds").getBoundingClientRect();
+    Object.assign(fontPop.style, { left: `${Math.max(8, r.left - host.left)}px`, top: `${r.bottom - host.top + 6}px` });
+    const search = fontPop.querySelector(".ds-fontsearch");
+    search.focus();
+    search.addEventListener("input", () => {
+      const q = search.value.trim().toLowerCase();
+      fontPop.querySelectorAll("[data-font]").forEach((b2) => { b2.hidden = q && !FONTS[b2.dataset.font].label.toLowerCase().includes(q); });
+      fontPop.querySelectorAll(".ds-fontgroup").forEach((g) => { g.hidden = ![...g.querySelectorAll("[data-font]")].some((x) => !x.hidden); });
+    });
+    search.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); closeFontPicker(); btn.focus(); } e.stopPropagation(); });
+    fontPop.addEventListener("click", async (e) => {
+      const b2 = e.target.closest("[data-font]"); if (!b2) return;
+      const k = b2.dataset.font, T = sel && layer(sel); if (!T) return;
+      T.font = k;
+      T.weight = nearestWeight(FONTS[k], T.weight || 400);
+      closeFontPicker();
+      await ensureFontsFor([T]);
+      commit(); draw(); paintToolbar();
+    });
+    setTimeout(() => document.addEventListener("pointerdown", onFontOutside, true), 0);
+  }
+
   // ── edit text in place ──
   artboard.addEventListener("dblclick", (e) => {
     const L = hit(pt(e));
@@ -1268,7 +1531,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     ta.value = L.text;
     Object.assign(ta.style, {
       left: `${L.x * scale}px`, top: `${L.y * scale}px`, width: `${L.w * scale}px`, minHeight: `${(L.h || L.size * 1.2) * scale}px`,
-      font: `${L.italic ? "italic " : ""}${L.weight || 400} ${L.size * scale}px ${L.font === "serif" ? FONTS.serif.css : FONTS.sans.css}`,
+      font: `${L.italic && fontOf(L.font).it.length ? "italic " : ""}${nearestWeight(fontOf(L.font), L.weight || 400)} ${L.size * scale}px ${fontOf(L.font).css}`,
       lineHeight: `${(L.lh || 1.15)}`, color: L.color, textAlign: L.align || "left",
       letterSpacing: `${(L.ls || 0) * L.size * scale}px`, textTransform: L.upper ? "uppercase" : "none",
     });
@@ -1300,6 +1563,11 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === "z") { if (typing) return; e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
     if (typing) return;
+    if (eraser) {
+      if (e.key === "Escape" || e.key === "Enter") { e.preventDefault(); stopEraser(); }
+      else if (e.key === "[" || e.key === "]") { e.preventDefault(); eraser.size = clamp(eraser.size * (e.key === "]" ? 1.15 : 1 / 1.15), 6, 320); paintToolbar(); moveBrush(lastBrushPt); }
+      return;
+    }
     if (mod && e.key.toLowerCase() === "a") { e.preventDefault(); setSelection(page().layers.filter((L) => !L.hidden && !L.locked).map((L) => L.id)); paintSelection(); paintToolbar(); paintPanelIfLayers(); return; }
     const ls = selLayers();
     if (!ls.length) return;
@@ -1384,7 +1652,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     lockedForW = w;
     tb.style.minHeight = "";
     let max = 0;
-    for (const [L, n] of [[null, 0], [txt({}), 1], [{ type: "image", fit: "contain", w: 100, h: 100 }, 1], [{ type: "rect", fill: "#0f172a", w: 100, h: 100 }, 1], [{ type: "line", w: 100, h: 14 }, 1], [null, 3]]) {
+    for (const [L, n] of [[{ __eraser: true }, 1], [null, 0], [txt({}), 1], [{ type: "image", fit: "contain", w: 100, h: 100 }, 1], [{ type: "rect", fill: "#0f172a", w: 100, h: 100 }, 1], [{ type: "line", w: 100, h: 14 }, 1], [null, 3]]) {
       tb.innerHTML = toolbarHTML(L, n, true);
       max = Math.max(max, tb.offsetHeight);
     }
@@ -1420,7 +1688,26 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       <button type="button" class="ds-icon is-danger" data-act="del" title="Delete" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button>
       <span class="ds-tb-hint">Shift- or ⌘-click to add or remove. Drag a corner to resize together.</span>`;
   }
+  function eraserToolbar() {
+    const er = eraser || { mode: "e", size: 60, soft: 0.35, target: "layer" };
+    const T = eraserTarget();
+    const count = (T?.erase || []).length;
+    return `
+      <span class="ds-tb-label">Eraser · ${er.target === "bg" ? "background" : "image"}</span><span class="ds-tb-sep"></span>
+      <div class="ds-seg" role="group" aria-label="Brush">
+        <button type="button" data-er-mode="e" class="${er.mode === "e" ? "is-on" : ""}" aria-pressed="${er.mode === "e"}">Erase</button>
+        <button type="button" data-er-mode="r" class="${er.mode === "r" ? "is-on" : ""}" aria-pressed="${er.mode === "r"}">Restore</button>
+      </div>
+      <label class="ds-tb-field" title="Brush size ( [ and ] )">Size<input type="range" min="6" max="320" step="1" value="${er.size}" data-er="size"><output>${Math.round(er.size)}</output></label>
+      <label class="ds-tb-field" title="Soft edges blend the cut into the picture">Softness<input type="range" min="0" max="0.9" step="0.05" value="${er.soft}" data-er="soft"></label>
+      <span class="ds-tb-sep"></span>
+      <button type="button" class="ds-ghost" data-act="er-undo"${count ? "" : " disabled"}>Undo stroke</button>
+      <button type="button" class="ds-ghost" data-act="er-reset"${count ? "" : " disabled"}>Reset</button>
+      <button type="button" class="btn btn-primary btn-sm" data-act="er-done">Done</button>
+      <span class="ds-tb-hint">Paint over the part you want gone. Restore paints it back. Nothing is lost: the original image is kept.</span>`;
+  }
   function toolbarHTML(L = sel && layer(sel), n = selIds().length, sample = false) {
+    if (eraser || L?.__eraser) return eraserToolbar();
     if (n > 1) return multiToolbar(n, sample);
     if (!L) return bgControls();
     const common = `
@@ -1435,8 +1722,8 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       ${alignButtons(true)}`;
     if (L.type === "text") {
       return `
-        <select data-prop="font" aria-label="Font">${Object.entries(FONTS).map(([k, f]) => `<option value="${k}"${L.font === k ? " selected" : ""}>${f.label}</option>`).join("")}</select>
-        <select data-prop="weight" aria-label="Weight">${[400, 500, 600, 700].map((w) => `<option value="${w}"${Number(L.weight) === w ? " selected" : ""}>${{ 400: "Regular", 500: "Medium", 600: "Semibold", 700: "Bold" }[w]}</option>`).join("")}</select>
+        <button type="button" class="ds-fontbtn" data-act="font-pick" aria-haspopup="listbox" title="Change font" style="font-family:${esc(fontOf(L.font).css)}">${esc(fontOf(L.font).label)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <select data-prop="weight" aria-label="Weight">${fontOf(L.font).w.map((w) => `<option value="${w}"${nearestWeight(fontOf(L.font), Number(L.weight) || 400) === w ? " selected" : ""}>${WEIGHT_NAMES[w] || w}</option>`).join("")}</select>
         <label class="ds-tb-field ds-size">Size<input type="number" min="8" max="400" value="${Math.round(L.size)}" data-prop="size"></label>
         <button type="button" class="ds-icon${L.italic ? " is-on" : ""}" data-toggle="italic" title="Italic" aria-label="Italic"><svg viewBox="0 0 24 24"><path d="M14 4h-4M14 20h-4M15 4 9 20"/></svg></button>
         <button type="button" class="ds-icon${L.upper ? " is-on" : ""}" data-toggle="upper" title="Uppercase" aria-label="Uppercase"><svg viewBox="0 0 24 24"><path d="M3 18 7 6l4 12M4.5 14h5M14 18V6h4a3 3 0 0 1 0 6h-4m0 0h4.5a3 3 0 0 1 0 6H14"/></svg></button>
@@ -1451,6 +1738,8 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
         <label class="ds-tb-field">Fit<select data-prop="fit"><option value="contain"${L.fit !== "cover" ? " selected" : ""}>Whole image</option><option value="cover"${L.fit === "cover" ? " selected" : ""}>Fill the box</option></select></label>
         <label class="ds-tb-field">Blend<select data-prop="blend"><option value="normal"${L.blend !== "multiply" ? " selected" : ""}>Normal</option><option value="multiply"${L.blend === "multiply" ? " selected" : ""}>Multiply (on paper)</option></select></label>
         <label class="ds-tb-field">Corners<input type="range" min="0" max="400" step="2" value="${L.radius || 0}" data-prop="radius"></label>
+        <button type="button" class="ds-ghost ds-erase-btn" data-act="erase" title="Paint away parts of this image"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4 10-10 8 8-6 6H7z"/><path d="M8 12l6 6"/><path d="M14 21h7"/></svg>Erase</button>
+        <button type="button" class="ds-ghost" data-act="to-bg" title="Use this image as the page background">Make background</button>
         ${common}`;
     } else {
       return `
@@ -1480,6 +1769,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       <div class="ds-bgctl">
         <label class="ds-tb-field">Position<select data-act="bg-fit"><option value="cover"${bg.fit !== "bottom" ? " selected" : ""}>Fill the page</option><option value="bottom"${bg.fit === "bottom" ? " selected" : ""}>Fit width, at the bottom</option></select></label>
         <button type="button" class="ds-ghost" data-act="bg-clear">Remove image</button>
+        ${inPanel ? "" : `<button type="button" class="ds-ghost ds-erase-btn" data-act="bg-erase" title="Paint away parts of the background"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4 10-10 8 8-6 6H7z"/><path d="M8 12l6 6"/><path d="M14 21h7"/></svg>Erase parts</button>`}
       </div>` : ""}
       ${inPanel ? "" : `<span class="ds-tb-hint">Click anything to edit it, double-click text to type. Drag to move: red guides show when it lines up (hold Alt to skip snapping).</span>`}`;
   }
@@ -1532,6 +1822,12 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   }
 
   $("#ds-toolbar").addEventListener("input", (e) => {
+    if (e.target.dataset.er && eraser) {
+      eraser[e.target.dataset.er] = Number(e.target.value);
+      const out = e.target.parentElement.querySelector("output"); if (out) out.textContent = Math.round(eraser.size);
+      try { localStorage.setItem("catalyst.studio.brush", JSON.stringify({ size: eraser.size, soft: eraser.soft })); } catch {}
+      return moveBrush(lastBrushPt);
+    }
     if (onColourInput(e)) return;
     const t = e.target;
     const L = sel && layer(sel);
@@ -1551,6 +1847,20 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   $("#ds-toolbar").addEventListener("click", (e) => {
     const b = e.target.closest("button");
     if (!b) return;
+    if (b.dataset.erMode) { eraser.mode = b.dataset.erMode; return paintToolbar(); }
+    if (b.dataset.act === "erase") return startEraser("layer");
+    if (b.dataset.act === "bg-erase") return startEraser("bg");
+    if (b.dataset.act === "er-done") return stopEraser();
+    if (b.dataset.act === "er-undo") { const T = eraserTarget(); if (T?.erase?.length) { T.erase.pop(); if (!T.erase.length) delete T.erase; commit(); draw(); paintToolbar(); } return; }
+    if (b.dataset.act === "er-reset") { const T = eraserTarget(); if (T?.erase) { delete T.erase; commit(); draw(); paintToolbar(); } return; }
+    if (b.dataset.act === "font-pick") return openFontPicker(b);
+    if (b.dataset.act === "to-bg") {
+      const L = sel && layer(sel); if (!L || L.type !== "image") return;
+      page().bg = { ...(page().bg || {}), image: L.src, fit: "cover", focusY: 0.5, tone: "light" };
+      if (L.erase) page().bg.erase = clone(L.erase); else delete page().bg.erase;
+      page().layers = page().layers.filter((x) => x.id !== L.id);
+      setSelection([]); commit(); draw(); paintToolbar(); paintPanelIfLayers(); return;
+    }
     if (b.dataset.place) return alignSelection(b.dataset.place);
     if (b.dataset.act === "dist-h" || b.dataset.act === "dist-v") return distribute(b.dataset.act === "dist-h" ? "h" : "v");
     if (b.dataset.act === "group") return groupSelection();
@@ -1666,12 +1976,29 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
           <button type="button" data-text="brand" class="tp-kicker">THE CATALYST</button>
           <button type="button" data-text="url" class="tp-body">catalyst-magazine.com</button>
           <button type="button" data-text="cta" class="tp-body">Link in bio →</button>
+        </div>
+        <h4>Headings in our recommended fonts</h4>
+        <p class="ds-panel-hint">Pick any text, then the font name in the toolbar to see all ${Object.keys(FONTS).length} fonts.</p>
+        <div class="ds-textpresets">
+          ${Object.keys(FONTS).filter((k) => FONTS[k].rec).map((k) => `<button type="button" data-text-font="${k}" class="tp-font" style="font-family:${esc(FONTS[k].css)};font-weight:${k === "sans" ? 700 : 400}">${esc(FONTS[k].label)}</button>`).join("")}
         </div>`;
+      Object.keys(FONTS).filter((k) => FONTS[k].rec).forEach((k) => ensureFace(k, nearestWeight(FONTS[k], k === "sans" ? 700 : 400), false));
     } else if (panel === "photos") {
+      const ups = myUploads();
       p.innerHTML = `<h3>Photos</h3>
-        <label class="ds-upload"><input type="file" accept="image/*" id="ds-file" hidden><span>Upload a photo</span><small>JPG or PNG. Saved to the team's storage.</small></label>
+        <label class="ds-upload" id="ds-dropzone"><input type="file" accept="image/*" id="ds-file" multiple hidden><span>Upload your images</span><small>Click to choose, drop files here or onto the page, or paste (⌘V). PNG cut-outs keep their transparency.</small></label>
+        <h4>Your uploads</h4>
+        <div class="ds-bgrid ds-uploads" id="ds-uploads">${ups.length ? ups.map((u) => `
+          <div class="ds-utile">
+            <button type="button" class="ds-btile is-photo" data-upload="${esc(u.url)}" title="Add to the page"><img src="${esc(proxied(u.url))}" alt="" loading="lazy"></button>
+            <button type="button" class="ds-ubg" data-upload-bg="${esc(u.url)}" title="Use as the page background">Background</button>
+          </div>`).join("") : `<p class="ds-panel-hint">Images you upload show up here so you can use them again.</p>`}</div>
         <h4>Article covers</h4><div class="ds-bgrid" id="ds-covers"><p class="ds-panel-hint">Loading…</p></div>`;
       p.querySelector("#ds-file").addEventListener("change", onUpload);
+      const dz = p.querySelector("#ds-dropzone");
+      dz.addEventListener("dragover", (e) => { if (hasFiles(e)) { e.preventDefault(); dz.classList.add("is-over"); } });
+      dz.addEventListener("dragleave", () => dz.classList.remove("is-over"));
+      dz.addEventListener("drop", (e) => { e.preventDefault(); dz.classList.remove("is-over"); uploadFiles([...e.dataTransfer.files]); });
       loadCovers().then((covers) => {
         const g = p.querySelector("#ds-covers");
         if (!g) return;
@@ -1716,6 +2043,14 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       const e2 = lib.elements.find((x) => x.id === t.dataset.el);
       const k = 440 / Math.max(e2.w || 1, e2.h || 1);
       addLayer({ type: "image", src: e2.image, w: Math.round((e2.w || 440) * k), h: Math.round((e2.h || 440) * k), fit: "contain", blend: "normal", name: e2.title });
+    } else if (t.dataset.textFont) {
+      const k = t.dataset.textFont, F = FONTS[k];
+      const L = txt({ name: "Heading", text: "Your headline here", font: k, weight: nearestWeight(F, k === "sans" ? 700 : 400), size: k === "sans" ? 84 : 92, ls: k === "sans" ? -0.035 : -0.01, lh: 1.04, w: f.w - 176 });
+      ensureFontsFor([L]).then(() => addLayer(L));
+    } else if (t.dataset.upload) {
+      placeImage(t.dataset.upload);
+    } else if (t.dataset.uploadBg) {
+      useAsBackground(t.dataset.uploadBg);
     } else if (t.dataset.photo) {
       addLayer({ type: "image", src: t.dataset.photo, w: Math.round(f.w * 0.7), h: Math.round(f.w * 0.7 * 0.66), fit: "cover", radius: 18, name: "Photo" });
     } else if (t.dataset.shape) {
@@ -1774,23 +2109,75 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
     } catch { _covers = []; }
     return _covers;
   }
-  async function onUpload(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const label = e.target.closest(".ds-upload").querySelector("span");
-    label.textContent = "Uploading…";
-    try {
-      const { uploadToFirebase } = await import("./writer.js?v=topics-alt");
-      const url = await uploadToFirebase(file, "image", ctx, (pct) => { label.textContent = `Uploading… ${pct}%`; });
-      const f = fmt();
-      addLayer({ type: "image", src: url, w: Math.round(f.w * 0.7), h: Math.round(f.w * 0.7 * 0.75), fit: "cover", radius: 18, name: "Photo" });
-      label.textContent = "Upload a photo";
-    } catch (err) {
-      label.textContent = "Upload failed. Try again.";
-      ctx.toast?.(err.message || "Upload failed", "error");
-    }
-    e.target.value = "";
+  // ── your own images ──
+  const UPLOADS = `catalyst.studio.uploads.${ctx.user?.uid || "anon"}`;
+  function myUploads() { try { return JSON.parse(localStorage.getItem(UPLOADS) || "[]"); } catch { return []; } }
+  function rememberUpload(u) {
+    const list = [u, ...myUploads().filter((x) => x.url !== u.url)].slice(0, 48);
+    try { localStorage.setItem(UPLOADS, JSON.stringify(list)); } catch {}
   }
+  const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes("Files");
+  // Place an image at its own proportions, as large as fits comfortably.
+  async function placeImage(url, at = null, nth = 0) {
+    const f = fmt();
+    let iw = 4, ih = 3;
+    try { const img = await loadImg(url); iw = img.naturalWidth; ih = img.naturalHeight; } catch {}
+    const k = Math.min((f.w * 0.72) / iw, (f.h * 0.6) / ih);
+    const w = Math.max(40, Math.round(iw * k)), h = Math.max(40, Math.round(ih * k));
+    const x = at ? Math.round(at.x - w / 2) : Math.round((f.w - w) / 2) + nth * 28;
+    const y = at ? Math.round(at.y - h / 2) : Math.round((f.h - h) / 2) + nth * 28;
+    addLayer({ type: "image", src: url, x, y, w, h, fit: "contain", radius: 0, name: "Your image" });
+  }
+  function useAsBackground(url) {
+    page().bg = { ...(page().bg || {}), image: url, fit: "cover", focusY: 0.5, tone: "light" };
+    delete page().bg.erase;
+    commit(); draw(); paintToolbar(); syncPanelBg();
+  }
+  async function uploadFiles(files, at = null) {
+    files = files.filter((f) => /^image\//.test(f.type));
+    if (!files.length) { ctx.toast?.("That isn't an image file.", "error"); return; }
+    const label = container.querySelector("#ds-dropzone span");
+    const { uploadToFirebase } = await import("./writer.js?v=topics-alt");
+    let i = 0;
+    for (const file of files) {
+      const n = files.length > 1 ? ` ${i + 1} of ${files.length}` : "";
+      if (label) label.textContent = `Uploading${n}…`;
+      try {
+        const url = await uploadToFirebase(file, "image", ctx, (pct) => { if (label) label.textContent = `Uploading${n}… ${pct}%`; });
+        rememberUpload({ url, name: file.name, at: Date.now() });
+        await placeImage(url, at && files.length === 1 ? at : null, i);
+      } catch (err) {
+        ctx.toast?.(`Could not upload ${file.name}: ${err.message || err}`, "error");
+      }
+      i++;
+    }
+    if (panel === "photos") paintPanel();
+  }
+  async function onUpload(e) {
+    const files = [...(e.target.files || [])];
+    e.target.value = "";
+    if (files.length) await uploadFiles(files);
+  }
+  // Drop files straight onto the page.
+  stage.addEventListener("dragover", (e) => { if (hasFiles(e)) { e.preventDefault(); stage.classList.add("is-dropping"); } });
+  stage.addEventListener("dragleave", (e) => { if (!stage.contains(e.relatedTarget)) stage.classList.remove("is-dropping"); });
+  stage.addEventListener("drop", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); stage.classList.remove("is-dropping");
+    const r = artboard.getBoundingClientRect();
+    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    uploadFiles([...e.dataTransfer.files], inside ? pt(e) : null);
+  });
+  // Paste an image (screenshot, copied picture) with ⌘V.
+  const onPaste = (e) => {
+    if (!container.isConnected || container.offsetParent === null) return;
+    if (/INPUT|TEXTAREA/.test(document.activeElement?.tagName || "")) return;
+    const files = [...(e.clipboardData?.files || [])].filter((f) => /^image\//.test(f.type));
+    if (!files.length) return;
+    e.preventDefault();
+    uploadFiles(files);
+  };
+  document.addEventListener("paste", onPaste);
 
   // ── pages strip ──
   const pageThumbs = new Map();
@@ -1928,6 +2315,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
   });
 
   function refreshAll() {
+    if (eraser && !eraserTarget()) stopEraser();
     $("#ds-format").value = design.format;
     fit();
     paintPages();
@@ -1959,6 +2347,6 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved } = 
       pageIdx = 0; setSelection([]);
       commit(); refreshAll();
     },
-    destroy() { document.removeEventListener("keydown", onKey); ro.disconnect(); },
+    destroy() { document.removeEventListener("keydown", onKey); document.removeEventListener("paste", onPaste); ro.disconnect(); },
   };
 }

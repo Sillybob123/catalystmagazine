@@ -2379,7 +2379,7 @@ async function mountSocialPosts(ctx, container) {
   let studio = null;
   async function ensureStudio() {
     if (studio) return studio;
-    const { mountDesignStudio } = await import("./design-studio.js?v=8");
+    const { mountDesignStudio } = await import("./design-studio.js?v=9");
     studio = await mountDesignStudio(ctx, studioView, {
       onSaved: () => loadPosts(),
       // New design → new draft on the board; re-saving an opened post updates it.
