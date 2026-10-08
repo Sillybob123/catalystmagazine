@@ -2,7 +2,7 @@
 //   - "analytics": headline stats + 30-day growth sparkline
 //   - "collabs":   collaboration-request pipeline
 
-import { el, esc, fmtRelative, fmtDate } from "./ui.js";
+import { el, esc, fmtRelative, fmtDate, confirmDialog } from "./ui.js";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -2123,81 +2123,56 @@ async function renderClosing(page) {
 async function mountSocialPosts(ctx, container) {
   // ── Page shell: tabbed — "Board" (kanban) and "Create" (inline generator) ──
   container.innerHTML = `
-    <div class="sp-page" style="display:flex;flex-direction:column;gap:18px;">
+    <div class="sp-page">
 
-      <!-- Hero / tabs -->
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-          <div>
-            <h2 style="font-size:20px;font-weight:800;margin:0;letter-spacing:-.01em;">Social media</h2>
-            <p style="font-size:13px;color:var(--muted);margin:4px 0 0;">Drafts ready to post, a design Studio with templates, illustrations and photos, and a carousel maker for articles.</p>
-          </div>
+      <header class="spb-hero">
+        <div>
+          <h2>Social media</h2>
+          <p>Every post for Instagram, LinkedIn and X: design it in the Studio, then copy the caption and download the images when it's time to post.</p>
         </div>
-        <div role="tablist" style="display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;">
-          <button role="tab" id="sp-tab-board" class="sp-tab" style="padding:8px 16px;border:0;background:var(--surface);color:var(--ink);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;box-shadow:var(--shadow-sm);">Board</button>
-          <button role="tab" id="sp-tab-studio" class="sp-tab" style="padding:8px 16px;border:0;background:transparent;color:var(--muted);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Studio</button>
-          <button role="tab" id="sp-tab-create" class="sp-tab" style="padding:8px 16px;border:0;background:transparent;color:var(--muted);border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Article carousel</button>
+        <div class="spb-hero-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="sp-goto-create" title="Turn a published article into a carousel">Carousel from an article</button>
+          <button type="button" class="btn btn-primary btn-sm" id="sp-new-design"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Create a design</button>
         </div>
+      </header>
+      <div role="tablist" class="spb-tabs" aria-label="Social media">
+        <button role="tab" id="sp-tab-board" class="sp-tab">Posts</button>
+        <button role="tab" id="sp-tab-studio" class="sp-tab">Studio</button>
+        <button role="tab" id="sp-tab-create" class="sp-tab">Article carousel</button>
       </div>
 
       <!-- BOARD VIEW -->
-      <section id="sp-board-view" style="display:flex;flex-direction:column;gap:18px;">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <select class="input select" id="sp-platform-filter" style="width:160px;">
-            <option value="">All platforms</option>
-            <option value="instagram">Instagram</option>
-            <option value="linkedin">LinkedIn</option>
-            <option value="twitter">Twitter</option>
-            <option value="facebook">Facebook</option>
+      <section id="sp-board-view" class="spb">
+        <div class="spb-controls">
+          <label class="spb-search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="sp-search" placeholder="Search posts and captions" aria-label="Search posts">
+          </label>
+          <div class="spb-seg" id="sp-platform-seg" role="group" aria-label="Platform">
+            <button type="button" data-platform="" class="is-on">All</button>
+            <button type="button" data-platform="instagram">Instagram</button>
+            <button type="button" data-platform="linkedin">LinkedIn</button>
+            <button type="button" data-platform="twitter">X</button>
+          </div>
+          <select class="spb-sort" id="sp-sort" aria-label="Sort">
+            <option value="due">Due date</option>
+            <option value="new">Newest first</option>
+            <option value="old">Oldest first</option>
           </select>
-          <select class="input select" id="sp-status-filter" style="width:150px;">
-            <option value="">All statuses</option>
-            <option value="proposed">Proposed</option>
-            <option value="approved">Approved</option>
-            <option value="assigned">Assigned</option>
-            <option value="posted">Posted</option>
-          </select>
-          <button class="btn btn-primary btn-sm" id="sp-goto-create" style="margin-left:auto;">Create new post</button>
         </div>
+        <div class="spb-status" id="sp-status-tabs" role="tablist" aria-label="Status"></div>
 
         <!-- Suggestions: published articles that don't have a post yet -->
-        <div id="sp-suggestions-wrap" style="display:none;">
-          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
-            <div>
-              <h3 style="font-size:14px;font-weight:700;margin:0;letter-spacing:-.01em;">Needs a post</h3>
-              <p style="font-size:12px;color:var(--muted);margin:2px 0 0;">Recently published articles that don't have a social post yet.</p>
-            </div>
-            <span id="sp-suggestions-count" style="font-size:12px;color:var(--muted);"></span>
-          </div>
-          <div id="sp-suggestions-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;"></div>
+        <div id="sp-suggestions-wrap" class="spb-suggest" hidden>
+          <div class="spb-suggest-head"><b>Needs a post</b><span id="sp-suggestions-count"></span></div>
+          <div id="sp-suggestions-list" class="spb-suggest-list"></div>
         </div>
 
-        <!-- Drafts: unposted posts (proposed, approved, assigned) -->
-        <div id="sp-drafts-wrap" style="display:none;">
-          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
-            <div>
-              <h3 style="font-size:14px;font-weight:700;margin:0;letter-spacing:-.01em;">Drafts</h3>
-              <p style="font-size:12px;color:var(--muted);margin:2px 0 0;">Saved posts you haven't published yet. Click one to edit, copy, or download.</p>
-            </div>
-            <span id="sp-drafts-count" style="font-size:12px;color:var(--muted);"></span>
-          </div>
-          <div id="sp-drafts-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-        </div>
-
-        <!-- All / posted -->
-        <div id="sp-all-wrap">
-          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;gap:12px;flex-wrap:wrap;">
-            <div>
-              <h3 style="font-size:14px;font-weight:700;margin:0;letter-spacing:-.01em;">All posts</h3>
-              <p style="font-size:12px;color:var(--muted);margin:2px 0 0;">Everything on the board, newest first.</p>
-            </div>
-          </div>
-          <div id="sp-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
-        </div>
+        <div id="sp-list" class="spb-grid" aria-live="polite"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
       </section>
 
       <!-- STUDIO VIEW — the design editor (design-studio.js) -->
-      <section id="sp-studio-view" style="display:none;"></section>
+      <section id="sp-studio-view" class="sp-studio" style="display:none;"></section>
 
       <!-- CREATE VIEW (inline — no modal) -->
       <section id="sp-create-view" style="display:none;">
@@ -2358,13 +2333,13 @@ async function mountSocialPosts(ctx, container) {
   detailModal.id = "sp-detail-modal";
   detailModal.style.cssText = "display:none;";
   detailModal.innerHTML = `
-    <div class="modal" style="width:min(680px,92vw);max-height:90vh;">
+    <div class="modal spd" role="dialog" aria-modal="true" aria-labelledby="sp-detail-title">
       <div class="modal-header">
         <div class="modal-title" id="sp-detail-title">Post</div>
-        <button class="btn btn-ghost btn-sm" id="sp-detail-close" style="margin-left:auto;">✕</button>
+        <button class="btn btn-ghost btn-sm" id="sp-detail-close" aria-label="Close" style="margin-left:auto;">✕</button>
       </div>
       <div class="modal-body" id="sp-detail-body"></div>
-      <div class="modal-footer" id="sp-detail-footer" style="flex-wrap:wrap;gap:8px;"></div>
+      <div class="modal-footer" id="sp-detail-footer"></div>
     </div>`;
   document.body.appendChild(detailModal);
 
@@ -2379,17 +2354,21 @@ async function mountSocialPosts(ctx, container) {
   let studio = null;
   async function ensureStudio() {
     if (studio) return studio;
-    const { mountDesignStudio } = await import("./design-studio.js?v=9");
+    const { mountDesignStudio } = await studioModule();
     studio = await mountDesignStudio(ctx, studioView, {
-      onSaved: () => loadPosts(),
+      onSaved: () => { boardStale = true; },
+      onClose: () => { setActiveTab("board"); if (boardStale) { boardStale = false; loadPosts(); } },
       // New design → new draft on the board; re-saving an opened post updates it.
-      savePost: async ({ id, ...post }) => {
+      savePost: async ({ id, copyOnFail, ...post }) => {
         if (id) {
           try {
             await firestoreWrite(ctx.authedFetch, `social_posts/${id}`, post);
+            boardStale = true;
             return { id };
           } catch (err) {
-            // Not allowed to edit someone else's post: save a copy as a new draft.
+            // Autosave never forks a post; an explicit save of someone else's
+            // post (not allowed to edit it) saves a copy as a new draft.
+            if (!copyOnFail) throw err;
             console.warn("[studio] update failed, saving a copy", err);
           }
         }
@@ -2404,33 +2383,46 @@ async function mountSocialPosts(ctx, container) {
           createdAt: new Date().toISOString(),
           activity: [{ text: "designed in the Studio", authorName: ctx.profile.name || ctx.user.email, timestamp: new Date().toISOString() }],
         });
+        boardStale = true;
         return { id: newId };
       },
     });
     return studio;
   }
+  let boardStale = false;
   async function openInStudio(p) {
     setActiveTab("studio");
     const s = await ensureStudio();
     await s.open(p);
+    s.refit?.();
+  }
+  async function openNewDesign() {
+    setActiveTab("studio");
+    const s = await ensureStudio();
+    s.refit?.();
+    await s.newDesign?.();
   }
 
+  // The Studio is a full-screen editor; the other two views live in the page.
   function setActiveTab(which) {
     const tabs = { board: [tabBoard, boardView, "flex"], studio: [tabStudio, studioView, "block"], create: [tabCreate, createView, "block"] };
     for (const [k, [tab, view, disp]] of Object.entries(tabs)) {
       const on = k === which;
       tab.classList.toggle("active", on);
       tab.setAttribute("aria-selected", on ? "true" : "false");
-      tab.style.background = on ? "var(--surface)" : "transparent";
-      tab.style.color      = on ? "var(--ink)" : "var(--muted)";
-      tab.style.boxShadow  = on ? "var(--shadow-sm)" : "none";
       view.style.display   = on ? disp : "none";
     }
+    studioView.classList.toggle("is-open", which === "studio");
+    document.body.classList.toggle("ds-lock", which === "studio");
+    if (which === "studio" && studio) requestAnimationFrame(() => studio.refit?.());
   }
   tabBoard.addEventListener("click",  () => setActiveTab("board"));
-  tabStudio.addEventListener("click", () => { setActiveTab("studio"); ensureStudio(); });
+  tabStudio.addEventListener("click", async () => { setActiveTab("studio"); const s = await ensureStudio(); s.refit?.(); });
   tabCreate.addEventListener("click", () => { setActiveTab("create"); ensureCreateInitialized(); });
   container.querySelector("#sp-goto-create").addEventListener("click", () => { setActiveTab("create"); ensureCreateInitialized(); });
+  container.querySelector("#sp-new-design").addEventListener("click", openNewDesign);
+  // Leaving the page (another dashboard route) must not leave the body locked.
+  window.addEventListener("hashchange", () => { if (!container.isConnected) document.body.classList.remove("ds-lock"); });
 
   // ── Cleanup: remove body-level modal when module unmounts ─────────────────
   const cleanup = () => {
@@ -2452,14 +2444,13 @@ async function mountSocialPosts(ctx, container) {
   let customCoverDataUrl = null; // applies to the cover page only
 
   const listEl = container.querySelector("#sp-list");
-  const platformFilter = container.querySelector("#sp-platform-filter");
-  const statusFilter = container.querySelector("#sp-status-filter");
+  const statusTabs = container.querySelector("#sp-status-tabs");
+  const searchEl = container.querySelector("#sp-search");
+  const sortEl = container.querySelector("#sp-sort");
   const suggestionsWrap = container.querySelector("#sp-suggestions-wrap");
   const suggestionsList = container.querySelector("#sp-suggestions-list");
   const suggestionsCount = container.querySelector("#sp-suggestions-count");
-  const draftsWrap = container.querySelector("#sp-drafts-wrap");
-  const draftsList = container.querySelector("#sp-drafts-list");
-  const draftsCount = container.querySelector("#sp-drafts-count");
+  const boardFilter = { platform: "", status: "", q: "" };
 
   // True if `post` is plausibly about `article` — matches by stored
   // articleId when available, else by title substring (legacy posts).
@@ -2473,77 +2464,161 @@ async function mountSocialPosts(ctx, container) {
     return haystack.includes(at);
   }
 
-  // Card markup for a saved post — used by both the Drafts strip and the
-  // full All-posts list. status badge shows on top of caption preview.
+  // ── Board cards: a visual gallery ──────────────────────────────────────────
+  const STATUS_LABEL = { proposed: "Draft", approved: "Approved", assigned: "Assigned", posted: "Posted" };
+  const PLATFORM_ICON = {
+    instagram: '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".9" fill="currentColor" stroke="none"/>',
+    linkedin: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 10.5V16M8 7.6v.1M11.5 16v-3.3a2.2 2.2 0 0 1 4.4 0V16M11.5 10.5V16"/>',
+    twitter: '<path d="M5 4.5 19 19.5M19 4.5 5 19.5"/>',
+    facebook: '<path d="M14.5 8H16V4.8h-2.4A3.6 3.6 0 0 0 10 8.4V11H8v3h2v6.5h3V14h2.4l.6-3h-3V8.8a.8.8 0 0 1 .5-.8z"/>',
+  };
+  const platIcon = (pl) => `<svg viewBox="0 0 24 24" aria-hidden="true">${PLATFORM_ICON[pl] || PLATFORM_ICON.instagram}</svg>`;
+  // "Instagram carousel (6 slides): Title" → "Title"
+  const cleanTitle = (t) => String(t || "Untitled").replace(/^(instagram|linkedin|x|twitter|facebook)(\s+(carousel|story|post))?(\s*\([^)]*\))?\s*:\s*/i, "").replace(/\s*\(\d+-page carousel\)$/i, "").trim() || "Untitled";
+  function designOf(p) { if (!p.designJson) return null; try { return JSON.parse(p.designJson); } catch { return null; } }
+  function kindOf(p) {
+    const d = designOf(p), n = d?.pages?.length || p.imageUrls?.length || 1;
+    if (n > 1) return `Carousel · ${n} slides`;
+    if (d?.format === "story" || /story/i.test(p.title || "")) return "Story";
+    return "Post";
+  }
+  const isWide = (p) => { const f = designOf(p)?.format; return f === "linkedin" || f === "wide" || (!f && (p.platform === "linkedin" || p.platform === "twitter")); };
+  function dueInfo(p) {
+    if (!p.deadline) return { text: "No date", cls: "" };
+    const [yy, mm, dd] = String(p.deadline).split("-").map(Number);
+    const d = new Date(yy, (mm || 1) - 1, dd || 1);   // local midnight, so day maths is exact
+    if (!yy || Number.isNaN(d.getTime())) return { text: p.deadline, cls: "" };
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const days = Math.round((d - today) / 86400000);
+    const txt = d.toLocaleDateString(undefined, { month: "short", day: "numeric", ...(d.getFullYear() !== today.getFullYear() ? { year: "numeric" } : {}) });
+    if (p.status === "posted") return { text: txt, cls: "" };
+    if (days < 0) return { text: `Overdue · ${txt}`, cls: "is-late" };
+    if (days === 0) return { text: "Due today", cls: "is-soon" };
+    if (days <= 3) return { text: `Due ${txt}`, cls: "is-soon" };
+    return { text: `Due ${txt}`, cls: "" };
+  }
   function postCardHTML(p) {
-    const pm = PLATFORM_META[p.platform] || { label: p.platform, pill: "pill-draft" };
-    const sp = STATUS_PILL[p.status] || "pill-draft";
-    const preview = (p.content || "").slice(0, 160) + ((p.content || "").length > 160 ? "…" : "");
-    const cover = p.coverImageUrl || "";
+    const due = dueInfo(p), st = p.status || "proposed";
+    const live = !!designOf(p);
+    const img = p.coverImageUrl || "";
     return `
-      <div class="card" style="cursor:pointer;" data-id="${esc(p.id)}">
-        <div class="card-body" style="display:flex;gap:14px;align-items:flex-start;">
-          ${cover ? `<img src="${esc(cover)}" alt="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">` : ""}
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-              <strong style="font-size:14px;">${esc(p.title)}</strong>
-              <span class="pill ${pm.pill}" style="font-size:11px;">${esc(pm.label)}</span>
-              <span class="pill ${sp}" style="font-size:11px;">${esc(p.status)}</span>
-            </div>
-            ${preview ? `<div style="font-size:13px;color:var(--ink-2);white-space:pre-line;margin-bottom:6px;">${esc(preview)}</div>` : ""}
-            <div style="font-size:12px;color:var(--muted);">
-              By ${esc(p.proposerName || "—")}
-              ${p.deadline ? ` · Due ${esc(p.deadline)}` : ""}
-              ${p.createdAt ? ` · ${fmtRelative(p.createdAt)}` : ""}
-            </div>
+      <article class="spc" data-id="${esc(p.id)}" tabindex="0" aria-label="${esc(cleanTitle(p.title))}">
+        <div class="spc-media${isWide(p) ? " is-wide" : ""}">
+          ${live ? `<img alt="" data-live="${esc(p.id)}"${img ? ` src="${esc(img)}"` : ""}>` : img ? `<img alt="" src="${esc(img)}" loading="lazy">` : `<span class="spc-empty">${platIcon(p.platform)}<small>No image yet</small></span>`}
+          ${/^Carousel/.test(kindOf(p)) ? `<span class="spc-kind" title="${esc(kindOf(p))}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>${esc(kindOf(p).replace(/\D+/g, ""))}</span>` : ""}
+          <div class="spc-hover">
+            ${live || p.backgroundId ? `<button type="button" class="spc-act" data-card-act="studio">Edit</button>` : ""}
+            <button type="button" class="spc-act" data-card-act="open">Details</button>
           </div>
         </div>
-      </div>`;
+        <div class="spc-body">
+          <h3 class="spc-title">${esc(cleanTitle(p.title))}</h3>
+          <div class="spc-meta">
+            <span class="spc-plat" title="${esc((PLATFORM_META[p.platform] || {}).label || "Instagram")}">${platIcon(p.platform)}</span>
+            <span class="spc-due ${due.cls}">${esc(due.text)}</span>
+            <span class="spc-status is-${esc(st)}">${esc(STATUS_LABEL[st] || st)}</span>
+          </div>
+        </div>
+      </article>`;
   }
 
-  // ── Render post list ───────────────────────────────────────────────────────
+  // Live previews for Studio designs (always the latest saved layout).
+  let _studioMod = null;
+  const studioModule = () => _studioMod || (_studioMod = import("./design-studio.js?v=10"));
+  const FORMAT_W = { post: 1080, square: 1080, story: 1080, linkedin: 1200, wide: 1600 };
+  const liveCache = new Map();
+  async function renderDesignImage(p, page = 0, width = 420, type = "image/jpeg") {
+    const d = designOf(p); if (!d || !d.pages?.[page]) return null;
+    const key = `${p.id}|${page}|${width}|${p.designJson.length}|${p.designJson.slice(-40)}`;
+    if (liveCache.has(key)) return liveCache.get(key);
+    const job = (async () => {
+      const m = await studioModule();
+      const c = await m.renderDesignPage(d, page, width / (FORMAT_W[d.format] || 1080));
+      return c.toDataURL(type, 0.86);
+    })().catch(() => null);
+    liveCache.set(key, job);
+    return job;
+  }
+  const liveQueue = [];
+  let liveBusy = false;
+  async function pumpLive() {
+    if (liveBusy) return; liveBusy = true;
+    while (liveQueue.length) {
+      const img = liveQueue.shift();
+      if (!img.isConnected) continue;
+      const p = allPosts.find((x) => x.id === img.dataset.live);
+      if (!p) continue;
+      const url = await renderDesignImage(p);
+      if (url && img.isConnected) img.src = url;
+    }
+    liveBusy = false;
+  }
+  const liveObserver = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
+    for (const en of entries) if (en.isIntersecting) { liveObserver.unobserve(en.target); liveQueue.push(en.target); }
+    pumpLive();
+  }, { rootMargin: "300px" }) : null;
+
+  // ── Render the board ───────────────────────────────────────────────────────
   function render() {
-    const pf = platformFilter.value;
-    const sf = statusFilter.value;
-    const filtered = allPosts.filter((p) => (!pf || p.platform === pf) && (!sf || p.status === sf));
+    const { platform: pf, status: sf } = boardFilter;
+    const q = boardFilter.q.trim().toLowerCase();
+    const base = allPosts.filter((p) => (!pf || p.platform === pf) && (!q || `${p.title} ${p.content} ${p.articleTitle}`.toLowerCase().includes(q)));
+    const counts = { "": base.length };
+    for (const p of base) counts[p.status || "proposed"] = (counts[p.status || "proposed"] || 0) + 1;
+    statusTabs.innerHTML = [["", "All"], ["proposed", "Drafts"], ["approved", "Approved"], ["assigned", "Assigned"], ["posted", "Posted"]]
+      .map(([k, label]) => `<button type="button" role="tab" data-status="${k}" class="${sf === k ? "is-on" : ""}" aria-selected="${sf === k}">${label}<span>${counts[k] || 0}</span></button>`).join("");
 
-    // Drafts = unposted (any status that isn't "posted"). Show in their own
-    // strip so they're easy to grab and finish.
-    // Next to post first: soonest due date on top (undated drafts last).
-    const drafts = filtered.filter((p) => p.status !== "posted")
-      .sort((a, b) => (a.deadline || "9999").localeCompare(b.deadline || "9999"));
-    if (drafts.length) {
-      draftsWrap.style.display = "block";
-      draftsCount.textContent = `${drafts.length} draft${drafts.length === 1 ? "" : "s"}`;
-      draftsList.innerHTML = drafts.map(postCardHTML).join("");
-      draftsList.querySelectorAll("[data-id]").forEach((card) =>
-        card.addEventListener("click", () => openDetail(allPosts.find((p) => p.id === card.dataset.id)))
-      );
+    const sort = sortEl.value;
+    const list = base.filter((p) => !sf || (p.status || "proposed") === sf).sort((a, b) => {
+      if (sort === "new") return String(b.createdAt).localeCompare(String(a.createdAt));
+      if (sort === "old") return String(a.createdAt).localeCompare(String(b.createdAt));
+      const empty = (x) => (!x.title && !x.content && !x.coverImageUrl && !x.designJson ? 1 : 0);
+      if (empty(a) !== empty(b)) return empty(a) - empty(b);
+      const pa = a.status === "posted" ? 1 : 0, pb = b.status === "posted" ? 1 : 0;
+      if (pa !== pb) return pa - pb;
+      return (a.deadline || "9999").localeCompare(b.deadline || "9999") || String(b.createdAt).localeCompare(String(a.createdAt));
+    });
+
+    if (!allPosts.length) {
+      listEl.innerHTML = `<div class="spb-empty"><b>No posts yet</b><p>Create a design in the Studio, or turn a published article into a carousel.</p><button type="button" class="btn btn-primary btn-sm" data-empty-new>Create a design</button></div>`;
+      listEl.querySelector("[data-empty-new]").addEventListener("click", openNewDesign);
+    } else if (!list.length) {
+      listEl.innerHTML = `<div class="spb-empty"><b>Nothing matches</b><p>Try another filter or clear the search.</p></div>`;
     } else {
-      draftsWrap.style.display = "none";
+      listEl.innerHTML = list.map(postCardHTML).join("");
+      listEl.querySelectorAll("img[data-live]").forEach((img) => (liveObserver ? liveObserver.observe(img) : liveQueue.push(img)));
+      if (!liveObserver) pumpLive();
     }
-
-    // All posts list
-    if (!filtered.length) {
-      listEl.innerHTML = `<div class="empty-state">No posts yet. Click "Create new post" to get started.</div>`;
-    } else {
-      listEl.innerHTML = filtered.map(postCardHTML).join("");
-      listEl.querySelectorAll("[data-id]").forEach((card) =>
-        card.addEventListener("click", () => openDetail(allPosts.find((p) => p.id === card.dataset.id)))
-      );
-    }
-
     renderSuggestions();
   }
+  listEl.addEventListener("click", (e) => {
+    const card = e.target.closest(".spc"); if (!card) return;
+    const p = allPosts.find((x) => x.id === card.dataset.id); if (!p) return;
+    const act = e.target.closest("[data-card-act]")?.dataset.cardAct;
+    if (act === "studio") return openInStudio(p);
+    openDetail(p);
+  });
+  listEl.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    const card = e.target.closest(".spc"); if (!card || e.target !== card) return;
+    e.preventDefault(); openDetail(allPosts.find((x) => x.id === card.dataset.id));
+  });
+  statusTabs.addEventListener("click", (e) => { const b = e.target.closest("[data-status]"); if (!b) return; boardFilter.status = b.dataset.status; render(); });
+  container.querySelector("#sp-platform-seg").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-platform]"); if (!b) return;
+    boardFilter.platform = b.dataset.platform;
+    container.querySelectorAll("#sp-platform-seg button").forEach((x) => x.classList.toggle("is-on", x === b));
+    render();
+  });
+  let searchT = 0;
+  searchEl.addEventListener("input", () => { clearTimeout(searchT); searchT = setTimeout(() => { boardFilter.q = searchEl.value; render(); }, 120); });
+  sortEl.addEventListener("change", render);
 
   // Suggestions: published articles from the last 30 days that don't yet have
   // any matching post on the board. Click → switches to Create tab with the
   // article pre-selected.
   function renderSuggestions() {
-    if (!publishedArticles.length) {
-      suggestionsWrap.style.display = "none";
-      return;
-    }
+    if (!publishedArticles.length) { suggestionsWrap.hidden = true; return; }
     const cutoff = Date.now() - 30 * 86400000;
     const recent = publishedArticles.filter((a) => {
       if (!a.publishedAt) return true; // include articles missing a date
@@ -2551,32 +2626,16 @@ async function mountSocialPosts(ctx, container) {
       return Number.isFinite(t) ? t >= cutoff : true;
     });
     const needsPost = recent.filter((a) => !allPosts.some((p) => postMatchesArticle(p, a)));
-    if (!needsPost.length) {
-      suggestionsWrap.style.display = "none";
-      return;
-    }
-    const top = needsPost.slice(0, 6);
-    suggestionsWrap.style.display = "block";
-    suggestionsCount.textContent = `${needsPost.length} article${needsPost.length === 1 ? "" : "s"} without a post`;
-    suggestionsList.innerHTML = top.map((a) => {
+    if (!needsPost.length) { suggestionsWrap.hidden = true; return; }
+    suggestionsWrap.hidden = false;
+    suggestionsCount.textContent = `${needsPost.length} published ${needsPost.length === 1 ? "story" : "stories"} without a post`;
+    suggestionsList.innerHTML = needsPost.slice(0, 8).map((a) => {
       const cover = a.coverImage || a.image || "";
-      const author = a.authorName || a.author || "";
-      return `
-        <div class="card sp-suggestion" data-article-id="${esc(a.id)}" style="cursor:pointer;">
-          <div class="card-body" style="display:flex;gap:12px;align-items:flex-start;padding:12px;">
-            ${cover ? `<img src="${esc(cover)}" alt="" style="width:56px;height:56px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">` : `<div style="width:56px;height:56px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);flex-shrink:0;"></div>`}
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:700;line-height:1.3;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(a.title)}</div>
-              <div style="font-size:11px;color:var(--muted);">${author ? `By ${esc(author)}` : "Recently published"}</div>
-            </div>
-            <button class="btn btn-primary btn-xs" data-create-for="${esc(a.id)}" style="flex-shrink:0;align-self:center;">Create</button>
-          </div>
-        </div>`;
+      return `<button type="button" class="spb-chip" data-article-id="${esc(a.id)}" title="Make a carousel for this story">
+        ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy">` : `<span class="spb-chip-ph"></span>`}
+        <span>${esc(a.title)}</span><b>Make a post</b></button>`;
     }).join("");
-
-    suggestionsList.querySelectorAll(".sp-suggestion").forEach((card) => {
-      card.addEventListener("click", () => startCreateForArticleId(card.dataset.articleId));
-    });
+    suggestionsList.querySelectorAll("[data-article-id]").forEach((b) => b.addEventListener("click", () => startCreateForArticleId(b.dataset.articleId)));
   }
 
   // Switch to the Create tab and preselect the article (initializing the
@@ -2630,186 +2689,203 @@ async function mountSocialPosts(ctx, container) {
   }
 
   // ── Detail modal ───────────────────────────────────────────────────────────
-  const closeDetail = () => { detailModal.style.display = "none"; };
+  const closeDetail = () => { detailModal.style.display = "none"; document.removeEventListener("keydown", detailKeys); };
+  function detailKeys(e) {
+    if (e.key === "Escape") { e.stopPropagation(); closeDetail(); }
+    else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "")) detailModal.querySelector(e.key === "ArrowLeft" ? "[data-slide-prev]" : "[data-slide-next]")?.click();
+  }
   detailModal.querySelector("#sp-detail-close").addEventListener("click", closeDetail);
   detailModal.addEventListener("click", (e) => { if (e.target === detailModal) closeDetail(); });
 
   function openDetail(p) {
     if (!p) return;
-    const pm = PLATFORM_META[p.platform] || { label: p.platform, icon: "", pill: "pill-draft" };
-    const sp = STATUS_PILL[p.status] || "pill-draft";
-    detailModal.querySelector("#sp-detail-title").textContent = p.title || "Post";
+    const pm = PLATFORM_META[p.platform] || { label: p.platform || "Instagram" };
+    const st = p.status || "proposed";
+    const design = designOf(p);
+    const nSlides = design?.pages?.length || p.imageUrls?.length || (p.coverImageUrl ? 1 : 0);
+    const staticImgs = p.imageUrls && p.imageUrls.length ? p.imageUrls : (p.coverImageUrl ? [p.coverImageUrl] : []);
+    const canEdit = !!(design || p.backgroundId);
+    const canStatus = ["admin", "editor"].includes(ctx.role);
+    const canDelete = ctx.role === "admin" || p.proposerId === ctx.user?.uid;
+    detailModal.querySelector("#sp-detail-title").textContent = cleanTitle(p.title);
 
-    const cover = p.coverImageUrl || "";
-    // Every image on the post (a carousel has one per slide).
-    const images = p.imageUrls && p.imageUrls.length ? p.imageUrls : (cover ? [cover] : []);
     detailModal.querySelector("#sp-detail-body").innerHTML = `
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-        <span class="pill ${pm.pill}">${esc(pm.label)}</span>
-        <span class="pill ${sp}">${esc(p.status)}</span>
-        ${p.deadline ? `<span class="pill pill-draft">Due ${esc(p.deadline)}</span>` : ""}
-      </div>
-      ${images.length > 1 ? `
-      <div style="margin-bottom:16px;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;">${images.length} slides, in posting order</div>
-        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;">
-          ${images.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener" title="Open slide ${i + 1}" style="flex:none;position:relative;">
-            <img src="${esc(u)}" alt="Slide ${i + 1}" loading="lazy" style="display:block;height:132px;width:auto;border-radius:8px;border:1px solid var(--border);">
-            <span style="position:absolute;left:6px;bottom:6px;font:600 10.5px/1 var(--font, Poppins);background:rgba(248,247,243,.92);color:var(--ink);padding:4px 6px;border-radius:999px;">${i + 1}</span></a>`).join("")}
+      <div class="spd-grid">
+        <div class="spd-preview">
+          <div class="spd-stage${isWide(p) ? " is-wide" : ""}">
+            ${nSlides ? `<img id="spd-img" alt="Slide 1 of ${nSlides}">` : `<div class="spd-noimg">${platIcon(p.platform)}<span>No image on this post yet${canEdit ? "" : ". Design one in the Studio"}.</span></div>`}
+            ${nSlides > 1 ? `<button type="button" class="spd-nav is-prev" data-slide-prev aria-label="Previous slide">‹</button><button type="button" class="spd-nav is-next" data-slide-next aria-label="Next slide">›</button><span class="spd-count" id="spd-count">1 / ${nSlides}</span>` : ""}
+          </div>
+          ${nSlides > 1 ? `<div class="spd-strip">${Array.from({ length: nSlides }, (_, i) => `<button type="button" data-slide="${i}" class="${i === 0 ? "is-on" : ""}" aria-label="Slide ${i + 1}"><img alt="" data-thumb="${i}"><span>${i + 1}</span></button>`).join("")}</div>` : ""}
         </div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px;">"Download all" saves every slide (numbered, as JPEGs) in one ZIP.${p.designJson ? ` "Open in Studio" edits the slides.` : ""}</div>
-      </div>` : cover ? `
-      <div style="margin-bottom:16px;display:flex;gap:12px;align-items:flex-start;">
-        <img src="${esc(cover)}" alt="" style="width:120px;height:120px;border-radius:10px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">
-        <div style="font-size:12px;color:var(--muted);line-height:1.5;">
-          Image saved with this draft. Use "Download image" below to grab it for posting${p.designJson ? `, or "Open in Studio" to edit it` : ""}.
+        <div class="spd-side">
+          <div class="spd-chips">
+            <span class="spd-chip">${platIcon(p.platform)}${esc(pm.label)}</span>
+            <span class="spc-status is-${esc(st)}">${esc(STATUS_LABEL[st] || st)}</span>
+            <span class="spd-chip">${esc(kindOf(p))}</span>
+          </div>
+          <label class="spd-label" for="spd-due">Post on</label>
+          <div class="spd-due"><input type="date" id="spd-due" value="${esc(p.deadline || "")}"><span id="spd-due-status"></span></div>
+          <div class="spd-labelrow"><label class="spd-label" for="sp-detail-caption">Caption</label><span id="sp-detail-caption-status"></span></div>
+          <textarea id="sp-detail-caption" class="input textarea spd-caption" rows="9">${esc(p.content || "")}</textarea>
+          <div class="spd-capactions">
+            <button type="button" class="btn btn-secondary btn-sm" id="spd-copy">Copy caption</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="spd-save-cap" disabled>Save caption</button>
+            <span class="spd-capcount" id="spd-capcount"></span>
+          </div>
+          ${p.notes ? `<details class="spd-notes"><summary>Notes</summary><pre>${esc(p.notes)}</pre></details>` : ""}
+          <div class="spd-by">By <strong>${esc(p.proposerName || "—")}</strong>${p.createdAt ? ` · ${fmtRelative(p.createdAt)}` : ""}${p.articleSlug ? ` · <a href="/article/${esc(p.articleSlug)}" target="_blank" rel="noopener">Story</a>` : ""}</div>
         </div>
-      </div>` : ""}
-      <div style="margin-bottom:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px;">
-          <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;">Caption</span>
-          <span id="sp-detail-caption-status" style="font-size:11px;color:var(--muted);"></span>
-        </div>
-        <textarea id="sp-detail-caption" class="input textarea" rows="8"
-          style="width:100%;min-height:160px;font-size:14px;font-family:inherit;">${esc(p.content || "")}</textarea>
-      </div>
-      ${p.notes ? `
-      <div style="margin-bottom:16px;">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Notes</div>
-        <pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:8px;padding:12px;margin:0;border:1px solid var(--border);">${esc(p.notes)}</pre>
-      </div>` : ""}
-      <div style="font-size:12px;color:var(--muted);">By <strong>${esc(p.proposerName || "—")}</strong>${p.createdAt ? ` · ${fmtRelative(p.createdAt)}` : ""}</div>`;
+      </div>`;
 
+    // Slides: Studio designs render live (always the latest layout).
+    let cur = 0;
+    const bigImg = detailModal.querySelector("#spd-img");
+    const slideSrc = async (i, width) => (design ? await renderDesignImage(p, i, width) : staticImgs[i] || staticImgs[0]);
+    async function show(i) {
+      if (!bigImg) return;
+      cur = (i + nSlides) % nSlides;
+      bigImg.alt = `Slide ${cur + 1} of ${nSlides}`;
+      const src = await slideSrc(cur, 900);
+      if (src) bigImg.src = src;
+      detailModal.querySelectorAll("[data-slide]").forEach((b) => b.classList.toggle("is-on", Number(b.dataset.slide) === cur));
+      const c = detailModal.querySelector("#spd-count"); if (c) c.textContent = `${cur + 1} / ${nSlides}`;
+    }
+    show(0);
+    (async () => { for (let i = 0; i < nSlides && nSlides > 1; i++) { const t = detailModal.querySelector(`[data-thumb="${i}"]`); const src = await slideSrc(i, 160); if (t && src) t.src = src; } })();
+    detailModal.querySelector("[data-slide-prev]")?.addEventListener("click", () => show(cur - 1));
+    detailModal.querySelector("[data-slide-next]")?.addEventListener("click", () => show(cur + 1));
+    detailModal.querySelectorAll("[data-slide]").forEach((b) => b.addEventListener("click", () => show(Number(b.dataset.slide))));
+
+    // Due date
+    const dueEl = detailModal.querySelector("#spd-due"), dueSt = detailModal.querySelector("#spd-due-status");
+    dueEl.addEventListener("change", async () => {
+      dueSt.textContent = "Saving…";
+      try { await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { deadline: dueEl.value || "" }); p.deadline = dueEl.value; dueSt.textContent = "Saved"; render(); }
+      catch (err) { dueSt.textContent = "Couldn't save"; ctx.toast("Could not save the date: " + err.message, "error"); }
+      setTimeout(() => { dueSt.textContent = ""; }, 1800);
+    });
+
+    // Caption
     const captionEl = detailModal.querySelector("#sp-detail-caption");
     const captionStatus = detailModal.querySelector("#sp-detail-caption-status");
-
-    const footer = detailModal.querySelector("#sp-detail-footer");
-    footer.innerHTML = "";
-
-    if (p.backgroundId || p.designJson) {
-      const studioBtn = el("button", { class: "btn btn-primary btn-sm" });
-      studioBtn.textContent = "Open in Studio";
-      studioBtn.addEventListener("click", () => { closeDetail(); openInStudio(p); });
-      footer.appendChild(studioBtn);
-    }
-
-    const copyBtn = el("button", { class: "btn btn-secondary btn-sm" });
-    copyBtn.textContent = "Copy caption";
-    copyBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(captionEl.value || "").then(() => {
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => { copyBtn.textContent = "Copy caption"; }, 2000);
-      });
+    const saveCaptionBtn = detailModal.querySelector("#spd-save-cap");
+    const capCount = detailModal.querySelector("#spd-capcount");
+    const LIMIT = { instagram: 2200, linkedin: 3000, twitter: 280, facebook: 63206 };
+    const countCap = () => { const lim = LIMIT[p.platform] || 2200; capCount.textContent = `${captionEl.value.length.toLocaleString()} / ${lim.toLocaleString()}`; capCount.classList.toggle("is-over", captionEl.value.length > lim); };
+    countCap();
+    detailModal.querySelector("#spd-copy").addEventListener("click", (e) => {
+      navigator.clipboard.writeText(captionEl.value || "").then(() => { e.target.textContent = "Copied"; setTimeout(() => { e.target.textContent = "Copy caption"; }, 1600); });
     });
-    footer.appendChild(copyBtn);
-
-    // Save edits to the caption back to Firestore. Only enabled when the user
-    // has actually changed the text, to avoid accidental no-op writes.
-    const saveCaptionBtn = el("button", { class: "btn btn-primary btn-sm" });
-    saveCaptionBtn.textContent = "Save caption";
-    saveCaptionBtn.disabled = true;
     captionEl.addEventListener("input", () => {
       const dirty = captionEl.value !== (p.content || "");
       saveCaptionBtn.disabled = !dirty;
       captionStatus.textContent = dirty ? "Unsaved changes" : "";
+      countCap();
     });
     saveCaptionBtn.addEventListener("click", async () => {
-      saveCaptionBtn.disabled = true;
-      saveCaptionBtn.textContent = "Saving…";
+      saveCaptionBtn.disabled = true; saveCaptionBtn.textContent = "Saving…";
       try {
         await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { content: captionEl.value });
         p.content = captionEl.value;
         captionStatus.textContent = "Saved";
-        saveCaptionBtn.textContent = "Saved";
-        setTimeout(() => { saveCaptionBtn.textContent = "Save caption"; captionStatus.textContent = ""; }, 1500);
-        await loadPosts();
+        setTimeout(() => { captionStatus.textContent = ""; }, 1500);
       } catch (err) {
         ctx.toast("Save failed: " + err.message, "error");
-        saveCaptionBtn.textContent = "Save caption";
         saveCaptionBtn.disabled = false;
-      }
+      } finally { saveCaptionBtn.textContent = "Save caption"; }
     });
-    footer.appendChild(saveCaptionBtn);
 
-    // Download the post's images: one file, or every slide of a carousel as a
-    // numbered ZIP. Fetched through the same-origin image proxy (Storage
-    // doesn't send CORS headers) and saved as JPEG so Instagram takes them.
-    if (images.length) {
-      const multi = images.length > 1;
-      const dlLabel = multi ? `Download all ${images.length} (ZIP)` : "Download image";
-      const dlBtn = el("button", { class: "btn btn-secondary btn-sm" });
-      dlBtn.textContent = dlLabel;
-      dlBtn.addEventListener("click", async () => {
-        dlBtn.disabled = true;
-        dlBtn.textContent = "Preparing…";
-        const base = `catalyst-${(p.articleSlug || "post").slice(0, 60)}`;
+    // Footer actions
+    const footer = detailModal.querySelector("#sp-detail-footer");
+    footer.innerHTML = "";
+    if (canDelete) {
+      const delBtn = el("button", { class: "btn btn-ghost btn-sm spd-delete" }, "Delete");
+      delBtn.addEventListener("click", async () => {
+        const ok = await confirmDialogSafe(`Delete "${cleanTitle(p.title)}" from the board? This can't be undone.`);
+        if (!ok) return;
         try {
-          if (!multi) {
-            saveBlob(await fetchAsJpeg(images[0]), `${base}.jpg`);
-          } else {
+          const res = await ctx.authedFetch(`https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/social_posts/${p.id}`, { method: "DELETE" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          allPosts = allPosts.filter((x) => x.id !== p.id);
+          closeDetail(); render();
+          ctx.toast("Post deleted.", "success");
+        } catch (err) { ctx.toast("Could not delete: " + err.message, "error"); }
+      });
+      footer.appendChild(delBtn);
+    }
+    footer.appendChild(el("span", { class: "spd-spacer" }));
+    if (canStatus) {
+      const transitions = { proposed: "approved", approved: "assigned", assigned: "posted" };
+      const labels = { proposed: "Approve", approved: "Mark assigned", assigned: "Mark posted" };
+      if (transitions[st]) {
+        const btn = el("button", { class: "btn btn-secondary btn-sm" }, labels[st]);
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          try {
+            await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { status: transitions[st] });
+            ctx.toast(`Marked as ${STATUS_LABEL[transitions[st]].toLowerCase()}`, "success");
+            closeDetail();
+            await loadPosts();
+          } catch (err) { ctx.toast("Failed: " + err.message, "error"); btn.disabled = false; }
+        });
+        footer.appendChild(btn);
+      }
+    }
+    if (nSlides) {
+      const multi = nSlides > 1;
+      const dlLabel = multi ? `Download all ${nSlides} (ZIP)` : "Download image";
+      const dlBtn = el("button", { class: "btn btn-secondary btn-sm" }, dlLabel);
+      dlBtn.addEventListener("click", async () => {
+        dlBtn.disabled = true; dlBtn.textContent = "Preparing…";
+        const base = `catalyst-${(p.articleSlug || cleanTitle(p.title).toLowerCase().replace(/[^a-z0-9]+/g, "-")).slice(0, 60)}`;
+        // A slide as a JPEG blob: rendered from the design, or the stored image.
+        const slideBlob = async (i) => {
+          if (design) {
+            const m = await studioModule();
+            const c = await m.renderDesignPage(design, i, 1);
+            const flat = document.createElement("canvas"); flat.width = c.width; flat.height = c.height;
+            const g = flat.getContext("2d"); g.fillStyle = "#ffffff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(c, 0, 0);
+            return await new Promise((r) => flat.toBlob(r, "image/jpeg", 0.93));
+          }
+          return fetchAsJpeg(staticImgs[i]);
+        };
+        try {
+          if (!multi) saveBlob(await slideBlob(0), `${base}.jpg`);
+          else {
             const JSZipMod = await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm");
             const zip = new (JSZipMod.default || JSZipMod)();
-            for (let i = 0; i < images.length; i++) {
-              dlBtn.textContent = `Preparing ${i + 1}/${images.length}…`;
-              zip.file(`${String(i + 1).padStart(2, "0")}.jpg`, await fetchAsJpeg(images[i]));
-            }
+            for (let i = 0; i < nSlides; i++) { dlBtn.textContent = `Preparing ${i + 1}/${nSlides}…`; zip.file(`${String(i + 1).padStart(2, "0")}.jpg`, await slideBlob(i)); }
             saveBlob(await zip.generateAsync({ type: "blob" }), `${base}-carousel.zip`);
           }
         } catch (err) {
           console.warn("[social] download failed", err);
-          ctx.toast("Could not download: " + (err.message || err) + ". Opening the image instead.", "error");
-          window.open(images[0], "_blank", "noopener");
-        } finally {
-          dlBtn.disabled = false;
-          dlBtn.textContent = dlLabel;
-        }
+          ctx.toast("Could not download: " + (err.message || err), "error");
+        } finally { dlBtn.disabled = false; dlBtn.textContent = dlLabel; }
       });
       footer.appendChild(dlBtn);
     }
-
-    // Re-open the Create tab pre-loaded with this draft's article and caption,
-    // so the user can re-render the carousel pages and download fresh PNGs.
-    // Studio designs reopen in the Studio (above); this is for carousel-maker
-    // drafts, which can only be rebuilt from a published article.
-    if (p.articleId && !p.designJson && !p.backgroundId) {
-      const editBtn = el("button", { class: "btn btn-accent btn-sm" });
-      editBtn.textContent = "Open in editor";
+    if (canEdit) {
+      const studioBtn = el("button", { class: "btn btn-primary btn-sm" }, "Open in Studio");
+      studioBtn.addEventListener("click", () => { closeDetail(); openInStudio(p); });
+      footer.appendChild(studioBtn);
+    } else if (p.articleId) {
+      const editBtn = el("button", { class: "btn btn-primary btn-sm" }, "Open in carousel maker");
       editBtn.addEventListener("click", async () => {
         closeDetail();
         const found = await startCreateForArticleId(p.articleId);
-        if (!found) { ctx.toast("This story isn't published yet, so the carousel maker can't load it. Download the images above instead.", "error"); return; }
-        // Replace the auto-built caption with the user's edited one so they
-        // don't lose any tweaks they made in the draft.
-        if (captionArea && captionEl.value) {
-          captionArea.value = captionEl.value;
-          charEl.textContent = `${captionArea.value.length} characters`;
-        }
+        if (!found) { ctx.toast("This story isn't published yet, so the carousel maker can't load it.", "error"); return; }
+        if (captionArea && captionEl.value) { captionArea.value = captionEl.value; charEl.textContent = `${captionArea.value.length} characters`; }
         if (p.platform && platformSelect) platformSelect.value = p.platform;
       });
       footer.appendChild(editBtn);
     }
 
-    if (["admin", "editor"].includes(ctx.role)) {
-      const transitions = { proposed: "approved", approved: "assigned", assigned: "posted" };
-      const labels = { proposed: "Approve", approved: "Mark assigned", assigned: "Mark posted" };
-      if (transitions[p.status]) {
-        const btn = el("button", { class: "btn btn-primary btn-sm" });
-        btn.textContent = labels[p.status];
-        btn.addEventListener("click", async () => {
-          btn.disabled = true;
-          try {
-            await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { status: transitions[p.status] });
-            ctx.toast(`Marked as ${transitions[p.status]}`, "success");
-            closeDetail();
-            await loadPosts();
-          } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
-        });
-        footer.appendChild(btn);
-      }
-    }
-
     detailModal.style.display = "grid";
+    document.addEventListener("keydown", detailKeys);
+    detailModal.querySelector("#sp-detail-close").focus();
   }
+  const confirmDialogSafe = (msg) => confirmDialog(msg, { confirmText: "Delete", danger: true });
 
   // ── Generator (inline — no modal) ──────────────────────────────────────────
   const articleSelect  = container.querySelector("#sp-gen-article");
@@ -4048,8 +4124,7 @@ bg: #0a1f3d
   }
 
   // ── Filters ────────────────────────────────────────────────────────────────
-  platformFilter.addEventListener("change", render);
-  statusFilter.addEventListener("change", render);
+  // (filters are wired up next to render())
 
   // Load posts and the published-article list in parallel so the Board can
   // surface "needs a post" suggestions on first paint without waiting for
