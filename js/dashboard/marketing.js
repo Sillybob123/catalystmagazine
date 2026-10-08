@@ -634,6 +634,9 @@ async function firestoreQuery(authedFetch, structuredQuery) {
       articleTitle: str("articleTitle"),
       coverImageUrl: str("coverImageUrl"),
       imageUrls: (f.imageUrls?.arrayValue?.values || []).map((v) => v.stringValue || "").filter(Boolean),
+      bank: f.bank?.booleanValue === true,
+      series: str("series"),
+      seriesNo: Number(f.seriesNo?.integerValue ?? f.seriesNo?.doubleValue ?? 0),
       backgroundId: str("backgroundId"),
       designJson: str("designJson"),
       studio: (() => {
@@ -2161,6 +2164,10 @@ async function mountSocialPosts(ctx, container) {
           </select>
         </div>
         <div class="spb-status" id="sp-status-tabs" role="tablist" aria-label="Status"></div>
+        <div class="spb-bankbar" id="sp-bank-bar" hidden>
+          <p>Ready-made posts for slow weeks. Open one, give it a date and move it to Drafts.</p>
+          <div class="spb-seg" id="sp-series-seg" role="group" aria-label="Series"></div>
+        </div>
 
         <!-- Suggestions: published articles that don't have a post yet -->
         <div id="sp-suggestions-wrap" class="spb-suggest" hidden>
@@ -2450,7 +2457,8 @@ async function mountSocialPosts(ctx, container) {
   const suggestionsWrap = container.querySelector("#sp-suggestions-wrap");
   const suggestionsList = container.querySelector("#sp-suggestions-list");
   const suggestionsCount = container.querySelector("#sp-suggestions-count");
-  const boardFilter = { platform: "", status: "", q: "" };
+  const boardFilter = { platform: "", status: "", q: "", series: "" };
+  const SERIES_LABEL = { "wacky-word": "Wacky Word Wednesday", "fun-fact": "Fun facts" };
 
   // True if `post` is plausibly about `article` — matches by stored
   // articleId when available, else by title substring (legacy posts).
@@ -2465,7 +2473,7 @@ async function mountSocialPosts(ctx, container) {
   }
 
   // ── Board cards: a visual gallery ──────────────────────────────────────────
-  const STATUS_LABEL = { proposed: "Draft", approved: "Approved", assigned: "Assigned", posted: "Posted" };
+  const STATUS_LABEL = { proposed: "Draft", approved: "Approved", assigned: "Assigned", posted: "Posted", bank: "Bank" };
   const PLATFORM_ICON = {
     instagram: '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".9" fill="currentColor" stroke="none"/>',
     linkedin: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 10.5V16M8 7.6v.1M11.5 16v-3.3a2.2 2.2 0 0 1 4.4 0V16M11.5 10.5V16"/>',
@@ -2483,6 +2491,8 @@ async function mountSocialPosts(ctx, container) {
     return "Post";
   }
   const isWide = (p) => { const f = designOf(p)?.format; return f === "linkedin" || f === "wide" || (!f && (p.platform === "linkedin" || p.platform === "twitter")); };
+  // Frame shape for the card / detail preview, from the design's format.
+  const shapeOf = (p) => { if (isWide(p)) return "wide"; const f = designOf(p)?.format; return f === "square" ? "square" : f === "story" ? "story" : f === "post" ? "portrait" : "other"; };
   function dueInfo(p) {
     if (!p.deadline) return { text: "No date", cls: "" };
     const [yy, mm, dd] = String(p.deadline).split("-").map(Number);
@@ -2498,12 +2508,12 @@ async function mountSocialPosts(ctx, container) {
     return { text: `Due ${txt}`, cls: "" };
   }
   function postCardHTML(p) {
-    const due = dueInfo(p), st = p.status || "proposed";
+    const due = p.bank ? { text: SERIES_LABEL[p.series] || "Ready anytime", cls: "" } : dueInfo(p), st = p.bank ? "bank" : (p.status || "proposed");
     const live = !!designOf(p);
     const img = p.coverImageUrl || "";
     return `
       <article class="spc" data-id="${esc(p.id)}" tabindex="0" aria-label="${esc(cleanTitle(p.title))}">
-        <div class="spc-media${isWide(p) ? " is-wide" : ""}">
+        <div class="spc-media is-${shapeOf(p)}">
           ${live ? `<img alt="" data-live="${esc(p.id)}"${img ? ` src="${esc(img)}"` : ""}>` : img ? `<img alt="" src="${esc(img)}" loading="lazy">` : `<span class="spc-empty">${platIcon(p.platform)}<small>No image yet</small></span>`}
           ${/^Carousel/.test(kindOf(p)) ? `<span class="spc-kind" title="${esc(kindOf(p))}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>${esc(kindOf(p).replace(/\D+/g, ""))}</span>` : ""}
           <div class="spc-hover">
@@ -2524,7 +2534,7 @@ async function mountSocialPosts(ctx, container) {
 
   // Live previews for Studio designs (always the latest saved layout).
   let _studioMod = null;
-  const studioModule = () => _studioMod || (_studioMod = import("./design-studio.js?v=10"));
+  const studioModule = () => _studioMod || (_studioMod = import("./design-studio.js?v=11"));
   const FORMAT_W = { post: 1080, square: 1080, story: 1080, linkedin: 1200, wide: 1600 };
   const liveCache = new Map();
   async function renderDesignImage(p, page = 0, width = 420, type = "image/jpeg") {
@@ -2562,14 +2572,26 @@ async function mountSocialPosts(ctx, container) {
   function render() {
     const { platform: pf, status: sf } = boardFilter;
     const q = boardFilter.q.trim().toLowerCase();
-    const base = allPosts.filter((p) => (!pf || p.platform === pf) && (!q || `${p.title} ${p.content} ${p.articleTitle}`.toLowerCase().includes(q)));
-    const counts = { "": base.length };
+    const matching = allPosts.filter((p) => (!pf || p.platform === pf) && (!q || `${p.title} ${p.content} ${p.articleTitle}`.toLowerCase().includes(q)));
+    // Bank posts (ready-made, undated) live in their own tab.
+    const base = matching.filter((p) => !p.bank);
+    const bank = matching.filter((p) => p.bank);
+    const counts = { "": base.length, bank: bank.length };
     for (const p of base) counts[p.status || "proposed"] = (counts[p.status || "proposed"] || 0) + 1;
-    statusTabs.innerHTML = [["", "All"], ["proposed", "Drafts"], ["approved", "Approved"], ["assigned", "Assigned"], ["posted", "Posted"]]
-      .map(([k, label]) => `<button type="button" role="tab" data-status="${k}" class="${sf === k ? "is-on" : ""}" aria-selected="${sf === k}">${label}<span>${counts[k] || 0}</span></button>`).join("");
+    statusTabs.innerHTML = [["", "All"], ["proposed", "Drafts"], ["approved", "Approved"], ["assigned", "Assigned"], ["posted", "Posted"], ["bank", "Post bank"]]
+      .map(([k, label]) => `<button type="button" role="tab" data-status="${k}" class="${sf === k ? "is-on" : ""}${k === "bank" ? " is-bank" : ""}" aria-selected="${sf === k}">${label}<span>${counts[k] || 0}</span></button>`).join("");
+    const bankBar = container.querySelector("#sp-bank-bar");
+    bankBar.hidden = sf !== "bank";
+    if (sf === "bank") {
+      const sc = {}; for (const p of bank) sc[p.series || "other"] = (sc[p.series || "other"] || 0) + 1;
+      container.querySelector("#sp-series-seg").innerHTML = [["", "All"], ...Object.keys(sc).map((k) => [k, SERIES_LABEL[k] || "Other"])]
+        .map(([k, label]) => `<button type="button" data-series="${k}" class="${boardFilter.series === k ? "is-on" : ""}">${label} <small>${k ? sc[k] : bank.length}</small></button>`).join("");
+    }
 
     const sort = sortEl.value;
-    const list = base.filter((p) => !sf || (p.status || "proposed") === sf).sort((a, b) => {
+    const pool = sf === "bank" ? bank.filter((p) => !boardFilter.series || p.series === boardFilter.series) : base.filter((p) => !sf || (p.status || "proposed") === sf);
+    const list = pool.sort((a, b) => {
+      if (sf === "bank" && sort === "due") return (a.series || "").localeCompare(b.series || "") || (a.seriesNo - b.seriesNo);
       if (sort === "new") return String(b.createdAt).localeCompare(String(a.createdAt));
       if (sort === "old") return String(a.createdAt).localeCompare(String(b.createdAt));
       const empty = (x) => (!x.title && !x.content && !x.coverImageUrl && !x.designJson ? 1 : 0);
@@ -2603,7 +2625,8 @@ async function mountSocialPosts(ctx, container) {
     const card = e.target.closest(".spc"); if (!card || e.target !== card) return;
     e.preventDefault(); openDetail(allPosts.find((x) => x.id === card.dataset.id));
   });
-  statusTabs.addEventListener("click", (e) => { const b = e.target.closest("[data-status]"); if (!b) return; boardFilter.status = b.dataset.status; render(); });
+  statusTabs.addEventListener("click", (e) => { const b = e.target.closest("[data-status]"); if (!b) return; boardFilter.status = b.dataset.status; boardFilter.series = ""; render(); });
+  container.querySelector("#sp-series-seg").addEventListener("click", (e) => { const b = e.target.closest("[data-series]"); if (!b) return; boardFilter.series = b.dataset.series; render(); });
   container.querySelector("#sp-platform-seg").addEventListener("click", (e) => {
     const b = e.target.closest("[data-platform]"); if (!b) return;
     boardFilter.platform = b.dataset.platform;
@@ -2619,11 +2642,12 @@ async function mountSocialPosts(ctx, container) {
   // article pre-selected.
   function renderSuggestions() {
     if (!publishedArticles.length) { suggestionsWrap.hidden = true; return; }
-    const cutoff = Date.now() - 30 * 86400000;
+    // Only stories published in the last 20 days: after that it's too late
+    // to promote them. Stories without a publish date aren't suggested.
+    const cutoff = Date.now() - 20 * 86400000;
     const recent = publishedArticles.filter((a) => {
-      if (!a.publishedAt) return true; // include articles missing a date
-      const t = Date.parse(a.publishedAt);
-      return Number.isFinite(t) ? t >= cutoff : true;
+      const t = Date.parse(a.publishedAt || "");
+      return Number.isFinite(t) && t >= cutoff;
     });
     const needsPost = recent.filter((a) => !allPosts.some((p) => postMatchesArticle(p, a)));
     if (!needsPost.length) { suggestionsWrap.hidden = true; return; }
@@ -2657,7 +2681,7 @@ async function mountSocialPosts(ctx, container) {
       allPosts = await firestoreQuery(ctx.authedFetch, {
         from: [{ collectionId: "social_posts" }],
         orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
-        limit: 200,
+        limit: 400,
       });
       render();
     } catch (err) {
@@ -2700,7 +2724,7 @@ async function mountSocialPosts(ctx, container) {
   function openDetail(p) {
     if (!p) return;
     const pm = PLATFORM_META[p.platform] || { label: p.platform || "Instagram" };
-    const st = p.status || "proposed";
+    const st = p.bank ? "bank" : (p.status || "proposed");
     const design = designOf(p);
     const nSlides = design?.pages?.length || p.imageUrls?.length || (p.coverImageUrl ? 1 : 0);
     const staticImgs = p.imageUrls && p.imageUrls.length ? p.imageUrls : (p.coverImageUrl ? [p.coverImageUrl] : []);
@@ -2712,11 +2736,11 @@ async function mountSocialPosts(ctx, container) {
     detailModal.querySelector("#sp-detail-body").innerHTML = `
       <div class="spd-grid">
         <div class="spd-preview">
-          <div class="spd-stage${isWide(p) ? " is-wide" : ""}">
+          <div class="spd-stage is-${shapeOf(p)}">
             ${nSlides ? `<img id="spd-img" alt="Slide 1 of ${nSlides}">` : `<div class="spd-noimg">${platIcon(p.platform)}<span>No image on this post yet${canEdit ? "" : ". Design one in the Studio"}.</span></div>`}
             ${nSlides > 1 ? `<button type="button" class="spd-nav is-prev" data-slide-prev aria-label="Previous slide">‹</button><button type="button" class="spd-nav is-next" data-slide-next aria-label="Next slide">›</button><span class="spd-count" id="spd-count">1 / ${nSlides}</span>` : ""}
           </div>
-          ${nSlides > 1 ? `<div class="spd-strip">${Array.from({ length: nSlides }, (_, i) => `<button type="button" data-slide="${i}" class="${i === 0 ? "is-on" : ""}" aria-label="Slide ${i + 1}"><img alt="" data-thumb="${i}"><span>${i + 1}</span></button>`).join("")}</div>` : ""}
+          ${nSlides > 1 ? `<div class="spd-strip is-${shapeOf(p)}">${Array.from({ length: nSlides }, (_, i) => `<button type="button" data-slide="${i}" class="${i === 0 ? "is-on" : ""}" aria-label="Slide ${i + 1}"><img alt="" data-thumb="${i}"><span>${i + 1}</span></button>`).join("")}</div>` : ""}
         </div>
         <div class="spd-side">
           <div class="spd-chips">
@@ -2815,7 +2839,19 @@ async function mountSocialPosts(ctx, container) {
       footer.appendChild(delBtn);
     }
     footer.appendChild(el("span", { class: "spd-spacer" }));
-    if (canStatus) {
+    if (p.bank) {
+      const useBtn = el("button", { class: "btn btn-secondary btn-sm", title: "Take it out of the bank and put it with the drafts (with the date above, if you set one)" }, "Move to drafts");
+      useBtn.addEventListener("click", async () => {
+        useBtn.disabled = true;
+        try {
+          await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { bank: false, status: "proposed", deadline: detailModal.querySelector("#spd-due").value || p.deadline || "" });
+          ctx.toast(dueEl.value ? "Moved to drafts with its date." : "Moved to drafts. Give it a date when you're ready.", "success");
+          closeDetail(); await loadPosts();
+        } catch (err) { ctx.toast("Could not move it: " + err.message, "error"); useBtn.disabled = false; }
+      });
+      footer.appendChild(useBtn);
+    }
+    if (canStatus && !p.bank) {
       const transitions = { proposed: "approved", approved: "assigned", assigned: "posted" };
       const labels = { proposed: "Approve", approved: "Mark assigned", assigned: "Mark posted" };
       if (transitions[st]) {

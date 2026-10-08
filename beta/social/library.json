@@ -563,6 +563,56 @@
  ],
  "elements": [
   {
+   "id": "brand-lockup-ink",
+   "title": "Catalyst logo",
+   "cat": "Brand",
+   "tags": "logo brand lockup the catalyst",
+   "image": "/beta/social/brand/lockup-ink.png?v=1",
+   "thumb": "/beta/social/brand/lockup-ink.png?v=1",
+   "w": 1033,
+   "h": 258
+  },
+  {
+   "id": "brand-lockup-paper",
+   "title": "Catalyst logo (light)",
+   "cat": "Brand",
+   "tags": "logo brand lockup white light",
+   "image": "/beta/social/brand/lockup-paper.png?v=1",
+   "thumb": "/beta/social/brand/lockup-paper.png?v=1",
+   "w": 1033,
+   "h": 258
+  },
+  {
+   "id": "brand-stacked-ink",
+   "title": "Catalyst logo, stacked",
+   "cat": "Brand",
+   "tags": "logo brand stacked centered",
+   "image": "/beta/social/brand/lockup-stacked-ink.png?v=1",
+   "thumb": "/beta/social/brand/lockup-stacked-ink.png?v=1",
+   "w": 622,
+   "h": 316
+  },
+  {
+   "id": "brand-stacked-paper",
+   "title": "Catalyst logo, stacked (light)",
+   "cat": "Brand",
+   "tags": "logo brand stacked white",
+   "image": "/beta/social/brand/lockup-stacked-paper.png?v=1",
+   "thumb": "/beta/social/brand/lockup-stacked-paper.png?v=1",
+   "w": 622,
+   "h": 316
+  },
+  {
+   "id": "brand-mark",
+   "title": "Catalyst mark",
+   "cat": "Brand",
+   "tags": "logo mark icon hexagon atom",
+   "image": "/beta/social/brand/mark-alpha.png?v=1",
+   "thumb": "/beta/social/brand/mark-alpha.png?v=1",
+   "w": 1929,
+   "h": 1866
+  },
+  {
    "id": "med-ambulance",
    "title": "Ambulance",
    "cat": "Medicine",

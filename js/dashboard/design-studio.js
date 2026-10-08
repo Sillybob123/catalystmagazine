@@ -25,8 +25,8 @@ import { el, esc } from "./ui.js";
 
 // ─── Formats, fonts, palette ────────────────────────────────────────────────
 const FORMATS = {
-  post:   { label: "Post 4:5",   w: 1080, h: 1350 },
-  square: { label: "Square 1:1", w: 1080, h: 1080 },
+  square: { label: "Instagram post 1:1", w: 1080, h: 1080 },
+  post:   { label: "Portrait 4:5", w: 1080, h: 1350 },
   story:  { label: "Story 9:16", w: 1080, h: 1920 },
   linkedin: { label: "LinkedIn 1.91:1", w: 1200, h: 627 },
   wide:   { label: "X / wide 16:9", w: 1600, h: 900 },
@@ -485,10 +485,21 @@ export async function renderDesignPage(design, index, scale = 1) {
 //   after: [name, gap] → placed under the named layer
 const T = (o) => ({ id: uid(), opacity: 1, ...o });
 const txt = (o) => T({ type: "text", font: "sans", weight: 400, size: 40, color: "#0f172a", align: "left", lh: 1.15, ls: 0, markup: true, h: 50, ...o });
+// The Catalyst logo lockup (mark + wordmark), ink for light pages, paper for
+// dark ones. Files in /beta/social/brand/ (made from NewLogoShape.png).
+const LOCKUP = { h: { w: 1033, h: 258 }, s: { w: 622, h: 316 } };
+const isLightColor = (c) => { const m = /^#?([0-9a-f]{6})$/i.exec(c || ""); if (!m) return false; const n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150; };
+function logo(x, y, h, { tone = "ink", stacked = false } = {}) {
+  const L = LOCKUP[stacked ? "s" : "h"];
+  const w = Math.round(h * L.w / L.h);
+  return T({ type: "image", src: `/beta/social/brand/${stacked ? "lockup-stacked" : "lockup"}-${tone}.png?v=1`, x: x === "center" ? null : x, y, w, h, fit: "contain", name: "Logo" });
+}
+function centeredLogo(W, y, h, opts) { const L = logo(0, y, h, opts); L.x = Math.round((W - L.w) / 2); return L; }
 function brandLine(W, color = "#5b6678", y = 72) {
+  const tone = isLightColor(color) ? "paper" : "ink";
   return [
-    txt({ text: "THE CATALYST", x: 88, y, w: 420, size: 21, weight: 600, ls: 0.18, color, markup: false, name: "Brand" }),
-    txt({ text: "catalyst-magazine.com", x: W - 88 - 420, y, w: 420, size: 21, weight: 500, align: "right", color, markup: false, name: "Website" }),
+    logo(88, y - 18, 56, { tone }),
+    txt({ text: "catalyst-magazine.com", x: W - 88 - 420, y: y - 1, w: 420, size: 19, weight: 500, ls: 0.02, align: "right", color, opacity: 0.85, markup: false, name: "Website" }),
   ];
 }
 function kicker(text, x, y, color = "#5b6678", w = 700) {
@@ -511,7 +522,7 @@ const TEMPLATES = [
       ...kicker(c.kicker || "Science in the Capital", 104, H - 420),
       txt({ text: c.headline || "Where D.C. *does science*", x: 104, y: H - 372, w: W - 208, size: 72, weight: 700, lh: 1.05, ls: -0.035, name: "Headline", maxH: 160, minSize: 44 }),
       txt({ text: c.sub || "The labs, museums and people behind the research in our city.", x: 104, y: H - 200, w: W - 208, size: 30, font: "serif", color: "#334155", lh: 1.4, name: "Line" }),
-      txt({ text: "THE CATALYST", x: 104, y: 70, w: 400, size: 21, weight: 600, ls: 0.18, color: "#fdfcf9", markup: false, name: "Brand" }),
+      logo(104, 54, 56, { tone: "paper" }),
     ] },
   { id: "quote", name: "Quote card", cat: "Quote", bg: "series-quote",
     build: (W, H, c, ink) => [
@@ -795,7 +806,7 @@ const TEMPLATES = [
       txt({ text: "“", x: 0, y: Math.round(H * 0.14), w: W, size: 240, font: "serif", italic: true, color: "#f1d9c8", lh: 0.9, align: "center", markup: false, name: "Quote mark" }),
       txt({ text: c.headline || "Nothing in life is to be feared, it is only to be *understood.*", x: 110, y: Math.round(H * 0.34), w: W - 220, size: 64, font: "serif", lh: 1.22, align: "center", color: "#fbf3ec", name: "Quote", maxH: Math.round(H * 0.38), minSize: 40 }),
       txt({ text: c.sub || "— Marie Curie", x: 110, y: 0, w: W - 220, size: 26, weight: 600, ls: 0.08, align: "center", color: "#f1d9c8", markup: false, name: "Attribution", after: ["Quote", 40] }),
-      txt({ text: "THE CATALYST", x: 0, y: H - 110, w: W, size: 20, weight: 600, ls: 0.22, align: "center", color: "#f1d9c8", markup: false, name: "Brand" }),
+      centeredLogo(W, H - 128, 56, { tone: "paper" }),
     ] },
   { id: "book-pick", name: "Book pick", cat: "People", bg: "wash-blush",
     build: (W, H, c) => [
@@ -862,7 +873,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
   let postPlatform = null, postTitle = null;   // of the post opened from the board
   const undo = [], redo = [];
 
-  function newDesignFrom(tid, format = "post", content = {}, bgId) {
+  function newDesignFrom(tid, format = "square", content = {}, bgId) {
     const d = { format, pages: [] };
     d.pages.push(pageFromTemplate(tid, format, content, bgId));
     return d;
@@ -2601,7 +2612,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
         return `<button type="button" class="ds-fmtcard" data-fmt="${k}"><span class="ds-fmtshape" style="width:${w}px;height:${h}px"></span><b>${f.label.split(" ")[0] === "X" ? "X / wide" : f.label.replace(/ \d.*$/, "")}</b><small>${f.label.match(/[\d.]+:[\d.]+/)?.[0] || ""} · ${f.w}×${f.h}</small></button>`; };
       wrap.innerHTML = `<div class="ds-dialog ds-newdlg" role="dialog" aria-modal="true" aria-labelledby="ds-new-t">
         <h3 id="ds-new-t">Create a design</h3><p>Choose a size. You can change it later from the top bar.</p>
-        <div class="ds-fmtgrid">${["post", "square", "story", "linkedin", "wide"].map(card).join("")}</div>
+        <div class="ds-fmtgrid">${["square", "story", "post", "linkedin", "wide"].map(card).join("")}</div>
         <div class="ds-dialog-actions"><button type="button" class="ds-ghost" data-k="cancel">Cancel</button></div></div>`;
       const done = (k) => { wrap.remove(); document.removeEventListener("keydown", onEsc, true); resolve(k); };
       const onEsc = (e) => { if (e.key === "Escape") { e.stopPropagation(); done(null); } };
