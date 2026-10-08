@@ -14,6 +14,7 @@ import {
   ref as storageRef, uploadBytesResumable, getDownloadURL,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
+import { mountCoverPromptTool } from "./cover-prompt.js?v=1";
 
 // A user is "recently joined" if their account was created within this many
 // days. The welcome email panel surfaces these at the top so the admin can fire
@@ -40,6 +41,14 @@ const TOOLS = [
     danger: "writes",
     iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`,
     mount: mountAnnounceTool,
+  },
+  {
+    id: "cover-prompt",
+    label: "Cover art prompt",
+    summary: "Turn an article or an idea into a detailed AI prompt for a watercolour cover in our style, plus a style sheet to attach.",
+    danger: null,
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-1.5a1.5 1.5 0 0 0-1 2.6A1.5 1.5 0 0 1 14.4 22z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="11" cy="7" r="1"/><circle cx="15.5" cy="8" r="1"/></svg>`,
+    mount: mountCoverPromptTool,
   },
   {
     id: "hero",

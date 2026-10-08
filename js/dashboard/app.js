@@ -396,7 +396,7 @@ const ROUTES = {
     icon: ICONS.chart,
     roles: ["admin", "marketing", "newsletter_builder", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-13"),
+    loader: () => import("./marketing.js?v=studio-14"),
     mountKey: "analytics",
   },
   "#/marketing/subscribers": {
@@ -405,7 +405,7 @@ const ROUTES = {
     icon: ICONS.users,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-13"),
+    loader: () => import("./marketing.js?v=studio-14"),
     mountKey: "subscribers",
   },
   "#/marketing/collabs": {
@@ -414,7 +414,7 @@ const ROUTES = {
     icon: ICONS.handshake,
     roles: ["admin", "marketing"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-13"),
+    loader: () => import("./marketing.js?v=studio-14"),
     mountKey: "collabs",
   },
   "#/marketing/social": {
@@ -423,7 +423,7 @@ const ROUTES = {
     icon: ICONS.share,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-13"),
+    loader: () => import("./marketing.js?v=studio-14"),
     mountKey: "social",
   },
   "#/marketing/searchability": {
@@ -509,7 +509,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js"),
+    loader: () => import("./admin-import.js?v=cover-1"),
     mountKey: "advanced",
   },
   "#/admin/activity": {

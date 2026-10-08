@@ -466,6 +466,10 @@ export function settleLayout(page) {
   return page;
 }
 
+// For other modules that build pages: load the faces these layers use, so
+// settleLayout measures with the real fonts.
+export async function loadFontsFor(layers) { await Promise.all([fontsReady(), ensureFontsFor(layers)]); }
+
 export async function renderDesignPage(design, index, scale = 1) {
   const fmt = FORMATS[design.format] || FORMATS.post;
   const c = document.createElement("canvas");
