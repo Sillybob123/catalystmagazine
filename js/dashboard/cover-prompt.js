@@ -9,8 +9,8 @@ import { db } from "../firebase-config.js";
 import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { esc, toast } from "./ui.js";
 
-const SHEET = "/beta/cover-style/catalyst-watercolor-style-sheet.jpg";
-const SHEET_PREVIEW = "/beta/cover-style/catalyst-watercolor-style-sheet-1600.webp";
+const SHEET = "/beta/cover-style/catalyst-watercolor-style-sheet.jpg?v=2";
+const SHEET_PREVIEW = "/beta/cover-style/catalyst-watercolor-style-sheet-1600.webp?v=2";
 
 const SIZES = {
   cover:    { label: "Article cover", ratio: "16:9", px: "1920 × 1080", note: "The site shows covers wide and may trim the edges, so keep the subject and anything important away from the outer 8 percent of the frame." },
@@ -19,9 +19,9 @@ const SIZES = {
   story:    { label: "Story", ratio: "9:16", px: "1080 × 1920", note: "Instagram covers the top and bottom 12 percent of a story with buttons, so keep the subject in the middle band." },
 };
 const SPACE = {
-  none: "Paint a complete scene that fills the frame, softly fading out into bare paper at the very edges rather than ending in a hard rectangle.",
-  top: "Leave the top 40 percent of the image as completely blank warm paper, with no drawing, no wash and no texture changes, so a headline can be set there later. Everything is drawn in the lower 60 percent, as a low, wide vignette whose top edge fades irregularly into the paper.",
-  left: "Leave the left 45 percent of the image as completely blank warm paper so text can be set there later. Place the subject in the right half, fading irregularly into the paper on its left side.",
+  none: "Full bleed: the painting fills the entire frame and runs right off all four edges, like a crop from a larger painting. No white or paper-coloured margin anywhere around it.",
+  top: "Leave the top 40 percent of the image as completely blank warm paper, with no drawing, no wash and no texture changes, so a headline can be set there later. Everything is drawn in the lower 60 percent and runs off the left, right and bottom edges of the image; only its top edge fades softly into the blank paper.",
+  left: "Leave the left 45 percent of the image as completely blank warm paper so text can be set there later. Place the subject in the right half; it runs off the top, right and bottom edges of the image and only fades softly into the paper on its left side.",
 };
 
 function buildPrompt({ size, space, title, text, kind }) {
@@ -35,7 +35,8 @@ Read the ${source} at the bottom of this message and make ONE cover illustration
 FORMAT
 - Aspect ratio ${S.ratio} (${S.px} pixels), for: ${S.label}.
 - ${SPACE[space] || SPACE.none}${S.note ? `\n- ${S.note}` : ""}
-- I have attached a style reference sheet with 12 of our past illustrations. Match its medium, palette, line quality, paper and level of detail exactly. Do NOT copy its subjects.
+- I have attached a style reference sheet with 12 of our past illustrations laid out in a grid. Match their medium, palette, line quality, paper and level of detail exactly. Do NOT copy their subjects, and do NOT copy the sheet's layout: the gaps, margins and background around the tiles are only there to separate the examples. Your image is ONE illustration, not a grid, a card or a collage.
+- NO BORDERS: the illustration must reach the very edge of the image on every side. Never add a white, cream or paper-coloured border, margin, mat, frame, deckled edge, drop shadow, or a "painting lying on a table" look. Don't show the edges of the paper. If you're unsure, crop in tighter.
 
 STEP 1: FIND THE IDEA (think before you draw)
 1. In one sentence, say what this ${source} is really about.
@@ -44,7 +45,7 @@ STEP 1: FIND THE IDEA (think before you draw)
 4. Pick the strongest idea and tell me which one in a single line. Then draw it.
 
 STEP 2: THE HOUSE STYLE (follow it exactly)
-- Medium: traditional transparent watercolour with fine sepia and soft charcoal ink linework over a light pencil underdrawing, on warm off-white cold-press cotton paper (like Arches 300 gsm). It should look like a scan of a real painted page, about #F4EFE3 where the paper is bare.
+- Medium: traditional transparent watercolour with fine sepia and soft charcoal ink linework over a light pencil underdrawing, on warm off-white cold-press cotton paper (like Arches 300 gsm). It should look like a high-resolution scan cropped from inside a real painting, so no page edges ever show. Bare paper is about #F4EFE3.
 - Linework: thin, slightly wavering, confident ink lines with varied weight. Lines don't always close. Light hatching in shadows. A few faint pencil construction lines still visible.
 - Paint: soft layered washes with visible pigment granulation, gentle blooms and backruns, wet-into-wet bleeds at the edges of shapes, and small areas of untouched white paper for highlights. Colour sits slightly inside or outside the ink lines in places, the way real watercolour does.
 - Palette: muted and natural. Sage green, ochre, terracotta and dusty rose, slate blue, warm grey, soft charcoal. At most one gentle accent colour. Never neon, never fully saturated, never digital-looking gradients.
@@ -57,11 +58,12 @@ STEP 2: THE HOUSE STYLE (follow it exactly)
 STEP 3: MAKE IT LOOK HUMAN-MADE, NOT AI-MADE
 Avoid all of these: glossy or airbrushed shading, plastic-smooth skin, perfect symmetry, glowing auras, lens flare, bokeh, photographic realism, a 3D-render look, flat vector shapes, thick colouring-book outlines, over-saturated sunsets, sparkles or particles floating everywhere, sci-fi neon, holograms, and the "too clean" look where every surface is evenly detailed.
 Include small human imperfections: a few pigment speckles, slightly uneven wash edges, paper texture visible across the whole image, faint pencil marks, and details that are suggested with a few strokes instead of fully rendered. Vary the finish: some areas detailed, others left loose.
-Absolutely no text of any kind: no letters, words, numbers, labels, captions, logos, signatures, watermarks, borders or frames.
+Absolutely no text of any kind: no letters, words, numbers, labels, captions, logos, signatures or watermarks. And again: no border, margin, frame or visible paper edge around the image.
 
 STEP 4: OUTPUT
 - If you can make images: make the illustration now at ${S.ratio}. Then give me the one-line idea you chose.
-- If you can't make images: write the final image prompt as one paragraph of 120 to 180 words that I can paste into an image generator. Start it with "Delicate watercolour and fine ink illustration on warm off-white cotton paper," describe the scene, the palette and the composition, include the format instruction above, and end with "No text, no letters, no numbers, no watermark, no border."
+- If you can't make images: write the final image prompt as one paragraph of 120 to 180 words that I can paste into an image generator. Start it with "Delicate watercolour and fine ink illustration on warm off-white cotton paper," describe the scene, the palette and the composition, include the format and full-bleed instructions above, and end with "Full bleed to every edge. No border, no margin, no frame, no text, no letters, no numbers, no watermark."
+- Before you send it, check the edges: if there is any white or cream band, margin or frame around the illustration, crop it away or redo it.
 - If I ask for changes, keep the same style and only change what I asked for.
 
 THE ${source.toUpperCase()}
@@ -135,7 +137,7 @@ export function mountCoverPromptTool(ctx, root) {
       </div>
     </div>
     <figure class="cvp-sheet">
-      <a href="${SHEET}" target="_blank" rel="noopener"><img src="${SHEET_PREVIEW}" alt="Style reference sheet: twelve Catalyst watercolour illustrations, including a Georgetown street in autumn, a tardigrade, the Library of Congress reading room, an anatomical heart with flowers, a honey pot, fungi under a seedling, cherry blossoms at the Jefferson Memorial, an octopus, a coral reef, a microscope under a desk lamp at night, an old window with a robin, and a panda eating bamboo" loading="lazy"></a>
+      <a href="${SHEET}" target="_blank" rel="noopener"><img src="${SHEET_PREVIEW}" alt="Style reference sheet: twelve Catalyst watercolour illustrations, including a Georgetown street in autumn, a tardigrade, the Library of Congress reading room, an anatomical heart with flowers, a honey pot, fungi under a seedling, cherry blossoms at the Jefferson Memorial, an octopus, a shark by a shoreline, a microscope under a desk lamp at night, an old window with a robin, and a panda eating bamboo" loading="lazy"></a>
       <figcaption>The style sheet: 12 of our own illustrations. Attach the full-size file, not a screenshot.</figcaption>
     </figure>`;
 

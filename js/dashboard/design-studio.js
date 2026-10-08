@@ -142,6 +142,7 @@ async function loadLibrary() {
   ]);
   const storyBgs = (stories.backgrounds || []).map((b) => ({
     id: b.id, title: b.title, image: b.image, thumb: b.thumb, tone: b.tone || "dark", inkTop: b.inkTop || 0.44,
+    square: b.square, squareInkTop: b.squareInkTop,
     cat: b.group === "article" ? "Stories" : b.group === "edition" ? "Editions" : "Series",
     preset: b.preset, caption: b.caption, articleId: b.articleId, articleSlug: b.articleSlug, articleTitle: b.articleTitle,
   }));
@@ -860,9 +861,16 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
   // Stories: light illustrations fit the width and sit at the bottom (paper
   // above); dark scenes and textures fill the frame.
   const fitFor = (format, b) => (format === "story" && b && b.tone !== "dark" && (b.inkTop ?? 0.5) >= 0.15 ? "bottom" : "cover");
+  // Illustrations are drawn 4:5; many also have a 1:1 version (blank paper
+  // on top, the drawing below) that square designs use instead.
+  const baseUrl = (u) => String(u || "").split("?")[0];
+  const bgByImage = new Map();
+  for (const b of lib.backgrounds) { bgByImage.set(baseUrl(b.image), b); if (b.square) bgByImage.set(baseUrl(b.square), b); }
+  const useSquare = (b, format) => format === "square" && !!b?.square;
   const bgFrom = (b, format, extra = {}) => ({
     color: b?.paper && b.tone !== "dark" ? b.paper : PAPER,
-    image: b?.image || null, fit: fitFor(format, b), tone: b?.tone || "light", inkTop: b?.inkTop ?? 0.5, ...extra,
+    image: (useSquare(b, format) ? b.square : b?.image) || null, fit: fitFor(format, b), tone: b?.tone || "light",
+    inkTop: useSquare(b, format) ? (b.squareInkTop ?? 0.42) : (b?.inkTop ?? 0.5), ...extra,
   });
   const blankPage = () => ({ id: uid(), bg: { color: PAPER, image: bgById["wash-paper"]?.image || null }, layers: [] });
   const AUTOSAVE = `catalyst.studio.design.${ctx.user?.uid || "anon"}`;
@@ -890,7 +898,8 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     const focusY = t.bgFocus ?? 0.5;
     // Where does the drawing start on this canvas? (backgrounds are 4:5)
     let ink = fmt.h * 0.62;
-    if (b && b.inkTop >= 0.15) {
+    if (useSquare(b, format)) ink = fmt.h * (b.squareInkTop ?? 0.42);
+    else if (b && b.inkTop >= 0.15) {
       const imgH = fitMode === "bottom" ? fmt.w * 1.25 : 2000 * Math.max(fmt.w / 1600, fmt.h / 2000);
       const top = fitMode === "bottom" ? fmt.h - imgH : (fmt.h - imgH) * focusY;
       ink = Math.min(fmt.h, top + b.inkTop * imgH);
@@ -2006,7 +2015,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
   function syncPanelBg() {
     const box = container.querySelector("#ds-panel-bgctl");
     if (box) box.innerHTML = bgControls({ inPanel: true });
-    container.querySelectorAll("[data-bg]").forEach((t) => t.classList.toggle("is-on", (bgById[t.dataset.bg]?.image || "") === (page().bg?.image || "-")));
+    container.querySelectorAll("[data-bg]").forEach((t) => t.classList.toggle("is-on", bgByImage.get(baseUrl(page().bg?.image))?.id === t.dataset.bg));
   }
   function onColourInput(e) {
     const t = e.target;
@@ -2483,7 +2492,11 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
         if (mid >= from.h * 0.6) L.y = Math.round(L.y + (to.h - from.h));
         else L.y = Math.round(L.y * (to.h / from.h));
       });
-      if (pg.bg?.image) pg.bg.fit = fitFor(e.target.value, pg.bg);
+      if (pg.bg?.image) {
+        const b = bgByImage.get(baseUrl(pg.bg.image));
+        if (b && !hasErase(pg.bg)) { const nb = bgFrom(b, e.target.value); pg.bg.image = nb.image; pg.bg.inkTop = nb.inkTop; }
+        pg.bg.fit = fitFor(e.target.value, pg.bg);
+      }
     });
     design.format = e.target.value;
     thumbCache.clear();
@@ -2726,7 +2739,9 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
       } else if (post.backgroundId) {
         const b = bgById[post.backgroundId];
         const s = post.studio || b?.preset || {};
-        design = newDesignFrom("headline-top", "post", { kicker: s.kicker, headline: s.headline, sub: s.sub }, post.backgroundId);
+        // Instagram posts are 1:1; only stories are tall.
+        const f0 = /story/i.test(post.title || "") ? "story" : post.platform === "linkedin" ? "linkedin" : post.platform === "twitter" ? "wide" : "square";
+        design = newDesignFrom("headline-top", f0, { kicker: s.kicker, headline: s.headline, sub: s.sub }, post.backgroundId);
       }
       caption = post.content || bgById[post.backgroundId]?.caption || "";
       designTitle = post.title || "Untitled design";

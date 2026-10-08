@@ -8,7 +8,9 @@
    "thumb": "/beta/social/bg/med-bg-corridor-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.353,
-   "paper": "#fcf5eb"
+   "paper": "#fcf5eb",
+   "square": "/beta/social/sq/med-bg-corridor.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "med-bg-or",
@@ -18,7 +20,9 @@
    "thumb": "/beta/social/bg/med-bg-or-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.367,
-   "paper": "#f9f3e8"
+   "paper": "#f9f3e8",
+   "square": "/beta/social/sq/med-bg-or.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "med-bg-clinic",
@@ -28,7 +32,9 @@
    "thumb": "/beta/social/bg/med-bg-clinic-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.404,
-   "paper": "#fcf5ed"
+   "paper": "#fcf5ed",
+   "square": "/beta/social/sq/med-bg-clinic.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "med-bg-pharmacy",
@@ -38,7 +44,9 @@
    "thumb": "/beta/social/bg/med-bg-pharmacy-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.322,
-   "paper": "#fcf6ed"
+   "paper": "#fcf6ed",
+   "square": "/beta/social/sq/med-bg-pharmacy.webp?v=1",
+   "squareInkTop": 0.418
   },
   {
    "id": "med-bg-lab",
@@ -48,7 +56,9 @@
    "thumb": "/beta/social/bg/med-bg-lab-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.408,
-   "paper": "#fbf2e6"
+   "paper": "#fbf2e6",
+   "square": "/beta/social/sq/med-bg-lab.webp?v=1",
+   "squareInkTop": 0.435
   },
   {
    "id": "med-bg-brain",
@@ -58,7 +68,9 @@
    "thumb": "/beta/social/bg/med-bg-brain-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.36,
-   "paper": "#fdf5eb"
+   "paper": "#fdf5eb",
+   "square": "/beta/social/sq/med-bg-brain.webp?v=1",
+   "squareInkTop": 0.41
   },
   {
    "id": "med-bg-heart",
@@ -68,7 +80,9 @@
    "thumb": "/beta/social/bg/med-bg-heart-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.371,
-   "paper": "#fcf8f0"
+   "paper": "#fcf8f0",
+   "square": "/beta/social/sq/med-bg-heart.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "med-bg-cells",
@@ -78,7 +92,9 @@
    "thumb": "/beta/social/bg/med-bg-cells-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.411,
-   "paper": "#faf4e7"
+   "paper": "#faf4e7",
+   "square": "/beta/social/sq/med-bg-cells.webp?v=1",
+   "squareInkTop": 0.418
   },
   {
    "id": "med-bg-garden",
@@ -88,7 +104,9 @@
    "thumb": "/beta/social/bg/med-bg-garden-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.426,
-   "paper": "#fbf4ea"
+   "paper": "#fbf4ea",
+   "square": "/beta/social/sq/med-bg-garden.webp?v=1",
+   "squareInkTop": 0.418
   },
   {
    "id": "med-bg-pattern",
@@ -98,7 +116,9 @@
    "thumb": "/beta/social/bg/med-bg-pattern-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.323,
-   "paper": "#f9f3e7"
+   "paper": "#f9f3e7",
+   "square": "/beta/social/sq/med-bg-pattern.webp?v=1",
+   "squareInkTop": 0.415
   },
   {
    "id": "season-fall-georgetown",
@@ -118,7 +138,9 @@
    "thumb": "/beta/social/bg/season-fall-mall-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.365,
-   "paper": "#fbf7f0"
+   "paper": "#fbf7f0",
+   "square": "/beta/social/sq/season-fall-mall.webp?v=1",
+   "squareInkTop": 0.415
   },
   {
    "id": "season-fall-still-life",
@@ -128,7 +150,9 @@
    "thumb": "/beta/social/bg/season-fall-still-life-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.496,
-   "paper": "#fdf6eb"
+   "paper": "#fdf6eb",
+   "square": "/beta/social/sq/season-fall-still-life.webp?v=1",
+   "squareInkTop": 0.41
   },
   {
    "id": "season-winter-library",
@@ -148,7 +172,9 @@
    "thumb": "/beta/social/bg/season-winter-desk-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.295,
-   "paper": "#f9f2e7"
+   "paper": "#f9f2e7",
+   "square": "/beta/social/sq/season-winter-desk.webp?v=1",
+   "squareInkTop": 0.428
   },
   {
    "id": "season-winter-night",
@@ -178,7 +204,9 @@
    "thumb": "/beta/social/bg/season-spring-lab-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.438,
-   "paper": "#fcf5eb"
+   "paper": "#fcf5eb",
+   "square": "/beta/social/sq/season-spring-lab.webp?v=1",
+   "squareInkTop": 0.415
   },
   {
    "id": "season-spring-rain",
@@ -188,7 +216,9 @@
    "thumb": "/beta/social/bg/season-spring-rain-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.437,
-   "paper": "#f7f1e5"
+   "paper": "#f7f1e5",
+   "square": "/beta/social/sq/season-spring-rain.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "season-summer-potomac",
@@ -208,7 +238,9 @@
    "thumb": "/beta/social/bg/dc-air-space-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.387,
-   "paper": "#fbf6ee"
+   "paper": "#fbf6ee",
+   "square": "/beta/social/sq/dc-air-space.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "dc-botanic",
@@ -218,7 +250,9 @@
    "thumb": "/beta/social/bg/dc-botanic-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.394,
-   "paper": "#f8f4e8"
+   "paper": "#f8f4e8",
+   "square": "/beta/social/sq/dc-botanic.webp?v=1",
+   "squareInkTop": 0.425
   },
   {
    "id": "dc-canal",
@@ -228,7 +262,9 @@
    "thumb": "/beta/social/bg/dc-canal-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.381,
-   "paper": "#fcf6ed"
+   "paper": "#fcf6ed",
+   "square": "/beta/social/sq/dc-canal.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "dc-jefferson",
@@ -238,7 +274,9 @@
    "thumb": "/beta/social/bg/dc-jefferson-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.466,
-   "paper": "#f8f4e9"
+   "paper": "#f8f4e9",
+   "square": "/beta/social/sq/dc-jefferson.webp?v=1",
+   "squareInkTop": 0.425
   },
   {
    "id": "dc-kennedy",
@@ -248,7 +286,9 @@
    "thumb": "/beta/social/bg/dc-kennedy-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.363,
-   "paper": "#fbf4e8"
+   "paper": "#fbf4e8",
+   "square": "/beta/social/sq/dc-kennedy.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "dc-lincoln",
@@ -258,7 +298,9 @@
    "thumb": "/beta/social/bg/dc-lincoln-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.408,
-   "paper": "#faf4ea"
+   "paper": "#faf4ea",
+   "square": "/beta/social/sq/dc-lincoln.webp?v=1",
+   "squareInkTop": 0.432
   },
   {
    "id": "dc-metro",
@@ -268,7 +310,9 @@
    "thumb": "/beta/social/bg/dc-metro-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.399,
-   "paper": "#fbf5ec"
+   "paper": "#fbf5ec",
+   "square": "/beta/social/sq/dc-metro.webp?v=1",
+   "squareInkTop": 0.418
   },
   {
    "id": "dc-monument",
@@ -278,7 +322,9 @@
    "thumb": "/beta/social/bg/dc-monument-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.456,
-   "paper": "#fbf5ea"
+   "paper": "#fbf5ea",
+   "square": "/beta/social/sq/dc-monument.webp?v=1",
+   "squareInkTop": 0.435
   },
   {
    "id": "dc-natural-history",
@@ -288,7 +334,9 @@
    "thumb": "/beta/social/bg/dc-natural-history-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.337,
-   "paper": "#f7f3ea"
+   "paper": "#f7f3ea",
+   "square": "/beta/social/sq/dc-natural-history.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "dc-reading-room",
@@ -298,7 +346,9 @@
    "thumb": "/beta/social/bg/dc-reading-room-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.332,
-   "paper": "#fcf6ee"
+   "paper": "#fcf6ee",
+   "square": "/beta/social/sq/dc-reading-room.webp?v=1",
+   "squareInkTop": 0.422
   },
   {
    "id": "dc-union-station",
@@ -308,7 +358,9 @@
    "thumb": "/beta/social/bg/dc-union-station-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.35,
-   "paper": "#fbf3ea"
+   "paper": "#fbf3ea",
+   "square": "/beta/social/sq/dc-union-station.webp?v=1",
+   "squareInkTop": 0.415
   },
   {
    "id": "dc-zoo",
@@ -318,7 +370,9 @@
    "thumb": "/beta/social/bg/dc-zoo-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.358,
-   "paper": "#fdf5ec"
+   "paper": "#fdf5ec",
+   "square": "/beta/social/sq/dc-zoo.webp?v=1",
+   "squareInkTop": 0.415
   },
   {
    "id": "sci-cells",
@@ -328,7 +382,9 @@
    "thumb": "/beta/social/bg/sci-cells-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.344,
-   "paper": "#f8f4e9"
+   "paper": "#f8f4e9",
+   "square": "/beta/social/sq/sci-cells.webp?v=1",
+   "squareInkTop": 0.415
   },
   {
    "id": "sci-chip",
@@ -338,7 +394,9 @@
    "thumb": "/beta/social/bg/sci-chip-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.365,
-   "paper": "#fcf4ea"
+   "paper": "#fcf4ea",
+   "square": "/beta/social/sq/sci-chip.webp?v=1",
+   "squareInkTop": 0.418
   },
   {
    "id": "sci-dna",
@@ -348,7 +406,9 @@
    "thumb": "/beta/social/bg/sci-dna-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.399,
-   "paper": "#fcf8f2"
+   "paper": "#fcf8f2",
+   "square": "/beta/social/sq/sci-dna.webp?v=1",
+   "squareInkTop": 0.422
   },
   {
    "id": "sci-earth",
@@ -368,7 +428,9 @@
    "thumb": "/beta/social/bg/sci-energy-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.368,
-   "paper": "#faf5ec"
+   "paper": "#faf5ec",
+   "square": "/beta/social/sq/sci-energy.webp?v=1",
+   "squareInkTop": 0.43
   },
   {
    "id": "sci-fungi",
@@ -378,7 +440,9 @@
    "thumb": "/beta/social/bg/sci-fungi-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.379,
-   "paper": "#fcf8f0"
+   "paper": "#fcf8f0",
+   "square": "/beta/social/sq/sci-fungi.webp?v=1",
+   "squareInkTop": 0.415
   },
   {
    "id": "sci-glassware",
@@ -388,7 +452,9 @@
    "thumb": "/beta/social/bg/sci-glassware-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.404,
-   "paper": "#fbf8f0"
+   "paper": "#fbf8f0",
+   "square": "/beta/social/sq/sci-glassware.webp?v=1",
+   "squareInkTop": 0.45
   },
   {
    "id": "sci-heart",
@@ -398,7 +464,9 @@
    "thumb": "/beta/social/bg/sci-heart-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.424,
-   "paper": "#f9f3e7"
+   "paper": "#f9f3e7",
+   "square": "/beta/social/sq/sci-heart.webp?v=1",
+   "squareInkTop": 0.415
   },
   {
    "id": "sci-prism",
@@ -408,7 +476,9 @@
    "thumb": "/beta/social/bg/sci-prism-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.286,
-   "paper": "#f6f2e8"
+   "paper": "#f6f2e8",
+   "square": "/beta/social/sq/sci-prism.webp?v=1",
+   "squareInkTop": 0.438
   },
   {
    "id": "sci-reef",
@@ -418,7 +488,9 @@
    "thumb": "/beta/social/bg/sci-reef-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.361,
-   "paper": "#fcf7ef"
+   "paper": "#fcf7ef",
+   "square": "/beta/social/sq/sci-reef.webp?v=1",
+   "squareInkTop": 0.422
   },
   {
    "id": "sci-rocket",
@@ -428,7 +500,9 @@
    "thumb": "/beta/social/bg/sci-rocket-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.441,
-   "paper": "#f9f4e7"
+   "paper": "#f9f4e7",
+   "square": "/beta/social/sq/sci-rocket.webp?v=1",
+   "squareInkTop": 0.42
   },
   {
    "id": "sci-telescope",
@@ -438,7 +512,9 @@
    "thumb": "/beta/social/bg/sci-telescope-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.425,
-   "paper": "#f9f3e7"
+   "paper": "#f9f3e7",
+   "square": "/beta/social/sq/sci-telescope.webp?v=1",
+   "squareInkTop": 0.408
   },
   {
    "id": "wash-blue",
@@ -458,7 +534,9 @@
    "thumb": "/beta/social/bg/wash-blush-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.526,
-   "paper": "#faf9f3"
+   "paper": "#faf9f3",
+   "square": "/beta/social/sq/wash-blush.webp?v=1",
+   "squareInkTop": 0.44
   },
   {
    "id": "wash-lavender",
@@ -468,7 +546,9 @@
    "thumb": "/beta/social/bg/wash-lavender-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.321,
-   "paper": "#f8f3ec"
+   "paper": "#f8f3ec",
+   "square": "/beta/social/sq/wash-lavender.webp?v=1",
+   "squareInkTop": 0.445
   },
   {
    "id": "wash-ochre",
@@ -478,7 +558,9 @@
    "thumb": "/beta/social/bg/wash-ochre-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.497,
-   "paper": "#faf5ea"
+   "paper": "#faf5ea",
+   "square": "/beta/social/sq/wash-ochre.webp?v=1",
+   "squareInkTop": 0.438
   },
   {
    "id": "wash-paper",
@@ -498,7 +580,9 @@
    "thumb": "/beta/social/bg/wash-sage-thumb.webp?v=2",
    "tone": "light",
    "inkTop": 0.192,
-   "paper": "#fbfaf3"
+   "paper": "#fbfaf3",
+   "square": "/beta/social/sq/wash-sage.webp?v=1",
+   "squareInkTop": 0.478
   },
   {
    "id": "night-capitol",
@@ -2527,6 +2611,806 @@
    "thumb": "/beta/social/el/deco-bubbles-thumb.webp?v=2",
    "w": 1000,
    "h": 630
+  },
+  {
+   "id": "bank-w-borborygmus",
+   "title": "Borborygmus (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the rumbling, gurgling sound of gas and fluid moving through your intestines. your gut makes it whether you're hungry or",
+   "image": "/beta/social/el/bank/w-borborygmus.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-borborygmus-thumb.webp?v=1",
+   "w": 1000,
+   "h": 587
+  },
+  {
+   "id": "bank-w-petrichor",
+   "title": "Petrichor (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the earthy smell after rain on dry ground. it comes from plant oils and geosmin, made by soil bacteria. our noses can pi",
+   "image": "/beta/social/el/bank/w-petrichor.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-petrichor-thumb.webp?v=1",
+   "w": 1000,
+   "h": 571
+  },
+  {
+   "id": "bank-w-sternutation",
+   "title": "Sternutation (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the scientific word for sneezing: a reflex your brainstem fires when nerves in your nose sense something irritating, lik",
+   "image": "/beta/social/el/bank/w-sternutation.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-sternutation-thumb.webp?v=1",
+   "w": 1000,
+   "h": 471
+  },
+  {
+   "id": "bank-w-horripilation",
+   "title": "Horripilation (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word goosebumps. tiny muscles at the base of each hair tighten when you're cold, scared or moved by music, and the hairs stan",
+   "image": "/beta/social/el/bank/w-horripilation.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-horripilation-thumb.webp?v=1",
+   "w": 1000,
+   "h": 585
+  },
+  {
+   "id": "bank-w-singultus",
+   "title": "Singultus (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word hiccups. your diaphragm suddenly contracts, then your vocal cords snap shut a split second later. that snap is the \"hic.",
+   "image": "/beta/social/el/bank/w-singultus.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-singultus-thumb.webp?v=1",
+   "w": 1000,
+   "h": 548
+  },
+  {
+   "id": "bank-w-phosphene",
+   "title": "Phosphene (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the swirls of light and colour you see when you rub your closed eyes. pressure stimulates your retina even with no light",
+   "image": "/beta/social/el/bank/w-phosphene.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-phosphene-thumb.webp?v=1",
+   "w": 1000,
+   "h": 534
+  },
+  {
+   "id": "bank-w-crepuscular",
+   "title": "Crepuscular (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word most active at dawn and dusk. deer, rabbits, fireflies and many house cats are crepuscular.",
+   "image": "/beta/social/el/bank/w-crepuscular.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-crepuscular-thumb.webp?v=1",
+   "w": 1000,
+   "h": 591
+  },
+  {
+   "id": "bank-w-glabella",
+   "title": "Glabella (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the smooth patch of skin between your eyebrows, just above your nose. anatomists use the same name for that spot on the ",
+   "image": "/beta/social/el/bank/w-glabella.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-glabella-thumb.webp?v=1",
+   "w": 1000,
+   "h": 517
+  },
+  {
+   "id": "bank-w-philtrum",
+   "title": "Philtrum (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the little groove between your nose and your upper lip. it forms before birth, where the left and right sides of your fa",
+   "image": "/beta/social/el/bank/w-philtrum.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-philtrum-thumb.webp?v=1",
+   "w": 1000,
+   "h": 513
+  },
+  {
+   "id": "bank-w-nictitating",
+   "title": "Nictitating membrane (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word a see-through \"third eyelid\" that sweeps sideways across the eye to clean and protect it. cats, birds and sharks have on",
+   "image": "/beta/social/el/bank/w-nictitating.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-nictitating-thumb.webp?v=1",
+   "w": 1000,
+   "h": 512
+  },
+  {
+   "id": "bank-w-pandiculation",
+   "title": "Pandiculation (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word that big full-body stretch you do while yawning, like a cat waking up from a nap.",
+   "image": "/beta/social/el/bank/w-pandiculation.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-pandiculation-thumb.webp?v=1",
+   "w": 1000,
+   "h": 479
+  },
+  {
+   "id": "bank-w-formication",
+   "title": "Formication (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the feeling of insects crawling on or under your skin when nothing is there. it comes from the latin \"formica,\" meaning ",
+   "image": "/beta/social/el/bank/w-formication.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-formication-thumb.webp?v=1",
+   "w": 1000,
+   "h": 528
+  },
+  {
+   "id": "bank-w-brainfreeze",
+   "title": "Sphenopalatine ganglioneuralgia (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word brain freeze. cold on the roof of your mouth makes blood vessels there tighten and then widen, and your brain reads the ",
+   "image": "/beta/social/el/bank/w-brainfreeze.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-brainfreeze-thumb.webp?v=1",
+   "w": 1000,
+   "h": 392
+  },
+  {
+   "id": "bank-w-pareidolia",
+   "title": "Pareidolia (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word seeing faces in things that aren't faces: power outlets, clouds, the front of a car. your brain is wired to spot faces f",
+   "image": "/beta/social/el/bank/w-pareidolia.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-pareidolia-thumb.webp?v=1",
+   "w": 1000,
+   "h": 564
+  },
+  {
+   "id": "bank-w-ommatidium",
+   "title": "Ommatidium (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word one of the thousands of tiny units in an insect's compound eye. each one sees a single dot of the picture. a dragonfly h",
+   "image": "/beta/social/el/bank/w-ommatidium.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-ommatidium-thumb.webp?v=1",
+   "w": 1000,
+   "h": 593
+  },
+  {
+   "id": "bank-w-brontide",
+   "title": "Brontide (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word a low rumble like distant thunder heard under a clear sky. some are linked to small earthquakes; many are still a myster",
+   "image": "/beta/social/el/bank/w-brontide.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-brontide-thumb.webp?v=1",
+   "w": 1000,
+   "h": 514
+  },
+  {
+   "id": "bank-w-thixotropy",
+   "title": "Thixotropy (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word when a thick fluid gets runnier as you shake or stir it, then thickens again at rest. it's why a sharp tap gets ketchup ",
+   "image": "/beta/social/el/bank/w-thixotropy.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-thixotropy-thumb.webp?v=1",
+   "w": 1000,
+   "h": 424
+  },
+  {
+   "id": "bank-w-saccade",
+   "title": "Saccade (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word a quick jump your eyes make as they move from point to point. you make about three every second, and you don't notice an",
+   "image": "/beta/social/el/bank/w-saccade.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-saccade-thumb.webp?v=1",
+   "w": 1000,
+   "h": 507
+  },
+  {
+   "id": "bank-w-tardigrade",
+   "title": "Tardigrade (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word a tiny eight-legged \"water bear,\" usually under a millimetre long. it can survive drying out, freezing and even the vacu",
+   "image": "/beta/social/el/bank/w-tardigrade.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-tardigrade-thumb.webp?v=1",
+   "w": 1000,
+   "h": 548
+  },
+  {
+   "id": "bank-w-fulgurite",
+   "title": "Fulgurite (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word a branching tube of natural glass made when lightning hits sand and melts it in a fraction of a second.",
+   "image": "/beta/social/el/bank/w-fulgurite.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-fulgurite-thumb.webp?v=1",
+   "w": 1000,
+   "h": 574
+  },
+  {
+   "id": "bank-w-nudibranch",
+   "title": "Nudibranch (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word a brilliantly coloured sea slug whose name means \"naked gills.\" some steal stinging cells from the animals they eat and ",
+   "image": "/beta/social/el/bank/w-nudibranch.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-nudibranch-thumb.webp?v=1",
+   "w": 1000,
+   "h": 519
+  },
+  {
+   "id": "bank-w-neoteny",
+   "title": "Neoteny (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word keeping baby features as an adult. the axolotl keeps its feathery gills and lives underwater its whole life.",
+   "image": "/beta/social/el/bank/w-neoteny.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-neoteny-thumb.webp?v=1",
+   "w": 1000,
+   "h": 542
+  },
+  {
+   "id": "bank-w-sonoluminescence",
+   "title": "Sonoluminescence (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word when tiny bubbles in a liquid are squeezed by sound waves, they collapse so violently they flash with light.",
+   "image": "/beta/social/el/bank/w-sonoluminescence.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-sonoluminescence-thumb.webp?v=1",
+   "w": 1000,
+   "h": 490
+  },
+  {
+   "id": "bank-w-syzygy",
+   "title": "Syzygy (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word when three celestial bodies line up in a row, like the sun, earth and moon during an eclipse.",
+   "image": "/beta/social/el/bank/w-syzygy.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-syzygy-thumb.webp?v=1",
+   "w": 1000,
+   "h": 461
+  },
+  {
+   "id": "bank-w-gibbous",
+   "title": "Gibbous (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word describes a moon that's more than half lit but not yet full. the word comes from the latin for \"humpbacked.\"",
+   "image": "/beta/social/el/bank/w-gibbous.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-gibbous-thumb.webp?v=1",
+   "w": 1000,
+   "h": 531
+  },
+  {
+   "id": "bank-w-perihelion",
+   "title": "Perihelion (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the point in an orbit closest to the sun. earth reaches it in early january, so northern winter isn't about distance; it",
+   "image": "/beta/social/el/bank/w-perihelion.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-perihelion-thumb.webp?v=1",
+   "w": 1000,
+   "h": 551
+  },
+  {
+   "id": "bank-w-uvula",
+   "title": "Uvula (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word the little teardrop of tissue hanging at the back of your throat. when you swallow, it helps seal off your nose so food ",
+   "image": "/beta/social/el/bank/w-uvula.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-uvula-thumb.webp?v=1",
+   "w": 1000,
+   "h": 553
+  },
+  {
+   "id": "bank-w-hypnagogic",
+   "title": "Hypnagogic jerk (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word that sudden twitch, often with a feeling of falling, just as you drift off to sleep. it's very common and harmless.",
+   "image": "/beta/social/el/bank/w-hypnagogic.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-hypnagogic-thumb.webp?v=1",
+   "w": 1000,
+   "h": 604
+  },
+  {
+   "id": "bank-w-zwitterion",
+   "title": "Zwitterion (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word a molecule with a positive and a negative charge at the same time. amino acids in your body often exist this way. from t",
+   "image": "/beta/social/el/bank/w-zwitterion.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-zwitterion-thumb.webp?v=1",
+   "w": 1000,
+   "h": 433
+  },
+  {
+   "id": "bank-w-stridulation",
+   "title": "Stridulation (Wacky Word)",
+   "cat": "Wacky words",
+   "tags": "wacky word making sound by rubbing body parts together. crickets chirp by rubbing their wings; grasshoppers rub a leg against a win",
+   "image": "/beta/social/el/bank/w-stridulation.webp?v=1",
+   "thumb": "/beta/social/el/bank/w-stridulation-thumb.webp?v=1",
+   "w": 1000,
+   "h": 509
+  },
+  {
+   "id": "bank-f-thaw",
+   "title": "Thaw meat in cold water, not hot",
+   "cat": "Fun facts",
+   "tags": "fun fact water moves heat into food about 20 times faster than air, so a sealed package in cold water thaws far quicker than in t",
+   "image": "/beta/social/el/bank/f-thaw.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-thaw-thumb.webp?v=1",
+   "w": 1000,
+   "h": 467
+  },
+  {
+   "id": "bank-f-mountain",
+   "title": "Your head is older than your feet",
+   "cat": "Fun facts",
+   "tags": "fun fact gravity slows time. clocks higher up tick a hair faster, so someone living on a mountain ages a tiny bit faster than som",
+   "image": "/beta/social/el/bank/f-mountain.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-mountain-thumb.webp?v=1",
+   "w": 1000,
+   "h": 509
+  },
+  {
+   "id": "bank-f-honey",
+   "title": "Honey can last for thousands of years",
+   "cat": "Fun facts",
+   "tags": "fun fact it's so low in water and so acidic that microbes can't grow in it, and bees add an enzyme that makes a little hydrogen p",
+   "image": "/beta/social/el/bank/f-honey.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-honey-thumb.webp?v=1",
+   "w": 1000,
+   "h": 589
+  },
+  {
+   "id": "bank-f-banana",
+   "title": "Bananas are a little bit radioactive",
+   "cat": "Fun facts",
+   "tags": "fun fact they're rich in potassium, and a tiny share of all potassium is radioactive potassium-40. it's harmless: one cross-count",
+   "image": "/beta/social/el/bank/f-banana.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-banana-thumb.webp?v=1",
+   "w": 1000,
+   "h": 554
+  },
+  {
+   "id": "bank-f-octopus",
+   "title": "An octopus has three hearts and blue blood",
+   "cat": "Fun facts",
+   "tags": "fun fact two hearts pump blood through the gills and one pumps it around the body. their blood carries oxygen with a copper-based",
+   "image": "/beta/social/el/bank/f-octopus.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-octopus-thumb.webp?v=1",
+   "w": 1000,
+   "h": 543
+  },
+  {
+   "id": "bank-f-venus",
+   "title": "A day on Venus is longer than its year",
+   "cat": "Fun facts",
+   "tags": "fun fact venus spins so slowly that one turn takes 243 earth days, but one trip around the sun takes only 225. it also spins back",
+   "image": "/beta/social/el/bank/f-venus.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-venus-thumb.webp?v=1",
+   "w": 1000,
+   "h": 469
+  },
+  {
+   "id": "bank-f-stomach",
+   "title": "Your stomach gets a new lining every few days",
+   "cat": "Fun facts",
+   "tags": "fun fact the cells lining your stomach face acid strong enough to dissolve some metals, so they're replaced every three to five d",
+   "image": "/beta/social/el/bank/f-stomach.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-stomach-thumb.webp?v=1",
+   "w": 1000,
+   "h": 464
+  },
+  {
+   "id": "bank-f-sharks",
+   "title": "Sharks are older than trees",
+   "cat": "Fun facts",
+   "tags": "fun fact sharks have been swimming the oceans for more than 400 million years. the first trees appeared about 385 million years a",
+   "image": "/beta/social/el/bank/f-sharks.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-sharks-thumb.webp?v=1",
+   "w": 1000,
+   "h": 618
+  },
+  {
+   "id": "bank-f-wombat",
+   "title": "Wombats poop cubes",
+   "cat": "Fun facts",
+   "tags": "fun fact the last part of a wombat's intestine has stiff and stretchy sections that shape waste into cubes as it dries. wombats l",
+   "image": "/beta/social/el/bank/f-wombat.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-wombat-thumb.webp?v=1",
+   "w": 1000,
+   "h": 481
+  },
+  {
+   "id": "bank-f-glass",
+   "title": "Old windows don't prove that glass flows",
+   "cat": "Fun facts",
+   "tags": "fun fact centuries-old panes are thicker at the bottom because of how glass was made back then, and glaziers usually set the thic",
+   "image": "/beta/social/el/bank/f-glass.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-glass-thumb.webp?v=1",
+   "w": 1000,
+   "h": 502
+  },
+  {
+   "id": "bank-f-ice",
+   "title": "Floating ice keeps fish alive",
+   "cat": "Fun facts",
+   "tags": "fun fact water expands about 9% when it freezes, so ice is lighter than liquid water and floats. lakes freeze from the top down, ",
+   "image": "/beta/social/el/bank/f-ice.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-ice-thumb.webp?v=1",
+   "w": 1000,
+   "h": 665
+  },
+  {
+   "id": "bank-f-salt-boil",
+   "title": "Salt doesn't make pasta water boil hotter",
+   "cat": "Fun facts",
+   "tags": "fun fact a tablespoon of salt in a big pot of water raises the boiling point by a tiny fraction of a degree. it's there for flavo",
+   "image": "/beta/social/el/bank/f-salt-boil.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-salt-boil-thumb.webp?v=1",
+   "w": 1000,
+   "h": 605
+  },
+  {
+   "id": "bank-f-lightning",
+   "title": "Lightning is about five times hotter than the Sun's surface",
+   "cat": "Fun facts",
+   "tags": "fun fact a lightning bolt heats the air around it to roughly 50,000°f (about 28,000°c). the surface of the sun is about 10,000°f.",
+   "image": "/beta/social/el/bank/f-lightning.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-lightning-thumb.webp?v=1",
+   "w": 1000,
+   "h": 459
+  },
+  {
+   "id": "bank-f-hum",
+   "title": "You can't hum while holding your nose",
+   "cat": "Fun facts",
+   "tags": "fun fact when you hum with your mouth closed, the air escapes through your nose. pinch it shut and the air has nowhere to go, so ",
+   "image": "/beta/social/el/bank/f-hum.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-hum-thumb.webp?v=1",
+   "w": 1000,
+   "h": 465
+  },
+  {
+   "id": "bank-f-onion",
+   "title": "Chill your onions to cry less",
+   "cat": "Fun facts",
+   "tags": "fun fact cutting an onion breaks its cells and starts a reaction that makes a gas, syn-propanethial-s-oxide, which stings your ey",
+   "image": "/beta/social/el/bank/f-onion.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-onion-thumb.webp?v=1",
+   "w": 1000,
+   "h": 431
+  },
+  {
+   "id": "bank-f-microwave",
+   "title": "Microwaves don't cook food from the inside out",
+   "cat": "Fun facts",
+   "tags": "fun fact they mostly heat the outer inch or so by making water molecules jiggle. the middle warms up as that heat spreads inward,",
+   "image": "/beta/social/el/bank/f-microwave.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-microwave-thumb.webp?v=1",
+   "w": 1000,
+   "h": 437
+  },
+  {
+   "id": "bank-f-sound-water",
+   "title": "Sound travels four times faster in water",
+   "cat": "Fun facts",
+   "tags": "fun fact molecules in water are packed more tightly than in air, so they pass vibrations along faster: about 1,480 metres per sec",
+   "image": "/beta/social/el/bank/f-sound-water.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-sound-water-thumb.webp?v=1",
+   "w": 1000,
+   "h": 407
+  },
+  {
+   "id": "bank-f-bacteria",
+   "title": "You're roughly half bacteria",
+   "cat": "Fun facts",
+   "tags": "fun fact old textbooks said bacteria outnumber your cells ten to one. newer counts put it closer to one to one: about 38 trillion",
+   "image": "/beta/social/el/bank/f-bacteria.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-bacteria-thumb.webp?v=1",
+   "w": 1000,
+   "h": 529
+  },
+  {
+   "id": "bank-f-berries",
+   "title": "Bananas are berries. Strawberries aren't",
+   "cat": "Fun facts",
+   "tags": "fun fact to a botanist, a berry grows from a single flower's ovary and has its seeds inside: bananas, grapes and tomatoes all qua",
+   "image": "/beta/social/el/bank/f-berries.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-berries-thumb.webp?v=1",
+   "w": 1000,
+   "h": 426
+  },
+  {
+   "id": "bank-f-knuckles",
+   "title": "Cracking your knuckles won't give you arthritis",
+   "cat": "Fun facts",
+   "tags": "fun fact the pop is a gas bubble forming in the fluid inside the joint. studies have found no link to arthritis, including one do",
+   "image": "/beta/social/el/bank/f-knuckles.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-knuckles-thumb.webp?v=1",
+   "w": 1000,
+   "h": 359
+  },
+  {
+   "id": "bank-f-chimborazo",
+   "title": "Everest isn't the point farthest from Earth's center",
+   "cat": "Fun facts",
+   "tags": "fun fact earth bulges at the equator. chimborazo, a volcano in ecuador near the equator, reaches about 2 kilometres farther from ",
+   "image": "/beta/social/el/bank/f-chimborazo.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-chimborazo-thumb.webp?v=1",
+   "w": 1000,
+   "h": 416
+  },
+  {
+   "id": "bank-f-salt-ice",
+   "title": "Salt makes ice colder",
+   "cat": "Fun facts",
+   "tags": "fun fact salt lowers the freezing point of water, so salty ice keeps melting and pulls heat from everything around it, dropping w",
+   "image": "/beta/social/el/bank/f-salt-ice.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-salt-ice-thumb.webp?v=1",
+   "w": 1000,
+   "h": 462
+  },
+  {
+   "id": "bank-f-apples",
+   "title": "Lemon juice keeps cut apples from browning",
+   "cat": "Fun facts",
+   "tags": "fun fact cutting an apple lets an enzyme in its cells react with oxygen and turn the flesh brown. the acid and vitamin c in lemon",
+   "image": "/beta/social/el/bank/f-apples.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-apples-thumb.webp?v=1",
+   "w": 1000,
+   "h": 344
+  },
+  {
+   "id": "bank-f-searing",
+   "title": "Searing doesn't seal in a steak's juices",
+   "cat": "Fun facts",
+   "tags": "fun fact seared meat loses about as much moisture as unseared meat. searing is still worth it: the maillard reaction creates hund",
+   "image": "/beta/social/el/bank/f-searing.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-searing-thumb.webp?v=1",
+   "w": 1000,
+   "h": 406
+  },
+  {
+   "id": "bank-f-eiffel",
+   "title": "The Eiffel Tower grows in summer",
+   "cat": "Fun facts",
+   "tags": "fun fact iron expands as it warms up, so on a hot day the tower can stand about 15 centimetres (6 inches) taller than on a cold o",
+   "image": "/beta/social/el/bank/f-eiffel.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-eiffel-thumb.webp?v=1",
+   "w": 1000,
+   "h": 480
+  },
+  {
+   "id": "bank-f-brain",
+   "title": "Your brain uses about 20% of your energy",
+   "cat": "Fun facts",
+   "tags": "fun fact it's only about 2% of your body weight, but at rest it burns roughly a fifth of all the calories you use.",
+   "image": "/beta/social/el/bank/f-brain.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-brain-thumb.webp?v=1",
+   "w": 1000,
+   "h": 439
+  },
+  {
+   "id": "bank-f-cats",
+   "title": "Cats can't taste sweetness",
+   "cat": "Fun facts",
+   "tags": "fun fact a broken gene leaves cats without a working sweet taste receptor. as strict meat-eaters, they never needed it.",
+   "image": "/beta/social/el/bank/f-cats.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-cats-thumb.webp?v=1",
+   "w": 1000,
+   "h": 526
+  },
+  {
+   "id": "bank-f-soda",
+   "title": "Cold soda stays fizzier",
+   "cat": "Fun facts",
+   "tags": "fun fact gases dissolve better in cold liquids, so carbon dioxide stays in a cold drink longer. a warm soda lets it escape and go",
+   "image": "/beta/social/el/bank/f-soda.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-soda-thumb.webp?v=1",
+   "w": 1000,
+   "h": 612
+  },
+  {
+   "id": "bank-f-cloud",
+   "title": "A fluffy cloud can weigh a million pounds",
+   "cat": "Fun facts",
+   "tags": "fun fact a typical cumulus cloud holds about 500,000 kilograms of water. it floats because those droplets are tiny and spread acr",
+   "image": "/beta/social/el/bank/f-cloud.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-cloud-thumb.webp?v=1",
+   "w": 1000,
+   "h": 440
+  },
+  {
+   "id": "bank-f-neutron",
+   "title": "A teaspoon of neutron star weighs about a billion tons",
+   "cat": "Fun facts",
+   "tags": "fun fact a neutron star squeezes more mass than the sun into a ball about 20 kilometres across. matter that dense would make a si",
+   "image": "/beta/social/el/bank/f-neutron.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-neutron-thumb.webp?v=1",
+   "w": 1000,
+   "h": 400
+  },
+  {
+   "id": "bank-f-sunlight",
+   "title": "The sunlight on your face is ancient",
+   "cat": "Fun facts",
+   "tags": "fun fact the energy in a sunbeam was made in the sun's core, then spent somewhere between 10,000 and 170,000 years bouncing its w",
+   "image": "/beta/social/el/bank/f-sunlight.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-sunlight-thumb.webp?v=1",
+   "w": 1000,
+   "h": 467
+  },
+  {
+   "id": "bank-f-dna",
+   "title": "Each of your cells holds 2 metres of DNA",
+   "cat": "Fun facts",
+   "tags": "fun fact stretched out, the dna in a single cell would be about 2 metres long. it fits inside a nucleus a few thousandths of a mi",
+   "image": "/beta/social/el/bank/f-dna.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-dna-thumb.webp?v=1",
+   "w": 1000,
+   "h": 322
+  },
+  {
+   "id": "bank-f-dino-day",
+   "title": "Dinosaurs had shorter days than we do",
+   "cat": "Fun facts",
+   "tags": "fun fact about 70 million years ago a day lasted roughly 23 and a half hours. the moon's pull slowly brakes earth's spin, so our ",
+   "image": "/beta/social/el/bank/f-dino-day.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-dino-day-thumb.webp?v=1",
+   "w": 1000,
+   "h": 456
+  },
+  {
+   "id": "bank-f-glass-frog",
+   "title": "Glass frogs hide their blood to turn invisible",
+   "cat": "Fun facts",
+   "tags": "fun fact when a glass frog sleeps, it pulls almost 90 percent of its red blood cells out of circulation and packs them into its l",
+   "image": "/beta/social/el/bank/f-glass-frog.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-glass-frog-thumb.webp?v=1",
+   "w": 1000,
+   "h": 478
+  },
+  {
+   "id": "bank-f-pistol-shrimp",
+   "title": "A shrimp's snap is almost as hot as the Sun",
+   "cat": "Fun facts",
+   "tags": "fun fact the pistol shrimp snaps its claw so fast that it fires a jet of water and creates a bubble. when the bubble collapses, i",
+   "image": "/beta/social/el/bank/f-pistol-shrimp.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-pistol-shrimp-thumb.webp?v=1",
+   "w": 1000,
+   "h": 471
+  },
+  {
+   "id": "bank-f-turtle-breath",
+   "title": "Some turtles breathe through their butts",
+   "cat": "Fun facts",
+   "tags": "fun fact australia's fitzroy river turtle can take oxygen from the water through its cloaca, the opening at its back end. the lin",
+   "image": "/beta/social/el/bank/f-turtle-breath.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-turtle-breath-thumb.webp?v=1",
+   "w": 1000,
+   "h": 501
+  },
+  {
+   "id": "bank-f-brain-pain",
+   "title": "Your brain can't feel pain",
+   "cat": "Fun facts",
+   "tags": "fun fact brain tissue has no pain receptors, which is why surgeons can operate on some patients while they're awake. headaches co",
+   "image": "/beta/social/el/bank/f-brain-pain.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-brain-pain-thumb.webp?v=1",
+   "w": 1000,
+   "h": 518
+  },
+  {
+   "id": "bank-f-photon",
+   "title": "Your eyes can sense a single particle of light",
+   "cat": "Fun facts",
+   "tags": "fun fact in a 2016 experiment, people sitting in total darkness could tell when a single photon hit their eye a little better tha",
+   "image": "/beta/social/el/bank/f-photon.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-photon-thumb.webp?v=1",
+   "w": 1000,
+   "h": 418
+  },
+  {
+   "id": "bank-f-trees-stars",
+   "title": "Earth has more trees than our galaxy has stars",
+   "cat": "Fun facts",
+   "tags": "fun fact a 2015 study estimated there are about 3 trillion trees on earth. the milky way has an estimated 100 to 400 billion star",
+   "image": "/beta/social/el/bank/f-trees-stars.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-trees-stars-thumb.webp?v=1",
+   "w": 1000,
+   "h": 512
+  },
+  {
+   "id": "bank-f-hawaii",
+   "title": "Hawaii is slowly sliding toward Japan",
+   "cat": "Fun facts",
+   "tags": "fun fact the pacific plate, which carries hawaii, creeps northwest by about 7 centimetres a year, almost twice as fast as your fi",
+   "image": "/beta/social/el/bank/f-hawaii.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-hawaii-thumb.webp?v=1",
+   "w": 1000,
+   "h": 480
+  },
+  {
+   "id": "bank-f-wood-frog",
+   "title": "Wood frogs freeze solid, then come back to life",
+   "cat": "Fun facts",
+   "tags": "fun fact in winter, up to two-thirds of a wood frog's body water turns to ice. its heart stops and it stops breathing. sugar floo",
+   "image": "/beta/social/el/bank/f-wood-frog.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-wood-frog-thumb.webp?v=1",
+   "w": 1000,
+   "h": 489
+  },
+  {
+   "id": "bank-f-bones",
+   "title": "You get a new skeleton about every 10 years",
+   "cat": "Fun facts",
+   "tags": "fun fact bone is alive. cells called osteoclasts dissolve old bone while others, called osteoblasts, build new bone in its place.",
+   "image": "/beta/social/el/bank/f-bones.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-bones-thumb.webp?v=1",
+   "w": 1000,
+   "h": 457
+  },
+  {
+   "id": "bank-f-rats-laugh",
+   "title": "Rats laugh when you tickle them",
+   "cat": "Fun facts",
+   "tags": "fun fact tickled rats make high-pitched chirps, too high for us to hear, and then chase the hand that tickled them for more. they",
+   "image": "/beta/social/el/bank/f-rats-laugh.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-rats-laugh-thumb.webp?v=1",
+   "w": 1000,
+   "h": 440
+  },
+  {
+   "id": "bank-f-body-heat",
+   "title": "You give off as much heat as a light bulb",
+   "cat": "Fun facts",
+   "tags": "fun fact at rest, your body releases roughly 80 to 100 watts of heat, about the same as an old-fashioned incandescent bulb. a pac",
+   "image": "/beta/social/el/bank/f-body-heat.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-body-heat-thumb.webp?v=1",
+   "w": 1000,
+   "h": 479
+  },
+  {
+   "id": "bank-f-wrinkly-fingers",
+   "title": "Wrinkly fingers are your nerves at work",
+   "cat": "Fun facts",
+   "tags": "fun fact pruney fingertips aren't just soggy skin. your nervous system narrows blood vessels under the skin, which pulls it into ",
+   "image": "/beta/social/el/bank/f-wrinkly-fingers.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-wrinkly-fingers-thumb.webp?v=1",
+   "w": 1000,
+   "h": 454
+  },
+  {
+   "id": "bank-f-earth-core",
+   "title": "Earth's core is about as hot as the Sun's surface",
+   "cat": "Fun facts",
+   "tags": "fun fact the inner core is a ball of iron and nickel at around 5,200°c, close to the roughly 5,500°c surface of the sun. it stays",
+   "image": "/beta/social/el/bank/f-earth-core.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-earth-core-thumb.webp?v=1",
+   "w": 1000,
+   "h": 469
+  },
+  {
+   "id": "bank-f-crows",
+   "title": "Crows remember your face and tell their friends",
+   "cat": "Fun facts",
+   "tags": "fun fact in a university of washington study, researchers wearing a mask trapped a few crows. for years afterwards, crows scolded",
+   "image": "/beta/social/el/bank/f-crows.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-crows-thumb.webp?v=1",
+   "w": 1000,
+   "h": 589
+  },
+  {
+   "id": "bank-f-cards",
+   "title": "Your shuffled deck has probably never existed before",
+   "cat": "Fun facts",
+   "tags": "fun fact there are about 8 followed by 67 zeros ways to order 52 cards. if everyone on earth shuffled a deck every second since t",
+   "image": "/beta/social/el/bank/f-cards.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-cards-thumb.webp?v=1",
+   "w": 1000,
+   "h": 536
+  },
+  {
+   "id": "bank-f-koala",
+   "title": "Koala fingerprints look almost like ours",
+   "cat": "Fun facts",
+   "tags": "fun fact koalas have fingerprints with loops and whorls so similar to human ones that even under a microscope they're hard to tel",
+   "image": "/beta/social/el/bank/f-koala.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-koala-thumb.webp?v=1",
+   "w": 1000,
+   "h": 510
+  },
+  {
+   "id": "bank-f-space-smell",
+   "title": "Space has a smell, and it's like seared steak",
+   "cat": "Fun facts",
+   "tags": "fun fact astronauts coming back inside after spacewalks describe a smell on their suits like hot metal, welding fumes or seared s",
+   "image": "/beta/social/el/bank/f-space-smell.webp?v=1",
+   "thumb": "/beta/social/el/bank/f-space-smell-thumb.webp?v=1",
+   "w": 1000,
+   "h": 505
   }
  ]
 }
