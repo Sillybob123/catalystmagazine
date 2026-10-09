@@ -1658,9 +1658,9 @@ function renderArticleDetail(article) {
     });
 
     // --- Content ----------------------------------------------------------
-    const contentHtml = cleanStoryHtml(article.blocks?.length
+    const contentHtml = markLeadFigure(cleanStoryHtml(article.blocks?.length
         ? renderContentBlocks(article.blocks)
-        : (article.content || `<p>${article.excerpt || ''}</p>`));
+        : (article.content || `<p>${article.excerpt || ''}</p>`)));
     const readingTime = article.readingTime || estimateReadingTime(article);
     const heroImage = getResizedImageUrl(article.image || ARTICLE_FALLBACK_IMAGE, 1600, 80);
     const category = formatCategory(article.category || 'feature');
@@ -3029,6 +3029,22 @@ function rootRelativePaths(html) {
 // Older stories carry Wix-era photos (posts/insidearticleimages/...) and
 // "Term Targeter" game iframes (posts/games/articleN.html) that no longer
 // hold up; drop those blocks, then root any other relative paths.
+// A story that opens with a picture: mark that first figure (skipping empty
+// paragraphs before it) so article-premium.css can set it beside the opening
+// text instead of above it. Mirrored in js/dashboard/final-review.js.
+function markLeadFigure(html) {
+    const s = String(html || '');
+    const lead = /^(?:\s|<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?>|<a\b[^>]*>\s*<\/a>)*<\/p>)*/i.exec(s)[0];
+    const rest = s.slice(lead.length);
+    if (/^<figure\b/i.test(rest)) {
+        return lead + rest.replace(/^<figure\b([^>]*?)(\sclass=["']([^"']*)["'])?/i, (m, a, c, cls) => `<figure${a.replace(/\sclass=["'][^"']*["']/i, '')} class="${cls ? cls + ' ' : ''}rt-lead"`);
+    }
+    if (/^<p\b[^>]*>\s*(?:<a\b[^>]*>\s*)?<img\b[^>]*>\s*(?:<\/a>\s*)?<\/p>/i.test(rest)) {
+        return lead + rest.replace(/^<p\b/i, '<p class="rt-lead"');
+    }
+    return s;
+}
+
 function cleanStoryHtml(html) {
     return rootRelativePaths(String(html || '')
         .replace(/<figure\b[^>]*>\s*<img\b[^>]*\ssrc=["']\/?posts\/insidearticleimages\/[^"']*["'][^>]*>[\s\S]*?<\/figure>/gi, '')

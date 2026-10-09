@@ -529,7 +529,7 @@ const ROUTES = {
     icon: ICONS.check,
     roles: ["admin", "editor", "writer"],
     hidden: true,
-    loader: () => import("./final-review.js?v=pub-1"),
+    loader: () => import("./final-review.js?v=lead-1"),
   },
 };
 

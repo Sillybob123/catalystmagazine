@@ -747,6 +747,41 @@ body[data-page="article"] { --hero-frame: min(1152px, calc(100% - 186px)); }
   padding-top: 6px;
   margin-top: 14px;
 }
+
+/* A story that opens with a picture (js/main.js markLeadFigure): on wide
+   screens the picture sits to the right of the opening paragraphs, like a
+   magazine page, instead of standing alone above the first line. Later
+   figures, quotes and rules clear it so nothing tucks in beside them. */
+.article-body > .rt-lead { margin-top: 4px; }
+@media (min-width: 900px) {
+  .article-body > .rt-lead {
+    float: right;
+    width: 44%;
+    max-width: 330px;
+    margin: 8px -40px 22px 36px;
+    text-align: left;
+  }
+  .article-body > .rt-lead img {
+    width: 100%;
+    margin: 0;
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05), 0 14px 32px -20px rgba(15, 23, 42, 0.45);
+  }
+  .article-body > .rt-lead figcaption {
+    margin: 12px 0 0;
+    max-width: none;
+    text-align: left;
+    font-size: 13px;
+    text-wrap: pretty;
+  }
+  .article-body > figure:not(.rt-lead),
+  .article-body > blockquote,
+  .article-body > hr,
+  .article-body > .article-image { clear: both; }
+}
+@media (min-width: 900px) and (max-width: 1100px) {
+  .article-body > .rt-lead { margin-right: 0; }
+}
 .article-body hr {
   border: none;
   display: block;
