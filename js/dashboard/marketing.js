@@ -631,6 +631,7 @@ async function firestoreQuery(authedFetch, structuredQuery) {
       imageUrls: (f.imageUrls?.arrayValue?.values || []).map((v) => v.stringValue || "").filter(Boolean),
       bank: f.bank?.booleanValue === true,
       series: str("series"),
+      boardType: str("boardType"),
       seriesNo: Number(f.seriesNo?.integerValue ?? f.seriesNo?.doubleValue ?? 0),
       backgroundId: str("backgroundId"),
       designJson: str("designJson"),
@@ -752,6 +753,8 @@ async function mountSocialPosts(ctx, container) {
           </select>
         </div>
         <div class="spb-status" id="sp-status-tabs" role="tablist" aria-label="Status"></div>
+        <div class="spb-types" id="sp-type-row" role="group" aria-label="What the post is for"></div>
+        <div class="spb-cover" id="sp-coverage" hidden></div>
         <div class="spb-bankbar" id="sp-bank-bar" hidden>
           <p>Ready-made posts for slow weeks. Open one, give it a date and move it to Drafts.</p>
           <div class="spb-seg" id="sp-series-seg" role="group" aria-label="Series"></div>
@@ -894,7 +897,7 @@ async function mountSocialPosts(ctx, container) {
   const suggestionsWrap = container.querySelector("#sp-suggestions-wrap");
   const suggestionsList = container.querySelector("#sp-suggestions-list");
   const suggestionsCount = container.querySelector("#sp-suggestions-count");
-  const boardFilter = { platform: "", status: "", q: "", series: "", view: "grid" };
+  const boardFilter = { platform: "", status: "", q: "", series: "", view: "grid", type: "", article: "" };
   const lead = canAssign(ctx), myUid = ctx.user?.uid;
   let scheduleWeek = 0, team = null;
   const ensureTeam = async () => team || (team = await loadTeam((q) => firestoreRunQuery(ctx.authedFetch, q)).catch(() => []));
@@ -910,6 +913,34 @@ async function mountSocialPosts(ctx, container) {
     if (!at) return false;
     const haystack = `${post.title || ""} ${post.articleTitle || ""}`.toLowerCase();
     return haystack.includes(at);
+  }
+
+  // What a post is for. A post can pick its own (boardType); otherwise it's
+  // worked out from its story link, series and title.
+  const TYPES = [["article", "Articles"], ["recruit", "Recruitment"], ["fun", "Fun posts"], ["edition", "Editions"], ["other", "Other"]];
+  const TYPE_LABEL = { article: "Article", recruit: "Recruitment", fun: "Fun post", edition: "Edition", other: "Other" };
+  const STALE_DAYS = 20;
+  function articleFor(p) { return publishedArticles.find((a) => postMatchesArticle(p, a)) || null; }
+  function typeOf(p) {
+    if (TYPE_LABEL[p.boardType]) return p.boardType;
+    if (p.bank || p.series) return "fun";
+    const t = `${p.title || ""} ${p.backgroundId || ""}`.toLowerCase();
+    if (/wacky word|fun fact|brain teaser|did you know|myth vs fact/.test(t)) return "fun";
+    if (/series-(join|pitch)|join the team|pitch us|recruit|writers wanted|hiring|join the catalyst|apply to/.test(t)) return "recruit";
+    if (p.articleId || p.articleSlug || p.article) return "article";
+    if (/edition|\bed-/.test(t)) return "edition";
+    return "other";
+  }
+  // Drafts for a story published more than 20 days ago are too late to post;
+  // they move to Archived (unless someone has been assigned to post them).
+  function annotate() {
+    const cutoff = Date.now() - STALE_DAYS * 86400000;
+    for (const p of allPosts) {
+      p.article = articleFor(p);
+      p.type = typeOf(p);
+      const t = Date.parse(p.article?.publishedAt || "");
+      p.stale = !p.bank && Number.isFinite(t) && t < cutoff && p.status !== "posted" && !p.assign;
+    }
   }
 
   // ── Board cards: a visual gallery ──────────────────────────────────────────
@@ -1013,16 +1044,24 @@ async function mountSocialPosts(ctx, container) {
   function render() {
     const { platform: pf, status: sf } = boardFilter;
     const q = boardFilter.q.trim().toLowerCase();
-    const matching = allPosts.filter((p) => (!pf || p.platform === pf) && (!q || `${p.title} ${p.content} ${p.articleTitle}`.toLowerCase().includes(q)));
-    // Bank posts (ready-made, undated) live in their own tab.
-    const base = matching.filter((p) => !p.bank);
+    annotate();
+    const searched = allPosts.filter((p) => (!pf || p.platform === pf) && (!q || `${p.title} ${p.content} ${p.articleTitle}`.toLowerCase().includes(q)));
+    // Type chips count everything that's live (not archived, not the bank).
+    const typeCounts = {}; for (const p of searched) if (!p.bank && !p.stale) typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
+    renderTypeRow(typeCounts);
+    const tf = boardFilter.type, af = boardFilter.article;
+    const matching = searched.filter((p) => (!tf || (p.bank ? tf === "fun" : p.type === tf)) && (!af || p.article?.id === af));
+    // Bank posts (ready-made, undated) live in their own tab; drafts for old
+    // stories in Archived.
+    const base = matching.filter((p) => !p.bank && !p.stale);
     const bank = matching.filter((p) => p.bank);
-    const counts = { "": base.length, bank: bank.length };
+    const archived = matching.filter((p) => p.stale);
+    const counts = { "": base.length, bank: bank.length, archived: archived.length };
     for (const p of base) counts[p.status || "proposed"] = (counts[p.status || "proposed"] || 0) + 1;
     const isMine = (p) => p.status !== "posted" && p.owners?.some((o) => o.id === myUid);
     counts.mine = base.filter(isMine).length;
-    statusTabs.innerHTML = [["", "All"], ...(counts.mine || sf === "mine" ? [["mine", "For me"]] : []), ["proposed", "Drafts"], ["approved", "Approved"], ["assigned", "Assigned"], ["posted", "Posted"], ["bank", "Post bank"]]
-      .map(([k, label]) => `<button type="button" role="tab" data-status="${k}" class="${sf === k ? "is-on" : ""}${k === "bank" ? " is-bank" : ""}" aria-selected="${sf === k}">${label}<span>${counts[k] || 0}</span></button>`).join("");
+    statusTabs.innerHTML = [["", "All"], ...(counts.mine || sf === "mine" ? [["mine", "For me"]] : []), ["proposed", "Drafts"], ["approved", "Approved"], ["assigned", "Assigned"], ["posted", "Posted"], ...(counts.archived || sf === "archived" ? [["archived", "Archived"]] : []), ["bank", "Post bank"]]
+      .map(([k, label]) => `<button type="button" role="tab" data-status="${k}" class="${sf === k ? "is-on" : ""}${k === "bank" ? " is-bank" : ""}" aria-selected="${sf === k}"${k === "archived" ? ` title="Drafts for stories published more than ${STALE_DAYS} days ago: too late to post"` : ""}>${label}<span>${counts[k] || 0}</span></button>`).join("");
     const bankBar = container.querySelector("#sp-bank-bar");
     bankBar.hidden = sf !== "bank";
     if (sf === "bank") {
@@ -1033,6 +1072,7 @@ async function mountSocialPosts(ctx, container) {
 
     const sort = sortEl.value;
     const pool = sf === "bank" ? bank.filter((p) => !boardFilter.series || p.series === boardFilter.series)
+      : sf === "archived" ? archived
       : base.filter((p) => !sf || (sf === "mine" ? isMine(p) : (p.status || "proposed") === sf));
     const list = pool.sort((a, b) => {
       if (sf === "bank" && sort === "due") return (a.series || "").localeCompare(b.series || "") || (a.seriesNo - b.seriesNo);
@@ -1048,7 +1088,8 @@ async function mountSocialPosts(ctx, container) {
     const schedule = boardFilter.view === "schedule" && sf !== "bank";
     listEl.className = schedule ? "sps" : "spb-grid";
     sortEl.hidden = schedule;
-    renderRecent(base, sf, q, schedule);
+    renderRecent(base, sf, q || tf || af, schedule);
+    renderCoverage(sf, schedule);
     if (schedule) {
       for (const p of pool) { p.cleanTitle = cleanTitle(p.title); }
       listEl.innerHTML = scheduleHTML(pool, scheduleWeek, {
@@ -1067,8 +1108,56 @@ async function mountSocialPosts(ctx, container) {
       listEl.querySelectorAll("img[data-live]").forEach((img) => (liveObserver ? liveObserver.observe(img) : liveQueue.push(img)));
       if (!liveObserver) pumpLive();
     }
-    renderSuggestions();
+    if (tf === "article" || af) suggestionsWrap.hidden = true; else renderSuggestions();
   }
+
+  // Type chips: Articles · Recruitment · Fun posts · Editions · Other.
+  const typeRow = container.querySelector("#sp-type-row");
+  function renderTypeRow(counts) {
+    const af = boardFilter.article && publishedArticles.find((a) => a.id === boardFilter.article);
+    typeRow.innerHTML = `<span class="spb-types-label">Show</span>` +
+      [["", "Everything"], ...TYPES].map(([k, label]) => `<button type="button" data-type="${k}" class="${boardFilter.type === k ? "is-on" : ""}" aria-pressed="${boardFilter.type === k}">${label}${k ? `<small>${counts[k] || 0}</small>` : ""}</button>`).join("") +
+      (af ? `<span class="spb-artfilter">Posts for <b>${esc(af.title)}</b><button type="button" data-clear-article aria-label="Show all posts">×</button></span>` : "");
+  }
+  typeRow.addEventListener("click", (e) => {
+    if (e.target.closest("[data-clear-article]")) { boardFilter.article = ""; render(); return; }
+    const b = e.target.closest("[data-type]"); if (!b) return;
+    boardFilter.type = b.dataset.type; boardFilter.article = "";
+    if (boardFilter.status === "bank" && b.dataset.type !== "fun" && b.dataset.type) boardFilter.status = "";
+    render();
+  });
+
+  // Articles: has each recent story got a post yet?
+  const coverEl = container.querySelector("#sp-coverage");
+  function renderCoverage(sf, schedule) {
+    const show = boardFilter.type === "article" && !boardFilter.article && !schedule && sf !== "bank" && publishedArticles.length;
+    coverEl.hidden = !show;
+    if (!show) return;
+    const now = Date.now(), cutoff = now - STALE_DAYS * 86400000;
+    const list = publishedArticles.filter((a) => Date.parse(a.publishedAt || "") >= now - 60 * 86400000)
+      .sort((a, b) => String(b.publishedAt).localeCompare(String(a.publishedAt))).slice(0, 12);
+    coverEl.innerHTML = `<div class="spb-cover-head"><b>Stories from the last 60 days</b><span>Has each one got a post? Stories older than ${STALE_DAYS} days are too late to promote.</span></div>
+      <ul class="spb-cover-list">${list.map((a) => {
+        const posts = allPosts.filter((p) => !p.bank && postMatchesArticle(p, a));
+        const posted = posts.filter((p) => p.status === "posted").length;
+        const fresh = Date.parse(a.publishedAt || "") >= cutoff;
+        const state = posted ? ["is-done", `Posted${posted > 1 ? ` · ${posted}` : ""}`] : posts.length ? ["is-draft", `${posts.length} draft${posts.length === 1 ? "" : "s"}`] : fresh ? ["is-none", "No post yet"] : ["is-late", "No post · too late"];
+        const d = new Date(a.publishedAt);
+        return `<li class="spb-cover-row${fresh ? "" : " is-old"}">
+          ${a.coverImage || a.image ? `<img src="${esc(a.coverImage || a.image)}" alt="" loading="lazy">` : `<span class="spb-cover-ph"></span>`}
+          <span class="spb-cover-txt"><b>${esc(a.title)}</b><small>${esc([a.authorName || a.author, Number.isFinite(+d) ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""].filter(Boolean).join(" · "))}</small></span>
+          <span class="spb-cover-state ${state[0]}">${state[1]}</span>
+          ${posts.length ? `<button type="button" class="btn btn-ghost btn-sm" data-cover-view="${esc(a.id)}">See posts</button>` : ""}
+          ${fresh ? `<button type="button" class="btn btn-secondary btn-sm" data-cover-make="${esc(a.id)}">${posts.length ? "Another" : "Make a post"}</button>` : ""}
+        </li>`;
+      }).join("") || `<li class="spb-cover-empty">No stories published in the last 60 days.</li>`}</ul>`;
+  }
+  coverEl.addEventListener("click", (e) => {
+    const v = e.target.closest("[data-cover-view]");
+    if (v) { boardFilter.article = v.dataset.coverView; boardFilter.status = ""; render(); return; }
+    const m = e.target.closest("[data-cover-make]");
+    if (m) startCreateForArticleId(m.dataset.coverMake);
+  });
   // The newest drafts, with who made them, so nothing new slips by.
   const recentEl = container.querySelector("#sp-recent");
   function renderRecent(base, sf, q, schedule) {
@@ -1239,6 +1328,7 @@ async function mountSocialPosts(ctx, container) {
             <span class="spd-chip">${platIcon(p.platform)}${esc(pm.label)}</span>
             <span class="spc-status is-${esc(st)}">${esc(STATUS_LABEL[st] || st)}</span>
             <span class="spd-chip">${esc(kindOf(p))}</span>
+            ${p.bank ? "" : `<label class="spd-type"><span class="sr-only">What it's for</span><select id="spd-type" aria-label="What it's for" title="What this post is for (sorts it on the board)">${TYPES.map(([k]) => `<option value="${k}"${(p.type || typeOf(p)) === k ? " selected" : ""}>${TYPE_LABEL[k]}</option>`).join("")}</select></label>`}
           </div>
           ${p.bank ? `<label class="spd-label" for="spd-due">Post on</label>
           <div class="spd-due"><input type="date" id="spd-due" value="${esc(p.deadline || "")}"><span id="spd-due-status"></span></div>` : `<div id="spd-plan" class="spd-plan"><div class="loading-state"><div class="spinner"></div></div></div>`}
@@ -1272,6 +1362,14 @@ async function mountSocialPosts(ctx, container) {
     detailModal.querySelector("[data-slide-prev]")?.addEventListener("click", () => show(cur - 1));
     detailModal.querySelector("[data-slide-next]")?.addEventListener("click", () => show(cur + 1));
     detailModal.querySelectorAll("[data-slide]").forEach((b) => b.addEventListener("click", () => show(Number(b.dataset.slide))));
+
+    // What it's for (sorts it under Articles / Recruitment / Fun posts …).
+    detailModal.querySelector("#spd-type")?.addEventListener("change", async (e) => {
+      const v = e.target.value, prev = p.boardType;
+      p.boardType = v; render();
+      try { await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { boardType: v }); ctx.toast(`Filed under ${TYPES.find(([k]) => k === v)[1]}.`, "success"); }
+      catch (err) { p.boardType = prev; render(); ctx.toast("Only the person who made this post (or an editor) can change that: " + err.message, "error"); }
+    });
 
     // Who posts it, and when (social-plan.js). Bank posts just keep a date
     // for when they move to the drafts.
