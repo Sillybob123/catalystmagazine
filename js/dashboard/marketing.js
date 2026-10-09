@@ -965,21 +965,21 @@ async function mountSocialPosts(ctx, container) {
   // Frame shape for the card / detail preview, from the design's format.
   const shapeOf = (p) => { if (isWide(p)) return "wide"; const f = designOf(p)?.format; return f === "square" ? "square" : f === "story" ? "story" : f === "post" ? "portrait" : "other"; };
   function dueInfo(p) {
-    if (!p.deadline) return { text: "No date", cls: "" };
+    if (!p.deadline) return { text: p.status === "posted" ? "Posted" : "No date set", cls: p.status === "posted" ? "is-done" : "is-none" };
     const [yy, mm, dd] = String(p.deadline).split("-").map(Number);
     const d = new Date(yy, (mm || 1) - 1, dd || 1);   // local midnight, so day maths is exact
     if (!yy || Number.isNaN(d.getTime())) return { text: p.deadline, cls: "" };
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const days = Math.round((d - today) / 86400000);
     const txt = d.toLocaleDateString(undefined, { month: "short", day: "numeric", ...(d.getFullYear() !== today.getFullYear() ? { year: "numeric" } : {}) });
-    if (p.status === "posted") return { text: txt, cls: "" };
-    if (days < 0) return { text: `Overdue · ${txt}`, cls: "is-late" };
+    if (p.status === "posted") return { text: `Posted ${txt}`, cls: "is-done" };
+    if (days < 0) return { text: `Overdue ${txt}`, cls: "is-late" };
     if (days === 0) return { text: `Due today${p.postTime ? " · " + fmtTime(p.postTime) : ""}`, cls: "is-soon" };
     if (days <= 3) return { text: `Due ${txt}`, cls: "is-soon" };
     return { text: `Due ${txt}`, cls: "" };
   }
   function postCardHTML(p) {
-    const due = p.bank ? { text: SERIES_LABEL[p.series] || "Ready anytime", cls: "" } : dueInfo(p), st = p.bank ? "bank" : (p.status || "proposed");
+    const due = p.bank ? { text: SERIES_LABEL[p.series] || "Ready anytime", cls: "is-series" } : dueInfo(p), st = p.bank ? "bank" : (p.status || "proposed");
     const live = !!designOf(p);
     const img = p.coverImageUrl || "";
     return `
@@ -994,12 +994,11 @@ async function mountSocialPosts(ctx, container) {
         </div>
         <div class="spc-body">
           <h3 class="spc-title">${esc(cleanTitle(p.title))}</h3>
-          ${p.bank ? "" : `<div class="spc-by">${avatar({ name: p.proposerName })}<span>${esc(creatorName(p.proposerName))}${p.createdAt ? ` · ${esc(fmtRelative(p.createdAt))}` : ""}</span>${p.owners?.length ? `<span class="spc-owners" title="Posting: ${esc(p.owners.map((o) => o.name).join(", "))}">${avatarStack(p.owners, 2)}</span>` : ""}</div>`}
           <div class="spc-meta">
-            <span class="spc-plat" title="${esc((PLATFORM_META[p.platform] || {}).label || "Instagram")}">${platIcon(p.platform)}</span>
-            <span class="spc-due ${due.cls}">${esc(due.text)}</span>
+            <span class="spc-due ${due.cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span>${esc(due.text)}</span></span>
             <span class="spc-status is-${esc(st)}">${esc(STATUS_LABEL[st] || st)}</span>
           </div>
+          ${p.bank ? "" : `<div class="spc-by">${avatar({ name: p.proposerName })}<span>${esc(creatorName(p.proposerName))}${p.createdAt ? ` · ${esc(fmtRelative(p.createdAt))}` : ""}</span><span class="spc-end">${p.owners?.length ? `<span class="spc-owners" title="Posting: ${esc(p.owners.map((o) => o.name).join(", "))}">${avatarStack(p.owners, 2)}</span>` : ""}<span class="spc-plat" title="${esc((PLATFORM_META[p.platform] || {}).label || "Instagram")}">${platIcon(p.platform)}</span></span></div>`}
         </div>
       </article>`;
   }
@@ -1045,7 +1044,7 @@ async function mountSocialPosts(ctx, container) {
     const { platform: pf, status: sf } = boardFilter;
     const q = boardFilter.q.trim().toLowerCase();
     annotate();
-    const searched = allPosts.filter((p) => (!pf || p.platform === pf) && (!q || `${p.title} ${p.content} ${p.articleTitle}`.toLowerCase().includes(q)));
+    const searched = allPosts.filter((p) => (p.title || p.content || p.designJson || p.coverImageUrl || p.platform) && (!pf || p.platform === pf) && (!q || `${p.title} ${p.content} ${p.articleTitle}`.toLowerCase().includes(q)));
     // Type chips count everything that's live (not archived, not the bank).
     const typeCounts = {}; for (const p of searched) if (!p.bank && !p.stale) typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
     renderTypeRow(typeCounts);

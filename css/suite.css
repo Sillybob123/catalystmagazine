@@ -1220,13 +1220,20 @@ body.ds-lock .toast-stack { z-index: 1100; }
 .spc-act:hover { background: #fff; }
 .spc-act:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .spc-body { padding: 10px 2px 0; }
-.spc-title { margin: 0; font: 600 13.5px/1.35 var(--font); letter-spacing: -0.01em; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.spc-meta { display: flex; align-items: center; gap: 8px; margin-top: 7px; font-size: 12px; color: var(--muted); }
+.spc-title { margin: 0; min-height: calc(13.5px * 1.35 * 2); font: 600 13.5px/1.35 var(--font); letter-spacing: -0.01em; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }   /* always two lines tall, so the rows below line up across the grid */
+.spc-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .spc-plat { display: inline-flex; color: var(--ink-2); }
 .spc-plat svg, .spd-chip svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.spc-due { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.spc-due.is-soon { color: #8a5a12; font-weight: 600; }
-.spc-due.is-late { color: var(--danger); font-weight: 600; }
+/* The date is the first thing to read: a pill whose colour says how urgent it is. */
+.spc-due { display: inline-flex; align-items: center; gap: 5px; min-width: 0; min-height: 26px; padding: 0 10px 0 8px; border-radius: 999px; background: var(--surface-3); color: var(--ink-2); font: 600 12px/1 var(--font); white-space: nowrap; }
+.spc-due > span { overflow: hidden; text-overflow: ellipsis; }
+.spc-due svg { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; }
+.spc-due.is-soon { background: #f6ead0; color: #7a4f0e; }
+.spc-due.is-late { background: #f6e0dc; color: var(--danger); }
+.spc-due.is-done { background: #e2ecdf; color: #2f5d3a; }
+.spc-due.is-none { background: none; box-shadow: inset 0 0 0 1px var(--hairline-2); color: var(--muted); font-weight: 500; }
+.spc-due.is-series { background: #efe6d8; color: #7a5232; }
+.spc-due.is-series svg { display: none; }
 .spc-status { margin-left: auto; flex: none; padding: 4px 8px; border-radius: 999px; font: 600 10.5px/1 var(--font); letter-spacing: .04em; text-transform: uppercase; background: var(--surface-3); color: var(--ink-2); }
 .spc-status.is-approved { background: var(--good-soft); color: var(--good); }
 .spc-status.is-assigned { background: var(--info-soft); color: var(--info); }
@@ -1414,9 +1421,11 @@ body.ds-lock .toast-stack { z-index: 1100; }
 .spa-more { background: var(--surface-3); color: var(--ink-2); }
 .spb-view { margin-left: auto; }
 .spb-view + .spb-sort { margin-left: 0; }
-.spc-by { display: flex; align-items: center; gap: 6px; margin-top: 6px; min-width: 0; font-size: 12px; color: var(--muted); }
+.spc-by { display: flex; align-items: center; gap: 6px; min-height: 22px; margin-top: 7px; min-width: 0; font-size: 12px; color: var(--muted); }
 .spc-by > span:not(.spc-owners) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.spc-owners { margin-left: auto; display: inline-flex; align-items: center; }
+.spc-end { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.spc-owners { display: inline-flex; align-items: center; }
+.spc-by .spc-plat { color: var(--muted); }
 
 /* Just added */
 .spb-recent { padding: 12px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface); }
