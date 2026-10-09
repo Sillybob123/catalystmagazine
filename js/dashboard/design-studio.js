@@ -363,10 +363,12 @@ export async function renderPage(ctx, page, fmt, { skip = null } = {}) {
   ctx.fillStyle = bg.color || PAPER;
   ctx.fillRect(0, 0, W, H);
   if (bg.image) {
+    ctx.globalAlpha = bg.opacity ?? 1;
     try {
       if (hasErase(bg)) await drawErased(ctx, bg.erase, 0, 0, W, H, (g) => drawBgImage(g, bg, W, H));
       else await drawBgImage(ctx, bg, W, H);
     } catch {}
+    ctx.globalAlpha = 1;
   }
   if (bg.image && bg.tintColor && bg.tintAlpha > 0) { ctx.fillStyle = hexA(bg.tintColor, bg.tintAlpha); ctx.fillRect(0, 0, W, H); }
   else if (bg.tint) { ctx.fillStyle = bg.tint; ctx.fillRect(0, 0, W, H); }
@@ -1619,7 +1621,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
       n === 1 ? item("lock", L.locked ? "Unlock" : "Lock") : "",
       n === 1 && L.type === "text" ? item("edit", "Edit text", "Double-click") : "",
       n === 1 && L.type === "image" ? item("erase", "Erase parts…") + item("to-bg", "Set as background") : "",
-    ].join("") : [item("paste", "Paste", "⌘V", !clip), item("all", "Select all", "⌘A"), sep, page().bg?.image ? item("bg-erase", "Erase parts of the background…") : "", item("new-page", "Add a page")].join("");
+    ].join("") : [item("paste", "Paste", "⌘V", !clip), item("all", "Select all", "⌘A"), sep, page().bg?.image ? item("bg-detach", "Move or resize the background") + item("bg-erase", "Erase parts of the background…") : "", item("new-page", "Add a page")].join("");
     ctxMenu = el("div", { class: "ds-menu ds-ctxmenu", role: "menu" });
     ctxMenu.innerHTML = html;
     const root = container.querySelector(".ds"), rr = root.getBoundingClientRect();
@@ -1646,6 +1648,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     if (m === "edit" && L) return startEditing(L);
     if (m === "erase") return startEraser("layer");
     if (m === "bg-erase") return startEraser("bg");
+    if (m === "bg-detach") return detachBackground();
     if (m === "to-bg") { const b = $('#ds-toolbar [data-act="to-bg"]'); return b && b.click(); }
     if (m === "new-page") { design.pages.splice(pageIdx + 1, 0, blankPage()); pageIdx++; setSelection([]); commit(); refreshAll(); return; }
     if (["front", "up", "down", "back"].includes(m)) {
@@ -1692,7 +1695,29 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
   artboard.addEventListener("dblclick", (e) => {
     const L = hit(pt(e));
     if (L && L.type === "text" && !L.locked) startEditing(L);
+    else if (!L && page().bg?.image && !eraser) detachBackground();
   });
+  // The page background becomes an ordinary image layer at the back, drawn
+  // exactly where it was (erased parts and the wash come along), so it can
+  // be selected, moved, resized, faded, cropped by the page or erased.
+  async function detachBackground() {
+    const pg = page(), bg = pg.bg || {};
+    if (!bg.image) return;
+    const f = fmt();
+    let img;
+    try { img = await loadImg(bg.image); } catch { ctx.toast?.("Couldn't load the background image.", "error"); return; }
+    const iw = img.naturalWidth || f.w, ih = img.naturalHeight || f.h;
+    let x, y, w, h;
+    if (bg.fit === "bottom" && ih * f.w / iw < f.h) { w = f.w; h = Math.round(ih * f.w / iw); x = 0; y = f.h - h; }
+    else { const k = Math.max(f.w / iw, f.h / ih); w = Math.round(iw * k); h = Math.round(ih * k); x = Math.round((f.w - w) / 2); y = Math.round((f.h - h) * (bg.focusY ?? 0.5)); }
+    const L = { id: uid(), type: "image", src: bg.image, x, y, w, h, fit: "cover", opacity: bg.opacity ?? 1, name: "Background image" };
+    if (hasErase(bg)) L.erase = bg.erase.map((st) => ({ ...st, r: st.r * f.w / w, p: st.p.map((v, i) => (i % 2 === 0 ? (v * f.w - x) / w : (v * f.h - y) / h)) }));
+    const add = [L];
+    if (bg.tintAlpha > 0 && bg.tintColor) add.push({ id: uid(), type: "rect", x: 0, y: 0, w: f.w, h: f.h, radius: 0, fill: bg.tintColor, opacity: bg.tintAlpha, name: "Wash" });
+    pg.layers.unshift(...add);
+    pg.bg = { color: bg.color || PAPER };
+    setSelection([L.id]); commit(); draw(); paintSelection(); paintToolbar(); syncPanelBg(); paintPanelIfLayers();
+  }
   function startEditing(L) {
     setSelection([L.id]); editingId = L.id;
     const ta = el("textarea", { class: "ds-inline-edit", spellcheck: "true" });
@@ -1911,7 +1936,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
   function commonRight(L) {
     return `
       <span class="ds-tb-sep"></span>
-      ${popBtn("opacity", I(ICONS.opacity), "Transparency", field("Transparency", `<input type="range" min="0.1" max="1" step="0.05" value="${L.opacity ?? 1}" data-prop="opacity">`, `${Math.round((L.opacity ?? 1) * 100)}%`))}
+      ${popBtn("opacity", `${I(ICONS.opacity)}<span>Opacity</span>`, "Opacity (see-through)", field("Opacity", `<input type="range" min="0.05" max="1" step="0.05" value="${L.opacity ?? 1}" data-prop="opacity">`, `${Math.round((L.opacity ?? 1) * 100)}%`), L.type === "text" ? "has-label" : "has-label keep-label")}
       ${popBtn("position", `${I(ICONS.position)}<span>Position</span>`, "Position", `
         <div class="ds-pophead">Layer order</div>
         <div class="ds-popgrid2">
@@ -1981,7 +2006,9 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
       ${hasImg ? `<div class="ds-bgctl"><span class="ds-tb-label">Wash over image</span>${swatches(bg.tintAlpha > 0 ? bg.tintColor : "", "tint", { none: true })}
         <label class="ds-tb-field">Strength<input type="range" min="0" max="0.85" step="0.01" value="${bg.tintAlpha || 0}" data-bgprop="tintAlpha"></label></div>
       <div class="ds-bgctl"><label class="ds-tb-field">Position<select data-act="bg-fit"><option value="cover"${bg.fit !== "bottom" ? " selected" : ""}>Fill the page</option><option value="bottom"${bg.fit === "bottom" ? " selected" : ""}>Fit width, at the bottom</option></select></label>
-        <button type="button" class="ds-ghost" data-act="bg-clear">Remove image</button></div>` : ""}`;
+        <button type="button" class="ds-ghost" data-act="bg-clear">Remove image</button></div>
+      <div class="ds-bgctl"><label class="ds-tb-field">Opacity<input type="range" min="0.05" max="1" step="0.05" value="${bg.opacity ?? 1}" data-bgprop="opacity"></label>
+        <button type="button" class="ds-ghost" data-act="bg-detach">Move &amp; resize</button></div>` : ""}`;
     }
     return `
       <span class="ds-tb-label">Page ${pageIdx + 1}</span><span class="ds-tb-sep"></span>
@@ -1990,8 +2017,10 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
       ${popBtn("wash", `${I(ICONS.wash)}<span>Wash</span>`, "Wash over the image", `<div class="ds-pophead">Wash over the image</div>${swatches(bg.tintAlpha > 0 ? bg.tintColor : "", "tint", { none: true })}${field("Strength", `<input type="range" min="0" max="0.85" step="0.01" value="${bg.tintAlpha || 0}" data-bgprop="tintAlpha">`, `${Math.round((bg.tintAlpha || 0) * 100)}%`)}`, "has-label")}
       <select class="ds-tbselect" data-act="bg-fit" aria-label="Image position" title="Image position"><option value="cover"${bg.fit !== "bottom" ? " selected" : ""}>Fill the page</option><option value="bottom"${bg.fit === "bottom" ? " selected" : ""}>Fit width, at the bottom</option></select>
       <button type="button" class="ds-tbtn has-label ds-erase-btn" data-act="bg-erase" title="Paint away parts of the background"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 21-4-4 10-10 8 8-6 6H7z"/><path d="M8 12l6 6"/><path d="M14 21h7"/></svg><span>Erase parts</span></button>
+      ${popBtn("bgop", `${I(ICONS.opacity)}<span>Opacity</span>`, "Background opacity (see-through)", field("Opacity", `<input type="range" min="0.05" max="1" step="0.05" value="${bg.opacity ?? 1}" data-bgprop="opacity">`, `${Math.round((bg.opacity ?? 1) * 100)}%`), "has-label keep-label")}
+      <button type="button" class="ds-tbtn has-label" data-act="bg-detach" title="Turn the background into an image you can move, resize, fade and layer (or double-click the background)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9 2 12l3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg><span>Move &amp; resize</span></button>
       <button type="button" class="ds-tbtn has-label" data-act="bg-clear" title="Remove the background image"><span>Remove image</span></button>` : ""}
-      <span class="ds-tb-hint">Click anything to edit it · double-click text to type · right-click for more</span>`;
+      <span class="ds-tb-hint">${hasImg ? "Double-click the background to move or resize it · " : ""}Click anything to edit it · right-click for more</span>`;
   }
   // Apply a colour from any swatch row. kind: color | fill | bgc | tint
   function applyColour(kind, c, { live = false } = {}) {
@@ -2027,7 +2056,9 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
         return true;
       }
     }
-    if (t.dataset.bgprop) { page().bg[t.dataset.bgprop] = Number(t.value); if (t.dataset.bgprop === "tintAlpha" && !page().bg.tintColor) page().bg.tintColor = "#0f172a"; draw(); commitSoon(); return true; }
+    if (t.dataset.bgprop) {
+      const out = t.closest(".ds-popfield")?.querySelector("output"); if (out) out.textContent = `${Math.round(Number(t.value) * 100)}%`;
+      page().bg[t.dataset.bgprop] = Number(t.value); if (t.dataset.bgprop === "tintAlpha" && !page().bg.tintColor) page().bg.tintColor = "#0f172a"; draw(); commitSoon(); return true; }
     return false;
   }
   function onColourClick(b) {
@@ -2035,6 +2066,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
       if (b.dataset[kind] != null && b.classList.contains("ds-sw")) { applyColour(kind, b.dataset[kind]); return true; }
     }
     if (b.dataset.act === "bg-clear") { page().bg.image = null; commit(); draw(); paintToolbar(); syncPanelBg(); return true; }
+    if (b.dataset.act === "bg-detach") { detachBackground(); return true; }
     return false;
   }
   function onBgFit(t) {
@@ -2088,6 +2120,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     if (b.dataset.erMode) { eraser.mode = b.dataset.erMode; return paintToolbar(); }
     if (b.dataset.act === "erase") return startEraser("layer");
     if (b.dataset.act === "bg-erase") return startEraser("bg");
+    if (b.dataset.act === "bg-detach") return detachBackground();
     if (b.dataset.act === "er-done") return stopEraser();
     if (b.dataset.act === "er-undo") { const T = eraserTarget(); if (T?.erase?.length) { T.erase.pop(); if (!T.erase.length) delete T.erase; commit(); draw(); paintToolbar(); } return; }
     if (b.dataset.act === "er-reset") { const T = eraserTarget(); if (T?.erase) { delete T.erase; commit(); draw(); paintToolbar(); } return; }
@@ -2276,7 +2309,11 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
             <button type="button" data-lact="hide" title="${L.hidden ? "Show" : "Hide"}">${L.hidden ? "Show" : "Hide"}</button>
             <button type="button" data-lact="up" title="Forward">↑</button>
             <button type="button" data-lact="down" title="Backward">↓</button>
-          </li>`).join("") || `<li class="ds-panel-hint">Nothing on this page yet.</li>`}</ul>`;
+          </li>`).join("")}${page().bg?.image ? `
+          <li class="ds-lbg" data-bgrow title="The page background. Unlock it to move, resize or fade it like any image.">
+            <span class="ds-ltype">Bg</span><span class="ds-lname">Background image</span>
+            <button type="button" data-lact="bg-detach">Unlock</button>
+          </li>` : ""}${!ls.length && !page().bg?.image ? `<li class="ds-panel-hint">Nothing on this page yet.</li>` : ""}</ul>`;
     }
   }
 
@@ -2286,7 +2323,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     if (e.target.matches("#ds-panel-bgctl input[type=color], #ds-panel-bgctl .ds-hex")) { paintToolbar(); syncPanelBg(); }
   });
   $("#ds-panel").addEventListener("click", (e) => {
-    const t = e.target.closest("button, li[data-layer]");
+    const t = e.target.closest("button, li[data-layer], li[data-bgrow]");
     if (!t) return;
     if (t.closest("#ds-panel-bgctl")) { onColourClick(t); return; }
     const f = fmt();
@@ -2336,6 +2373,9 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
         cta: { text: "Link in bio →", size: 30, weight: 600, markup: false, w: 400 },
       };
       addLayer(txt({ name: k, ...presets[k] }));
+    } else if (t.closest("li[data-bgrow]")) {
+      if (e.target.closest("[data-lact]")?.dataset.lact === "bg-detach") return detachBackground();
+      setSelection([]); paintSelection(); paintToolbar(); paintPanel();
     } else if (t.closest("li[data-layer]")) {
       const li = t.closest("li[data-layer]");
       const L = layer(li.dataset.layer);

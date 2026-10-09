@@ -812,6 +812,8 @@ body.ds-lock .toast-stack { z-index: 1100; }
 .ds-lname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ds-layers li button { min-width: 28px; min-height: 28px; padding: 0 6px; border: 0; border-radius: 6px; background: none; color: var(--muted); font: 500 11px/1 var(--font); cursor: pointer; }
 .ds-layers li button:hover { background: var(--surface); color: var(--ink); }
+.ds-layers li.ds-lbg { margin-top: 6px; border-top: 1px dashed var(--hairline-2); border-radius: 0 0 9px 9px; color: var(--muted); }
+.ds-layers li.ds-lbg button { color: var(--ink); font-weight: 600; border: 1px solid var(--hairline-2); }
 .ds-flabel { display: block; margin: 16px 0 6px; font: 600 12px/1.2 var(--font); color: var(--ink-2); }
 .ds-fselect { width: 100%; min-height: 40px; }
 .ds-cap { width: 100%; min-height: 220px; padding: 12px; font: 400 14px/1.55 var(--font); resize: vertical; }
@@ -1004,6 +1006,8 @@ body.ds-lock .toast-stack { z-index: 1100; }
   .ds-toolbar { gap: 6px 2px; padding: 7px 8px; margin: 8px 10px 0; }
   .ds-popwrap > .ds-tbtn.has-label > span { display: none; }
   .ds-popwrap > .ds-tbtn.has-label { padding: 0 8px; }
+  .ds-popwrap > .ds-tbtn.keep-label > span { display: inline; }
+  .ds-popwrap > .ds-tbtn.keep-label { padding: 0 11px; }
   .ds-weight { width: 100px; }
   .ds-tb-sep { margin: 0 2px; }
 }
