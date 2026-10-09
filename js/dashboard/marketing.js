@@ -3,7 +3,7 @@
 //   - "collabs":   collaboration-request pipeline
 
 import { el, esc, fmtRelative, fmtDate, confirmDialog } from "./ui.js";
-import { canAssign, loadAssignments, loadTeam, applyPlan, scheduleHTML, mountPlan, avatar, avatarStack, creatorName, fmtTime } from "./social-plan.js?v=1";
+import { canAssign, loadAssignments, loadTeam, applyPlan, scheduleHTML, mountPlan, avatar, avatarStack, creatorName, fmtTime } from "./social-plan.js?v=2";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -742,6 +742,7 @@ async function mountSocialPosts(ctx, container) {
             <button type="button" data-platform="linkedin">LinkedIn</button>
             <button type="button" data-platform="twitter">X</button>
           </div>
+          <button type="button" class="spb-selbtn" id="sp-select" aria-pressed="false" title="Pick several posts to duplicate or delete them">Select</button>
           <div class="spb-seg spb-view" id="sp-view-seg" role="group" aria-label="View">
             <button type="button" data-view="grid" class="is-on">Grid</button>
             <button type="button" data-view="schedule">Schedule</button>
@@ -769,6 +770,7 @@ async function mountSocialPosts(ctx, container) {
           <div id="sp-suggestions-list" class="spb-suggest-list"></div>
         </div>
 
+        <div class="spb-selbar" id="sp-selbar" role="region" aria-label="Selected posts" hidden></div>
         <div id="sp-list" class="spb-grid" aria-live="polite"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
       </section>
 
@@ -900,6 +902,9 @@ async function mountSocialPosts(ctx, container) {
   const boardFilter = { platform: "", status: "", q: "", series: "", view: "grid", type: "", article: "" };
   const lead = canAssign(ctx), myUid = ctx.user?.uid;
   let scheduleWeek = 0, team = null;
+  // Select mode: pick cards, then duplicate or delete them together.
+  let selecting = false, visibleIds = [];
+  const picked = new Set();
   const ensureTeam = async () => team || (team = await loadTeam((q) => firestoreRunQuery(ctx.authedFetch, q)).catch(() => []));
   const SERIES_LABEL = { "wacky-word": "Wacky Word Wednesday", "fun-fact": "Fun facts" };
 
@@ -983,8 +988,9 @@ async function mountSocialPosts(ctx, container) {
     const live = !!designOf(p);
     const img = p.coverImageUrl || "";
     return `
-      <article class="spc" data-id="${esc(p.id)}" tabindex="0" aria-label="${esc(cleanTitle(p.title))}">
+      <article class="spc${selecting && picked.has(p.id) ? " is-picked" : ""}" data-id="${esc(p.id)}" tabindex="0" aria-label="${esc(cleanTitle(p.title))}"${selecting ? ` aria-pressed="${picked.has(p.id)}"` : ""}>
         <div class="spc-media is-${shapeOf(p)}">
+          ${selecting ? `<span class="spc-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>` : ""}
           ${live ? `<img alt="" data-live="${esc(p.id)}"${img ? ` src="${esc(img)}"` : ""}>` : img ? `<img alt="" src="${esc(img)}" loading="lazy">` : `<span class="spc-empty">${platIcon(p.platform)}<small>No image yet</small></span>`}
           ${/^Carousel/.test(kindOf(p)) ? `<span class="spc-kind" title="${esc(kindOf(p))}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>${esc(kindOf(p).replace(/\D+/g, ""))}</span>` : ""}
           <div class="spc-hover">
@@ -1085,7 +1091,9 @@ async function mountSocialPosts(ctx, container) {
     });
 
     const schedule = boardFilter.view === "schedule" && sf !== "bank";
-    listEl.className = schedule ? "sps" : "spb-grid";
+    listEl.className = schedule ? "sps" : `spb-grid${selecting ? " is-selecting" : ""}`;
+    if (schedule && selecting) setSelecting(false, { quiet: true });
+    container.querySelector("#sp-select").hidden = schedule;
     sortEl.hidden = schedule;
     renderRecent(base, sf, q || tf || af, schedule);
     renderCoverage(sf, schedule);
@@ -1103,6 +1111,7 @@ async function mountSocialPosts(ctx, container) {
     } else if (!list.length) {
       listEl.innerHTML = `<div class="spb-empty"><b>Nothing matches</b><p>Try another filter or clear the search.</p></div>`;
     } else {
+      visibleIds = list.map((p) => p.id);
       listEl.innerHTML = list.map(postCardHTML).join("");
       listEl.querySelectorAll("img[data-live]").forEach((img) => (liveObserver ? liveObserver.observe(img) : liveQueue.push(img)));
       if (!liveObserver) pumpLive();
@@ -1189,6 +1198,7 @@ async function mountSocialPosts(ctx, container) {
     const open = e.target.closest("[data-open]");
     if (open) { openDetail(allPosts.find((x) => x.id === open.dataset.open)); return; }
     const card = e.target.closest(".spc"); if (!card) return;
+    if (selecting) { togglePick(card.dataset.id); return; }
     const p = allPosts.find((x) => x.id === card.dataset.id); if (!p) return;
     const act = e.target.closest("[data-card-act]")?.dataset.cardAct;
     if (act === "studio") return openInStudio(p);
@@ -1197,7 +1207,8 @@ async function mountSocialPosts(ctx, container) {
   listEl.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" && e.key !== " ") return;
     const card = e.target.closest(".spc"); if (!card || e.target !== card) return;
-    e.preventDefault(); openDetail(allPosts.find((x) => x.id === card.dataset.id));
+    e.preventDefault();
+    if (selecting) togglePick(card.dataset.id); else openDetail(allPosts.find((x) => x.id === card.dataset.id));
   });
   statusTabs.addEventListener("click", (e) => { const b = e.target.closest("[data-status]"); if (!b) return; boardFilter.status = b.dataset.status; boardFilter.series = ""; render(); });
   container.querySelector("#sp-series-seg").addEventListener("click", (e) => { const b = e.target.closest("[data-series]"); if (!b) return; boardFilter.series = b.dataset.series; render(); });
@@ -1210,6 +1221,88 @@ async function mountSocialPosts(ctx, container) {
   let searchT = 0;
   searchEl.addEventListener("input", () => { clearTimeout(searchT); searchT = setTimeout(() => { boardFilter.q = searchEl.value; render(); }, 120); });
   sortEl.addEventListener("change", render);
+
+  const selBtn = container.querySelector("#sp-select"), selBar = container.querySelector("#sp-selbar");
+  const canDeletePost = (p) => ctx.role === "admin" || p.proposerId === myUid;
+  function setSelecting(on, { quiet = false } = {}) {
+    selecting = on; picked.clear();
+    selBtn.setAttribute("aria-pressed", String(on)); selBtn.classList.toggle("is-on", on);
+    selBtn.textContent = on ? "Done" : "Select";
+    paintSelBar();
+    if (!quiet) render();
+  }
+  function togglePick(id) {
+    picked.has(id) ? picked.delete(id) : picked.add(id);
+    const card = listEl.querySelector(`.spc[data-id="${CSS.escape(id)}"]`);
+    if (card) { card.classList.toggle("is-picked", picked.has(id)); card.setAttribute("aria-pressed", String(picked.has(id))); }
+    paintSelBar();
+  }
+  function paintSelBar() {
+    selBar.hidden = !selecting;
+    if (!selecting) { selBar.innerHTML = ""; return; }
+    const n = picked.size;
+    const allOn = visibleIds.length && visibleIds.every((id) => picked.has(id));
+    selBar.innerHTML = `
+      <b>${n ? `${n} selected` : "Click posts to select them"}</b>
+      <button type="button" class="btn btn-ghost btn-sm" data-sel="all">${allOn ? "Clear" : `Select all ${visibleIds.length}`}</button>
+      <span class="spb-selbar-spacer"></span>
+      <button type="button" class="btn btn-secondary btn-sm" data-sel="dup" ${n ? "" : "disabled"}>Duplicate</button>
+      <button type="button" class="btn btn-danger btn-sm" data-sel="del" ${n ? "" : "disabled"}>Delete</button>
+      <button type="button" class="btn btn-ghost btn-sm" data-sel="done">Done</button>`;
+  }
+  selBtn.addEventListener("click", () => setSelecting(!selecting));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && selecting && container.isConnected && detailModal.style.display !== "grid" && !document.querySelector("#modal-root .modal-backdrop")) setSelecting(false);
+  });
+  selBar.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-sel]"); if (!b || b.disabled) return;
+    const act = b.dataset.sel;
+    if (act === "done") return setSelecting(false);
+    if (act === "all") {
+      const allOn = visibleIds.every((id) => picked.has(id));
+      visibleIds.forEach((id) => (allOn ? picked.delete(id) : picked.add(id)));
+      listEl.querySelectorAll(".spc").forEach((c) => { const on = picked.has(c.dataset.id); c.classList.toggle("is-picked", on); c.setAttribute("aria-pressed", String(on)); });
+      return paintSelBar();
+    }
+    const posts = [...picked].map((id) => allPosts.find((x) => x.id === id)).filter(Boolean);
+    if (act === "del") {
+      const mine = posts.filter(canDeletePost), theirs = posts.length - mine.length;
+      if (!mine.length) { ctx.toast("You can only delete posts you made.", "error"); return; }
+      const ok = await confirmDialog(`Delete ${mine.length} post${mine.length === 1 ? "" : "s"}? This can't be undone.${theirs ? ` (${theirs} made by someone else will be skipped.)` : ""}`, { confirmText: "Delete", danger: true });
+      if (!ok) return;
+      b.disabled = true;
+      let done = 0, failed = 0;
+      for (const p of mine) {
+        try {
+          const res = await ctx.authedFetch(`https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/social_posts/${p.id}`, { method: "DELETE" });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          done++;
+        } catch { failed++; }
+      }
+      ctx.toast(failed ? `Deleted ${done}; ${failed} couldn't be deleted.` : `Deleted ${done} post${done === 1 ? "" : "s"}.`, failed ? "error" : "success");
+      setSelecting(false, { quiet: true }); await loadPosts();
+    }
+    if (act === "dup") {
+      b.disabled = true;
+      let done = 0;
+      const now = new Date().toISOString(), me = ctx.profile?.name || ctx.user?.email || "";
+      for (const p of posts) {
+        try {
+          await firestoreAdd(ctx.authedFetch, "social_posts", {
+            title: p.title ? `${p.title} (copy)` : "Copy", platform: p.platform || "instagram", content: p.content || "", notes: p.notes || "",
+            designJson: p.designJson || "", coverImageUrl: p.coverImageUrl || "", imageUrls: p.imageUrls || [],
+            articleId: p.articleId || "", articleSlug: p.articleSlug || "", articleTitle: p.articleTitle || "",
+            backgroundId: p.backgroundId || "", boardType: p.boardType || "", ...(p.studio ? { studio: p.studio } : {}),
+            status: "proposed", deadline: "", proposerId: myUid, proposerName: me, assigneeId: null, assigneeName: null,
+            createdAt: now, activity: [{ text: `duplicated from "${cleanTitle(p.title)}"`, authorName: me, timestamp: now }],
+          });
+          done++;
+        } catch (err) { console.warn("[social] duplicate", err); }
+      }
+      ctx.toast(`Made ${done} cop${done === 1 ? "y" : "ies"}. ${done === 1 ? "It's" : "They're"} in Drafts.`, done ? "success" : "error");
+      setSelecting(false, { quiet: true }); await loadPosts();
+    }
+  });
 
   // Suggestions: published articles from the last 30 days that don't yet have
   // any matching post on the board. Click → switches to Create tab with the

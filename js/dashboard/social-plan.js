@@ -179,6 +179,7 @@ export function mountPlan(el, { p, ctx, team, lead, api, onChange }) {
             </div></span>` : ""}
         </div>
       </div>
+      ${lead ? `<p class="spp-hint" id="spp-hint" aria-live="polite"></p>` : ""}
       <div class="spp-row spp-taskrow">
         <label class="spd-label" for="spp-task">Task <em>(optional)</em></label>
         ${lead ? `<textarea id="spp-task" class="input textarea" rows="2" placeholder="e.g. Post at 6 pm, tag @gwtoday and share it to our story too.">${esc(a?.notes || "")}</textarea>`
@@ -199,7 +200,22 @@ export function mountPlan(el, { p, ctx, team, lead, api, onChange }) {
   const saveBtn = $("#spp-save");
   const start = JSON.stringify([p.deadline || "", p.postTime || "", owners.map((o) => o.id).sort(), a?.notes || ""]);
   const dirty = () => JSON.stringify([dateEl.value, timeEl.value, [...picked].sort(), taskEl ? taskEl.value.trim() : a?.notes || ""]) !== start;
-  const refresh = () => { if (saveBtn) { saveBtn.disabled = !dirty(); saveBtn.textContent = !a && !picked.length ? "Save date" : a ? "Save" : "Assign & notify"; } };
+  // Say exactly when people hear about it.
+  const hint = () => {
+    const h = $("#spp-hint"); if (!h) return;
+    const before = owners.map((o) => o.id);
+    const fresh = picked.filter((id) => !before.includes(id) && id !== myUid).map((id) => team.find((u) => u.id === id)).filter(Boolean);
+    const all = picked.map((id) => team.find((u) => u.id === id) || owners.find((o) => o.id === id)).filter(Boolean);
+    const d = dateEl.value ? new Date(dateEl.value + "T12:00:00") : null;
+    const when = d ? d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "";
+    if (!all.length) { h.textContent = ""; return; }
+    const names = (list) => list.map((u) => firstName(u.name)).join(", ");
+    h.textContent = [
+      fresh.length ? `${names(fresh)} will get an email as soon as you save.` : "",
+      d ? `${names(all)} ${all.length === 1 ? "gets" : "get"} a reminder email the morning of ${when}${timeEl.value ? `, for the ${fmtTime(timeEl.value)} post` : ""}.` : "Pick a day and they'll get a reminder that morning.",
+    ].filter(Boolean).join(" ");
+  };
+  const refresh = () => { hint(); if (saveBtn) { saveBtn.disabled = !dirty(); saveBtn.textContent = !a && !picked.length ? "Save date" : a ? "Save" : "Assign & notify"; } };
 
   // People picker
   const menu = $("#spp-menu"), list = $("#spp-list"), q = $("#spp-q");
