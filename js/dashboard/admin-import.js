@@ -14,7 +14,7 @@ import {
   ref as storageRef, uploadBytesResumable, getDownloadURL,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
-import { mountCoverPromptTool } from "./cover-prompt.js?v=2";
+import { mountCoverPromptTool } from "./cover-prompt.js?v=3";
 
 // A user is "recently joined" if their account was created within this many
 // days. The welcome email panel surfaces these at the top so the admin can fire

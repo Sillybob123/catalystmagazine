@@ -1620,7 +1620,7 @@ async function mountSocialPosts(ctx, container) {
   let maker = null;
   async function ensureCreateInitialized() {
     if (maker) return maker;
-    const { mountCarouselMaker } = await import("./carousel-maker.js?v=1");
+    const { mountCarouselMaker } = await import("./carousel-maker.js?v=2");
     maker = mountCarouselMaker(ctx, createView, {
       getArticles: async () => { if (!publishedArticles.length) await loadArticles(); return publishedArticles; },
       getArticleHtml: (id) => firestoreGetArticleHtml(ctx.authedFetch, id),

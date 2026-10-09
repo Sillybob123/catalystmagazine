@@ -317,6 +317,8 @@ Rules:
 - Include a "stat" slide only if the article has a genuinely striking number, and a "quote" slide only if it has a strong quote.
 - Then write an Instagram caption of 120 to 200 words: open with a hook line, explain the story in two or three short paragraphs, credit the writer, say "link in bio", and end with a question for readers and 4 to 6 hashtags including #TheCatalyst.
 
+Before you answer, silently check and fix: every fact and number appears in the article; every quote is word for word with the right speaker; each slide makes one point and no two slides repeat each other; headlines are 8 words or fewer; the slides read in order as one story; the JSON below is valid.
+
 Reply with ONLY this JSON (no other text):
 {"caption":"…","slides":[
  {"type":"cover","kicker":"Category or topic","headline":"…","text":"one-sentence dek"},
