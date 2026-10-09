@@ -1576,6 +1576,22 @@ function openArticlePreview(wrap, ctx) {
 // Data-driven twin of openArticlePreview — admin edits don't have the writer's
 // compose form, so they build a data object from the details modal and call
 // this directly. Kept as a separate function so the writer path stays identical.
+// A story that opens with a picture: mark that first figure (skipping empty
+// paragraphs before it) so article-premium.css can set it beside the opening
+// text instead of above it. Mirrors js/main.js markLeadFigure(). Keep in sync.
+function markLeadFigure(html) {
+    const s = String(html || '');
+    const lead = /^(?:\s|<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?>|<a\b[^>]*>\s*<\/a>)*<\/p>)*/i.exec(s)[0];
+    const rest = s.slice(lead.length);
+    if (/^<figure\b/i.test(rest)) {
+        return lead + rest.replace(/^<figure\b([^>]*?)(\sclass=["']([^"']*)["'])?/i, (m, a, c, cls) => `<figure${a.replace(/\sclass=["'][^"']*["']/i, '')} class="${cls ? cls + ' ' : ''}rt-lead"`);
+    }
+    if (/^<p\b[^>]*>\s*(?:<a\b[^>]*>\s*)?<img\b[^>]*>\s*(?:<\/a>\s*)?<\/p>/i.test(rest)) {
+        return lead + rest.replace(/^<p\b/i, '<p class="rt-lead"');
+    }
+    return s;
+}
+
 export function openArticlePreviewFromData(data, ctx) {
   const title = (data.title || "").trim() || "Untitled draft";
   const dek = (data.dek || "").trim();
@@ -1583,7 +1599,7 @@ export function openArticlePreviewFromData(data, ctx) {
   const lightCover = !!data.lightCover;
   const category = data.category || "Feature";
   const author = data.author || "The Catalyst";
-  const bodyHtml = data.bodyHtml || "";
+  const bodyHtml = markLeadFigure(data.bodyHtml || "");
   const publishedDate = data.publishedDate instanceof Date && !isNaN(data.publishedDate)
     ? data.publishedDate : new Date();
 
@@ -1612,7 +1628,7 @@ export function openArticlePreviewFromData(data, ctx) {
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${origin}/css/styles.css">
-<link rel="stylesheet" href="${origin}/css/article-premium.css">
+<link rel="stylesheet" href="${origin}/css/article-premium.css?v=20261009-lead">
 <style>
   body { background: var(--canvas, #fafafa); }
   .preview-banner {
