@@ -62,7 +62,12 @@ function mountDraftEditor(ctx, container) {
     <!-- Sticky command bar -->
     <div class="compose-bar">
       <div class="compose-bar-left">
+        <button type="button" class="compose-focus-btn" id="focus-toggle" aria-pressed="false">
+          <svg class="ico-menu" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+          <span id="focus-toggle-label">Focus</span>
+        </button>
         <div class="compose-eyebrow">${editingId ? "Editing draft" : "New draft"}</div>
+        <span class="compose-words" id="compose-words" aria-live="polite">0 words</span>
         <span class="compose-status" id="editor-status"></span>
       </div>
       <div class="compose-bar-right">
@@ -445,6 +450,33 @@ function mountDraftEditor(ctx, container) {
   if (ctx.role !== "admin") {
     wireDriveReviewGateOnFirstEdit(wrap);
   }
+
+  // Focus mode: the composer fills the screen (sidebar and top bar tucked
+  // away), like the Studio. On by default; one click brings the menu back.
+  const FOCUS_KEY = `catalyst.writer.focus.${ctx.user?.uid || "anon"}`;
+  const focusBtn = wrap.querySelector("#focus-toggle");
+  const setFocus = (on) => {
+    document.body.classList.toggle("wr-focus", on);
+    focusBtn.setAttribute("aria-pressed", String(on));
+    focusBtn.title = on ? "Show the dashboard menu" : "Hide the menu and fill the screen with your article";
+    wrap.querySelector("#focus-toggle-label").textContent = on ? "Menu" : "Focus";
+    try { localStorage.setItem(FOCUS_KEY, on ? "1" : "0"); } catch {}
+  };
+  let focusPref = "1";
+  try { focusPref = localStorage.getItem(FOCUS_KEY) ?? "1"; } catch {}
+  setFocus(focusPref !== "0");
+  focusBtn.addEventListener("click", () => setFocus(!document.body.classList.contains("wr-focus")));
+
+  // Live word count in the command bar.
+  const bodyEl = wrap.querySelector("#f-body"), wordsEl = wrap.querySelector("#compose-words");
+  const countWords = () => {
+    const n = (bodyEl.textContent || "").trim().split(/\s+/).filter(Boolean).length;
+    wordsEl.textContent = `${n.toLocaleString()} word${n === 1 ? "" : "s"} · ${Math.max(1, Math.round(n / 220))} min read`;
+  };
+  bodyEl.addEventListener("input", countWords);
+  setTimeout(countWords, 1200);   // after a draft loads
+
+  return () => { document.body.classList.remove("wr-focus"); };
 }
 
 // Watches the compose fields for the writer's first edit signal (typing,
@@ -774,14 +806,7 @@ function installSectionHintFlow(editorEl) {
 function handleBlockAction(action, editorEl, ctx) {
   editorEl.focus();
   if (action === "link") {
-    const url = prompt("Link URL (https://…)");
-    if (!url) return;
-    document.execCommand("createLink", false, url);
-    // Force links to open in a new tab
-    editorEl.querySelectorAll('a:not([target])').forEach((a) => {
-      a.target = "_blank";
-      a.rel = "noopener";
-    });
+    openLinkDialog(editorEl, captureEditorRange(editorEl));
     return;
   }
   if (action === "divider") {
@@ -789,12 +814,7 @@ function handleBlockAction(action, editorEl, ctx) {
     return;
   }
   if (action === "blockquote") {
-    const text = prompt("Quote text");
-    if (!text) return;
-    const who = prompt("Attribution (optional)") || "";
-    const html = `<figure class="rt-pullquote"><blockquote>${escapeHtml(text)}</blockquote>${who ? `<figcaption>— ${escapeHtml(who)}</figcaption>` : ""}</figure><p><br/></p>`;
-    // Style it (classic, large or beside the text) from the bar that appears when you click it.
-    insertBlockAtCaret(editorEl, html);
+    openQuoteDialog(editorEl, captureEditorRange(editorEl));
     return;
   }
   if (action === "image") {
@@ -1676,7 +1696,7 @@ export function openArticlePreviewFromData(data, ctx) {
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${origin}/css/styles.css">
 <link rel="stylesheet" href="${origin}/css/article-premium.css?v=20261009-lead">
-<link rel="stylesheet" href="${origin}/css/article-layouts.css?v=2">
+<link rel="stylesheet" href="${origin}/css/article-layouts.css?v=3">
 <style>
   body { background: var(--canvas, #fafafa); }
   .preview-banner {
@@ -2415,13 +2435,17 @@ function openGalleryDialog(editorEl, ctx, existing = null, savedRange = null) {
   let edges = cls?.contains("rt-frame-plain") ? "plain" : cls?.contains("rt-frame-rounded") ? "rounded" : "soft";
   const capEl = existing?.querySelector("figcaption");
   let caption = (capEl?.querySelector(".fig-caption-text")?.textContent || (capEl && !capEl.querySelector(".fig-caption-credit") ? capEl.textContent : "") || "").trim();
-  let credit = (capEl?.querySelector(".fig-caption-credit")?.textContent || "").trim();
+  const legacyCredit = (capEl?.querySelector(".fig-caption-credit")?.textContent || "").trim();
+  const gSrc = { type: "", kind: "Photo", name: "", url: "", license: "", ...Object.fromEntries(Object.entries(readFigureSource(existing)).filter(([, v]) => v)) };
+  let gCtl = null;
 
   const scrim = el("div", { class: "media-dialog-scrim" });
   const modal = el("div", { class: "media-dialog media-dialog-design" });
   document.body.appendChild(scrim); document.body.appendChild(modal);
   requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); });
-  const close = () => { scrim.classList.remove("open"); modal.classList.remove("open"); setTimeout(() => { scrim.remove(); modal.remove(); }, 200); };
+  const onEsc = (e) => { if (e.key === "Escape" && document.body.lastElementChild === modal) { e.stopPropagation(); close(); } };
+  document.addEventListener("keydown", onEsc, true);
+  const close = () => { document.removeEventListener("keydown", onEsc, true); scrim.classList.remove("open"); modal.classList.remove("open"); setTimeout(() => { scrim.remove(); modal.remove(); }, 200); };
   scrim.addEventListener("click", close);
 
   const seg = (name, cur, opts) => `<div class="mseg" role="radiogroup">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" value="${v}" ${cur === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>`;
@@ -2447,10 +2471,9 @@ function openGalleryDialog(editorEl, ctx, existing = null, savedRange = null) {
           ${items.length < 3 ? `<button type="button" class="mgal-add" data-act="add">+ Add a third picture</button>` : ""}
         </div>
         <input type="file" id="g-file" accept="image/*" hidden>
-        <div class="media-cap-row">
-          <div class="field"><label class="label" for="g-cap">Caption <em class="opt">(optional)</em></label><input class="input" id="g-cap" value="${escapeAttr(caption)}" placeholder="One caption for the whole grid"></div>
-          <div class="field"><label class="label" for="g-credit">Credit <em class="opt">(optional)</em></label><input class="input" id="g-credit" value="${escapeAttr(credit)}" placeholder="e.g. Photos: Jane Doe"></div>
-        </div>
+        <div class="field"><label class="label" for="g-cap">Caption <em class="opt">(optional)</em></label><input class="input" id="g-cap" value="${escapeAttr(caption)}" placeholder="One caption for the whole grid"></div>
+        ${sourceFieldsHTML("g-src", gSrc, ctx?.profile?.name || "")}
+        <p class="hint" style="margin:-4px 0 0;">If the pictures come from different places, choose the main source and name the others in the caption.</p>
         <div class="mgal-opts">
           <div class="field"><span class="label">Shape</span>${seg("g-shape", shape, [["landscape", "Landscape"], ["square", "Square"], ["portrait", "Portrait"], ["natural", "As shot"]])}</div>
           <div class="field"><span class="label">Width</span>${seg("g-width", width, [["column", "Column"], ["wide", "Wide"]])}</div>
@@ -2464,10 +2487,11 @@ function openGalleryDialog(editorEl, ctx, existing = null, savedRange = null) {
         <button class="btn btn-ghost btn-sm" data-act="cancel">Cancel</button>
         <button class="btn btn-accent btn-sm" data-act="save">${existing ? "Save changes" : "Insert grid"}</button>
       </div>`;
+    gCtl = wireSourceFields(modal, "g-src", gSrc, ctx?.profile?.name || "", legacyCredit);
   }
   const keep = () => {
     caption = modal.querySelector("#g-cap")?.value.trim() ?? caption;
-    credit = modal.querySelector("#g-credit")?.value.trim() ?? credit;
+    if (modal.querySelector('[data-src-prefix="g-src"]')) readSourceFields(modal, "g-src", gSrc);
     shape = modal.querySelector('input[name="g-shape"]:checked')?.value || shape;
     width = modal.querySelector('input[name="g-width"]:checked')?.value || width;
     edges = modal.querySelector('input[name="g-edges"]:checked')?.value || edges;
@@ -2504,9 +2528,13 @@ function openGalleryDialog(editorEl, ctx, existing = null, savedRange = null) {
       const filled = items.filter((it) => it.url);
       if (filled.length < 2) { err.textContent = "Add at least two pictures."; return; }
       if (filled.some((it) => !it.alt)) { err.textContent = "Please add alt text to every picture: describe what it shows, for screen readers and search."; return; }
+      const problem = gCtl.problem();
+      if (problem) { err.textContent = `Image source: ${problem}`; modal.querySelector(".msrc")?.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
       const cl = ["rt-gallery", `rt-cols-${filled.length}`, `rt-shape-${shape}`, width === "wide" ? "rt-size-wide" : "", edges !== "soft" ? `rt-frame-${edges}` : ""].filter(Boolean).join(" ");
-      const cap = caption || credit ? `<figcaption>${caption ? `<span class="fig-caption-text">${escapeHtml(caption)}</span>` : ""}${credit ? `<span class="fig-caption-credit">${escapeHtml(credit)}</span>` : ""}</figcaption>` : "";
-      const html = `<figure class="${cl}" contenteditable="false" data-rt-figure="gallery"><div class="rt-gallery-grid">${filled.map((it) => `<img src="${escapeAttr(it.url)}" alt="${escapeAttr(it.alt)}" />`).join("")}</div>${cap}</figure>`;
+      const plural = { Photo: "Photos", Illustration: "Illustrations", Chart: "Charts", Map: "Maps", Figure: "Figures", Screenshot: "Screenshots", Video: "Videos" };
+      const src = { ...gSrc, kind: plural[gSrc.kind] || gSrc.kind };
+      const cap = `<figcaption>${caption ? `<span class="fig-caption-text">${escapeHtml(caption)}</span>` : ""}${creditHtml(src)}</figcaption>`;
+      const html = `<figure class="${cl}" contenteditable="false" data-rt-figure="gallery"${sourceAttrs(gSrc)}><div class="rt-gallery-grid">${filled.map((it) => `<img src="${escapeAttr(it.url)}" alt="${escapeAttr(it.alt)}" />`).join("")}</div>${cap}</figure>`;
       if (existing) existing.outerHTML = html;
       else insertBlockAtCaret(editorEl, html + "<p><br/></p>", savedRange);
       editorEl.dispatchEvent(new Event("input", { bubbles: true }));
@@ -2588,6 +2616,203 @@ function setupBlockBar(editorEl) {
   editorEl.addEventListener("input", () => { if (cur && !editorEl.contains(cur)) { cur = null; bar.hidden = true; } else place(); });
 }
 
+// ===== Small composer dialogs (link, pull quote) ===========================
+// Same look as the image window. `fields` is HTML; onSubmit(root) returns
+// an error string to keep the dialog open, or nothing to close it.
+function openComposerDialog({ title, fields, submitLabel, onSubmit, onOpen }) {
+  const scrim = el("div", { class: "media-dialog-scrim" });
+  const modal = el("div", { class: "media-dialog media-dialog-sm", role: "dialog", "aria-modal": "true", "aria-label": title });
+  modal.innerHTML = `
+    <div class="media-dialog-head"><div class="media-dialog-title">${title}</div>
+      <button class="media-dialog-close" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <form class="media-dialog-body" novalidate>${fields}<div class="media-error" data-err></div><button type="submit" hidden></button></form>
+    <div class="media-dialog-foot"><button class="btn btn-ghost btn-sm" data-cancel>Cancel</button><button class="btn btn-accent btn-sm" data-ok>${submitLabel}</button></div>`;
+  document.body.appendChild(scrim); document.body.appendChild(modal);
+  requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); modal.querySelector("input, textarea")?.focus(); });
+  const close = () => { document.removeEventListener("keydown", onKey, true); scrim.classList.remove("open"); modal.classList.remove("open"); setTimeout(() => { scrim.remove(); modal.remove(); }, 200); };
+  const submit = () => { const err = onSubmit(modal); if (err) { modal.querySelector("[data-err]").textContent = err; return; } close(); };
+  const onKey = (e) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+  document.addEventListener("keydown", onKey, true);
+  scrim.addEventListener("click", close);
+  modal.querySelector(".media-dialog-close").addEventListener("click", close);
+  modal.querySelector("[data-cancel]").addEventListener("click", close);
+  modal.querySelector("[data-ok]").addEventListener("click", submit);
+  modal.querySelector("form").addEventListener("submit", (e) => { e.preventDefault(); submit(); });
+  onOpen?.(modal);
+}
+
+function openLinkDialog(editorEl, range) {
+  const selected = range ? range.toString() : "";
+  const existing = range ? (range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement)?.closest("a") : null;
+  openComposerDialog({
+    title: existing ? "Edit link" : "Add a link",
+    submitLabel: existing ? "Save link" : "Add link",
+    fields: `
+      <div class="field"><label class="label" for="ln-url">Link address <span class="req">*</span></label><input class="input" id="ln-url" type="url" inputmode="url" placeholder="https://www.nih.gov/…" value="${escapeAttr(existing?.getAttribute("href") || "")}"></div>
+      ${selected || existing ? "" : `<div class="field"><label class="label" for="ln-text">Text to show <span class="req">*</span></label><input class="input" id="ln-text" placeholder="e.g. the study published in Nature"></div>`}
+      ${existing ? `<button type="button" class="btn btn-ghost btn-sm" id="ln-remove" style="color:var(--danger);">Remove link</button>` : ""}
+      <p class="hint" style="margin:0;">Links open in a new tab. Link to the original source (the study, the agency, the lab) whenever you can.</p>`,
+    onOpen: (m) => m.querySelector("#ln-remove")?.addEventListener("click", () => {
+      existing.replaceWith(...existing.childNodes); editorEl.dispatchEvent(new Event("input", { bubbles: true })); m.querySelector("[data-cancel]").click();
+    }),
+    onSubmit: (m) => {
+      let url = m.querySelector("#ln-url").value.trim();
+      if (!url) return "Paste the link address.";
+      if (!/^(https?:|mailto:)/i.test(url)) url = "https://" + url.replace(/^\/+/, "");
+      if (!/^(https?:\/\/[^\s.]+\.[^\s]+|mailto:\S+@\S+)$/i.test(url)) return "That doesn't look like a web address.";
+      if (existing) { existing.setAttribute("href", url); existing.target = "_blank"; existing.rel = "noopener"; }
+      else {
+        editorEl.focus();
+        const sel = window.getSelection(); sel.removeAllRanges();
+        if (range) sel.addRange(range);
+        if (selected) document.execCommand("createLink", false, url);
+        else {
+          const text = m.querySelector("#ln-text").value.trim();
+          if (!text) return "Add the text to show.";
+          document.execCommand("insertHTML", false, `<a href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(text)}</a>&nbsp;`);
+        }
+        editorEl.querySelectorAll("a:not([target])").forEach((a) => { a.target = "_blank"; a.rel = "noopener"; });
+      }
+      editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+  });
+}
+
+function openQuoteDialog(editorEl, range) {
+  openComposerDialog({
+    title: "Add a pull quote",
+    submitLabel: "Add quote",
+    fields: `
+      <div class="field"><label class="label" for="pq-text">The quote <span class="req">*</span></label><textarea class="input textarea" id="pq-text" rows="3" placeholder="One memorable line, word for word."></textarea></div>
+      <div class="field"><label class="label" for="pq-who">Who said it <em class="opt">(optional)</em></label><input class="input" id="pq-who" placeholder="e.g. Dr. Alexandra DeCandia, Georgetown University"></div>
+      <div class="field"><span class="label">Style</span><div class="mseg" role="radiogroup">${[["", "Classic"], ["rt-pq-large", "Large"], ["rt-pq-side", "Beside the text"]].map(([v, l], i) => `<label><input type="radio" name="pq-style" value="${v}" ${i === 0 ? "checked" : ""}><span>${l}</span></label>`).join("")}</div></div>
+      <p class="hint" style="margin:0;">Use a pull quote once or twice per article, for a line worth reading twice.</p>`,
+    onSubmit: (m) => {
+      const text = m.querySelector("#pq-text").value.trim();
+      if (!text) return "Write the quote.";
+      const who = m.querySelector("#pq-who").value.trim().replace(/^[—–-]\s*/, "");
+      const style = m.querySelector('input[name="pq-style"]:checked')?.value || "";
+      const sel = window.getSelection(); editorEl.focus(); sel.removeAllRanges(); if (range) sel.addRange(range);
+      insertBlockAfterCaret(editorEl, `<figure class="rt-pullquote${style ? " " + style : ""}"><blockquote>${escapeHtml(text.replace(/^["“]|["”]$/g, ""))}</blockquote>${who ? `<figcaption>— ${escapeHtml(who)}</figcaption>` : ""}</figure>`, "blockquote");
+      editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+  });
+}
+
+// ===== Image sources and credits ===========================================
+// Every picture says where it came from, the way magazines credit images.
+// The writer answers "Where is this from?" and the credit line is written
+// for them ("Photo: Jane Doe / NIH (CC BY)", "Courtesy of …"), linked to the
+// source when there is one. The answers are kept on the figure
+// (data-src-*) so editors can check them and the writer can re-open them.
+const SRC_TYPES = [
+  ["own", "I took or made it"],
+  ["web", "From a website or publication"],
+  ["courtesy", "Given to us (courtesy)"],
+  ["staff", "Catalyst staff art"],
+  ["ai", "AI-generated"],
+];
+const SRC_KINDS = ["Photo", "Illustration", "Chart", "Map", "Figure", "Screenshot", "Video"];
+function readFigureSource(fig) {
+  const d = fig?.dataset || {};
+  return { type: d.srcType || "", kind: d.srcKind || "Photo", name: d.srcName || "", url: d.srcUrl || "", license: d.srcLicense || "" };
+}
+function sourceAttrs(src) {
+  const a = (k, v) => (v ? ` data-src-${k}="${escapeAttr(v)}"` : "");
+  return a("type", src.type) + a("kind", src.kind) + a("name", src.name) + a("url", src.url) + a("license", src.license);
+}
+// Plain-text credit (for the preview and checks) and the HTML credit span.
+function creditText(src) {
+  const k = src.kind || "Photo";
+  if (src.type === "own") return `${k}: ${src.name}`;
+  if (src.type === "web") return `${k}: ${src.name}`;
+  if (src.type === "courtesy") return `Courtesy of ${src.name}`;
+  if (src.type === "staff") return `${k}: ${src.name || "The Catalyst"}`;
+  if (src.type === "ai") return `AI-generated ${k.toLowerCase()}: ${src.name}`;
+  return "";
+}
+function creditHtml(src) {
+  const txt = creditText(src); if (!txt) return "";
+  if (!src.url || !/^https?:\/\//i.test(src.url) || !src.name) return `<span class="fig-caption-credit">${escapeHtml(txt)}</span>`;
+  const i = txt.indexOf(src.name);
+  return `<span class="fig-caption-credit">${escapeHtml(txt.slice(0, i))}<a href="${escapeAttr(src.url)}" target="_blank" rel="noopener nofollow">${escapeHtml(src.name)}</a>${escapeHtml(txt.slice(i + src.name.length))}</span>`;
+}
+// What's missing, in plain words ("" when complete).
+function sourceProblem(src) {
+  if (!src.type) return "Say where this picture is from.";
+  if (src.type === "own" && !src.name) return "Add the name of the person who took or made it.";
+  if (src.type === "web") {
+    if (!/^https?:\/\/\S+\.\S+/i.test(src.url)) return "Paste the link to the page where you found it.";
+    if (!src.name) return "Add who made or owns it (a photographer, lab or organization).";
+  }
+  if (src.type === "courtesy" && !src.name) return "Add the person or organization that gave it to us.";
+  if (src.type === "ai" && !src.name) return "Add the tool it was made with (e.g. Higgsfield, ChatGPT).";
+  return "";
+}
+function sourceFieldsHTML(p, src, writerName) {
+  const nameLabel = { own: "Taken or made by", web: "Made or owned by", courtesy: "Courtesy of", staff: "Artist (optional)", ai: "Made with" }[src.type] || "Name";
+  const namePh = { own: writerName || "Your name", web: "e.g. Kimberly Fraser / USFWS", courtesy: "e.g. GW Milken Institute School of Public Health", staff: "The Catalyst", ai: "e.g. Higgsfield" }[src.type] || "";
+  return `
+    <div class="msrc" data-src-prefix="${p}">
+      <div class="msrc-head"><span class="label">Where is this from? <span class="req">*</span></span><span class="hint">Every picture is credited, like in a printed magazine.</span></div>
+      <div class="msrc-types" role="radiogroup" aria-label="Where is this from?">
+        ${SRC_TYPES.map(([v, l]) => `<label><input type="radio" name="${p}-type" value="${v}" ${src.type === v ? "checked" : ""}><span>${l}</span></label>`).join("")}
+      </div>
+      ${src.type ? `
+      <div class="msrc-fields">
+        ${src.type !== "courtesy" ? `<div class="field"><label class="label" for="${p}-kind">Type</label><select class="input select" id="${p}-kind">${SRC_KINDS.map((k) => `<option${src.kind === k ? " selected" : ""}>${k}</option>`).join("")}</select></div>` : ""}
+        <div class="field msrc-name"><label class="label" for="${p}-name">${nameLabel}${src.type === "staff" ? "" : ' <span class="req">*</span>'}</label><input class="input" id="${p}-name" value="${escapeAttr(src.name || (src.type === "own" ? writerName || "" : ""))}" placeholder="${escapeAttr(namePh)}"></div>
+        ${src.type === "web" || src.type === "courtesy" ? `<div class="field msrc-url"><label class="label" for="${p}-url">Link to the source${src.type === "web" ? ' <span class="req">*</span>' : ' <em class="opt">(optional)</em>'}</label><input class="input" id="${p}-url" value="${escapeAttr(src.url)}" placeholder="https://…"></div>` : ""}
+      </div>` : ""}
+      <div class="msrc-credit" id="${p}-credit-line"></div>
+    </div>`;
+}
+// Read the fields back into `src` (mutates and returns it).
+function readSourceFields(root, p, src) {
+  const t = root.querySelector(`input[name="${p}-type"]:checked`)?.value;
+  if (t) src.type = t;
+  const v = (id) => root.querySelector(`#${p}-${id}`);
+  if (v("kind")) src.kind = v("kind").value;
+  if (v("name")) src.name = v("name").value.trim();
+  src.url = v("url") ? v("url").value.trim() : (src.type === "web" || src.type === "courtesy" ? src.url : "");
+  src.license = "";
+  if (src.type === "courtesy") src.kind = src.kind || "Photo";
+  return src;
+}
+function paintCreditLine(root, p, src, legacyCredit) {
+  const line = root.querySelector(`#${p}-credit-line`); if (!line) return;
+  const txt = creditText(src), problem = sourceProblem(src);
+  line.className = `msrc-credit${problem ? " is-missing" : ""}`;
+  line.innerHTML = txt && !problem
+    ? `<span>Credit will read</span><b>${escapeHtml(txt)}</b>`
+    : `<span>${escapeHtml(problem)}</span>${legacyCredit ? `<em>Current credit: ${escapeHtml(legacyCredit)}</em>` : ""}`;
+}
+// Wire one source section inside `root`. Returns { get(), problem() }.
+function wireSourceFields(root, p, src, writerName, legacyCredit, onChange) {
+  const host = root.querySelector(`[data-src-prefix="${p}"]`);
+  const repaint = () => {
+    readSourceFields(root, p, src);
+    host.outerHTML = sourceFieldsHTML(p, src, writerName);
+    paintCreditLine(root, p, src, legacyCredit);
+    rewire();
+    onChange?.();
+  };
+  const rewire = () => {
+    const h = root.querySelector(`[data-src-prefix="${p}"]`);
+    h.querySelectorAll(`input[name="${p}-type"]`).forEach((r) => r.addEventListener("change", () => {
+      const keepName = src.type === r.value ? src.name : "";
+      src.type = r.value; src.name = keepName; if (r.value !== "web") src.license = "";
+      if (r.value === "staff" || r.value === "ai") src.kind = "Illustration";
+      const html = sourceFieldsHTML(p, src, writerName);
+      h.outerHTML = html; paintCreditLine(root, p, src, legacyCredit); rewire(); onChange?.();
+      root.querySelector(`#${p}-name`)?.focus();
+    }));
+    h.querySelectorAll("input, select").forEach((x) => x.addEventListener(x.tagName === "SELECT" ? "change" : "input", () => { readSourceFields(root, p, src); paintCreditLine(root, p, src, legacyCredit); onChange?.(); }));
+  };
+  paintCreditLine(root, p, src, legacyCredit); rewire();
+  return { get: () => readSourceFields(root, p, src), problem: () => sourceProblem(readSourceFields(root, p, src)), repaint };
+}
+
 // Picture layouts in the image window: how much room the picture takes and
 // whether the text wraps beside it. `size`/`align` become rt-size-* and
 // rt-align-* classes, styled by css/article-layouts.css.
@@ -2627,6 +2852,7 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
   let initialSize = "standard";
   let initialCredit = "";
   let initialLayout = "column", initialCap = "classic", initialFrame = "soft";
+  const mSrc = { type: "", kind: kind === "video" ? "Video" : "Photo", name: "", url: "", license: "" };
   if (isEdit) {
     const mediaEl = existingFigure.querySelector(isImage ? "img" : "video");
     initialUrl = mediaEl?.getAttribute("src") || "";
@@ -2645,6 +2871,8 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
         initialCaption = capEl.textContent.trim();
       }
     }
+    Object.assign(mSrc, Object.fromEntries(Object.entries(readFigureSource(existingFigure)).filter(([, v]) => v)));
+    if (!mSrc.url) mSrc.url = existingFigure.querySelector(".fig-caption-credit a")?.getAttribute("href") || "";
     const sizeMatch = (existingFigure.className || "").match(/rt-size-(\w+)/);
     if (sizeMatch) initialSize = sizeMatch[1];
     const cls = existingFigure.classList;
@@ -2672,7 +2900,7 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <div class="media-dropzone-title">${isEdit ? `Replace the ${label}` : `Drop a ${label} here`}, or <span class="link">browse your computer</span></div>
+        <div class="media-dropzone-title">${isEdit ? `Replace the ${label}` : `Drop ${isImage ? "an image" : "a video"} here`}, or <span class="link">browse your computer</span></div>
         <div class="media-dropzone-hint">${isImage ? "JPG, PNG, WebP, or GIF — up to 10 MB." : "MP4 or WebM — up to 100 MB."}</div>
         <input type="file" id="m-file" accept="${accept}" hidden />
       </div>
@@ -2697,16 +2925,11 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
         <input class="input" id="m-alt" placeholder="${isImage ? "e.g. 'A researcher pipettes a blue sample into a microplate in a lab'" : "What's happening in this video"}" value="${escapeAttr(initialAlt)}" />
         ${isImage ? `<div class="hint" style="margin-top:6px;">Required. Describe what the image shows in one clear sentence — write it for a reader who can't see it. This is read aloud by screen readers <strong>and</strong> helps this article rank in Google Image search (better SEO for your story).</div>` : ""}
       </div>
-      <div class="media-cap-row">
-        <div class="field">
-          <label class="label" for="m-caption">Caption <em class="opt">(optional)</em></label>
-          <input class="input" id="m-caption" placeholder="e.g. Researchers review the sequencing data." value="${escapeAttr(initialCaption)}" />
-        </div>
-        <div class="field">
-          <label class="label" for="m-credit">Credit <em class="opt">(optional)</em></label>
-          <input class="input" id="m-credit" placeholder="e.g. Photo: Jane Doe / NIH" value="${escapeAttr(initialCredit)}" />
-        </div>
+      <div class="field">
+        <label class="label" for="m-caption">Caption <em class="opt">(optional)</em></label>
+        <input class="input" id="m-caption" placeholder="e.g. Researchers review the sequencing data at the Milken Institute." value="${escapeAttr(initialCaption)}" />
       </div>
+      ${sourceFieldsHTML("m-src", mSrc, ctx?.profile?.name || "")}
       ${isImage ? `
       <div class="media-design">
         <div class="media-design-controls">
@@ -2756,7 +2979,8 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
   requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); });
 
   const fileInput = modal.querySelector("#m-file");
-  const creditInput = modal.querySelector("#m-credit");
+  let paintPreview = () => {};
+  const srcCtl = wireSourceFields(modal, "m-src", mSrc, ctx?.profile?.name || "", initialCredit, () => paintPreview());
   const urlInput = modal.querySelector("#m-url");
   const altInput = modal.querySelector("#m-alt");
   const capInput = modal.querySelector("#m-caption");
@@ -2772,13 +2996,13 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
 
   // Live preview of where the picture sits in the article.
   const pick = (name, fallback) => modal.querySelector(`input[name="${name}"]:checked`)?.value || fallback;
-  const paintPreview = () => {
+  paintPreview = () => {
     const pv = modal.querySelector("#m-preview"); if (!pv) return;
     const layout = pick("m-layout", "column"), cap = pick("m-cap", "classic"), frame = pick("m-frame", "soft");
     const L = MEDIA_LAYOUTS.find((o) => o.id === layout) || MEDIA_LAYOUTS[0];
     const src = resolvedUrl || (urlInput.value.trim().startsWith("http") ? urlInput.value.trim() : "") || initialUrl;
-    const capTxt = (capInput.value.trim() || (creditInput.value.trim() ? "" : "Your caption appears here"));
-    const credit = creditInput.value.trim();
+    const credit = sourceProblem(mSrc) ? "" : creditText(mSrc);
+    const capTxt = (capInput.value.trim() || (credit ? "" : "Your caption appears here"));
     const lines = (n, short) => Array.from({ length: n }, (_, i) => `<i class="mlp-line${short && i === n - 1 ? " is-short" : ""}"></i>`).join("");
     pv.className = `mlp is-${layout}`;
     pv.innerHTML = `${layout.startsWith("inset") ? "" : lines(2)}
@@ -2790,10 +3014,13 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
     const hint = modal.querySelector("#m-layout-hint"); if (hint) hint.textContent = L.hint;
   };
   modal.addEventListener("change", (e) => { if (e.target.matches('input[name="m-layout"], input[name="m-cap"], input[name="m-frame"]')) paintPreview(); });
-  [capInput, creditInput].forEach((x) => x?.addEventListener("input", paintPreview));
+  capInput.addEventListener("input", paintPreview);
   urlInput.addEventListener("change", paintPreview);
 
+  const onEsc = (e) => { if (e.key === "Escape" && document.body.lastElementChild === modal) { e.stopPropagation(); close(); } };
+  document.addEventListener("keydown", onEsc, true);
   const close = () => {
+    document.removeEventListener("keydown", onEsc, true);
     scrim.classList.remove("open");
     modal.classList.remove("open");
     setTimeout(() => { scrim.remove(); modal.remove(); }, 200);
@@ -2904,7 +3131,16 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
     }
 
     const caption = capInput.value.trim();
-    const credit = creditInput.value.trim();
+    const srcProblem = srcCtl.problem();
+    if (srcProblem) {
+      errorEl.textContent = `Image source: ${srcProblem}`;
+      modal.querySelector(".msrc")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      modal.querySelector(".msrc")?.classList.add("flash-attention");
+      setTimeout(() => modal.querySelector(".msrc")?.classList.remove("flash-attention"), 1600);
+      return;
+    }
+    const src = srcCtl.get();
+    const credit = creditHtml(src);
     let figClass = "rt-figure rt-size-standard";
     if (isImage) {
       const L = MEDIA_LAYOUTS.find((o) => o.id === pick("m-layout", "column")) || MEDIA_LAYOUTS[0];
@@ -2917,15 +3153,13 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
     // Build just the <figure>…</figure> (no trailing <p>) so an in-place edit
     // doesn't duplicate the empty paragraph that already follows the figure.
     // An em-dash in the caption still works as a credit separator.
-    const captionHtml = credit
-      ? `<figcaption>${caption ? `<span class="fig-caption-text">${escapeHtml(caption)}</span>` : ""}<span class="fig-caption-credit">${escapeHtml(credit)}</span></figcaption>`
-      : (caption ? renderFigureCaption(caption) : "");
+    const captionHtml = `<figcaption>${caption ? `<span class="fig-caption-text">${escapeHtml(caption)}</span>` : ""}${credit}</figcaption>`;
     const figureHtml = isImage
-      ? `<figure class="${figClass}" contenteditable="false" data-rt-figure="image">
+      ? `<figure class="${figClass}" contenteditable="false" data-rt-figure="image"${sourceAttrs(src)}>
            <img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" />
            ${captionHtml}
          </figure>`
-      : `<figure class="rt-figure rt-figure-video" contenteditable="false" data-rt-figure="video">
+      : `<figure class="rt-figure rt-figure-video" contenteditable="false" data-rt-figure="video"${sourceAttrs(src)}>
            <video src="${escapeAttr(url)}" controls playsinline preload="metadata"${alt ? ` aria-label="${escapeAttr(alt)}"` : ""}></video>
            ${captionHtml}
          </figure>`;
@@ -3616,6 +3850,20 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
       // Scroll the first undescribed image into view and flash it.
       const first = imgsMissingAlt[0];
       const fig = first.closest("figure") || first;
+      fig.scrollIntoView({ behavior: "smooth", block: "center" });
+      fig.classList.add("flash-attention");
+      setTimeout(() => fig.classList.remove("flash-attention"), 1600);
+      return;
+    }
+    // Every picture is credited: it says where it came from (older images
+    // that already carry a written credit are accepted as they are).
+    const uncited = Array.from(bodyEl.querySelectorAll("figure.rt-figure, figure.rt-gallery"))
+      .filter((f) => !f.dataset.srcType && !(f.querySelector(".fig-caption-credit")?.textContent || "").trim());
+    if (uncited.length) {
+      const n = uncited.length;
+      msg.textContent = `Before submitting, say where ${n === 1 ? "1 picture is" : `${n} pictures are`} from: click ${n === 1 ? "it" : "each one"} and fill in "Where is this from?" so it gets a proper credit.`;
+      ctx.toast(`${n} picture${n === 1 ? " needs" : "s need"} a source before you can submit.`, "error");
+      const fig = uncited[0];
       fig.scrollIntoView({ behavior: "smooth", block: "center" });
       fig.classList.add("flash-attention");
       setTimeout(() => fig.classList.remove("flash-attention"), 1600);

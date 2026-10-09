@@ -189,3 +189,8 @@ body[data-page="article"] .article-body-wrap { overflow-x: clip; }
 .compose-body figure.rt-gallery { cursor: pointer; position: relative; }
 .compose-body figure.rt-gallery:hover { outline: 2px solid var(--accent, #0f172a); outline-offset: 6px; border-radius: 6px; }
 .compose-body :is(aside.rt-callout, .rt-stats, figure.rt-pullquote).is-active { outline: 2px dashed rgba(15, 23, 42, 0.35); outline-offset: 6px; }
+
+/* Credit lines link to the source when there is one. */
+:is(.article-body, .compose-body) .fig-caption-credit a { color: inherit; text-decoration: underline; text-decoration-color: rgba(15, 23, 42, 0.3); text-underline-offset: 2px; }
+:is(.article-body, .compose-body) .fig-caption-credit a:hover { text-decoration-color: currentColor; }
+:is(.article-body, .compose-body) figure.rt-cap-overlay .fig-caption-credit a { text-decoration-color: rgba(248, 247, 243, 0.5); }
