@@ -14,7 +14,7 @@ import { db } from "../firebase-config.js";
 import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { esc, toast } from "./ui.js";
 
-const V = "v=3";
+const V = "v=4";
 const sheet = (k) => ({ full: `/beta/cover-style/sheet-${k}.jpg?${V}`, preview: `/beta/cover-style/sheet-${k}-1600.webp?${V}` });
 
 // Paper zone wording shared by the 1:1 and 9:16 kinds. Exact rows, a hard
@@ -62,9 +62,10 @@ const TYPES = {
   edition: {
     label: "Edition cover", ratio: "3:4", px: "1536 × 2048", sheet: sheet("edition"),
     use: "the cover of one of our seasonal magazine editions; we add the masthead, title and cover lines on top later",
-    sheetSays: "8 of our edition covers. Notice what they share: one Washington, D.C. landmark seen straight on, seasonal trees framing it, a path or water leading in from the bottom, and a pale, empty sky across the top for the masthead.",
+    sheetSays: "8 of our edition covers (the Jefferson Memorial in fall and in winter, the Library of Congress with magnolias, Arlington Memorial Bridge, the Capitol in cherry blossom, Union Station in snow, the Natural History Museum in fall, and the Smithsonian Castle gardens in spring). Notice what they share: one real Washington, D.C. landmark seen straight on, seasonal trees framing it, a path or water leading in from the bottom, and a pale, empty sky across the top for the masthead.",
     composition: `EDITION COVER LAYOUT.
-- One Washington, D.C. landmark (or a D.C. street or garden) in a calm, centred, one-point-perspective view, with seasonal trees framing the left and right edges and a path, lawn, steps or water leading in from the bottom edge.
+- One REAL, named place in Washington, D.C., drawn accurately enough that a local recognises it at once: for example the Jefferson Memorial, Lincoln Memorial, U.S. Capitol, Washington Monument, Library of Congress, Smithsonian Castle, National Museum of Natural History, Union Station, Washington National Cathedral, Healy Hall at Georgetown, Arlington Memorial Bridge, the Tidal Basin, Dupont Circle or a Georgetown street. No invented, generic or ruined buildings. Already used for past editions (pick something else unless asked): Dupont Circle, the Library of Congress, the Washington Monument, the Einstein Memorial, the Jefferson Memorial, the Capitol and the Tidal Basin.
+- Show it in a calm, centred, one-point-perspective view, with seasonal trees framing the left and right edges and a path, lawn, steps or water leading in from the bottom edge.
 - SKY ZONE, from the top edge down to 32 percent of the height (rows 0 to 655 of 2048): an almost-white pale sky wash with nothing in it, because the masthead sits there. No birds, branches, detailed clouds or rooftops reach into it. The tallest point of the landmark stays below the 38 percent line.
 - Airy and light: delicate pen-and-ink with pale, transparent watercolour, plenty of white paper showing in the sky and the ground, softer and lighter than our other images.
 - The season is unmistakable: falling leaves and warm reds for fall, blossoms for spring, snow and bare branches for winter, deep green for summer.`,
@@ -81,9 +82,21 @@ Line: thin, slightly wavering, confident ink lines of varied weight; light hatch
 Paint: soft layered washes, visible pigment granulation, gentle blooms and wet-into-wet bleeds, small patches of untouched paper as highlights.
 Palette: sage green, ochre, terracotta, dusty rose, slate blue, warm grey and soft charcoal; one gentle accent at most; muted, natural, never neon.
 Light and mood: soft daylight from one side; calm, curious, warm, a light touch of wit; natural-history plate meets New Yorker editorial illustration.
-Finish: hand-made and slightly imperfect: uneven wash edges, pigment speckles, paper grain across the whole image, some areas detailed and others left loose.
+Finish: it must look like a scan of a real painting, not a digital image. Washes are uneven and slightly blotchy, with hard dried edges where puddles of paint dried, granulating pigment that settles into the paper's tooth, colour that wanders a little outside the ink lines, and some areas left as loose suggestion while others are detailed. Ink lines are drawn by hand: they vary in weight, break, overlap and are sometimes redrawn. Colour is muted and slightly chalky, never clean, smooth or evenly saturated.
 Accuracy: animals, anatomy, plants, lab equipment and D.C. landmarks drawn correctly; people with natural proportions, gentle simple faces, five-fingered hands and a natural mix of ages and backgrounds.
-Never: lettering of any kind, logos, signatures, borders, frames, glossy or airbrushed rendering, 3D-render or photographic looks, glowing sci-fi effects.`;
+Never: lettering of any kind, logos, signatures, borders, frames; and never the digital look: smooth even gradients, crisp uniform outlines, perfectly clean flat fills, glossy or airbrushed shading, glowing highlights, a 3D-render or photographic finish, or splashy decorative paint blotches added around the scene.`;
+
+// Image models invent impossible machinery and floating objects. Make them
+// reason about the physical world before they paint.
+const PHYSICS = `PHYSICAL TRUTH (think this through before you paint)
+Picture the scene as a photograph of something that really exists, then paint that.
+- Every object rests on something or hangs from something visible: nothing floats, hovers or balances impossibly. Animals stand on ground, swim in water that is drawn around them, or perch on something.
+- Machines and lab equipment are built the way real ones are: every pipe, hose and cable starts somewhere and ends somewhere, connected with a fitting, flange or clamp. Liquid only leaves a container through a visible opening (a spout, tap, outlet pipe or open top) and pours down into another container under gravity. Rotating parts sit on a real axle, motor or rollers.
+- Water, light and shadows are consistent: one light source, shadows falling away from it, water levels flat, reflections below their objects, liquid inside a clear container matching the shape of that container.
+- Scale is right: people, hands, tools, furniture and buildings are the right size compared with each other.
+- People: two arms, two legs, five fingers per hand, natural poses, clothes that fold where bodies bend. Hands hold things with a real grip.
+- Count and check the small things: the legs on an insect, the wings on a bird, the windows and columns on a real building.
+- Keep it simple when unsure: one well-understood setup beats a complicated invented machine. If the article describes a device, draw only what the article says it is.`;
 
 function buildPrompt({ type, slides, season, title, text, kind }) {
   const T = TYPES[type] || TYPES.cover;
@@ -102,11 +115,13 @@ FORMAT
 Aspect ratio ${T.ratio} (${T.px}).
 ${T.composition}
 
+${PHYSICS}
+
 STEP 1: CREATIVE DNA (think privately, don't show me)
 - Story truth: what is physically real in this ${source}? (a place, an organism, an instrument, a process, a person's work)
 - Reader desire: what should a curious high-school or college reader feel when they see it?
 - Central mechanism: the one visual idea that captures it.
-- Forbidden clichés for THIS ${source}: generic devices that would make the image interchangeable (always include: glowing brains, light bulbs, puzzle pieces, handshakes, circuit patterns, DNA made of light, floating icons, a lone figure staring at a galaxy).${type === "edition" ? `\n- Season: ${season || "the edition's season"}; landmark: one that suits the edition's theme (if one is named below, use it).` : ""}
+- Forbidden clichés for THIS ${source}: generic devices that would make the image interchangeable (always include: glowing brains, light bulbs, puzzle pieces, handshakes, circuit patterns, DNA made of light, floating icons, a lone figure staring at a galaxy).${type === "edition" ? `\n- Season: ${season || "the edition's season"}. Landmark: one real D.C. place that suits the edition's theme (if one is named below, use it), with plants and weather true to D.C. in that season (cherry blossoms are late March to early April; magnolias and redbuds in April; full fall colour in late October; snow only in winter).` : ""}
 
 STEP 2: ${T.set ? "PLAN THE SET" : "THREE CONCEPTS, THEN CHOOSE"}
 ${T.set
@@ -125,6 +140,8 @@ STEP 4: SILENT CHECK (redo the prompt, or the image, if any fail)
 - Under 170 words, starts with the medium, ends with the exact closing line
 - No clichés from Step 1, no artist or brand names, scientifically accurate subject
 - No white or cream band, frame or margin around the outside of the image
+- Physical truth: nothing floats; every pipe, hose and outlet is connected; liquid only leaves through a visible opening; light, shadows, water and scale are consistent; hands and bodies are correct
+- It looks painted by hand (uneven washes, granulation, hand-drawn lines), not clean, smooth and digital${type === "edition" ? "\n- It is a real, recognisable place in Washington, D.C., drawn accurately, in the right season" : ""}
 
 STEP 5: OUTPUT
 ${T.set
@@ -132,14 +149,14 @@ ${T.set
 1. First show me the plan from Step 2 as a numbered list, one line per slide.
 2. Then make ONLY slide 1 (attach Image 1 as the style reference), show its prompt under it, and stop.
 3. Wait for me. When I reply "next" (or "ready" or "go"), make the next slide, and only that one, with its prompt. Keep going until all ${n} are done, then say "That's the set."
-4. Before every slide, re-read the style lock, the plan and the fixed descriptions, and look at the slides you've already made: the new one must sit naturally next to them (same paper colour, same light direction, same 45 percent line, similar amount of detail) while showing the next part of the story.
+4. After each slide, check it against Step 4 (including physical truth) and redo it before showing me if it fails. Before every slide, re-read the style lock, the plan and the fixed descriptions, and look at the slides you've already made: the new one must sit naturally next to them (same paper colour, same light direction, same 45 percent line, similar amount of detail) while showing the next part of the story.
 5. If I reply "redo" with a note, remake the same slide with only that change.
 If you can't make images at all, give me all ${n} prompts, numbered, in one code block instead.`
     : `- If you can make images: make it from your prompt, attaching Image 1 as the style reference, and show me the prompt you used.
 - If you can't: give me the prompt in a code block.
-- Then look at your image against the check in Step 4. If it fails (for example, paint reaching into the empty zone), say so and make it again.
+- Then look hard at your image against every point in Step 4, as a picky science editor would: zoom in on machines, liquids, hands and anything touching anything else. If something fails (paint in the empty zone, a pipe going nowhere, a floating object, a smooth digital look), say what's wrong and make it again.
 - If I ask for a change, change only that and keep everything else, including the style lock and the layout, exactly the same.`}
-In Higgsfield, use GPT Image 2.5 at high quality, ${T.ratio}, with Image 1 added as a reference image; use Nano Banana 2 instead when the image is mostly a cartoon-like character.
+Best results: GPT Image 2.5 (in Higgsfield, at high quality, ${T.ratio}, with Image 1 added as a reference image) or ChatGPT. Gemini (Nano Banana) tends to come out too clean, smooth and digital for our style; if you use it, ask it to make the washes rougher and more uneven and the lines more hand-drawn.
 
 THE ${source.toUpperCase()}
 ${title ? `Title: ${title}\n` : ""}${body || (type === "edition" ? "(describe the edition: its season, title and theme, and a landmark if you have one in mind)" : "(paste the article text or describe the concept here)")}`;

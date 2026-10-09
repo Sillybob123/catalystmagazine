@@ -509,7 +509,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=cover-4"),
+    loader: () => import("./admin-import.js?v=cover-5"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
