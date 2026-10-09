@@ -1685,6 +1685,19 @@ export function socialPublishedEmail({ title, authorName, articleUrl, category, 
 // ─── Social post assignment ──────────────────────────────────────────────────
 // Sent to the assignee when an admin (or a granted user, e.g. the marketing
 // lead) assigns them a social post for a specific article with a deadline.
+// Board assignments (social_assignments with a postId) link straight to the
+// post on the Social media board; Planner rows link to the Planner.
+function assignmentLink(assignment, siteUrl) {
+  const id = String(assignment.postId || "").replace(/[^A-Za-z0-9_-]/g, "");
+  return id
+    ? { url: `${siteUrl}/admin/#/marketing/social?post=${id}`, label: "Open the post" }
+    : { url: `${siteUrl}/admin/#/planner`, label: "Open the Planner" };
+}
+function postTimeLabel(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || ""); if (!m) return "";
+  const h = +m[1]; return ` at ${h % 12 || 12}${m[2] === "00" ? "" : ":" + m[2]} ${h >= 12 ? "pm" : "am"}`;
+}
+
 export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
   const articleTitle = assignment.articleTitle || "(untitled article)";
   const owners = Array.isArray(assignment.assignees) && assignment.assignees.length
@@ -1694,7 +1707,7 @@ export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
     ? "team"
     : (String(owners[0]?.name || "there").trim().split(/\s+/)[0] || "there");
   const ownerNames = owners.map((o) => o?.name || o?.email).filter(Boolean).join(", ");
-  const plannerUrl = `${siteUrl}/admin/#/planner`;
+  const link = assignmentLink(assignment, siteUrl);
 
   const statusBlock = buildStatusBlock({
     rows: [
@@ -1703,7 +1716,7 @@ export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
       assignment.platform && assignment.platform !== "any"
         ? { label: "Platform", value: assignment.platform }
         : { label: "Platform", value: "Your call (any)" },
-      { label: "Due", value: fmtDate(assignment.deadline) },
+      { label: "Due", value: fmtDate(assignment.deadline) + postTimeLabel(assignment.postTime) },
       owners.length > 1 ? { label: "Owners", value: ownerNames } : null,
       { label: "Assigned by", value: assignerName || "—" },
     ].filter(Boolean),
@@ -1726,12 +1739,13 @@ export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
     </div>` : ""}
 
     <p style="margin:18px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};">
-      The Planner has the story's details, the proposal, and a direct line to the
-      writer if you have questions. Mark the assignment done there when the post ships.
+      ${assignment.postId
+        ? "The post, its caption and its images are ready on the Social media board. Download them from there, and click <strong>Mark as posted</strong> once it's live."
+        : "The Planner has the story's details, the proposal, and a direct line to the writer if you have questions. Mark the assignment done there when the post ships."}
     </p>
 
     <div style="margin:22px 0 0 0;">
-      <a href="${escapeAttr(plannerUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the Planner</a>
+      <a href="${escapeAttr(link.url)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">${link.label}</a>
     </div>
 
     <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">
@@ -1750,7 +1764,7 @@ export function socialAssignmentEmail({ assignment, assignerName, siteUrl }) {
 export function socialAssignmentDueEmail({ assignment, recipientName, siteUrl }) {
   const articleTitle = assignment.articleTitle || "(untitled post)";
   const firstName = String(recipientName || "there").trim().split(/\s+/)[0] || "there";
-  const plannerUrl = `${siteUrl}/admin/#/planner`;
+  const link = assignmentLink(assignment, siteUrl);
 
   const statusBlock = buildStatusBlock({
     rows: [
@@ -1758,7 +1772,7 @@ export function socialAssignmentDueEmail({ assignment, recipientName, siteUrl })
       assignment.type ? { label: "Type", value: assignment.type } : null,
       assignment.platform && assignment.platform !== "any"
         ? { label: "Platform", value: assignment.platform } : null,
-      { label: "Due", value: "Today" },
+      { label: "Due", value: "Today" + postTimeLabel(assignment.postTime) },
     ].filter(Boolean),
     tone: "alert",
   });
@@ -1779,12 +1793,13 @@ export function socialAssignmentDueEmail({ assignment, recipientName, siteUrl })
     </div>` : ""}
 
     <p style="margin:18px 0 0 0;font-size:14px;line-height:1.6;color:${COLORS.muted};">
-      Once it's posted, set the row to <strong>Published</strong> in the
-      Planner so the tracker stays clean for everyone.
+      ${assignment.postId
+        ? "Once it's live, open the post and click <strong>Mark as posted</strong> so the board stays up to date."
+        : "Once it's posted, set the row to <strong>Published</strong> in the Planner so the tracker stays clean for everyone."}
     </p>
 
     <div style="margin:22px 0 0 0;">
-      <a href="${escapeAttr(plannerUrl)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the Planner</a>
+      <a href="${escapeAttr(link.url)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">${link.label}</a>
     </div>
 
     <p style="margin:28px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">

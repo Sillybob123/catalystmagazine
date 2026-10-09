@@ -3,6 +3,7 @@
 //   - "collabs":   collaboration-request pipeline
 
 import { el, esc, fmtRelative, fmtDate, confirmDialog } from "./ui.js";
+import { canAssign, loadAssignments, loadTeam, applyPlan, scheduleHTML, mountPlan, avatar, avatarStack, creatorName, fmtTime } from "./social-plan.js?v=1";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -740,6 +741,10 @@ async function mountSocialPosts(ctx, container) {
             <button type="button" data-platform="linkedin">LinkedIn</button>
             <button type="button" data-platform="twitter">X</button>
           </div>
+          <div class="spb-seg spb-view" id="sp-view-seg" role="group" aria-label="View">
+            <button type="button" data-view="grid" class="is-on">Grid</button>
+            <button type="button" data-view="schedule">Schedule</button>
+          </div>
           <select class="spb-sort" id="sp-sort" aria-label="Sort">
             <option value="due">Due date</option>
             <option value="new">Newest first</option>
@@ -751,6 +756,9 @@ async function mountSocialPosts(ctx, container) {
           <p>Ready-made posts for slow weeks. Open one, give it a date and move it to Drafts.</p>
           <div class="spb-seg" id="sp-series-seg" role="group" aria-label="Series"></div>
         </div>
+
+        <!-- Newest drafts and who made them -->
+        <div id="sp-recent" class="spb-recent" hidden></div>
 
         <!-- Suggestions: published articles that don't have a post yet -->
         <div id="sp-suggestions-wrap" class="spb-suggest" hidden>
@@ -886,7 +894,10 @@ async function mountSocialPosts(ctx, container) {
   const suggestionsWrap = container.querySelector("#sp-suggestions-wrap");
   const suggestionsList = container.querySelector("#sp-suggestions-list");
   const suggestionsCount = container.querySelector("#sp-suggestions-count");
-  const boardFilter = { platform: "", status: "", q: "", series: "" };
+  const boardFilter = { platform: "", status: "", q: "", series: "", view: "grid" };
+  const lead = canAssign(ctx), myUid = ctx.user?.uid;
+  let scheduleWeek = 0, team = null;
+  const ensureTeam = async () => team || (team = await loadTeam((q) => firestoreRunQuery(ctx.authedFetch, q)).catch(() => []));
   const SERIES_LABEL = { "wacky-word": "Wacky Word Wednesday", "fun-fact": "Fun facts" };
 
   // True if `post` is plausibly about `article` — matches by stored
@@ -932,7 +943,7 @@ async function mountSocialPosts(ctx, container) {
     const txt = d.toLocaleDateString(undefined, { month: "short", day: "numeric", ...(d.getFullYear() !== today.getFullYear() ? { year: "numeric" } : {}) });
     if (p.status === "posted") return { text: txt, cls: "" };
     if (days < 0) return { text: `Overdue · ${txt}`, cls: "is-late" };
-    if (days === 0) return { text: "Due today", cls: "is-soon" };
+    if (days === 0) return { text: `Due today${p.postTime ? " · " + fmtTime(p.postTime) : ""}`, cls: "is-soon" };
     if (days <= 3) return { text: `Due ${txt}`, cls: "is-soon" };
     return { text: `Due ${txt}`, cls: "" };
   }
@@ -952,6 +963,7 @@ async function mountSocialPosts(ctx, container) {
         </div>
         <div class="spc-body">
           <h3 class="spc-title">${esc(cleanTitle(p.title))}</h3>
+          ${p.bank ? "" : `<div class="spc-by">${avatar({ name: p.proposerName })}<span>${esc(creatorName(p.proposerName))}${p.createdAt ? ` · ${esc(fmtRelative(p.createdAt))}` : ""}</span>${p.owners?.length ? `<span class="spc-owners" title="Posting: ${esc(p.owners.map((o) => o.name).join(", "))}">${avatarStack(p.owners, 2)}</span>` : ""}</div>`}
           <div class="spc-meta">
             <span class="spc-plat" title="${esc((PLATFORM_META[p.platform] || {}).label || "Instagram")}">${platIcon(p.platform)}</span>
             <span class="spc-due ${due.cls}">${esc(due.text)}</span>
@@ -1007,7 +1019,9 @@ async function mountSocialPosts(ctx, container) {
     const bank = matching.filter((p) => p.bank);
     const counts = { "": base.length, bank: bank.length };
     for (const p of base) counts[p.status || "proposed"] = (counts[p.status || "proposed"] || 0) + 1;
-    statusTabs.innerHTML = [["", "All"], ["proposed", "Drafts"], ["approved", "Approved"], ["assigned", "Assigned"], ["posted", "Posted"], ["bank", "Post bank"]]
+    const isMine = (p) => p.status !== "posted" && p.owners?.some((o) => o.id === myUid);
+    counts.mine = base.filter(isMine).length;
+    statusTabs.innerHTML = [["", "All"], ...(counts.mine || sf === "mine" ? [["mine", "For me"]] : []), ["proposed", "Drafts"], ["approved", "Approved"], ["assigned", "Assigned"], ["posted", "Posted"], ["bank", "Post bank"]]
       .map(([k, label]) => `<button type="button" role="tab" data-status="${k}" class="${sf === k ? "is-on" : ""}${k === "bank" ? " is-bank" : ""}" aria-selected="${sf === k}">${label}<span>${counts[k] || 0}</span></button>`).join("");
     const bankBar = container.querySelector("#sp-bank-bar");
     bankBar.hidden = sf !== "bank";
@@ -1018,7 +1032,8 @@ async function mountSocialPosts(ctx, container) {
     }
 
     const sort = sortEl.value;
-    const pool = sf === "bank" ? bank.filter((p) => !boardFilter.series || p.series === boardFilter.series) : base.filter((p) => !sf || (p.status || "proposed") === sf);
+    const pool = sf === "bank" ? bank.filter((p) => !boardFilter.series || p.series === boardFilter.series)
+      : base.filter((p) => !sf || (sf === "mine" ? isMine(p) : (p.status || "proposed") === sf));
     const list = pool.sort((a, b) => {
       if (sf === "bank" && sort === "due") return (a.series || "").localeCompare(b.series || "") || (a.seriesNo - b.seriesNo);
       if (sort === "new") return String(b.createdAt).localeCompare(String(a.createdAt));
@@ -1030,7 +1045,19 @@ async function mountSocialPosts(ctx, container) {
       return (a.deadline || "9999").localeCompare(b.deadline || "9999") || String(b.createdAt).localeCompare(String(a.createdAt));
     });
 
-    if (!allPosts.length) {
+    const schedule = boardFilter.view === "schedule" && sf !== "bank";
+    listEl.className = schedule ? "sps" : "spb-grid";
+    sortEl.hidden = schedule;
+    renderRecent(base, sf, q, schedule);
+    if (schedule) {
+      for (const p of pool) { p.cleanTitle = cleanTitle(p.title); }
+      listEl.innerHTML = scheduleHTML(pool, scheduleWeek, {
+        myUid,
+        thumb: (p) => (designOf(p) ? `<img alt="" data-live="${esc(p.id)}"${p.coverImageUrl ? ` src="${esc(p.coverImageUrl)}"` : ""}>` : p.coverImageUrl ? `<img alt="" src="${esc(p.coverImageUrl)}" loading="lazy">` : `<span class="sps-ph">${platIcon(p.platform)}</span>`),
+      });
+      listEl.querySelectorAll("img[data-live]").forEach((img) => (liveObserver ? liveObserver.observe(img) : liveQueue.push(img)));
+      if (!liveObserver) pumpLive();
+    } else if (!allPosts.length) {
       listEl.innerHTML = `<div class="spb-empty"><b>No posts yet</b><p>Create a design in the Studio, or turn a published article into a carousel.</p><button type="button" class="btn btn-primary btn-sm" data-empty-new>Create a design</button></div>`;
       listEl.querySelector("[data-empty-new]").addEventListener("click", openNewDesign);
     } else if (!list.length) {
@@ -1042,7 +1069,37 @@ async function mountSocialPosts(ctx, container) {
     }
     renderSuggestions();
   }
+  // The newest drafts, with who made them, so nothing new slips by.
+  const recentEl = container.querySelector("#sp-recent");
+  function renderRecent(base, sf, q, schedule) {
+    const since = Date.now() - 14 * 86400000;
+    const list = (sf === "" || sf === "proposed") && !q && !schedule
+      ? base.filter((p) => Date.parse(p.createdAt || "") >= since).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 8) : [];
+    recentEl.hidden = !list.length;
+    if (!list.length) return;
+    recentEl.innerHTML = `<div class="spb-recent-head"><b>Just added</b><span>${list.length === 1 ? "The newest draft" : `The ${list.length} newest drafts`} and who made them</span></div>
+      <div class="spb-recent-list">${list.map((p) => `
+        <button type="button" class="spb-recent-item" data-open="${esc(p.id)}">
+          <span class="spb-recent-img">${designOf(p) ? `<img alt="" data-live="${esc(p.id)}"${p.coverImageUrl ? ` src="${esc(p.coverImageUrl)}"` : ""}>` : p.coverImageUrl ? `<img alt="" src="${esc(p.coverImageUrl)}" loading="lazy">` : platIcon(p.platform)}</span>
+          <span class="spb-recent-txt"><b>${esc(cleanTitle(p.title))}</b><small>${avatar({ name: p.proposerName })}<span>${esc(p.platform && p.platform !== "instagram" ? ((PLATFORM_META[p.platform] || {}).label || p.platform) : kindOf(p).split(" · ")[0])} · ${esc(creatorName(p.proposerName))} · ${esc(fmtRelative(p.createdAt))}</span></small></span>
+        </button>`).join("")}</div>`;
+    recentEl.querySelectorAll("img[data-live]").forEach((img) => (liveObserver ? liveObserver.observe(img) : liveQueue.push(img)));
+    if (!liveObserver) pumpLive();
+  }
+  recentEl.addEventListener("click", (e) => { const b = e.target.closest("[data-open]"); if (b) openDetail(allPosts.find((x) => x.id === b.dataset.open)); });
+  container.querySelector("#sp-view-seg").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-view]"); if (!b) return;
+    boardFilter.view = b.dataset.view;
+    container.querySelectorAll("#sp-view-seg button").forEach((x) => x.classList.toggle("is-on", x === b));
+    try { localStorage.setItem("catalyst.social.view", boardFilter.view); } catch {}
+    render();
+  });
+  try { const v = localStorage.getItem("catalyst.social.view"); if (v === "schedule") { boardFilter.view = v; container.querySelectorAll("#sp-view-seg button").forEach((x) => x.classList.toggle("is-on", x.dataset.view === v)); } } catch {}
   listEl.addEventListener("click", (e) => {
+    const wk = e.target.closest("[data-week]");
+    if (wk) { scheduleWeek = Number(wk.dataset.week) === 0 ? 0 : scheduleWeek + Number(wk.dataset.week); render(); return; }
+    const open = e.target.closest("[data-open]");
+    if (open) { openDetail(allPosts.find((x) => x.id === open.dataset.open)); return; }
     const card = e.target.closest(".spc"); if (!card) return;
     const p = allPosts.find((x) => x.id === card.dataset.id); if (!p) return;
     const act = e.target.closest("[data-card-act]")?.dataset.cardAct;
@@ -1100,15 +1157,25 @@ async function mountSocialPosts(ctx, container) {
   }
 
   // ── Load posts ─────────────────────────────────────────────────────────────
+  let deepLinked = false;
   async function loadPosts() {
     listEl.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading…</div>`;
     try {
-      allPosts = await firestoreQuery(ctx.authedFetch, {
-        from: [{ collectionId: "social_posts" }],
-        orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
-        limit: 400,
-      });
+      const [posts, assigns] = await Promise.all([
+        firestoreQuery(ctx.authedFetch, {
+          from: [{ collectionId: "social_posts" }],
+          orderBy: [{ field: { fieldPath: "createdAt" }, direction: "DESCENDING" }],
+          limit: 400,
+        }),
+        loadAssignments((q) => firestoreRunQuery(ctx.authedFetch, q)).catch((err) => { console.warn("[social] assignments", err); return []; }),
+      ]);
+      allPosts = posts;
+      for (const p of allPosts) { p.cleanTitle = cleanTitle(p.title); p.kind = kindOf(p); }
+      applyPlan(allPosts, assigns);
       render();
+      // Deep link from an assignment email: #/marketing/social?post=<id>
+      const want = new URLSearchParams(location.hash.split("?")[1] || "").get("post");
+      if (want && !deepLinked) { deepLinked = true; const hit = allPosts.find((x) => x.id === want); if (hit) openDetail(hit); }
     } catch (err) {
       listEl.innerHTML = `<div class="error-state">Could not load posts: ${esc(err.message)}</div>`;
     }
@@ -1173,8 +1240,8 @@ async function mountSocialPosts(ctx, container) {
             <span class="spc-status is-${esc(st)}">${esc(STATUS_LABEL[st] || st)}</span>
             <span class="spd-chip">${esc(kindOf(p))}</span>
           </div>
-          <label class="spd-label" for="spd-due">Post on</label>
-          <div class="spd-due"><input type="date" id="spd-due" value="${esc(p.deadline || "")}"><span id="spd-due-status"></span></div>
+          ${p.bank ? `<label class="spd-label" for="spd-due">Post on</label>
+          <div class="spd-due"><input type="date" id="spd-due" value="${esc(p.deadline || "")}"><span id="spd-due-status"></span></div>` : `<div id="spd-plan" class="spd-plan"><div class="loading-state"><div class="spinner"></div></div></div>`}
           <div class="spd-labelrow"><label class="spd-label" for="sp-detail-caption">Caption</label><span id="sp-detail-caption-status"></span></div>
           <textarea id="sp-detail-caption" class="input textarea spd-caption" rows="9">${esc(p.content || "")}</textarea>
           <div class="spd-capactions">
@@ -1206,14 +1273,26 @@ async function mountSocialPosts(ctx, container) {
     detailModal.querySelector("[data-slide-next]")?.addEventListener("click", () => show(cur + 1));
     detailModal.querySelectorAll("[data-slide]").forEach((b) => b.addEventListener("click", () => show(Number(b.dataset.slide))));
 
-    // Due date
-    const dueEl = detailModal.querySelector("#spd-due"), dueSt = detailModal.querySelector("#spd-due-status");
-    dueEl.addEventListener("change", async () => {
-      dueSt.textContent = "Saving…";
-      try { await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { deadline: dueEl.value || "" }); p.deadline = dueEl.value; dueSt.textContent = "Saved"; render(); }
-      catch (err) { dueSt.textContent = "Couldn't save"; ctx.toast("Could not save the date: " + err.message, "error"); }
-      setTimeout(() => { dueSt.textContent = ""; }, 1800);
-    });
+    // Who posts it, and when (social-plan.js). Bank posts just keep a date
+    // for when they move to the drafts.
+    const dueEl = detailModal.querySelector("#spd-due");
+    const planEl = detailModal.querySelector("#spd-plan");
+    if (planEl) {
+      ensureTeam().then((t) => {
+        if (!planEl.isConnected) return;
+        mountPlan(planEl, {
+          p, ctx, team: t, lead,
+          api: {
+            write: (path, fields) => firestoreWrite(ctx.authedFetch, path, fields),
+            add: (col, fields) => firestoreAdd(ctx.authedFetch, col, fields),
+            del: async (path) => { const r = await ctx.authedFetch(`https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT}/databases/(default)/documents/${path}`, { method: "DELETE" }); if (!r.ok) throw new Error(`HTTP ${r.status}`); },
+            notify: (id) => ctx.authedFetch("/api/notify/assignment", { method: "POST", body: JSON.stringify({ assignmentId: id }) }).catch((err) => console.warn("[social] notify", err)),
+            writePost: (fields) => firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, fields),
+          },
+          onChange: async () => { closeDetail(); await loadPosts(); const again = allPosts.find((x) => x.id === p.id); if (again) openDetail(again); },
+        });
+      });
+    }
 
     // Caption
     const captionEl = detailModal.querySelector("#sp-detail-caption");
@@ -1269,16 +1348,17 @@ async function mountSocialPosts(ctx, container) {
       useBtn.addEventListener("click", async () => {
         useBtn.disabled = true;
         try {
-          await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { bank: false, status: "proposed", deadline: detailModal.querySelector("#spd-due").value || p.deadline || "" });
-          ctx.toast(dueEl.value ? "Moved to drafts with its date." : "Moved to drafts. Give it a date when you're ready.", "success");
+          await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { bank: false, status: "proposed", deadline: dueEl?.value || p.deadline || "" });
+          ctx.toast(dueEl?.value ? "Moved to drafts with its date." : "Moved to drafts. Give it a date and someone to post it when you're ready.", "success");
           closeDetail(); await loadPosts();
         } catch (err) { ctx.toast("Could not move it: " + err.message, "error"); useBtn.disabled = false; }
       });
       footer.appendChild(useBtn);
     }
-    if (canStatus && !p.bank) {
-      const transitions = { proposed: "approved", approved: "assigned", assigned: "posted" };
-      const labels = { proposed: "Approve", approved: "Mark assigned", assigned: "Mark posted" };
+    // Assigned posts are marked posted from the "who posts it" block above.
+    if (canStatus && !p.bank && !p.assign) {
+      const transitions = { proposed: "approved", approved: "posted", assigned: "posted" };
+      const labels = { proposed: "Approve", approved: "Mark posted", assigned: "Mark posted" };
       if (transitions[st]) {
         const btn = el("button", { class: "btn btn-secondary btn-sm" }, labels[st]);
         btn.addEventListener("click", async () => {
