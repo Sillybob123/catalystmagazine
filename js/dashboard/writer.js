@@ -62,9 +62,13 @@ function mountDraftEditor(ctx, container) {
     <!-- Sticky command bar -->
     <div class="compose-bar">
       <div class="compose-bar-left">
+        <button type="button" class="compose-back" id="back-to-suite">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          <span>Back to the Suite</span>
+        </button>
         <button type="button" class="compose-focus-btn" id="focus-toggle" aria-pressed="false">
-          <svg class="ico-menu" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
-          <span id="focus-toggle-label">Focus</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+          <span class="sr-only" id="focus-toggle-label">Show the sidebar</span>
         </button>
         <div class="compose-eyebrow">${editingId ? "Editing draft" : "New draft"}</div>
         <span class="compose-words" id="compose-words" aria-live="polite">0 words</span>
@@ -100,124 +104,79 @@ function mountDraftEditor(ctx, container) {
          so nothing here introduces a new dependency. -->
     <div class="rt-toolbar" id="rt-toolbar" role="toolbar" aria-label="Formatting">
       <div class="rt-group" aria-label="History">
-        <button class="rt-btn" data-cmd="undo" title="Undo (⌘Z)" aria-label="Undo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
-        </button>
-        <button class="rt-btn" data-cmd="redo" title="Redo (⌘⇧Z)" aria-label="Redo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
-        </button>
+        <button class="rt-btn" data-cmd="undo" data-tip="Undo  ⌘Z" aria-label="Undo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button>
+        <button class="rt-btn" data-cmd="redo" data-tip="Redo  ⇧⌘Z" aria-label="Redo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg></button>
       </div>
       <div class="rt-group" aria-label="Text style">
-        <select class="rt-select" data-block title="Text style">
+        <select class="rt-select" data-block aria-label="Text style" data-tip="Text style">
           <option value="p">Paragraph</option>
-          <option value="h2">Heading 1</option>
-          <option value="h3">Heading 2</option>
+          <option value="h2">Heading</option>
+          <option value="h3">Subheading</option>
           <option value="h4">Section label</option>
         </select>
       </div>
       <div class="rt-group" aria-label="Inline formatting">
-        <button class="rt-btn" data-cmd="bold" title="Bold (⌘B)" aria-label="Bold"><span style="font-weight:800;">B</span></button>
-        <button class="rt-btn" data-cmd="italic" title="Italic (⌘I)" aria-label="Italic"><span style="font-style:italic;font-family:Georgia,serif;">I</span></button>
-        <button class="rt-btn" data-cmd="underline" title="Underline (⌘U)" aria-label="Underline"><span style="text-decoration:underline;text-underline-offset:3px;">U</span></button>
-        <button class="rt-btn" data-cmd="strikeThrough" title="Strikethrough" aria-label="Strikethrough"><span style="text-decoration:line-through;">S</span></button>
-      </div>
-      <div class="rt-group" aria-label="Color">
-        <!-- Native color inputs — no JS needed for the picker UI itself.
-             A small swatch label sits over the hidden input so the
-             button reads as a normal toolbar control. The 'data-color
-             foreground/background' attribute tells the wired handler
-             which execCommand to fire on input. -->
-        <label class="rt-btn rt-btn-color" title="Text color" aria-label="Text color">
+        <button class="rt-btn" data-cmd="bold" data-tip="Bold  ⌘B" aria-label="Bold"><span class="rt-glyph" style="font-weight:800;">B</span></button>
+        <button class="rt-btn" data-cmd="italic" data-tip="Italic  ⌘I" aria-label="Italic"><span class="rt-glyph" style="font-style:italic;font-family:Georgia,serif;">I</span></button>
+        <button class="rt-btn" data-cmd="underline" data-tip="Underline  ⌘U" aria-label="Underline"><span class="rt-glyph" style="text-decoration:underline;text-underline-offset:3px;">U</span></button>
+        <button class="rt-btn" data-cmd="strikeThrough" data-tip="Strikethrough" aria-label="Strikethrough"><span class="rt-glyph" style="text-decoration:line-through;">S</span></button>
+        <label class="rt-btn rt-btn-color" data-tip="Text colour" aria-label="Text colour">
           <span class="rt-color-glyph"><span style="font-weight:800;">A</span><span class="rt-color-bar" id="rt-color-bar-fg" style="background:#0f172a"></span></span>
           <input type="color" data-color="foreground" value="#0f172a" tabindex="-1" aria-hidden="true">
         </label>
-        <label class="rt-btn rt-btn-color" title="Highlight color" aria-label="Highlight color">
-          <span class="rt-color-glyph">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l-6 6v3h3l6-6"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.83 0L9 11l6-6 5.6 5.6a2 2 0 0 1 0 2.83z"/></svg>
-            <span class="rt-color-bar" id="rt-color-bar-bg" style="background:#fde68a"></span>
-          </span>
+        <label class="rt-btn rt-btn-color" data-tip="Highlight" aria-label="Highlight colour">
+          <span class="rt-color-glyph"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l-6 6v3h3l6-6"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.83 0L9 11l6-6 5.6 5.6a2 2 0 0 1 0 2.83z"/></svg><span class="rt-color-bar" id="rt-color-bar-bg" style="background:#fde68a"></span></span>
           <input type="color" data-color="background" value="#fde68a" tabindex="-1" aria-hidden="true">
         </label>
       </div>
-      <div class="rt-group" aria-label="Lists">
-        <button class="rt-btn" data-cmd="insertUnorderedList" title="Bulleted list" aria-label="Bulleted list">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></svg>
-        </button>
-        <button class="rt-btn" data-cmd="insertOrderedList" title="Numbered list" aria-label="Numbered list">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
-        </button>
+      <div class="rt-group" aria-label="Paragraph">
+        <button class="rt-btn" data-cmd="insertUnorderedList" data-tip="Bulleted list" aria-label="Bulleted list"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1.1" fill="currentColor"/><circle cx="4.5" cy="12" r="1.1" fill="currentColor"/><circle cx="4.5" cy="18" r="1.1" fill="currentColor"/></svg></button>
+        <button class="rt-btn" data-cmd="insertOrderedList" data-tip="Numbered list" aria-label="Numbered list"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="10" y1="6" x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="10" y1="18" x2="20" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
+        <div class="rt-menuwrap">
+          <button type="button" class="rt-btn rt-btn-drop" data-menu="align" data-tip="Alignment" aria-label="Alignment" aria-haspopup="menu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <div class="rt-menu rt-menu-row" role="menu" data-menu-for="align" hidden>
+            <button type="button" class="rt-btn" role="menuitem" data-cmd="justifyLeft" aria-label="Align left" data-tip="Left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg></button>
+            <button type="button" class="rt-btn" role="menuitem" data-cmd="justifyCenter" aria-label="Align centre" data-tip="Centre"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4.5" y1="18" x2="19.5" y2="18"/></svg></button>
+            <button type="button" class="rt-btn" role="menuitem" data-cmd="justifyRight" aria-label="Align right" data-tip="Right"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg></button>
+          </div>
+        </div>
       </div>
-      <div class="rt-group" aria-label="Indent">
-        <button class="rt-btn" data-cmd="outdent" title="Decrease indent" aria-label="Decrease indent">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 6 5 12 11 18"/><line x1="20" y1="6" x2="13" y2="6"/><line x1="20" y1="12" x2="13" y2="12"/><line x1="20" y1="18" x2="13" y2="18"/></svg>
-        </button>
-        <button class="rt-btn" data-cmd="indent" title="Increase indent" aria-label="Increase indent">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 6 19 12 13 18"/><line x1="4" y1="6" x2="11" y2="6"/><line x1="4" y1="12" x2="11" y2="12"/><line x1="4" y1="18" x2="11" y2="18"/></svg>
-        </button>
+      <div class="rt-group" aria-label="Link and quote">
+        <button class="rt-btn" data-action="link" data-tip="Link  ⌘K" aria-label="Add link"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+        <button class="rt-btn" data-action="blockquote" data-tip="Pull quote" aria-label="Pull quote"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h4v4H6zM14 7h4v4h-4z"/><path d="M6 11c0 3-1 5-3 6"/><path d="M14 11c0 3-1 5-3 6"/></svg></button>
+        <button class="rt-btn" data-action="image" data-tip="Image" aria-label="Insert image"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>
       </div>
-      <div class="rt-group" aria-label="Alignment">
-        <button class="rt-btn" data-cmd="justifyLeft" title="Align left" aria-label="Align left">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
-        </button>
-        <button class="rt-btn" data-cmd="justifyCenter" title="Align center" aria-label="Align center">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4.5" y1="18" x2="19.5" y2="18"/></svg>
-        </button>
-        <button class="rt-btn" data-cmd="justifyRight" title="Align right" aria-label="Align right">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
-        </button>
+      <div class="rt-group rt-group-insert" aria-label="Insert">
+        <div class="rt-menuwrap">
+          <button type="button" class="rt-insert-btn" data-menu="insert" aria-haspopup="menu" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Insert</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
+          <div class="rt-menu" role="menu" data-menu-for="insert" hidden>
+            <div class="rt-menu-label">Pictures</div>
+          <button type="button" class="rt-mi" role="menuitem" data-action="image"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span><span class="rt-mi-txt"><b>Image</b><small>Upload, from your library, or a link</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-action="gallery"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="8.5" height="14" rx="1.5"/><rect x="13" y="5" width="8.5" height="14" rx="1.5"/></svg></span><span class="rt-mi-txt"><b>Image grid</b><small>Two or three pictures side by side</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-action="video"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span><span class="rt-mi-txt"><b>Video</b><small>Upload or paste a link</small></span></button>
+            <div class="rt-menu-label">Magazine blocks</div>
+          <button type="button" class="rt-mi" role="menuitem" data-action="blockquote"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h4v4H6zM14 7h4v4h-4z"/><path d="M6 11c0 3-1 5-3 6"/><path d="M14 11c0 3-1 5-3 6"/></svg></span><span class="rt-mi-txt"><b>Pull quote</b><small>A line worth reading twice</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-action="callout"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v13H8l-4 4z"/><path d="M8 9h8M8 13h5"/></svg></span><span class="rt-mi-txt"><b>Callout box</b><small>Key takeaway, explainer or side note</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-action="stats"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="rt-mi-txt"><b>By the numbers</b><small>Big figures with a short label</small></span></button>
+            <div class="rt-menu-label">Structure</div>
+          <button type="button" class="rt-mi" role="menuitem" data-action="new-section"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M4 12h16M4 18h12"/><path d="M19 3v6M16 6h6"/></svg></span><span class="rt-mi-txt"><b>New section</b><small>A heading and a fresh paragraph</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-action="divider"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg></span><span class="rt-mi-txt"><b>Divider</b><small>A quiet break between parts</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-action="paste-gdoc"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 6v14a2 2 0 0 0 2 2h10"/></svg></span><span class="rt-mi-txt"><b>Paste from Google Doc</b><small>Keeps headings, bold, italics, links and images</small></span></button>
+          </div>
+        </div>
       </div>
-      <div class="rt-group" aria-label="Script">
-        <button class="rt-btn" data-cmd="superscript" title="Superscript" aria-label="Superscript"><span style="font-size:11px;">X<sup style="font-size:8px;">2</sup></span></button>
-        <button class="rt-btn" data-cmd="subscript" title="Subscript" aria-label="Subscript"><span style="font-size:11px;">X<sub style="font-size:8px;">2</sub></span></button>
-      </div>
-      <div class="rt-group" aria-label="Insert">
-        <button class="rt-btn" data-action="link" title="Insert link (⌘K)" aria-label="Insert link">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        </button>
-        <button class="rt-btn" data-action="blockquote" title="Pull quote" aria-label="Pull quote">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 7h4v4H6zM14 7h4v4h-4z"/><path d="M6 11c0 3-1 5-3 6"/><path d="M14 11c0 3-1 5-3 6"/></svg>
-        </button>
-        <button class="rt-btn" data-action="divider" title="Section divider" aria-label="Section divider">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg>
-        </button>
-        <button class="rt-btn" data-action="image" title="Insert image (upload or URL)" aria-label="Insert image">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-        </button>
-        <button class="rt-btn" data-action="video" title="Insert video (upload or URL)" aria-label="Insert video">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-        </button>
-        <button class="rt-btn" data-action="gallery" title="Image grid: two or three pictures side by side" aria-label="Insert image grid">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="5" width="8.5" height="14" rx="1.5"/><rect x="13" y="5" width="8.5" height="14" rx="1.5"/></svg>
-        </button>
-      </div>
-      <div class="rt-group" aria-label="Magazine blocks">
-        <button class="rt-btn rt-btn-wide" data-action="callout" title="Callout box: a key takeaway, an explainer or a side note">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v13H8l-4 4z"/><path d="M8 9h8M8 13h5"/></svg>
-          <span>Callout</span>
-        </button>
-        <button class="rt-btn rt-btn-wide" data-action="stats" title="By the numbers: big figures with a short label">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-          <span>Numbers</span>
-        </button>
-      </div>
-      <div class="rt-group" aria-label="Structure">
-        <button class="rt-btn rt-btn-wide" data-action="new-section" title="Insert a new section (heading + paragraph)">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          <span>New section</span>
-        </button>
-        <button class="rt-btn rt-btn-wide" data-action="paste-gdoc" title="Paste from a Google Doc and keep headings, bold, italic, and links">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 6v14a2 2 0 0 0 2 2h10"/></svg>
-          <span>Paste from Google Doc</span>
-        </button>
-        <!-- "Add quiz" entry point removed per editorial direction. The
-             public renderer + the data-action="quiz" handler still exist
-             so older articles with quizzes keep rendering; we just don't
-             surface a way to insert a new one from the composer. -->
-      </div>
-      <div class="rt-group" aria-label="Clear">
-        <button class="rt-btn" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V4h16v3"/><line x1="5" y1="20" x2="19" y2="20"/><path d="M13 4L8 20"/></svg>
-        </button>
+      <span class="rt-spacer"></span>
+      <div class="rt-group rt-group-end" aria-label="More">
+        <div class="rt-menuwrap">
+          <button type="button" class="rt-btn" data-menu="more" data-tip="More formatting" aria-label="More formatting" aria-haspopup="menu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></svg></button>
+          <div class="rt-menu rt-menu-right" role="menu" data-menu-for="more" hidden>
+          <button type="button" class="rt-mi" role="menuitem" data-cmd="superscript"><span class="rt-mi-ico"><span class="rt-glyph" style="font-size:12px;">X<sup style="font-size:8px;">2</sup></span></span><span class="rt-mi-txt"><b>Superscript</b><small>For units and footnote marks</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-cmd="subscript"><span class="rt-mi-ico"><span class="rt-glyph" style="font-size:12px;">X<sub style="font-size:8px;">2</sub></span></span><span class="rt-mi-txt"><b>Subscript</b><small>For chemical formulas like H₂O</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-cmd="indent"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="13 6 19 12 13 18"/><line x1="4" y1="6" x2="11" y2="6"/><line x1="4" y1="12" x2="11" y2="12"/><line x1="4" y1="18" x2="11" y2="18"/></svg></span><span class="rt-mi-txt"><b>Indent</b><small>Move a list item in</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-cmd="outdent"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="11 6 5 12 11 18"/><line x1="20" y1="6" x2="13" y2="6"/><line x1="20" y1="12" x2="13" y2="12"/><line x1="20" y1="18" x2="13" y2="18"/></svg></span><span class="rt-mi-txt"><b>Outdent</b><small>Move a list item out</small></span></button>
+          <button type="button" class="rt-mi" role="menuitem" data-cmd="removeFormat"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V4h16v3"/><line x1="5" y1="20" x2="19" y2="20"/><path d="M13 4L8 20"/></svg></span><span class="rt-mi-txt"><b>Clear formatting</b><small>Back to plain text</small></span></button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -458,8 +417,8 @@ function mountDraftEditor(ctx, container) {
   const setFocus = (on) => {
     document.body.classList.toggle("wr-focus", on);
     focusBtn.setAttribute("aria-pressed", String(on));
-    focusBtn.title = on ? "Show the dashboard menu" : "Hide the menu and fill the screen with your article";
-    wrap.querySelector("#focus-toggle-label").textContent = on ? "Menu" : "Focus";
+    focusBtn.title = on ? "Show the sidebar (stay on this page)" : "Hide the sidebar and fill the screen";
+    wrap.querySelector("#focus-toggle-label").textContent = on ? "Show the sidebar" : "Hide the sidebar";
     try { localStorage.setItem(FOCUS_KEY, on ? "1" : "0"); } catch {}
   };
   let focusPref = "1";
@@ -476,7 +435,41 @@ function mountDraftEditor(ctx, container) {
   bodyEl.addEventListener("input", countWords);
   setTimeout(countWords, 1200);   // after a draft loads
 
-  return () => { document.body.classList.remove("wr-focus"); };
+  // Unsaved work: compare against what was last saved (or loaded).
+  const snapshot = () => [
+    wrap.querySelector("#f-title")?.textContent || "", wrap.querySelector("#f-dek")?.textContent || "",
+    wrap.querySelector("#f-body")?.innerHTML || "", wrap.querySelector("#f-cover")?.value || "",
+    wrap.querySelector("#f-category")?.value || "", [...wrap.querySelectorAll(".f-topic-chip.is-on")].map((c) => c.dataset.topic).join(","),
+  ].join("\u241e");
+  let saved = snapshot();
+  setTimeout(() => { saved = snapshot(); }, editingId ? 2500 : 300);   // after a draft loads
+  wrap.addEventListener("story-saved", () => { saved = snapshot(); });
+  const isDirty = () => snapshot() !== saved && (bodyEl.textContent.trim() || wrap.querySelector("#f-title")?.textContent.trim());
+  const onBeforeUnload = (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ""; } };
+  window.addEventListener("beforeunload", onBeforeUnload);
+
+  // Back to the Suite: wherever the writer came from (else the Overview).
+  const prev = window.__catalystPrevRoute || "";
+  const backTo = prev && !prev.startsWith("#/writer/draft") ? prev : "#/overview";
+  const leave = () => { setFocus(false); location.hash = backTo; };
+  wrap.querySelector("#back-to-suite").addEventListener("click", () => {
+    if (!isDirty()) return leave();
+    const body = el("div", {}, [el("p", { style: { margin: "0" } }, "You have changes that aren't saved yet. Save the draft before you go?")]);
+    const keep = el("button", { class: "btn btn-ghost" }, "Keep writing");
+    const drop = el("button", { class: "btn btn-secondary" }, "Leave without saving");
+    const save = el("button", { class: "btn btn-accent" }, "Save draft and leave");
+    const m = openModal({ title: "Leave this draft?", body, footer: [keep, drop, save], stack: true });
+    keep.addEventListener("click", m.close);
+    drop.addEventListener("click", () => { m.close(); saved = snapshot(); leave(); });
+    save.addEventListener("click", async () => {
+      save.disabled = true; save.textContent = "Saving…";
+      const ok = await saveStory(ctx, wrap, "draft", editingId);
+      m.close();
+      if (ok) leave();
+    });
+  });
+
+  return () => { document.body.classList.remove("wr-focus"); window.removeEventListener("beforeunload", onBeforeUnload); };
 }
 
 // Watches the compose fields for the writer's first edit signal (typing,
@@ -544,6 +537,45 @@ function wireRichToolbar(wrap, editorEl, ctx) {
   toolbar.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("mousedown", (e) => e.preventDefault());
     btn.addEventListener("click", () => handleBlockAction(btn.dataset.action, editorEl, ctx));
+  });
+
+  // Drop-down menus (Alignment, Insert, More). Items are ordinary toolbar
+  // buttons (data-cmd / data-action), wired above; the menu just shows and
+  // hides them. Keyboard: arrows move, Escape closes, focus returns.
+  const menuBtns = [...toolbar.querySelectorAll("[data-menu]")];
+  const menuOf = (btn) => toolbar.querySelector(`[data-menu-for="${btn.dataset.menu}"]`);
+  const closeMenus = (except) => menuBtns.forEach((b) => { if (b === except) return; const m = menuOf(b); if (m && !m.hidden) { m.hidden = true; b.setAttribute("aria-expanded", "false"); b.classList.remove("is-open"); } });
+  menuBtns.forEach((btn) => {
+    btn.addEventListener("mousedown", (e) => e.preventDefault());   // keep the writer's selection
+    btn.addEventListener("click", () => {
+      const m = menuOf(btn), open = m.hidden;
+      closeMenus(btn);
+      m.hidden = !open; btn.setAttribute("aria-expanded", String(open)); btn.classList.toggle("is-open", open);
+    });
+    btn.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault(); const m = menuOf(btn);
+        if (m.hidden) btn.click();
+        m.querySelector("button")?.focus();
+      }
+    });
+  });
+  toolbar.querySelectorAll(".rt-menu").forEach((m) => {
+    m.addEventListener("click", (e) => { if (e.target.closest("button")) closeMenus(); });
+    m.addEventListener("keydown", (e) => {
+      const items = [...m.querySelectorAll("button")], i = items.indexOf(document.activeElement);
+      const owner = toolbar.querySelector(`[data-menu="${m.dataset.menuFor}"]`);
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
+      else if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+      else if (e.key === "Escape" || e.key === "Tab") { closeMenus(); if (e.key === "Escape") { e.preventDefault(); owner?.focus(); } }
+    });
+  });
+  document.addEventListener("mousedown", (e) => { if (!e.target.closest?.(".rt-menuwrap")) closeMenus(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenus(); });
+
+  // ⌘K / Ctrl+K: add a link.
+  editorEl.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "k") { e.preventDefault(); handleBlockAction("link", editorEl, ctx); }
   });
 
   // Color pickers — native <input type="color"> sit hidden inside the
@@ -3909,6 +3941,8 @@ async function saveStory(ctx, wrap, desiredStatus, editingId) {
       location.hash = `#/writer/draft?edit=${ref.id}`;
     }
     msg.textContent = "";
+    wrap.dispatchEvent(new CustomEvent("story-saved"));
+    return true;
   } catch (err) {
     msg.textContent = "Save failed: " + err.message;
     ctx.toast("Save failed: " + err.message, "error");

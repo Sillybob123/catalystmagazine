@@ -292,7 +292,7 @@ const ROUTES = {
     icon: ICONS.pen,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js?v=focus-2"),
+    loader: () => import("./writer.js?v=tb-1"),
     mountKey: "draft",
   },
   "#/writer/mine": {
@@ -301,7 +301,7 @@ const ROUTES = {
     icon: ICONS.pages,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js?v=focus-2"),
+    loader: () => import("./writer.js?v=tb-1"),
     mountKey: "mine",
   },
   "#/writer/feed": {
@@ -310,7 +310,7 @@ const ROUTES = {
     icon: ICONS.feed,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js?v=focus-2"),
+    loader: () => import("./writer.js?v=tb-1"),
     mountKey: "feed",
   },
   "#/writer/guidelines": {
@@ -396,7 +396,7 @@ const ROUTES = {
     icon: ICONS.chart,
     roles: ["admin", "marketing", "newsletter_builder", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-25"),
+    loader: () => import("./marketing.js?v=studio-26"),
     mountKey: "analytics",
   },
   "#/marketing/subscribers": {
@@ -405,7 +405,7 @@ const ROUTES = {
     icon: ICONS.users,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-25"),
+    loader: () => import("./marketing.js?v=studio-26"),
     mountKey: "subscribers",
   },
   "#/marketing/collabs": {
@@ -414,7 +414,7 @@ const ROUTES = {
     icon: ICONS.handshake,
     roles: ["admin", "marketing"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-25"),
+    loader: () => import("./marketing.js?v=studio-26"),
     mountKey: "collabs",
   },
   "#/marketing/social": {
@@ -423,7 +423,7 @@ const ROUTES = {
     icon: ICONS.share,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-25"),
+    loader: () => import("./marketing.js?v=studio-26"),
     mountKey: "social",
   },
   "#/marketing/searchability": {
@@ -463,7 +463,7 @@ const ROUTES = {
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=focus-2"),
+    loader: () => import("./admin.js?v=tb-1"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -491,7 +491,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=focus-2"),
+    loader: () => import("./admin.js?v=tb-1"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -500,7 +500,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=focus-2"),
+    loader: () => import("./admin.js?v=tb-1"),
     mountKey: "images",
   },
   "#/admin/advanced": {
@@ -867,6 +867,8 @@ async function handleRoute() {
 
   try {
     const mod = await route.loader();
+    // Pages that take over the screen (Write a draft) offer "Back" to here.
+    window.__catalystPrevRoute = state.currentRoute || "";
     const ctx = makeContext(route);
     const maybeCleanup = await mod.mount(ctx, content);
     if (typeof maybeCleanup === "function") state.moduleCleanup = maybeCleanup;

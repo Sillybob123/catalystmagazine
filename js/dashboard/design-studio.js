@@ -2437,7 +2437,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     files = files.filter((f) => /^image\//.test(f.type));
     if (!files.length) { ctx.toast?.("That isn't an image file.", "error"); return; }
     const label = container.querySelector("#ds-dropzone span");
-    const { uploadToFirebase } = await import("./writer.js?v=focus-2");
+    const { uploadToFirebase } = await import("./writer.js?v=tb-1");
     let i = 0;
     for (const file of files) {
       const n = files.length > 1 ? ` ${i + 1} of ${files.length}` : "";
@@ -2617,7 +2617,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     uploadingImages = true;
     const id = postId;
     try {
-      const { uploadToFirebase } = await import("./writer.js?v=focus-2");
+      const { uploadToFirebase } = await import("./writer.js?v=tb-1");
       const imageUrls = [];
       for (let i = 0; i < design.pages.length; i++) imageUrls.push(await uploadToFirebase(new File([await exportPage(i)], `post-${i + 1}.png`, { type: "image/png" }), "image", ctx));
       await savePost({ id, coverImageUrl: imageUrls[0] || "", imageUrls });
