@@ -3036,6 +3036,8 @@ function markLeadFigure(html) {
     const s = String(html || '');
     const lead = /^(?:\s|<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?>|<a\b[^>]*>\s*<\/a>)*<\/p>)*/i.exec(s)[0];
     const rest = s.slice(lead.length);
+    // A layout the writer chose on purpose (wide, full width, inset, grid) wins.
+    if (/^<figure\b[^>]*\bclass=["'][^"']*\b(rt-size-(?:wide|large)|rt-align-|rt-gallery|rt-cap-side|rt-cap-overlay)/i.test(rest)) return s;
     if (/^<figure\b/i.test(rest)) {
         return lead + rest.replace(/^<figure\b([^>]*?)(\sclass=["']([^"']*)["'])?/i, (m, a, c, cls) => `<figure${a.replace(/\sclass=["'][^"']*["']/i, '')} class="${cls ? cls + ' ' : ''}rt-lead"`);
     }

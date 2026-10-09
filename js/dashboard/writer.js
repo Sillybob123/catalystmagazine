@@ -181,6 +181,19 @@ function mountDraftEditor(ctx, container) {
         <button class="rt-btn" data-action="video" title="Insert video (upload or URL)" aria-label="Insert video">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
         </button>
+        <button class="rt-btn" data-action="gallery" title="Image grid: two or three pictures side by side" aria-label="Insert image grid">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="5" width="8.5" height="14" rx="1.5"/><rect x="13" y="5" width="8.5" height="14" rx="1.5"/></svg>
+        </button>
+      </div>
+      <div class="rt-group" aria-label="Magazine blocks">
+        <button class="rt-btn rt-btn-wide" data-action="callout" title="Callout box: a key takeaway, an explainer or a side note">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v13H8l-4 4z"/><path d="M8 9h8M8 13h5"/></svg>
+          <span>Callout</span>
+        </button>
+        <button class="rt-btn rt-btn-wide" data-action="stats" title="By the numbers: big figures with a short label">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+          <span>Numbers</span>
+        </button>
       </div>
       <div class="rt-group" aria-label="Structure">
         <button class="rt-btn rt-btn-wide" data-action="new-section" title="Insert a new section (heading + paragraph)">
@@ -475,6 +488,7 @@ function wireDriveReviewGateOnFirstEdit(wrap) {
 
 // ===== Rich-text toolbar wiring =============================================
 function wireRichToolbar(wrap, editorEl, ctx) {
+  setupBlockBar(editorEl);
   const toolbar = wrap.querySelector("#rt-toolbar");
 
   // Block-type dropdown
@@ -593,6 +607,12 @@ function wireRichToolbar(wrap, editorEl, ctx) {
     if (quizFig && editorEl.contains(quizFig)) {
       e.preventDefault();
       openQuizDialog(editorEl, ctx, quizFig);
+      return;
+    }
+    const gallery = e.target.closest("figure.rt-gallery");
+    if (gallery && editorEl.contains(gallery)) {
+      e.preventDefault();
+      openGalleryDialog(editorEl, ctx, gallery);
       return;
     }
     const figure = e.target.closest("figure.rt-figure");
@@ -773,6 +793,7 @@ function handleBlockAction(action, editorEl, ctx) {
     if (!text) return;
     const who = prompt("Attribution (optional)") || "";
     const html = `<figure class="rt-pullquote"><blockquote>${escapeHtml(text)}</blockquote>${who ? `<figcaption>— ${escapeHtml(who)}</figcaption>` : ""}</figure><p><br/></p>`;
+    // Style it (classic, large or beside the text) from the bar that appears when you click it.
     insertBlockAtCaret(editorEl, html);
     return;
   }
@@ -782,6 +803,21 @@ function handleBlockAction(action, editorEl, ctx) {
   }
   if (action === "video") {
     openMediaDialog("video", editorEl, ctx, null, captureEditorRange(editorEl));
+    return;
+  }
+  if (action === "gallery") {
+    openGalleryDialog(editorEl, ctx, null, captureEditorRange(editorEl));
+    return;
+  }
+  if (action === "callout") {
+    insertBlockAfterCaret(editorEl, `<aside class="rt-callout" data-tone="paper"><p class="rt-callout-label">Key takeaway</p><p>Write the one thing a reader should remember from this section.</p></aside>`, ".rt-callout p:not(.rt-callout-label)");
+    editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+    return;
+  }
+  if (action === "stats") {
+    const stat = (n, l) => `<div class="rt-stat"><p class="rt-stat-num">${n}</p><p class="rt-stat-label">${l}</p></div>`;
+    insertBlockAfterCaret(editorEl, `<div class="rt-stats rt-stats-3">${stat("40%", "what the first number means")}${stat("3×", "what the second number means")}${stat("1 in 5", "what the third number means")}</div>`, ".rt-stat-num");
+    editorEl.dispatchEvent(new Event("input", { bubbles: true }));
     return;
   }
   if (action === "paste-gdoc") {
@@ -1059,6 +1095,15 @@ function openGoogleDocPasteDialog(editorEl, ctx) {
 //   - ensure a size class (defaults to rt-size-standard)
 //   - ensure data-rt-figure so the toolbar's click handler recognizes them
 function normalizeEditorFigures(editorEl) {
+  editorEl.querySelectorAll("figure.rt-gallery").forEach((fig) => {
+    let parent = fig.parentElement;
+    while (parent && parent !== editorEl && /^(p|div|span)$/i.test(parent.tagName) && !parent.classList.contains("rt-gallery-grid")) {
+      parent.parentElement.insertBefore(fig, parent);
+      if (!parent.textContent.trim() && !parent.querySelector("img, video, figure")) parent.remove();
+      parent = fig.parentElement;
+    }
+    fig.setAttribute("contenteditable", "false");
+  });
   editorEl.querySelectorAll("figure.rt-figure").forEach((fig) => {
     // Hoist out of <p> / <div> wrappers that the browser added around it.
     let parent = fig.parentElement;
@@ -1107,7 +1152,7 @@ function stripInlineImgDimensions(editorEl) {
 // handler ignores (it only matches figure.rt-figure). This converts each one
 // into a proper editable figure so writers can click to edit size/alt/caption.
 function upgradeLegacyImages(editorEl) {
-  const bareImgs = Array.from(editorEl.querySelectorAll("img")).filter((img) => !img.closest("figure.rt-figure"));
+  const bareImgs = Array.from(editorEl.querySelectorAll("img")).filter((img) => !img.closest("figure.rt-figure, figure.rt-gallery"));
   bareImgs.forEach((img) => {
     const src = img.getAttribute("src") || "";
     if (!src) { img.remove(); return; }
@@ -1583,6 +1628,8 @@ function markLeadFigure(html) {
     const s = String(html || '');
     const lead = /^(?:\s|<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?>|<a\b[^>]*>\s*<\/a>)*<\/p>)*/i.exec(s)[0];
     const rest = s.slice(lead.length);
+    // A layout the writer chose on purpose (wide, full width, inset, grid) wins.
+    if (/^<figure\b[^>]*\bclass=["'][^"']*\b(rt-size-(?:wide|large)|rt-align-|rt-gallery|rt-cap-side|rt-cap-overlay)/i.test(rest)) return s;
     if (/^<figure\b/i.test(rest)) {
         return lead + rest.replace(/^<figure\b([^>]*?)(\sclass=["']([^"']*)["'])?/i, (m, a, c, cls) => `<figure${a.replace(/\sclass=["'][^"']*["']/i, '')} class="${cls ? cls + ' ' : ''}rt-lead"`);
     }
@@ -1629,6 +1676,7 @@ export function openArticlePreviewFromData(data, ctx) {
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${origin}/css/styles.css">
 <link rel="stylesheet" href="${origin}/css/article-premium.css?v=20261009-lead">
+<link rel="stylesheet" href="${origin}/css/article-layouts.css?v=2">
 <style>
   body { background: var(--canvas, #fafafa); }
   .preview-banner {
@@ -2308,6 +2356,26 @@ function insertBlockAtCaret(editorEl, html, savedRange = null) {
   document.execCommand("insertHTML", false, html);
 }
 
+// Put a block (callout, numbers row…) on its own line after the paragraph the
+// caret is in, so it never merges into that paragraph; an empty paragraph is
+// replaced. Then select `focusSel` inside the new block so the writer can type.
+function insertBlockAfterCaret(editorEl, html, focusSel) {
+  const sel = window.getSelection();
+  let node = sel && sel.rangeCount && editorEl.contains(sel.anchorNode) ? sel.anchorNode : null;
+  while (node && node.parentNode !== editorEl) node = node.parentNode;
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html.trim();
+  const block = tpl.content.firstElementChild;
+  const after = document.createElement("p"); after.innerHTML = "<br>";
+  if (node && node.nodeType === 1 && /^P$/i.test(node.tagName) && !node.textContent.replace(/\u200b/g, "").trim() && !node.querySelector("img, video, figure")) node.replaceWith(block);
+  else if (node) node.after(block);
+  else editorEl.appendChild(block);
+  if (!block.nextElementSibling) block.after(after);
+  const target = (focusSel && block.querySelector(focusSel)) || block;
+  const r = document.createRange(); r.selectNodeContents(target);
+  sel.removeAllRanges(); sel.addRange(r);
+}
+
 // Snapshot the editor's current selection so we can restore it after a modal
 // has stolen focus. Returns a cloned Range (safe to hold) or null.
 function captureEditorRange(editorEl) {
@@ -2334,6 +2402,212 @@ function renderFigureCaption(raw) {
   return `<figcaption><span class="fig-caption-text">${escapeHtml(text)}</span></figcaption>`;
 }
 
+// ===== Image grid (2–3 pictures side by side) ===============================
+// figure.rt-gallery > .rt-gallery-grid > img…, one shared caption + credit.
+// Click a grid in the composer to edit it.
+function openGalleryDialog(editorEl, ctx, existing = null, savedRange = null) {
+  const items = existing
+    ? [...existing.querySelectorAll(".rt-gallery-grid img")].map((img) => ({ url: img.getAttribute("src") || "", alt: img.getAttribute("alt") || "" }))
+    : [{ url: "", alt: "" }, { url: "", alt: "" }];
+  const cls = existing?.classList;
+  let shape = cls?.contains("rt-shape-square") ? "square" : cls?.contains("rt-shape-portrait") ? "portrait" : cls?.contains("rt-shape-natural") ? "natural" : "landscape";
+  let width = cls?.contains("rt-size-wide") ? "wide" : "column";
+  let edges = cls?.contains("rt-frame-plain") ? "plain" : cls?.contains("rt-frame-rounded") ? "rounded" : "soft";
+  const capEl = existing?.querySelector("figcaption");
+  let caption = (capEl?.querySelector(".fig-caption-text")?.textContent || (capEl && !capEl.querySelector(".fig-caption-credit") ? capEl.textContent : "") || "").trim();
+  let credit = (capEl?.querySelector(".fig-caption-credit")?.textContent || "").trim();
+
+  const scrim = el("div", { class: "media-dialog-scrim" });
+  const modal = el("div", { class: "media-dialog media-dialog-design" });
+  document.body.appendChild(scrim); document.body.appendChild(modal);
+  requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); });
+  const close = () => { scrim.classList.remove("open"); modal.classList.remove("open"); setTimeout(() => { scrim.remove(); modal.remove(); }, 200); };
+  scrim.addEventListener("click", close);
+
+  const seg = (name, cur, opts) => `<div class="mseg" role="radiogroup">${opts.map(([v, l]) => `<label><input type="radio" name="${name}" value="${v}" ${cur === v ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>`;
+  function paint() {
+    modal.innerHTML = `
+      <div class="media-dialog-head">
+        <div class="media-dialog-title">${existing ? "Edit" : "Insert"} image grid</div>
+        <button class="media-dialog-close" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="media-dialog-body">
+        <p class="hint" style="margin:0 0 12px;">Two or three pictures side by side, sharing one caption. Good for before-and-after, a lab and its people, or a series.</p>
+        <div class="mgal-slots mgal-n${items.length}">
+          ${items.map((it, i) => `
+            <div class="mgal-slot" data-i="${i}">
+              <button type="button" class="mgal-pic${it.url ? " has-img" : ""}" data-act="pick" aria-label="Choose picture ${i + 1}">${it.url ? `<img src="${escapeAttr(it.url)}" alt="">` : `<span>+ Picture ${i + 1}</span>`}</button>
+              <div class="mgal-tools">
+                <button type="button" class="btn btn-ghost btn-xs" data-act="upload">Upload</button>
+                <button type="button" class="btn btn-ghost btn-xs" data-act="library">Library</button>
+                ${items.length > 2 ? `<button type="button" class="btn btn-ghost btn-xs" data-act="remove" aria-label="Remove picture ${i + 1}">Remove</button>` : ""}
+              </div>
+              <input class="input input-sm" data-alt="${i}" placeholder="Alt text: describe picture ${i + 1}" value="${escapeAttr(it.alt)}">
+            </div>`).join("")}
+          ${items.length < 3 ? `<button type="button" class="mgal-add" data-act="add">+ Add a third picture</button>` : ""}
+        </div>
+        <input type="file" id="g-file" accept="image/*" hidden>
+        <div class="media-cap-row">
+          <div class="field"><label class="label" for="g-cap">Caption <em class="opt">(optional)</em></label><input class="input" id="g-cap" value="${escapeAttr(caption)}" placeholder="One caption for the whole grid"></div>
+          <div class="field"><label class="label" for="g-credit">Credit <em class="opt">(optional)</em></label><input class="input" id="g-credit" value="${escapeAttr(credit)}" placeholder="e.g. Photos: Jane Doe"></div>
+        </div>
+        <div class="mgal-opts">
+          <div class="field"><span class="label">Shape</span>${seg("g-shape", shape, [["landscape", "Landscape"], ["square", "Square"], ["portrait", "Portrait"], ["natural", "As shot"]])}</div>
+          <div class="field"><span class="label">Width</span>${seg("g-width", width, [["column", "Column"], ["wide", "Wide"]])}</div>
+          <div class="field"><span class="label">Edges</span>${seg("g-edges", edges, [["soft", "Soft"], ["plain", "Square"], ["rounded", "Rounded"]])}</div>
+        </div>
+        <div class="media-progress" id="g-progress" hidden><div class="media-progress-bar"><span id="g-fill"></span></div><div class="media-progress-text" id="g-ptext">Uploading…</div></div>
+        <div class="media-error" id="g-error"></div>
+      </div>
+      <div class="media-dialog-foot">
+        ${existing ? `<button class="btn btn-ghost btn-sm" data-act="delete" style="color:var(--danger);margin-right:auto;">Remove grid</button>` : ""}
+        <button class="btn btn-ghost btn-sm" data-act="cancel">Cancel</button>
+        <button class="btn btn-accent btn-sm" data-act="save">${existing ? "Save changes" : "Insert grid"}</button>
+      </div>`;
+  }
+  const keep = () => {
+    caption = modal.querySelector("#g-cap")?.value.trim() ?? caption;
+    credit = modal.querySelector("#g-credit")?.value.trim() ?? credit;
+    shape = modal.querySelector('input[name="g-shape"]:checked')?.value || shape;
+    width = modal.querySelector('input[name="g-width"]:checked')?.value || width;
+    edges = modal.querySelector('input[name="g-edges"]:checked')?.value || edges;
+    modal.querySelectorAll("[data-alt]").forEach((inp) => { items[+inp.dataset.alt].alt = inp.value.trim(); });
+  };
+  paint();
+  let uploadFor = -1;
+  modal.addEventListener("change", async (e) => {
+    if (e.target.id !== "g-file") return;
+    const f = e.target.files[0]; e.target.value = "";
+    if (!f || uploadFor < 0) return;
+    const err = modal.querySelector("#g-error");
+    if (!f.type.startsWith("image/")) { err.textContent = "Please choose an image file."; return; }
+    if (f.size > 10 * 1024 * 1024) { err.textContent = "File too large. Max 10 MB."; return; }
+    const prog = modal.querySelector("#g-progress"); prog.hidden = false;
+    try {
+      const url = await uploadToFirebase(f, "image", ctx, (pct) => { modal.querySelector("#g-fill").style.width = pct + "%"; modal.querySelector("#g-ptext").textContent = `Uploading… ${pct}%`; });
+      keep(); items[uploadFor].url = url; paint();
+    } catch (ex) { err.textContent = "Upload failed: " + (ex?.message || ex); prog.hidden = true; }
+  });
+  modal.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act], .media-dialog-close"); if (!b) return;
+    if (b.classList.contains("media-dialog-close") || b.dataset.act === "cancel") return close();
+    const i = +(b.closest(".mgal-slot")?.dataset.i ?? -1);
+    const act = b.dataset.act;
+    if (act === "upload" || act === "pick") { keep(); uploadFor = i; modal.querySelector("#g-file").click(); return; }
+    if (act === "library") { keep(); openImageLibraryPicker(ctx, (url) => { items[i].url = url; paint(); }); return; }
+    if (act === "remove") { keep(); items.splice(i, 1); paint(); return; }
+    if (act === "add") { keep(); items.push({ url: "", alt: "" }); paint(); return; }
+    if (act === "delete") { existing.remove(); editorEl.dispatchEvent(new Event("input", { bubbles: true })); return close(); }
+    if (act === "save") {
+      keep();
+      const err = modal.querySelector("#g-error");
+      const filled = items.filter((it) => it.url);
+      if (filled.length < 2) { err.textContent = "Add at least two pictures."; return; }
+      if (filled.some((it) => !it.alt)) { err.textContent = "Please add alt text to every picture: describe what it shows, for screen readers and search."; return; }
+      const cl = ["rt-gallery", `rt-cols-${filled.length}`, `rt-shape-${shape}`, width === "wide" ? "rt-size-wide" : "", edges !== "soft" ? `rt-frame-${edges}` : ""].filter(Boolean).join(" ");
+      const cap = caption || credit ? `<figcaption>${caption ? `<span class="fig-caption-text">${escapeHtml(caption)}</span>` : ""}${credit ? `<span class="fig-caption-credit">${escapeHtml(credit)}</span>` : ""}</figcaption>` : "";
+      const html = `<figure class="${cl}" contenteditable="false" data-rt-figure="gallery"><div class="rt-gallery-grid">${filled.map((it) => `<img src="${escapeAttr(it.url)}" alt="${escapeAttr(it.alt)}" />`).join("")}</div>${cap}</figure>`;
+      if (existing) existing.outerHTML = html;
+      else insertBlockAtCaret(editorEl, html + "<p><br/></p>", savedRange);
+      editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+      close();
+    }
+  });
+}
+
+// ===== Block bar =============================================================
+// A small floating bar over a callout, a numbers row or a pull quote while
+// the writer is working in it: change its style, or remove it.
+const BLOCK_STYLES = {
+  callout: { sel: "aside.rt-callout", attr: "data-tone", opts: [["paper", "Paper"], ["sage", "Sage"], ["ink", "Dark"], ["line", "Outline"]],
+    labels: ["Key takeaway", "Explainer", "Why it matters", "By the way", "Methods", "Glossary"] },
+  stats: { sel: ".rt-stats", cls: ["rt-stats-1", "rt-stats-2", "rt-stats-3"], opts: [["rt-stats-1", "1"], ["rt-stats-2", "2"], ["rt-stats-3", "3"]] },
+  quote: { sel: "figure.rt-pullquote", cls: ["", "rt-pq-large", "rt-pq-side"], opts: [["", "Classic"], ["rt-pq-large", "Large"], ["rt-pq-side", "Beside text"]] },
+};
+function setupBlockBar(editorEl) {
+  document.querySelectorAll(".rt-blockbar").forEach((x) => x.remove());   // one per composer
+  const bar = el("div", { class: "rt-blockbar", role: "toolbar", "aria-label": "Block style" });
+  bar.hidden = true;
+  document.body.appendChild(bar);
+  let cur = null, kind = null;
+  const find = (node) => {
+    const elx = node?.nodeType === 1 ? node : node?.parentElement;
+    for (const [k, d] of Object.entries(BLOCK_STYLES)) { const b = elx?.closest?.(d.sel); if (b && editorEl.contains(b)) return [b, k]; }
+    return [null, null];
+  };
+  const place = () => {
+    if (!cur) return;
+    const r = cur.getBoundingClientRect();
+    bar.style.top = `${window.scrollY + r.top - bar.offsetHeight - 10}px`;
+    bar.style.left = `${window.scrollX + Math.max(8, r.left)}px`;
+  };
+  const paint = () => {
+    const d = BLOCK_STYLES[kind];
+    const on = d.attr ? cur.getAttribute(d.attr) || d.opts[0][0] : (d.cls.find((c) => c && cur.classList.contains(c)) || "");
+    const n = kind === "stats" ? cur.querySelectorAll(".rt-stat").length : 0;
+    bar.innerHTML = `<span class="rt-blockbar-name">${{ callout: "Callout", stats: "Numbers", quote: "Pull quote" }[kind]}</span>
+      ${d.opts.map(([v, l]) => `<button type="button" data-style="${v}" class="${(kind === "stats" ? `rt-stats-${n}` : on) === v ? "is-on" : ""}">${l}</button>`).join("")}
+      ${kind === "callout" ? `<select aria-label="Label">${d.labels.map((l) => `<option${cur.querySelector(".rt-callout-label")?.textContent.trim() === l ? " selected" : ""}>${l}</option>`).join("")}<option value="">Custom…</option></select>` : ""}
+      <button type="button" data-style="__remove" class="is-danger" title="Remove this block">Remove</button>`;
+    bar.hidden = false; place();
+  };
+  const show = () => {
+    const sel = window.getSelection();
+    const [b, k] = find(sel?.anchorNode);
+    if (b === cur) return;
+    cur?.classList.remove("is-active");
+    cur = b; kind = k;
+    if (!cur) { bar.hidden = true; return; }
+    cur.classList.add("is-active");
+    paint();
+  };
+  document.addEventListener("selectionchange", () => { if (!bar.contains(document.activeElement)) show(); });
+  window.addEventListener("scroll", place, { passive: true });
+  bar.addEventListener("mousedown", (e) => { if (e.target.tagName !== "SELECT") e.preventDefault(); });
+  bar.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-style]"); if (!b || !cur) return;
+    const v = b.dataset.style, d = BLOCK_STYLES[kind];
+    if (v === "__remove") { cur.remove(); cur = null; bar.hidden = true; editorEl.dispatchEvent(new Event("input", { bubbles: true })); return; }
+    if (d.attr) cur.setAttribute(d.attr, v);
+    else if (kind === "stats") {
+      const want = +v.slice(-1), have = cur.querySelectorAll(".rt-stat");
+      d.cls.forEach((c) => cur.classList.remove(c)); cur.classList.add(v);
+      for (let i = have.length; i < want; i++) cur.insertAdjacentHTML("beforeend", `<div class="rt-stat"><p class="rt-stat-num">00</p><p class="rt-stat-label">what the number means</p></div>`);
+      [...have].slice(want).forEach((x) => x.remove());
+    } else { d.cls.forEach((c) => c && cur.classList.remove(c)); if (v) cur.classList.add(v); }
+    editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+    paint();
+  });
+  bar.addEventListener("change", (e) => {
+    if (e.target.tagName !== "SELECT" || !cur) return;
+    const label = cur.querySelector(".rt-callout-label") || cur.insertAdjacentElement("afterbegin", el("p", { class: "rt-callout-label" }));
+    if (e.target.value) label.textContent = e.target.value;
+    else { const r = document.createRange(); r.selectNodeContents(label); const s2 = getSelection(); s2.removeAllRanges(); s2.addRange(r); label.focus?.(); }
+    editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  editorEl.addEventListener("input", () => { if (cur && !editorEl.contains(cur)) { cur = null; bar.hidden = true; } else place(); });
+}
+
+// Picture layouts in the image window: how much room the picture takes and
+// whether the text wraps beside it. `size`/`align` become rt-size-* and
+// rt-align-* classes, styled by css/article-layouts.css.
+const MLAY_ICO = (body) => `<svg viewBox="0 0 64 44" fill="none">${body}</svg>`;
+const MLAY_TXT = (x, w, ys) => ys.map((y) => `<rect x="${x}" y="${y}" width="${w}" height="2.6" rx="1.3" fill="currentColor" opacity=".35"/>`).join("");
+const MEDIA_LAYOUTS = [
+  { id: "inset-left", label: "Inset left", size: "compact", align: "left", hint: "A smaller picture on the left; the text wraps around it. Great for portraits and details.",
+    icon: MLAY_ICO(`<rect x="8" y="9" width="20" height="16" rx="2" fill="currentColor" opacity=".8"/>${MLAY_TXT(32, 24, [10, 15, 20, 25])}${MLAY_TXT(8, 48, [30, 35])}`) },
+  { id: "inset-right", label: "Inset right", size: "compact", align: "right", hint: "A smaller picture on the right; the text wraps around it.",
+    icon: MLAY_ICO(`<rect x="36" y="9" width="20" height="16" rx="2" fill="currentColor" opacity=".8"/>${MLAY_TXT(8, 24, [10, 15, 20, 25])}${MLAY_TXT(8, 48, [30, 35])}`) },
+  { id: "small", label: "Centered", size: "compact", align: "", hint: "A modest picture centred in the column, with text above and below.",
+    icon: MLAY_ICO(`${MLAY_TXT(8, 48, [6])}<rect x="20" y="12" width="24" height="18" rx="2" fill="currentColor" opacity=".8"/>${MLAY_TXT(8, 48, [35])}`) },
+  { id: "column", label: "Column", size: "standard", align: "", hint: "As wide as the text. The everyday choice.",
+    icon: MLAY_ICO(`${MLAY_TXT(8, 48, [5])}<rect x="8" y="11" width="48" height="22" rx="2" fill="currentColor" opacity=".8"/>${MLAY_TXT(8, 48, [37])}`) },
+  { id: "wide", label: "Wide", size: "wide", align: "", hint: "Breaks out past the text on both sides, for maps, charts and big scenes.",
+    icon: MLAY_ICO(`${MLAY_TXT(14, 36, [5])}<rect x="3" y="11" width="58" height="22" rx="2" fill="currentColor" opacity=".8"/>${MLAY_TXT(14, 36, [37])}`) },
+  { id: "full", label: "Full width", size: "large", align: "", hint: "Edge to edge across the whole screen. Save it for one big, beautiful photo.",
+    icon: MLAY_ICO(`${MLAY_TXT(14, 36, [4])}<rect x="0" y="10" width="64" height="25" fill="currentColor" opacity=".8"/>${MLAY_TXT(14, 36, [39])}`) },
+];
+
 // ===== Media upload dialog (images + videos) ================================
 // When `existingFigure` is passed, we edit it in place instead of inserting a
 // new one — lets writers click an already-placed image/video to change its
@@ -2351,6 +2625,8 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
   let initialAlt = "";
   let initialCaption = "";
   let initialSize = "standard";
+  let initialCredit = "";
+  let initialLayout = "column", initialCap = "classic", initialFrame = "soft";
   if (isEdit) {
     const mediaEl = existingFigure.querySelector(isImage ? "img" : "video");
     initialUrl = mediaEl?.getAttribute("src") || "";
@@ -2363,22 +2639,24 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
       const mainSpan = capEl.querySelector(".fig-caption-text");
       const creditSpan = capEl.querySelector(".fig-caption-credit");
       if (mainSpan || creditSpan) {
-        const main = (mainSpan?.textContent || "").trim();
-        const credit = (creditSpan?.textContent || "").trim();
-        initialCaption = credit ? `${main} — ${credit}` : main;
+        initialCaption = (mainSpan?.textContent || "").trim();
+        initialCredit = (creditSpan?.textContent || "").trim();
       } else {
         initialCaption = capEl.textContent.trim();
       }
     }
     const sizeMatch = (existingFigure.className || "").match(/rt-size-(\w+)/);
     if (sizeMatch) initialSize = sizeMatch[1];
+    const cls = existingFigure.classList;
+    initialLayout = cls.contains("rt-align-left") ? "inset-left" : cls.contains("rt-align-right") ? "inset-right"
+      : ({ small: "small", compact: "small", standard: "column", wide: "wide", large: "full" })[initialSize] || "column";
+    initialCap = cls.contains("rt-cap-minimal") ? "minimal" : cls.contains("rt-cap-side") ? "side" : cls.contains("rt-cap-overlay") ? "overlay" : "classic";
+    initialFrame = cls.contains("rt-frame-plain") ? "plain" : cls.contains("rt-frame-rounded") ? "rounded" : cls.contains("rt-frame-mounted") ? "mounted" : "soft";
   }
 
   // Build the modal
   const scrim = el("div", { class: "media-dialog-scrim" });
   const modal = el("div", { class: "media-dialog" });
-  const sizeRadio = (value, title, detail) => `
-    <label class="media-size-opt"><input type="radio" name="m-size" value="${value}" ${initialSize === value ? "checked" : ""}><span><strong>${title}</strong><em>${detail}</em></span></label>`;
 
   modal.innerHTML = `
     <div class="media-dialog-head">
@@ -2419,19 +2697,42 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
         <input class="input" id="m-alt" placeholder="${isImage ? "e.g. 'A researcher pipettes a blue sample into a microplate in a lab'" : "What's happening in this video"}" value="${escapeAttr(initialAlt)}" />
         ${isImage ? `<div class="hint" style="margin-top:6px;">Required. Describe what the image shows in one clear sentence — write it for a reader who can't see it. This is read aloud by screen readers <strong>and</strong> helps this article rank in Google Image search (better SEO for your story).</div>` : ""}
       </div>
-      <div class="field">
-        <label class="label">Caption (optional)</label>
-        <input class="input" id="m-caption" placeholder='e.g. "Researchers review the sequencing data. — Photo: Jane Doe"' value="${escapeAttr(initialCaption)}" />
-        <div class="hint" style="margin-top:6px;">Add a credit by writing it after an em-dash: <em>caption — credit</em>.</div>
+      <div class="media-cap-row">
+        <div class="field">
+          <label class="label" for="m-caption">Caption <em class="opt">(optional)</em></label>
+          <input class="input" id="m-caption" placeholder="e.g. Researchers review the sequencing data." value="${escapeAttr(initialCaption)}" />
+        </div>
+        <div class="field">
+          <label class="label" for="m-credit">Credit <em class="opt">(optional)</em></label>
+          <input class="input" id="m-credit" placeholder="e.g. Photo: Jane Doe / NIH" value="${escapeAttr(initialCredit)}" />
+        </div>
       </div>
       ${isImage ? `
-      <div class="field">
-        <label class="label">Size</label>
-        <div class="media-size-picker" role="radiogroup" aria-label="Image size">
-          ${sizeRadio("small", "Small", "Inline thumb, ~320px")}
-          ${sizeRadio("compact", "Compact", "Column width, ~520px")}
-          ${sizeRadio("standard", "Standard", "Body width, ~720px")}
-          ${sizeRadio("large", "Large", "Full-bleed, edge to edge")}
+      <div class="media-design">
+        <div class="media-design-controls">
+          <div class="field">
+            <span class="label">Layout</span>
+            <div class="mlay-grid" role="radiogroup" aria-label="Layout">
+              ${MEDIA_LAYOUTS.map((o) => `<label class="mlay-opt" title="${o.hint}"><input type="radio" name="m-layout" value="${o.id}" ${initialLayout === o.id ? "checked" : ""}><span class="mlay-ico" aria-hidden="true">${o.icon}</span><span class="mlay-name">${o.label}</span></label>`).join("")}
+            </div>
+            <div class="hint" id="m-layout-hint"></div>
+          </div>
+          <div class="field">
+            <span class="label">Caption style</span>
+            <div class="mseg" role="radiogroup" aria-label="Caption style">
+              ${[["classic", "Classic"], ["minimal", "Minimal"], ["side", "Beside"], ["overlay", "On image"]].map(([v, l]) => `<label><input type="radio" name="m-cap" value="${v}" ${initialCap === v ? "checked" : ""}><span>${l}</span></label>`).join("")}
+            </div>
+          </div>
+          <div class="field">
+            <span class="label">Edges</span>
+            <div class="mseg" role="radiogroup" aria-label="Edges">
+              ${[["soft", "Soft"], ["plain", "Square"], ["rounded", "Rounded"], ["mounted", "Mounted"]].map(([v, l]) => `<label><input type="radio" name="m-frame" value="${v}" ${initialFrame === v ? "checked" : ""}><span>${l}</span></label>`).join("")}
+            </div>
+          </div>
+        </div>
+        <div class="media-preview" aria-hidden="true">
+          <div class="media-preview-label">Preview</div>
+          <div class="mlp" id="m-preview"></div>
         </div>
       </div>` : ""}
 
@@ -2449,11 +2750,13 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
     </div>
   `;
 
+  if (isImage) modal.classList.add("media-dialog-design");
   document.body.appendChild(scrim);
   document.body.appendChild(modal);
   requestAnimationFrame(() => { scrim.classList.add("open"); modal.classList.add("open"); });
 
   const fileInput = modal.querySelector("#m-file");
+  const creditInput = modal.querySelector("#m-credit");
   const urlInput = modal.querySelector("#m-url");
   const altInput = modal.querySelector("#m-alt");
   const capInput = modal.querySelector("#m-caption");
@@ -2466,6 +2769,29 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
 
   let resolvedUrl = null;
   let pendingFile = null;
+
+  // Live preview of where the picture sits in the article.
+  const pick = (name, fallback) => modal.querySelector(`input[name="${name}"]:checked`)?.value || fallback;
+  const paintPreview = () => {
+    const pv = modal.querySelector("#m-preview"); if (!pv) return;
+    const layout = pick("m-layout", "column"), cap = pick("m-cap", "classic"), frame = pick("m-frame", "soft");
+    const L = MEDIA_LAYOUTS.find((o) => o.id === layout) || MEDIA_LAYOUTS[0];
+    const src = resolvedUrl || (urlInput.value.trim().startsWith("http") ? urlInput.value.trim() : "") || initialUrl;
+    const capTxt = (capInput.value.trim() || (creditInput.value.trim() ? "" : "Your caption appears here"));
+    const credit = creditInput.value.trim();
+    const lines = (n, short) => Array.from({ length: n }, (_, i) => `<i class="mlp-line${short && i === n - 1 ? " is-short" : ""}"></i>`).join("");
+    pv.className = `mlp is-${layout}`;
+    pv.innerHTML = `${layout.startsWith("inset") ? "" : lines(2)}
+      <div class="mlp-fig is-${layout} cap-${cap} frame-${frame}">
+        <div class="mlp-img">${src ? `<img src="${escapeAttr(src)}" alt="">` : ""}</div>
+        ${capTxt || credit ? `<div class="mlp-cap"><b>${escapeHtml(capTxt)}</b>${credit ? `<small>${escapeHtml(credit)}</small>` : ""}</div>` : ""}
+      </div>
+      ${lines(layout.startsWith("inset") ? 9 : 4, true)}`;
+    const hint = modal.querySelector("#m-layout-hint"); if (hint) hint.textContent = L.hint;
+  };
+  modal.addEventListener("change", (e) => { if (e.target.matches('input[name="m-layout"], input[name="m-cap"], input[name="m-frame"]')) paintPreview(); });
+  [capInput, creditInput].forEach((x) => x?.addEventListener("input", paintPreview));
+  urlInput.addEventListener("change", paintPreview);
 
   const close = () => {
     scrim.classList.remove("open");
@@ -2505,9 +2831,11 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
         progressWrap.hidden = true;
         errorEl.textContent = "";
         updateInsertState();
+        paintPreview();
       });
     });
   }
+  paintPreview();
 
   drop.addEventListener("click", () => fileInput.click());
   drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") fileInput.click(); });
@@ -2546,6 +2874,7 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
       });
       progressText.textContent = "Upload complete.";
       updateInsertState();
+      paintPreview();
     } catch (err) {
       errorEl.textContent = "Upload failed: " + (err?.message || err);
       progressWrap.hidden = true;
@@ -2575,15 +2904,24 @@ function openMediaDialog(kind, editorEl, ctx, existingFigure = null, savedRange 
     }
 
     const caption = capInput.value.trim();
-    const size = isImage
-      ? (modal.querySelector('input[name="m-size"]:checked')?.value || "standard")
-      : null;
+    const credit = creditInput.value.trim();
+    let figClass = "rt-figure rt-size-standard";
+    if (isImage) {
+      const L = MEDIA_LAYOUTS.find((o) => o.id === pick("m-layout", "column")) || MEDIA_LAYOUTS[0];
+      // Keep a legacy "small" when it's still small, otherwise use the layout's size.
+      const size = L.size === "compact" && initialSize === "small" ? "small" : L.size;
+      const cap = pick("m-cap", "classic"), frame = pick("m-frame", "soft");
+      figClass = ["rt-figure", `rt-size-${size}`, L.align ? `rt-align-${L.align}` : "", cap !== "classic" ? `rt-cap-${cap}` : "", frame !== "soft" ? `rt-frame-${frame}` : ""].filter(Boolean).join(" ");
+    }
 
     // Build just the <figure>…</figure> (no trailing <p>) so an in-place edit
     // doesn't duplicate the empty paragraph that already follows the figure.
-    const captionHtml = caption ? renderFigureCaption(caption) : "";
+    // An em-dash in the caption still works as a credit separator.
+    const captionHtml = credit
+      ? `<figcaption>${caption ? `<span class="fig-caption-text">${escapeHtml(caption)}</span>` : ""}<span class="fig-caption-credit">${escapeHtml(credit)}</span></figcaption>`
+      : (caption ? renderFigureCaption(caption) : "");
     const figureHtml = isImage
-      ? `<figure class="rt-figure rt-size-${size}" contenteditable="false" data-rt-figure="image">
+      ? `<figure class="${figClass}" contenteditable="false" data-rt-figure="image">
            <img src="${escapeAttr(url)}" alt="${escapeAttr(alt)}" />
            ${captionHtml}
          </figure>`

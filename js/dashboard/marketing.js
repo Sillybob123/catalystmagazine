@@ -1011,7 +1011,7 @@ async function mountSocialPosts(ctx, container) {
 
   // Live previews for Studio designs (always the latest saved layout).
   let _studioMod = null;
-  const studioModule = () => _studioMod || (_studioMod = import("./design-studio.js?v=15"));
+  const studioModule = () => _studioMod || (_studioMod = import("./design-studio.js?v=16"));
   const FORMAT_W = { post: 1080, square: 1080, story: 1080, linkedin: 1200, wide: 1600 };
   const liveCache = new Map();
   async function renderDesignImage(p, page = 0, width = 420, type = "image/jpeg") {
