@@ -15,7 +15,7 @@
   --wd-hover: #ecebe5;
   --wd-active: #e2dfd6;
   --wd-head-h: 60px;
-  --wd-pad: clamp(22px, 5vw, 72px);
+  --wd-pad: clamp(24px, 7vw, 96px);
   --wd-measure: 720px;
 }
 
@@ -304,18 +304,19 @@ body.wr-focus .compose .editor-msg:not(:empty) {
 .wd-outline-list .lv-3 button { padding-left: 22px; font-size: 12.5px; color: var(--muted); }
 .wd-outline-empty { margin: 4px 8px 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
 
-/* The page */
+/* The page: a document sized to the published reading column plus its
+   margins, so the headline, deck, cover and body all share one left edge. */
 .compose .compose-article {
-  width: 100%; max-width: 1080px; margin: 0 auto;
-  background: var(--wd-paper); border: 1px solid rgba(15, 23, 42, 0.07); border-radius: 6px; overflow: visible;
+  width: 100%; max-width: calc(var(--wd-measure) + 2 * var(--wd-pad)); margin: 0 auto;
+  background: var(--wd-paper); border: 1px solid rgba(15, 23, 42, 0.07); border-radius: 4px; overflow: visible;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 24px 60px -36px rgba(15, 23, 42, 0.38);
 }
 
-/* Title block: kicker, headline, deck, byline — and the cover beside them */
+/* Title block: kicker, headline, deck, byline, then the cover */
 .wd-titleblock {
-  display: grid; grid-template-columns: minmax(0, 1fr) clamp(200px, 22vw, 264px); gap: clamp(20px, 3vw, 40px); align-items: start;
-  padding: clamp(28px, 4vw, 48px) var(--wd-pad) clamp(22px, 3vw, 32px);
-  border-bottom: 1px solid var(--wd-line-2);
+  margin: 0 var(--wd-pad);
+  padding: clamp(32px, 4.5vw, 56px) 0 clamp(24px, 3vw, 32px);
+  border-bottom: 1px solid var(--wd-line);
 }
 .wd-title-main { min-width: 0; }
 .wd-kicker {
@@ -329,13 +330,13 @@ body.wr-focus .compose .editor-msg:not(:empty) {
 .wd-kicker:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .wd-kicker-wrap .rt-menu { min-width: 220px; }
 .wd-headline {
-  margin: 16px 0 10px; font-family: var(--compose-serif); font-weight: 700;
-  font-size: clamp(1.9rem, 3vw, 2.75rem); line-height: 1.1; letter-spacing: -0.015em;
+  margin: 18px 0 12px; font-family: var(--compose-serif); font-weight: 700;
+  font-size: clamp(2rem, 3.2vw, 2.7rem); line-height: 1.1; letter-spacing: -0.015em;
   color: var(--compose-ink, #0a0a0c); text-wrap: balance; outline: none; caret-color: var(--ink);
 }
 .wd-deck {
-  margin: 0 0 18px; max-width: 46rem; font-family: var(--compose-serif); font-style: italic; font-weight: 400;
-  font-size: clamp(1.05rem, 1.4vw, 1.22rem); line-height: 1.5; color: #3d4656; outline: none; caret-color: var(--ink);
+  margin: 0 0 18px; font-family: var(--compose-serif); font-style: italic; font-weight: 400;
+  font-size: clamp(1.08rem, 1.4vw, 1.25rem); line-height: 1.5; color: #3d4656; outline: none; caret-color: var(--ink);
 }
 .wd-headline:empty::before, .wd-deck:empty::before { content: attr(data-placeholder); color: #a6a59f; pointer-events: none; }
 .wd-headline:focus:empty::before, .wd-deck:focus:empty::before { color: #c2c0b9; }
@@ -343,25 +344,27 @@ body.wr-focus .compose .editor-msg:not(:empty) {
 .wd-byline b { color: var(--ink); font-weight: 600; }
 .wd-byline .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--muted-2); }
 
-/* Cover tile */
-.wd-cover { position: relative; aspect-ratio: 4 / 3; border-radius: 10px; overflow: hidden; background: #f1efe9; }
+/* Cover: a slim prompt while empty, the picture across the column once set */
+.wd-cover { position: relative; margin-top: 24px; border-radius: 8px; overflow: hidden; background: #f3f1eb; }
+.compose-article[data-has-cover="true"] .wd-cover { aspect-ratio: 12 / 5; }
 .wd-cover-img { position: absolute; inset: 0; background: center / cover no-repeat; }
-.compose-article[data-has-cover="false"] .wd-cover { border: 1.5px dashed rgba(15, 23, 42, 0.18); }
+.compose-article[data-has-cover="false"] .wd-cover { border: 1px dashed rgba(15, 23, 42, 0.2); background: none; }
 .compose-article[data-has-cover="false"] .wd-cover-img,
 .compose-article[data-has-cover="false"] .wd-cover-tools { display: none; }
 .compose-article[data-has-cover="true"] .wd-cover-empty { display: none; }
-.wd-cover-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 12px; text-align: center; font-family: var(--font); }
-.wd-cover-ico { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 6px; border-radius: 50%; background: var(--wd-paper); color: var(--ink-2); box-shadow: 0 0 0 1px var(--wd-line); }
+.wd-cover-empty { display: flex; align-items: center; gap: 14px; min-height: 68px; padding: 12px 12px 12px 14px; font-family: var(--font); }
+.wd-cover-ico { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 10px; background: #f1efe9; color: var(--ink-2); }
+.wd-cover-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .wd-cover-empty b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
-.wd-cover-empty small { font-size: 12px; color: var(--muted); }
-.wd-cover-acts { display: flex; gap: 6px; margin-top: 10px; }
+.wd-cover-empty small { font-size: 12.5px; color: var(--muted); }
+.wd-cover-acts { display: flex; gap: 6px; margin-left: auto; flex: none; }
 .wd-cover-acts button {
-  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 11px; border: 1px solid var(--wd-line); border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--wd-line); border-radius: 8px;
   background: var(--wd-paper); color: var(--ink); font: 600 12.5px/1 var(--font); cursor: pointer;
 }
 .wd-cover-acts button:hover { border-color: var(--ink); }
 .wd-cover-tools {
-  position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; padding: 3px; border-radius: 10px;
+  position: absolute; top: 10px; right: 10px; display: flex; gap: 2px; padding: 3px; border-radius: 10px;
   background: rgba(253, 252, 249, 0.94); box-shadow: 0 6px 18px -8px rgba(15, 23, 42, 0.5);
   opacity: 0; transform: translateY(-2px); transition: opacity 0.15s ease, transform 0.15s ease;
 }
@@ -371,23 +374,36 @@ body.wr-focus .compose .editor-msg:not(:empty) {
 .wd-cover-tools button:hover { background: var(--wd-hover); }
 .wd-cover-tools button[data-cover="remove"]:hover { color: var(--danger); }
 .wd-cover :is(button):focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
-.wd-cover-busy { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: rgba(253, 252, 249, 0.88); font: 500 12.5px/1 var(--font); color: var(--ink-2); }
-
-@media (max-width: 760px) {
-  .wd-titleblock { grid-template-columns: 1fr; }
-  .wd-cover { aspect-ratio: 16 / 7; }
+.wd-cover-busy { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(253, 252, 249, 0.92); font: 500 12.5px/1 var(--font); color: var(--ink-2); }
+@media (max-width: 560px) {
+  .wd-cover-empty { flex-wrap: wrap; row-gap: 10px; }
+  .wd-cover-txt { flex: 1 1 160px; }
+  .wd-cover-acts { width: 100%; margin-left: 0; padding-left: 54px; }
 }
 
-/* Body: the published article's reading column, centred on the page.
-   Wide and full-width pictures break out of it, as they do for readers. */
-.compose .compose-body-wrap { container-type: inline-size; padding: clamp(28px, 3.4vw, 44px) var(--wd-pad) 96px; background: none; }
-.compose .compose-body { max-width: var(--wd-measure); font-size: 20px; line-height: 1.72; min-height: 46vh; caret-color: var(--ink); }
-.compose .compose-body-ghost { top: clamp(28px, 3.4vw, 44px); left: var(--wd-pad); right: var(--wd-pad); bottom: 96px; opacity: 0.75; }
-.compose .compose-body-ghost-inner { max-width: var(--wd-measure); font-size: 20px; line-height: 1.72; }
-.compose .compose-body-ghost .ghost-tip b { font-style: normal; font-weight: 600; }
+/* Body: the published article's reading column. The suggested-structure
+   guide shares its grid cell, so it lines up word for word with where the
+   writing goes and the page grows to hold it (nothing spills out). Wide
+   and full-width pictures break out of the column, as they do for readers. */
+.compose .compose-body-wrap {
+  container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr);
+  padding: clamp(28px, 3.4vw, 40px) var(--wd-pad) 104px; background: none;
+}
+.compose .compose-body-wrap > .compose-body,
+.compose .compose-body-wrap > .compose-body-ghost { grid-area: 1 / 1; }
+.compose .compose-body { max-width: none; width: 100%; margin: 0; font-size: 20px; line-height: 1.72; min-height: 42vh; caret-color: var(--ink); }
+.compose .compose-body-ghost { position: relative; inset: auto; opacity: 1; z-index: 0; }
+.compose .compose-body-ghost-inner { max-width: none; margin: 0; font-size: 20px; line-height: 1.72; color: #b5b3ac; }
+.compose .compose-body-ghost-inner :is(p, h2, figure, blockquote) { color: inherit; }
+.compose .compose-body-ghost .ghost-lead::first-letter { color: #c9c7c0; }
+.compose .compose-body-ghost .ghost-tag { margin-bottom: 26px; color: #9c9a93; opacity: 1; }
+.compose .compose-body-ghost .ghost-tip { margin: 36px 0 0; padding-top: 18px; border-top: 1px dashed rgba(15, 23, 42, 0.12); font-style: normal; color: #8f8d86; opacity: 1; }
+.compose .compose-body-ghost .ghost-tip b { font-weight: 600; color: var(--ink-2); }
+.compose .compose-body-wrap:has(.compose-body:not(:empty)) .compose-body-ghost,
+.compose .compose-body-wrap:has(.compose-body:focus) .compose-body-ghost { display: none; }
 .compose .compose-body figure.rt-figure.rt-size-wide,
 .compose .compose-body figure.rt-gallery.rt-size-wide {
-  width: min(980px, 100cqw + var(--wd-pad)); max-width: none; margin-left: 50%; margin-right: 0; transform: translateX(-50%);
+  width: calc(100cqw + 2 * var(--wd-pad) - 48px); max-width: none; margin-left: 50%; margin-right: 0; transform: translateX(-50%);
 }
 .compose .compose-body figure.rt-figure.rt-size-large {
   width: calc(100cqw + 2 * var(--wd-pad)); max-width: none; margin-left: 50%; margin-right: 0; transform: translateX(-50%);

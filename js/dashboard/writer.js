@@ -321,8 +321,7 @@ function mountDraftEditor(ctx, container) {
             <div class="wd-cover-img" id="hero-image"></div>
             <div class="wd-cover-empty">
               <span class="wd-cover-ico">${wdIco("imagePlus", 22)}</span>
-              <b>Cover image</b>
-              <small>The first picture readers see</small>
+              <span class="wd-cover-txt"><b>Add a cover image</b><small>The first picture readers see, at the top of the article</small></span>
               <div class="wd-cover-acts">
                 <button type="button" data-cover="upload">${wdIco("upload", 15)}Upload</button>
                 <button type="button" data-cover="library">${wdIco("library", 15)}Library</button>
