@@ -372,7 +372,7 @@ function renderArticleMarkup(story) {
   const lightCover = !!story.lightCover;
   const rawCover = story.coverImage || story.image || ARTICLE_FALLBACK_IMAGE;
   const heroImage = getResizedImageUrl(rawCover, 1600, 80);
-  const bodyHtml = markLeadFigure(story.body || story.content || "");
+  const bodyHtml = markShortOpener(markLeadFigure(story.body || story.content || ""));
   const authorName = story.authorName
     || (Array.isArray(story.authors) ? story.authors.map(a => a?.name).filter(Boolean).join(", ") : "")
     || story.author
@@ -456,6 +456,18 @@ function renderArticleMarkup(story) {
         </button>
       </div>
     </div>`;
+}
+
+// A first paragraph too short to wrap around the drop cap (a one-line
+// "A conversation with…" opener) goes without one: it"s marked .rt-no-cap
+// for css/article-layouts.css. Mirrors js/main.js markShortOpener(). Keep in sync.
+function markShortOpener(html) {
+    const t = document.createElement("template");
+    t.innerHTML = String(html || "");
+    const p = [...t.content.children].find((n) => n.tagName === "P");
+    if (!p || p.textContent.trim().length >= 110) return html;
+    p.classList.add("rt-no-cap");
+    return t.innerHTML;
 }
 
 // A story that opens with a picture: mark that first figure (skipping empty

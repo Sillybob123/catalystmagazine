@@ -1658,9 +1658,9 @@ function renderArticleDetail(article) {
     });
 
     // --- Content ----------------------------------------------------------
-    const contentHtml = markLeadFigure(cleanStoryHtml(article.blocks?.length
+    const contentHtml = markShortOpener(markLeadFigure(cleanStoryHtml(article.blocks?.length
         ? renderContentBlocks(article.blocks)
-        : (article.content || `<p>${article.excerpt || ''}</p>`)));
+        : (article.content || `<p>${article.excerpt || ''}</p>`))));
     const readingTime = article.readingTime || estimateReadingTime(article);
     const heroImage = getResizedImageUrl(article.image || ARTICLE_FALLBACK_IMAGE, 1600, 80);
     const category = formatCategory(article.category || 'feature');
@@ -3029,6 +3029,19 @@ function rootRelativePaths(html) {
 // Older stories carry Wix-era photos (posts/insidearticleimages/...) and
 // "Term Targeter" game iframes (posts/games/articleN.html) that no longer
 // hold up; drop those blocks, then root any other relative paths.
+// A first paragraph too short to wrap around the drop cap (a one-line
+// "A conversation with…" opener) goes without one: it's marked .rt-no-cap
+// for css/article-layouts.css. Mirrored in js/dashboard/final-review.js
+// and js/dashboard/writer.js (Preview as published). Keep in sync.
+function markShortOpener(html) {
+    const t = document.createElement('template');
+    t.innerHTML = String(html || '');
+    const p = [...t.content.children].find((n) => n.tagName === 'P');
+    if (!p || p.textContent.trim().length >= 110) return html;
+    p.classList.add('rt-no-cap');
+    return t.innerHTML;
+}
+
 // A story that opens with a picture: mark that first figure (skipping empty
 // paragraphs before it) so article-premium.css can set it beside the opening
 // text instead of above it. Mirrored in js/dashboard/final-review.js.

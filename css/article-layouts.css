@@ -214,3 +214,29 @@ body[data-page="article"] .article-body-wrap { overflow-x: clip; }
 :is(.article-body, .compose-body) ol ol { list-style-type: lower-alpha; }
 /* A short first paragraph: what follows starts below its drop cap, not beside it. */
 :is(.article-body, .compose-body) > p:first-of-type + :is(h2, h3, h4, ul, ol, blockquote) { clear: left; }
+
+/* ── Drop cap ──────────────────────────────────────────────────────────── */
+/* Two lines deep and set on the text's own lines (initial-letter), instead
+   of a free-floating 4.8em letter. A first paragraph too short to wrap
+   around it goes without: .rt-no-cap (marked by the page script) or
+   data-cap="off" on the composer. */
+.article-body > p:first-of-type::first-letter,
+.compose .compose-body > p:first-of-type:not(:empty)::first-letter,
+.compose .compose-body-ghost .ghost-lead::first-letter {
+  float: left; margin: 0; padding: 0.06em 0.08em 0 0;
+  font-family: var(--compose-serif, var(--serif, "Source Serif Pro", Georgia, serif)); font-weight: 700; font-style: normal;
+  font-size: 3.3em; line-height: 0.84;
+}
+@supports (initial-letter: 2) or (-webkit-initial-letter: 2) {
+  .article-body > p:first-of-type::first-letter,
+  .compose .compose-body > p:first-of-type:not(:empty)::first-letter,
+  .compose .compose-body-ghost .ghost-lead::first-letter {
+    float: none; padding: 0; margin-right: 0.1em; font-size: inherit; line-height: inherit;
+    -webkit-initial-letter: 2; initial-letter: 2;
+  }
+}
+.article-body > p.rt-no-cap:first-of-type::first-letter,
+.compose .compose-body[data-cap="off"] > p:first-of-type::first-letter {
+  float: none; margin: 0; padding: 0; font: inherit; color: inherit;
+  -webkit-initial-letter: normal; initial-letter: normal;
+}

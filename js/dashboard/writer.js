@@ -595,6 +595,10 @@ function mountDraftEditor(ctx, container) {
     setStat("#wd-sb-parts", secs ? plural(secs, "section") : "No sections yet");
     const pics = bodyEl.querySelectorAll("figure.rt-figure:not(.rt-figure-video) img, figure.rt-gallery img").length;
     setStat("#wd-sb-pics", pics ? plural(pics, "picture") : "No pictures");
+    // The drop cap waits until the opening paragraph can wrap around it
+    // (same rule as markShortOpener on the published page).
+    const firstP = [...bodyEl.children].find((n) => n.tagName === "P");
+    bodyEl.dataset.cap = firstP && firstP.textContent.trim().length >= 110 ? "on" : "off";
   };
   bodyEl.addEventListener("input", countWords);
   countWords();
@@ -2359,6 +2363,18 @@ function openArticlePreview(wrap, ctx) {
 // Data-driven twin of openArticlePreview — admin edits don't have the writer's
 // compose form, so they build a data object from the details modal and call
 // this directly. Kept as a separate function so the writer path stays identical.
+// A first paragraph too short to wrap around the drop cap (a one-line
+// "A conversation with…" opener) goes without one: it"s marked .rt-no-cap
+// for css/article-layouts.css. Mirrors js/main.js markShortOpener(). Keep in sync.
+function markShortOpener(html) {
+    const t = document.createElement("template");
+    t.innerHTML = String(html || "");
+    const p = [...t.content.children].find((n) => n.tagName === "P");
+    if (!p || p.textContent.trim().length >= 110) return html;
+    p.classList.add("rt-no-cap");
+    return t.innerHTML;
+}
+
 // A story that opens with a picture: mark that first figure (skipping empty
 // paragraphs before it) so article-premium.css can set it beside the opening
 // text instead of above it. Mirrors js/main.js markLeadFigure(). Keep in sync.
@@ -2384,7 +2400,7 @@ export function openArticlePreviewFromData(data, ctx) {
   const lightCover = !!data.lightCover;
   const category = data.category || "Feature";
   const author = data.author || "The Catalyst";
-  const bodyHtml = markLeadFigure(data.bodyHtml || "");
+  const bodyHtml = markShortOpener(markLeadFigure(data.bodyHtml || ""));
   const publishedDate = data.publishedDate instanceof Date && !isNaN(data.publishedDate)
     ? data.publishedDate : new Date();
 
@@ -2414,7 +2430,7 @@ export function openArticlePreviewFromData(data, ctx) {
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${origin}/css/styles.css">
 <link rel="stylesheet" href="${origin}/css/article-premium.css?v=20261009-lead">
-<link rel="stylesheet" href="${origin}/css/article-layouts.css?v=4">
+<link rel="stylesheet" href="${origin}/css/article-layouts.css?v=5">
 <style>
   body { background: var(--canvas, #fafafa); }
   .preview-banner {
