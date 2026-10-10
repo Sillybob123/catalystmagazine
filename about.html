@@ -601,8 +601,12 @@
       .ab-person {
         display: grid; gap: 12px; width: 100%; padding: 0; margin: 0; border: 0; background: none; text-align: left; cursor: pointer; color: inherit;
         border-radius: 6px;
+        /* Cards in a row stretch to the tallest one (a name that wraps); keep
+           that extra height below the text, not in the photo row, or the
+           square photo box grows and the hexagons end up different sizes. */
+        grid-template-columns: minmax(0, 1fr); align-content: start;
       }
-      .ab-person .ph { position: relative; aspect-ratio: 1; }   /* no clipping: the hexagon grows past its box on hover */
+      .ab-person .ph { position: relative; display: block; width: 100%; aspect-ratio: 1; margin: 0; align-self: start; }   /* no clipping: the hexagon grows past its box on hover */
       .ab-person img { width: 100%; height: 100%; object-fit: contain; filter: grayscale(1) contrast(1.02); transform: scale(1.001); transition: filter .6s var(--ease-out), transform .9s var(--ease-out); }
       .ab-person:hover img, .ab-person:focus-visible img { filter: grayscale(0); transform: scale(1.04); }
       .ab-person .ph::after {
@@ -920,7 +924,7 @@
     <script defer src="/js/newsletter-handler.js"></script>
     <script defer src="/js/data.js"></script>
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
-    <script defer src="/js/main.js?v=20260925-review"></script>
+    <script defer src="/js/main.js?v=20261010-team"></script>
     <script defer src="/js/about.js?v=18"></script>
     <script>
     /* In-page menu: shows once the opening is behind you, lights the section in

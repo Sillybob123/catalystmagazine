@@ -4124,7 +4124,7 @@ const teamMembers = [
         name: "Dani Molloy",
         role: "Digital Strategy Lead",
         bio: "Dani is a senior at Cornell University pursuing a B.A. in Information Science with a concentration in UX and a minor in Business. She is passionate about digital storytelling, user-centered design, and the ways emerging technologies can help people discover and engage with new ideas. Her interests lie at the intersection of technology, communication, and artificial intelligence, particularly how thoughtful design can make complex information more accessible and engaging. At The Catalyst, Dani is excited to help grow the publication's reach, strengthen its online community, and connect more readers with the stories shaping the future of STEM.",
-        image: "/Dani.webp",
+        image: "/Dani.webp?v=2",
         linkedin: "",
         email: ""
     },
@@ -4164,7 +4164,7 @@ const teamMembers = [
         name: "Belinda Li",
         role: "Editor",
         bio: "Belinda is a recent graduate of Georgetown University, where she majored in biology and minored in journalism. She has an interest in science writing and journalism, and she is passionate about making science more accessible to a lay audience. Her interest in science communication was shaped through her work as an intern at NASA's Goddard Space Flight Center, where she contributed to projects bridging technical advancements and public understanding. Belinda is fascinated by all areas of science, and she hopes to continue exploring and sharing about science in her future career.",
-        image: "/Belinda.webp",
+        image: "/Belinda.webp?v=2",
         linkedin: "",
         email: ""
     },
@@ -4196,7 +4196,7 @@ const teamMembers = [
         name: "Josh Shapo",
         role: "Writer",
         bio: "Josh is an electrical engineering student at the George Washington University graduating in the spring of 2027. He is involved in science advocacy and engineering policy, particularly within the space and aviation sectors. In his capacity as the Chair of IEEE-GWU and the IEEE Region 2 Student Representative, he strives to make academic and industrial STEM opportunities more accessible to students. He is currently conducting machine learning-based Heliophysics to denoise satellite magnetometry signals and aid scientific understanding of solar storms.",
-        image: "/JoshShapo.webp",
+        image: "/JoshShapo.webp?v=2",
         linkedin: "",
         email: ""
     },
@@ -4204,7 +4204,7 @@ const teamMembers = [
         name: "LaMyla Hill",
         role: "Writer",
         bio: "LaMyla is a rising Senior at Howard University, majoring in physics, with a concentration in astrophysics, and a minor in math. She is also a part of the College of Arts and Sciences Honors program and is a proud member of the Society of Physics Students. Ever since elementary school, LaMyla's dream career was to be a physicist, and she has been following this thread of fascination until now. After completing her bachelor's degree, she intends to enroll in graduate school to become an astrophysics researcher.",
-        image: "/LaMayla.webp",
+        image: "/LaMayla.webp?v=2",
         linkedin: "",
         email: ""
     },
@@ -4212,7 +4212,7 @@ const teamMembers = [
         name: "Sienna Halstead",
         role: "Writer",
         bio: "Sienna is a neuroscience student with a minor in Mind and Brain Studies in the Philosophy Department at George Washington University. She is passionate about science communication and connecting people with educational resources that inspire curiosity, as that is how her own love of science, philosophy, and anthropology was cultivated. Her academic interests primarily focus on understanding the biology of consciousness and the complex interactions between health, culture, and the environment. Her current research at George Washington University's Department of Neuroscience focuses on the development of next-generation therapeutics through drug repurposing to address antimicrobial resistance in parasitic hookworms.",
-        image: "/Sienna.webp",
+        image: "/Sienna.webp?v=2",
         linkedin: "",
         email: ""
     },
@@ -4220,7 +4220,7 @@ const teamMembers = [
         name: "Cameron Fields",
         role: "Writer",
         bio: "Cameron is a recent graduate from Johns Hopkins University with a B.A. in Public Health Studies and a minor in Psychology. She will be beginning her Master's of Science in Public Health at the Johns Hopkins Bloomberg School of Public Health in maternal, fetal, and perinatal health. Through her research experiences in prenatal care, harm reduction, and HIV, Cameron has become passionate about interacting with community members to ensure they have resources and education about various health topics. Cameron is drawn to the community-based side of medicine and hopes to continue to share and expand on this passion through her writing with the Catalyst, research, and in the future professionally as a physician.",
-        image: "/cameron.webp",
+        image: "/cameron.webp?v=2",
         linkedin: "",
         email: ""
     },
@@ -4228,7 +4228,7 @@ const teamMembers = [
         name: "Jada Traynor",
         role: "Writer",
         bio: "Jada Traynor is a senior at the George Washington University pursuing a double major in Chemistry and Biology with a minor in Human Anatomy. Throughout her time at GW, she has been engaged in both medicinal chemistry and genetics research, developing a strong interest in pharmacology, physiology, and the ways scientific discoveries can be translated into impactful clinical advances. She is drawn to work at the intersection of research and medicine, where a deeper understanding of human physiology can inspire problem solving and innovative approaches to patient care. Through The Catalyst, she hopes to highlight the profound and wide-ranging impact of scientific research by writing about the people, processes, and attitudes that drive scientific progress and how those discoveries influence our lives. In the future, she intends to pursue medical school and a career that combines patient care with scientific inquiry and problem solving.",
-        image: "/Jada.webp",
+        image: "/Jada.webp?v=2",
         linkedin: "",
         email: ""
     },
@@ -4236,7 +4236,7 @@ const teamMembers = [
         name: "Yahav Gutman",
         role: "Writer",
         bio: "Yahav is a second-year student pursuing a B.S. in Business & Engineering at Drexel University. As a certified personal trainer and performance coach, his interests lie in biomechanics, human performance, and the use of AI and data analysis to better understand training and adaptation. He seeks to bridge academic study and applied coaching practice in order to refine how human performance is measured and optimized. He is drawn to interdisciplinary approaches that turn complex systems into actionable insight.",
-        image: "/Yahav.webp",
+        image: "/Yahav.webp?v=2",
         linkedin: "",
         email: ""
     }
