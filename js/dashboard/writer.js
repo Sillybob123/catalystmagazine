@@ -52,188 +52,327 @@ export async function mount(ctx, container) {
   }
 }
 
+// ===== Composer icons =======================================================
+// One line-icon set (24px grid, 1.75 stroke, round caps) for every control on
+// the Write a draft page, so the header, toolbar and menus read as one family.
+const WD_ICONS = {
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  back: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  bold: '<path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8"/>',
+  italic: '<path d="M19 4h-9M14 20H5M15 4 9 20"/>',
+  underline: '<path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/>',
+  strike: '<path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><path d="M4 12h16"/>',
+  sup: '<path d="m4 19 8-8M12 19l-8-8"/><path d="M20 12h-4c0-1.5.44-2 1.5-2.5S20 8.33 20 7c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"/>',
+  sub: '<path d="m4 5 8 8M12 5l-8 8"/><path d="M20 19h-4c0-1.5.44-2 1.5-2.5S20 15.33 20 14c0-.47-.17-.93-.48-1.29a2.11 2.11 0 0 0-2.62-.44c-.42.24-.74.62-.9 1.07"/>',
+  color: '<path d="m6 16 6-12 6 12"/><path d="M8.2 11.5h7.6"/>',
+  highlight: '<path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/>',
+  clear: '<path d="M4 7V4h16v3"/><path d="M5 20h6"/><path d="M13 4 8 20"/><path d="m15 15 5 5M20 15l-5 5"/>',
+  ul: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" stroke-width="2.6"/>',
+  ol: '<path d="M10 6h11M10 12h11M10 18h11"/><path d="M4 6h1v4M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
+  indent: '<path d="m3 8 4 4-4 4"/><path d="M21 12H11M21 6H11M21 18H11"/>',
+  outdent: '<path d="m7 8-4 4 4 4"/><path d="M21 12H11M21 6H11M21 18H11"/>',
+  alignLeft: '<path d="M21 6H3M15 12H3M17 18H3"/>',
+  alignCenter: '<path d="M21 6H3M17 12H7M19 18H5"/>',
+  alignRight: '<path d="M21 6H3M21 12H9M21 18H7"/>',
+  alignJustify: '<path d="M3 6h18M3 12h18M3 18h18"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/>',
+  imagePlus: '<path d="M16 5h6M19 2v6"/><path d="M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/><circle cx="9" cy="9" r="2"/>',
+  gallery: '<rect x="3" y="3" width="7.5" height="18" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="8" rx="1.5"/><rect x="13.5" y="13" width="7.5" height="8" rx="1.5"/>',
+  video: '<path d="m16 13 5.22 3.48a.5.5 0 0 0 .78-.42V7.87a.5.5 0 0 0-.75-.43L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+  quote: '<path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/>',
+  callout: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16"/><path d="M11 9h6M11 13h4"/>',
+  stats: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9M13 17V5M8 17v-3"/>',
+  divider: '<path d="M3 12h18"/><path d="m8 8 4-4 4 4M16 16l-4 4-4-4"/>',
+  section: '<path d="M4 12h8M4 18V6M12 18V6"/><path d="M17 10h4M19 8v4"/><path d="M15 18h6"/>',
+  paste: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/>',
+  omega: '<path d="M3 20h4.5a.5.5 0 0 0 .5-.5v-.28a.52.52 0 0 0-.25-.44 8 8 0 1 1 8.5 0 .52.52 0 0 0-.25.44v.28a.5.5 0 0 0 .5.5H21"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>',
+  chevron: '<path d="m6 9 6 6 6-6"/>',
+  up: '<path d="m18 15-6-6-6 6"/>',
+  close: '<path d="M18 6 6 18M6 6l12 12"/>',
+  eye: '<path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0"/><circle cx="12" cy="12" r="3"/>',
+  sliders: '<path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3"/><path d="M14 2v4M8 10v4M16 18v4"/>',
+  book: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  format: '<path d="M4 7V4h16v3"/><path d="M9 20h6M12 4v16"/>',
+  keyboard: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>',
+  quotes: '<path d="M7 7h3v3c0 2-1 3.5-3 4.5"/><path d="M14 7h3v3c0 2-1 3.5-3 4.5"/>',
+  outline: '<path d="M3 5h.01M3 12h.01M3 19h.01" stroke-width="2.6"/><path d="M8 5h13M12 12h9M12 19h9"/>',
+  save: '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7M7 3v4a1 1 0 0 0 1 1h7"/>',
+  send: '<path d="M14.54 21.69a.5.5 0 0 0 .94-.03l6.5-19a.5.5 0 0 0-.64-.63l-19 6.5a.5.5 0 0 0-.02.93l7.93 3.18a2 2 0 0 1 1.11 1.11z"/><path d="m21.85 2.15-10.94 10.94"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/>',
+  library: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  trash: '<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+};
+const wdIco = (name, size = 18) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${WD_ICONS[name] || ""}</svg>`;
+const WD_MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+// Shortcut label for this platform: "mod+shift+x" → "⌘⇧X" on a Mac, "Ctrl+Shift+X" elsewhere.
+const wdKeys = (combo) => combo.split("+").map((k) => {
+  const m = { mod: WD_MAC ? "⌘" : "Ctrl", shift: WD_MAC ? "⇧" : "Shift", alt: WD_MAC ? "⌥" : "Alt" }[k];
+  return m || (k.length === 1 ? k.toUpperCase() : k);
+}).join(WD_MAC ? "" : "+");
+// A toolbar button. `attr` is its wiring (data-cmd / data-action / data-menu).
+const wdBtn = (attr, icon, label, keys) =>
+  `<button type="button" class="rt-btn" ${attr} aria-label="${label}" data-tip="${label}${keys ? " · " + wdKeys(keys) : ""}">${wdIco(icon)}</button>`;
+// A row in a drop-down menu.
+const wdItem = (attr, icon, title, hint, keys) =>
+  `<button type="button" class="rt-mi" role="menuitem" ${attr}><span class="rt-mi-ico">${wdIco(icon)}</span><span class="rt-mi-txt"><b>${title}</b>${hint ? `<small>${hint}</small>` : ""}</span>${keys ? `<kbd>${wdKeys(keys)}</kbd>` : ""}</button>`;
+// Characters science writers reach for, with what each is for.
+const WD_SYMBOLS = [
+  ["—", "Em dash"], ["–", "En dash (ranges: 10–20)"], ["…", "Ellipsis"], ["°", "Degree"], ["µ", "Micro"], ["±", "Plus or minus"],
+  ["×", "Times"], ["÷", "Divide"], ["≈", "About equal"], ["≠", "Not equal"], ["≤", "Less or equal"], ["≥", "Greater or equal"],
+  ["→", "Arrow"], ["←", "Arrow left"], ["↔", "Both ways"], ["∞", "Infinity"], ["√", "Square root"], ["%", "Percent"],
+  ["α", "Alpha"], ["β", "Beta"], ["γ", "Gamma"], ["δ", "Delta"], ["Δ", "Delta (change)"], ["λ", "Lambda"],
+  ["π", "Pi"], ["σ", "Sigma"], ["Σ", "Sum"], ["Ω", "Omega"], ["θ", "Theta"], ["φ", "Phi"],
+  ["²", "Squared"], ["³", "Cubed"], ["½", "Half"], ["¼", "Quarter"], ["§", "Section"], ["•", "Bullet"],
+];
+const WD_CATEGORIES = ["Feature", "Profile", "Interview", "Op-Ed", "News", "Science"];
+
 // ===== Draft editor =========================================================
 function mountDraftEditor(ctx, container) {
   // Support ?edit=<storyId> in hash for editing an existing draft.
   const editingId = getHashParam("edit");
 
   const wrap = el("div", { class: "compose" });
+  const byline = esc(ctx.profile.name || ctx.user.email);
   wrap.innerHTML = `
-    <!-- Sticky command bar -->
-    <div class="compose-bar">
-      <div class="compose-bar-left">
-        <button type="button" class="compose-back" id="back-to-suite">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-          <span>Back to the Suite</span>
-        </button>
-        <button type="button" class="compose-focus-btn" id="focus-toggle" aria-pressed="false">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
-          <span class="sr-only" id="focus-toggle-label">Show the sidebar</span>
-        </button>
-        <div class="compose-eyebrow">${editingId ? "Editing draft" : "New draft"}</div>
-        <span class="compose-words" id="compose-words" aria-live="polite">0 words</span>
-        <span class="compose-status" id="editor-status"></span>
-      </div>
-      <div class="compose-bar-right">
-        <button class="btn btn-secondary btn-sm compose-settings-btn" id="toggle-settings" title="Cover image, category, and article settings">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Cover &amp; settings
-        </button>
-        <button class="btn btn-ghost btn-sm" id="editorial-standards-btn" title="Open Catalyst's editorial standards in a new tab">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          Editorial standards
-        </button>
-        <button class="btn btn-ghost btn-sm" id="format-guide-btn" title="See an example of a professionally formatted article">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-          How to format
-        </button>
-        <button class="btn btn-ghost btn-sm" id="preview-btn" title="Open a full preview of how this article will look when published">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          Preview
-        </button>
-        <button class="btn btn-secondary btn-sm" id="save-draft-btn">Save draft</button>
-        <button class="btn btn-accent btn-sm" id="submit-btn">Submit for review</button>
-      </div>
-    </div>
-
-    <!-- Formatting toolbar — Google Docs–style ribbon. Groups (left → right):
-         history → text style → inline format → color → list → indent →
-         align → script → insert → structure → clear. Every control uses
-         document.execCommand under the hood (the same execCommand the
-         contenteditable already relies on for B/I/U keyboard shortcuts),
-         so nothing here introduces a new dependency. -->
-    <div class="rt-toolbar" id="rt-toolbar" role="toolbar" aria-label="Formatting">
-      <div class="rt-group" aria-label="History">
-        <button class="rt-btn" data-cmd="undo" data-tip="Undo  ⌘Z" aria-label="Undo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button>
-        <button class="rt-btn" data-cmd="redo" data-tip="Redo  ⇧⌘Z" aria-label="Redo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg></button>
-      </div>
-      <div class="rt-group" aria-label="Text style">
-        <select class="rt-select" data-block aria-label="Text style" data-tip="Text style">
-          <option value="p">Paragraph</option>
-          <option value="h2">Heading</option>
-          <option value="h3">Subheading</option>
-          <option value="h4">Section label</option>
-        </select>
-      </div>
-      <div class="rt-group" aria-label="Inline formatting">
-        <button class="rt-btn" data-cmd="bold" data-tip="Bold  ⌘B" aria-label="Bold"><span class="rt-glyph" style="font-weight:800;">B</span></button>
-        <button class="rt-btn" data-cmd="italic" data-tip="Italic  ⌘I" aria-label="Italic"><span class="rt-glyph" style="font-style:italic;font-family:Georgia,serif;">I</span></button>
-        <button class="rt-btn" data-cmd="underline" data-tip="Underline  ⌘U" aria-label="Underline"><span class="rt-glyph" style="text-decoration:underline;text-underline-offset:3px;">U</span></button>
-        <button class="rt-btn" data-cmd="strikeThrough" data-tip="Strikethrough" aria-label="Strikethrough"><span class="rt-glyph" style="text-decoration:line-through;">S</span></button>
-        <label class="rt-btn rt-btn-color" data-tip="Text colour" aria-label="Text colour">
-          <span class="rt-color-glyph"><span style="font-weight:800;">A</span><span class="rt-color-bar" id="rt-color-bar-fg" style="background:#0f172a"></span></span>
-          <input type="color" data-color="foreground" value="#0f172a" tabindex="-1" aria-hidden="true">
-        </label>
-        <label class="rt-btn rt-btn-color" data-tip="Highlight" aria-label="Highlight colour">
-          <span class="rt-color-glyph"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l-6 6v3h3l6-6"/><path d="M22 12l-4.6 4.6a2 2 0 0 1-2.83 0L9 11l6-6 5.6 5.6a2 2 0 0 1 0 2.83z"/></svg><span class="rt-color-bar" id="rt-color-bar-bg" style="background:#fde68a"></span></span>
-          <input type="color" data-color="background" value="#fde68a" tabindex="-1" aria-hidden="true">
-        </label>
-      </div>
-      <div class="rt-group" aria-label="Paragraph">
-        <button class="rt-btn" data-cmd="insertUnorderedList" data-tip="Bulleted list" aria-label="Bulleted list"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1.1" fill="currentColor"/><circle cx="4.5" cy="12" r="1.1" fill="currentColor"/><circle cx="4.5" cy="18" r="1.1" fill="currentColor"/></svg></button>
-        <button class="rt-btn" data-cmd="insertOrderedList" data-tip="Numbered list" aria-label="Numbered list"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="10" y1="6" x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="10" y1="18" x2="20" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg></button>
-        <div class="rt-menuwrap">
-          <button type="button" class="rt-btn rt-btn-drop" data-menu="align" data-tip="Alignment" aria-label="Alignment" aria-haspopup="menu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
-          <div class="rt-menu rt-menu-row" role="menu" data-menu-for="align" hidden>
-            <button type="button" class="rt-btn" role="menuitem" data-cmd="justifyLeft" aria-label="Align left" data-tip="Left"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg></button>
-            <button type="button" class="rt-btn" role="menuitem" data-cmd="justifyCenter" aria-label="Align centre" data-tip="Centre"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4.5" y1="18" x2="19.5" y2="18"/></svg></button>
-            <button type="button" class="rt-btn" role="menuitem" data-cmd="justifyRight" aria-label="Align right" data-tip="Right"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg></button>
+    <!-- App header: the Suite menu (hamburger), back, the draft's name and
+         save state on the left; guides, settings, preview and the two save
+         actions on the right. Labels drop to icons (with tooltips) as the
+         window narrows, so nothing ever wraps or clips. -->
+    <header class="wd-head">
+      <div class="wd-head-l">
+        <button type="button" class="wd-ibtn" id="wd-menu" aria-label="Open the Suite menu" aria-expanded="false" aria-controls="sidebar" data-tip="Suite menu">${wdIco("menu", 20)}</button>
+        <button type="button" class="wd-back" id="back-to-suite" data-tip="Back to the Suite">${wdIco("back", 17)}<span>Back to the Suite</span></button>
+        <span class="wd-head-rule" aria-hidden="true"></span>
+        <div class="wd-doc">
+          <div class="wd-doc-title" id="wd-doc-title">Untitled draft</div>
+          <div class="wd-doc-meta">
+            <span class="wd-doc-kind">${editingId ? "Draft" : "New draft"}</span>
+            <span class="compose-status" id="editor-status" aria-live="polite">${editingId ? "Opening…" : "Not saved yet"}</span>
           </div>
         </div>
       </div>
-      <div class="rt-group" aria-label="Link and quote">
-        <button class="rt-btn" data-action="link" data-tip="Link  ⌘K" aria-label="Add link"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
-        <button class="rt-btn" data-action="blockquote" data-tip="Pull quote" aria-label="Pull quote"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h4v4H6zM14 7h4v4h-4z"/><path d="M6 11c0 3-1 5-3 6"/><path d="M14 11c0 3-1 5-3 6"/></svg></button>
-        <button class="rt-btn" data-action="image" data-tip="Image" aria-label="Insert image"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></button>
-      </div>
-      <div class="rt-group rt-group-insert" aria-label="Insert">
+      <div class="wd-head-r">
         <div class="rt-menuwrap">
-          <button type="button" class="rt-insert-btn" data-menu="insert" aria-haspopup="menu" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Insert</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
-          <div class="rt-menu" role="menu" data-menu-for="insert" hidden>
-            <div class="rt-menu-label">Pictures</div>
-          <button type="button" class="rt-mi" role="menuitem" data-action="image"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span><span class="rt-mi-txt"><b>Image</b><small>Upload, from your library, or a link</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-action="gallery"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="8.5" height="14" rx="1.5"/><rect x="13" y="5" width="8.5" height="14" rx="1.5"/></svg></span><span class="rt-mi-txt"><b>Image grid</b><small>Two or three pictures side by side</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-action="video"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span><span class="rt-mi-txt"><b>Video</b><small>Upload or paste a link</small></span></button>
-            <div class="rt-menu-label">Magazine blocks</div>
-          <button type="button" class="rt-mi" role="menuitem" data-action="blockquote"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h4v4H6zM14 7h4v4h-4z"/><path d="M6 11c0 3-1 5-3 6"/><path d="M14 11c0 3-1 5-3 6"/></svg></span><span class="rt-mi-txt"><b>Pull quote</b><small>A line worth reading twice</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-action="callout"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v13H8l-4 4z"/><path d="M8 9h8M8 13h5"/></svg></span><span class="rt-mi-txt"><b>Callout box</b><small>Key takeaway, explainer or side note</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-action="stats"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><span class="rt-mi-txt"><b>By the numbers</b><small>Big figures with a short label</small></span></button>
-            <div class="rt-menu-label">Structure</div>
-          <button type="button" class="rt-mi" role="menuitem" data-action="new-section"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M4 12h16M4 18h12"/><path d="M19 3v6M16 6h6"/></svg></span><span class="rt-mi-txt"><b>New section</b><small>A heading and a fresh paragraph</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-action="divider"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg></span><span class="rt-mi-txt"><b>Divider</b><small>A quiet break between parts</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-action="paste-gdoc"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="12" height="16" rx="2"/><path d="M4 6v14a2 2 0 0 0 2 2h10"/></svg></span><span class="rt-mi-txt"><b>Paste from Google Doc</b><small>Keeps headings, bold, italics, links and images</small></span></button>
+          <button type="button" class="wd-hbtn" data-menu="guides" aria-haspopup="menu" aria-expanded="false" data-tip="Guides and shortcuts">${wdIco("book")}<span>Guides</span>${wdIco("chevron", 14)}</button>
+          <div class="rt-menu rt-menu-right" role="menu" data-menu-for="guides" hidden>
+            ${wdItem('id="editorial-standards-btn"', "book", "Editorial standards", "How Catalyst reports, sources and credits")}
+            ${wdItem('id="format-guide-btn"', "format", "How to format an article", "A worked example, block by block")}
+            ${wdItem('id="wd-shortcuts-btn"', "keyboard", "Keyboard shortcuts", "Every key that works in here", "mod+/")}
+            <div class="rt-menu-sep"></div>
+            <button type="button" class="rt-mi" role="menuitemcheckbox" aria-checked="true" id="wd-smart-toggle"><span class="rt-mi-ico">${wdIco("quotes")}</span><span class="rt-mi-txt"><b>Smart punctuation</b><small>Curly quotes, -- to —, ... to …</small></span><span class="wd-switch" aria-hidden="true"></span></button>
+          </div>
+        </div>
+        <button type="button" class="wd-hbtn" id="wd-outline-btn" aria-pressed="false" aria-controls="wd-outline" data-tip="Outline of your headings">${wdIco("outline")}<span>Outline</span></button>
+        <button type="button" class="wd-hbtn" id="toggle-settings" data-tip="Category, topics and cover">${wdIco("sliders")}<span>Settings</span></button>
+        <button type="button" class="wd-hbtn" id="preview-btn" data-tip="See it as readers will">${wdIco("eye")}<span>Preview</span></button>
+        <span class="wd-head-rule" aria-hidden="true"></span>
+        <button type="button" class="wd-save" id="save-draft-btn" data-tip="Save draft · ${wdKeys("mod+s")}">${wdIco("save", 17)}<span>Save draft</span></button>
+        <button type="button" class="wd-submit" id="submit-btn">${wdIco("send", 16)}<span class="wd-l-long">Submit for review</span><span class="wd-l-short">Submit</span></button>
+      </div>
+    </header>
+
+    <!-- Formatting toolbar. Every control is on show, in groups: history,
+         text style, character formatting, paragraphs, and things to insert.
+         Each one names itself (and its shortcut) on hover. -->
+    <div class="rt-toolbar" id="rt-toolbar" role="toolbar" aria-label="Formatting">
+      <div class="rt-group" aria-label="History">
+        ${wdBtn('data-cmd="undo"', "undo", "Undo", "mod+z")}
+        ${wdBtn('data-cmd="redo"', "redo", "Redo", "mod+shift+z")}
+      </div>
+      <div class="rt-group" aria-label="Text style">
+        <select class="rt-select" data-block aria-label="Text style" data-tip="Text style">
+          <option value="p">Body text</option>
+          <option value="lede">Lead paragraph</option>
+          <option value="h2">Heading</option>
+          <option value="h3">Subheading</option>
+          <option value="h4">Section label</option>
+          <option value="note">Small print</option>
+        </select>
+      </div>
+      <div class="rt-group" aria-label="Character formatting">
+        ${wdBtn('data-cmd="bold"', "bold", "Bold", "mod+b")}
+        ${wdBtn('data-cmd="italic"', "italic", "Italic", "mod+i")}
+        ${wdBtn('data-cmd="underline"', "underline", "Underline", "mod+u")}
+        ${wdBtn('data-cmd="strikeThrough"', "strike", "Strikethrough", "mod+shift+x")}
+        ${wdBtn('data-cmd="superscript"', "sup", "Superscript (x²)", "mod+.")}
+        ${wdBtn('data-cmd="subscript"', "sub", "Subscript (H₂O)", "mod+,")}
+        <label class="rt-btn rt-btn-color" data-tip="Text colour" aria-label="Text colour">
+          <span class="rt-color-glyph">${wdIco("color")}<span class="rt-color-bar" id="rt-color-bar-fg" style="background:#0f172a"></span></span>
+          <input type="color" data-color="foreground" value="#0f172a" tabindex="-1" aria-hidden="true">
+        </label>
+        <label class="rt-btn rt-btn-color" data-tip="Highlight" aria-label="Highlight colour">
+          <span class="rt-color-glyph">${wdIco("highlight")}<span class="rt-color-bar" id="rt-color-bar-bg" style="background:#fde68a"></span></span>
+          <input type="color" data-color="background" value="#fde68a" tabindex="-1" aria-hidden="true">
+        </label>
+        ${wdBtn('data-action="clear"', "clear", "Clear formatting", "mod+\\")}
+      </div>
+      <div class="rt-group" aria-label="Paragraph">
+        ${wdBtn('data-cmd="insertUnorderedList"', "ul", "Bulleted list", "mod+shift+8")}
+        ${wdBtn('data-cmd="insertOrderedList"', "ol", "Numbered list", "mod+shift+7")}
+        ${wdBtn('data-action="outdent"', "outdent", "Decrease indent", "shift+Tab")}
+        ${wdBtn('data-action="indent"', "indent", "Increase indent", "Tab")}
+        <div class="rt-menuwrap">
+          <button type="button" class="rt-btn rt-btn-drop" data-menu="align" data-tip="Alignment" aria-label="Alignment" aria-haspopup="menu" aria-expanded="false"><span id="rt-align-ico">${wdIco("alignLeft")}</span>${wdIco("chevron", 12)}</button>
+          <div class="rt-menu rt-menu-row" role="menu" data-menu-for="align" hidden>
+            ${wdBtn('role="menuitem" data-cmd="justifyLeft"', "alignLeft", "Align left", "mod+shift+l")}
+            ${wdBtn('role="menuitem" data-cmd="justifyCenter"', "alignCenter", "Centre", "mod+shift+e")}
+            ${wdBtn('role="menuitem" data-cmd="justifyRight"', "alignRight", "Align right", "mod+shift+r")}
+            ${wdBtn('role="menuitem" data-cmd="justifyFull"', "alignJustify", "Justify", "mod+shift+j")}
+          </div>
+        </div>
+      </div>
+      <div class="rt-group" aria-label="Insert">
+        ${wdBtn('data-action="link"', "link", "Link", "mod+k")}
+        ${wdBtn('data-action="image" data-dup', "image", "Image")}
+        ${wdBtn('data-action="gallery" data-dup', "gallery", "Image grid")}
+        ${wdBtn('data-action="blockquote" data-dup', "quote", "Pull quote")}
+        ${wdBtn('data-action="callout" data-dup', "callout", "Callout box")}
+        ${wdBtn('data-action="stats" data-dup', "stats", "By the numbers")}
+        ${wdBtn('data-action="divider" data-dup', "divider", "Divider")}
+        <div class="rt-menuwrap">
+          ${wdBtn('data-menu="symbols" aria-haspopup="menu" aria-expanded="false"', "omega", "Symbols (°, µ, ±, α…)")}
+          <div class="rt-menu rt-menu-symbols" role="menu" data-menu-for="symbols" hidden>
+            <div class="rt-menu-label">Symbols</div>
+            <div class="rt-sym-grid">${WD_SYMBOLS.map(([c, n]) => `<button type="button" role="menuitem" data-insert="${c}" title="${n}" aria-label="${n}">${c}</button>`).join("")}</div>
           </div>
         </div>
       </div>
       <span class="rt-spacer"></span>
       <div class="rt-group rt-group-end" aria-label="More">
+        ${wdBtn('data-action="find"', "search", "Find and replace", "mod+f")}
         <div class="rt-menuwrap">
-          <button type="button" class="rt-btn" data-menu="more" data-tip="More formatting" aria-label="More formatting" aria-haspopup="menu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/></svg></button>
-          <div class="rt-menu rt-menu-right" role="menu" data-menu-for="more" hidden>
-          <button type="button" class="rt-mi" role="menuitem" data-cmd="superscript"><span class="rt-mi-ico"><span class="rt-glyph" style="font-size:12px;">X<sup style="font-size:8px;">2</sup></span></span><span class="rt-mi-txt"><b>Superscript</b><small>For units and footnote marks</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-cmd="subscript"><span class="rt-mi-ico"><span class="rt-glyph" style="font-size:12px;">X<sub style="font-size:8px;">2</sub></span></span><span class="rt-mi-txt"><b>Subscript</b><small>For chemical formulas like H₂O</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-cmd="indent"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="13 6 19 12 13 18"/><line x1="4" y1="6" x2="11" y2="6"/><line x1="4" y1="12" x2="11" y2="12"/><line x1="4" y1="18" x2="11" y2="18"/></svg></span><span class="rt-mi-txt"><b>Indent</b><small>Move a list item in</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-cmd="outdent"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="11 6 5 12 11 18"/><line x1="20" y1="6" x2="13" y2="6"/><line x1="20" y1="12" x2="13" y2="12"/><line x1="20" y1="18" x2="13" y2="18"/></svg></span><span class="rt-mi-txt"><b>Outdent</b><small>Move a list item out</small></span></button>
-          <button type="button" class="rt-mi" role="menuitem" data-cmd="removeFormat"><span class="rt-mi-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V4h16v3"/><line x1="5" y1="20" x2="19" y2="20"/><path d="M13 4L8 20"/></svg></span><span class="rt-mi-txt"><b>Clear formatting</b><small>Back to plain text</small></span></button>
+          <button type="button" class="rt-insert-btn" data-menu="insert" aria-haspopup="menu" aria-expanded="false">${wdIco("plus", 16)}<span>Insert</span>${wdIco("chevron", 13)}</button>
+          <div class="rt-menu rt-menu-right rt-menu-insert" role="menu" data-menu-for="insert" hidden>
+            <div class="rt-menu-col">
+              <div class="rt-menu-label">Pictures</div>
+              ${wdItem('data-action="image"', "image", "Image", "Upload, from the library, or a link")}
+              ${wdItem('data-action="gallery"', "gallery", "Image grid", "Two or three pictures side by side")}
+              ${wdItem('data-action="video"', "video", "Video", "Upload or paste a link")}
+              <div class="rt-menu-label">Structure</div>
+              ${wdItem('data-action="new-section"', "section", "New section", "A heading and a fresh paragraph")}
+              ${wdItem('data-action="divider"', "divider", "Divider", "A quiet break between parts")}
+            </div>
+            <div class="rt-menu-col">
+              <div class="rt-menu-label">Magazine blocks</div>
+              ${wdItem('data-action="blockquote"', "quote", "Pull quote", "A line worth reading twice")}
+              ${wdItem('data-action="callout"', "callout", "Callout box", "Key takeaway, explainer or side note")}
+              ${wdItem('data-action="stats"', "stats", "By the numbers", "Big figures with a short label")}
+              <div class="rt-menu-label">Bring text in</div>
+              ${wdItem('data-action="paste-gdoc"', "paste", "Paste from Google Docs", "Keeps headings, bold, links and images")}
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- The canvas: looks exactly like a published Catalyst article -->
-    <article class="compose-article" data-has-cover="false">
-      <!-- Hero (cover image + overlay) -->
-      <header class="compose-hero">
-        <div class="compose-hero-image" id="hero-image"></div>
-        <div class="compose-hero-overlay"></div>
-        <div class="compose-hero-inner">
-          <div class="compose-hero-surface">
-            <div class="compose-hero-category" id="hero-category">FEATURE</div>
-            <h1 class="compose-hero-title" id="f-title"
-                contenteditable="true"
-                data-placeholder="Your headline…"
-                spellcheck="true"></h1>
-            <p class="compose-hero-deck" id="f-dek"
-               contenteditable="true"
-               data-placeholder="One-sentence deck that teases the story…"
-               spellcheck="true"></p>
-            <div class="compose-hero-meta">
-              <span class="compose-hero-byline">By ${esc(ctx.profile.name || ctx.user.email)}</span>
-              <span class="dot"></span>
-              <span id="hero-reading-time">1 min read</span>
+    <!-- Find and replace (opens under the toolbar) -->
+    <div class="wd-find" id="wd-find" role="search" aria-label="Find and replace" hidden>
+      <div class="wd-find-row">
+        <span class="wd-find-ico">${wdIco("search", 16)}</span>
+        <input type="text" id="wd-find-q" placeholder="Find in article" aria-label="Find" autocomplete="off" spellcheck="false">
+        <span class="wd-find-count" id="wd-find-count" aria-live="polite"></span>
+        <button type="button" class="wd-find-nav" id="wd-find-prev" aria-label="Previous match" data-tip="Previous · ${wdKeys("shift+Enter")}">${wdIco("up", 16)}</button>
+        <button type="button" class="wd-find-nav" id="wd-find-next" aria-label="Next match" data-tip="Next · Enter">${wdIco("chevron", 16)}</button>
+        <button type="button" class="wd-find-nav" id="wd-find-close" aria-label="Close find" data-tip="Close · Esc">${wdIco("close", 16)}</button>
+      </div>
+      <div class="wd-find-row">
+        <span class="wd-find-ico" aria-hidden="true"></span>
+        <input type="text" id="wd-find-r" placeholder="Replace with" aria-label="Replace with" autocomplete="off" spellcheck="false">
+        <label class="wd-find-case"><input type="checkbox" id="wd-find-case"> Match case</label>
+      </div>
+      <div class="wd-find-acts">
+        <button type="button" class="btn btn-ghost btn-sm" id="wd-find-one">Replace</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="wd-find-all">Replace all</button>
+      </div>
+    </div>
+
+    <div class="wd-stage">
+      <!-- Outline: the article's headings; click one to jump there -->
+      <nav class="wd-outline" id="wd-outline" aria-label="Article outline" hidden>
+        <div class="wd-outline-head"><span>Outline</span><button type="button" class="wd-outline-x" id="wd-outline-x" aria-label="Hide the outline">${wdIco("close", 14)}</button></div>
+        <ol class="wd-outline-list" id="wd-outline-list"></ol>
+        <p class="wd-outline-empty" id="wd-outline-empty">Headings you add show up here, so you can see the shape of the piece and jump around it.</p>
+      </nav>
+
+      <!-- The page -->
+      <article class="compose-article" data-has-cover="false">
+        <!-- Title block: category, headline, deck, byline, and the cover beside them -->
+        <header class="wd-titleblock">
+          <div class="wd-title-main">
+            <div class="rt-menuwrap wd-kicker-wrap">
+              <button type="button" class="wd-kicker" data-menu="category" aria-haspopup="menu" aria-expanded="false" data-tip="Change the category"><span id="hero-category">FEATURE</span>${wdIco("chevron", 12)}</button>
+              <div class="rt-menu" role="menu" data-menu-for="category" hidden>
+                <div class="rt-menu-label">Category</div>
+                ${WD_CATEGORIES.map((c) => `<button type="button" class="rt-mi rt-mi-plain" role="menuitemradio" aria-checked="false" data-cat="${c}"><span class="rt-mi-txt"><b>${c}</b></span><span class="rt-mi-tick">${wdIco("check", 16)}</span></button>`).join("")}
+              </div>
+            </div>
+            <h1 class="wd-headline" id="f-title" contenteditable="true" data-placeholder="Headline" spellcheck="true"></h1>
+            <p class="wd-deck" id="f-dek" contenteditable="true" data-placeholder="Deck: one sentence that tells readers why this matters" spellcheck="true"></p>
+            <div class="wd-byline">By <b>${byline}</b><span class="dot" aria-hidden="true"></span><span id="hero-reading-time">1 min read</span></div>
+          </div>
+          <div class="wd-cover" id="wd-cover">
+            <div class="wd-cover-img" id="hero-image"></div>
+            <div class="wd-cover-empty">
+              <span class="wd-cover-ico">${wdIco("imagePlus", 22)}</span>
+              <b>Cover image</b>
+              <small>The first picture readers see</small>
+              <div class="wd-cover-acts">
+                <button type="button" data-cover="upload">${wdIco("upload", 15)}Upload</button>
+                <button type="button" data-cover="library">${wdIco("library", 15)}Library</button>
+              </div>
+            </div>
+            <div class="wd-cover-tools">
+              <button type="button" data-cover="upload" aria-label="Upload a new cover" data-tip="Upload new">${wdIco("upload", 15)}</button>
+              <button type="button" data-cover="library" aria-label="Choose a cover from the library" data-tip="From library">${wdIco("library", 15)}</button>
+              <button type="button" data-cover="remove" aria-label="Remove the cover" data-tip="Remove">${wdIco("trash", 15)}</button>
+            </div>
+            <div class="wd-cover-busy" id="wd-cover-busy" hidden><span class="spinner"></span><span id="wd-cover-busy-text">Uploading…</span></div>
+          </div>
+        </header>
+
+        <!-- Body — the same typography and layouts as the public article page.
+             The ghost next to it shows a suggested structure and fades out as
+             soon as the writer starts typing. It's a sibling, not a child, so
+             it can never end up saved to Firestore. -->
+        <div class="compose-body-wrap">
+          <div class="compose-body-ghost" id="f-body-ghost" aria-hidden="true">
+            <div class="compose-body-ghost-inner">
+              <p class="ghost-tag">Suggested structure · click here to start</p>
+              <p class="ghost-lead"><strong>Opening paragraph.</strong> Lead with a specific scene, detail, or question that earns the reader's attention — not a summary. This is the hook.</p>
+              <p>Add one or two setup paragraphs that establish context, stakes, or your angle. Who, what, and <em>why this matters right now.</em></p>
+              <h2 class="rt-section-heading">First section heading</h2>
+              <p>Use section headings to break the piece into 2–4 clear movements. Each section should move the story forward and flow logically from the last.</p>
+              <figure class="rt-pullquote"><blockquote>A memorable line from your piece, pulled out for emphasis.</blockquote><figcaption>— Attribution</figcaption></figure>
+              <h2 class="rt-section-heading">Closing</h2>
+              <p>End with a callback to your opening, a forward-looking implication, or the sharpest quote you saved for last.</p>
+              <p class="ghost-tip">Shortcuts: type <b>#</b> and a space for a heading, <b>-</b> for a list, <b>1.</b> for a numbered list. Tab indents. ${wdKeys("mod+/")} shows every shortcut.</p>
             </div>
           </div>
+          <div class="compose-body article-body"
+               id="f-body"
+               contenteditable="true"
+               spellcheck="true"></div>
         </div>
-      </header>
+      </article>
+    </div>
 
-      <!-- Body — rendered with the same typography as the public article page.
-           The ghost-template next to it shows a suggested structure (hero ¶,
-           sections, pull-quote, closing) and fades out as soon as the writer
-           starts typing. It's a sibling, not a child, so it can never end up
-           saved to Firestore. -->
-      <div class="compose-body-wrap">
-        <div class="compose-body-ghost" id="f-body-ghost" aria-hidden="true">
-          <div class="compose-body-ghost-inner">
-            <p class="ghost-tag">Suggested structure · tap anywhere to start</p>
-            <p class="ghost-lead"><strong>Opening paragraph.</strong> Lead with a specific scene, detail, or question that earns the reader's attention — not a summary. This is the hook.</p>
-            <p>Add one or two setup paragraphs that establish context, stakes, or your angle. Who, what, and <em>why this matters right now.</em></p>
-            <h2 class="rt-section-heading">First section heading</h2>
-            <p>Use section headings to break the piece into 2–4 clear movements. Each section should move the story forward and flow logically from the last.</p>
-            <p>Support claims with a quote, a statistic, or a source. Pull-quotes highlight a powerful line:</p>
-            <figure class="rt-pullquote"><blockquote>A memorable quote or line from your piece pulled out for emphasis.</blockquote><figcaption>— Attribution (optional)</figcaption></figure>
-            <h2 class="rt-section-heading">Second section heading</h2>
-            <p>Deepen the argument here. Introduce a counterpoint, a new source, or zoom into a specific example. Insert images using the toolbar — captions and credits help.</p>
-            <h2 class="rt-section-heading">Closing</h2>
-            <p>End with a callback to your opening, a forward-looking implication, or the sharpest quote you saved for last. Land it.</p>
-            <p class="ghost-tip">Tip: use the toolbar for headings, quotes, lists, images, and dividers — or paste from a Google Doc to bring an outline straight in.</p>
-          </div>
-        </div>
-        <div class="compose-body article-body"
-             id="f-body"
-             contenteditable="true"
-             spellcheck="true"></div>
-      </div>
-    </article>
+    <!-- Status bar -->
+    <footer class="wd-statusbar" aria-label="Article statistics">
+      <span id="compose-words" aria-live="polite">0 words</span>
+      <span class="wd-sb-dim" id="wd-sb-chars">0 characters</span>
+      <span class="wd-sb-dim" id="wd-sb-read">1 min read</span>
+      <span class="wd-sb-dim" id="wd-sb-parts">No sections yet</span>
+      <span class="wd-sb-dim" id="wd-sb-pics">No pictures</span>
+      <span class="wd-sb-fill"></span>
+      <button type="button" class="wd-sb-btn" id="wd-sb-keys">${wdIco("keyboard", 14)}<span>Shortcuts ${wdKeys("mod+/")}</span></button>
+    </footer>
 
     <!-- Settings drawer (category, cover, hidden fields) -->
     <aside class="compose-settings" id="compose-settings" aria-hidden="true">
@@ -398,6 +537,8 @@ function mountDraftEditor(ctx, container) {
 
   wrap.querySelector("#editorial-standards-btn").addEventListener("click", openEditorialStandards);
   wrap.querySelector("#format-guide-btn").addEventListener("click", openFormatGuide);
+  wrap.querySelector("#wd-shortcuts-btn").addEventListener("click", openShortcutsDialog);
+  wrap.querySelector("#wd-sb-keys").addEventListener("click", openShortcutsDialog);
   wrap.querySelector("#preview-btn").addEventListener("click", () => openArticlePreview(wrap, ctx));
   wrap.querySelector("#save-draft-btn").addEventListener("click", () => saveStory(ctx, wrap, "draft", editingId));
   wrap.querySelector("#submit-btn").addEventListener("click", () => saveStory(ctx, wrap, "pending", editingId));
@@ -410,48 +551,100 @@ function mountDraftEditor(ctx, container) {
     wireDriveReviewGateOnFirstEdit(wrap);
   }
 
-  // Focus mode: the composer fills the screen (sidebar and top bar tucked
-  // away), like the Studio. On by default; one click brings the menu back.
-  const FOCUS_KEY = `catalyst.writer.focus.${ctx.user?.uid || "anon"}`;
-  const focusBtn = wrap.querySelector("#focus-toggle");
-  const setFocus = (on) => {
-    document.body.classList.toggle("wr-focus", on);
-    focusBtn.setAttribute("aria-pressed", String(on));
-    focusBtn.title = on ? "Show the sidebar (stay on this page)" : "Hide the sidebar and fill the screen";
-    wrap.querySelector("#focus-toggle-label").textContent = on ? "Show the sidebar" : "Hide the sidebar";
-    try { localStorage.setItem(FOCUS_KEY, on ? "1" : "0"); } catch {}
+  // Full screen: the Suite's top bar steps aside and its sidebar becomes a
+  // drawer behind the hamburger at the top left (same nav, same width, so
+  // nothing in it wraps or clips).
+  document.body.classList.add("wr-focus");
+  const sidebar = document.getElementById("sidebar");
+  const navScrim = document.getElementById("sidebar-scrim");
+  const menuBtn = wrap.querySelector("#wd-menu");
+  const setNav = (open) => {
+    sidebar?.classList.toggle("open", open);
+    navScrim?.classList.toggle("open", open);
+    document.body.classList.toggle("wr-nav-open", open);
+    menuBtn.setAttribute("aria-expanded", String(open));
+    menuBtn.setAttribute("aria-label", open ? "Close the Suite menu" : "Open the Suite menu");
+    if (open) sidebar?.querySelector(".nav-link")?.focus({ preventScroll: true });
   };
-  let focusPref = "1";
-  try { focusPref = localStorage.getItem(FOCUS_KEY) ?? "1"; } catch {}
-  setFocus(focusPref !== "0");
-  focusBtn.addEventListener("click", () => setFocus(!document.body.classList.contains("wr-focus")));
+  menuBtn.addEventListener("click", () => setNav(!sidebar?.classList.contains("open")));
+  const onScrim = () => setNav(false);
+  const onNavClick = (e) => { if (e.target.closest(".nav-link")) setNav(false); };
+  navScrim?.addEventListener("click", onScrim);
+  sidebar?.addEventListener("click", onNavClick);
 
-  // Live word count in the command bar.
+  // The header shows the headline as the draft's name.
+  const titleEl = wrap.querySelector("#f-title");
+  const docTitle = wrap.querySelector("#wd-doc-title");
+  const syncDocTitle = () => {
+    const t = titleEl.textContent.trim();
+    docTitle.textContent = t || "Untitled draft";
+    docTitle.classList.toggle("is-empty", !t);
+  };
+  titleEl.addEventListener("input", syncDocTitle);
+
+  // Status bar: words, characters, reading time, sections and pictures.
   const bodyEl = wrap.querySelector("#f-body"), wordsEl = wrap.querySelector("#compose-words");
+  const plural = (n, one) => `${n.toLocaleString()} ${n === 1 ? one : one + "s"}`;
+  const setStat = (id, text) => { wrap.querySelector(id).textContent = text; };
   const countWords = () => {
-    const n = (bodyEl.textContent || "").trim().split(/\s+/).filter(Boolean).length;
-    wordsEl.textContent = `${n.toLocaleString()} word${n === 1 ? "" : "s"} · ${Math.max(1, Math.round(n / 220))} min read`;
+    const text = (bodyEl.textContent || "").replace(/​/g, "").trim();
+    const n = text ? text.split(/\s+/).length : 0;
+    wordsEl.textContent = plural(n, "word");
+    setStat("#wd-sb-chars", plural(text.length, "character"));
+    setStat("#wd-sb-read", `${Math.max(1, Math.round(n / 220))} min read`);
+    const secs = bodyEl.querySelectorAll("h2").length;
+    setStat("#wd-sb-parts", secs ? plural(secs, "section") : "No sections yet");
+    const pics = bodyEl.querySelectorAll("figure.rt-figure:not(.rt-figure-video) img, figure.rt-gallery img").length;
+    setStat("#wd-sb-pics", pics ? plural(pics, "picture") : "No pictures");
   };
   bodyEl.addEventListener("input", countWords);
-  setTimeout(countWords, 1200);   // after a draft loads
+  countWords();
+  setTimeout(() => { countWords(); syncDocTitle(); }, 1200);   // after a draft loads
+
+  wireOutline(wrap, bodyEl, ctx);
 
   // Unsaved work: compare against what was last saved (or loaded).
   const snapshot = () => [
     wrap.querySelector("#f-title")?.textContent || "", wrap.querySelector("#f-dek")?.textContent || "",
     wrap.querySelector("#f-body")?.innerHTML || "", wrap.querySelector("#f-cover")?.value || "",
     wrap.querySelector("#f-category")?.value || "", [...wrap.querySelectorAll(".f-topic-chip.is-on")].map((c) => c.dataset.topic).join(","),
-  ].join("\u241e");
+  ].join("␞");
   let saved = snapshot();
-  setTimeout(() => { saved = snapshot(); }, editingId ? 2500 : 300);   // after a draft loads
-  wrap.addEventListener("story-saved", () => { saved = snapshot(); });
+  let savedAt = null;
+  const statusEl = wrap.querySelector("#editor-status");
   const isDirty = () => snapshot() !== saved && (bodyEl.textContent.trim() || wrap.querySelector("#f-title")?.textContent.trim());
+  const paintStatus = () => {
+    const dirty = !!isDirty();
+    statusEl.classList.toggle("is-dirty", dirty);
+    statusEl.classList.toggle("saved", !dirty && (!!savedAt || !!editingId));
+    if (dirty) statusEl.textContent = "Unsaved changes";
+    else if (savedAt) statusEl.textContent = `Saved at ${savedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
+    else statusEl.textContent = editingId ? "All changes saved" : "Not saved yet";
+  };
+  let statusTimer = 0;
+  const queueStatus = () => { clearTimeout(statusTimer); statusTimer = setTimeout(paintStatus, 350); };
+  wrap.addEventListener("input", queueStatus);
+  wrap.addEventListener("change", queueStatus);
+  wrap.addEventListener("click", (e) => { if (e.target.closest(".f-topic-chip, [data-cat], [data-cover]")) queueStatus(); });
+  setTimeout(() => { saved = snapshot(); paintStatus(); }, editingId ? 2500 : 300);   // after a draft loads
+  wrap.addEventListener("story-saved", () => { saved = snapshot(); savedAt = new Date(); paintStatus(); });
   const onBeforeUnload = (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ""; } };
   window.addEventListener("beforeunload", onBeforeUnload);
+
+  // Page-wide keys: ⌘S saves, ⌘/ lists the shortcuts, Esc closes the menu drawer.
+  const onKey = (e) => {
+    if (e.key === "Escape" && sidebar?.classList.contains("open")) { setNav(false); menuBtn.focus(); return; }
+    if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+    if (document.querySelector("#modal-root .modal-backdrop, .media-dialog-scrim")) return;   // a pop-up has the keyboard
+    if (e.key.toLowerCase() === "s" && !e.shiftKey) { e.preventDefault(); saveStory(ctx, wrap, "draft", editingId); }
+    else if (e.key === "/") { e.preventDefault(); openShortcutsDialog(); }
+  };
+  document.addEventListener("keydown", onKey);
 
   // Back to the Suite: wherever the writer came from (else the Overview).
   const prev = window.__catalystPrevRoute || "";
   const backTo = prev && !prev.startsWith("#/writer/draft") ? prev : "#/overview";
-  const leave = () => { setFocus(false); location.hash = backTo; };
+  const leave = () => { location.hash = backTo; };
   wrap.querySelector("#back-to-suite").addEventListener("click", () => {
     if (!isDirty()) return leave();
     const body = el("div", {}, [el("p", { style: { margin: "0" } }, "You have changes that aren't saved yet. Save the draft before you go?")]);
@@ -469,7 +662,16 @@ function mountDraftEditor(ctx, container) {
     });
   });
 
-  return () => { document.body.classList.remove("wr-focus"); window.removeEventListener("beforeunload", onBeforeUnload); };
+  return () => {
+    document.body.classList.remove("wr-focus", "wr-nav-open");
+    sidebar?.classList.remove("open");
+    navScrim?.classList.remove("open");
+    navScrim?.removeEventListener("click", onScrim);
+    sidebar?.removeEventListener("click", onNavClick);
+    document.removeEventListener("keydown", onKey);
+    window.removeEventListener("beforeunload", onBeforeUnload);
+    clearFindHighlights();
+  };
 }
 
 // Watches the compose fields for the writer's first edit signal (typing,
@@ -515,68 +717,159 @@ function wireDriveReviewGateOnFirstEdit(wrap) {
 function wireRichToolbar(wrap, editorEl, ctx) {
   setupBlockBar(editorEl);
   const toolbar = wrap.querySelector("#rt-toolbar");
+  try { document.execCommand("defaultParagraphSeparator", false, "p"); } catch {}
+  try { wdSmart = localStorage.getItem("catalyst.writer.smart") !== "0"; } catch {}
 
-  // Block-type dropdown
-  toolbar.querySelector('[data-block]').addEventListener("change", (e) => {
-    editorEl.focus();
-    document.execCommand("formatBlock", false, e.target.value);
-    e.target.value = e.target.value; // keep selection
+  // Remember the writer's place in the article, so a control reached with
+  // the keyboard (focus has left the page) still acts where they were.
+  let lastRange = null;
+  document.addEventListener("selectionchange", () => {
+    const s = window.getSelection();
+    if (s && s.rangeCount && editorEl.contains(s.anchorNode)) lastRange = s.getRangeAt(0).cloneRange();
+  });
+  const refocus = () => {
+    const s = window.getSelection();
+    const inside = s && s.rangeCount && editorEl.contains(s.anchorNode);
+    editorEl.focus({ preventScroll: true });
+    if (!inside && lastRange && editorEl.contains(lastRange.startContainer)) { s.removeAllRanges(); s.addRange(lastRange); }
+  };
+  const after = () => updateToolbarState(toolbar);
+
+  // An empty article starts with a real paragraph, so the first line can
+  // take a heading, list or indent like any other; left untouched, it goes
+  // back to empty and the suggested-structure guide returns.
+  editorEl.addEventListener("focus", () => {
+    if (editorEl.innerHTML.trim()) return;
+    editorEl.innerHTML = "<p><br></p>";
+    const r = document.createRange(); r.setStart(editorEl.firstChild, 0); r.collapse(true);
+    const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+  });
+  editorEl.addEventListener("blur", () => {
+    if (!editorEl.textContent.replace(/​/g, "").trim() && !editorEl.querySelector("img, video, iframe, hr, figure, aside, .rt-stats")) editorEl.innerHTML = "";
   });
 
-  // Inline formatting buttons
+  // Text style
+  const styleSel = toolbar.querySelector("[data-block]");
+  styleSel.addEventListener("change", () => {
+    refocus();
+    wdApplyBlockStyle(editorEl, styleSel.value);
+    after();
+  });
+
+  // Character / paragraph commands
   toolbar.querySelectorAll("[data-cmd]").forEach((btn) => {
     btn.addEventListener("mousedown", (e) => e.preventDefault()); // don't steal focus
     btn.addEventListener("click", () => {
-      editorEl.focus();
+      refocus();
       document.execCommand(btn.dataset.cmd, false, null);
-      updateToolbarState(toolbar);
+      if (/List$/.test(btn.dataset.cmd)) wdFixLists(editorEl);
+      after();
     });
   });
 
-  // Block insertions
+  // Actions (indent, clear, find, and every insert)
+  const runAction = (action) => {
+    if (action === "find") return openFind();
+    refocus();
+    if (action === "indent" || action === "outdent") wdChangeIndent(editorEl, action === "indent" ? 1 : -1);
+    else if (action === "clear") wdClearFormatting(editorEl);
+    else return handleBlockAction(action, editorEl, ctx);
+    after();
+  };
   toolbar.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("mousedown", (e) => e.preventDefault());
-    btn.addEventListener("click", () => handleBlockAction(btn.dataset.action, editorEl, ctx));
+    btn.addEventListener("click", () => runAction(btn.dataset.action));
   });
 
-  // Drop-down menus (Alignment, Insert, More). Items are ordinary toolbar
-  // buttons (data-cmd / data-action), wired above; the menu just shows and
-  // hides them. Keyboard: arrows move, Escape closes, focus returns.
-  const menuBtns = [...toolbar.querySelectorAll("[data-menu]")];
-  const menuOf = (btn) => toolbar.querySelector(`[data-menu-for="${btn.dataset.menu}"]`);
-  const closeMenus = (except) => menuBtns.forEach((b) => { if (b === except) return; const m = menuOf(b); if (m && !m.hidden) { m.hidden = true; b.setAttribute("aria-expanded", "false"); b.classList.remove("is-open"); } });
-  menuBtns.forEach((btn) => {
-    btn.addEventListener("mousedown", (e) => e.preventDefault());   // keep the writer's selection
-    btn.addEventListener("click", () => {
-      const m = menuOf(btn), open = m.hidden;
-      closeMenus(btn);
-      m.hidden = !open; btn.setAttribute("aria-expanded", String(open)); btn.classList.toggle("is-open", open);
-    });
-    btn.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
-        e.preventDefault(); const m = menuOf(btn);
-        if (m.hidden) btn.click();
-        m.querySelector("button")?.focus();
-      }
-    });
+  // Symbols
+  toolbar.querySelectorAll("[data-insert]").forEach((btn) => {
+    btn.addEventListener("mousedown", (e) => e.preventDefault());
+    btn.addEventListener("click", () => { refocus(); document.execCommand("insertText", false, btn.dataset.insert); });
   });
-  toolbar.querySelectorAll(".rt-menu").forEach((m) => {
-    m.addEventListener("click", (e) => { if (e.target.closest("button")) closeMenus(); });
-    m.addEventListener("keydown", (e) => {
-      const items = [...m.querySelectorAll("button")], i = items.indexOf(document.activeElement);
-      const owner = toolbar.querySelector(`[data-menu="${m.dataset.menuFor}"]`);
-      if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
-      else if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
-      else if (e.key === "Escape" || e.key === "Tab") { closeMenus(); if (e.key === "Escape") { e.preventDefault(); owner?.focus(); } }
-    });
-  });
-  document.addEventListener("mousedown", (e) => { if (!e.target.closest?.(".rt-menuwrap")) closeMenus(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenus(); });
 
-  // ⌘K / Ctrl+K: add a link.
+  // Drop-down menus in the toolbar, the header and the title block.
+  wireMenus(toolbar);
+  wireMenus(wrap.querySelector(".wd-head"));
+  wireMenus(wrap.querySelector(".wd-titleblock"));
+
+  // Smart punctuation switch (Guides menu)
+  const smartBtn = wrap.querySelector("#wd-smart-toggle");
+  const paintSmart = () => smartBtn.setAttribute("aria-checked", String(wdSmart));
+  paintSmart();
+  smartBtn.addEventListener("click", () => {
+    wdSmart = !wdSmart; paintSmart();
+    try { localStorage.setItem("catalyst.writer.smart", wdSmart ? "1" : "0"); } catch {}
+    toast(wdSmart ? "Smart punctuation is on." : "Smart punctuation is off.");
+  });
+
+  // Category menu on the title block
+  const catSel = wrap.querySelector("#f-category");
+  const paintCats = () => wrap.querySelectorAll("[data-cat]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.cat === catSel.value)));
+  wrap.querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => {
+    catSel.value = b.dataset.cat;
+    catSel.dispatchEvent(new Event("change", { bubbles: true }));
+  }));
+  catSel.addEventListener("change", paintCats);
+  paintCats();
+
+  // Cover tile
+  wrap.querySelectorAll("[data-cover]").forEach((b) => b.addEventListener("click", () => {
+    const what = b.dataset.cover;
+    if (what === "upload") wrap.querySelector("#f-cover-file").click();
+    else if (what === "library") wrap.querySelector("#f-cover-library-btn").click();
+    else if (what === "remove") {
+      const inp = wrap.querySelector("#f-cover");
+      inp.value = "";
+      inp.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+  }));
+
+  // Find and replace
+  const openFind = wireFind(wrap, editorEl);
+
+  // Keys that behave like a word processor: Tab indents, the usual
+  // shortcuts format, and a few typed patterns turn into blocks.
   editorEl.addEventListener("keydown", (e) => {
-    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "k") { e.preventDefault(); handleBlockAction("link", editorEl, ctx); }
+    if (e.isComposing) return;
+    const mod = e.metaKey || e.ctrlKey;
+    if (e.key === "Tab" && !mod && !e.altKey) {
+      e.preventDefault();
+      wdChangeIndent(editorEl, e.shiftKey ? -1 : 1);
+      return after();
+    }
+    if (!mod && !e.altKey) {
+      if (e.key === " " && wdAutoFormat(editorEl, e)) return after();
+      if (e.key === "Enter" && !e.shiftKey && wdAutoDivider(editorEl, e)) return after();
+      if (wdSmart) wdSmartPunct(e);
+      return;
+    }
+    if (!mod) return;
+    const k = e.key.toLowerCase();
+    const run = (cmd) => { e.preventDefault(); document.execCommand(cmd, false, null); if (/List$/.test(cmd)) wdFixLists(editorEl); after(); };
+    if (e.altKey) {
+      const m = /^Digit([0-5])$/.exec(e.code);
+      if (m) { e.preventDefault(); wdApplyBlockStyle(editorEl, ["p", "h2", "h3", "h4", "lede", "note"][+m[1]]); after(); }
+      return;
+    }
+    if (e.shiftKey) {
+      if (e.code === "Digit7") return run("insertOrderedList");
+      if (e.code === "Digit8") return run("insertUnorderedList");
+      if (k === "x") return run("strikeThrough");
+      const align = { l: "justifyLeft", e: "justifyCenter", r: "justifyRight", j: "justifyFull" }[k];
+      if (align) return run(align);
+      return;
+    }
+    if (k === "k") { e.preventDefault(); handleBlockAction("link", editorEl, ctx); return; }
+    if (k === "f") { e.preventDefault(); openFind(); return; }
+    if (e.key === ".") return run("superscript");
+    if (e.key === ",") return run("subscript");
+    if (e.key === "\\") { e.preventDefault(); wdClearFormatting(editorEl); return after(); }
+    if (e.key === "]" || e.key === "[") { e.preventDefault(); wdChangeIndent(editorEl, e.key === "]" ? 1 : -1); return after(); }
   });
+  // Curly quotes and dashes in the headline and deck too.
+  ["#f-title", "#f-dek"].forEach((sel) => wrap.querySelector(sel)?.addEventListener("keydown", (e) => {
+    if (!e.isComposing && !e.metaKey && !e.ctrlKey && !e.altKey && wdSmart) wdSmartPunct(e);
+  }));
 
   // Color pickers — native <input type="color"> sit hidden inside the
   // .rt-btn-color labels. Clicking the label opens the OS picker; on
@@ -695,10 +988,404 @@ function updateToolbarState(toolbar) {
   toolbar.querySelectorAll("[data-cmd]").forEach((btn) => {
     const cmd = btn.dataset.cmd;
     if (["bold", "italic", "underline", "strikeThrough", "insertUnorderedList", "insertOrderedList",
-         "subscript", "superscript", "justifyLeft", "justifyCenter", "justifyRight"].includes(cmd)) {
+         "subscript", "superscript", "justifyLeft", "justifyCenter", "justifyRight", "justifyFull"].includes(cmd)) {
       btn.classList.toggle("active", check(cmd));
     }
   });
+  // The style box and the alignment button show where the caret is.
+  const editorEl = document.getElementById("f-body");
+  const sel = window.getSelection();
+  if (!editorEl || !sel || !sel.rangeCount || !editorEl.contains(sel.anchorNode)) return;
+  const styleSel = toolbar.querySelector("[data-block]");
+  if (styleSel && document.activeElement !== styleSel) styleSel.value = wdCurrentStyle(editorEl);
+  const alignIco = toolbar.querySelector("#rt-align-ico");
+  if (alignIco) {
+    const a = check("justifyCenter") ? "alignCenter" : check("justifyRight") ? "alignRight" : check("justifyFull") ? "alignJustify" : "alignLeft";
+    if (alignIco.dataset.a !== a) { alignIco.dataset.a = a; alignIco.innerHTML = wdIco(a); }
+  }
+}
+
+// ===== Composer: menus, paragraph styles, indents, typing helpers ===========
+let wdSmart = true;   // smart punctuation (Guides menu; remembered per browser)
+
+// Drop-down menus inside `root`: a [data-menu="x"] button opens the
+// [data-menu-for="x"] panel. Arrows move, Escape closes and returns focus,
+// choosing an item or clicking elsewhere closes. Menus that would run off
+// the screen open the other way.
+function wireMenus(root) {
+  if (!root) return () => {};
+  const btns = [...root.querySelectorAll("[data-menu]")];
+  const menuOf = (b) => root.querySelector(`[data-menu-for="${b.dataset.menu}"]`);
+  const close = (except) => btns.forEach((b) => {
+    if (b === except) return;
+    const m = menuOf(b);
+    if (m && !m.hidden) { m.hidden = true; b.setAttribute("aria-expanded", "false"); b.classList.remove("is-open"); }
+  });
+  const place = (m, btn) => {
+    m.style.left = ""; m.style.right = ""; m.style.top = "";
+    if (getComputedStyle(m).position === "fixed") {   // phones: the toolbar scrolls, so the menu can't hang off it
+      const b = btn.getBoundingClientRect();
+      m.style.top = `${b.bottom + 6}px`;
+      m.style.left = `${Math.max(8, Math.min(b.left, window.innerWidth - m.offsetWidth - 8))}px`;
+      m.style.right = "auto";
+      return;
+    }
+    const r = m.getBoundingClientRect();
+    if (r.right > window.innerWidth - 8) { m.style.left = "auto"; m.style.right = "0"; }
+    else if (r.left < 8) { m.style.left = "0"; m.style.right = "auto"; }
+  };
+  btns.forEach((btn) => {
+    btn.addEventListener("mousedown", (e) => e.preventDefault());   // keep the writer's selection
+    btn.addEventListener("click", () => {
+      const m = menuOf(btn), open = m.hidden;
+      close(btn);
+      m.hidden = !open; btn.setAttribute("aria-expanded", String(open)); btn.classList.toggle("is-open", open);
+      if (open) place(m, btn);
+    });
+    btn.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault(); const m = menuOf(btn);
+        if (m.hidden) btn.click();
+        m.querySelector("button")?.focus();
+      }
+    });
+  });
+  root.querySelectorAll(".rt-menu").forEach((m) => {
+    m.addEventListener("mousedown", (e) => { if (e.target.closest("button")) e.preventDefault(); });
+    m.addEventListener("click", (e) => { if (e.target.closest("button") && !e.target.closest('[role="menuitemcheckbox"]')) close(); });
+    m.addEventListener("keydown", (e) => {
+      const items = [...m.querySelectorAll("button")], i = items.indexOf(document.activeElement);
+      const owner = root.querySelector(`[data-menu="${m.dataset.menuFor}"]`);
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
+      else if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+      else if (e.key === "Escape" || e.key === "Tab") { close(); if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); owner?.focus(); } }
+    });
+  });
+  document.addEventListener("mousedown", (e) => { if (!root.contains(e.target) || !e.target.closest?.(".rt-menuwrap")) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  return close;
+}
+
+// The block (paragraph, heading, list item…) that holds `node`.
+function wdBlockOf(editorEl, node) {
+  let n = node && (node.nodeType === 1 ? node : node.parentNode);
+  while (n && n !== editorEl) {
+    if (/^(P|DIV|H1|H2|H3|H4|LI|BLOCKQUOTE|FIGCAPTION)$/.test(n.tagName)) return n;
+    n = n.parentNode;
+  }
+  return null;
+}
+// Every block the selection touches (or the caret's block).
+function wdSelectedBlocks(editorEl, selector = "p, h2, h3, h4, li") {
+  const s = window.getSelection();
+  if (!s || !s.rangeCount) return [];
+  const r = s.getRangeAt(0);
+  if (!editorEl.contains(r.startContainer)) return [];
+  const first = wdBlockOf(editorEl, r.startContainer);
+  const pick = (b) => b && b.matches(selector) && !b.closest('[contenteditable="false"]');
+  if (r.collapsed) return pick(first) ? [first] : [];
+  const all = [...editorEl.querySelectorAll(selector)].filter((b) => r.intersectsNode(b) && pick(b));
+  return all.length ? all : (pick(first) ? [first] : []);
+}
+function wdCurrentStyle(editorEl) {
+  const s = window.getSelection();
+  const b = s && s.rangeCount ? wdBlockOf(editorEl, s.anchorNode) : null;
+  if (!b) return "p";
+  if (/^H[1-4]$/.test(b.tagName)) return b.tagName === "H1" ? "h2" : b.tagName.toLowerCase();
+  if (b.classList.contains("rt-lede")) return "lede";
+  if (b.classList.contains("rt-note")) return "note";
+  return "p";
+}
+const wdTidyClass = (b) => { if (!b.getAttribute("class")) b.removeAttribute("class"); };
+
+// Text styles: body text, lead paragraph, heading, subheading, section
+// label, small print. Lead and small print are paragraphs with a class
+// (rt-lede / rt-note), styled the same in css/article-layouts.css.
+function wdApplyBlockStyle(editorEl, v) {
+  const tag = { lede: "p", note: "p", h2: "h2", h3: "h3", h4: "h4" }[v] || "p";
+  document.execCommand("formatBlock", false, tag);
+  wdSelectedBlocks(editorEl, "p, h2, h3, h4").forEach((b) => {
+    b.classList.remove("rt-lede", "rt-note");
+    if (v === "lede" || v === "note") b.classList.add(`rt-${v}`);
+    wdTidyClass(b);
+  });
+  editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+// Tab / Shift+Tab. In a list it nests or un-nests the item; anywhere else
+// it steps the paragraph in or out (three steps, rt-indent-1..3), because
+// the browser's own indent wraps paragraphs in a blockquote — which this
+// magazine prints as a pull quote.
+function wdChangeIndent(editorEl, dir) {
+  const blocks = wdSelectedBlocks(editorEl);
+  if (!blocks.length) return;
+  if (blocks.some((b) => b.closest("li"))) { document.execCommand(dir > 0 ? "indent" : "outdent", false, null); return; }
+  blocks.forEach((b) => {
+    const lvl = +((/\brt-indent-(\d)\b/.exec(b.className) || [])[1] || 0);
+    const next = Math.max(0, Math.min(3, lvl + dir));
+    b.classList.remove("rt-indent-1", "rt-indent-2", "rt-indent-3");
+    if (next) b.classList.add(`rt-indent-${next}`);
+    wdTidyClass(b);
+  });
+  editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+// Clear formatting: plain text, and the paragraph's indent, alignment,
+// lead / small-print style back to normal. Headings stay headings.
+function wdClearFormatting(editorEl) {
+  document.execCommand("removeFormat", false, null);
+  wdSelectedBlocks(editorEl, "p, h2, h3, h4, li").forEach((b) => {
+    b.classList.remove("rt-indent-1", "rt-indent-2", "rt-indent-3", "rt-lede", "rt-note");
+    b.style.removeProperty("text-align");
+    if (!b.getAttribute("style")) b.removeAttribute("style");
+    wdTidyClass(b);
+  });
+  editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+// Typed shortcuts at the start of a paragraph, then a space:
+//   #  heading   ##  subheading   ###  section label   -  or  *  bullets   1.  numbers
+function wdAutoFormat(editorEl, e) {
+  const s = window.getSelection();
+  if (!s || !s.rangeCount || !s.isCollapsed) return false;
+  const r = s.getRangeAt(0);
+  const block = wdBlockOf(editorEl, r.startContainer);
+  if (!block || block.tagName !== "P" || block.closest("li, figure, aside, .rt-stats, blockquote")) return false;
+  const pre = document.createRange();
+  pre.selectNodeContents(block);
+  pre.setEnd(r.startContainer, r.startOffset);
+  const token = pre.toString().replace(/​/g, "");
+  const rule = { "#": ["h2"], "##": ["h3"], "###": ["h4"], "-": [null, "insertUnorderedList"], "*": [null, "insertUnorderedList"], "1.": [null, "insertOrderedList"], "1)": [null, "insertOrderedList"] }[token];
+  if (!rule) return false;
+  e.preventDefault();
+  s.removeAllRanges(); s.addRange(pre);
+  document.execCommand("delete", false, null);
+  if (rule[0]) document.execCommand("formatBlock", false, rule[0]);
+  else { document.execCommand(rule[1], false, null); wdFixLists(editorEl); }
+  editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}
+// Chrome sometimes builds a new list inside the paragraph it came from
+// (<p><ul>…</ul></p>). Lift such lists out, keeping the caret where it was.
+function wdFixLists(editorEl) {
+  editorEl.querySelectorAll(":scope p > ul, :scope p > ol").forEach((list) => {
+    const p = list.parentElement;
+    const rest = [...p.childNodes].filter((n) => n !== list && !(n.nodeType === 3 && !n.data.trim()) && n.nodeName !== "BR");
+    if (rest.length) p.after(list);
+    else p.replaceWith(list);
+  });
+}
+// "---" (or ***) on its own line, then Enter: a divider.
+function wdAutoDivider(editorEl, e) {
+  const s = window.getSelection();
+  if (!s || !s.rangeCount || !s.isCollapsed) return false;
+  const block = wdBlockOf(editorEl, s.anchorNode);
+  if (!block || block.tagName !== "P" || block.parentNode !== editorEl) return false;
+  if (!["---", "—-", "***", "___"].includes(block.textContent.replace(/​/g, "").trim())) return false;
+  e.preventDefault();
+  const hr = document.createElement("hr");
+  hr.className = "rt-divider";
+  const next = document.createElement("p");
+  next.innerHTML = "<br>";
+  block.replaceWith(hr);
+  hr.after(next);
+  const r = document.createRange(); r.setStart(next, 0); r.collapse(true);
+  s.removeAllRanges(); s.addRange(r);
+  editorEl.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}
+// Curly quotes and apostrophes, -- to an em dash, ... to an ellipsis.
+function wdSmartPunct(e) {
+  if (e.key.length !== 1 || !`"'-.`.includes(e.key)) return false;
+  const s = window.getSelection();
+  if (!s || !s.rangeCount || !s.isCollapsed) return false;
+  const r = s.getRangeAt(0), n = r.startContainer;
+  const before = n.nodeType === 3 ? n.data.slice(0, r.startOffset) : "";
+  const prev = before.slice(-1);
+  const opening = !prev || /[\s([{—–\-“‘ ​]/.test(prev);
+  let out = null, back = 0;
+  if (e.key === '"') out = opening ? "“" : "”";
+  else if (e.key === "'") out = opening ? "‘" : "’";
+  else if (e.key === "-" && prev === "-") { out = "—"; back = 1; }
+  else if (e.key === "." && before.endsWith("..")) { out = "…"; back = 2; }
+  if (!out) return false;
+  e.preventDefault();
+  if (back) {
+    const rr = document.createRange();
+    rr.setStart(n, r.startOffset - back); rr.setEnd(n, r.startOffset);
+    s.removeAllRanges(); s.addRange(rr);
+  }
+  document.execCommand("insertText", false, out);
+  return true;
+}
+
+// ===== Find and replace =====================================================
+// Matches are painted with the CSS Custom Highlight API (no change to the
+// article's HTML); replacing goes through insertText so ⌘Z undoes it.
+// Text inside pictures (captions are edited in the picture window) is skipped.
+function clearFindHighlights() {
+  try { CSS.highlights?.delete("wd-find"); CSS.highlights?.delete("wd-find-cur"); } catch {}
+}
+function wireFind(wrap, editorEl) {
+  const panel = wrap.querySelector("#wd-find");
+  const q = panel.querySelector("#wd-find-q"), rep = panel.querySelector("#wd-find-r");
+  const mc = panel.querySelector("#wd-find-case"), count = panel.querySelector("#wd-find-count");
+  const canPaint = typeof CSS !== "undefined" && CSS.highlights && typeof Highlight !== "undefined";
+  let matches = [], idx = -1;
+  const paint = () => {
+    count.textContent = q.value ? (matches.length ? `${idx + 1} of ${matches.length}` : "No matches") : "";
+    count.classList.toggle("is-none", !!q.value && !matches.length);
+    if (!canPaint) return;
+    clearFindHighlights();
+    if (matches.length) {
+      CSS.highlights.set("wd-find", new Highlight(...matches));
+      if (idx >= 0) CSS.highlights.set("wd-find-cur", new Highlight(matches[idx]));
+    }
+  };
+  const search = (keepIdx) => {
+    matches = [];
+    const term = q.value;
+    if (term) {
+      const needle = mc.checked ? term : term.toLowerCase();
+      const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT, {
+        acceptNode: (t) => t.parentElement?.closest('[contenteditable="false"]') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+      });
+      for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+        const hay = mc.checked ? t.data : t.data.toLowerCase();
+        for (let i = hay.indexOf(needle); i !== -1; i = hay.indexOf(needle, i + needle.length)) {
+          const r = document.createRange(); r.setStart(t, i); r.setEnd(t, i + term.length); matches.push(r);
+        }
+      }
+    }
+    idx = matches.length ? Math.min(keepIdx ?? 0, matches.length - 1) : -1;
+    paint();
+  };
+  const show = () => {
+    const r = matches[idx];
+    if (!r) return;
+    const box = r.getBoundingClientRect();
+    const tb = wrap.querySelector("#rt-toolbar").getBoundingClientRect();
+    if (box.top < tb.bottom + 80 || box.bottom > window.innerHeight - 80) {
+      window.scrollBy({ top: box.top - window.innerHeight / 2, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }
+  };
+  const go = (d) => { if (!matches.length) return; idx = (idx + d + matches.length) % matches.length; paint(); show(); };
+  const replaceAt = (r) => {
+    const s = window.getSelection();
+    editorEl.focus({ preventScroll: true });
+    s.removeAllRanges(); s.addRange(r);
+    document.execCommand("insertText", false, rep.value);
+  };
+  const place = () => {
+    const tb = wrap.querySelector("#rt-toolbar").getBoundingClientRect();
+    panel.style.top = `${Math.max(8, tb.bottom + 8)}px`;
+  };
+  const open = () => {
+    const s = window.getSelection();
+    const picked = s && s.rangeCount && editorEl.contains(s.anchorNode) ? s.toString().trim() : "";
+    if (picked && picked.length < 80 && !picked.includes("\n")) q.value = picked;
+    panel.hidden = false;
+    place();
+    q.focus(); q.select();
+    search();
+  };
+  const close = () => { panel.hidden = true; matches = []; idx = -1; clearFindHighlights(); editorEl.focus({ preventScroll: true }); };
+  q.addEventListener("input", () => search());
+  mc.addEventListener("change", () => search());
+  q.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); go(e.shiftKey ? -1 : 1); } });
+  rep.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); panel.querySelector("#wd-find-one").click(); } });
+  panel.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } });
+  panel.querySelector("#wd-find-next").addEventListener("click", () => go(1));
+  panel.querySelector("#wd-find-prev").addEventListener("click", () => go(-1));
+  panel.querySelector("#wd-find-close").addEventListener("click", close);
+  panel.querySelector("#wd-find-one").addEventListener("click", () => {
+    if (idx < 0) return;
+    const at = idx;
+    replaceAt(matches[idx]);
+    search(at); show();
+    q.focus();
+  });
+  panel.querySelector("#wd-find-all").addEventListener("click", () => {
+    if (!matches.length) return;
+    const n = matches.length;
+    for (let i = matches.length - 1; i >= 0; i--) replaceAt(matches[i]);
+    search();
+    toast(`Replaced ${n} match${n === 1 ? "" : "es"}.`, "success");
+    q.focus();
+  });
+  editorEl.addEventListener("input", () => { if (!panel.hidden && document.activeElement === editorEl) search(idx); });
+  window.addEventListener("resize", () => { if (!panel.hidden) place(); });
+  return open;
+}
+
+// ===== Outline ==============================================================
+// The article's headings in the left margin; click one to jump to it.
+function wireOutline(wrap, bodyEl, ctx) {
+  const nav = wrap.querySelector("#wd-outline");
+  const list = wrap.querySelector("#wd-outline-list");
+  const empty = wrap.querySelector("#wd-outline-empty");
+  const btn = wrap.querySelector("#wd-outline-btn");
+  const KEY = `catalyst.writer.outline.${ctx.user?.uid || "anon"}`;
+  let pref = null;
+  try { pref = localStorage.getItem(KEY); } catch {}
+  const set = (on, remember) => {
+    nav.hidden = !on;
+    wrap.classList.toggle("has-outline", on);
+    btn.setAttribute("aria-pressed", String(on));
+    if (remember) { try { localStorage.setItem(KEY, on ? "1" : "0"); } catch {} }
+  };
+  set(pref ? pref === "1" : window.innerWidth >= 1400, false);
+  btn.addEventListener("click", () => set(nav.hidden, true));
+  wrap.querySelector("#wd-outline-x").addEventListener("click", () => { set(false, true); btn.focus(); });
+  let heads = [];
+  const build = () => {
+    heads = [...bodyEl.querySelectorAll("h2, h3")].filter((h) => h.textContent.trim());
+    list.innerHTML = `<li class="lv-0"><button type="button" data-i="-1">Headline and opening</button></li>` +
+      heads.map((h, i) => `<li class="lv-${h.tagName[1]}"><button type="button" data-i="${i}">${esc(h.textContent.trim())}</button></li>`).join("");
+    empty.hidden = heads.length > 0;
+  };
+  let t = 0;
+  bodyEl.addEventListener("input", () => { clearTimeout(t); t = setTimeout(build, 300); });
+  build();
+  setTimeout(build, 1300);   // after a draft loads
+  list.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-i]");
+    if (!b) return;
+    const i = +b.dataset.i;
+    const target = i < 0 ? wrap.querySelector(".wd-titleblock") : heads[i];
+    if (!target) return;
+    const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const top = target.getBoundingClientRect().top + window.scrollY - (i < 0 ? 140 : 170);
+    window.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
+    if (i >= 0) {
+      bodyEl.focus({ preventScroll: true });
+      const r = document.createRange(); r.selectNodeContents(target); r.collapse(false);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    }
+    list.querySelectorAll("button").forEach((x) => x.classList.toggle("is-current", x === b));
+  });
+}
+
+// ===== Keyboard shortcuts ===================================================
+function openShortcutsDialog() {
+  const groups = [
+    ["Writing", [["Save draft", "mod+s"], ["Undo", "mod+z"], ["Redo", "mod+shift+z"], ["Find and replace", "mod+f"], ["Add a link", "mod+k"], ["Line break in a paragraph", "shift+Enter"], ["This list", "mod+/"]]],
+    ["Characters", [["Bold", "mod+b"], ["Italic", "mod+i"], ["Underline", "mod+u"], ["Strikethrough", "mod+shift+x"], ["Superscript (x²)", "mod+."], ["Subscript (H₂O)", "mod+,"], ["Clear formatting", "mod+\\"]]],
+    ["Paragraphs", [["Body text", "mod+alt+0"], ["Heading", "mod+alt+1"], ["Subheading", "mod+alt+2"], ["Section label", "mod+alt+3"], ["Lead paragraph", "mod+alt+4"], ["Small print", "mod+alt+5"], ["Bulleted list", "mod+shift+8"], ["Numbered list", "mod+shift+7"], ["Indent", "Tab"], ["Decrease indent", "shift+Tab"], ["Align left · centre · right · justify", "mod+shift+l / e / r / j"]]],
+    ["Type at the start of a line", [["Heading", "# then space"], ["Subheading", "## then space"], ["Section label", "### then space"], ["Bulleted list", "- then space"], ["Numbered list", "1. then space"], ["Divider", "--- then Enter"]]],
+    ["Smart punctuation", [["Curly quotes", "\" and '"], ["Em dash —", "--"], ["Ellipsis …", "..."]]],
+  ];
+  const keyHtml = (k) => {
+    if (/ then |^"/.test(k) || k === "--" || k === "...") return `<kbd>${esc(k)}</kbd>`;
+    return k.split(" / ").map((part, i) => (i ? `<span class="wd-keys-or">/</span>` : "") + `<kbd>${esc(wdKeys(part))}</kbd>`).join("");
+  };
+  const body = el("div", { class: "wd-keys" });
+  body.innerHTML = groups.map(([name, rows]) => `
+    <section class="wd-keys-group">
+      <h3>${esc(name)}</h3>
+      <dl>${rows.map(([what, k]) => `<div><dt>${esc(what)}</dt><dd>${keyHtml(k)}</dd></div>`).join("")}</dl>
+    </section>`).join("");
+  openModal({ title: "Keyboard shortcuts", body, stack: true, size: "wide" });
 }
 
 // ─── "New section?" hint ────────────────────────────────────────────────────
@@ -1728,7 +2415,7 @@ export function openArticlePreviewFromData(data, ctx) {
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${origin}/css/styles.css">
 <link rel="stylesheet" href="${origin}/css/article-premium.css?v=20261009-lead">
-<link rel="stylesheet" href="${origin}/css/article-layouts.css?v=3">
+<link rel="stylesheet" href="${origin}/css/article-layouts.css?v=4">
 <style>
   body { background: var(--canvas, #fafafa); }
   .preview-banner {
@@ -3586,6 +4273,9 @@ function wireCoverUpload(wrap, ctx) {
   const progress  = wrap.querySelector("#f-cover-progress");
   const fill      = wrap.querySelector("#f-cover-progress-fill");
   const text      = wrap.querySelector("#f-cover-progress-text");
+  // The cover tile on the page shows the same progress.
+  const busy      = wrap.querySelector("#wd-cover-busy");
+  const busyText  = wrap.querySelector("#wd-cover-busy-text");
 
   btn.addEventListener("click", () => fileInput.click());
   if (libraryBtn) {
@@ -3608,9 +4298,11 @@ function wireCoverUpload(wrap, ctx) {
     btn.disabled = true;
 
     try {
+      if (busy) { busy.hidden = false; busyText.textContent = "Preparing…"; }
       const url = await uploadToFirebase(file, "image", ctx, (pct) => {
         fill.style.width = pct + "%";
         text.textContent = `Uploading… ${pct}%`;
+        if (busyText) busyText.textContent = `Uploading… ${pct}%`;
       });
       urlInput.value = url;
       urlInput.dispatchEvent(new Event("input", { bubbles: true }));
@@ -3621,6 +4313,7 @@ function wireCoverUpload(wrap, ctx) {
       progress.hidden = true;
     } finally {
       btn.disabled = false;
+      if (busy) busy.hidden = true;
       fileInput.value = "";
     }
   });

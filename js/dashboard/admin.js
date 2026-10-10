@@ -13,7 +13,7 @@ import { deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, updateProfile, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { el, esc, fmtRelative, fmtDate, statusPill, confirmDialog, openModal, slugify, clearPublicStoryCache } from "./ui.js";
-import { loadImageLibrary, renderLibraryGrid, uploadToFirebase, openImageLibraryPicker, openArticlePreviewFromData } from "./writer.js?v=tb-1";
+import { loadImageLibrary, renderLibraryGrid, uploadToFirebase, openImageLibraryPicker, openArticlePreviewFromData } from "./writer.js?v=wd-1";
 import { markStoryPublishedOnProject } from "./publish-sync.js";
 
 export async function mount(ctx, container) {

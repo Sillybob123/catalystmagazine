@@ -194,3 +194,23 @@ body[data-page="article"] .article-body-wrap { overflow-x: clip; }
 :is(.article-body, .compose-body) .fig-caption-credit a { color: inherit; text-decoration: underline; text-decoration-color: rgba(15, 23, 42, 0.3); text-underline-offset: 2px; }
 :is(.article-body, .compose-body) .fig-caption-credit a:hover { text-decoration-color: currentColor; }
 :is(.article-body, .compose-body) figure.rt-cap-overlay .fig-caption-credit a { text-decoration-color: rgba(248, 247, 243, 0.5); }
+
+/* ── Paragraph styles (composer "Text style" box, Tab to indent) ──────── */
+/* Lead paragraph: a larger opening paragraph that sets up the piece. */
+:is(.article-body, .compose-body) p.rt-lede { font-size: 1.16em; line-height: 1.62; color: var(--ink, #1d1d1f); letter-spacing: -0.006em; }
+/* Small print: notes, corrections, disclosures, methods. */
+:is(.article-body, .compose-body) p.rt-note { font-size: 0.8em; line-height: 1.6; color: var(--ink-muted, #5b6474); }
+/* Indents: three steps. */
+:is(.article-body, .compose-body) :is(p, h2, h3, h4).rt-indent-1 { padding-left: 2em; }
+:is(.article-body, .compose-body) :is(p, h2, h3, h4).rt-indent-2 { padding-left: 4em; }
+:is(.article-body, .compose-body) :is(p, h2, h3, h4).rt-indent-3 { padding-left: 6em; }
+@media (max-width: 560px) {
+  :is(.article-body, .compose-body) :is(p, h2, h3, h4).rt-indent-2 { padding-left: 3em; }
+  :is(.article-body, .compose-body) :is(p, h2, h3, h4).rt-indent-3 { padding-left: 4em; }
+}
+/* Nested lists from Tab inside a list */
+:is(.article-body, .compose-body) :is(ul, ol) :is(ul, ol) { margin-top: 8px; margin-bottom: 8px; }
+:is(.article-body, .compose-body) ul ul { list-style-type: circle; }
+:is(.article-body, .compose-body) ol ol { list-style-type: lower-alpha; }
+/* A short first paragraph: what follows starts below its drop cap, not beside it. */
+:is(.article-body, .compose-body) > p:first-of-type + :is(h2, h3, h4, ul, ol, blockquote) { clear: left; }
