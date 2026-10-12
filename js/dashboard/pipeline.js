@@ -1964,7 +1964,7 @@ function truncate(s, n) {
 const WORKS_STAGES = [
   { key: "ready",     label: "Ready to publish", hint: "Fully edited. An admin publishes it." },
   { key: "edits",     label: "Making edits",     hint: "The writer is working through the editor's notes." },
-  { key: "review",    label: "With an editor",   hint: "An editor is reviewing the draft." },
+  { key: "review",    label: "Editing",          hint: "Finished drafts: getting an editor, or with one now." },
   { key: "writing",   label: "Writing",          hint: "Drafts being written." },
   { key: "interview", label: "Interviewing",     hint: "Scheduling and doing interviews." },
   { key: "pitch",     label: "Pitches",          hint: "Waiting for an admin to approve." },
@@ -1976,6 +1976,8 @@ function worksStageOf(p) {
     const live = p.publishedAt || p.publishedStoryId || (_publishedTitlesLoaded && isProjectPublished(p, _publishedTitles));
     return live ? "published" : "ready";
   }
+  // A finished draft waiting for an editor belongs with editing, not writing.
+  if ((p.timeline || {})["Article Writing Complete"]) return "review";
   const { column } = getProjectState(p, "all", _uid);
   return {
     [COL.TOPIC_PROPOSAL]: "pitch",
