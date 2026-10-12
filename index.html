@@ -211,9 +211,9 @@
          the left, reveal the Catalyst logo and "The latest stories" on
          the right, then that block shrinks up to the top-left and becomes
          the heading for the stories rising in below (the next section
-         overlaps the last 50vh of this pinned scene). */
+         overlaps the last 72vh of this pinned scene). */
       @media (min-width: 761px) and (min-aspect-ratio: 9/10) {
-        .scene-mall { --len: 250vh; margin-bottom: -50vh; }
+        .scene-mall { --len: 270vh; margin-bottom: -72vh; }
         /* every piece is placed by drawBrand(): stacked on the right while
            the logo draws, then reflowed into one centred header line */
         .hero-brand { display: block; position: absolute; z-index: 3; inset: 0; pointer-events: none; }
@@ -367,7 +367,8 @@
       /* ---------- Latest ---------- */
       .lead-link { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(24px, 4vw, 64px); align-items: center; }
       .lead-link .fig { aspect-ratio: 16 / 10; }
-      .lead-body h3 { margin: 0 0 18px; font: 600 clamp(28px, 3.2vw, 46px)/1.08 var(--sans); letter-spacing: -0.025em; text-wrap: balance; }
+      .lead-body h3 { margin: 0 0 18px; font: 600 clamp(26px, 2.5vw, 38px)/1.12 var(--sans); letter-spacing: -0.022em; text-wrap: balance; }
+      .lead-body h3.is-long { font-size: clamp(24px, 2.05vw, 32px); }
       .lead-body .deck { margin: 0 0 22px; font: 400 clamp(17px, 1.3vw, 19px)/1.6 var(--serif); color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
       .byline { margin: 0 0 26px; font: 500 14px/1.4 var(--sans); color: var(--ink); }
       .read-more { display: inline-flex; align-items: center; gap: 10px; font: 500 15px/1 var(--sans); padding-bottom: 6px; border-bottom: 1px solid var(--ink); min-height: 44px; }
@@ -1166,6 +1167,7 @@
         this.after = opts.after || null;
         this.entry = !!opts.entry;             // start drawing as the scene scrolls into view
         this.auto = opts.auto || 0;            // ms: once in view, ink by time instead of by scroll
+        this.timeOf = opts.timeOf || null;     // scroll progress -> timeline progress
         this.t0 = 0;
         this.p = 0; this.sp = 0; this.key = ''; this.ready = false; this.started = false;
         this.gl = this.canvas.getContext('webgl2', { alpha: false, antialias: false, premultipliedAlpha: false });
@@ -1368,8 +1370,29 @@
       // p-ranges of the push into the Capitol (the autoplay slows through them)
       var ZOOM_DESK = [0.24, 0.5], ZOOM_PHONE = [0.6, 1];
 
+      // Desktop: the stories overlap the last 72vh of the pinned scene, so
+      // they start rising at scroll progress 1 - 72vh/span. The choreography
+      // (ink, zoom, logo, the shrink to the heading row) is timed for that
+      // hand-off at 0.673, as in the original 220vh span. The scene is now
+      // shorter, so everything before the hand-off plays faster, and the
+      // stories still arrive right under the heading.
+      var HANDOFF = 0.673;
+      function handoffAt() {
+        var span = mall.el.offsetHeight - window.innerHeight;
+        return span > 0 ? clamp(1 - 0.72 * window.innerHeight / span, 0.05, 0.95) : HANDOFF;
+      }
+      function deskTime(p) {
+        var h = handoffAt();
+        return p <= h ? p / h * HANDOFF : HANDOFF + (p - h) / (1 - h) * (1 - HANDOFF);
+      }
+      function deskScroll(t) {
+        var h = handoffAt();
+        return t <= HANDOFF ? t / HANDOFF * h : h + (t - HANDOFF) / (1 - HANDOFF) * (1 - h);
+      }
+
       var mall = new Plate({
         id: 'mall', ghost: 0.26,
+        timeOf: function (p) { return portrait() ? p : deskTime(p); },
         inkAt: function (p) { return lerp(0.24, 1.04, map(p, 0, portrait() ? 0.56 : 0.32)); },
         rect: function (vw, vh, t, p) {
           var R;
@@ -1528,8 +1551,9 @@
           if (to <= from + 4) return;
           var span = mall.el.offsetHeight - window.innerHeight, z = portrait() ? ZOOM_PHONE : ZOOM_DESK;
           SLOW = portrait() ? 1.5 : 1.6;
-          slowA = clamp(mall.el.offsetTop + z[0] * span, from, to);
-          slowB = clamp(mall.el.offsetTop + z[1] * span, slowA, to);
+          var z0 = portrait() ? z[0] : deskScroll(z[0]), z1 = portrait() ? z[1] : deskScroll(z[1]);   // timeline -> scroll
+          slowA = clamp(mall.el.offsetTop + z0 * span, from, to);
+          slowB = clamp(mall.el.offsetTop + z1 * span, slowA, to);
           cost = (to - from) + (SLOW - 1) * (slowB - slowA);
           dur = portrait() ? 1900 : 2300;
           if (heroSeen) { dur *= 0.65; SLOW = 1.2; cost = (to - from) + (SLOW - 1) * (slowB - slowA); }   // a replay: quicker
@@ -1615,6 +1639,7 @@
             if (!s.t0 && s.ready && r.top < vh * (portrait() ? 0.7 : 0.6)) s.t0 = time;   // well into view
             s.p = s.t0 ? glide(clamp((time - s.t0) / s.auto, 0, 1)) : 0;
           } else s.p = s.entry ? entryProgress(s.el) : pinProgress(s.el);
+          if (s.timeOf) s.p = s.timeOf(s.p);
           s.sp = snap || Math.abs(s.p - s.sp) < 0.0005 ? s.p : lerp(s.sp, s.p, 0.2);
           s.render();
         }
@@ -1788,7 +1813,7 @@
             figure(lead, [800, 1200, 1600], '(max-width: 960px) 100vw, 58vw', false) +
             '<div class="lead-body" data-reveal>' +
               '<p class="meta"><span class="cat">' + esc(catLabel(lead.cat)) + '</span>' + edMeta(lead) + (lead.date ? ' &middot; ' + esc(lead.date) : '') + '</p>' +
-              '<h3>' + esc(lead.title) + '</h3>' +
+              '<h3' + (lead.title.length > 70 ? ' class="is-long"' : '') + '>' + esc(lead.title) + '</h3>' +
               (lead.deck ? '<p class="deck">' + esc(lead.deck) + '</p>' : '') +
               '<p class="byline">By ' + esc(lead.author) + '</p>' +
               '<span class="read-more">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>' +
