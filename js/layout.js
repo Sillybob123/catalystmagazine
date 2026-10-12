@@ -350,7 +350,8 @@ function setupWelcomePopup() {
     // ?welcome=1 forces the popup for design QA.
     const forceShow = new URLSearchParams(window.location.search).has('welcome');
     if (hasSeen() && !forceShow) return;
-    const openDelay = forceShow ? 350 : 6000;
+    // 20 s: long enough that a new reader has started reading before we ask.
+    const openDelay = forceShow ? 350 : 20000;
 
     const markup = `
         <div class="welcome-popup-overlay" id="welcome-popup-overlay"></div>
