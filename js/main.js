@@ -4281,7 +4281,7 @@ const rosterGroups = [
         id: "staff",
         title: "Staff",
         clusters: [
-            { subtitle: "Editing", members: ["Belinda Li", "Alexis Tamm", "Lori Preci"] },
+            { subtitle: "Editing", members: ["Belinda Li", "Alexis Tamm"] },
             { subtitle: "Social Media", members: ["Skye Schurr", "Cameron Fields"] }
         ]
     },
