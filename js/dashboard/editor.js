@@ -33,64 +33,211 @@ export async function mount(ctx, container) {
 }
 
 // ===== Queue =================================================================
-async function mountQueue(ctx, container) {
-  // Two-column view: assigned to me, and general pending queue.
-  const layout = el("div", { class: "grid grid-2" });
-  const mineCard = el("div", { class: "card" });
-  mineCard.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">Assigned to me</div>
-        <div class="card-subtitle">Articles where you are the assigned editor.</div>
-      </div>
-    </div>
-    <div class="card-body" id="mine-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
+// Three groups, closest to the editor first:
+//  1. Assigned to you: Story Tracker projects where you are the editor and the
+//     review isn't done, matched (by title) to the submitted draft when there
+//     is one. (Assignments live on projects; stories carry no editorId.)
+//  2. Waiting for review: every submitted draft (status "pending"), with who
+//     has already started reviewing it (their checklist doc) so two editors
+//     don't take the same piece.
+//  3. Sent to an admin: reviews confirmed (status "reviewing").
+const normTitle = (t) => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const initialsOf = (n) => String(n || "?").split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+const wordsIn = (html) => String(html || "").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+const typeLabel = (a) => a.category === "book-review" ? "Book review"
+  : a.category ? a.category.charAt(0).toUpperCase() + a.category.slice(1).replace(/-/g, " ") : "Article";
 
-  const pendCard = el("div", { class: "card" });
-  pendCard.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">Pending review</div>
-        <div class="card-subtitle">Drafts submitted by writers and awaiting an editor.</div>
-      </div>
-    </div>
-    <div class="card-body" id="pending-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-
-  layout.appendChild(mineCard);
-  layout.appendChild(pendCard);
-  container.appendChild(layout);
-
-  const storiesRef = collection(db, "stories");
-  try {
-    const mineSnap = await getDocs(query(storiesRef, where("editorId", "==", ctx.user.uid), orderBy("updatedAt", "desc")));
-    renderQueueRows(mineCard.querySelector("#mine-list"), mineSnap);
-  } catch (err) {
-    mineCard.querySelector("#mine-list").innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
+function ensureQueueStyles() {
+  if (document.getElementById("eq-styles")) return;
+  const st = document.createElement("style");
+  st.id = "eq-styles";
+  st.textContent = `
+  .eq { display: grid; gap: 22px; max-width: 1080px; }
+  .eq-head h2 { margin: 0; font: 600 22px/1.2 var(--font); letter-spacing: -0.02em; color: var(--ink); }
+  .eq-head p { margin: 6px 0 0; max-width: 620px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+  .eq-head a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
+  .eq-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+  .eq-stats a { display: grid; gap: 4px; padding: 14px 18px; border-left: 1px solid var(--hairline-2); color: inherit; text-decoration: none; transition: background-color .2s; }
+  .eq-stats a:first-child { border-left: 0; }
+  .eq-stats a:hover { background: var(--surface-3); }
+  .eq-stats a:focus-visible { outline: none; box-shadow: inset var(--focus); }
+  .eq-stats b { font: 600 24px/1 var(--font); color: var(--ink); }
+  .eq-stats a.is-empty b { color: var(--muted-2); }
+  .eq-stats span { font: 500 12.5px/1.3 var(--font); color: var(--muted); }
+  .eq-group { border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); overflow: hidden; scroll-margin-top: 90px; }
+  .eq-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 16px 20px 12px; border-bottom: 1px solid var(--hairline-2); }
+  .eq-group-head h3 { margin: 0; font: 600 15px/1.3 var(--font); color: var(--ink); }
+  .eq-group-head .n { padding: 3px 8px; border-radius: 999px; background: var(--surface-3); font: 600 12px/1 var(--font); color: var(--muted); }
+  .eq-group-head p { flex: 1 1 280px; margin: 0; font-size: 12.5px; color: var(--muted); }
+  .eq-row { display: grid; grid-template-columns: minmax(0, 1fr) 180px auto; align-items: center; gap: 10px 24px; padding: 16px 20px; border-top: 1px solid var(--hairline-2); }
+  .eq-row:first-of-type { border-top: 0; }
+  .eq-title { margin: 0; font: 600 15px/1.35 var(--font); color: var(--ink); overflow-wrap: anywhere; }
+  .eq-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--surface-3); font: 500 11px/1.5 var(--font); color: var(--ink-2); vertical-align: 2px; white-space: nowrap; }
+  .eq-dek { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .eq-facts { margin: 6px 0 0; font: 500 12px/1.4 var(--font); color: var(--muted-2); }
+  .eq-facts .is-late { color: var(--danger); font-weight: 600; }
+  .eq-facts .is-mine { color: var(--good); font-weight: 600; }
+  .eq-person { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12.5px; color: var(--ink-2); }
+  .eq-person i { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--surface); font: 600 10px/1 var(--font); font-style: normal; }
+  .eq-person span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .eq-person small { display: block; color: var(--muted-2); font-size: 11px; }
+  .eq-act { display: flex; justify-content: flex-end; }
+  .eq-act .btn { min-height: 38px; white-space: nowrap; }
+  .eq-empty { padding: 26px 20px; font-size: 13.5px; color: var(--muted); }
+  @media (max-width: 760px) {
+    .eq-stats { grid-template-columns: minmax(0, 1fr); }
+    .eq-stats a { border-left: 0; border-top: 1px solid var(--hairline-2); grid-template-columns: auto 1fr; align-items: baseline; gap: 10px; }
+    .eq-stats a:first-child { border-top: 0; }
+    .eq-row { grid-template-columns: minmax(0, 1fr); padding: 14px 16px; }
+    .eq-act { justify-content: flex-start; }
+    .eq-group-head { padding: 14px 16px 10px; }
   }
-  try {
-    const pendSnap = await getDocs(query(storiesRef, where("status", "==", "pending"), orderBy("updatedAt", "desc")));
-    renderQueueRows(pendCard.querySelector("#pending-list"), pendSnap);
-  } catch (err) {
-    pendCard.querySelector("#pending-list").innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
-  }
+  @media (prefers-reduced-motion: reduce) { .eq-stats a { transition: none; } }`;
+  document.head.appendChild(st);
 }
 
-function renderQueueRows(mount, snap) {
-  if (snap.empty) { mount.innerHTML = `<div class="empty-state">Nothing here.</div>`; return; }
-  mount.innerHTML = "";
-  snap.forEach((d) => {
-    const a = d.data();
-    const row = el("div", { class: "article-row" });
-    row.innerHTML = `
-      <div>
-        <div class="article-title">${esc(a.title || "Untitled")}</div>
-        <div class="article-meta">
-          by ${esc(a.authorName || "Unknown")} · ${fmtRelative(a.updatedAt)} · ${statusPill(a.status)}
-        </div>
-      </div>
-      <div><a class="btn btn-accent btn-xs" href="#/editor/queue?review=${esc(d.id)}">Open review</a></div>`;
-    mount.appendChild(row);
+async function mountQueue(ctx, container) {
+  ensureQueueStyles();
+  const page = el("div", { class: "eq" });
+  page.innerHTML = `
+    <div class="eq-head">
+      <h2>Editing queue</h2>
+      <p>Drafts to review and the stories assigned to you. Before you confirm a review, run the editor checklist in <a href="#/writer/guidelines?section=editors">Editorial standards</a>.</p>
+    </div>
+    <nav class="eq-stats" id="eq-stats" aria-label="Queue summary"></nav>
+    <div id="eq-body" style="display:grid;gap:18px;"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
+  container.appendChild(page);
+
+  const uid = ctx.user.uid;
+  const storiesRef = collection(db, "stories");
+  const safe = (p) => p.catch((err) => { console.warn("[queue]", err); return null; });
+  const [pendSnap, revSnap, mineSnap, projSnap] = await Promise.all([
+    safe(getDocs(query(storiesRef, where("status", "==", "pending")))),
+    safe(getDocs(query(storiesRef, where("status", "==", "reviewing")))),
+    safe(getDocs(query(storiesRef, where("editorId", "==", uid)))),
+    safe(getDocs(query(collection(db, "projects"), where("editorId", "==", uid)))),
+  ]);
+  if (!pendSnap && !revSnap) {
+    page.querySelector("#eq-body").innerHTML = `<div class="error-state">Could not load the queue. Try refreshing.</div>`;
+    return;
+  }
+  const docs = (snap) => (snap ? snap.docs.map((d) => ({ id: d.id, ...d.data() })) : []);
+  const byUpdated = (a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
+  const pending = docs(pendSnap).sort(byUpdated);
+  const reviewing = docs(revSnap).sort(byUpdated);
+
+  // Who has started reviewing each pending draft (their checklist doc).
+  await Promise.all(pending.map(async (s) => {
+    try {
+      const cl = await getDocs(collection(db, "stories", s.id, "checklist"));
+      s.reviewers = cl.docs.map((d) => ({ id: d.id, name: d.data().editorName || "An editor", done: Object.values(d.data().items || {}).filter(Boolean).length }));
+    } catch { s.reviewers = []; }
+  }));
+
+  // Assigned to you: tracker projects still waiting on your review, plus any
+  // story that names you as editor directly.
+  const draftsByTitle = new Map([...pending, ...docs(mineSnap)].map((s) => [normTitle(s.title), s]));
+  const assigned = docs(projSnap)
+    .filter((p) => !(p.timeline || {})["Review Complete"] && !(p.timeline || {})["Suggestions Reviewed"])
+    .map((p) => ({ project: p, draft: draftsByTitle.get(normTitle(p.title)) || null }));
+  for (const s of docs(mineSnap)) {
+    if (s.status === "published" || assigned.some((a) => a.draft?.id === s.id)) continue;
+    assigned.push({ project: null, draft: s });
+  }
+
+  const groups = [
+    { key: "assigned", title: "Assigned to you", hint: "Stories where you are the editor in the Story Tracker.", count: assigned.length,
+      empty: "Nothing assigned to you right now. An admin assigns editors in the Story Tracker once a draft is finished.",
+      rows: assigned.map((a) => assignedRow(a, uid)) },
+    { key: "waiting", title: "Waiting for review", hint: "Drafts writers have submitted. Open one to review it; its checklist shows who else has started.", count: pending.length,
+      empty: "No drafts are waiting for review.",
+      rows: pending.map((s) => pendingRow(s, uid)) },
+    { key: "sent", title: "Sent to an admin", hint: "Reviews confirmed by an editor, waiting for an admin's final read.", count: reviewing.length,
+      empty: "No reviews are waiting on an admin.",
+      rows: reviewing.map((s) => reviewedRow(s)) },
+  ];
+
+  page.querySelector("#eq-stats").innerHTML = groups.map((g) => `
+    <a href="#/editor/queue" data-jump="${g.key}" class="${g.count ? "" : "is-empty"}"><b>${g.count}</b><span>${esc(g.title)}</span></a>`).join("");
+  page.querySelector("#eq-stats").addEventListener("click", (e) => {
+    const a = e.target.closest("[data-jump]"); if (!a) return;
+    e.preventDefault();
+    page.querySelector(`[data-group="${a.dataset.jump}"]`)?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
   });
+  page.querySelector("#eq-body").innerHTML = groups.map((g) => `
+    <section class="eq-group" data-group="${g.key}" aria-labelledby="eq-h-${g.key}">
+      <header class="eq-group-head"><h3 id="eq-h-${g.key}">${esc(g.title)}</h3><span class="n">${g.count}</span><p>${esc(g.hint)}</p></header>
+      ${g.rows.length ? g.rows.join("") : `<div class="eq-empty">${esc(g.empty)}</div>`}
+    </section>`).join("");
+}
+
+function personHtml(name, sub) {
+  return `<div class="eq-person"><i aria-hidden="true">${esc(initialsOf(name))}</i><span>${esc(name || "Unknown")}${sub ? `<small>${esc(sub)}</small>` : ""}</span></div>`;
+}
+
+function dueText(dateStr) {
+  if (!dateStr) return "";
+  const d = Math.ceil((new Date(dateStr + "T00:00:00") - Date.now()) / 86400000);
+  if (isNaN(d)) return "";
+  if (d < 0) return `<span class="is-late">Review ${-d} day${d === -1 ? "" : "s"} late</span>`;
+  if (d === 0) return `<span class="is-late">Review due today</span>`;
+  return `Review due in ${d} day${d === 1 ? "" : "s"}`;
+}
+
+function assignedRow({ project: p, draft: s }, uid) {
+  const title = s?.title || p?.title || "Untitled";
+  const writer = s?.authorName || p?.authorName;
+  const facts = [
+    p ? dueText(p.deadlines?.review) : "",
+    s ? `Draft submitted ${esc(fmtRelative(s.updatedAt))}` : "Draft not submitted yet",
+  ].filter(Boolean).join(" · ");
+  const action = s
+    ? `<a class="btn btn-accent btn-sm" href="#/editor/queue?review=${esc(s.id)}">Open review</a>`
+    : `<a class="btn btn-secondary btn-sm" href="#/pipeline/all">View in Story Tracker</a>`;
+  return `
+    <div class="eq-row">
+      <div>
+        <p class="eq-title">${esc(title)}${s ? `<span class="eq-tag">${esc(typeLabel(s))}</span>` : p?.type ? `<span class="eq-tag">${esc(p.type)}</span>` : ""}</p>
+        ${s?.dek || s?.deck ? `<p class="eq-dek">${esc(s.dek || s.deck)}</p>` : ""}
+        <p class="eq-facts">${facts}</p>
+      </div>
+      ${personHtml(writer, "Writer")}
+      <div class="eq-act">${action}</div>
+    </div>`;
+}
+
+function pendingRow(s, uid) {
+  const words = wordsIn(s.body || s.content || s.reviewText);
+  const mine = (s.reviewers || []).find((r) => r.id === uid);
+  const others = (s.reviewers || []).filter((r) => r.id !== uid);
+  const facts = [
+    `Submitted ${esc(fmtRelative(s.updatedAt))}`,
+    words ? `${words.toLocaleString()} words · ${Math.max(1, Math.round(words / 225))} min read` : "",
+    mine ? `<span class="is-mine">You started this review (${mine.done} of ${CHECKLIST_ITEMS.length} checks)</span>` : "",
+    others.length ? `Started by ${esc(others.map((r) => r.name).join(", "))}` : "",
+  ].filter(Boolean).join(" · ");
+  return `
+    <div class="eq-row">
+      <div>
+        <p class="eq-title">${esc(s.title || "Untitled")}<span class="eq-tag">${esc(typeLabel(s))}</span></p>
+        ${s.dek || s.deck ? `<p class="eq-dek">${esc(s.dek || s.deck)}</p>` : ""}
+        <p class="eq-facts">${facts}</p>
+      </div>
+      ${personHtml(s.authorName || s.author, "Writer")}
+      <div class="eq-act"><a class="btn ${mine ? "btn-accent" : others.length ? "btn-secondary" : "btn-accent"} btn-sm" href="#/editor/queue?review=${esc(s.id)}">${mine ? "Continue review" : "Start review"}</a></div>
+    </div>`;
+}
+
+function reviewedRow(s) {
+  return `
+    <div class="eq-row">
+      <div>
+        <p class="eq-title">${esc(s.title || "Untitled")}<span class="eq-tag">${esc(typeLabel(s))}</span></p>
+        <p class="eq-facts">Reviewed by ${esc(s.reviewedByName || "an editor")} ${esc(fmtRelative(s.reviewedAt || s.updatedAt))}</p>
+      </div>
+      ${personHtml(s.authorName || s.author, "Writer")}
+      <div class="eq-act"><a class="btn btn-secondary btn-sm" href="#/editor/queue?review=${esc(s.id)}">Open</a></div>
+    </div>`;
 }
 
 // ===== Review surface ========================================================
