@@ -32,6 +32,7 @@ import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import {
   computeWriterReminders,
+  isFormerTeamMember,
   computeEditorReminders,
   computeAdminDigest,
   computeAdminTasks,
@@ -530,6 +531,7 @@ export const onRequestPost = async ({ request, env }) => {
         for (const job of taskJobs) {
           for (const a of job.task.assignees || []) {
             if (!a.email) continue;
+            if (isFormerTeamMember(a, users)) continue;   // set back to reader: no more emails
             // Per-(task, kind, recipient) dedupe key. Including the email
             // means re-assigning a task to a new person re-arms the
             // reminder for that person without re-firing for the old one.
@@ -640,6 +642,7 @@ export const onRequestPost = async ({ request, env }) => {
         for (const job of calJobs) {
           for (const person of job.task.participants || []) {
             if (!person.email) continue;
+            if (isFormerTeamMember(person, users)) continue;   // set back to reader: no more emails
             const key = `caltask:${job.task.taskId}:${job.kind}:${person.email}`;
             if (reminderLog[key]) {
               result.calendarTasks.skipped++;
@@ -753,6 +756,7 @@ export const onRequestPost = async ({ request, env }) => {
             const email = (userDoc?.email || owner.email || "").trim();
             const name = userDoc?.name || owner.name || "there";
             if (!email) continue;
+            if (isFormerTeamMember({ id: owner.id, email, name: userDoc?.name || owner.name }, users)) continue;   // set back to reader
             result.socialPosts.planned++;
 
             const key = `socialpost:${a.id}:due-today:${email}`;

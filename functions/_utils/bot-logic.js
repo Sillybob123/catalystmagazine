@@ -148,6 +148,23 @@ function namesLooselyMatch(a, b) {
   return false;
 }
 
+// Former team members: an admin set their account back to 'reader' in
+// Users & roles. Their stories stay, but the bot stops emailing them. One
+// person can have several user rows (old sign-ins), so they only count as
+// former when none of the rows that could be them still holds a staff role;
+// someone the bot can't place at all is not treated as former.
+const STAFF_ROLES = new Set(["admin", "editor", "writer", "newsletter_builder", "marketing", "social_media"]);
+export function isFormerTeamMember(person, users) {
+  if (!person) return false;
+  const email = String(person.email || "").toLowerCase();
+  const names = new Set(userNameVariants(person).map(normalizeName).filter(Boolean));
+  const rows = (users || []).filter((u) =>
+    (person.id && u.id === person.id) ||
+    (email && String(u.email || "").toLowerCase() === email) ||
+    userNameVariants(u).some((v) => names.has(normalizeName(v))));
+  return rows.length > 0 && !rows.some((u) => STAFF_ROLES.has(u.role));
+}
+
 function userPreferenceScore(user) {
   let score = 0;
   if (user?.email) score += 1000;
@@ -367,6 +384,11 @@ export function computeWriterReminders({ projects, users, reminderLog = {}, now 
         writerName: writer.name,
         writerId: writer.id,
       });
+      continue;
+    }
+
+    if (isFormerTeamMember(writer, users)) {
+      record(project.id, title, "writer-former-member", { writerName: writer.name, writerId: writer.id || null });
       continue;
     }
 
@@ -862,6 +884,11 @@ export function computeEditorReminders({ projects, users, reminderLog = {}, now 
         editorName: editor.name,
         editorId: editor.id,
       });
+      continue;
+    }
+
+    if (isFormerTeamMember(editor, users)) {
+      record(project.id, title, "editor-former-member", { editorName: editor.name, editorId: editor.id || null });
       continue;
     }
 
