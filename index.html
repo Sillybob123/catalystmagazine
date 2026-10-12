@@ -211,9 +211,9 @@
          the left, reveal the Catalyst logo and "The latest stories" on
          the right, then that block shrinks up to the top-left and becomes
          the heading for the stories rising in below (the next section
-         overlaps the last 70vh of this pinned scene). */
+         overlaps the last 50vh of this pinned scene). */
       @media (min-width: 761px) and (min-aspect-ratio: 9/10) {
-        .scene-mall { --len: 320vh; margin-bottom: -72vh; }
+        .scene-mall { --len: 250vh; margin-bottom: -50vh; }
         /* every piece is placed by drawBrand(): stacked on the right while
            the logo draws, then reflowed into one centred header line */
         .hero-brand { display: block; position: absolute; z-index: 3; inset: 0; pointer-events: none; }
@@ -254,19 +254,19 @@
       }
       .display em { font-weight: 400; letter-spacing: -0.02em; }
       .display .line { display: block; overflow: hidden; padding-bottom: .06em; }
-      .display .line > span { display: inline-block; transform: translateY(105%); transition: transform 1.1s var(--ease-out); }
+      .display .line > span { display: inline-block; transform: translateY(105%); transition: transform .75s var(--ease-out); }
       .is-loaded .display .line > span { transform: none; }
-      .is-loaded .display .line:nth-child(2) > span { transition-delay: .12s; }
+      .is-loaded .display .line:nth-child(2) > span { transition-delay: .08s; }
       .lede {
         margin: 26px 0 0; max-width: 480px;
         font: 400 clamp(17px, 1.35vw, 20px)/1.55 var(--serif); color: var(--ink-2);
         opacity: 0; transform: translateY(12px);
-        transition: opacity 1s .35s, transform 1s .35s var(--ease-out);
+        transition: opacity .7s .2s, transform .7s .2s var(--ease-out);
       }
       .hb-actions {
         display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px;
         opacity: 0; transform: translateY(12px);
-        transition: opacity 1s .5s, transform 1s .5s var(--ease-out);
+        transition: opacity .7s .3s, transform .7s .3s var(--ease-out);
       }
       .is-loaded .lede, .is-loaded .hb-actions { opacity: 1; transform: none; }
       .scroll-cue {
@@ -278,7 +278,7 @@
       .scroll-cue span { width: 1px; height: 36px; background: linear-gradient(var(--ink-2), transparent); transform-origin: top; animation: cue 2.2s var(--ease-out) infinite; }
       @keyframes cue { 0% { transform: scaleY(0); opacity: 1; } 70% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
       @media (max-width: 760px), (max-aspect-ratio: 9/10) {
-        .scene-mall { --len: 200vh; }
+        .scene-mall { --len: 165vh; }
         /* the drawing sits on top (see mall.rect in the script); its
            content ends ~69vw below the header, the copy starts under it */
         .hero-copy { max-width: none; right: var(--gutter); top: calc(var(--nav-h) + 69vw + 20px); }
@@ -445,8 +445,6 @@
          EDITIONS on the homepage (beta)
          ============================================================ */
       .meta .ed { color: var(--muted); }
-      .ed-tag { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 16px; font: 600 11px/1.3 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--ed-acc, var(--ink-2)); }
-      .ed-tag::before { content: ""; width: 18px; height: 1px; background: currentColor; }
 
       /* the current edition: its season's photograph, the cover laid over it */
       .ce { --acc: #334155; --tint: #f1efe8; position: relative; z-index: 2; padding-bottom: clamp(80px, 11vw, 150px); background: linear-gradient(180deg, var(--tint) 0, var(--tint) 60%, var(--paper) 100%); }
@@ -1529,12 +1527,12 @@
           to = heroEnd();
           if (to <= from + 4) return;
           var span = mall.el.offsetHeight - window.innerHeight, z = portrait() ? ZOOM_PHONE : ZOOM_DESK;
-          SLOW = portrait() ? 2.4 : 2.8;
+          SLOW = portrait() ? 1.5 : 1.6;
           slowA = clamp(mall.el.offsetTop + z[0] * span, from, to);
           slowB = clamp(mall.el.offsetTop + z[1] * span, slowA, to);
           cost = (to - from) + (SLOW - 1) * (slowB - slowA);
-          dur = portrait() ? 3200 : 4000;
-          if (heroSeen) { dur *= 0.55; SLOW = 1.6; cost = (to - from) + (SLOW - 1) * (slowB - slowA); }   // a replay: quicker
+          dur = portrait() ? 1900 : 2300;
+          if (heroSeen) { dur *= 0.65; SLOW = 1.2; cost = (to - from) + (SLOW - 1) * (slowB - slowA); }   // a replay: quicker
           playing = true; start = performance.now();
           root.style.scrollBehavior = 'auto';           // the site sets smooth scrolling; drive it directly
           raf = requestAnimationFrame(step);
@@ -1617,7 +1615,7 @@
             if (!s.t0 && s.ready && r.top < vh * (portrait() ? 0.7 : 0.6)) s.t0 = time;   // well into view
             s.p = s.t0 ? glide(clamp((time - s.t0) / s.auto, 0, 1)) : 0;
           } else s.p = s.entry ? entryProgress(s.el) : pinProgress(s.el);
-          s.sp = snap || Math.abs(s.p - s.sp) < 0.0005 ? s.p : lerp(s.sp, s.p, 0.14);
+          s.sp = snap || Math.abs(s.p - s.sp) < 0.0005 ? s.p : lerp(s.sp, s.p, 0.2);
           s.render();
         }
         snap = false;
@@ -1789,8 +1787,7 @@
           '<a class="lead-link" href="' + esc(lead.href) + '">' +
             figure(lead, [800, 1200, 1600], '(max-width: 960px) 100vw, 58vw', false) +
             '<div class="lead-body" data-reveal>' +
-              edTag(lead) +
-              '<p class="meta"><span class="cat">' + esc(catLabel(lead.cat)) + '</span>' + (lead.date ? ' &middot; ' + esc(lead.date) : '') + '</p>' +
+              '<p class="meta"><span class="cat">' + esc(catLabel(lead.cat)) + '</span>' + edMeta(lead) + (lead.date ? ' &middot; ' + esc(lead.date) : '') + '</p>' +
               '<h3>' + esc(lead.title) + '</h3>' +
               (lead.deck ? '<p class="deck">' + esc(lead.deck) + '</p>' : '') +
               '<p class="byline">By ' + esc(lead.author) + '</p>' +
@@ -1946,7 +1943,6 @@
         return null;
       }
       function edLink(s) { var e = edFor(s); return e ? s.href + '?edition=' + encodeURIComponent(e.id) : s.href; }
-      function edTag(s) { var e = edFor(s); return e ? '<p class="ed-tag" style="--ed-acc:' + e.acc + '">From the ' + esc(e.label) + ' edition &middot; No. ' + esc(e.no) + '</p>' : ''; }
       function edMeta(s) { var e = edFor(s); return e ? '<span class="ed"> &middot; ' + esc(e.label) + ' edition</span>' : ''; }
       function coverTitle(e) { return esc(e.title); }
 
