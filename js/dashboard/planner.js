@@ -851,7 +851,7 @@ function openAssignModal(ctx, state, reload, prefill = {}, existing = null) {
   const body = el("div", { style: "display:flex;flex-direction:column;gap:12px;min-width:min(500px,82vw);" });
   body.innerHTML = `
     <label style="display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--ink);">Topic — what's the post about?
-      <input id="as-topic" value="${esc(initialTopic)}" placeholder="e.g. Misfolded proteins, Fellow spotlight: Le Nguyen…" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
+      <input id="as-topic" value="${esc(initialTopic)}" placeholder="e.g. Misfolded proteins, Fellow spotlight: Jada Traynor…" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13px;font-family:inherit;">
     </label>
     <label style="display:grid;gap:4px;font-size:12.5px;font-weight:600;color:var(--muted);">Or pick an article (fills the topic for you)
       <select class="select" id="as-article" style="font-weight:400;">

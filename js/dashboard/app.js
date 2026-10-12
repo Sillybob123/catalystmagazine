@@ -284,7 +284,7 @@ const ROUTES = {
     icon: ICONS.addressBook,
     roles: ["*"],
     group: "main",
-    loader: () => import("./directory.js?v=chat-4"),
+    loader: () => import("./directory.js?v=chat-5"),
   },
   "#/writer/draft": {
     label: "Write a draft",
@@ -388,7 +388,7 @@ const ROUTES = {
     icon: ICONS.planner,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
-    loader: () => import("./planner.js?v=noiv-1"),
+    loader: () => import("./planner.js?v=noiv-2"),
   },
   "#/marketing/analytics": {
     label: "Subscribers & growth",

@@ -122,9 +122,15 @@ async function loadPeople() {
     if ((u.status || "active") === "inactive") return;
     raw.push({ ...u, id: d.id, role: u.role || "reader" });
   });
+  // Removed team members (every account of theirs set back to Reader in
+  // Users & roles) disappear from Team & messages entirely: no card, no
+  // hand-added contact under the same name/email, no old conversations.
+  // Their stories stay. Same rule as isFormerTeamMember in the bot.
+  formerTeam = formerTeamOf(raw);
   if (contactsSnap) {
     contactsSnap.forEach((d) => {
       const c = d.data();
+      if (isFormer({ ...c, id: d.id })) return;
       // Manual contacts lose to a real user doc with the same email in the
       // dedupe below (order 98 > any real role) — so when someone admins
       // added by hand later gets an account, the account card wins.
@@ -421,6 +427,13 @@ async function loadConversations(mountEl, ctx, state) {
     return;
   }
 
+  // Hide conversations with removed team members (see formerTeamOf).
+  state.threads = state.threads.filter((t) => {
+    const otherId = (t.participantIds || []).find((id) => id !== ctx.user.uid);
+    const other = (t.participants && t.participants[otherId]) || {};
+    return !isFormer({ id: otherId, name: other.name, email: other.email });
+  });
+
   if (!state.threads.length) {
     mountEl.innerHTML = `<div class="empty-state">No conversations yet. Find a teammate below and hit <strong>Message</strong> — they'll get it here and by email.</div>`;
     return;
@@ -636,6 +649,29 @@ function openChat(ctx, state, person) {
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
+
+// Identities (uids, emails, names) of people with no staff account left.
+let formerTeam = { ids: new Set(), keys: new Set() };
+function identityKeys(p) {
+  const keys = emailsOf(p).map((e) => `email:${e.toLowerCase()}`);
+  const name = String(p.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+  if (name) keys.push(`name:${name}`);
+  return keys;
+}
+function formerTeamOf(users) {
+  const staff = new Set(), ids = new Set(), keys = new Set();
+  for (const u of users) if (u.role !== "reader") identityKeys(u).forEach((k) => staff.add(k));
+  for (const u of users) {
+    if (u.role !== "reader") continue;
+    const k = identityKeys(u);
+    if (k.some((x) => staff.has(x))) continue;   // also has a staff account: still on the team
+    ids.add(u.id); k.forEach((x) => keys.add(x));
+  }
+  return { ids, keys };
+}
+function isFormer(p) {
+  return formerTeam.ids.has(p.id) || identityKeys(p).some((k) => formerTeam.keys.has(k));
+}
 
 function identityKey(person) {
   const email = String(person.email || "").trim().toLowerCase();

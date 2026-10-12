@@ -4133,14 +4133,6 @@ const teamMembers = [
         email: ""
     },
     {
-        name: "Le Nguyen",
-        role: "Editor",
-        bio: "Le is a recent George Washington University graduate with a degree in Neuroscience, a minor in Creative Writing, and summa cum laude honors. With extensive research experience spanning neurodevelopment, cardiology, and pulmonary medicine at institutions including GWU School of Medicine, Johns Hopkins, and Minneapolis Heart Institute, Le brings a unique blend of scientific rigor and narrative skill to The Catalyst. Currently in his gap year working as an IR Medical Assistant at Beth Israel Deaconess Medical Center, Le is passionate about the intersections of medicine, research, and health equity as he prepares to pursue medical school.",
-        image: "/Le.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
         name: "Ginger Taurek",
         role: "Writer, Operations & Events Lead",
         bio: "Ginger Taurek is a rising senior at The George Washington University School of Business, studying Entrepreneurship and Innovation with a minor in Sustainability. As a writer and Operations & Events Lead at The Catalyst, she is committed to fostering community through both storytelling and engagement. Passionate about wildlife conservation and global sustainability, she is particularly interested in how innovation, policy, and communication can advance climate resilience and sustainable development. Her externship experiences with the National Geographic Society and The Nature Conservancy deepened her interest in storytelling as a tool for addressing environmental challenges. Ginger seeks to make complex environmental issues accessible to broader audiences and inspire meaningful action.",
@@ -4173,14 +4165,6 @@ const teamMembers = [
         email: ""
     },
     {
-        name: "Layla Abdoulaye",
-        role: "Writer",
-        bio: "Layla is a junior studying Physics at Howard University, with aspirations to earn a Ph.D. after graduation. Drawn to physics due to its complexity and power to explain how the world works, Layla is especially passionate about astronomy and quantum physics. Her academic interests specifically narrow on quantum materials and systems, where she hopes to contribute to cutting-edge research at the intersection of theory and discovery.",
-        image: "/Layla.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
         name: "Izzy Lubinsky",
         role: "Writer",
         bio: "Izzy is a George Washington University Presidential Scholar pursuing a double major in Biology and Environmental Science, with concentrations in Ecology, Evolution, and Environment and Ecological Management. At The Catalyst, she utilizes her background as an Anatomy Laboratory Technician and a meta-analysis ecological researcher to make complex biological topics accessible to a wider audience. Her interest in STEM is driven by a passion for urban ecology and climate resilience, often exploring how green infrastructure can bridge the gap between academic research and community well-being in D.C.",
@@ -4193,14 +4177,6 @@ const teamMembers = [
         role: "Writer, Media Specialist",
         bio: "Skye is a recent Rutgers University graduate with a B.S. in Public Health, a minor in Business Administration, and a certificate in Health Policy. Over the past two summers, she has worked in Washington, D.C., contributing to research on reproductive and maternal health and authoring policy memoranda on AI in healthcare. Skye sees The Catalyst as a vehicle to increase health and civic literacy, empowering readers to understand the systems that shape their lives.",
         image: "/Skye.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
-        name: "Josh Shapo",
-        role: "Writer",
-        bio: "Josh is an electrical engineering student at the George Washington University graduating in the spring of 2027. He is involved in science advocacy and engineering policy, particularly within the space and aviation sectors. In his capacity as the Chair of IEEE-GWU and the IEEE Region 2 Student Representative, he strives to make academic and industrial STEM opportunities more accessible to students. He is currently conducting machine learning-based Heliophysics to denoise satellite magnetometry signals and aid scientific understanding of solar storms.",
-        image: "/JoshShapo.webp?v=2",
         linkedin: "",
         email: ""
     },
@@ -4236,33 +4212,9 @@ const teamMembers = [
         linkedin: "",
         email: ""
     },
-    {
-        name: "Yahav Gutman",
-        role: "Writer",
-        bio: "Yahav is a second-year student pursuing a B.S. in Business & Engineering at Drexel University. As a certified personal trainer and performance coach, his interests lie in biomechanics, human performance, and the use of AI and data analysis to better understand training and adaptation. He seeks to bridge academic study and applied coaching practice in order to refine how human performance is measured and optimized. He is drawn to interdisciplinary approaches that turn complex systems into actionable insight.",
-        image: "/Yahav.webp?v=2",
-        linkedin: "",
-        email: ""
-    }
 ];
 
 const alumniMembers = [
-    {
-        name: "Sydney Reiser",
-        role: "Former Writer",
-        bio: "Sydney is a Chemistry PhD student at Johns Hopkins University, having graduated summa cum laude from George Washington University with a B.S. in Chemistry. With a background in synthetic chemistry research and experience as a Physics Learning Assistant, she brings a strong analytical and pedagogical perspective to The Catalyst, aiming to make complex chemical concepts accessible and engaging for a wider audience.",
-        image: "/Sydney.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
-        name: "Naama Ben-Dor",
-        role: "Former Senior Writer, Editor, Media Specialist",
-        bio: "Naama is a summa cum laude graduate of Georgetown University and a member of Phi Beta Kappa, where she majored in Neurobiology with minors in Chemistry and Jewish Civilization. As the creative spark behind The Catalyst Magazine, she handles digital content and outreach, all while writing some of the magazine's most unexpected and entertaining pieces. Naama is drawn to science to understand not only how the world works but why, and deeply values the relatable nature of science journalism as a mechanism to learn about STEM.",
-        image: "/NaamaCatalyst.webp",
-        linkedin: "",
-        email: ""
-    },
     {
         name: "Rachel Lee",
         role: "Former Photographer, Media Specialist",
@@ -4319,7 +4271,7 @@ const rosterGroups = [
         id: "staff",
         title: "Staff",
         clusters: [
-            { subtitle: "Editing", members: ["Belinda Li", "Alexis Tamm", "Le Nguyen", "Lori Preci"] },
+            { subtitle: "Editing", members: ["Belinda Li", "Alexis Tamm", "Lori Preci"] },
             { subtitle: "Social Media", members: ["Skye Schurr", "Cameron Fields"] }
         ]
     },
@@ -4328,7 +4280,7 @@ const rosterGroups = [
         title: "Undergraduate Fellowship",
         blurb: "Undergraduate writers reporting across the D.C. STEM landscape.",
         clusters: [
-            { members: ["Sienna Halstead", "Izzy Lubinsky", "Ginger Taurek", "LaMyla Hill", "Layla Abdoulaye", "Josh Shapo", "Jada Traynor", "Yahav Gutman"] }
+            { members: ["Sienna Halstead", "Izzy Lubinsky", "Ginger Taurek", "LaMyla Hill", "Jada Traynor"] }
         ]
     },
     {
