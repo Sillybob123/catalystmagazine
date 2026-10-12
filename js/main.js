@@ -4214,28 +4214,14 @@ const teamMembers = [
     },
 ];
 
+// Former team members who published at least one story with The Catalyst
+// (people who never published aren't listed). Ordered by stories published.
 const alumniMembers = [
     {
-        name: "Rachel Lee",
-        role: "Former Photographer, Media Specialist",
-        bio: "Rachel is a junior at George Washington University majoring in Communications and Business. Originally entering GWU as a pre-med student, Rachel comes from a strong STEM and biology-focused background, but her interests have shifted toward the communications field. She is passionate about making STEM topics more accessible through creative media and visual storytelling.",
-        image: "/RachelLee.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
-        name: "Azza Uwhubetine",
-        role: "Former Writer",
-        bio: "Azza studied English with a minor in Astronomy at George Washington University. At The Catalyst, she merged her love for science, particularly physics, with the journalistic and publishing world. Azza has held positions at various publishing organizations, gaining experience in editorial writing and storytelling, and also runs a non-profit dedicated to supporting children in West African communities.",
-        image: "/Azza.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
-        name: "Stephanie Solomon",
-        role: "Former Editor",
-        bio: "Stephanie is a Georgetown University junior studying History, Spanish, and World Affairs, with a strong background in journalism, policy research, and editorial work. At The Catalyst Magazine, she ensured every piece met high standards for accuracy and clarity, drawing on her experience in investigative writing, political communications, and media strategy. Her sharp editorial eye kept the magazine grounded in both integrity and impact, and she plans to translate these analytical writing skills into the legal field.",
-        image: "/Steph.webp",
+        name: "Naama Ben-Dor",
+        role: "Former Senior Writer, Editor, Media Specialist",
+        bio: "Naama is a summa cum laude graduate of Georgetown University and a member of Phi Beta Kappa, where she majored in Neurobiology with minors in Chemistry and Jewish Civilization. As the creative spark behind The Catalyst Magazine, she handles digital content and outreach, all while writing some of the magazine's most unexpected and entertaining pieces. Naama is drawn to science to understand not only how the world works but why, and deeply values the relatable nature of science journalism as a mechanism to learn about STEM.",
+        image: "/NaamaCatalyst.webp",
         linkedin: "",
         email: ""
     },
@@ -4244,6 +4230,54 @@ const alumniMembers = [
         role: "Former Writer",
         bio: "Alex is a PhD student at Princeton University studying developmental biology, in addition to a recent George Washington University graduate with a B.S. in Cellular and Molecular Biology. His work at the GWU Martin Lab explored the genetic basis of evolution and adaptation, and finds the field of biology specifically interesting due to its answers to some of the world's most challenging and relevant questions. Alex excelled at making complex genetics approachable and engaging for a broad audience.",
         image: "/CarterCatalyst.webp",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Layla Abdoulaye",
+        role: "Former Writer",
+        bio: "Layla is a junior studying Physics at Howard University, with aspirations to earn a Ph.D. after graduation. Drawn to physics due to its complexity and power to explain how the world works, Layla is especially passionate about astronomy and quantum physics. Her academic interests specifically narrow on quantum materials and systems, where she hopes to contribute to cutting-edge research at the intersection of theory and discovery.",
+        image: "/Layla.webp",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Le Nguyen",
+        role: "Former Editor",
+        bio: "Le is a recent George Washington University graduate with a degree in Neuroscience, a minor in Creative Writing, and summa cum laude honors. With extensive research experience spanning neurodevelopment, cardiology, and pulmonary medicine at institutions including GWU School of Medicine, Johns Hopkins, and Minneapolis Heart Institute, Le brings a unique blend of scientific rigor and narrative skill to The Catalyst. Currently in his gap year working as an IR Medical Assistant at Beth Israel Deaconess Medical Center, Le is passionate about the intersections of medicine, research, and health equity as he prepares to pursue medical school.",
+        image: "/Le.webp",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Josh Shapo",
+        role: "Former Writer",
+        bio: "Josh is an electrical engineering student at the George Washington University graduating in the spring of 2027. He is involved in science advocacy and engineering policy, particularly within the space and aviation sectors. In his capacity as the Chair of IEEE-GWU and the IEEE Region 2 Student Representative, he strives to make academic and industrial STEM opportunities more accessible to students. He is currently conducting machine learning-based Heliophysics to denoise satellite magnetometry signals and aid scientific understanding of solar storms.",
+        image: "/JoshShapo.webp?v=2",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Yahav Gutman",
+        role: "Former Writer",
+        bio: "Yahav is a second-year student pursuing a B.S. in Business & Engineering at Drexel University. As a certified personal trainer and performance coach, his interests lie in biomechanics, human performance, and the use of AI and data analysis to better understand training and adaptation. He seeks to bridge academic study and applied coaching practice in order to refine how human performance is measured and optimized. He is drawn to interdisciplinary approaches that turn complex systems into actionable insight.",
+        image: "/Yahav.webp?v=2",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Sydney Reiser",
+        role: "Former Writer",
+        bio: "Sydney is a Chemistry PhD student at Johns Hopkins University, having graduated summa cum laude from George Washington University with a B.S. in Chemistry. With a background in synthetic chemistry research and experience as a Physics Learning Assistant, she brings a strong analytical and pedagogical perspective to The Catalyst, aiming to make complex chemical concepts accessible and engaging for a wider audience.",
+        image: "/Sydney.webp",
+        linkedin: "",
+        email: ""
+    },
+    {
+        name: "Juan Martinez",
+        role: "Former Writer",
+        bio: "Juan wrote for The Catalyst. His story “The Hidden Thirst Killing Coastal Forests” looks at how rising seas push saltwater into coastal forests, and why the trees are dying of thirst while standing in water.",
+        image: "",
         linkedin: "",
         email: ""
     }

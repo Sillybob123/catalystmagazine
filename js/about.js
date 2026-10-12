@@ -415,13 +415,19 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
   var people = {}, seen = {};
+  function initialsOf(name) {
+    return String(name || '').split(/\s+/).filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
+  }
   function personCard(m, i) {
     people[m.name] = m;
     // id = the anchor the About page's structured data uses (/about#yair-ben-dor)
     var id = String(m.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     var first = !document.getElementById(id) && !seen[id]; seen[id] = 1;
     return '<button type="button" class="ab-person"' + (first ? ' id="' + id + '"' : '') + ' data-reveal style="--d:' + ((i % 4) * 0.06).toFixed(2) + 's" data-name="' + esc(m.name) + '">' +
-      '<span class="ph"><img src="' + esc(m.image) + '" alt="" loading="lazy" decoding="async" onerror="this.src=\'/NewsletterHeader1.png\'"></span>' +
+      '<span class="ph">' + (m.image
+        ? '<img src="' + esc(m.image) + '" alt="" loading="lazy" decoding="async" onerror="this.src=\'/NewsletterHeader1.png\'">'
+        // no portrait on file: their initials, in the same hexagon
+        : '<span class="ab-initials" aria-hidden="true">' + esc(initialsOf(m.name)) + '</span>') + '</span>' +
       '<span><strong>' + esc(m.name) + '</strong><span>' + esc(m.role) + '</span></span></button>';
   }
   function renderTeam() {
@@ -450,8 +456,9 @@
   document.getElementById('team').addEventListener('click', function (e) {
     var b = e.target.closest('.ab-person'); if (!b) return;
     var m = people[b.dataset.name]; if (!m) return;
-    document.getElementById('ab-bio-img').src = m.image;
-    document.getElementById('ab-bio-img').alt = 'Portrait of ' + m.name;
+    var img = document.getElementById('ab-bio-img');
+    img.hidden = !m.image;                          // no portrait: the text takes the whole card
+    if (m.image) { img.src = m.image; img.alt = 'Portrait of ' + m.name; } else img.removeAttribute('src');
     document.getElementById('ab-bio-name').textContent = m.name;
     document.getElementById('ab-bio-role').textContent = m.role;
     document.getElementById('ab-bio-text').textContent = m.bio;
