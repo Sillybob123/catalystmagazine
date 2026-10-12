@@ -4250,34 +4250,10 @@ const alumniMembers = [
         email: ""
     },
     {
-        name: "Josh Shapo",
-        role: "Former Writer",
-        bio: "Josh is an electrical engineering student at the George Washington University graduating in the spring of 2027. He is involved in science advocacy and engineering policy, particularly within the space and aviation sectors. In his capacity as the Chair of IEEE-GWU and the IEEE Region 2 Student Representative, he strives to make academic and industrial STEM opportunities more accessible to students. He is currently conducting machine learning-based Heliophysics to denoise satellite magnetometry signals and aid scientific understanding of solar storms.",
-        image: "/JoshShapo.webp?v=2",
-        linkedin: "",
-        email: ""
-    },
-    {
-        name: "Yahav Gutman",
-        role: "Former Writer",
-        bio: "Yahav is a second-year student pursuing a B.S. in Business & Engineering at Drexel University. As a certified personal trainer and performance coach, his interests lie in biomechanics, human performance, and the use of AI and data analysis to better understand training and adaptation. He seeks to bridge academic study and applied coaching practice in order to refine how human performance is measured and optimized. He is drawn to interdisciplinary approaches that turn complex systems into actionable insight.",
-        image: "/Yahav.webp?v=2",
-        linkedin: "",
-        email: ""
-    },
-    {
         name: "Sydney Reiser",
         role: "Former Writer",
         bio: "Sydney is a Chemistry PhD student at Johns Hopkins University, having graduated summa cum laude from George Washington University with a B.S. in Chemistry. With a background in synthetic chemistry research and experience as a Physics Learning Assistant, she brings a strong analytical and pedagogical perspective to The Catalyst, aiming to make complex chemical concepts accessible and engaging for a wider audience.",
         image: "/Sydney.webp",
-        linkedin: "",
-        email: ""
-    },
-    {
-        name: "Juan Martinez",
-        role: "Former Writer",
-        bio: "Juan wrote for The Catalyst. His story “The Hidden Thirst Killing Coastal Forests” looks at how rising seas push saltwater into coastal forests, and why the trees are dying of thirst while standing in water.",
-        image: "",
         linkedin: "",
         email: ""
     }
