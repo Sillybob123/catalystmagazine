@@ -358,7 +358,7 @@ const ROUTES = {
     icon: ICONS.check,
     roles: ["admin", "editor"],
     group: "edit",
-    loader: () => import("./editor.js"),
+    loader: () => import("./editor.js?v=eq-1"),
     mountKey: "queue",
   },
   "#/newsletter/builder": {
