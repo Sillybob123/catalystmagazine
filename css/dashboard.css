@@ -5987,6 +5987,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .sc-map-history-list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);   /* the column fits the panel, not its longest row */
   gap: 4px;
   margin-top: 6px;
 }
