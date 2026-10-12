@@ -1,7 +1,6 @@
 // Writer module — three mount keys:
 //   - "draft": compose / edit a draft
 //   - "mine":  list the current user's own articles
-//   - "feed":  read-only feed of everything in the works across the newsroom
 
 import { db, storage } from "../firebase-config.js";
 import {
@@ -47,7 +46,6 @@ export async function mount(ctx, container) {
   switch (ctx.mountKey) {
     case "draft": return mountDraftEditor(ctx, container);
     case "mine":  return mountMyArticles(ctx, container);
-    case "feed":  return mountFeed(ctx, container);
     default:      return mountMyArticles(ctx, container);
   }
 }
@@ -4799,30 +4797,6 @@ async function mountMyArticles(ctx, container) {
 }
 
 // ===== Public-to-newsroom feed =============================================
-async function mountFeed(ctx, container) {
-  const card = el("div", { class: "card" });
-  card.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">Articles in the works</div>
-        <div class="card-subtitle">Everything the newsroom is working on — read-only across the team.</div>
-      </div>
-    </div>
-    <div class="card-body" id="feed-list"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-  container.appendChild(card);
-
-  try {
-    // Show everything except rejected; order by most recently updated.
-    const snap = await getDocs(query(
-      collection(db, "stories"),
-      orderBy("updatedAt", "desc"),
-    ));
-    renderArticleRows(card.querySelector("#feed-list"), snap, false);
-  } catch (err) {
-    card.querySelector("#feed-list").innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
-  }
-}
-
 function renderArticleRows(mount, snap, allowEdit) {
   if (snap.empty) {
     mount.innerHTML = `<div class="empty-state">Nothing here yet.</div>`;

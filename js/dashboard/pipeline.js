@@ -403,6 +403,7 @@ export async function mount(ctx, container) {
   _uid     = ctx.user.uid;
   _role    = ctx.role;
   _profile = ctx.profile;
+  if (ctx.mountKey === "works") { _view = "all"; return mountWorks(ctx, container); }
   // Any legacy mount key ("interviews" / "opeds") lands on the merged board.
   _view    = ctx.mountKey === "mine" ? "mine" : "all";
   _editionFilter = null;
@@ -1951,4 +1952,289 @@ export function renderPipeline(mountEl, ctx, { compact = true } = {}) {
 function truncate(s, n) {
   s = String(s || "");
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+
+// ─── Articles in the works ────────────────────────────────────────────────────
+// #/writer/feed: a read-only roundup of every story in progress, for the whole
+// team. Same data and stage logic as the Story Tracker, laid out as a list
+// grouped by how close each story is to publication. A row opens the same
+// detail panel as a tracker card (which applies its own role permissions).
+
+const WORKS_STAGES = [
+  { key: "ready",     label: "Ready to publish", hint: "Fully edited. An admin publishes it." },
+  { key: "edits",     label: "Making edits",     hint: "The writer is working through the editor's notes." },
+  { key: "review",    label: "With an editor",   hint: "An editor is reviewing the draft." },
+  { key: "writing",   label: "Writing",          hint: "Drafts being written." },
+  { key: "interview", label: "Interviewing",     hint: "Scheduling and doing interviews." },
+  { key: "pitch",     label: "Pitches",          hint: "Waiting for an admin to approve." },
+];
+
+function worksStageOf(p) {
+  if (p.proposalStatus === "rejected") return null;
+  if (isProjectCompleted(p)) {
+    const live = p.publishedAt || p.publishedStoryId || (_publishedTitlesLoaded && isProjectPublished(p, _publishedTitles));
+    return live ? "published" : "ready";
+  }
+  const { column } = getProjectState(p, "all", _uid);
+  return {
+    [COL.TOPIC_PROPOSAL]: "pitch",
+    [COL.INTERVIEW_STAGE]: "interview",
+    [COL.WRITING_STAGE]: "writing",
+    [COL.IN_REVIEW]: "review",
+    [COL.REVIEWING_SUGGESTIONS]: "edits",
+  }[column] || "pitch";
+}
+
+// Share of this story's own steps that are done (no interview steps for a
+// story that doesn't need one).
+function worksProgress(p) {
+  const tl = p.timeline || {};
+  const steps = TIMELINE_STEPS.filter((s) => p.type === "Interview" && !p.noInterview ? true : !s.startsWith("Interview"));
+  const done = steps.filter((s) => tl[s]).length;
+  return { done, total: steps.length, pct: Math.round((done / steps.length) * 100) };
+}
+
+function worksDue(p) {
+  const due = pubDeadline(p);
+  if (!due) return { text: "No date yet", tone: "muted" };
+  const d = daysUntil(due);
+  if (d < 0) return { text: `${-d} day${d === -1 ? "" : "s"} late`, tone: "late", title: `Publication date was ${fmtShort(due)}` };
+  if (d === 0) return { text: "Due today", tone: "soon" };
+  if (d <= 7) return { text: `Due in ${d} day${d === 1 ? "" : "s"}`, tone: "soon", title: fmtShort(due) };
+  return { text: `Due ${fmtShort(due)}`, tone: "muted" };
+}
+
+function initials(name) {
+  return String(name || "?").split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+}
+
+function ensureWorksStyles() {
+  if (document.getElementById("iw-styles")) return;
+  const st = document.createElement("style");
+  st.id = "iw-styles";
+  st.textContent = `
+  .iw { display: grid; gap: 22px; max-width: 1180px; }
+  .iw-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; }
+  .iw-head h2 { margin: 0; font: 600 22px/1.2 var(--font); letter-spacing: -0.02em; color: var(--ink); }
+  .iw-head p { margin: 6px 0 0; max-width: 560px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+  .iw-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .iw-search { position: relative; }
+  .iw-search svg { position: absolute; left: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); color: var(--muted-2); pointer-events: none; }
+  .iw-search input { width: 240px; max-width: 100%; min-height: 40px; padding: 0 12px 0 36px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); font: 400 13.5px var(--font); color: var(--ink); }
+  .iw-search input:focus-visible { outline: none; box-shadow: var(--focus); border-color: var(--ink-2); }
+  .iw-seg { display: inline-flex; padding: 3px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); }
+  .iw-seg button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: none; font: 500 13px var(--font); color: var(--muted); cursor: pointer; }
+  .iw-seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .iw-seg button:focus-visible { outline: none; box-shadow: var(--focus); }
+
+  /* the pipeline at a glance: one segment per stage, closest to publication first */
+  .iw-strip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+  .iw-strip a { display: grid; gap: 4px; padding: 14px 16px; border-left: 1px solid var(--hairline-2); color: inherit; text-decoration: none; transition: background-color .2s; }
+  .iw-strip a:first-child { border-left: 0; }
+  .iw-strip a:hover { background: var(--surface-3); }
+  .iw-strip a:focus-visible { outline: none; box-shadow: inset var(--focus); }
+  .iw-strip b { font: 600 24px/1 var(--font); letter-spacing: -0.02em; color: var(--ink); }
+  .iw-strip span { font: 500 12px/1.3 var(--font); color: var(--muted); }
+  .iw-strip a.is-empty b { color: var(--muted-2); }
+
+  .iw-group { border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); overflow: hidden; scroll-margin-top: 90px; }
+  .iw-group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 16px 20px 12px; border-bottom: 1px solid var(--hairline-2); }
+  .iw-group-head h3 { margin: 0; font: 600 15px/1.3 var(--font); color: var(--ink); }
+  .iw-group-head .n { font: 600 12px/1 var(--font); color: var(--muted); padding: 3px 8px; border-radius: 999px; background: var(--surface-3); }
+  .iw-group-head p { flex: 1 1 260px; margin: 0; font-size: 12.5px; color: var(--muted); }
+  .iw-group[data-stage="ready"] .iw-group-head { box-shadow: inset 3px 0 0 var(--good); }
+
+  .iw-row { display: grid; grid-template-columns: minmax(0, 1fr) 190px 128px; align-items: center; gap: 8px 24px; padding: 14px 20px; border-top: 1px solid var(--hairline-2); cursor: pointer; transition: background-color .15s; }
+  .iw-row:first-of-type { border-top: 0; }
+  .iw-row:hover { background: var(--surface-2); }
+  .iw-row:focus-visible { outline: none; box-shadow: inset var(--focus); }
+  .iw-title { margin: 0; font: 600 15px/1.35 var(--font); color: var(--ink); overflow-wrap: anywhere; }
+  .iw-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 8px; vertical-align: 2px; }
+  .iw-tag { padding: 2px 8px; border-radius: 999px; background: var(--surface-3); font: 500 11px/1.5 var(--font); color: var(--ink-2); white-space: nowrap; }
+  .iw-next { margin: 5px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  .iw-next strong { color: var(--ink-2); font-weight: 600; }
+  .iw-people { display: grid; gap: 6px; min-width: 0; }
+  .iw-person { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12.5px; color: var(--ink-2); }
+  .iw-person i { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: var(--surface); font: 600 10px/1 var(--font); font-style: normal; }
+  .iw-person.is-editor i { background: var(--surface-3); color: var(--ink-2); }
+  .iw-person.is-none { color: var(--muted-2); }
+  .iw-person.is-none i { background: none; border: 1px dashed var(--muted-2); color: var(--muted-2); }
+  .iw-person span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .iw-when { display: grid; gap: 7px; justify-items: end; text-align: right; }
+  .iw-due { font: 500 12.5px/1.3 var(--font); color: var(--muted); white-space: nowrap; }
+  .iw-due.is-late { color: var(--danger); font-weight: 600; }
+  .iw-due.is-soon { color: var(--warn); }
+  .iw-bar { width: 100%; height: 4px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+  .iw-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--ink); }
+  .iw-steps { font-size: 11px; color: var(--muted-2); }
+
+  .iw-pub .iw-row { grid-template-columns: minmax(0, 1fr) auto; padding: 11px 20px; }
+  .iw-pub .iw-title { font-weight: 500; font-size: 14px; }
+  .iw-pub .iw-due { color: var(--good); }
+  .iw-empty { padding: 48px 20px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--hairline); border-radius: var(--radius); }
+
+  @media (max-width: 900px) {
+    .iw-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .iw-strip a:nth-child(4) { border-left: 0; }
+    .iw-strip a:nth-child(n+4) { border-top: 1px solid var(--hairline-2); }
+    .iw-row { grid-template-columns: minmax(0, 1fr) 128px; }
+    .iw-people { grid-column: 1 / -1; grid-row: 2; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  }
+  @media (max-width: 560px) {
+    .iw-search input { width: 100%; }
+    .iw-search, .iw-tools { width: 100%; }
+    .iw-row { grid-template-columns: minmax(0, 1fr); padding: 14px 16px; }
+    .iw-when { grid-row: 3; justify-items: start; text-align: left; grid-template-columns: auto 1fr; align-items: center; gap: 12px; }
+    .iw-group-head { padding: 14px 16px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .iw-row, .iw-strip a { transition: none; } }`;
+  document.head.appendChild(st);
+}
+
+async function mountWorks(ctx, container) {
+  ensureWorksStyles();
+  container.innerHTML = "";
+  const page = el("div", { class: "iw" });
+  page.innerHTML = `
+    <div class="iw-head">
+      <div>
+        <h2>Articles in the works</h2>
+        <p>Every story the newsroom is working on, from pitch to publication. Open one to see its checklist, dates and people.</p>
+      </div>
+      <div class="iw-tools">
+        <label class="iw-search"><span class="sr-only">Search stories</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="iw-q" placeholder="Search title or name" autocomplete="off">
+        </label>
+        <div class="iw-seg" role="group" aria-label="Show">
+          <button type="button" data-who="all" aria-pressed="true">Everyone</button>
+          <button type="button" data-who="mine" aria-pressed="false">Just mine</button>
+        </div>
+      </div>
+    </div>
+    <nav class="iw-strip" id="iw-strip" aria-label="Stories by stage"></nav>
+    <div id="iw-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
+  container.appendChild(page);
+
+  let who = "all", q = "";
+  const render = () => renderWorks(page, who, q);
+  page.querySelector("#iw-q").addEventListener("input", (e) => { q = e.target.value.trim().toLowerCase(); render(); });
+  page.querySelector(".iw-seg").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-who]"); if (!b) return;
+    who = b.dataset.who;
+    page.querySelectorAll(".iw-seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  });
+  const open = (e) => {
+    const row = e.target.closest("[data-project]"); if (!row) return;
+    if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    openDetailModal(row.dataset.project);
+  };
+  page.querySelector("#iw-body").addEventListener("click", open);
+  page.querySelector("#iw-body").addEventListener("keydown", open);
+
+  await loadEditors();   // the detail panel's editor picker
+  fetchPublishedTitleSet()
+    .then((set) => { _publishedTitles = set; _publishedTitlesLoaded = true; render(); })
+    .catch((err) => console.warn("[works] published titles", err));
+  const unsubProjects = onSnapshot(collection(workflowDb, "projects"),
+    (snap) => { _allProjects = snap.docs.map((d) => ({ id: d.id, ...d.data() })); render(); },
+    (err) => { page.querySelector("#iw-body").innerHTML = `<div class="error-state">Could not load stories: ${esc(err.message)}</div>`; });
+  const unsubEditions = onSnapshot(doc(workflowDb, "settings", "editions"), (snap) => {
+    const data = snap.exists() ? snap.data() : null;
+    _editions = {
+      names: Array.isArray(data?.names) ? data.names.filter((n) => typeof n === "string" && n.trim()).map((n) => n.trim()) : [],
+      current: typeof data?.current === "string" ? data.current.trim() : "",
+    };
+    _editionsLoaded = true;
+  }, () => {});
+  return () => { unsubProjects(); unsubEditions(); };
+}
+
+function renderWorks(page, who, q) {
+  const body = page.querySelector("#iw-body");
+  const strip = page.querySelector("#iw-strip");
+  const myName = (_profile?.name || "").trim().toLowerCase();
+  const isMine = (p) => p.authorId === _uid || p.editorId === _uid || (!!myName && (p.authorName || "").trim().toLowerCase() === myName);
+  const matches = (p) => !q || [p.title, p.authorName, p.editorName, projectEdition(p), p.type].some((v) => String(v || "").toLowerCase().includes(q));
+
+  const groups = Object.fromEntries([...WORKS_STAGES.map((s) => [s.key, []]), ["published", []]]);
+  for (const p of _allProjects) {
+    const stage = worksStageOf(p);
+    if (!stage || (who === "mine" && !isMine(p)) || !matches(p)) continue;
+    groups[stage].push(p);
+  }
+  // Soonest deadline first; stories with no date go last.
+  const dueKey = (p) => { const d = pubDeadline(p); return d ? new Date(d + "T00:00:00").getTime() : Infinity; };
+  for (const k of Object.keys(groups)) groups[k].sort((a, b) => dueKey(a) - dueKey(b));
+
+  strip.innerHTML = WORKS_STAGES.map((s) => `
+    <a href="#/writer/feed" data-jump="${s.key}" class="${groups[s.key].length ? "" : "is-empty"}">
+      <b>${groups[s.key].length}</b><span>${esc(s.label)}</span>
+    </a>`).join("");
+  strip.onclick = (e) => {
+    const a = e.target.closest("[data-jump]"); if (!a) return;
+    e.preventDefault();
+    page.querySelector(`[data-stage="${a.dataset.jump}"]`)?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  };
+
+  const inProgress = WORKS_STAGES.reduce((n, s) => n + groups[s.key].length, 0);
+  const row = (p) => {
+    const tl = p.timeline || {};
+    const next = nextStepFor(p, null, { awaitingPublish: worksStageOf(p) === "ready" });
+    const prog = worksProgress(p);
+    const due = worksDue(p);
+    const tags = [p.type, projectEdition(p)].filter(Boolean).map((t) => `<span class="iw-tag">${esc(t)}</span>`).join("");
+    const editor = p.editorName
+      ? `<div class="iw-person is-editor" title="Editor"><i aria-hidden="true">${esc(initials(p.editorName))}</i><span>${esc(p.editorName)}</span></div>`
+      : (tl["Article Writing Complete"] || p.proposalStatus === "approved")
+        ? `<div class="iw-person is-none"><i aria-hidden="true">?</i><span>No editor yet</span></div>` : "";
+    return `
+      <div class="iw-row" role="button" tabindex="0" data-project="${esc(p.id)}" aria-label="${esc(p.title || "Untitled")}: open details">
+        <div>
+          <p class="iw-title">${esc(p.title || "Untitled")}${tags ? `<span class="iw-tags">${tags}</span>` : ""}</p>
+          <p class="iw-next">${next.html}</p>
+        </div>
+        <div class="iw-people">
+          <div class="iw-person" title="Writer"><i aria-hidden="true">${esc(initials(p.authorName))}</i><span>${esc(p.authorName || "No writer")}</span></div>
+          ${editor}
+        </div>
+        <div class="iw-when">
+          <span class="iw-due ${due.tone === "late" ? "is-late" : due.tone === "soon" ? "is-soon" : ""}"${due.title ? ` title="${esc(due.title)}"` : ""}>${esc(due.text)}</span>
+          <div style="display:grid;gap:4px;width:100%;">
+            <div class="iw-bar" role="img" aria-label="${prog.done} of ${prog.total} steps done"><span style="width:${prog.pct}%"></span></div>
+            <span class="iw-steps">${prog.done} of ${prog.total} steps</span>
+          </div>
+        </div>
+      </div>`;
+  };
+
+  const sections = WORKS_STAGES.filter((s) => groups[s.key].length).map((s) => `
+    <section class="iw-group" data-stage="${s.key}" aria-labelledby="iw-h-${s.key}">
+      <header class="iw-group-head"><h3 id="iw-h-${s.key}">${esc(s.label)}</h3><span class="n">${groups[s.key].length}</span><p>${esc(s.hint)}</p></header>
+      ${groups[s.key].map(row).join("")}
+    </section>`).join("");
+
+  // Published in the last 30 days, newest first.
+  const month = Date.now() - 30 * 86400000;
+  const recent = groups.published
+    .map((p) => ({ p, at: toMs(p.publishedAt) || toMs(p.updatedAt) }))
+    .filter((x) => x.at >= month)
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 8);
+  const published = recent.length ? `
+    <section class="iw-group iw-pub" data-stage="published" aria-labelledby="iw-h-pub">
+      <header class="iw-group-head"><h3 id="iw-h-pub">Published this month</h3><span class="n">${recent.length}</span><p>Recently out of the pipeline and live on the site.</p></header>
+      ${recent.map(({ p, at }) => `
+        <div class="iw-row" role="button" tabindex="0" data-project="${esc(p.id)}">
+          <p class="iw-title">${esc(p.title || "Untitled")} <span style="font-weight:400;color:var(--muted);">by ${esc(p.authorName || "")}</span></p>
+          <span class="iw-due">Published ${esc(fmtDate(new Date(at).toISOString()))}</span>
+        </div>`).join("")}
+    </section>` : "";
+
+  body.innerHTML = inProgress || published
+    ? `<div style="display:grid;gap:18px;">${sections || `<div class="iw-empty">${who === "mine" ? "None of your stories are in progress right now." : "No stories in progress."}</div>`}${published}</div>`
+    : `<div class="iw-empty">${q ? `No stories match “${esc(q)}”.` : who === "mine" ? "None of your stories are in progress right now." : "No stories in progress right now."}</div>`;
 }

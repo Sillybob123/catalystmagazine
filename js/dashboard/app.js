@@ -242,7 +242,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=notify-1"),
+    loader: () => import("./overview.js?v=notify-2"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.
@@ -252,7 +252,7 @@ const ROUTES = {
     icon: ICONS.board,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js?v=tracker-2"),
+    loader: () => import("./pipeline.js?v=works-1"),
     mountKey: "all",
   },
   // Old split-board hashes — kept so bookmarks, saved pins, and links in
@@ -265,7 +265,7 @@ const ROUTES = {
     icon: ICONS.clipboard,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js?v=tracker-2"),
+    loader: () => import("./pipeline.js?v=works-1"),
     mountKey: "mine",
   },
   "#/tasks": {
@@ -292,7 +292,7 @@ const ROUTES = {
     icon: ICONS.pen,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js?v=wd-3"),
+    loader: () => import("./writer.js?v=wd-4"),
     mountKey: "draft",
   },
   "#/writer/mine": {
@@ -301,17 +301,17 @@ const ROUTES = {
     icon: ICONS.pages,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js?v=wd-3"),
+    loader: () => import("./writer.js?v=wd-4"),
     mountKey: "mine",
   },
   "#/writer/feed": {
     label: "Articles in the works",
-    desc: "What the whole newsroom is working on right now. Read-only.",
+    desc: "Every story in progress, grouped by stage: who is on it, when it is due and what happens next.",
     icon: ICONS.feed,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js?v=wd-3"),
-    mountKey: "feed",
+    loader: () => import("./pipeline.js?v=works-1"),
+    mountKey: "works",
   },
   "#/writer/guidelines": {
     label: "Editorial standards",
