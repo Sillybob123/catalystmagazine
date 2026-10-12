@@ -459,6 +459,7 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
    column pushed it over the Status cell (chevron on top of the status dot) */
 .ua-table td[data-label="Role"] .select { width: 100% !important; min-width: 0 !important; max-width: 100%; min-height: 34px !important; font-size: 13px !important; padding-right: 28px !important; text-overflow: ellipsis; }
 .ua-table td[data-label="Status"] { white-space: nowrap; }
+.ua-table td[data-label="Bot reminders"] span { width: auto !important; max-width: 100%; white-space: normal; line-height: 1.3; }
 .ua-table td[data-label="Status"] .pill { background: none; color: var(--ink-2); padding: 0; letter-spacing: .06em; }
 /* Readers: no Suite access, no bot reminders. Grouped under a divider at
    the foot of Users & roles and tinted red so they read as "off". */

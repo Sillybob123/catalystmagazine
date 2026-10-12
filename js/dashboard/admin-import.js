@@ -490,16 +490,16 @@ function mountAnnounceTool(ctx, root) {
           <textarea id="ann-message" rows="3" maxlength="4000" placeholder="Add any context — agenda, what to bring, deadline to respond by…"
                     style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;line-height:1.5;resize:vertical;"></textarea>
         </label>
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 200px), 1fr));gap:10px;">
           <label style="display:grid;gap:5px;min-width:0;">
             <span style="font-weight:600;font-size:13px;">Button link <span style="font-weight:400;color:var(--muted);">(optional)</span></span>
             <input id="ann-link" type="url" placeholder="https://when2meet.com/…  or  Zoom URL" autocomplete="off"
-                   style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
+                   style="width:100%;min-width:0;box-sizing:border-box;padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
           </label>
           <label style="display:grid;gap:5px;min-width:0;">
             <span style="font-weight:600;font-size:13px;">Button text</span>
             <input id="ann-link-label" maxlength="40" placeholder="Open link" autocomplete="off"
-                   style="padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
+                   style="width:100%;min-width:0;box-sizing:border-box;padding:10px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:14px;font-family:inherit;">
           </label>
         </div>
         <label style="display:grid;gap:5px;max-width:220px;">
