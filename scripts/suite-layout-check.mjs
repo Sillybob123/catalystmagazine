@@ -64,6 +64,7 @@ const DETECT = `(() => {
     if (!vis(e) || !inMain(e)) return;
     const cs = getComputedStyle(e);
     if (!/hidden|clip/.test(cs.overflowX) || cs.textOverflow === 'ellipsis') return;
+    if (e.closest('.sr-only, .visually-hidden') || (cs.position === 'absolute' && e.clientWidth <= 1)) return;   // screen-reader-only text
     if (e.children.length > 0 && e.tagName !== 'SELECT') return;
     if (e.scrollWidth > e.clientWidth + 2 && (e.innerText || '').trim()) out.push({ type: 'text cut off', el: desc(e), by: e.scrollWidth - e.clientWidth });
   });
