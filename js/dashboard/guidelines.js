@@ -258,7 +258,7 @@ const STYLE = `
 
 .es-main { min-width: 0; }
 .es-hero { padding: 6px 0 30px; border-bottom: 1px solid var(--hairline); }
-.es-eyebrow { margin: 0 0 10px; font: 600 11px/1.3 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.es-hero .es-eyebrow { max-width: none; margin: 0 0 10px; font: 600 11px/1.3 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .es-hero h1 { margin: 0; font: 600 clamp(26px, 3vw, 34px)/1.15 var(--font); letter-spacing: -0.025em; color: var(--ink); }
 .es-hero p { max-width: var(--es-measure); margin: 12px 0 0; font: 400 17px/1.6 var(--serif); color: var(--ink-2); }
 .es-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
