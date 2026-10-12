@@ -354,15 +354,15 @@ async function loadUsers(mount, ctx, reload) {
 
     const table = el("table", { class: "table ua-table" });
     // colgroup lets us set proportional widths without fighting auto-layout.
-    table.style.cssText = "table-layout:fixed;min-width:860px;";
+    table.style.cssText = "table-layout:fixed;min-width:980px;";
     table.innerHTML = `
       <colgroup>
         <col style="width:14%"><!-- User -->
-        <col style="width:20%"><!-- Email -->
-        <col style="width:13%"><!-- Role -->
+        <col style="width:19%"><!-- Email -->
+        <col style="width:15%"><!-- Role (≥147px: fits "Newsletter builder") -->
         <col style="width:9%"> <!-- Status -->
         <col style="width:11%"><!-- Bot reminders -->
-        <col style="width:12%"><!-- Last seen -->
+        <col style="width:11%"><!-- Last seen -->
         <col style="width:21%"><!-- Actions -->
       </colgroup>
       <thead><tr>

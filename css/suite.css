@@ -455,7 +455,10 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ua-table th, .ua-table td { padding: 12px 10px !important; vertical-align: middle !important; }
 .ua-table td:first-child { font-weight: 500; }
 .ua-table td[data-label="Email"] > div:first-child { font-family: var(--font) !important; font-size: 12.5px !important; color: var(--muted) !important; max-width: 210px; }
-.ua-table td[data-label="Role"] .select { min-height: 34px !important; min-width: 168px; font-size: 13px !important; padding-right: 28px !important; }
+/* the select fills its column and never wider: a min-width larger than the
+   column pushed it over the Status cell (chevron on top of the status dot) */
+.ua-table td[data-label="Role"] .select { width: 100% !important; min-width: 0 !important; max-width: 100%; min-height: 34px !important; font-size: 13px !important; padding-right: 28px !important; text-overflow: ellipsis; }
+.ua-table td[data-label="Status"] { white-space: nowrap; }
 .ua-table td[data-label="Status"] .pill { background: none; color: var(--ink-2); padding: 0; letter-spacing: .06em; }
 /* Readers: no Suite access, no bot reminders. Grouped under a divider at
    the foot of Users & roles and tinted red so they read as "off". */
