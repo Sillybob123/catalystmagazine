@@ -315,11 +315,11 @@ const ROUTES = {
   },
   "#/writer/guidelines": {
     label: "Editorial standards",
-    desc: "How we write at The Catalyst: audience, structure, sourcing and style.",
+    desc: "What writers and editors are expected to do, from pitch to publication, with checklists for both.",
     icon: ICONS.bookOpen,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./guidelines.js"),
+    loader: () => import("./guidelines.js?v=es-1"),
   },
   // Book reviews live in their own sidebar group ("Book reviews") so the
   // composer + writer's own list + admin queue are next to each other.

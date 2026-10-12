@@ -1,578 +1,486 @@
+// Editorial standards (#/writer/guidelines): what The Catalyst expects from
+// writers and editors. Read top to bottom it goes: the essentials, how a story
+// moves through the Story Tracker, the craft guide in four chapters, then a
+// checklist each for writers and editors (ticks are remembered per browser).
+//
+// Content lives in CHAPTERS below. Each topic is one rule, a short
+// explanation, and Do / Avoid examples. Examples marked "Illustrative" are
+// invented to show a technique; don't present them as reported facts.
+// Process dates mirror js/dashboard/auto-deadlines.js — keep them in sync.
+
 import { el, esc } from "./ui.js";
 
-const QUICK_CHECKLIST = [
-  "Write a lead that earns attention and promises a payoff.",
-  "Make sure the piece has a concrete angle, not just a broad topic.",
-  "Check that every section moves the story forward.",
-  "Vary paragraph length, and let short paragraphs land after long ones.",
-  "Attribute every quote and ground every factual claim in reporting.",
-  "Define scientific terms for a college-level, science-literate reader.",
-  "Avoid prescriptive language unless the piece is explicitly an op-ed.",
-  "Re-verify any technical claim that feels even slightly uncertain.",
-  "End on a kicker that lands instead of summarizing the piece.",
+const ESSENTIALS = [
+  ["Write for a curious, science-literate reader", "College and above, interested in science, not a specialist in your topic. Define every technical term the first time."],
+  ["Find an angle, not just a topic", "A specific person, lab, program or finding that makes the broader subject concrete."],
+  ["Earn the first sentence", "Open with something surprising or vivid. Never with “This article examines…”"],
+  ["Get the science exactly right", "Read the primary source. If you're unsure of a mechanism, ask the researcher before you publish it."],
+  ["Report, don't prescribe", "No “must”, “should” or “need to” in a reported piece. Opinions belong to sources, or to an op-ed."],
+  ["Attribute everything", "Every quote has a named speaker; every factual claim traces to reporting or a source."],
+  ["End on a kicker, not a summary", "A quote, a callback or an implication that adds something new."],
+  ["Hit your dates, or say so early", "Your deadlines are on your story in the Story Tracker. If one will slip, tell your editor before it does."],
 ];
 
-const SECTIONS = [
+const PROCESS = [
+  { step: "Pitch", owner: "Writer, then an admin", tracker: "Pitch approved",
+    text: "Propose the story in the Story Tracker: a working title, the type, the edition, a publication date, and a pitch that says what the story is, the angle and why it matters now. An admin approves or declines it." },
+  { step: "Interview", owner: "Writer", tracker: "Interview scheduled · Interview done",
+    text: "Contact your source within 2 days of approval and book the interview. Read their recent work first and prepare questions. Skip this step for op-eds and stories without an interview." },
+  { step: "Draft", owner: "Writer", tracker: "Draft finished",
+    text: "Write the piece in Write a draft. The draft is due 7 days after the interview. Before you tick “Draft finished”, run the writer checklist at the bottom of this page." },
+  { step: "Edit", owner: "Editor", tracker: "Editor's review done",
+    text: "An admin assigns an editor, who has 7 days to review: structure first, then accuracy, then line edits, every note with a reason." },
+  { step: "Revise", owner: "Writer", tracker: "Edits made",
+    text: "Work through every note within 7 days of the review. Accept, change or push back with a reason; don't leave comments unanswered. Re-check any claim an edit touched." },
+  { step: "Publish", owner: "Admin", tracker: "Live on the site",
+    text: "An admin does a final read, checks the headline, deck, cover image and credits, and publishes. The story then joins its season's edition." },
+];
+
+const CHAPTERS = [
   {
-    id: "foundation",
-    number: "01",
-    label: "Foundation",
-    title: "Know Your Audience",
-    intro: "Every writing decision - vocabulary, assumed knowledge, level of explanation - flows from a clear picture of who is reading. At Catalyst, that picture is specific.",
-    bodyHtml: `
-      <div class="standards-subhead">The Catalyst Reader</div>
-      <p>Catalyst is written for students in college and above who are into science. This is your north star. Readers are intellectually curious and science-literate, but they are not necessarily experts in your specific topic. Assume intelligence without assuming specialized knowledge.</p>
-      <div class="standards-feature-grid">
-        <article class="standards-feature-card">
-          <h4>Curious, Not Expert</h4>
-          <p>Your reader is engaged with science broadly, but probably is not a specialist in your topic. Explain concepts clearly without condescension. Respect their intelligence.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Accessible Language</h4>
-          <p>Define jargon the first time you use it. Never assume a term is universally known. When in doubt, add a brief one-clause explanation in parentheses or the next sentence.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>College-Level Reading</h4>
-          <p>You are not writing for a general newspaper audience, and you are not writing a journal abstract. Aim for a well-written science magazine article: substantive, but readable.</p>
-        </article>
-      </div>
-    `,
+    id: "before", title: "Before you write",
+    topics: [
+      {
+        id: "audience", title: "Know your reader",
+        rule: "Assume intelligence, not specialized knowledge.",
+        body: `
+          <p>The Catalyst is written for students in college and above who are into science. They read widely and follow an argument, but they probably don't work in your field. Every choice about vocabulary, assumed knowledge and how much to explain follows from that.</p>
+          <p>Aim for a well-written science magazine feature: substantive, but readable. Not a newspaper brief, and not a journal abstract.</p>`,
+        examples: [
+          ["do", "Define a term the first time, in a clause: “microglia, the brain's resident immune cells, …”"],
+          ["avoid", "Assuming a term is common knowledge because it's common in your lab."],
+          ["avoid", "Over-explaining what a cell or a gene is. Your reader knows."],
+        ],
+      },
+      {
+        id: "angle", title: "Find your angle",
+        rule: "A topic is what you write about. An angle is why someone reads it.",
+        body: `
+          <p>Every good science story has a specific, concrete lens: a person, a place, a lab, a program or a finding that makes a broad subject real. Often the best one is local, a D.C. example that shows a national or global trend and gives you someone you can actually interview.</p>
+          <p>To find it, ask yourself:</p>
+          <ul class="es-list">
+            <li>What was the most surprising thing I learned while researching this?</li>
+            <li>Who or what embodies the larger trend?</li>
+            <li>What does my reader not know, or assume wrongly?</li>
+            <li>What is still unresolved, and why does it matter now?</li>
+          </ul>`,
+        examples: [
+          ["avoid", "“This article looks at the role of AI in higher education.” A topic: no person, place, conflict or moment."],
+          ["do", "“UMD has launched a dedicated AI literacy major, and it's drawing students from every discipline.” A specific institution and a concrete claim. (Illustrative)"],
+        ],
+      },
+    ],
   },
   {
-    id: "lead",
-    number: "02",
-    label: "Structure",
-    title: "Writing the Lead",
-    intro: "The lead (or lede) is the most important sentence - or paragraph - in your piece. It is the only thing standing between your story and a reader clicking away. Get it wrong and nothing else matters.",
-    bodyHtml: `
-      <div class="standards-subhead">The Surprising Lead</div>
-      <p>The best leads are surprising. They give the reader something they did not expect: an unexpected fact, a counterintuitive finding, a vivid scene, or a provocative question that reframes how to think about the topic. A surprising lead tells the reader this story is worth their time.</p>
-
-      <div class="standards-subhead">What a Lead Must Accomplish</div>
-      <div class="standards-feature-grid">
-        <article class="standards-feature-card">
-          <h4>Hook the reader immediately</h4>
-          <p>You have one sentence to earn the second sentence. Every word counts.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Signal the stakes</h4>
-          <p>Why does this matter? Why now? The lead should make the urgency or wonder of the topic felt right away.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Set the tone</h4>
-          <p>Is this a mystery, a surprising discovery, or a human story? The lead establishes the emotional register for everything that follows.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Create a promise</h4>
-          <p>The lead implicitly says: if you keep reading, I will answer this question or deliver this payoff. Then keep that promise.</p>
-        </article>
-      </div>
-
-      <div class="standards-subhead">Lead Types to Know</div>
-      <div class="standards-compare-grid">
-        <article class="standards-compare-card">
-          <div class="standards-compare-label">Anecdote Lead</div>
-          <p>Open with a specific moment, scene, or person that illustrates the broader topic. This grounds abstract science in a human story and works especially well for features.</p>
-        </article>
-        <article class="standards-compare-card">
-          <div class="standards-compare-label">Surprising Fact Lead</div>
-          <p>Lead with a counterintuitive or astonishing statistic or finding. Example: "Despite decades of research, scientists still cannot explain why..."</p>
-        </article>
-        <article class="standards-compare-card">
-          <div class="standards-compare-label">Question Lead</div>
-          <p>Use sparingly. It only works when the question itself is genuinely surprising. Avoid vague rhetorical openings like "Have you ever wondered...?"</p>
-        </article>
-        <article class="standards-compare-card standards-compare-card--warn">
-          <div class="standards-compare-label">Summary Lead (avoid)</div>
-          <p>A dry summary like "This article examines..." or "Researchers at GW have discovered..." reads like a press release. Save that style for briefs, not features.</p>
-        </article>
-      </div>
-
-      <aside class="standards-callout standards-callout--dark">
-        <div class="standards-callout-label">Pro Tip</div>
-        <p>Write your lead last. Once you know the full story - every quote, finding, and twist - you will know which detail is actually the most surprising or compelling. Most better leads are hiding in the middle of a first draft.</p>
-      </aside>
-    `,
+    id: "writing", title: "Writing the piece",
+    topics: [
+      {
+        id: "lead", title: "The lead",
+        rule: "Your first sentence has one job: earn the second.",
+        body: `
+          <p>The lead hooks the reader, signals the stakes, sets the tone and makes a promise the rest of the piece keeps. The strongest leads are surprising: an unexpected fact, a vivid scene, or a question the reader didn't know to ask.</p>
+          <p>Three types work well for us. An <strong>anecdote lead</strong> opens on a specific moment or person and suits profiles and features. A <strong>surprising-fact lead</strong> opens on a counterintuitive finding. A <strong>question lead</strong> works only when the question itself is surprising.</p>
+          <p>Tip: write your lead last. Once you know the whole story, the best opening is usually hiding in the middle of your first draft.</p>`,
+        examples: [
+          ["do", "A scene, a person, or a finding that makes the reader stop."],
+          ["avoid", "“This article examines…” or “Researchers at GW have discovered…”: a press-release opening."],
+          ["avoid", "“Have you ever wondered…?”: a vague rhetorical question."],
+        ],
+      },
+      {
+        id: "structure", title: "Structure and depth",
+        rule: "Tell a story, not a literature review.",
+        body: `
+          <p>The most common trap for science-trained writers is the survey paper: comprehensive, citation-heavy and unreadable. Go deep on one case rather than listing ten studies, then zoom out to show where it fits.</p>
+          <p>Outline before you write: the lead, three or so sections, and the kicker. Cut any detail that doesn't move the story forward or help the reader understand the core finding. Let your sources carry the technical weight in quotes, placed in the right order. A niche deep-dive is fine with the right frame: start broad, go narrow, come back broad.</p>`,
+        examples: [
+          ["do", "One research team's work, explained in human terms, then placed in the bigger picture."],
+          ["avoid", "Every fact you learned, in the order you learned it."],
+        ],
+      },
+      {
+        id: "rhythm", title: "Paragraphs and pacing",
+        rule: "One paragraph, one idea. End it when the idea turns.",
+        body: `
+          <p>Across our published work the typical paragraph runs about three sentences, roughly 66 words. Past 120 words, make sure the density is earned. Under 40, make sure the paragraph lands a turn, a consequence or a verdict. Vary length on purpose: three paragraphs of the same length flatten the pace.</p>
+          <p>Short paragraphs are a landing, not an opener. They get their force from the weight before them. In Aidan Schurr's profile of Rebecca Katz, a long account of her illness resolves into one line: “This experience, harrowing and surreal, would change everything, she said.”</p>
+          <p>If a section still feels dense, add a section header or tighten the angle rather than more breaks. Profiles and interviews run tighter (about 36–45 words a paragraph); explainers run denser.</p>`,
+        examples: [
+          ["do", "Build a long passage, then release it with a short paragraph."],
+          ["avoid", "Splitting a thought in half because the block looked long."],
+        ],
+      },
+      {
+        id: "headlines", title: "Headlines",
+        rule: "Be bold and specific, never misleading.",
+        body: `
+          <p>A headline has to stop a scrolling reader and tell them why the story matters, in one line. Use active verbs and concrete nouns, and put the stakes in. Strong words are welcome when the story supports them. If the finding is qualified, the headline is qualified too: “may help” is not “cures.” The deck (the line under the headline) adds the context the headline can't fit.</p>`,
+        examples: [
+          ["avoid", "“AI in Universities: A Growing Trend”"],
+          ["do", "“The AI Literacy Major That Could Reshape Every Campus” (Illustrative)"],
+          ["avoid", "“Research on Memory and Protein”"],
+          ["do", "“Scientists Found the Protein That Lets Your Brain Forget Fear” (Illustrative)"],
+        ],
+      },
+      {
+        id: "endings", title: "Endings",
+        rule: "Land the piece. Don't summarize it.",
+        body: `
+          <p>Your last paragraph, the kicker, is the last impression. Three endings work reliably. A <strong>quote kicker</strong> captures the story's core in the source's own words: forward-looking, candid or unexpectedly moving. A <strong>callback</strong> returns to an image or question from the lead and resolves or reframes it. An <strong>implication</strong> points to the next question or the bigger puzzle.</p>
+          <p>Look for your kicker in your notes: the moment a source expressed wonder or doubt, said what they hope to find next, or said something you didn't expect.</p>`,
+        examples: [
+          ["do", "End on a line that adds something new: a voice, an image, a question."],
+          ["avoid", "A closing paragraph that restates what the reader just read."],
+        ],
+      },
+    ],
   },
   {
-    id: "angle",
-    number: "03",
-    label: "Reporting",
-    title: "Finding Your Angle",
-    intro: "Every good science story starts not with a topic, but with an angle - a specific, concrete lens through which a broader theme becomes real and readable. The angle is the difference between a story and an essay.",
-    bodyHtml: `
-      <div class="standards-subhead">The Local Window Into a Global Story</div>
-      <p>One powerful approach is to find a local, specific example that illuminates a global trend. Writing about AI in higher education? Zoom in on a pioneering program right here in the DMV. The specific grounds the abstract, gives readers something concrete to connect with, and gives you someone you can actually interview.</p>
-
-      <div class="standards-subhead">Questions to Find Your Angle</div>
-      <ol class="standards-number-list">
-        <li><strong>What is the most surprising thing I learned while researching this?</strong> Start there.</li>
-        <li><strong>Is there a specific person, place, lab, or program that embodies the broader trend?</strong> Use it as your entry point.</li>
-        <li><strong>What does my reader not know that they should?</strong> What assumptions does this story challenge?</li>
-        <li><strong>What is the unresolved tension in this topic?</strong> Good stories live between what we know and what we do not.</li>
-        <li><strong>Why does this matter right now?</strong> What makes this the moment to tell the story?</li>
-      </ol>
-
-      <div class="standards-subhead">Topic vs. Angle</div>
-      <div class="standards-example-stack">
-        <article class="standards-compare-card standards-compare-card--warn">
-          <div class="standards-compare-label">Too Broad (No Angle)</div>
-          <p>"This article looks at the role of AI in higher education."</p>
-          <p class="standards-muted">This is a topic, not a story. There is no specific institution, person, conflict, or moment.</p>
-        </article>
-        <div class="standards-example-arrow">Then sharpen it.</div>
-        <article class="standards-compare-card standards-compare-card--good">
-          <div class="standards-compare-label">Specific Angle</div>
-          <p>"UMD is one of a handful of universities in the country to have launched a dedicated AI literacy major - and it is drawing students from every discipline."</p>
-          <p class="standards-muted">Specific institution. Concrete claim. Implied stakes. Now the reader has a reason to keep going.</p>
-        </article>
-      </div>
-    `,
+    id: "right", title: "Getting it right",
+    topics: [
+      {
+        id: "accuracy", title: "Accuracy and sourcing",
+        rule: "If you can't explain why it's true, don't publish it.",
+        body: `
+          <p>One error in the science can sink an otherwise excellent piece, and in science the consequences of misinformation are real.</p>
+          <ul class="es-list">
+            <li><strong>Read the primary source.</strong> Not just the press release or the university news story. Know what the researchers claim, and what they don't.</li>
+            <li><strong>Be exact with mechanisms.</strong> Strengthens, weakens, activates, inhibits and promotes are not interchangeable. Unsure which verb is right? Go back to the source.</li>
+            <li><strong>Ask when uncertain.</strong> A short email to the researcher beats a guess. They would rather answer than be misrepresented.</li>
+            <li><strong>Attribute every quote and claim,</strong> with the person's name and role the first time they appear.</li>
+            <li><strong>Flag doubt in your draft.</strong> Leave a comment for your editor on anything you're not sure of. Never guess silently.</li>
+          </ul>
+          <p>Stuck on a concept? Ask the team. Someone with a different background can often clear it up in minutes.</p>`,
+      },
+      {
+        id: "opinion", title: "Reporting, not opinion",
+        rule: "In a reported piece, conclusions belong to sources and evidence, not to you.",
+        body: `
+          <p>As soon as you write “universities must,” “we should” or “scientists need to,” you've moved from reporting to editorializing. Urgency and interpretation can stay in the piece; attribute them to experts, data or researchers.</p>
+          <p>Op-eds are the exception: they are opinion by design and say so. Know which format you're writing before you start. If a feature starts drifting into opinion, raise it with your editor.</p>`,
+        examples: [
+          ["avoid", "“Universities must integrate AI literacy into their curriculum immediately.”"],
+          ["do", "“Experts say AI literacy is increasingly seen as a core skill for graduates.”"],
+          ["avoid", "“This research proves current policy is wrong and must change.”"],
+          ["do", "“The researchers argue the findings challenge existing protocols and may warrant a policy review.”"],
+        ],
+      },
+      {
+        id: "voice", title: "Voice and credibility",
+        rule: "Sound like a person; check like a scientist.",
+        body: `
+          <p>Voice is why a reader finishes your article instead of someone else's on the same topic. Credibility is why they trust it: accurate science, honest attribution, the right caveats, and never overstating what the research shows. You need both. Let the evidence carry the bold claim.</p>`,
+        examples: [
+          ["avoid", "Too flat: “There is evidence suggesting that these programs may have positive effects on outcomes.”"],
+          ["avoid", "Too editorial: “Universities must adopt these programs.”"],
+          ["do", "Just right: a bold, specific sentence where the facts do the arguing, with every number traced to a source."],
+        ],
+      },
+    ],
   },
   {
-    id: "headlines",
-    number: "04",
-    label: "Craft",
-    title: "Headlines & Titles",
-    intro: "A headline is a promise and a sales pitch compressed into a single line. It needs to stop a scrolling reader, convey the story's value, and make them click - without being misleading or clickbaity.",
-    bodyHtml: `
-      <div class="standards-subhead">Go Aggressive</div>
-      <p>Do not default to the safe, vague headline. Push for something with energy. Strong modifiers can stress urgency and importance: urgent, necessary, essential, critical, first, already. The title should carry the same weight as the story it introduces.</p>
-
-      <div class="standards-subhead">Headline Principles</div>
-      <div class="standards-feature-grid">
-        <article class="standards-feature-card">
-          <h4>Active</h4>
-          <p>Prefer active voice. "Scientists discover a protein that erases fear" is stronger than "A protein has been discovered that may affect fear memory."</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Specific</h4>
-          <p>Avoid vague titles like "A New Study Changes Everything." Specificity creates trust and curiosity at the same time.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Stakes</h4>
-          <p>Tell the reader why this matters to them, to science, or to society. Stakes are part of the hook.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Honest</h4>
-          <p>Never overpromise. If the story is qualified, the headline must be qualified too. "May help" is not the same as "cures."</p>
-        </article>
-      </div>
-
-      <div class="standards-subhead">Title Workshop: Before & After</div>
-      <div class="standards-pair-table">
-        <div class="standards-pair-row">
-          <div class="standards-pair-cell standards-pair-cell--before">
-            <div class="standards-compare-label">Before</div>
-            <p>AI in Universities: A Growing Trend</p>
-          </div>
-          <div class="standards-pair-cell standards-pair-cell--after">
-            <div class="standards-compare-label">After</div>
-            <p>The AI Literacy Major That Could Reshape Every Campus</p>
-          </div>
-        </div>
-        <div class="standards-pair-row">
-          <div class="standards-pair-cell standards-pair-cell--before">
-            <div class="standards-compare-label">Before</div>
-            <p>Research on Memory and Protein</p>
-          </div>
-          <div class="standards-pair-cell standards-pair-cell--after">
-            <div class="standards-compare-label">After</div>
-            <p>Scientists Found the Protein That Lets Your Brain Forget Fear</p>
-          </div>
-        </div>
-        <div class="standards-pair-row">
-          <div class="standards-pair-cell standards-pair-cell--before">
-            <div class="standards-compare-label">Before</div>
-            <p>A Look at Climate Change Effects</p>
-          </div>
-          <div class="standards-pair-cell standards-pair-cell--after">
-            <div class="standards-compare-label">After</div>
-            <p>These Chesapeake Bay Ecosystems Are Already Past the Point of No Return</p>
-          </div>
-        </div>
-      </div>
-    `,
-  },
-  {
-    id: "voice",
-    number: "05",
-    label: "Identity",
-    title: "Voice & Credibility",
-    intro: "Science journalism demands a paradox: write with personality and conviction while maintaining the rigorous credibility of a scientist. Neither should be sacrificed. The goal is a voice that feels both authoritative and alive.",
-    bodyHtml: `
-      <div class="standards-subhead">Your Voice</div>
-      <p>Your voice is what makes a reader finish your article instead of someone else's version of the same topic. It is your rhythm, your curiosity on the page, and the way you frame a question. Protect it. The best science writers make bold, clear statements and let the evidence support them.</p>
-
-      <div class="standards-subhead">Credibility</div>
-      <p>Credibility is what makes a reader trust you. It comes from accurate science, honest attribution, appropriate caveats, and not overstating what the research actually says. Think of credibility as the foundation your voice stands on. If the foundation is weak, the whole piece collapses.</p>
-
-      <div class="standards-subhead">How to Let the Story Drive</div>
-      <p>Research culture trains you to present facts neutrally, but storytelling rewards bold statements. The answer is not to abandon one for the other. Let the story make the bold claim, supported by the evidence you have reported.</p>
-
-      <div class="standards-compare-grid standards-compare-grid--tight">
-        <article class="standards-compare-card standards-compare-card--warn">
-          <div class="standards-compare-label">Too Flat</div>
-          <p>"There is evidence suggesting that AI literacy programs may have positive effects on student outcomes."</p>
-          <p class="standards-muted">Passive and hedged to the point of meaninglessness.</p>
-        </article>
-        <article class="standards-compare-card standards-compare-card--bad">
-          <div class="standards-compare-label">Too Editorial</div>
-          <p>"Universities must integrate AI literacy and competency into their curriculum."</p>
-          <p class="standards-muted">That is the writer's opinion, not the reported conclusion of the story.</p>
-        </article>
-        <article class="standards-compare-card standards-compare-card--good">
-          <div class="standards-compare-label">Just Right</div>
-          <p>"UMD's AI literacy program is one of fewer than a dozen of its kind nationwide - and early data suggests its graduates are landing internships at twice the rate of peers from traditional CS programs."</p>
-          <p class="standards-muted">Bold, specific, and evidence-grounded. The facts do the arguing.</p>
-        </article>
-      </div>
-
-      <p>Different publications have different style guides and editorial personalities. The writers who thrive across outlets learn those constraints and still sound like themselves inside them.</p>
-    `,
-  },
-  {
-    id: "opinion",
-    number: "06",
-    label: "Integrity",
-    title: "Opinion vs. Reporting",
-    intro: "This is one of the most common - and most consequential - lines for new science writers to learn. Crossing it without noticing can undermine the entire piece.",
-    bodyHtml: `
-      <aside class="standards-callout standards-callout--warn">
-        <div class="standards-callout-label">Red Flag: Prescriptive Language</div>
-        <p>As soon as you write phrases like "universities must," "we should," "it is imperative that," or "scientists need to," you have shifted from reporting to editorializing. Unless you are writing an op-ed, your job is to report what is and what research shows, not tell institutions or people what to do.</p>
-      </aside>
-
-      <div class="standards-subhead">The Distinction in Practice</div>
-      <div class="standards-pair-table">
-        <div class="standards-pair-row">
-          <div class="standards-pair-cell">
-            <div class="standards-compare-label">Reporting</div>
-            <p>"Experts say AI literacy is increasingly seen as a core competency for graduates entering today's workforce."</p>
-          </div>
-          <div class="standards-pair-cell">
-            <div class="standards-compare-label">Editorializing</div>
-            <p>"Universities must integrate AI literacy into their curriculum immediately."</p>
-          </div>
-        </div>
-        <div class="standards-pair-row">
-          <div class="standards-pair-cell">
-            <div class="standards-compare-label">Reporting</div>
-            <p>"The study found that early dietary interventions reduced obesity rates by 34% in participating schools."</p>
-          </div>
-          <div class="standards-pair-cell">
-            <div class="standards-compare-label">Editorializing</div>
-            <p>"Schools need to prioritize nutrition education before it is too late."</p>
-          </div>
-        </div>
-        <div class="standards-pair-row">
-          <div class="standards-pair-cell">
-            <div class="standards-compare-label">Reporting</div>
-            <p>"Researchers argue the findings challenge existing protocols and may warrant a policy review."</p>
-          </div>
-          <div class="standards-pair-cell">
-            <div class="standards-compare-label">Editorializing</div>
-            <p>"This research proves that current policy is wrong and must change."</p>
-          </div>
-        </div>
-      </div>
-
-      <p>Notice what happens in the reporting examples: urgency and interpretation are still present, but they belong to experts, data, or researchers. Your job is to relay those conclusions faithfully and clearly.</p>
-
-      <div class="standards-subhead">Op-Eds Are the Exception</div>
-      <p>Op-eds are explicitly opinion pieces and have different rules. Catalyst publishes both reported features and op-eds. Know which format you are writing before you start. If a reported feature starts drifting into opinion, flag it with your editor or consider whether the idea belongs in the op-ed section instead.</p>
-    `,
-  },
-  {
-    id: "accuracy",
-    number: "07",
-    label: "Standards",
-    title: "Technical Accuracy",
-    intro: "Science journalism lives or dies on accuracy. A single factual error - especially on the underlying science - can destroy the credibility of an otherwise excellent piece. In science, the consequences of misinformation can be real.",
-    bodyHtml: `
-      <ol class="standards-number-list standards-number-list--cards">
-        <li><strong>Do not paraphrase if you are not sure.</strong> When you restate a scientific concept, ask whether you could explain exactly why it is true. If not, go back to the papers, experts, or textbooks until you can.</li>
-        <li><strong>Email your sources when uncertain.</strong> If the paper left you confused, do not guess. Ask the researcher to clarify the mechanism. They would rather answer a short email than see the work misrepresented in print.</li>
-        <li><strong>Be precise with mechanism descriptions.</strong> Terms like strengthens, weakens, activates, inhibits, promotes, and erases are not interchangeable in biology. If you are not sure which verb is right, that is the signal to return to the source.</li>
-        <li><strong>Read the primary source.</strong> Do not rely only on press releases, university news pages, or secondary summaries. Read the paper itself and make sure you understand both what the researchers are claiming and what they are not.</li>
-        <li><strong>Flag uncertainty in your draft.</strong> If you are not confident about a claim when submitting, say so in a comment for your editor. Transparency is always better than silent guessing.</li>
-      </ol>
-
-      <aside class="standards-callout">
-        <div class="standards-callout-label">Team Science</div>
-        <p>If you are stuck on a technical concept, bring it to the team. Someone with a different background may be able to quickly clarify a mechanism that is slowing you down. Catalyst is a collaborative publication. Use your colleagues.</p>
-      </aside>
-    `,
-  },
-  {
-    id: "depth",
-    number: "08",
-    label: "Structure",
-    title: "Depth vs. Breadth",
-    intro: "One of the trickiest challenges in science journalism is giving readers real substance without losing them in the weeds - and keeping depth without closing off your audience.",
-    bodyHtml: `
-      <aside class="standards-callout standards-callout--warn">
-        <div class="standards-callout-label">Do Not Write a Literature Review</div>
-        <p>One of the most common traps for science-trained writers is producing an article that reads like a survey paper: comprehensive, citation-heavy, methodologically accurate, and completely unreadable. Catalyst readers want a story, not a systematic review.</p>
-      </aside>
-
-      <div class="standards-subhead">Strategies for the Balance</div>
-      <div class="standards-feature-grid">
-        <article class="standards-feature-card">
-          <h4>Use One Case to Tell the Whole Story</h4>
-          <p>Instead of listing ten studies, go deep on one. Explain one research team's methodology in human terms, then zoom back out to show how it fits into the larger picture.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Prioritize Ruthlessly</h4>
-          <p>Not every fact you learned belongs in the article. Ask whether a detail moves the story forward or helps the reader understand the core finding. If not, cut it.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Let Experts Do the Heavy Lifting</h4>
-          <p>You do not need to explain every technical nuance yourself. Quote your sources and put those quotes in the right context and sequence.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Use Structure as a Guide</h4>
-          <p>If you have 2,000 words and no through-line, the problem is usually structure. Outline before you write. Know the lead, the three key sections, and the kicker.</p>
-        </article>
-      </div>
-
-      <div class="standards-subhead">Niche Pieces Are Okay - With the Right Frame</div>
-      <p>Catalyst publishes both broadly accessible pieces and deeper, more technical articles. A niche deep-dive is not automatically wrong. It still needs a frame that makes the non-expert care: start broad, go narrow, and come back broad.</p>
-    `,
-  },
-  {
-    id: "rhythm",
-    number: "09",
-    label: "Craft",
-    title: "Paragraph Rhythm",
-    intro: "Paragraph length is not a formatting detail - it is pacing. A page of uniform blocks reads as a wall no matter how good the sentences are, and a page of one-liners reads as fragments. What follows is the rhythm our published work actually uses.",
-    bodyHtml: `
-      <div class="standards-subhead">One Paragraph, One Idea</div>
-      <p>A paragraph ends when the idea turns, not when it hits a word count. If you cannot say what a paragraph is about in a short phrase, it is holding two ideas and should be split at the seam. This is the only rule here that is actually a rule; everything below describes what tends to follow from it.</p>
-      <p>Two failure modes come from ignoring it. The first is chopping a thought in half because the block looked long on screen, which leaves the reader holding an incomplete idea across a white gap. The second is letting a paragraph quietly pick up a second idea because it still looked short. Length is the symptom you notice; the idea is the thing you are actually editing.</p>
-
-      <div class="standards-subhead">The Shape of a Catalyst Paragraph</div>
-      <div class="standards-feature-grid">
-        <article class="standards-feature-card">
-          <h4>Aim for About Three Sentences</h4>
-          <p>Across our published work the median paragraph runs roughly 66 words and three sentences. Treat that as a center of gravity you drift around, not a target you hit.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Past 120 Words, Justify It</h4>
-          <p>Only about one paragraph in eight runs longer than 120 words. That length is right for a genuinely dense mechanism you cannot fairly split, and wrong as a default.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Under 40 Words, Make It Land</h4>
-          <p>Roughly one in five paragraphs runs short. They work when they carry a turn, a consequence, or a verdict - not when they are simply the leftovers of a longer thought.</p>
-        </article>
-        <article class="standards-feature-card">
-          <h4>Vary on Purpose</h4>
-          <p>Three consecutive paragraphs of the same length flatten the pace even when each one is fine alone. Read your draft for the shape of the blocks, not just the words.</p>
-        </article>
-      </div>
-
-      <div class="standards-subhead">Short Paragraphs Are a Landing, Not an Opener</div>
-      <p>This is the pattern our strongest pieces share. A short paragraph earns its force from what comes before it: it resolves a long passage, reverses it, or hands off to the next section. Placed at the top of a section, where nothing has accumulated yet, the same sentence reads as a fragment.</p>
-      <p>In Aidan Schurr's profile of Rebecca Katz, a 75-word account of her illness is followed by a single line: "This experience, harrowing and surreal, would change everything, she said." The line lands because of the weight in front of it. Later in the same piece, a 117-word passage on outbreak response resolves into "In theory, that level of coordination sounds simple. In practice, it remains elusive."</p>
-      <p>When you are editing, look at the sequence of block lengths rather than any single paragraph. A long stretch that never releases is tiring; a run of short blocks with nothing to land on is choppy. The fix is usually to build one and then release it.</p>
-
-      <div class="standards-subhead">Density Is Usually a Structure Problem</div>
-      <p>When a section feels bunched, adding paragraph breaks often treats the symptom. Dense stretches are usually a sign that the section is carrying too much, and the real fix is a section header or a tighter angle. Our published pieces run a section header roughly every three to four paragraphs, and those headers do more work against wall-of-text than any break ever will. See Depth vs. Breadth for how to narrow what a section is trying to do.</p>
-
-      <aside class="standards-callout standards-callout--warn">
-        <div class="standards-callout-label">It Depends on the Piece</div>
-        <p>These numbers describe the center of our range, not its edges. Profiles and interviews run noticeably tighter, often around 36 to 45 words per paragraph, because they move on scene and quote. Explainers and mechanism-heavy features run denser, sometimes well past 120. Match the rhythm to the form you are writing, and do not edit a profile into an explainer's shape to satisfy an average.</p>
-      </aside>
-    `,
-  },
-  {
-    id: "endings",
-    number: "10",
-    label: "Craft",
-    title: "Endings & Kickers",
-    intro: "A great ending does not just stop the article - it lands it. The final paragraph, or kicker, is your last impression and your last chance to resonate.",
-    bodyHtml: `
-      <div class="standards-compare-grid">
-        <article class="standards-compare-card">
-          <div class="standards-compare-label">The Quote Kicker</div>
-          <p>The most reliable ending in science journalism. End with a quote that captures the story's emotional or intellectual core - something forward-looking, poetic, or unexpectedly candid.</p>
-        </article>
-        <article class="standards-compare-card">
-          <div class="standards-compare-label">The Callback Kicker</div>
-          <p>Return to something from the lead - an image, a character, or an unanswered question - and resolve it or reframe it with new meaning.</p>
-        </article>
-        <article class="standards-compare-card">
-          <div class="standards-compare-label">The Implication Kicker</div>
-          <p>End with the larger implication of the story: the next question, the future it points toward, or the bigger puzzle this finding fits into.</p>
-        </article>
-      </div>
-
-      <div class="standards-subhead">Mining for Your Kicker</div>
-      <ul class="standards-checklist">
-        <li>Look for quotes that express wonder, uncertainty, or unexpected candor about the research.</li>
-        <li>Look for statements about what the researcher hopes to discover next, or what still puzzles them.</li>
-        <li>Look for a detail or anecdote that did not fit elsewhere but still carries emotional resonance.</li>
-        <li>Look for the moment in the interview where the source said something you were not expecting. That is often where the real ending lives.</li>
-      </ul>
-
-      <aside class="standards-callout standards-callout--warn">
-        <div class="standards-callout-label">Avoid the Summary Ending</div>
-        <p>Do not end with a paragraph that simply summarizes what the article covered. The reader already knows what they read. A kicker should add something new: a resonant quote, an emotional note, or a forward-looking implication.</p>
-      </aside>
-    `,
-  },
-  {
-    id: "workflow",
-    number: "11",
-    label: "Workflow",
-    title: "The Editing Process",
-    intro: "Great journalism is not written in isolation - it is written in collaboration. Editing is not a judgment; it is the final stage of making the work as strong as it can be.",
-    bodyHtml: `
-      <ol class="standards-number-list standards-number-list--cards">
-        <li><strong>Submit your draft openly.</strong> Sharing an unfinished draft with editors and colleagues is an act of trust. Do not defend first drafts. The goal is to improve the story, not protect the first version of it.</li>
-        <li><strong>Read all editor comments before responding.</strong> Understand the full pattern of the feedback before making changes. Individual notes often point to a larger structural issue.</li>
-        <li><strong>Question edits you do not understand.</strong> Ask why a change was suggested. Understanding the reasoning behind edits makes every future draft better.</li>
-        <li><strong>Verify after edits.</strong> If an edit changes a technical claim or mechanism, re-check it. Editing can introduce scientific errors, even with good intentions.</li>
-        <li><strong>Disagreement is welcome.</strong> If you disagree with an editor's suggestion, say so respectfully and explain why. Passive acceptance does not help your piece or your growth.</li>
-      </ol>
-
-      <aside class="standards-callout standards-callout--dark">
-        <div class="standards-callout-label">The Editorial Session Is a Learning Opportunity</div>
-        <p>Every group editing session - like the ones we hold with Professor Kintisch - is a masterclass in disguise. Even when it is not your piece being reviewed, the lessons transfer: the same structure problems, voice issues, and credibility traps show up again and again.</p>
-      </aside>
-    `,
-  },
-  {
-    id: "checklist",
-    number: "12",
-    label: "Quick Reference",
-    title: "Writer's Quick-Reference Checklist",
-    intro: "Run through this before submitting any draft.",
-    bodyHtml: `
-      <ul class="standards-checklist standards-checklist--boxed">
-        ${QUICK_CHECKLIST.map((item) => `<li>${esc(item)}</li>`).join("")}
-      </ul>
-    `,
+    id: "editing", title: "Editing",
+    topics: [
+      {
+        id: "writers", title: "For writers: working with your editor",
+        rule: "Editing isn't a verdict on you. It's the last stage of making the story good.",
+        body: `
+          <ul class="es-list">
+            <li><strong>Read every note before changing anything.</strong> Single comments often point to one bigger structural issue.</li>
+            <li><strong>Answer every comment.</strong> Accept it, change it, or explain respectfully why you disagree. Disagreement is welcome; silence isn't.</li>
+            <li><strong>Ask about edits you don't understand.</strong> Knowing the reason makes your next draft better.</li>
+            <li><strong>Re-check the science after edits.</strong> Well-meant edits can introduce errors in a mechanism or a number.</li>
+            <li><strong>Tick “Edits made”</strong> in the Story Tracker when you're done, so the admin knows the piece is ready.</li>
+          </ul>
+          <p>Group editing sessions are worth attending even when your piece isn't up: the same structure, voice and credibility problems come up again and again.</p>`,
+      },
+      {
+        id: "editors", title: "For editors: how we edit",
+        rule: "Make the writer's story better, in the writer's voice.",
+        body: `
+          <p>Read the whole draft once before you comment. Then edit in this order, so you don't polish sentences that will be cut:</p>
+          <ul class="es-list es-list--numbered">
+            <li><strong>Story.</strong> Is there a clear angle? Does the lead earn attention and does the piece keep its promise? Does the ending land?</li>
+            <li><strong>Structure.</strong> Does each section move the story forward? What should be cut, moved or expanded?</li>
+            <li><strong>Accuracy.</strong> Check every technical claim, number and name against the sources. Flag anything you can't verify.</li>
+            <li><strong>Fairness and format.</strong> Every quote attributed, no prescriptive language in a reported piece, the headline honest to the findings.</li>
+            <li><strong>Lines.</strong> Clarity, jargon, paragraph rhythm and style, last.</li>
+          </ul>
+          <p>Explain the why behind every note, and mark which notes are required and which are suggestions. Make line edits as suggestions the writer can accept, rather than silently rewriting their voice. You have 7 days from assignment; if you can't make it, tell an admin early. When your review is done, tick “Editor's review done” in the Story Tracker.</p>`,
+        examples: [
+          ["do", "“This paragraph repeats the lead's point. Cut it, or use it to set up the second study?”"],
+          ["avoid", "“Awkward.” A note the writer can't act on."],
+        ],
+      },
+    ],
   },
 ];
+
+const WRITER_CHECKLIST = [
+  "The piece has a specific angle, not just a topic.",
+  "The lead earns attention and promises a payoff the piece delivers.",
+  "Every technical term is defined the first time it appears.",
+  "Every quote is attributed with the person's name and role.",
+  "Every factual claim traces to the primary source or an interview.",
+  "No “must”, “should” or “need to” in a reported piece.",
+  "Paragraphs carry one idea each, and their length varies.",
+  "The ending lands on something new, not a summary.",
+  "The headline is specific and honest to the findings.",
+  "Anything I'm unsure of is flagged in a comment for my editor.",
+];
+
+const EDITOR_CHECKLIST = [
+  "I read the full draft once before commenting.",
+  "The angle, lead and ending work, or my notes say how to fix them.",
+  "I checked every technical claim, number and name against the sources.",
+  "Every quote is attributed; nothing in a reported piece reads as opinion.",
+  "The headline and deck are honest to what the story shows.",
+  "Every note explains why, and required changes are marked as required.",
+  "Line edits are suggestions, in the writer's voice.",
+  "I ticked “Editor's review done” in the Story Tracker.",
+];
+
+const STORE_KEY = "catalyst.standards.checks.v1";
+function loadChecks() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch { return {}; } }
+function saveChecks(v) { try { localStorage.setItem(STORE_KEY, JSON.stringify(v)); } catch {} }
+
+const STYLE = `
+.es { --es-measure: 68ch; display: grid; grid-template-columns: 236px minmax(0, 1fr); gap: 48px; align-items: start; max-width: 1180px; }
+.es-toc { position: sticky; top: calc(var(--top-h, 72px) + 24px); max-height: calc(100vh - var(--top-h, 72px) - 48px); overflow: auto; padding: 4px 0 24px; }
+.es-toc h2 { margin: 0 0 12px; font: 600 11px/1.3 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.es-toc ol { list-style: none; margin: 0; padding: 0; }
+.es-toc li + li { margin-top: 2px; }
+.es-toc .es-toc-group { margin: 16px 0 6px; font: 600 11px/1.3 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted-2); }
+.es-toc a { display: block; padding: 7px 10px 7px 12px; border-left: 2px solid var(--hairline); color: var(--muted); font: 500 13px/1.35 var(--font); text-decoration: none; transition: color .15s, border-color .15s; }
+.es-toc a:hover { color: var(--ink); }
+.es-toc a[aria-current="true"] { color: var(--ink); border-left-color: var(--ink); font-weight: 600; }
+.es-toc a:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 4px; }
+
+.es-main { min-width: 0; }
+.es-hero { padding: 6px 0 30px; border-bottom: 1px solid var(--hairline); }
+.es-eyebrow { margin: 0 0 10px; font: 600 11px/1.3 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.es-hero h1 { margin: 0; font: 600 clamp(26px, 3vw, 34px)/1.15 var(--font); letter-spacing: -0.025em; color: var(--ink); }
+.es-hero p { max-width: var(--es-measure); margin: 12px 0 0; font: 400 17px/1.6 var(--serif); color: var(--ink-2); }
+.es-hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.es-hero-actions a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); color: var(--ink); font: 500 13px var(--font); text-decoration: none; }
+.es-hero-actions a:hover { border-color: var(--ink-2); }
+.es-hero-actions a:focus-visible { outline: none; box-shadow: var(--focus); }
+
+.es-block { padding: 40px 0; border-bottom: 1px solid var(--hairline); scroll-margin-top: calc(var(--top-h, 72px) + 16px); }
+.es-block > h2 { margin: 0; font: 600 22px/1.25 var(--font); letter-spacing: -0.02em; color: var(--ink); }
+.es-block > .es-lede { max-width: var(--es-measure); margin: 8px 0 0; font: 400 16px/1.6 var(--serif); color: var(--muted); }
+
+.es-essentials { counter-reset: es; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; margin: 22px 0 0; padding: 0; }
+.es-essentials li { counter-increment: es; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 2px 8px; padding: 16px 0; border-top: 1px solid var(--hairline-2); }
+.es-essentials li::before { content: counter(es, decimal-leading-zero); grid-row: span 2; font: 600 13px/1.6 var(--font); color: var(--muted-2); }
+.es-essentials b { font: 600 15px/1.4 var(--font); color: var(--ink); }
+.es-essentials span { font: 400 14.5px/1.55 var(--serif); color: var(--ink-2); }
+
+.es-steps { list-style: none; margin: 22px 0 0; padding: 0; }
+.es-steps li { position: relative; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 28px; padding: 18px 0 18px 26px; border-top: 1px solid var(--hairline-2); }
+.es-steps li::before { content: ""; position: absolute; left: 4px; top: 25px; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); }
+.es-steps li::after { content: ""; position: absolute; left: 8px; top: 38px; bottom: -22px; width: 1px; background: var(--hairline); }
+.es-steps li:last-child::after { display: none; }
+.es-steps h3 { margin: 0; font: 600 15px/1.4 var(--font); color: var(--ink); }
+.es-steps .es-owner { display: block; margin-top: 2px; font: 500 12.5px/1.4 var(--font); color: var(--muted); }
+.es-steps p { margin: 0; font: 400 15px/1.6 var(--serif); color: var(--ink-2); }
+.es-steps .es-tracker { display: inline-block; margin-top: 8px; padding: 2px 9px; border-radius: 999px; background: var(--surface-3); font: 500 11.5px/1.6 var(--font); color: var(--ink-2); }
+
+.es-chapter-title { margin: 0 0 4px; font: 600 11px/1.3 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.es-topic { padding: 34px 0; border-bottom: 1px solid var(--hairline-2); scroll-margin-top: calc(var(--top-h, 72px) + 16px); }
+.es-topic:last-child { border-bottom: 0; }
+.es-topic h3 { margin: 0; font: 600 20px/1.3 var(--font); letter-spacing: -0.015em; color: var(--ink); }
+.es-rule { max-width: var(--es-measure); margin: 10px 0 0; padding-left: 14px; border-left: 3px solid var(--ink); font: 500 italic 17.5px/1.5 var(--serif); color: var(--ink); }
+.es-prose { max-width: var(--es-measure); }
+.es-prose p { margin: 14px 0 0; font: 400 16px/1.7 var(--serif); color: var(--ink-2); }
+.es-prose strong { color: var(--ink); font-weight: 600; }
+.es-list { margin: 12px 0 0; padding-left: 20px; font: 400 16px/1.65 var(--serif); color: var(--ink-2); }
+.es-list li + li { margin-top: 6px; }
+.es-list--numbered { list-style: decimal; }
+.es-examples { display: grid; gap: 8px; max-width: var(--es-measure); margin-top: 18px; }
+.es-ex { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 11px 14px; border-radius: var(--radius-sm); font: 400 15px/1.55 var(--serif); color: var(--ink-2); }
+.es-ex b { font: 600 11px/1.6 var(--font); letter-spacing: .08em; text-transform: uppercase; }
+.es-ex--do { background: var(--good-soft); }
+.es-ex--do b { color: var(--good); }
+.es-ex--avoid { background: var(--danger-soft); }
+.es-ex--avoid b { color: var(--danger); }
+
+.es-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 22px; }
+.es-check { padding: 20px 22px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); }
+.es-check-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.es-check h3 { margin: 0; font: 600 16px/1.3 var(--font); color: var(--ink); }
+.es-check-count { font: 500 12.5px var(--font); color: var(--muted); white-space: nowrap; }
+.es-check ul { list-style: none; margin: 0; padding: 0; }
+.es-check label { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; min-height: 44px; padding: 10px 0; border-top: 1px solid var(--hairline-2); cursor: pointer; font: 400 14.5px/1.5 var(--serif); color: var(--ink-2); }
+.es-check li:first-child label { border-top: 0; }
+.es-check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--ink); cursor: pointer; }
+.es-check input:checked + span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted-2); }
+.es-check-reset { min-height: 32px; margin-top: 10px; padding: 0 12px; border: 1px solid var(--hairline); border-radius: 999px; background: none; font: 500 12.5px var(--font); color: var(--muted); cursor: pointer; }
+.es-check-reset:hover { color: var(--ink); border-color: var(--ink-2); }
+.es-check-reset:focus-visible { outline: none; box-shadow: var(--focus); }
+
+@media (max-width: 1080px) {
+  .es { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .es-toc { display: none; }
+}
+@media (max-width: 720px) {
+  .es-essentials, .es-checks { grid-template-columns: minmax(0, 1fr); }
+  .es-steps li { grid-template-columns: minmax(0, 1fr); }
+  .es-ex { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .es-block { padding: 30px 0; }
+}
+@media (prefers-reduced-motion: reduce) { .es-toc a { transition: none; } }
+`;
+
+function ensureStyles() {
+  if (document.getElementById("es-styles")) return;
+  const st = document.createElement("style");
+  st.id = "es-styles";
+  st.textContent = STYLE;
+  document.head.appendChild(st);
+}
+
+const exampleHtml = ([kind, text]) =>
+  `<div class="es-ex es-ex--${kind}"><b>${kind === "do" ? "Do" : "Avoid"}</b><span>${esc(text)}</span></div>`;
+
+function topicHtml(t) {
+  return `
+    <article class="es-topic" id="${esc(t.id)}" data-es-section>
+      <h3>${esc(t.title)}</h3>
+      <p class="es-rule">${esc(t.rule)}</p>
+      <div class="es-prose">${t.body}</div>
+      ${t.examples ? `<div class="es-examples">${t.examples.map(exampleHtml).join("")}</div>` : ""}
+    </article>`;
+}
+
+function checklistHtml(id, title, items, checks) {
+  const done = items.filter((_, i) => checks[`${id}-${i}`]).length;
+  return `
+    <div class="es-check" data-list="${id}">
+      <div class="es-check-head"><h3>${esc(title)}</h3><span class="es-check-count" aria-live="polite">${done} of ${items.length}</span></div>
+      <ul>${items.map((item, i) => `
+        <li><label><input type="checkbox" data-check="${id}-${i}" ${checks[`${id}-${i}`] ? "checked" : ""}><span>${esc(item)}</span></label></li>`).join("")}
+      </ul>
+      <button type="button" class="es-check-reset" data-reset="${id}">Clear ticks</button>
+    </div>`;
+}
 
 export async function mount(ctx, container) {
+  ensureStyles();
   container.innerHTML = "";
+  const checks = loadChecks();
 
-  const page = el("div", { class: "standards-page" });
+  const toc = [
+    { id: "essentials", title: "The essentials" },
+    { id: "process", title: "How a story moves" },
+    ...CHAPTERS.flatMap((c) => [{ group: c.title }, ...c.topics.map((t) => ({ id: t.id, title: t.title.replace(/^For (writers|editors): /, (m, w) => w[0].toUpperCase() + w.slice(1) + ": ") }))]),
+    { group: "Checklists" },
+    { id: "checklists", title: "Before you submit or sign off" },
+  ];
+
+  const page = el("div", { class: "es" });
   page.innerHTML = `
-    <div class="standards-layout">
-      <aside class="standards-toc" aria-label="Section navigation">
-        <div class="standards-toc-card">
-          <div class="standards-toc-eyebrow">Jump to a section</div>
-          <div class="standards-toc-list">
-            ${SECTIONS.map((section) => `
-              <button class="standards-toc-link" type="button" data-section-target="${esc(section.id)}">
-                <span class="standards-toc-number">${esc(section.number)}</span>
-                <span class="standards-toc-text">
-                  <span class="standards-toc-label">${esc(section.label)}</span>
-                  <span class="standards-toc-title">${esc(section.title)}</span>
-                </span>
-              </button>
-            `).join("")}
-          </div>
-        </div>
-      </aside>
+    <nav class="es-toc" aria-label="On this page">
+      <h2>On this page</h2>
+      <ol>${toc.map((t) => t.group
+        ? `<li class="es-toc-group" aria-hidden="true">${esc(t.group)}</li>`
+        : `<li><a href="#/writer/guidelines?section=${esc(t.id)}" data-target="${esc(t.id)}">${esc(t.title)}</a></li>`).join("")}
+      </ol>
+    </nav>
 
-      <div class="standards-content">
-        ${SECTIONS.map((section) => `
-          <section class="standards-section" id="${esc(section.id)}" data-section-id="${esc(section.id)}">
-            <div class="standards-section-header">
-              <div class="standards-section-number">${esc(section.number)}</div>
-              <div class="standards-section-headcopy">
-                <div class="standards-section-label">${esc(section.label)}</div>
-                <h3 class="standards-section-title">${esc(section.title)}</h3>
-                <p class="standards-section-intro">${esc(section.intro)}</p>
-              </div>
-            </div>
-            <div class="standards-body-flow">
-              ${section.bodyHtml}
-            </div>
-          </section>
-        `).join("")}
-      </div>
-    </div>
-  `;
+    <div class="es-main">
+      <header class="es-hero">
+        <p class="es-eyebrow">Editorial standards</p>
+        <h1>How we write and edit at The Catalyst</h1>
+        <p>What every writer and editor is expected to do, from pitch to publication. Start with the essentials; the guide below explains each one, with examples.</p>
+        <div class="es-hero-actions">
+          <a href="#/writer/guidelines?section=checklists" data-target="checklists">Writer checklist</a>
+          <a href="#/writer/guidelines?section=editors" data-target="editors">Guidance for editors</a>
+        </div>
+      </header>
+
+      <section class="es-block" id="essentials" data-es-section aria-labelledby="es-h-essentials">
+        <h2 id="es-h-essentials">The essentials</h2>
+        <p class="es-lede">Eight standards every piece meets. If you remember nothing else, remember these.</p>
+        <ol class="es-essentials">${ESSENTIALS.map(([b, s]) => `<li><b>${esc(b)}</b><span>${esc(s)}</span></li>`).join("")}</ol>
+      </section>
+
+      <section class="es-block" id="process" data-es-section aria-labelledby="es-h-process">
+        <h2 id="es-h-process">How a story moves</h2>
+        <p class="es-lede">Every story follows the same steps in the Story Tracker. Each step has an owner and a default deadline; an admin can set different dates for a story.</p>
+        <ol class="es-steps">${PROCESS.map((s) => `
+          <li>
+            <div><h3>${esc(s.step)}</h3><span class="es-owner">${esc(s.owner)}</span></div>
+            <div><p>${esc(s.text)}</p><span class="es-tracker">In the tracker: ${esc(s.tracker)}</span></div>
+          </li>`).join("")}
+        </ol>
+      </section>
+
+      ${CHAPTERS.map((c) => `
+        <section class="es-block" aria-labelledby="es-h-${esc(c.id)}">
+          <p class="es-chapter-title" id="es-h-${esc(c.id)}">${esc(c.title)}</p>
+          ${c.topics.map(topicHtml).join("")}
+        </section>`).join("")}
+
+      <section class="es-block" id="checklists" data-es-section aria-labelledby="es-h-checks" style="border-bottom:0">
+        <h2 id="es-h-checks">Checklists</h2>
+        <p class="es-lede">Run the writer checklist before you tick “Draft finished”, and the editor checklist before “Editor's review done”. Your ticks stay in this browser until you clear them.</p>
+        <div class="es-checks">
+          ${checklistHtml("writer", "Before you submit a draft", WRITER_CHECKLIST, checks)}
+          ${checklistHtml("editor", "Before you sign off an edit", EDITOR_CHECKLIST, checks)}
+        </div>
+      </section>
+    </div>`;
   container.appendChild(page);
 
-  const sectionEls = Array.from(page.querySelectorAll("[data-section-id]"));
-  const tocButtons = Array.from(page.querySelectorAll("[data-section-target]"));
-  let activeSectionId = sectionEls[0]?.id || null;
-
-  const setActiveSection = (id) => {
-    if (!id || id === activeSectionId) return;
-    activeSectionId = id;
-    tocButtons.forEach((button) => {
-      const isActive = button.dataset.sectionTarget === id;
-      button.classList.toggle("active", isActive);
-      button.setAttribute("aria-current", isActive ? "true" : "false");
-    });
-    sectionEls.forEach((section) => section.classList.toggle("is-active", section.id === id));
+  // Checklists: remembered per browser.
+  const updateCount = (listId) => {
+    const box = page.querySelector(`[data-list="${listId}"]`);
+    const all = box.querySelectorAll("input[type=checkbox]");
+    box.querySelector(".es-check-count").textContent = `${[...all].filter((i) => i.checked).length} of ${all.length}`;
   };
+  page.querySelector(".es-checks").addEventListener("change", (e) => {
+    const box = e.target.closest("[data-check]"); if (!box) return;
+    checks[box.dataset.check] = box.checked;
+    if (!box.checked) delete checks[box.dataset.check];
+    saveChecks(checks);
+    updateCount(box.dataset.check.split("-")[0]);
+  });
+  page.querySelector(".es-checks").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-reset]"); if (!btn) return;
+    const id = btn.dataset.reset;
+    page.querySelectorAll(`[data-check^="${id}-"]`).forEach((i) => { i.checked = false; delete checks[i.dataset.check]; });
+    saveChecks(checks);
+    updateCount(id);
+  });
 
-  const scrollToSection = (id, behavior = "smooth") => {
-    const target = sectionEls.find((section) => section.id === id);
+  // In-page navigation: links scroll without leaving the route; the menu
+  // follows the section in view.
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sections = [...page.querySelectorAll("[data-es-section]")];
+  const links = [...page.querySelectorAll(".es-toc a")];
+  const mark = (id) => links.forEach((a) => a.setAttribute("aria-current", a.dataset.target === id ? "true" : "false"));
+  const go = (id, behavior) => {
+    const target = page.querySelector(`#${CSS.escape(id)}`);
     if (!target) return;
-    target.scrollIntoView({ behavior, block: "start" });
-    setActiveSection(id);
-  };
-
-  const updateSectionParam = (id) => {
+    target.scrollIntoView({ behavior: reduced ? "auto" : behavior, block: "start" });
     history.replaceState(null, "", `#/writer/guidelines?section=${encodeURIComponent(id)}`);
+    mark(id);
   };
-
-  const buttonHandlers = tocButtons.map((button) => {
-    const handler = () => {
-      const id = button.dataset.sectionTarget;
-      updateSectionParam(id);
-      scrollToSection(id, "smooth");
-    };
-    button.addEventListener("click", handler);
-    return { button, handler };
+  page.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-target]"); if (!a) return;
+    e.preventDefault();
+    go(a.dataset.target, "smooth");
   });
+  const io = new IntersectionObserver((entries) => {
+    const hit = entries.filter((x) => x.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+    if (hit) mark(hit.target.id);
+  }, { rootMargin: "-20% 0px -65% 0px" });
+  sections.forEach((s) => io.observe(s));
+  mark("essentials");
 
-  tocButtons.forEach((button, index) => {
-    const isFirst = index === 0;
-    button.classList.toggle("active", isFirst);
-    button.setAttribute("aria-current", isFirst ? "true" : "false");
-  });
-  if (sectionEls[0]) sectionEls[0].classList.add("is-active");
+  const requested = new URLSearchParams(location.hash.split("?")[1] || "").get("section");
+  if (requested) requestAnimationFrame(() => setTimeout(() => go(requested, "auto"), 40));
 
-  const observer = new IntersectionObserver((entries) => {
-    const visible = entries
-      .filter((entry) => entry.isIntersecting)
-      .sort((a, b) => {
-        if (b.intersectionRatio !== a.intersectionRatio) {
-          return b.intersectionRatio - a.intersectionRatio;
-        }
-        return a.boundingClientRect.top - b.boundingClientRect.top;
-      });
-
-    if (!visible.length) return;
-    setActiveSection(visible[0].target.id);
-  }, {
-    rootMargin: "-18% 0px -58% 0px",
-    threshold: [0.1, 0.2, 0.35, 0.6],
-  });
-
-  sectionEls.forEach((section) => observer.observe(section));
-
-  const requestedSection = new URLSearchParams(location.hash.split("?")[1] || "").get("section");
-  if (requestedSection && sectionEls.some((section) => section.id === requestedSection)) {
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        scrollToSection(requestedSection, "auto");
-      }, 40);
-    });
-  }
-
-  return () => {
-    observer.disconnect();
-    buttonHandlers.forEach(({ button, handler }) => button.removeEventListener("click", handler));
-  };
+  return () => io.disconnect();
 }
