@@ -457,6 +457,16 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ua-table td[data-label="Email"] > div:first-child { font-family: var(--font) !important; font-size: 12.5px !important; color: var(--muted) !important; max-width: 210px; }
 .ua-table td[data-label="Role"] .select { min-height: 34px !important; min-width: 168px; font-size: 13px !important; padding-right: 28px !important; }
 .ua-table td[data-label="Status"] .pill { background: none; color: var(--ink-2); padding: 0; letter-spacing: .06em; }
+/* Readers: no Suite access, no bot reminders. Grouped under a divider at
+   the foot of Users & roles and tinted red so they read as "off". */
+.ua-table tr.ua-divider td { padding: 26px 10px 10px !important; background: none !important; border-bottom: 1px solid var(--danger) !important; font: 600 11px/1.4 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--danger); }
+.ua-table .ua-divider-count { display: inline-block; min-width: 20px; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--danger-soft); text-align: center; letter-spacing: 0; }
+.ua-table .ua-divider-note { margin-left: 12px; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; color: var(--muted); }
+.ua-table tr.ua-row-reader td { background: color-mix(in srgb, var(--danger-soft) 55%, transparent); }
+.ua-table tr.ua-row-reader td[data-label="User"] { color: var(--danger) !important; }
+.ua-table tr.ua-row-reader td[data-label="Role"] .select { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent) !important; }
+.ua-table tr.ua-row-reader td[data-label="Status"] .pill { color: var(--muted); }
+.ua-off { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; background: var(--danger-soft); color: var(--danger); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .ua-table td[data-label="Status"] .pill-published::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--good); vertical-align: 0; }
 
 /* ==========================================================================

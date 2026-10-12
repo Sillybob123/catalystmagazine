@@ -376,13 +376,26 @@ async function loadUsers(mount, ctx, reload) {
       </tr></thead><tbody></tbody>`;
     const tbody = table.querySelector("tbody");
 
-    snap.forEach((d) => {
+    // Readers have no Suite access and get no bot reminders (see
+    // isFormerTeamMember in functions/_utils/bot-logic.js): list the team
+    // first, then the readers under a divider, tinted red.
+    const isReader = (u) => (u.role || "reader") === "reader";
+    const team = snap.docs.filter((d) => !isReader(d.data()));
+    const readers = snap.docs.filter((d) => isReader(d.data()));
+
+    [...team, ...readers].forEach((d, i) => {
       const u = d.data();
+      const reader = isReader(u);
+      if (reader && i === team.length) {
+        const div = el("tr", { class: "ua-divider" });
+        div.innerHTML = `<td colspan="7">Readers <span class="ua-divider-count">${readers.length}</span><span class="ua-divider-note">No Suite access and no reminder emails. Pick a role to bring someone back.</span></td>`;
+        tbody.appendChild(div);
+      }
       const p = presence.get(d.id);
       const last = p?.lastSeenAt || u.lastSeenAt;
       const reminderStatus = getBotReminderExemptionState(u);
       const extraEmails = Array.isArray(u.extraEmails) ? u.extraEmails.filter(Boolean) : [];
-      const tr = el("tr", {});
+      const tr = el("tr", reader ? { class: "ua-row-reader" } : {});
       // data-label is read by the mobile stylesheet to render a label
       // next to each cell when the table collapses into stacked cards
       // on phones. Without it, the cards look like an unlabeled blob.
@@ -399,7 +412,7 @@ async function loadUsers(mount, ctx, reload) {
           </select>
         </td>
         <td data-label="Status"><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}" style="font-size:11px;">${esc(u.status || "active")}</span></td>
-        <td data-label="Bot reminders">${renderBotReminderStatus(reminderStatus)}</td>
+        <td data-label="Bot reminders">${reader ? `<span class="ua-off">Off · reader</span>` : renderBotReminderStatus(reminderStatus)}</td>
         <td data-label="Last seen" style="white-space:nowrap;" title="${u.createdAt ? "Joined " + escAttr(fmtDate(u.createdAt)) : ""}">
           ${last
             ? `<div style="font-size:12px;color:var(--ink-2);">${fmtRelative(last)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(last)}</div>`
@@ -425,7 +438,8 @@ async function loadUsers(mount, ctx, reload) {
       const uid = sel.dataset.id;
       try {
         await updateDoc(doc(db, "users", uid), { role: sel.value });
-        ctx.toast("Role updated.", "success");
+        ctx.toast(sel.value === "reader" ? "Set to Reader: no access, no reminders." : "Role updated.", "success");
+        reload();   // regroup: readers sit in their own section at the bottom
       } catch (err) { ctx.toast("Update failed: " + err.message, "error"); }
     });
 
