@@ -129,7 +129,9 @@ export const onRequestPost = async ({ request, env }) => {
       authorId: caller.uid,
       authorName: String(sub.submitterName || "").slice(0, 200),
       author: String(sub.submitterName || "").slice(0, 200),
-      submitterEmail: String(sub.submitterEmail || "").slice(0, 200),
+      // No submitter email here: published stories are world-readable
+      // (firestore.rules), so contact details stay on the staff-only
+      // submission, linked by sourceSubmissionId.
       category: "book-review",
       status: "published",
       communityPick: true,
@@ -151,7 +153,8 @@ export const onRequestPost = async ({ request, env }) => {
       createdAt: now,
       updatedAt: now,
       publishedAt: now,
-      publishedBy: decidedBy,
+      // uid, not decidedBy (which is the approver's email), for the same reason.
+      publishedBy: caller.uid,
       sourceSubmissionId: submissionId,
     };
 

@@ -81,3 +81,6 @@ build/
 # Source images for social previews — optimized versions live in
 # /images/social/ and are what actually ships.
 /bookprevie.jpeg
+
+# Removed-PII backup written by scripts/strip-story-pii.js (contains emails)
+scripts/.story-pii-backup.json

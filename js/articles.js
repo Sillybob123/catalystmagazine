@@ -181,7 +181,7 @@
 
   function coverHTML(e) {
     return '<span class="ea-cover' + (e.night ? ' is-night' : '') + '" aria-hidden="true">' +
-      '<img class="art" src="' + esc(e.cover) + '" alt="" width="700" height="937" loading="lazy" decoding="async">' +
+      '<img class="art" src="' + esc(e.cover) + '" alt="Cover of The Catalyst Magazine, ' + esc(e.label) + ' edition: ' + esc(e.title) + '" width="700" height="937" loading="lazy" decoding="async">' +
       '<span class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234"><span class="ea-dateline"><span>' + esc(e.label) + '</span><span>No. ' + esc(e.no) + '</span></span></span></span>';
   }
 

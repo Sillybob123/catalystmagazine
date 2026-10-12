@@ -16,10 +16,10 @@ Disallow: /api/
 # for the redirect rules. Do NOT re-add these Disallow lines without
 # also confirming there's no redirect that needs to be discoverable.
 
-# Block tracking-parameter URL variants from being treated as separate pages
-Disallow: /*?utm_
-Disallow: /*?fbclid=
-Disallow: /*?gclid=
+# Tracking-parameter variants (?utm_, ?fbclid=, ?gclid=) are NOT blocked:
+# every page declares a canonical URL, and Google has to crawl a variant to
+# see it. Blocking them left shared links stuck as "Indexed, though blocked
+# by robots.txt", the same trap as the /post/ paths above.
 
 Sitemap: https://www.catalyst-magazine.com/sitemap.xml
 Host: www.catalyst-magazine.com

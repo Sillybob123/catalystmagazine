@@ -1,6 +1,6 @@
 // Shared helpers for loading article metadata server-side.
-// Used by functions/article.html.js (OG meta injection) and
-// functions/sitemap.xml.js (sitemap generation).
+// Used by functions/article/[slug].js + book-review/[slug].js (meta, JSON-LD
+// and the server-rendered body) and functions/sitemap.xml.js.
 //
 // Data comes from two sources:
 //   1. posts/article<N>.json — committed JSON files
@@ -222,6 +222,15 @@ function firestoreDocToArticle(doc) {
       ? content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 220)
       : "Read this story on The Catalyst Magazine.");
 
+  const updatedRaw =
+    f.updatedAt?.timestampValue ||
+    f.updatedAt?.stringValue ||
+    f.editedByAdminAt?.timestampValue ||
+    "";
+  const tags = (f.tags?.arrayValue?.values || [])
+    .map((v) => v.stringValue)
+    .filter(Boolean);
+
   return {
     id,
     title,
@@ -229,10 +238,19 @@ function firestoreDocToArticle(doc) {
     author: str("authorName") || str("author") || "The Catalyst",
     date,
     image: resolveImage(str("coverImage") || str("image")),
+    // Unresolved cover, as the client sees it (for the server-rendered <img>).
+    rawImage: str("coverImage") || str("image"),
     excerpt,
+    deck,
+    // Full story HTML — rendered into the article shell server-side.
+    contentHtml: content,
     category: (str("category") || "feature").toLowerCase(),
     publishedAt: publishedRaw,
+    updatedAt: updatedRaw,
+    tags,
+    lightCover: bool("lightCover"),
     bookAuthor: str("bookAuthor"),
+    bookTitle: str("bookTitle"),
     isbn: str("isbn"),
     genre: str("genre"),
     rating: num("rating"),
@@ -414,7 +432,7 @@ export function titleToLegacySlug(title) {
 // Google has context even for bare/empty-excerpt articles.
 export function buildArticleDescription(article, maxLength = 160) {
   const clean = (s) => String(s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  const sources = [article?.excerpt, article?.deck, article?.content, article?.body];
+  const sources = [article?.excerpt, article?.deck, article?.contentHtml, article?.content, article?.body];
   let base = "";
   for (const s of sources) {
     const v = clean(s);

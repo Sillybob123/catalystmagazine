@@ -29,7 +29,7 @@
 
   function cover(ed, cls) {
     return '<span class="ed-cover ' + (cls || '') + (ed.night ? ' is-night' : '') + '" aria-hidden="true">' +
-      '<img class="ed-cover__art" src="' + esc(ed.cover) + '" alt="" loading="lazy" decoding="async">' +
+      '<img class="ed-cover__art" src="' + esc(ed.cover) + '" alt="Cover of The Catalyst Magazine, ' + esc(ed.label) + ' edition: ' + esc(ed.title) + '" loading="lazy" decoding="async">' +
       '<span class="ed-cover__mast"><img src="/edition-art/winter/masthead.webp?v=1" alt=""><span class="ed-cover__date"><span>' + esc(ed.label) + '</span><span>No. ' + esc(ed.no) + '</span></span></span>' +
       '<span class="ed-cover__title">' + esc(ed.title) + '</span></span>';
   }

@@ -13,7 +13,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>The Catalyst Magazine | STEM in Washington D.C.</title>
-    <meta name="description" content="The Catalyst Magazine is Washington, D.C.&#39;s student-run STEM publication: profiles, interviews and features on the science, research and innovation shaping the capital, published each season as an edition.">
+    <meta name="description" content="Washington, D.C.&#39;s student-run STEM magazine: profiles, interviews and features on the science, research and innovation shaping the capital, every season.">
     <meta name="keywords" content="The Catalyst Magazine, Catalyst Magazine, Catalyst DC, The Catalyst, STEM magazine Washington DC, student-run science magazine, science journalism DC, research profiles, science interviews">
     <meta name="author" content="The Catalyst Magazine">
     <meta name="robots" content="index, follow, max-image-preview:large">
@@ -67,6 +67,7 @@
                 "@id": "https://www.catalyst-magazine.com/#website",
                 "url": "https://www.catalyst-magazine.com/",
                 "name": "The Catalyst Magazine",
+                "alternateName": ["The Catalyst", "Catalyst Magazine", "Catalyst Magazine DC"],
                 "publisher": { "@id": "https://www.catalyst-magazine.com/#organization" },
                 "inLanguage": "en-US",
                 "potentialAction": {
@@ -757,12 +758,12 @@
                 <p class="sr-only">A pen-and-ink drawing of the National Mall, from the Washington Monument to the U.S. Capitol, draws itself as you scroll.</p>
 
                 <div class="scene-copy hero-copy" id="hero-copy">
-                    <p class="kicker">Student-run STEM magazine &middot; Washington, D.C.</p>
+                    <p class="kicker">The Catalyst Magazine &middot; Washington, D.C.</p>
                     <h1 class="display" id="hero-title">
                         <span class="line"><span>STEM in the</span></span>
                         <span class="line"><span>Nation&rsquo;s <em>Capital.</em></span></span>
                     </h1>
-                    <p class="lede">Profiles, interviews, and features on the science shaping D.C. &mdash; reported, edited, and designed by students, and published each season as an edition.</p>
+                    <p class="lede">A student-run STEM magazine: profiles, interviews, and features on the science shaping D.C. &mdash; reported, edited, and designed by students, and published each season as an edition.</p>
                     <div class="hb-actions">
                         <a href="#latest" class="hb-btn hb-btn-ink">Read the latest
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -794,7 +795,7 @@
                         <image href="/beta/mark-hex.webp?v=1" width="643" height="622" mask="url(#hb-hex-mask)"/>
                         <image href="/beta/mark-orbits.webp?v=1" width="643" height="622" mask="url(#hb-orb-mask)"/>
                     </svg>
-                    <img class="hb-word" src="/beta/wordmark.webp?v=1" alt="" width="900" height="142">
+                    <img class="hb-word" src="/beta/wordmark.webp?v=1" alt="The Catalyst" width="900" height="142">
                     <span class="hb-sep"></span>
                     <p class="brand-head">The latest <em>stories.</em></p>
                     <span class="hb-rule"></span>
@@ -873,7 +874,7 @@
                         <span class="peek-bg" aria-hidden="true"></span>
                         <span class="peek-cover" aria-hidden="true">
                             <span class="ea-cover">
-                                <img class="art" src="/edition-art/winter/cover-700.webp?v=1" alt="" width="700" height="937" loading="lazy" decoding="async">
+                                <img class="art" src="/edition-art/winter/cover-700.webp?v=1" alt="Cover of The Catalyst Magazine, Winter 2027 edition: Medical Innovation in the Capital" width="700" height="937" loading="lazy" decoding="async">
                                 <span class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234"><span class="ea-dateline"><span>Winter 2027</span><span>No. 06</span></span></span>
                                 <span class="ea-cover-title">Medical Innovation in the Capital</span>
                             </span>
@@ -1986,7 +1987,7 @@
         shelf.innerHTML = list.map(function (e, i) {
           return '<li data-reveal style="--delay:' + (i * 0.06).toFixed(2) + 's; --acc:' + e.acc + '"><a href="' + esc(e.page) + '" aria-label="The ' + esc(e.label) + ' edition: ' + esc(e.title) + '">' +
             '<span class="ea-cover' + (e.night ? ' is-night' : '') + '">' +
-              '<img class="art" src="' + esc(e.cover) + '" alt="" width="700" height="937" loading="lazy" decoding="async">' +
+              '<img class="art" src="' + esc(e.cover) + '" alt="Cover of The Catalyst Magazine, ' + esc(e.label) + ' edition: ' + esc(e.title) + '" width="700" height="937" loading="lazy" decoding="async">' +
               '<span class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234"><span class="ea-dateline"><span>' + esc(e.label) + '</span><span>No. ' + esc(e.no) + '</span></span></span>' +
               '<span class="ea-cover-title">' + esc(e.title) + '</span>' +
             '</span>' +

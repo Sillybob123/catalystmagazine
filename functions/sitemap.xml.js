@@ -1,41 +1,69 @@
 // GET /sitemap.xml
-// Dynamically built from the committed JSON posts + published Firestore
-// stories. Cached at the edge for an hour — fresh enough for new publishes,
-// cheap enough to survive Googlebot hitting it regularly.
+// Built from the published Firestore stories, the published editions
+// (edition-art/editions.json) and the indexable static pages below. Shadows
+// the static sitemap.xml in the repo root, which is only a fallback.
+//
+// <lastmod> must be a real content date: Google ignores it site-wide once it
+// sees it changing on every fetch. Static pages carry the date they last
+// changed (bump it when a page is meaningfully rewritten); the home page,
+// /articles, /editions and the current edition follow the newest story.
 
 import { listAllArticles, titleToSlug, SITE_URL, getSiteUrl } from "./_utils/article-meta.js";
 
+// lastmod "latest" = date of the newest published story.
 const STATIC_PAGES = [
-  { path: "/", priority: "1.0", changefreq: "daily" },
-  { path: "/articles", priority: "0.9", changefreq: "daily" },
-  { path: "/book-reviews", priority: "0.8", changefreq: "weekly" },
-  { path: "/about", priority: "0.7", changefreq: "monthly" },
-  { path: "/sponsors", priority: "0.7", changefreq: "monthly" },
-  { path: "/collaborate", priority: "0.6", changefreq: "monthly" },
-  { path: "/contact", priority: "0.6", changefreq: "monthly" },
-  { path: "/privacy", priority: "0.3", changefreq: "yearly" },
+  { path: "/", priority: "1.0", changefreq: "daily", lastmod: "latest" },
+  { path: "/articles", priority: "0.9", changefreq: "daily", lastmod: "latest" },
+  { path: "/editions", priority: "0.8", changefreq: "monthly", lastmod: "latest" },
+  { path: "/book-reviews", priority: "0.8", changefreq: "weekly", lastmod: "latest-review" },
+  { path: "/about", priority: "0.7", changefreq: "monthly", lastmod: "2026-10-10" },
+  { path: "/collaborate", priority: "0.6", changefreq: "monthly", lastmod: "2026-09-30" },
+  { path: "/sponsors", priority: "0.6", changefreq: "monthly", lastmod: "2026-09-25" },
+  { path: "/brain-teaser", priority: "0.5", changefreq: "weekly", lastmod: "2026-10-01" },
+  { path: "/contact", priority: "0.5", changefreq: "yearly", lastmod: "2026-09-25" },
+  { path: "/privacy", priority: "0.3", changefreq: "yearly", lastmod: "2026-09-25" },
+  { path: "/terms", priority: "0.3", changefreq: "yearly", lastmod: "2026-09-25" },
 ];
 
 export const onRequestGet = async ({ request, env }) => {
   const siteUrl = getSiteUrl(request, env) || SITE_URL;
   const today = new Date().toISOString().slice(0, 10);
 
-  const articles = await listAllArticles().catch(() => []);
+  const origin = new URL(request.url).origin;
+  const [articles, editions] = await Promise.all([
+    listAllArticles().catch(() => []),
+    loadEditions(origin),
+  ]);
 
   const urls = [];
 
-  // Freshest article lastmod doubles as the homepage/articles lastmod
-  // so Google re-checks those pages whenever a new article is published.
-  const mostRecent = articles
+  // Freshest story date doubles as the lastmod of the pages that list
+  // stories, so Google re-checks them whenever something is published.
+  const newest = (list) => list
     .map((a) => toIsoDate(a.publishedAt || a.date))
     .filter(Boolean)
     .sort()
-    .pop() || today;
+    .pop() || "";
+  const isReview = (a) => String(a.category || "").toLowerCase() === "book-review";
+  const latest = newest(articles.filter((a) => !isReview(a))) || today;
+  const latestReview = newest(articles.filter(isReview)) || latest;
 
   for (const page of STATIC_PAGES) {
-    const pageMod = (page.path === "/" || page.path === "/articles") ? mostRecent : today;
+    const pageMod = page.lastmod === "latest" ? latest
+      : page.lastmod === "latest-review" ? latestReview
+      : page.lastmod;
     urls.push(
       `<url><loc>${siteUrl}${page.path}</loc><lastmod>${pageMod}</lastmod><changefreq>${page.changefreq}</changefreq><priority>${page.priority}</priority></url>`
+    );
+  }
+
+  // Published editions. Upcoming/hidden ones (edition-winter, edition-spring)
+  // aren't in editions.json and are noindex, so they stay out.
+  for (const ed of editions) {
+    if (!ed.page || !ed.page.startsWith("/")) continue;
+    const image = ed.cover ? `<image:image><image:loc>${escapeXml(siteUrl + ed.cover)}</image:loc><image:title>${escapeXml(`The Catalyst, ${ed.label}: ${ed.title}`)}</image:title></image:image>` : "";
+    urls.push(
+      `<url><loc>${escapeXml(siteUrl + ed.page)}</loc><lastmod>${ed.current ? latest : EDITION_PAGES_UPDATED}</lastmod><changefreq>${ed.current ? "weekly" : "yearly"}</changefreq><priority>${ed.current ? "0.8" : "0.6"}</priority>${image}</url>`
     );
   }
 
@@ -48,7 +76,7 @@ export const onRequestGet = async ({ request, env }) => {
     const loc = isBookReview
       ? `${siteUrl}/book-review/${encodeURIComponent(slug)}`
       : `${siteUrl}/article/${encodeURIComponent(slug)}`;
-    const lastmod = toIsoDate(a.publishedAt || a.date) || today;
+    const lastmod = toIsoDate(a.updatedAt) || toIsoDate(a.publishedAt || a.date) || today;
     const image = a.image ? `<image:image><image:loc>${escapeXml(a.image)}</image:loc><image:title>${escapeXml(a.title)}</image:title></image:image>` : "";
     urls.push(
       `<url><loc>${escapeXml(loc)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority>${image}</url>`
@@ -70,6 +98,20 @@ ${urls.join("\n")}
     },
   });
 };
+
+// When the past-edition pages last changed (they're rebuilt together).
+const EDITION_PAGES_UPDATED = "2026-09-30";
+
+async function loadEditions(origin) {
+  try {
+    const res = await fetch(`${origin}/edition-art/editions.json`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Object.values(data || {}).filter((e) => e && typeof e === "object");
+  } catch {
+    return [];
+  }
+}
 
 function toIsoDate(s) {
   if (!s) return "";

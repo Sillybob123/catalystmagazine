@@ -17,6 +17,7 @@
 //      redirect to /articles if nothing is found).
 
 import { findArticleBySlug, listAllArticles, titleToSlug, titleToLegacySlug, resolveOgImage, getSiteUrl, getFallbackImage, buildArticleDescription } from "../_utils/article-meta.js";
+import { renderArticleSsr } from "../_utils/article-ssr.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
@@ -30,6 +31,9 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   // dropped non-ASCII letters (e.g. "g-del-…" for "Gödel…") still resolve.
   const wanted = slug.toLowerCase();
   let article = await findArticleBySlug(wanted).catch(() => null);
+  // Set when the full list loaded but nothing matched — a real 404, as
+  // opposed to Firestore being briefly unreachable (empty list).
+  let definitelyMissing = false;
   if (!article) {
     const articles = await listAllArticles().catch(() => []);
     article =
@@ -45,6 +49,9 @@ export const onRequestGet = async ({ request, env, params, next }) => {
         return full && full.length > wanted.length && full.startsWith(wanted);
       }) : null) ||
       null;
+    // listAllArticles caps at 200; past that, an older story could simply
+    // be outside the window, so only trust a miss on a complete list.
+    definitelyMissing = !article && articles.length > 0 && articles.length < 200;
   }
 
   const siteUrl = getSiteUrl(request, env);
@@ -71,7 +78,18 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   const origin_response = await fetch(`${origin}/article`);
   if (!origin_response.ok) return origin_response;
 
-  if (!article) return origin_response;
+  // Unknown slug: keep the shell (the client shows its not-found state) but
+  // answer 404 + noindex so Google doesn't index an empty page as a story.
+  if (!article) {
+    if (!definitelyMissing) return origin_response;
+    const notFound = new HTMLRewriter()
+      .on('meta[name="robots"]', { element: (el) => el.setAttribute("content", "noindex, follow") })
+      .transform(origin_response);
+    const h = new Headers(notFound.headers);
+    h.set("Content-Type", "text/html; charset=utf-8");
+    h.set("Cache-Control", "public, max-age=60, s-maxage=300");
+    return new Response(notFound.body, { status: 404, headers: h });
+  }
 
   // Canonical = the article's own slug (from the DB), NOT the URL slug Google
   // crawled. If a bot fetches a truncated/mangled URL like
@@ -100,9 +118,12 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   const image = resolveOgImage(article.image, siteUrl) || getFallbackImage(siteUrl);
   const author = article.author || SITE_NAME;
   const published = toIsoDate(article.publishedAt || article.date);
+  const modified = toIsoDate(article.updatedAt) || published;
   const section = formatCategory(article.category);
+  const tags = Array.isArray(article.tags) ? article.tags : [];
 
-  const jsonLd = buildArticleJsonLd({ title: article.title, description, image, author, published, section, canonical, siteUrl });
+  const jsonLd = buildArticleJsonLd({ title: article.title, description, image, author, published, modified, section, tags, canonical, siteUrl });
+  const bodyHtml = renderArticleSsr(article, section);
 
   const rewriter = new HTMLRewriter()
     .on("title", { element: (el) => el.setInnerContent(escapeHtml(title)) })
@@ -120,6 +141,14 @@ export const onRequestGet = async ({ request, env, params, next }) => {
     .on('meta[name="twitter:image:alt"]', { element: (el) => el.setAttribute("content", article.title) })
     .on('meta[property="og:image:width"]', { element: (el) => el.remove() })
     .on('meta[property="og:image:height"]', { element: (el) => el.remove() })
+    .on('meta[name="robots"]', { element: (el) => el.setAttribute("content", "index, follow, max-image-preview:large, max-snippet:-1") })
+    // The story itself, so crawlers that don't run JS still read it.
+    .on("#article-detail", {
+      element(el) {
+        el.setAttribute("data-ssr", "1");
+        el.setInnerContent(bodyHtml, { html: true });
+      },
+    })
     .on("head", {
       element(el) {
         el.append(`<link rel="canonical" href="${escapeAttr(canonical)}">`, { html: true });
@@ -130,11 +159,18 @@ export const onRequestGet = async ({ request, env, params, next }) => {
         if (published) {
           el.append(`<meta property="article:published_time" content="${escapeAttr(published)}">`, { html: true });
         }
+        if (modified) {
+          el.append(`<meta property="article:modified_time" content="${escapeAttr(modified)}">`, { html: true });
+        }
         if (section) {
           el.append(`<meta property="article:section" content="${escapeAttr(section)}">`, { html: true });
         }
+        for (const tag of tags) {
+          el.append(`<meta property="article:tag" content="${escapeAttr(tag)}">`, { html: true });
+        }
         el.append(`<meta name="author" content="${escapeAttr(author)}">`, { html: true });
-        el.append(`<script type="application/ld+json">${jsonLd}</script>`, { html: true });
+        // Same id js/main.js upserts, so the page ends up with one block.
+        el.append(`<script type="application/ld+json" id="catalyst-article-jsonld">${jsonLd}</script>`, { html: true });
         // Embed the article ID so client JS can load without a slug→id lookup.
         el.append(`<meta name="catalyst-article-id" content="${escapeAttr(String(article.id))}">`, { html: true });
       },
@@ -166,7 +202,7 @@ function formatCategory(cat) {
   return map[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
 }
 
-function buildArticleJsonLd({ title, description, image, author, published, section, canonical, siteUrl }) {
+function buildArticleJsonLd({ title, description, image, author, published, modified, section, tags, canonical, siteUrl }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -174,12 +210,15 @@ function buildArticleJsonLd({ title, description, image, author, published, sect
     description,
     image: [image],
     author: [{ "@type": "Person", name: author }],
-    publisher: { "@type": "Organization", name: SITE_NAME, logo: { "@type": "ImageObject", url: `${siteUrl}/NewLogoShape.png` } },
+    publisher: { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: SITE_NAME, url: `${siteUrl}/`, logo: { "@type": "ImageObject", url: `${siteUrl}/NewLogoShape.png` } },
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
     url: canonical,
+    inLanguage: "en-US",
     articleSection: section,
+    isAccessibleForFree: true,
   };
-  if (published) { data.datePublished = published; data.dateModified = published; }
+  if (tags && tags.length) data.keywords = tags.join(", ");
+  if (published) { data.datePublished = published; data.dateModified = modified || published; }
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 

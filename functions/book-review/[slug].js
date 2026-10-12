@@ -26,6 +26,7 @@ import {
   getFallbackImage,
   buildArticleDescription,
 } from "../_utils/article-meta.js";
+import { renderBookReviewSsr } from "../_utils/article-ssr.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
@@ -84,6 +85,7 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   const image = resolveOgImage(article.image, siteUrl) || getFallbackImage(siteUrl);
   const author = article.author || SITE_NAME;
   const published = toIsoDate(article.publishedAt || article.date);
+  const modified = toIsoDate(article.updatedAt) || published;
 
   const jsonLd = buildBookReviewJsonLd({
     article,
@@ -92,9 +94,11 @@ export const onRequestGet = async ({ request, env, params, next }) => {
     image,
     author,
     published,
+    modified,
     canonical,
     siteUrl,
   });
+  const bodyHtml = renderBookReviewSsr(article);
 
   const rewriter = new HTMLRewriter()
     .on("title", { element: (el) => el.setInnerContent(escapeHtml(title)) })
@@ -112,6 +116,17 @@ export const onRequestGet = async ({ request, env, params, next }) => {
     .on('meta[name="twitter:image:alt"]', { element: (el) => el.setAttribute("content", article.title) })
     .on('meta[property="og:image:width"]', { element: (el) => el.remove() })
     .on('meta[property="og:image:height"]', { element: (el) => el.remove() })
+    .on('meta[name="robots"]', { element: (el) => el.setAttribute("content", "index, follow, max-image-preview:large, max-snippet:-1") })
+    // Activates the book-review styles before js/main.js runs, so the
+    // server-rendered review below is laid out like the final page.
+    .on("body", { element: (el) => el.setAttribute("class", "is-book-review") })
+    .on("#article-detail", {
+      element(el) {
+        el.setAttribute("data-ssr", "1");
+        el.setInnerContent(bodyHtml, { html: true });
+      },
+    })
+    .on(".article-page .back-link", { element: (el) => el.setAttribute("href", "/book-reviews") })
     .on("head", {
       element(el) {
         el.append(`<link rel="canonical" href="${escapeAttr(canonical)}">`, { html: true });
@@ -124,7 +139,8 @@ export const onRequestGet = async ({ request, env, params, next }) => {
         }
         el.append(`<meta property="article:section" content="Book Review">`, { html: true });
         el.append(`<meta name="author" content="${escapeAttr(author)}">`, { html: true });
-        el.append(`<script type="application/ld+json">${jsonLd}</script>`, { html: true });
+        // Same id js/main.js upserts, so the page ends up with one block.
+        el.append(`<script type="application/ld+json" id="catalyst-review-jsonld">${jsonLd}</script>`, { html: true });
         // Embed the article ID so client JS can load without a slug→id lookup.
         el.append(`<meta name="catalyst-article-id" content="${escapeAttr(String(article.id))}">`, { html: true });
       },
@@ -147,7 +163,7 @@ function toIsoDate(dateStr) {
 // Schema.org Review structured data — gives Google a rating, an author for
 // the review, and (when ISBN is present) a Book itemReviewed so rich
 // results can show the star rating.
-function buildBookReviewJsonLd({ article, title, description, image, author, published, canonical, siteUrl }) {
+function buildBookReviewJsonLd({ article, title, description, image, author, published, modified, canonical, siteUrl }) {
   const rating =
     typeof article.rating === "number" && article.rating >= 0 && article.rating <= 5
       ? article.rating
@@ -155,7 +171,7 @@ function buildBookReviewJsonLd({ article, title, description, image, author, pub
 
   const itemReviewed = {
     "@type": "Book",
-    name: article.title,
+    name: article.bookTitle || article.title,
   };
   if (article.bookAuthor) {
     itemReviewed.author = { "@type": "Person", name: article.bookAuthor };
@@ -167,14 +183,16 @@ function buildBookReviewJsonLd({ article, title, description, image, author, pub
   const data = {
     "@context": "https://schema.org",
     "@type": "Review",
-    headline: title,
+    headline: article.title,
     name: article.title,
     description,
     image: [image],
     author: { "@type": "Person", name: author },
     publisher: {
       "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
       name: SITE_NAME,
+      url: `${siteUrl}/`,
       logo: { "@type": "ImageObject", url: `${siteUrl}/NewLogoShape.png` },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
@@ -191,7 +209,7 @@ function buildBookReviewJsonLd({ article, title, description, image, author, pub
   }
   if (published) {
     data.datePublished = published;
-    data.dateModified = published;
+    data.dateModified = modified || published;
   }
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }

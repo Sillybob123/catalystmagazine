@@ -535,7 +535,9 @@ function renderArticlesSkeletons() {
 
 function renderArticleDetailSkeleton() {
     const container = document.getElementById('article-detail');
-    if (!container) return;
+    // The Pages function already rendered the story (data-ssr); keep it on
+    // screen until renderArticleDetail replaces it.
+    if (!container || container.dataset.ssr) return;
 
     container.innerHTML = `
         <div class="article-detail-header">
@@ -1629,7 +1631,9 @@ function renderArticleDetail(article) {
     ].filter(Boolean);
     upsertNamedMeta('keywords', kwSet.join(', '));
 
-    upsertJsonLd('catalyst-article-jsonld', {
+    // The server's JSON-LD (functions/article/[slug].js) carries the real
+    // publish/modified timestamps; only build one when it isn't there.
+    if (!container.dataset.ssr) upsertJsonLd('catalyst-article-jsonld', {
         '@context': 'https://schema.org',
         '@type': 'NewsArticle',
         headline: article.title,
@@ -1679,7 +1683,7 @@ function renderArticleDetail(article) {
 
     container.innerHTML = `
         <header class="article-hero${article.lightCover ? ' article-hero--light-cover' : ''}">
-            <div class="article-hero__image" style="background-image:url('${escapeHtmlAttr(heroImage)}')"></div>
+            <div class="article-hero__image"><img src="${escapeHtmlAttr(heroImage)}" alt="${escapeHtmlAttr(article.title)}" fetchpriority="high" decoding="async"></div>
             <div class="article-hero__inner">
                 <div class="article-hero__surface">
                     <span class="article-hero__category">${category}</span>
@@ -2021,7 +2025,7 @@ function renderBookReviewDetail(article, container) {
     ].filter(Boolean);
     upsertNamedMeta('keywords', kwParts.join(', '));
 
-    upsertJsonLd('catalyst-review-jsonld',
+    if (!container.dataset.ssr) upsertJsonLd('catalyst-review-jsonld',
         buildBookReviewJsonLd({
             article, articleUrl, articleImage,
             bookTitle, bookAuthor, reviewer, rating: seoRating
