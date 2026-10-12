@@ -69,6 +69,11 @@
                 "url": "https://www.catalyst-magazine.com",
                 "logo": "https://www.catalyst-magazine.com/NewLogoShape.png",
                 "sameAs": ["https://www.instagram.com/thecatalyst_dc/", "https://www.linkedin.com/company/the-catalyst-stem-magazine", "https://www.wikidata.org/wiki/Q141711114"],
+                "subjectOf": [
+                    { "@type": "NewsArticle", "headline": "GW Students Found Interdisciplinary STEM Magazine", "url": "https://gwtoday.gwu.edu/gw-students-found-interdisciplinary-stem-magazine", "datePublished": "2026-01-09", "author": { "@type": "Person", "name": "Greg Varner" }, "publisher": { "@type": "Organization", "name": "GW Today" } },
+                    { "@type": "NewsArticle", "headline": "Biomedical Engineering Student Co-founds New Interdisciplinary Science Magazine", "url": "https://bme.engineering.gwu.edu/biomedical-engineering-student-co-founds-new-interdisciplinary-science-magazine", "datePublished": "2026-01-09", "publisher": { "@type": "Organization", "name": "GW Department of Biomedical Engineering" } },
+                    { "@type": "Event", "name": "3rd Student Journal Symposium for Literary and Research Publications", "url": "https://gwpress.manifoldapp.org/projects/student-journal-symposium-for-literary-and-research-publications-2026", "startDate": "2026-04-23", "endDate": "2026-04-24", "eventAttendanceMode": "https://schema.org/MixedEventAttendanceMode", "location": { "@type": "Place", "name": "George Washington University Arlington Education Center", "address": "950 N Glebe Rd., Arlington, VA" }, "organizer": { "@type": "Organization", "name": "Graduate Program in Publishing, George Washington University" } }
+                ],
                 "foundingLocation": "Washington, D.C.",
                 "address": {
                     "@type": "PostalAddress",
@@ -646,6 +651,47 @@
       }
 
       /* ============================================================
+         IN THE NEWS — outside coverage, set like a clippings page
+         ============================================================ */
+      .ab-press { padding: clamp(70px, 10vh, 120px) 0 clamp(80px, 11vh, 130px); background: var(--paper-2); border-top: 1px solid var(--hair-2); }
+      .ab-press-head { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); align-items: end; gap: 20px 64px; margin-bottom: clamp(44px, 5vw, 72px); }
+      .ab-press-head .ab-h2 { text-wrap: balance; }
+      .ab-press-lede { justify-self: end; margin: 0; max-width: 400px; font: 400 18px/1.6 var(--serif); color: var(--ink-2); }
+      .ab-press-quote { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 0 8px; margin: 0; padding: clamp(32px, 4vw, 56px) 0; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--hair); }
+      .ab-press-quote::before { content: "\201C"; font: 400 96px/.78 var(--serif); color: var(--ink); }
+      .ab-press-quote blockquote { margin: 0; }
+      .ab-press-quote blockquote p { margin: 0; max-width: 30ch; font: 400 clamp(28px, 3.4vw, 48px)/1.18 var(--serif); letter-spacing: -0.01em; color: var(--ink); text-wrap: balance; }
+      .ab-press-quote figcaption { grid-column: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; margin-top: 26px; font: 600 12px/1.5 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+      .ab-press-quote figcaption a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--hair); text-underline-offset: 5px; transition: text-decoration-color .2s; }
+      .ab-press-quote figcaption a:hover { text-decoration-color: currentColor; }
+      .ab-press-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; list-style: none; }
+      .ab-press-list li { border-left: 1px solid var(--hair); }
+      .ab-press-list li:first-child { border-left: 0; }
+      .ab-press-item { display: flex; flex-direction: column; height: 100%; padding: 30px clamp(20px, 2.4vw, 36px) 4px; }
+      .ab-press-list li:first-child .ab-press-item { padding-left: 0; }
+      .ab-press-list li:last-child .ab-press-item { padding-right: 0; }
+      .ab-press-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font: 600 12px/1.5 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+      .ab-press-meta .outlet { color: var(--ink); }
+      .ab-press-item h3 { margin: 18px 0 12px; font: 600 clamp(20px, 1.7vw, 24px)/1.22 var(--sans); letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; transition: text-decoration-color .25s; }
+      .ab-press-item p { margin: 0 0 22px; font: 400 16px/1.6 var(--serif); color: var(--ink-2); }
+      .ab-press-go { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: auto; font: 500 14px/1 var(--sans); color: var(--ink); }
+      .ab-press-go svg { width: 16px; height: 16px; transition: transform .3s var(--ease-out); }
+      .ab-press-item:hover h3 { text-decoration-color: currentColor; }
+      .ab-press-item:hover .ab-press-go svg { transform: translate(3px, -3px); }
+      .ab-press-item:focus-visible { outline-offset: 6px; border-radius: 4px; }
+      @media (max-width: 860px) {
+        .ab-press-head { grid-template-columns: 1fr; }
+        .ab-press-lede { justify-self: start; }
+        .ab-press-quote { grid-template-columns: 40px minmax(0, 1fr); }
+        .ab-press-quote::before { font-size: 68px; }
+        .ab-press-list { grid-template-columns: 1fr; }
+        .ab-press-list li { border-left: 0; border-top: 1px solid var(--hair); }
+        .ab-press-list li:first-child { border-top: 0; }
+        .ab-press-list li .ab-press-item { padding: 26px 0 4px; }
+      }
+      @media (prefers-reduced-motion: reduce) { .ab-press-item h3, .ab-press-go svg { transition: none; } }
+
+      /* ============================================================
          CLOSING — the Mall at golden hour
          ============================================================ */
       .ab-close { position: relative; min-height: max(90vh, 620px); display: flex; align-items: center; overflow: hidden; color: #fff; background: #1b2436; }
@@ -726,7 +772,7 @@
         .pnav.on-dark:not(:hover):not(:focus-within) a[aria-current="true"] { color: var(--paper); }
       }
       @media (prefers-reduced-motion: reduce) { .pnav, .pnav .pn-l, .pnav i { transition: opacity .2s; } }
-      #mission, #story, #numbers, #standards, #team, #join { scroll-margin-top: 96px; }
+      #mission, #story, #numbers, #standards, #team, #press, #join { scroll-margin-top: 96px; }
     </style>
 </head>
 <body data-page="about">
@@ -874,6 +920,61 @@
             </div>
         </section>
 
+        <!-- ============================= IN THE NEWS ============================= -->
+        <!-- Outside coverage. Quotes are verbatim from the linked pages; add new
+             pieces to the list (and to subjectOf in the JSON-LD above). -->
+        <section class="ab-press" id="press" aria-labelledby="ab-press-title">
+            <div class="ab-wrap">
+                <div class="ab-press-head">
+                    <div>
+                        <p class="ab-kicker" data-reveal>In the news</p>
+                        <h2 class="ab-h2" id="ab-press-title" data-reveal>Noticed beyond <em>our pages.</em></h2>
+                    </div>
+                    <p class="ab-press-lede" data-reveal>Coverage of The Catalyst, and the conversations about student publishing we&rsquo;ve been invited into.</p>
+                </div>
+
+                <figure class="ab-press-quote" data-reveal>
+                    <blockquote cite="https://biology.columbian.gwu.edu/gw-students-found-interdisciplinary-stem-magazine">
+                        <p>&hellip;an interdisciplinary science magazine called The Catalyst, which has become a must&#8209;read for STEM students.</p>
+                    </blockquote>
+                    <figcaption>
+                        <a href="https://biology.columbian.gwu.edu/gw-students-found-interdisciplinary-stem-magazine" target="_blank" rel="noopener">GW Department of Biological Sciences<span class="sr-only"> (opens in a new tab)</span></a>
+                        <time datetime="2026-01-14">January 14, 2026</time>
+                    </figcaption>
+                </figure>
+
+                <ol class="ab-press-list">
+                    <li data-reveal>
+                        <a class="ab-press-item" href="https://gwtoday.gwu.edu/gw-students-found-interdisciplinary-stem-magazine" target="_blank" rel="noopener">
+                            <span class="ab-press-meta"><span class="outlet">GW Today</span><time datetime="2026-01-09">Jan 9, 2026</time></span>
+                            <h3>GW Students Found Interdisciplinary STEM Magazine</h3>
+                            <p>&ldquo;The Catalyst has grown fourfold since its launch a year ago.&rdquo; A feature by Greg Varner.</p>
+                            <span class="ab-press-go">Read the feature <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+                            <span class="sr-only">(opens in a new tab)</span>
+                        </a>
+                    </li>
+                    <li data-reveal>
+                        <a class="ab-press-item" href="https://bme.engineering.gwu.edu/biomedical-engineering-student-co-founds-new-interdisciplinary-science-magazine" target="_blank" rel="noopener">
+                            <span class="ab-press-meta"><span class="outlet">GW Engineering</span><time datetime="2026-01-09">Jan 9, 2026</time></span>
+                            <h3>Biomedical Engineering Student Co-founds New Interdisciplinary Science Magazine</h3>
+                            <p>The Department of Biomedical Engineering on our co-founder and a first year in which nearly four times as many students got involved.</p>
+                            <span class="ab-press-go">Read the story <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+                            <span class="sr-only">(opens in a new tab)</span>
+                        </a>
+                    </li>
+                    <li data-reveal>
+                        <a class="ab-press-item" href="https://gwpress.manifoldapp.org/projects/student-journal-symposium-for-literary-and-research-publications-2026" target="_blank" rel="noopener">
+                            <span class="ab-press-meta"><span class="outlet">GW Publishing</span><time datetime="2026-04-24">Apr 24, 2026</time></span>
+                            <h3>Panelists: &ldquo;Generating Scholarship with Impact&rdquo;</h3>
+                            <p>Invited to speak at the 3rd Student Journal Symposium for Literary and Research Publications, alongside student journals from across the country.</p>
+                            <span class="ab-press-go">See the program <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+                            <span class="sr-only">(opens in a new tab)</span>
+                        </a>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
         <!-- =============================== CLOSING =============================== -->
         <section class="ab-close" id="join" aria-labelledby="ab-close-title">
             <div class="ab-close-bg" aria-hidden="true">
@@ -901,6 +1002,7 @@
         <a href="#numbers" data-sec="numbers"><span class="pn-l">In numbers</span><i aria-hidden="true"></i></a>
         <a href="#standards" data-sec="standards"><span class="pn-l">Standards</span><i aria-hidden="true"></i></a>
         <a href="#team" data-sec="team"><span class="pn-l">The team</span><i aria-hidden="true"></i></a>
+        <a href="#press" data-sec="press"><span class="pn-l">In the news</span><i aria-hidden="true"></i></a>
         <a href="#join" data-sec="join"><span class="pn-l">Join us</span><i aria-hidden="true"></i></a>
     </nav>
 
