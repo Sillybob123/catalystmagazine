@@ -12,7 +12,7 @@ import {
   doc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
-import { renderPipeline } from "./pipeline.js?v=works-2";
+import { renderPipeline } from "./pipeline.js?v=tracker-4";
 import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-3";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 

@@ -382,6 +382,7 @@ let _editionsLoaded = false;
 // null until the first settings snapshot picks a default.
 let _editionFilter = null;
 let _focus = "all";        // "all" | "attention" | "mine" (Story Tracker quick filter)
+let _query = "";           // Story Tracker search (title, writer, editor)
 const _expandedCols = new Set();
 let _view        = "all"; // "all" | "mine"
 let _uid         = null;
@@ -415,38 +416,38 @@ export async function mount(ctx, container) {
 
 
   _focus = "all";
-  const header = el("div", { class: "kb-toolbar" });
+  _query = "";
+  // One toolbar: what to show (all / needs attention / mine), which edition,
+  // a search, and the actions. The board below always fits the page.
+  const header = el("div", { class: "tr-toolbar" });
   header.innerHTML = `
-    <div class="kb-focus" id="pl-focus" role="group" aria-label="Show"></div>
+    <div class="tr-filters">
+      <div class="kb-focus" id="pl-focus" role="group" aria-label="Show"></div>
+      ${_view === "all" ? `<label class="tr-select" id="pl-editions"><span>Edition</span><select id="pl-ed-select" aria-label="Edition"></select></label>` : ""}
+      <label class="tr-search"><span class="sr-only">Search stories</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="pl-q" placeholder="Search stories" autocomplete="off">
+      </label>
+    </div>
     <div class="kb-header-actions">
-      ${_role === "admin" ? `<button class="btn btn-secondary btn-sm" id="pl-report-btn">Status report</button>` : ""}
-      ${_view !== "mine" && canPropose() ? `<button class="btn btn-primary btn-sm" id="pl-new-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Propose a story</button>` : ""}
+      ${_view === "all" && _role === "admin" ? `<button class="btn btn-ghost btn-sm" id="pl-ed-manage" type="button">Editions</button>` : ""}
+      ${_role === "admin" ? `<button class="btn btn-secondary btn-sm" id="pl-report-btn" type="button">Status report</button>` : ""}
+      ${_view !== "mine" && canPropose() ? `<button class="btn btn-primary btn-sm" id="pl-new-btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Propose a story</button>` : ""}
     </div>`;
   header.addEventListener("click", (e) => {
+    if (e.target.closest("#pl-ed-manage")) { openEditionsModal(); return; }
     const b = e.target.closest("[data-focus]");
     if (!b) return;
     _focus = b.dataset.focus;
     renderBoard();
   });
+  header.querySelector("#pl-ed-select")?.addEventListener("change", (e) => { _editionFilter = e.target.value; renderEditionBar(); renderBoard(); });
+  header.querySelector("#pl-q").addEventListener("input", (e) => { _query = e.target.value.trim().toLowerCase(); renderBoard(); });
   container.appendChild(header);
 
-  if (_view === "all") {
-    const edBar = el("div", { class: "kb-editions", id: "pl-editions" });
-    edBar.addEventListener("click", (e) => {
-      if (e.target.closest("#pl-ed-manage")) { openEditionsModal(); return; }
-      const tab = e.target.closest("[data-edition]");
-      if (!tab) return;
-      _editionFilter = tab.dataset.edition;
-      renderEditionBar();
-      renderBoard();
-    });
-    container.appendChild(edBar);
-  }
-
-  const scrollWrap = el("div", { class: "kb-scroll" });
-  const boardEl   = el("div", { class: "kb-board", id: "pl-board" });
-  scrollWrap.appendChild(boardEl);
-  container.appendChild(scrollWrap);
+  const boardEl = el("div", { class: "tr-board", id: "pl-board" });
+  container.appendChild(boardEl);
+  container.appendChild(el("div", { id: "pl-below" }));
 
   // Load editors/users once
   await Promise.all([loadEditors(), loadUsers()]);
@@ -513,7 +514,10 @@ function allEditionNames() {
 // edition has since been removed falls back the same way.
 function activeEditionFilter() {
   const names = allEditionNames();
-  const fallback = _editions.current && names.includes(_editions.current) ? _editions.current : ED_ALL;
+  // Open on the current edition only when it has stories; an empty current
+  // edition used to make the whole tracker look empty.
+  const currentHasStories = _editions.current && _allProjects.some(p => projectEdition(p) === _editions.current);
+  const fallback = currentHasStories && names.includes(_editions.current) ? _editions.current : ED_ALL;
   const f = _editionFilter ?? fallback;
   if (f === ED_ALL || f === ED_NONE || names.includes(f)) return f;
   return fallback;
@@ -531,15 +535,9 @@ function renderEditionBar() {
   ];
   if (unassigned || f === ED_NONE) tabs.push({ key: ED_NONE, label: "No edition", n: unassigned });
 
-  bar.innerHTML = `
-    <span class="kb-ed-label" id="pl-ed-label">Edition</span>
-    <div class="kb-ed-tabs" role="group" aria-labelledby="pl-ed-label">
-      ${tabs.map(t => `
-        <button type="button" class="kb-ed-tab" data-edition="${esc(t.key)}" aria-pressed="${t.key === f}">
-          ${esc(t.label)}${t.now ? `<span class="kb-ed-now">Current</span>` : ""}<span class="kb-ed-count">${t.n}</span>
-        </button>`).join("")}
-    </div>
-    ${_role === "admin" ? `<button type="button" class="btn btn-secondary btn-sm kb-ed-manage" id="pl-ed-manage">${names.length ? "Manage editions" : "Add an edition"}</button>` : ""}`;
+  const select = bar.querySelector("#pl-ed-select");
+  if (!select) return;
+  select.innerHTML = tabs.map(t => `<option value="${esc(t.key)}"${t.key === f ? " selected" : ""}>${esc(t.label)}${t.now ? " (current)" : ""} · ${t.n}</option>`).join("");
 }
 
 function openEditionsModal() {
@@ -711,6 +709,11 @@ function applyFocus(list) {
   return list;
 }
 
+function matchesQuery(p) {
+  if (!_query) return true;
+  return [p.title, p.authorName, p.editorName, p.type, projectEdition(p)].some(v => String(v || "").toLowerCase().includes(_query));
+}
+
 // Why a story needs someone to act, if it does (most pressing first).
 function attentionFor(p) {
   const completed = isProjectCompleted(p);
@@ -758,18 +761,132 @@ function renderBoard() {
   board.innerHTML = "";
   renderFocusBar();
 
-  const projects = filterProjects();
-  const columns = VIEW_COLUMNS[_view] || VIEW_COLUMNS.all;
+  const projects = filterProjects().filter(matchesQuery);
+  const below = document.getElementById("pl-below");
+  if (below) below.innerHTML = "";
 
-  for (const colName of columns) {
-    const colProjects = projects.filter(p => getProjectState(p, _view, _uid).column === colName);
-    board.appendChild(renderColumn(colName, colProjects));
+  if (_view === "mine") {
+    const columns = VIEW_COLUMNS.mine;
+    board.dataset.cols = String(columns.length);
+    for (const colName of columns) {
+      board.appendChild(renderColumn(colName, projects.filter(p => getProjectState(p, _view, _uid).column === colName)));
+    }
+    return;
   }
 
-  // Availability column (Story Tracker, admin only)
-  if (_view !== "mine" && _role === "admin") {
-    board.appendChild(renderAvailabilityColumn());
+  // The tracker: the five working stages plus "Ready to publish", side by
+  // side and always inside the page. Published stories and the team list
+  // sit underneath instead of as extra columns.
+  const live = (p) => isProjectCompleted(p) && (p.publishedAt || p.publishedStoryId || isProjectPublished(p, _publishedTitles));
+  const working = [COL.TOPIC_PROPOSAL, COL.INTERVIEW_STAGE, COL.WRITING_STAGE, COL.IN_REVIEW, COL.REVIEWING_SUGGESTIONS];
+  board.dataset.cols = "6";
+  for (const colName of working) {
+    board.appendChild(renderColumn(colName, projects.filter(p => !isProjectCompleted(p) && getProjectState(p, _view, _uid).column === colName)));
   }
+  board.appendChild(renderColumn(COL_READY, projects.filter(p => isProjectCompleted(p) && !live(p))));
+
+  if (below) below.appendChild(renderBelowBar(projects.filter(live)));
+}
+
+const COL_READY = "Ready to publish";
+
+// Under the board: a clear way to see who is working on what (for everyone
+// on staff), and a quiet link to what's already published (it's on the site).
+const STAGE_SHORT = {
+  [COL.TOPIC_PROPOSAL]: "Pitch", [COL.INTERVIEW_STAGE]: "Interviewing", [COL.WRITING_STAGE]: "Writing",
+  [COL.IN_REVIEW]: "In review", [COL.REVIEWING_SUGGESTIONS]: "Making edits",
+};
+const avatarHtml = (name) => `<span class="kb-avatar" title="${esc(name)}" style="background:${stringToColor(name)}">${esc(String(name || "?")[0].toUpperCase())}</span>`;
+
+function activeProjectsFor(u) {
+  const name = (u.name || "").trim().toLowerCase();
+  return _allProjects.filter((p) => !isProjectCompleted(p) && p.proposalStatus !== "rejected" && (
+    p.authorId === u.id || p.editorId === u.id ||
+    (name && ((p.authorName || "").trim().toLowerCase() === name || (p.editorName || "").trim().toLowerCase() === name))));
+}
+
+function teamMembers() {
+  // Staff only, one card per person (some people have an old duplicate account).
+  const byName = new Map();
+  for (const u of _allUsers) {
+    if (!u.role || u.role === "reader") continue;
+    const key = (u.name || u.email || u.id).trim().toLowerCase();
+    if (!byName.has(key)) byName.set(key, u);
+  }
+  return [...byName.values()].map((u) => ({ u, projects: activeProjectsFor(u) }))
+    .sort((a, b) => b.projects.length - a.projects.length || String(a.u.name || "").localeCompare(String(b.u.name || "")));
+}
+
+function renderBelowBar(published) {
+  const team = teamMembers();
+  const busy = team.filter((t) => t.projects.length);
+  const inProgress = _allProjects.filter((p) => !isProjectCompleted(p) && p.proposalStatus !== "rejected").length;
+  const faces = (busy.length ? busy : team).slice(0, 5);
+  const bar = el("div", { class: "tr-below" });
+  bar.innerHTML = `
+    <button type="button" class="tr-team-btn" id="tr-team-open">
+      <span class="kb-people tr-faces">${faces.map((t) => avatarHtml(t.u.name || t.u.email)).join("")}</span>
+      <span class="tr-team-btn-text"><b>See what everyone is working on</b><small>${busy.length} ${busy.length === 1 ? "person" : "people"} on ${inProgress} ${inProgress === 1 ? "story" : "stories"} right now</small></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <button type="button" class="tr-pub-link" id="tr-pub-open">See what&rsquo;s published <span>${published.length}</span></button>`;
+  bar.querySelector("#tr-team-open").addEventListener("click", () => openTeamModal());
+  bar.querySelector("#tr-pub-open").addEventListener("click", () => openPublishedModal(published));
+  return bar;
+}
+
+function openTeamModal() {
+  // Active staff only (Readers, i.e. people who have left, are never listed).
+  const team = teamMembers();
+  const busy = team.filter((t) => t.projects.length);
+  const free = team.filter((t) => !t.projects.length);
+  const body = el("div", { class: "tr-team-list" });
+  body.innerHTML = `
+    <p class="tr-team-intro">Every story in progress and who has it, so anyone can see what the team is working on. Open a story for its checklist and dates.</p>
+    ${busy.length ? `<h4 class="tr-team-sub">Working on</h4>` : ""}
+    ${busy.map(({ u, projects }) => `
+    <section class="tr-person">
+      <header class="tr-person-head">
+        ${avatarHtml(u.name || u.email)}
+        <span class="tr-person-name">${esc(u.name || u.email)}</span>
+        <span class="tr-person-load${projects.length ? "" : " is-free"}">${projects.length ? `${projects.length} in progress` : "Free"}</span>
+      </header>
+      ${projects.length ? `<ul>${projects.map((p) => {
+        const editing = p.editorId === u.id || (p.editorName || "").trim().toLowerCase() === (u.name || "").trim().toLowerCase();
+        const stage = STAGE_SHORT[getProjectState(p, "all", _uid).column] || "In progress";
+        const d = daysUntil(pubDeadline(p));
+        return `<li><button type="button" data-open="${esc(p.id)}">
+          <span class="tr-person-story">${esc(p.title || "Untitled")}</span>
+          <span class="tr-person-meta"><span class="tr-role">${editing ? "Editor" : "Writer"}</span>Stage: ${esc(stage)}${d !== null ? ` · <span class="${d < 0 ? "is-late" : ""}">${d < 0 ? `${-d} days late` : `due ${esc(fmtShort(pubDeadline(p)))}`}</span>` : ""}</span>
+        </button></li>`;
+      }).join("")}</ul>` : ""}
+    </section>`).join("")}
+    ${free.length ? `<h4 class="tr-team-sub">Free right now</h4>
+      <div class="tr-free">${free.map(({ u }) => `<span class="tr-free-chip">${avatarHtml(u.name || u.email)}<span>${esc(u.name || u.email)}</span></span>`).join("")}</div>` : ""}
+    ${team.length ? "" : `<div class="kb-empty">No team members loaded.</div>`}`;
+  const m = openModal({ title: "What everyone is working on", body, size: "wide" });
+  body.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-open]"); if (!b) return;
+    m?.close?.();
+    openDetailModal(b.dataset.open);
+  });
+}
+
+function openPublishedModal(list) {
+  const sorted = [...list].sort((a, b) => toMs(b.publishedAt || b.lastActivity || b.updatedAt) - toMs(a.publishedAt || a.lastActivity || a.updatedAt));
+  const body = el("div", { class: "tr-pub-list" });
+  body.innerHTML = sorted.length ? sorted.map((p) => `
+    <button type="button" class="tr-pub-row" data-open="${esc(p.id)}">
+      <span class="tr-pub-title">${esc(p.title || "Untitled")}</span>
+      <span class="tr-pub-meta">${esc([p.authorName, projectEdition(p)].filter(Boolean).join(" · "))}</span>
+      <span class="tr-pub-date">${p.publishedAt ? esc(fmtDate(p.publishedAt)) : "Live"}</span>
+    </button>`).join("") : `<div class="kb-empty">Nothing published${_query || _focus !== "all" ? " matches these filters" : " yet"}.</div>`;
+  const m = openModal({ title: `Published · ${sorted.length}`, body, size: "wide" });
+  body.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-open]"); if (!b) return;
+    m?.close?.();
+    openDetailModal(b.dataset.open);
+  });
 }
 
 const COL_COLORS = {
@@ -779,6 +896,7 @@ const COL_COLORS = {
   [COL.IN_REVIEW]:             "#0891b2",
   [COL.REVIEWING_SUGGESTIONS]: "#f97316",
   [COL.COMPLETED]:             "#10b981",
+  "Ready to publish":          "#6d4bb3",
   [COL.TODO]:                  "#94a3b8",
   [COL.IN_PROGRESS]:           "#8b5cf6",
   [COL.MY_REVIEW]:             "#0891b2",
@@ -792,6 +910,7 @@ const COL_HINTS = {
   [COL.IN_REVIEW]:             "With an editor",
   [COL.REVIEWING_SUGGESTIONS]: "Writer making the edits",
   [COL.COMPLETED]:             "Edited and ready, or live",
+  "Ready to publish":          "Fully edited; an admin publishes it",
   [COL.TODO]:                  "Not started yet",
   [COL.IN_PROGRESS]:           "You're working on it",
   [COL.MY_REVIEW]:             "Waiting on someone else",
@@ -801,19 +920,23 @@ const COL_LABELS = { [COL.REVIEWING_SUGGESTIONS]: "Making edits", [COL.TOPIC_PRO
 const FOLD_AT = 6;
 
 function renderColumn(name, projects) {
-  const colEl = el("section", { class: "kb-col", "aria-label": `${COL_LABELS[name] || name}: ${projects.length}` });
+  // "In Review" is also a My-assignments column name ("waiting on someone
+  // else"), so the tracker spells out its own meaning here.
+  const trackerReview = _view === "all" && name === COL.IN_REVIEW;
+  const label = trackerReview ? "In review" : (COL_LABELS[name] || name);
+  const hint = trackerReview ? "With an editor" : (COL_HINTS[name] || "");
+  const colEl = el("section", { class: `tr-col${projects.length ? "" : " is-empty"}`, "aria-label": `${label}: ${projects.length}`, style: `--col:${COL_COLORS[name] || "#94a3b8"}` });
   colEl.innerHTML = `
-    <header class="kb-col-head">
-      <div class="kb-col-titles">
-        <span class="kb-col-title">${esc(COL_LABELS[name] || name)}</span>
-        <span class="kb-col-hint">${esc(COL_HINTS[name] || "")}</span>
-      </div>
+    <header class="tr-col-head" title="${esc(hint)}">
+      <span class="tr-col-dot" aria-hidden="true"></span>
+      <span class="tr-col-title">${esc(label)}</span>
       <span class="kb-col-count">${projects.length}</span>
+      <span class="tr-col-hint">${esc(hint)}</span>
     </header>
-    <div class="kb-col-body"></div>`;
-  const body = colEl.querySelector(".kb-col-body");
+    <div class="tr-col-body"></div>`;
+  const body = colEl.querySelector(".tr-col-body");
   if (!projects.length) {
-    body.innerHTML = `<div class="kb-empty">${_focus === "attention" ? "Nothing needs attention here" : "Nothing here yet"}</div>`;
+    body.innerHTML = `<div class="tr-empty">${_query ? "No matches" : _focus === "attention" ? "Nothing needs attention" : "None right now"}</div>`;
     return colEl;
   }
   const isDone = name === COL.COMPLETED || name === COL.DONE;
@@ -881,34 +1004,6 @@ function renderCard(project) {
       <span class="kb-steps" title="${doneCount} of ${steps.length} steps done" aria-label="${doneCount} of ${steps.length} steps done">${steps.map(st => `<i${tl[st] ? ' class="is-done"' : ""}></i>`).join("")}</span>
     </div>`;
   return card;
-}
-
-function renderAvailabilityColumn() {
-  const colEl = el("section", { class: "kb-col kb-col-team" });
-  colEl.innerHTML = `
-    <div class="kb-col-head">
-      <div class="kb-col-titles"><span class="kb-col-title">Team</span><span class="kb-col-hint">Stories each person is on</span></div>
-      <span class="kb-col-count">${_allUsers.filter(u => ["writer","editor","admin"].includes(u.role)).length}</span>
-    </div>
-    <div class="kb-col-body" style="overflow-y:auto; max-height:600px;"></div>`;
-  const body = colEl.querySelector(".kb-col-body");
-  const writers = _allUsers.filter(u => ["writer", "editor", "admin"].includes(u.role));
-  if (!writers.length) {
-    body.innerHTML = `<div class="kb-empty">No team members loaded</div>`;
-  } else {
-    for (const u of writers) {
-      const activeCount = _allProjects.filter(p => (p.authorId === u.id || p.editorId === u.id) && !isProjectCompleted(p) && p.proposalStatus !== "rejected").length;
-      const chip = el("div", { class: "kb-avail-chip" });
-      chip.innerHTML = `
-        <div class="kb-avatar" style="background:${stringToColor(u.name || u.email)}">${(u.name || u.email || "?")[0].toUpperCase()}</div>
-        <div style="min-width:0;flex:1;">
-          <div class="kb-avail-name">${esc(u.name || u.email)}</div>
-          <div class="kb-avail-role">${esc(u.role || "")} · ${activeCount ? `${activeCount} in progress` : "free"}</div>
-        </div>`;
-      body.appendChild(chip);
-    }
-  }
-  return colEl;
 }
 
 // Plain-language steps: who owns each one and which deadline it answers to.
