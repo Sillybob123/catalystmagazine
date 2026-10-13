@@ -38,7 +38,7 @@ function shell({ title, preheader = "", body, siteUrl, recipientEmail = null }) 
 <style>
   body,table,td,a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
   table,td { mso-table-lspace:0; mso-table-rspace:0; }
-  img { -ms-interpolation-mode:bicubic; border:0; display:block; }
+  img { -ms-interpolation-mode:bicubic; border:0; }   /* not display:block: Gmail turns emoji into <img>s, which would each take a line; real images set display:block inline */
   body { margin:0 !important; padding:0 !important; width:100% !important; background:${COLORS.pageBg}; }
   a { color:${COLORS.ink}; }
   @media screen and (max-width:620px) {

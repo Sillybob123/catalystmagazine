@@ -57,7 +57,7 @@ export function buildNewsletter({
 <style>
   body,table,td,a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
   table,td { mso-table-lspace:0; mso-table-rspace:0; }
-  img { -ms-interpolation-mode:bicubic; border:0; display:block; }
+  img { -ms-interpolation-mode:bicubic; border:0; }   /* not display:block: Gmail turns emoji into <img>s, which would each take a line; real images set display:block inline */
   body { margin:0 !important; padding:0 !important; width:100% !important; background:${COLORS.pageBg}; }
   a { color:${COLORS.ink}; }
   .read-link:hover { color:${COLORS.inkSoft} !important; }
@@ -627,7 +627,7 @@ export function buildInboxNewsletter({
      a heavy system stack (Helvetica/Arial) which renders instantly. */
   body,table,td,a{-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}
   table,td{mso-table-lspace:0;mso-table-rspace:0;}
-  img{-ms-interpolation-mode:bicubic;border:0;display:block;}
+  img{-ms-interpolation-mode:bicubic;border:0;}
   body{margin:0!important;padding:0!important;width:100%!important;background:#f5f5f7;}
   a{color:#1d1d1f;}
   @media screen and (max-width:600px){
