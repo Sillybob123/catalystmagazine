@@ -380,6 +380,13 @@ async function loadUsers(mount, ctx, reload) {
     // isFormerTeamMember in functions/_utils/bot-logic.js): list the team
     // first, then the readers under a divider, tinted red.
     const isReader = (u) => (u.role || "reader") === "reader";
+    // One person can have several accounts with the same email (e.g. they
+    // signed in two different ways). Their roles move together, or a person
+    // set to Reader stays on the team through the other account.
+    const emailKey = (u) => String(u.email || "").trim().toLowerCase();
+    const sameEmail = new Map();
+    snap.docs.forEach((d) => { const k = emailKey(d.data()); if (k) sameEmail.set(k, [...(sameEmail.get(k) || []), d.id]); });
+    const accountsOf = (id) => { const d = snap.docs.find((x) => x.id === id); const k = d ? emailKey(d.data()) : ""; return k ? sameEmail.get(k) : [id]; };
     const team = snap.docs.filter((d) => !isReader(d.data()));
     const readers = snap.docs.filter((d) => isReader(d.data()));
 
@@ -400,7 +407,7 @@ async function loadUsers(mount, ctx, reload) {
       // next to each cell when the table collapses into stacked cards
       // on phones. Without it, the cards look like an unlabeled blob.
       tr.innerHTML = `
-        <td data-label="User" style="font-weight:600;color:var(--ink);">${esc(u.name || "—")}</td>
+        <td data-label="User" style="font-weight:600;color:var(--ink);">${esc(u.name || "—")}${accountsOf(d.id).length > 1 ? `<span class="ua-dupe" title="This email has ${accountsOf(d.id).length} accounts. Changing the role here changes all of them.">${accountsOf(d.id).length} accounts</span>` : ""}</td>
         <td data-label="Email" style="max-width:0;overflow:hidden;">
           <div title="${escAttr(u.email || "")}" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email || "")}</div>
           ${extraEmails.map(e => `<div title="${escAttr(e)}" style="margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:var(--muted);background:var(--surface-2,#f8fafc);border:1px solid var(--hairline,#e2e8f0);border-radius:4px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">${esc(e)}</div>`).join("")}
@@ -436,9 +443,12 @@ async function loadUsers(mount, ctx, reload) {
       const sel = e.target.closest('[data-action="role"]');
       if (!sel) return;
       const uid = sel.dataset.id;
+      const ids = accountsOf(uid);
       try {
-        await updateDoc(doc(db, "users", uid), { role: sel.value });
-        ctx.toast(sel.value === "reader" ? "Set to Reader: no access, no reminders." : "Role updated.", "success");
+        // Every account with this email gets the same role.
+        await Promise.all(ids.map((id) => updateDoc(doc(db, "users", id), { role: sel.value })));
+        const many = ids.length > 1 ? ` (all ${ids.length} of their accounts)` : "";
+        ctx.toast(sel.value === "reader" ? `Set to Reader${many}: no access, no reminders.` : `Role updated${many}.`, "success");
         reload();   // regroup: readers sit in their own section at the bottom
       } catch (err) { ctx.toast("Update failed: " + err.message, "error"); }
     });
