@@ -285,7 +285,7 @@ const ROUTES = {
     icon: ICONS.addressBook,
     roles: ["*"],
     group: "main",
-    loader: () => import("./directory.js?v=tm-1"),
+    loader: () => import("./directory.js?v=tm-2"),
   },
   "#/writer/draft": {
     label: "Write a draft",

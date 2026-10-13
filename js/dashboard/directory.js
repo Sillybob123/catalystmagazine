@@ -62,13 +62,17 @@ export async function mount(ctx, container) {
   const isAdmin = ctx.role === "admin";
   const startWith = new URLSearchParams((location.hash.split("?")[1] || "")).get("with");
 
+  container.classList.add("tm-content");   // edge to edge under the top bar (the router resets the class)
   container.innerHTML = `
     <div class="tm-page"><div class="tm-shell" id="tm-shell" data-view="list">
       <aside class="tm-side" aria-label="Messages and people">
         <div class="tm-side-head">
-          <div class="tm-seg" role="tablist" aria-label="Show">
-            <button type="button" role="tab" id="tm-tab-messages" aria-selected="true" data-tab="messages">Messages<span class="tm-badge" id="tm-unread" hidden></span></button>
-            <button type="button" role="tab" id="tm-tab-people" aria-selected="false" data-tab="people">People</button>
+          <div class="tm-side-top">
+            <div class="tm-seg" role="tablist" aria-label="Show">
+              <button type="button" role="tab" id="tm-tab-messages" aria-selected="true" data-tab="messages">Messages<span class="tm-badge" id="tm-unread" hidden></span></button>
+              <button type="button" role="tab" id="tm-tab-people" aria-selected="false" data-tab="people">People</button>
+            </div>
+            <button type="button" class="tm-compose-btn" id="tm-new" aria-label="New message" title="New message">${ICON.compose}</button>
           </div>
           <label class="tm-search">${ICON.search}<input type="search" id="tm-q" placeholder="Search" aria-label="Search messages and people" autocomplete="off"></label>
         </div>
@@ -118,8 +122,8 @@ export async function mount(ctx, container) {
       if (!rows.length) {
         listEl.innerHTML = q
           ? `<div class="tm-list-note">No conversations match “${esc(state.q.trim())}”.</div>`
-          : `<div class="tm-empty-side"><span class="tm-empty-ic">${ICON.chat}</span><p class="tm-empty-title">No messages yet</p><p>Message anyone on the team. They get it here and by email.</p><button type="button" class="btn btn-primary btn-sm" data-goto-people>Find someone</button></div>`;
-        listEl.querySelector("[data-goto-people]")?.addEventListener("click", () => setTab("people"));
+          : `<div class="tm-empty-side"><span class="tm-empty-ic">${ICON.chat}</span><p class="tm-empty-title">No messages yet</p><p>Message anyone on the team. They get it here and by email.</p><button type="button" class="btn btn-primary btn-sm" data-new>${ICON.compose}New message</button></div>`;
+        listEl.querySelector("[data-new]")?.addEventListener("click", () => select({ kind: "new" }));
         return;
       }
       listEl.innerHTML = `<ul class="tm-rows">${rows.map(({ t, p }) => {
@@ -151,21 +155,25 @@ export async function mount(ctx, container) {
     if (!matches.length) { listEl.innerHTML = `<div class="tm-list-note">No one matches “${esc(state.q.trim())}”.</div>`; return; }
     const groups = {};
     for (const p of matches) (groups[ROLE_META[p.role]?.group || "Others"] ||= []).push(p);
-    listEl.innerHTML = GROUP_ORDER.filter((g) => groups[g]?.length).map((g) => `
+    const hint = state.threadsLoaded && !state.threads.length && !q
+      ? `<p class="tm-hint">Tap someone to see how to reach them, or the ${ICON.chat} to message them right away.</p>` : "";
+    listEl.innerHTML = hint + GROUP_ORDER.filter((g) => groups[g]?.length).map((g) => `
       <div class="tm-group">
         <h3 class="tm-group-title">${esc(g)}<span>${groups[g].length}</span></h3>
         <ul class="tm-rows">${groups[g].map((p) => {
           const sel = state.selected?.kind === "person" && state.selected.id === p.id;
-          return `<li><button type="button" class="tm-row tm-row--person${sel ? " is-selected" : ""}" data-person="${esc(p.id)}" ${sel ? 'aria-current="true"' : ""}>
+          const canMsg = p.id !== me && !p.manual;
+          return `<li class="tm-person-li"><button type="button" class="tm-row tm-row--person${sel ? " is-selected" : ""}${canMsg ? " has-quick" : ""}" data-person="${esc(p.id)}" ${sel ? 'aria-current="true"' : ""}>
             ${avatar(p.name || p.email)}
             <span class="tm-row-main">
               <span class="tm-row-name">${esc(p.name || p.email || "Unknown")}${p.id === me ? ` <i>(you)</i>` : ""}</span>
               <span class="tm-row-sub">${esc(roleLabel(p))}</span>
             </span>
-          </button></li>`;
+          </button>${canMsg ? `<button type="button" class="tm-quick-msg" data-quick-msg="${esc(p.id)}" aria-label="Message ${esc(p.name || p.email || "")}" title="Message">${ICON.chat}</button>` : ""}</li>`;
         }).join("")}</ul>
       </div>`).join("");
     listEl.querySelectorAll("[data-person]").forEach((b) => b.addEventListener("click", () => select({ kind: "person", id: b.dataset.person })));
+    listEl.querySelectorAll("[data-quick-msg]").forEach((b) => b.addEventListener("click", () => openChatWith(b.dataset.quickMsg)));
   }
 
   function setTab(tab) {
@@ -191,21 +199,70 @@ export async function mount(ctx, container) {
       try { history.replaceState(null, "", base); } catch {}
     }
     renderList();
+    if (sel?.kind === "new") return renderNewMessage();
     if (!sel) return renderPlaceholder();
     const person = personById(sel.id) || (sel.kind === "chat" ? personForThread(state.threads.find((t) => otherIdOf(t) === sel.id) || { participantIds: [me, sel.id] }) : null);
     if (!person) return renderPlaceholder();
     if (sel.kind === "chat") renderChat(person); else renderPerson(person);
   }
 
+  // Open (or start) the conversation with someone.
+  function openChatWith(id) {
+    state.tab = "messages";
+    select({ kind: "chat", id });
+  }
+
+  // Nothing open: on a wide screen show the "new message" picker, so anyone
+  // can reach a teammate in one step.
   function renderPlaceholder() {
+    if (matchMedia("(min-width: 820px)").matches || !state.threads.length) return renderNewMessage({ welcome: !state.threads.length });
+    mainEl.innerHTML = "";
+  }
+
+  // New message: a "To:" search over the whole team, then the people as
+  // tappable cards, grouped by team. Enter opens the first match.
+  function renderNewMessage({ welcome = false } = {}) {
+    const reachable = state.people.filter((p) => p.id !== me && !p.manual);
     mainEl.innerHTML = `
-      <div class="tm-placeholder">
-        <span class="tm-empty-ic">${ICON.chat}</span>
-        <p class="tm-empty-title">${state.threads.length ? "Pick a conversation" : "Talk to the team"}</p>
-        <p>${state.threads.length ? "Or find someone under People to start a new one." : "Find a teammate under People and send them a message. They get it here and by email."}</p>
-        <button type="button" class="btn btn-secondary btn-sm" data-goto-people>${ICON.compose}New message</button>
-      </div>`;
-    mainEl.querySelector("[data-goto-people]").addEventListener("click", () => { setTab("people"); qEl.focus(); });
+      <header class="tm-chat-head tm-new-head">
+        ${backBtn()}
+        <h2 class="tm-new-title">${welcome ? "Message anyone on the team" : "New message"}</h2>
+      </header>
+      <div class="tm-to">
+        <label class="tm-to-field"><span>To:</span><input type="search" id="tm-to" placeholder="Name, role or email" autocomplete="off" aria-label="Who do you want to message?" aria-controls="tm-to-results"></label>
+      </div>
+      <div class="tm-new-body" id="tm-to-results"></div>`;
+    wireBack();
+    const input = mainEl.querySelector("#tm-to");
+    const results = mainEl.querySelector("#tm-to-results");
+    const draw = () => {
+      const q = input.value.trim().toLowerCase();
+      const list = reachable.filter((p) => !q
+        || String(p.name || "").toLowerCase().includes(q)
+        || roleLabel(p).toLowerCase().includes(q)
+        || (p.allEmails || [p.email]).some((e) => String(e || "").toLowerCase().includes(q)));
+      if (!list.length) { results.innerHTML = `<div class="tm-list-note">No one on the team matches “${esc(input.value.trim())}”.</div>`; return; }
+      const groups = {};
+      for (const p of list) (groups[ROLE_META[p.role]?.group || "Others"] ||= []).push(p);
+      results.innerHTML = (welcome && !q ? `<p class="tm-new-lede">Pick someone to start a conversation. They'll see it here and get it by email, so it's a quick way to ask a question or check in.</p>` : "")
+        + GROUP_ORDER.filter((g) => groups[g]?.length).map((g) => `
+        <section class="tm-pick-group">
+          <h3 class="tm-group-title">${esc(g)}<span>${groups[g].length}</span></h3>
+          <div class="tm-pick-grid">${groups[g].map((p) => `
+            <button type="button" class="tm-pick-card" data-pick="${esc(p.id)}">
+              ${avatar(p.name || p.email, "lg")}
+              <span class="tm-pick-text"><b>${esc(p.name || p.email)}</b><small>${esc(roleLabel(p))}</small></span>
+              <span class="tm-pick-go" aria-hidden="true">${ICON.chat}</span>
+            </button>`).join("")}</div>
+        </section>`).join("");
+      results.querySelectorAll("[data-pick]").forEach((b) => b.addEventListener("click", () => openChatWith(b.dataset.pick)));
+    };
+    input.addEventListener("input", draw);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); results.querySelector("[data-pick]")?.click(); }
+    });
+    draw();
+    if (matchMedia("(min-width: 820px)").matches || !welcome) setTimeout(() => input.focus(), 0);
   }
 
   const backBtn = () => `<button type="button" class="tm-back" data-back aria-label="Back">${ICON.back}<span>${state.tab === "people" ? "People" : "Messages"}</span></button>`;
@@ -238,7 +295,7 @@ export async function mount(ctx, container) {
         <p class="tm-privacy">Contact details are only visible to signed-in staff.</p>
       </div>`;
     wireBack();
-    mainEl.querySelector("[data-msg]")?.addEventListener("click", () => { state.tab = "messages"; select({ kind: "chat", id: p.id }); });
+    mainEl.querySelector("[data-msg]")?.addEventListener("click", () => openChatWith(p.id));
     mainEl.querySelector("[data-edit-phone]")?.addEventListener("click", () => openPhoneEditor(ctx, state, p));
     mainEl.querySelector("[data-edit-contact]")?.addEventListener("click", () => openContactEditor(ctx, state, p));
   }
@@ -359,6 +416,7 @@ export async function mount(ctx, container) {
   container.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
   qEl.addEventListener("input", () => { state.q = qEl.value; renderList(); });
   container.querySelector("#tm-add")?.addEventListener("click", () => openContactEditor(ctx, state, null));
+  container.querySelector("#tm-new").addEventListener("click", () => select({ kind: "new" }));
 
   await state.reload();
 
@@ -376,7 +434,7 @@ export async function mount(ctx, container) {
     renderList();
     if (first) {
       if (startWith) select({ kind: "chat", id: startWith }, { replace: false });
-      else if (!state.threads.length) { state.tab = "people"; renderList(); renderPlaceholder(); }
+      else if (!state.threads.length) { state.tab = "people"; renderList(); renderNewMessage({ welcome: true }); }
       else if (matchMedia("(min-width: 820px)").matches) select({ kind: "chat", id: otherIdOf(state.threads[0]) });
       else renderPlaceholder();
     }

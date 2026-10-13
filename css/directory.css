@@ -5,17 +5,27 @@
    teammate's card. Below 820px the panes become one and slide.
    ========================================================================== */
 
-.tm-page { container-type: inline-size; container-name: team; max-width: 1320px; }
+/* The page is the app: no padding around it, it fills everything under the
+   top bar (the router adds .tm-content to #content while it's open). */
+.content.tm-content { padding: 0 !important; }
+.content.tm-content > * { max-width: none; }
+.tm-page { container-type: inline-size; container-name: team; }
 .tm-shell {
-  display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
-  height: calc(100dvh - var(--top-h, 72px) - 72px); min-height: 520px; max-width: 1320px;
-  border: 1px solid var(--hairline-2); border-radius: 22px; overflow: hidden;
-  background: var(--surface); box-shadow: var(--shadow-md);
+  display: grid; grid-template-columns: minmax(290px, 360px) minmax(0, 1fr);
+  height: calc(100dvh - var(--top-h, 72px)); min-height: 480px;
+  overflow: hidden; background: var(--surface);
 }
+.content.tm-content > .preview-banner { margin: 12px 16px; }
 
 /* ---------- left pane ---------- */
 .tm-side { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--hairline-2); background: color-mix(in srgb, var(--surface-3) 45%, var(--surface)); }
 .tm-side-head { display: grid; gap: 10px; padding: 16px 16px 12px; }
+.tm-side-top { display: flex; align-items: center; gap: 8px; }
+.tm-side-top .tm-seg { flex: 1; }
+.tm-compose-btn { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border: 0; border-radius: 11px; background: none; cursor: pointer; color: #2f6fd6; }
+.tm-compose-btn:hover { background: color-mix(in srgb, #2f6fd6 10%, transparent); }
+.tm-compose-btn:focus-visible { outline: none; box-shadow: var(--focus); }
+.tm-compose-btn svg { width: 19px; height: 19px; }
 .tm-seg { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 11px; background: color-mix(in srgb, var(--ink) 7%, transparent); }
 .tm-seg button {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; border: 0; border-radius: 9px;
@@ -45,6 +55,19 @@
 .tm-row.is-selected .tm-row-sub, .tm-row.is-selected time, .tm-row.is-selected .tm-row-name i { color: color-mix(in srgb, var(--surface) 72%, transparent); }
 .tm-row.is-selected .tm-av { box-shadow: 0 0 0 2px color-mix(in srgb, var(--surface) 30%, transparent); }
 .tm-row--person { min-height: 52px; padding: 7px 10px; }
+.tm-person-li { position: relative; }
+.tm-row.has-quick { padding-right: 52px; }
+.tm-quick-msg {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px;
+  border: 0; border-radius: 50%; background: color-mix(in srgb, #2f6fd6 10%, transparent); color: #2f6fd6; cursor: pointer;
+  opacity: 0; transition: opacity .15s, background .15s;
+}
+.tm-quick-msg svg { width: 16px; height: 16px; }
+.tm-person-li:hover .tm-quick-msg, .tm-quick-msg:focus-visible, .tm-row.is-selected + .tm-quick-msg { opacity: 1; }
+.tm-quick-msg:hover { background: #2f6fd6; color: #f7f9fd; }
+.tm-quick-msg:focus-visible { outline: none; box-shadow: var(--focus); }
+.tm-row.is-selected + .tm-quick-msg { background: color-mix(in srgb, var(--surface) 18%, transparent); color: var(--surface); }
+@media (hover: none) { .tm-quick-msg { opacity: 1; } }
 .tm-row-main { display: grid; gap: 2px; flex: 1; min-width: 0; }
 .tm-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; }
 .tm-row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 14px/1.3 var(--font); letter-spacing: -0.01em; }
@@ -57,6 +80,8 @@
 .tm-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #2f6fd6; }
 .tm-row.is-selected .tm-dot { background: var(--surface); }
 
+.tm-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 2px 6px 4px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, #2f6fd6 8%, var(--surface)); font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
+.tm-hint svg { width: 14px; height: 14px; color: #2f6fd6; vertical-align: -2px; }
 .tm-group + .tm-group { margin-top: 6px; }
 .tm-group-title { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 10px 6px; background: inherit; font: 600 11px/1.3 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .tm-side .tm-group-title { background: color-mix(in srgb, var(--surface-3) 45%, var(--surface)); }
@@ -146,6 +171,31 @@
 .tm-send:focus-visible { outline: none; box-shadow: var(--focus); }
 .tm-compose-note { margin: 0; padding: 4px 22px 14px; font-size: 11.5px; color: var(--muted-2); min-height: 16px; }
 
+/* New message */
+.tm-new-head { gap: 6px; }
+.tm-new-title { margin: 0; padding-left: 4px; font: 600 16px/1.3 var(--font); letter-spacing: -0.01em; color: var(--ink); }
+.tm-to { padding: 0 20px; border-bottom: 1px solid var(--hairline-2); }
+.tm-to-field { display: flex; align-items: center; gap: 8px; min-height: 52px; }
+.tm-to-field span { font-size: 14.5px; color: var(--muted); }
+.tm-shell .tm-to-field input { flex: 1; min-width: 0; min-height: 44px; padding: 0 4px; border: 0; background: none; box-shadow: none; font: 400 15px var(--font); color: var(--ink); }
+.tm-shell .tm-to-field input:focus { outline: none; box-shadow: none; }
+.tm-new-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 20px 28px; }
+.tm-new-lede { max-width: 60ch; margin: 14px 0 4px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+.tm-pick-group .tm-group-title { position: static; padding: 18px 0 8px; background: none; }
+.tm-pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.tm-pick-card {
+  display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 64px; padding: 10px 12px; border: 1px solid var(--hairline-2); border-radius: 14px;
+  background: var(--surface); cursor: pointer; text-align: left; color: var(--ink); transition: border-color .15s, box-shadow .15s, transform .15s var(--ease-out);
+}
+.tm-pick-card:hover { border-color: rgba(15, 23, 42, .18); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.tm-pick-card:focus-visible { outline: none; box-shadow: var(--focus); }
+.tm-pick-text { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.tm-pick-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 14px/1.3 var(--font); }
+.tm-pick-text small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--muted); }
+.tm-pick-go { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; color: #2f6fd6; background: color-mix(in srgb, #2f6fd6 9%, transparent); transition: background .15s, color .15s; }
+.tm-pick-go svg { width: 15px; height: 15px; }
+.tm-pick-card:hover .tm-pick-go { background: #2f6fd6; color: #f7f9fd; }
+
 /* Contact card */
 .tm-card { display: grid; justify-items: center; align-content: start; gap: 4px; height: 100%; overflow-y: auto; padding: 48px 28px 32px; text-align: center; }
 .tm-card .tm-av--xl { margin-bottom: 10px; }
@@ -175,7 +225,7 @@
 
 /* ---------- one pane (tablet / phone) ---------- */
 @container team (max-width: 819px) {
-    .tm-shell { grid-template-columns: minmax(0, 1fr); border-radius: 18px; }
+    .tm-shell { grid-template-columns: minmax(0, 1fr); }
     .tm-side, .tm-main { grid-column: 1; grid-row: 1; }
     .tm-shell[data-view="list"] .tm-main { display: none; }
     .tm-shell[data-view="detail"] .tm-side { display: none; }
@@ -190,11 +240,15 @@
     .tm-card { padding: 16px 18px 28px; }
 }
 @media (max-width: 760px) {
-  .tm-shell { height: calc(100dvh - var(--top-h, 64px) - 40px); min-height: 440px; border-radius: 16px; }
+  .tm-shell { min-height: 420px; }
   .tm-compose-note { display: none; }
+  .tm-to { padding: 0 14px; }
+  .tm-new-body { padding: 4px 14px 24px; }
+  .tm-pick-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tm-bubble { animation: none; }
-  .tm-seg button, .tm-send, .tm-action, .tm-compose-box { transition: none; }
+  .tm-seg button, .tm-send, .tm-action, .tm-compose-box, .tm-pick-card, .tm-quick-msg { transition: none; }
+  .tm-pick-card:hover { transform: none; }
 }
