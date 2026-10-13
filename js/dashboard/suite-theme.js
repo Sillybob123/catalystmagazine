@@ -94,6 +94,10 @@ const isFocusRoute = (hash) => {
 const PREF_KEY = "catalyst.suite.seasonalEffects";
 function effectsAllowedByUser() { try { return localStorage.getItem(PREF_KEY) !== "off"; } catch { return true; } }
 function setEffectsAllowedByUser(on) { try { localStorage.setItem(PREF_KEY, on ? "on" : "off"); } catch {} }
+// Anyone can turn the whole theme off for themselves (the switch in the top bar).
+const HIDE_KEY = "catalyst.suite.themeOff";
+function themeHiddenByUser() { try { return localStorage.getItem(HIDE_KEY) === "1"; } catch { return false; } }
+function setThemeHiddenByUser(off) { try { off ? localStorage.setItem(HIDE_KEY, "1") : localStorage.removeItem(HIDE_KEY); } catch {} }
 
 const state = { mode: "off", effects: true, editionName: "", season: null, started: false };
 
@@ -112,14 +116,19 @@ export function resolveSeason(mode = state.mode, editionName = state.editionName
   return SEASONS[mode] ? mode : null;
 }
 
+// season: what this person sees (null when they turned the theme off);
+// siteSeason: what the admins set for everyone.
 export function currentTheme() {
-  return { ...state, season: resolveSeason() };
+  const siteSeason = resolveSeason();
+  return { ...state, siteSeason, hiddenByMe: !!siteSeason && themeHiddenByUser(), season: siteSeason && !themeHiddenByUser() ? siteSeason : null };
 }
 
 // ---------- apply --------------------------------------------------------------
 function apply() {
-  const season = resolveSeason();
+  const siteSeason = resolveSeason();
+  const season = siteSeason && !themeHiddenByUser() ? siteSeason : null;
   state.season = season;
+  paintThemeSwitch(siteSeason);
   const root = document.documentElement;
   if (season) root.dataset.suiteTheme = season; else delete root.dataset.suiteTheme;
   if (season) root.style.setProperty("--season-art", `url("${SEASONS[season].art}")`);
@@ -128,6 +137,28 @@ function apply() {
   paintCorner(season);
   updateFields();
   window.dispatchEvent(new CustomEvent("suitetheme", { detail: currentTheme() }));
+}
+
+// A quiet switch at the start of the top bar, only while a theme is on.
+function paintThemeSwitch(siteSeason) {
+  const bar = document.querySelector(".topbar-actions");
+  let btn = document.querySelector(".season-switch");
+  if (!siteSeason || !bar) { btn?.remove(); return; }
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "season-switch";
+    btn.addEventListener("click", () => { setThemeHiddenByUser(!themeHiddenByUser()); apply(); });
+    bar.prepend(btn);
+  }
+  const off = themeHiddenByUser();
+  const label = off ? "Turn theme on" : "Turn off theme";
+  btn.setAttribute("aria-pressed", String(!off));
+  btn.title = off ? `Show the ${SEASONS[siteSeason].label} theme again` : "Hide the seasonal theme for you (no one else is affected)";
+  btn.setAttribute("aria-label", label);
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">${off
+    ? '<path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"/><circle cx="12" cy="12" r="3.5"/>'
+    : '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>'}</svg><span>${label}</span>`;
 }
 
 function paintLogo(season) {
@@ -414,9 +445,9 @@ export function mountThemePicker(ctx, root) {
         </button>`;
     }).join("");
     effectsBox.checked = live.effects;
-    effectsBox.disabled = !live.season;
-    status.textContent = live.season
-      ? `${SEASONS[live.season].label} theme is on for everyone${live.effects ? "" : ", without drifting effects"}.`
+    effectsBox.disabled = !live.siteSeason;
+    status.textContent = live.siteSeason
+      ? `${SEASONS[live.siteSeason].label} theme is on for everyone${live.effects ? "" : ", without drifting effects"}.${live.hiddenByMe ? " You've turned it off for yourself (top bar)." : ""}`
       : "No theme is on.";
   };
 

@@ -121,10 +121,25 @@ html[data-suite-theme] .brand-mark { position: relative; z-index: 1; overflow: v
   .ov-hello.has-season .ov-season-credit { display: none; }
 }
 
+/* Each person's "Turn off theme" switch: quiet text at the start of the top bar. */
+.season-switch {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 6px; border: 0; border-radius: 8px;
+  background: none; cursor: pointer; font: 500 12px var(--font); color: var(--muted-2); white-space: nowrap;
+  transition: color .15s;
+}
+.season-switch:hover { color: var(--ink); }
+.season-switch:focus-visible { outline: none; box-shadow: var(--focus); }
+.season-switch svg { flex: none; opacity: .8; }
+@media (max-width: 760px) {
+  .season-switch span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .season-switch { width: 38px; justify-content: center; padding: 0; }
+}
+
 /* Focus pages keep the plain paper so nothing competes with the words. */
 html[data-suite-theme] body.wr-focus { background: var(--surface-2); }
 
 @media (prefers-reduced-motion: reduce) {
+  .season-switch { transition: none; }
   .season-canvas { display: none; }
   .ov-season-mascot { animation: none; }
 }

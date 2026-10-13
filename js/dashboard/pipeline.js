@@ -383,6 +383,7 @@ let _editionsLoaded = false;
 let _editionFilter = null;
 let _focus = "all";        // "all" | "attention" | "mine" (Story Tracker quick filter)
 let _query = "";           // Story Tracker search (title, writer, editor)
+let _socialPosts = [];     // social_assignments (Planner content tracker), for the social team section
 const _expandedCols = new Set();
 let _view        = "all"; // "all" | "mine"
 let _uid         = null;
@@ -488,7 +489,14 @@ export async function mount(ctx, container) {
     snap => onEditions(snap.exists() ? snap.data() : null),
     err => { console.warn("[pipeline] editions load failed", err); onEditions(null); });
 
-  return () => { unsubProjects(); unsubEditions(); };
+  // The social team's posts (Planner content tracker), shown under the board.
+  const unsubSocial = _view === "all"
+    ? onSnapshot(collection(workflowDb, "social_assignments"),
+        (snap) => { _socialPosts = snap.docs.map((d) => ({ id: d.id, ...d.data() })); renderBoard(); },
+        (err) => console.warn("[pipeline] social posts", err?.message))
+    : () => {};
+
+  return () => { unsubProjects(); unsubEditions(); unsubSocial(); };
 }
 
 // ─── Editions ─────────────────────────────────────────────────────────────────
@@ -787,6 +795,7 @@ function renderBoard() {
 
   if (below) {
     below.appendChild(renderTeamSection());
+    below.appendChild(renderSocialSection());
     below.appendChild(renderPublishedLink(projects.filter(live)));
   }
 }
@@ -812,7 +821,8 @@ function teamMembers() {
   // Staff only, one card per person (some people have an old duplicate account).
   const byName = new Map();
   for (const u of _allUsers) {
-    if (!u.role || u.role === "reader") continue;
+    // Admins run the tracker; the social team has its own section below.
+    if (!u.role || u.role === "reader" || u.role === "admin" || u.role === "social_media") continue;
     const key = (u.name || u.email || u.id).trim().toLowerCase();
     if (!byName.has(key)) byName.set(key, u);
   }
@@ -867,6 +877,145 @@ function renderTeamSection() {
     if (e.target.closest("[data-propose]")) openProposalModal();
   });
   return sec;
+}
+
+// ─── Social media team ──────────────────────────────────────────────────────
+// Everyone with the social_media role and the posts they have in progress
+// (Planner content tracker), plus a way for any writer to ask them for one.
+const SOCIAL_STATUS = { planned: "Planned", drafting: "Drafting", scheduled: "Scheduled", open: "Planned" };
+
+function socialTeam() {
+  const byName = new Map();
+  for (const u of _allUsers) {
+    if (u.role !== "social_media") continue;
+    const key = (u.name || u.email || u.id).trim().toLowerCase();
+    if (!byName.has(key)) byName.set(key, u);
+  }
+  return [...byName.values()].map((u) => {
+    const posts = _socialPosts.filter((a) => {
+      const done = a.status === "published" || a.status === "done";
+      const ids = Array.isArray(a.assigneeIds) && a.assigneeIds.length ? a.assigneeIds : [a.assigneeId];
+      return !done && ids.includes(u.id);
+    }).sort((a, b) => String(a.deadline || "9").localeCompare(String(b.deadline || "9")));
+    return { u, posts };
+  }).sort((a, b) => b.posts.length - a.posts.length || String(a.u.name || "").localeCompare(String(b.u.name || "")));
+}
+
+function renderSocialSection() {
+  const team = socialTeam();
+  const sec = el("section", { class: "tr-team-sec tr-social-sec", "aria-labelledby": "tr-social-h" });
+  sec.innerHTML = `
+    <header class="tr-team-head">
+      <div>
+        <h3 id="tr-social-h">Social media team</h3>
+        <p>The posts they&rsquo;re working on. Writing a story that should be on our socials? Ask them for a post.</p>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" data-ask-social>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ask social media for a post
+      </button>
+    </header>
+    <div class="tr-people">
+      ${team.map(({ u, posts }) => {
+        const name = u.name || u.email;
+        if (!posts.length) {
+          return `<article class="tr-card-person is-free"><header>${avatarHtml(name)}<span class="tr-person-name">${esc(name)}${u.id === _uid ? " <i>(you)</i>" : ""}</span></header><p class="tr-free-note">No posts in progress right now.</p></article>`;
+        }
+        return `
+          <article class="tr-card-person">
+            <header>${avatarHtml(name)}<span class="tr-person-name">${esc(name)}${u.id === _uid ? " <i>(you)</i>" : ""}</span><span class="tr-person-load">${posts.length} ${posts.length === 1 ? "post" : "posts"}</span></header>
+            <ul>${posts.map((a) => {
+              const d = daysUntil(a.deadline);
+              return `<li><div class="tr-post">
+                <span class="tr-person-story">${esc(a.articleTitle || "Untitled post")}</span>
+                <span class="tr-person-meta"><span class="tr-role">${esc(SOCIAL_STATUS[a.status] || "Planned")}</span>${a.deadline ? `<span class="${d !== null && d < 0 ? "is-late" : ""}">${d !== null && d < 0 ? `${-d} days late` : `due ${esc(fmtShort(a.deadline))}`}</span>` : ""}${a.kind === "request" && a.requestedByName ? `<span>asked by ${esc(a.requestedByName)}</span>` : ""}</span>
+              </div></li>`;
+            }).join("")}</ul>
+          </article>`;
+      }).join("") || `<div class="kb-empty">No one has the Social Media role yet.</div>`}
+    </div>`;
+  sec.querySelector("[data-ask-social]").addEventListener("click", () => openSocialRequestModal());
+  return sec;
+}
+
+// "Ask social media for a post": what the post is about, key information, and
+// the date the story is expected to publish (the post is needed by then).
+function openSocialRequestModal() {
+  const mine = _allProjects.filter((p) => !isProjectCompleted(p) && p.proposalStatus !== "rejected"
+    && (p.authorId === _uid || p.editorId === _uid));
+  const social = socialTeam().map((t) => String(t.u.name || t.u.email).split(/\s+/)[0]);
+  const body = el("div", { class: "tr-ask" });
+  body.innerHTML = `
+    <p class="tr-ask-lede">It goes to the social media team${social.length ? ` (${esc(social.join(", "))})` : ""} as a post on their list, with an email. They&rsquo;ll aim to have it ready by the date the story publishes.</p>
+    <div class="field">
+      <label class="label" for="ask-story">Story</label>
+      ${mine.length ? `<select class="select" id="ask-story">
+        ${mine.map((p) => `<option value="${esc(p.id)}">${esc(p.title || "Untitled")}</option>`).join("")}
+        <option value="">Another story…</option>
+      </select>` : ""}
+      <input class="input" id="ask-title" placeholder="Story title" maxlength="300"${mine.length ? " hidden" : ""}>
+    </div>
+    <div class="field">
+      <label class="label" for="ask-about">What should the post be about?</label>
+      <textarea class="textarea" id="ask-about" rows="3" maxlength="2000" placeholder="The one idea the post should get across, and who it's for."></textarea>
+    </div>
+    <div class="field">
+      <label class="label" for="ask-key">Key information to include <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+      <textarea class="textarea" id="ask-key" rows="3" maxlength="3000" placeholder="A striking fact or number, a quote, the people or lab to tag, an image idea…"></textarea>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label class="label" for="ask-date">When is the story expected to publish?</label>
+        <input class="input" type="date" id="ask-date">
+      </div>
+      <div class="field">
+        <label class="label" for="ask-link">Link <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+        <input class="input" id="ask-link" type="url" placeholder="https://… (draft, photos, source)">
+      </div>
+    </div>
+    <p class="tr-ask-error" id="ask-error" role="alert" hidden></p>`;
+  const $ = (id) => body.querySelector("#" + id);
+  const syncStory = () => {
+    const sel = $("ask-story");
+    const p = sel && sel.value ? mine.find((x) => x.id === sel.value) : null;
+    $("ask-title").hidden = !!p;
+    if (p && pubDeadline(p)) $("ask-date").value = pubDeadline(p);
+  };
+  $("ask-story")?.addEventListener("change", syncStory);
+  syncStory();
+
+  const send = el("button", { class: "btn btn-primary", type: "button" }, "Send to social media");
+  const cancel = el("button", { class: "btn btn-secondary", type: "button" }, "Cancel");
+  const m = openModal({ title: "Ask social media for a post", body, footer: [cancel, send] });
+  cancel.addEventListener("click", () => m?.close());
+  send.addEventListener("click", async () => {
+    const sel = $("ask-story");
+    const project = sel && sel.value ? mine.find((x) => x.id === sel.value) : null;
+    const payload = {
+      storyTitle: project ? project.title : $("ask-title").value.trim(),
+      projectId: project ? project.id : null,
+      about: $("ask-about").value.trim(),
+      keyInfo: $("ask-key").value.trim(),
+      link: $("ask-link").value.trim(),
+      neededBy: $("ask-date").value,
+    };
+    const err = $("ask-error");
+    const fail = (msg) => { err.textContent = msg; err.hidden = false; };
+    if (!payload.storyTitle) return fail("Which story is the post for?");
+    if (!payload.about) return fail("Say what the post should be about.");
+    if (!payload.neededBy) return fail("Add the date the story is expected to publish.");
+    err.hidden = true;
+    send.disabled = true; send.textContent = "Sending…";
+    try {
+      const res = await _ctx.authedFetch("/api/social/request", { method: "POST", body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      m?.close();
+      toast(`Sent to the social media team${data.team?.length ? ` (${data.team.map((n) => String(n).split(/\s+/)[0]).join(", ")})` : ""}.`, "success");
+    } catch (e) {
+      send.disabled = false; send.textContent = "Send to social media";
+      fail(e.message || "Could not send. Try again.");
+    }
+  });
 }
 
 function renderPublishedLink(published) {
