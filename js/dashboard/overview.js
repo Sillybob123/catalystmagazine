@@ -9,15 +9,16 @@ import {
   limit,
   getDocs,
   getDoc,
+  where,
   deleteDoc,
   doc,
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { buildAdminTasks } from "./task-engine.js";
 import { isProjectPublished } from "./publish-sync.js";
-import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
-import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-6";
-import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js?v=roles-1";
+import { el, esc, fmtRelative, confirmDialog } from "./ui.js";
+import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-7";
+import { isStaff, whoseTurn, isMyTurn, nudgeFor, progressPct, stageLabel, readiness } from "./schedule-calendar.js?v=roles-2";
 
 // Shortcuts at the top of Overview, per role: the three or four things that
 // person opens most. Only routes they can reach are listed.
@@ -52,7 +53,7 @@ export async function mount(ctx, container) {
     <div class="ov-hello-text">
       <p class="ov-date">${esc(today)}</p>
       <h2 class="ov-greeting">${esc(greetingFor(ctx.profile?.name || ctx.user?.displayName))}</h2>
-      ${isAdmin ? "" : `<p class="ov-lede">Here&rsquo;s the newsroom at a glance. Every section is in the menu; pin the pages you use most.</p>`}
+      ${isStaff(ctx.role) ? "" : `<p class="ov-lede">Here&rsquo;s the newsroom at a glance. Every section is in the menu; pin the pages you use most.</p>`}
     </div>
     <nav class="ov-shortcuts" aria-label="Shortcuts">
       ${shortcuts.map(([href, label]) => `<a class="ov-shortcut" href="${href}"><span>${esc(label)}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`).join("")}
@@ -98,45 +99,9 @@ export async function mount(ctx, container) {
     return cleanup;
   }
 
-  // Newsletter builder: the latest stories beside the newsletter status.
-  if (ctx.role === "newsletter_builder") {
-    const row = el("div", { class: "ov-row" });
-    if (isAdmin) {
-      const recent = el("div", { class: "card ov-recent" });
-      recent.innerHTML = `
-        <div class="card-header">
-          <div>
-            <div class="card-title">Latest from the newsroom</div>
-            <div class="card-subtitle">The six most recently updated stories.</div>
-          </div>
-          <a class="btn btn-ghost btn-sm" href="#/writer/feed">See all</a>
-        </div>
-        <div class="card-body card-body--flush" id="recent-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-      row.appendChild(recent);
-      loadRecentArticles(recent.querySelector("#recent-body"), ctx);
-    }
-    const side = el("div", { class: "ov-side" });
-    const nlCard = el("div", { class: "card" });
-    nlCard.innerHTML = `<div class="card-body" id="nl-reminder"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-    side.appendChild(nlCard);
-    loadNewsletterReminder(nlCard.querySelector("#nl-reminder"), ctx);
-    side.appendChild(directoryCard());
-    row.appendChild(side);
-    container.appendChild(row);
-  }
-
-  // Editorial calendar — every staff member sees the month's publish dates,
-  // ready-by dates (publish − 1 week, for the social team), interviews, and
-  // their own deadlines + progress nudges.
-  if (isStaff(ctx.role)) {
-    try {
-      renderScheduleCalendar(container, ctx);
-    } catch (err) {
-      console.warn("[overview] schedule calendar failed", err);
-    }
-  }
-
-  if (ctx.role !== "newsletter_builder") container.appendChild(directoryCard());
+  // Everyone else: their own next steps, what's coming, their stories.
+  if (isStaff(ctx.role)) return mountMemberHome(container, ctx, hello);
+  container.appendChild(directoryCard());
 }
 
 // Catalyst bot (admin only): the controls and its email log, folded into
@@ -251,7 +216,8 @@ function mountAdminHome(container, ctx, hello) {
       const joins = fresh.filter((x) => /join/i.test(x.source || x.type || "")).length;
       const pitches = fresh.length - joins;
       const parts = [joins && `${joins} ${joins === 1 ? "application" : "applications"}`, pitches && `${pitches} ${pitches === 1 ? "pitch" : "pitches"}`].filter(Boolean);
-      extra.push({ priority: "high", headline: `Read ${parts.join(" and ")} from the website`, context: "Submissions inbox", actionHref: "#/admin/submissions", actionLabel: "Open inbox" });
+      extra.push({ priority: "high", headline: `Read ${parts.join(" and ")} from the website`, context: "Submissions inbox · already read them? Mark them as read to clear this.", actionHref: "#/admin/submissions", actionLabel: "Open inbox",
+        secondary: { label: "Mark as read", run: () => markSubmissionsRead(fresh) } });
     }
     const waiting = state.teamTasks.filter((t) => t.status === "pending");
     if (waiting.length) {
@@ -279,57 +245,38 @@ function mountAdminHome(container, ctx, hello) {
           <span class="oh-job-title">${t.headline}</span>
           ${t.context ? `<span class="oh-job-meta">${t.context}</span>` : ""}
         </span>
-        ${t.actionHref ? `<a class="oh-job-btn" href="${esc(t.actionHref)}">${esc(t.actionLabel || "Open")}</a>` : ""}
+        <span class="oh-job-actions">
+          ${t.secondary ? `<button type="button" class="oh-job-btn oh-job-btn--quiet" data-secondary="${shown.indexOf(t)}">${esc(t.secondary.label)}</button>` : ""}
+          ${t.actionHref ? `<a class="oh-job-btn" href="${esc(t.actionHref)}">${esc(t.actionLabel || "Open")}</a>` : ""}
+        </span>
       </li>`).join("")
       + (items.length > shown.length ? `<li class="oh-list-more"><a href="#/admin/tasks">${items.length - shown.length} more in Action items ${ARROW}</a></li>` : "");
+    list.querySelectorAll("[data-secondary]").forEach((b) => b.addEventListener("click", async () => {
+      b.disabled = true; b.textContent = "Saving…";
+      const ok = await shown[+b.dataset.secondary].secondary.run();
+      if (!ok) { b.disabled = false; b.textContent = shown[+b.dataset.secondary].secondary.label; }
+    }));
+  }
+
+  async function markSubmissionsRead(fresh) {
+    try {
+      const res = await ctx.authedFetch("/api/admin/submissions", { method: "POST", body: JSON.stringify({ ids: fresh.map((x) => x.id), patch: { status: "reviewing" } }) });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      fresh.forEach((x) => { x.status = "reviewing"; });
+      ctx.toast?.(`Marked ${data.updated} as read.`, "success");
+      render();
+      return true;
+    } catch (err) {
+      ctx.toast?.(`Couldn't mark them as read: ${err.message}`, "error");
+      return false;
+    }
   }
 
   // ── Coming up ──
   function renderAgenda() {
-    const box = home.querySelector("#oh-agenda");
     if (!state.projects) return;
-    const horizon = 14;
-    const inRange = (iso) => { const d = daysFromToday(iso); return d !== null && d >= 0 && d < horizon; };
-    const events = [];
-    for (const p of state.projects) {
-      if (p.proposalStatus === "rejected") continue;
-      const pub = pubDateOf(p);
-      if (pub && inRange(pub)) {
-        const live = isProjectPublished(p);
-        const ready = isDone(p);
-        const behind = !ready && !live && (daysFromToday(pub) - 7) < 0;
-        events.push({ date: pub.slice(0, 10), kind: "Publishes", title: p.title, who: p.authorName,
-          tone: live ? "good" : ready ? "good" : behind ? "bad" : "", status: live ? "Published" : ready ? "Ready" : behind ? "Behind" : "In progress", href: "#/pipeline/all" });
-      }
-      const iv = p.deadlines?.interview || p.interviewDate;
-      if (iv && inRange(iv) && !p.timeline?.["Interview Complete"]) events.push({ date: String(iv).slice(0, 10), kind: "Interview", title: p.title, who: p.authorName, href: "#/pipeline/all" });
-    }
-    for (const a of state.posts) {
-      if (a.status === "published" || a.status === "done" || !inRange(a.deadline)) continue;
-      events.push({ date: String(a.deadline).slice(0, 10), kind: "Social post", title: a.articleTitle, who: a.assigneeName, href: "#/planner" });
-    }
-    for (const t of state.teamTasks) {
-      if (t.status !== "approved" || !inRange(t.deadline)) continue;
-      events.push({ date: String(t.deadline).slice(0, 10), kind: "Task due", title: t.title, who: (t.assigneeNames || [])[0], href: "#/tasks" });
-    }
-    events.sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind));
-    if (!events.length) {
-      box.innerHTML = `<p class="oh-empty">Nothing scheduled in the next two weeks. <a href="#/calendar">Open the calendar</a> to plan ahead.</p>`;
-      return;
-    }
-    const byDay = new Map();
-    for (const e of events.slice(0, 14)) (byDay.get(e.date) || byDay.set(e.date, []).get(e.date)).push(e);
-    box.innerHTML = [...byDay.entries()].map(([day, list]) => `
-      <div class="oh-day">
-        <h4 class="oh-day-label${daysFromToday(day) <= 1 ? " is-soon" : ""}">${esc(dayLabel(day))}</h4>
-        <ul>${list.map((e) => `
-          <li><a class="oh-event" href="${e.href}">
-            <span class="oh-kind oh-kind--${e.kind.replace(/\s+/g, "-").toLowerCase()}">${esc(e.kind)}</span>
-            <span class="oh-event-title">${esc(e.title || "Untitled")}</span>
-            ${e.who ? `<span class="oh-event-who">${esc(e.who)}</span>` : ""}
-            ${e.status ? `<span class="oh-status${e.tone ? " is-" + e.tone : ""}">${esc(e.status)}</span>` : ""}
-          </a></li>`).join("")}</ul>
-      </div>`).join("") + (events.length > 14 ? `<p class="oh-agenda-more"><a href="#/calendar">${events.length - 14} more on the calendar ${ARROW}</a></p>` : "");
+    home.querySelector("#oh-agenda").innerHTML = agendaHtml(collectAgenda(state));
   }
 
   // ── At a glance ──
@@ -371,6 +318,221 @@ function mountAdminHome(container, ctx, hello) {
       ? `<b>${items.length} ${items.length === 1 ? "thing needs" : "things need"} you</b>${urgent ? `, ${urgent} urgent` : ""}.`
       : `<b>You're all caught up.</b>`)
       + (week ? ` ${week} ${week === 1 ? "story publishes" : "stories publish"} this week.` : "");
+  }
+
+  return () => unsub();
+}
+
+// The next two weeks: publications, interviews, social posts and team task
+// deadlines. `mine(uid)` narrows the personal ones to that person (the
+// publication dates stay team-wide: everyone plans around them).
+function collectAgenda(state, uid = null) {
+  const horizon = 14;
+  const inRange = (iso) => { const d = daysFromToday(iso); return d !== null && d >= 0 && d < horizon; };
+  const onStory = (p) => !uid || p.authorId === uid || p.editorId === uid;
+  const events = [];
+  for (const p of state.projects || []) {
+    if (p.proposalStatus === "rejected") continue;
+    const pub = pubDateOf(p);
+    if (pub && inRange(pub)) {
+      const live = isProjectPublished(p);
+      const ready = isDone(p);
+      const behind = !ready && !live && (daysFromToday(pub) - 7) < 0;
+      events.push({ date: pub.slice(0, 10), kind: "Publishes", title: p.title, who: p.authorName, mine: !!uid && onStory(p),
+        tone: live || ready ? "good" : behind ? "bad" : "", status: live ? "Published" : ready ? "Ready" : behind ? "Behind" : "In progress", href: uid ? "#/pipeline/mine" : "#/pipeline/all" });
+    }
+    const iv = p.deadlines?.interview || p.interviewDate;
+    if (iv && inRange(iv) && !p.timeline?.["Interview Complete"] && onStory(p)) events.push({ date: String(iv).slice(0, 10), kind: "Interview", title: p.title, who: p.authorName, href: uid ? "#/pipeline/mine" : "#/pipeline/all" });
+  }
+  for (const a of state.posts || []) {
+    if (a.status === "published" || a.status === "done" || !inRange(a.deadline)) continue;
+    const ids = Array.isArray(a.assigneeIds) && a.assigneeIds.length ? a.assigneeIds : [a.assigneeId];
+    if (uid && !ids.includes(uid) && a.requestedById !== uid) continue;
+    events.push({ date: String(a.deadline).slice(0, 10), kind: "Social post", title: a.articleTitle, who: a.assigneeName, href: "#/planner" });
+  }
+  for (const t of state.teamTasks || []) {
+    if (t.status !== "approved" || !inRange(t.deadline)) continue;
+    if (uid && !(t.assigneeIds || [t.assigneeId]).includes(uid)) continue;
+    events.push({ date: String(t.deadline).slice(0, 10), kind: "Task due", title: t.title, who: (t.assigneeNames || [])[0], href: "#/tasks" });
+  }
+  return events.sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind));
+}
+
+function agendaHtml(events) {
+  if (!events.length) return `<p class="oh-empty">Nothing scheduled in the next two weeks. <a href="#/calendar">Open the calendar</a> to plan ahead.</p>`;
+  const byDay = new Map();
+  for (const e of events.slice(0, 14)) (byDay.get(e.date) || byDay.set(e.date, []).get(e.date)).push(e);
+  return [...byDay.entries()].map(([day, list]) => `
+    <div class="oh-day">
+      <h4 class="oh-day-label${daysFromToday(day) <= 1 ? " is-soon" : ""}">${esc(dayLabel(day))}</h4>
+      <ul>${list.map((e) => `
+        <li><a class="oh-event${e.mine ? " is-mine" : ""}" href="${e.href}">
+          <span class="oh-kind oh-kind--${e.kind.replace(/\s+/g, "-").toLowerCase()}">${esc(e.kind)}</span>
+          <span class="oh-event-title">${esc(e.title || "Untitled")}</span>
+          ${e.mine ? `<span class="oh-event-who"><i class="oh-yours">Yours</i></span>` : e.who ? `<span class="oh-event-who">${esc(e.who)}</span>` : ""}
+          ${e.status ? `<span class="oh-status${e.tone ? " is-" + e.tone : ""}">${esc(e.status)}</span>` : ""}
+        </a></li>`).join("")}</ul>
+    </div>`).join("") + (events.length > 14 ? `<p class="oh-agenda-more"><a href="#/calendar">${events.length - 14} more on the calendar ${ARROW}</a></p>` : "");
+}
+
+// ─── Everyone else's home ────────────────────────────────────────────────────
+// Same shape as the admin's, about *you*:
+//   Your next steps  stories where it's your move (worded for your role, from
+//                    the calendar's logic), your team tasks, your social posts,
+//                    unread messages
+//   Coming up        publication dates + your interviews, posts and tasks
+//   Side             your stories and where they stand, the newsletter (for
+//                    the newsletter builder), Team & messages
+
+const ROLE_LINKS = {
+  editor: "#/editor/queue",
+  writer: "#/pipeline/mine",
+};
+
+function mountMemberHome(container, ctx, hello) {
+  const uid = ctx.user?.uid;
+  const role = ctx.role;
+  const isNewsletter = role === "newsletter_builder";
+  const home = el("div", { class: "oh" });
+  home.innerHTML = `
+    <section class="oh-card oh-needs" aria-labelledby="oh-needs-h">
+      <header class="oh-head">
+        <h3 id="oh-needs-h">Your next steps</h3>
+        <span class="oh-badge" id="oh-needs-count" hidden></span>
+      </header>
+      <ol class="oh-list" id="oh-needs"><li class="oh-skel"></li><li class="oh-skel"></li></ol>
+    </section>
+
+    <section class="oh-card oh-agenda" aria-labelledby="oh-agenda-h">
+      <header class="oh-head">
+        <h3 id="oh-agenda-h">Coming up</h3>
+        <span class="oh-sub">Next two weeks</span>
+        <a class="oh-more" href="#/calendar">Full calendar ${ARROW}</a>
+      </header>
+      <div id="oh-agenda"><div class="oh-skel"></div></div>
+    </section>
+
+    <aside class="oh-side">
+      ${isNewsletter ? `<section class="oh-card oh-nl" id="nl-reminder"><div class="oh-skel"></div></section>` : ""}
+      <section class="oh-card" id="oh-mine-card" hidden aria-labelledby="oh-mine-h">
+        <header class="oh-head"><h3 id="oh-mine-h">Your stories</h3><a class="oh-more" href="#/pipeline/mine">My assignments ${ARROW}</a></header>
+        <ul class="oh-mine" id="oh-mine"></ul>
+      </section>
+    </aside>`;
+  container.appendChild(home);
+  home.querySelector(".oh-side").appendChild(directoryCard());
+  if (isNewsletter) loadNewsletterReminder(home.querySelector("#nl-reminder"), ctx);
+
+  const state = { projects: null, teamTasks: [], posts: [], threads: [] };
+  const render = () => { renderNext(); renderAgenda(); renderMine(); };
+
+  const unsub = onSnapshot(collection(db, "projects"), (snap) => {
+    state.projects = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    render();
+  }, () => { state.projects = []; render(); });
+  getDocs(collection(db, "tasks")).then((s) => { state.teamTasks = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }).catch(() => {});
+  getDocs(collection(db, "social_assignments")).then((s) => { state.posts = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }).catch(() => {});
+  if (uid) getDocs(query(collection(db, "dm_threads"), where("participantIds", "array-contains", uid))).then((s) => { state.threads = s.docs.map((d) => d.data()); render(); }).catch(() => {});
+
+  const myStories = () => (state.projects || []).filter((p) => (p.authorId === uid || p.editorId === uid)
+    && p.proposalStatus !== "rejected" && !isDone(p) && !isProjectPublished(p));
+
+  function nextSteps() {
+    if (!state.projects) return null;
+    const items = [];
+    for (const p of myStories()) {
+      if (!isMyTurn(p, uid)) continue;
+      const turn = whoseTurn(p, uid);
+      const r = readiness(p);
+      const nudge = nudgeFor(p, uid);
+      const editing = turn.who === "editor";
+      items.push({
+        priority: r === "behind" ? "urgent" : r === "at-risk" ? "high" : "normal",
+        due: pubDateOf(p) || "9999",
+        headline: `${esc(turn.what.charAt(0).toUpperCase() + turn.what.slice(1))}: <strong>${esc(p.title || "Untitled")}</strong>`,
+        context: esc(nudge.text),
+        actionHref: editing ? "#/editor/queue" : (ROLE_LINKS[role] || "#/pipeline/mine"),
+        actionLabel: editing ? "Open the queue" : "Open",
+      });
+    }
+    for (const t of state.teamTasks) {
+      if (t.status !== "approved" || !(t.assigneeIds || [t.assigneeId]).includes(uid)) continue;
+      const d = daysFromToday(t.deadline);
+      items.push({
+        priority: d !== null && d < 0 ? "urgent" : d !== null && d <= 2 ? "high" : "normal",
+        due: t.deadline || "9999",
+        headline: `Team task: <strong>${esc(t.title || "Untitled")}</strong>`,
+        context: t.deadline ? (d < 0 ? `<span class="admin-task-due admin-task-due-over">${-d} days late</span>` : `Due ${esc(dayLabel(t.deadline))}`) : "No due date",
+        actionHref: "#/tasks", actionLabel: "Open",
+      });
+    }
+    for (const a of state.posts) {
+      const ids = Array.isArray(a.assigneeIds) && a.assigneeIds.length ? a.assigneeIds : [a.assigneeId];
+      if (a.status === "published" || a.status === "done" || !ids.includes(uid)) continue;
+      const d = daysFromToday(a.deadline);
+      items.push({
+        priority: d !== null && d < 0 ? "urgent" : d !== null && d <= 2 ? "high" : "normal",
+        due: a.deadline || "9999",
+        headline: `Social post: <strong>${esc(a.articleTitle || "Untitled")}</strong>`,
+        context: a.deadline ? (d < 0 ? `<span class="admin-task-due admin-task-due-over">${-d} days late</span>` : `Due ${esc(dayLabel(a.deadline))}`) + (a.requestedByName ? ` · asked by ${esc(a.requestedByName)}` : "") : "No due date",
+        actionHref: "#/planner", actionLabel: "Open planner",
+      });
+    }
+    const unread = state.threads.filter((t) => t.lastMessage && t.lastMessage.senderId !== uid && String(t.readAt?.[uid] || "") < String(t.lastMessage.at || ""));
+    if (unread.length) {
+      const names = unread.map((t) => { const o = Object.entries(t.participants || {}).find(([k]) => k !== uid); return String(o?.[1]?.name || "").split(/\s+/)[0]; }).filter(Boolean);
+      items.push({ priority: "high", due: "0000", headline: `${unread.length} unread ${unread.length === 1 ? "message" : "messages"}`, context: names.length ? `From ${esc(names.slice(0, 3).join(", "))}${names.length > 3 ? ` and ${names.length - 3} more` : ""}` : "", actionHref: "#/directory", actionLabel: "Read" });
+    }
+    const rank = { urgent: 0, high: 1, normal: 2 };
+    return items.sort((a, b) => rank[a.priority] - rank[b.priority] || String(a.due).localeCompare(String(b.due)));
+  }
+
+  function renderNext() {
+    const list = home.querySelector("#oh-needs");
+    const items = nextSteps();
+    if (!items) return;
+    const count = home.querySelector("#oh-needs-count");
+    count.hidden = !items.length; count.textContent = items.length;
+    list.innerHTML = items.length ? items.slice(0, 8).map((t) => `
+      <li class="oh-job is-${t.priority}">
+        <span class="oh-job-dot" aria-hidden="true"></span>
+        <span class="oh-job-text"><span class="oh-job-title">${t.headline}</span>${t.context ? `<span class="oh-job-meta">${t.context}</span>` : ""}</span>
+        <span class="oh-job-actions"><a class="oh-job-btn" href="${esc(t.actionHref)}">${esc(t.actionLabel)}</a></span>
+      </li>`).join("")
+      : `<li class="oh-clear"><span class="oh-clear-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>You're all caught up.</b> ${myStories().length ? "Your stories are waiting on someone else for now." : "Nothing is waiting on you right now."}</span></li>`;
+    // Summary under the greeting.
+    let line = hello.querySelector(".ov-summary");
+    if (!line) { line = el("p", { class: "ov-summary" }); hello.querySelector(".ov-hello-text")?.appendChild(line); }
+    const urgent = items.filter((t) => t.priority === "urgent").length;
+    line.innerHTML = items.length
+      ? `<b>${items.length} ${items.length === 1 ? "thing is" : "things are"} waiting on you</b>${urgent ? `, ${urgent} overdue` : ""}.`
+      : `<b>You're all caught up.</b>`;
+  }
+
+  function renderAgenda() {
+    if (!state.projects) return;
+    home.querySelector("#oh-agenda").innerHTML = agendaHtml(collectAgenda(state, uid));
+  }
+
+  function renderMine() {
+    const card = home.querySelector("#oh-mine-card");
+    const mine = myStories().sort((a, b) => String(pubDateOf(a) || "9").localeCompare(String(pubDateOf(b) || "9")));
+    card.hidden = !mine.length;
+    if (!mine.length) return;
+    home.querySelector("#oh-mine").innerHTML = mine.slice(0, 5).map((p) => {
+      const pct = progressPct(p);
+      const turn = whoseTurn(p, uid);
+      const mineNow = isMyTurn(p, uid);
+      const waitingOn = turn && !mineNow ? (turn.who === "editor" ? (p.editorName || "an editor") : turn.who === "writer" ? (p.authorName || "the writer") : "an admin") : "";
+      return `<li>
+        <a href="${ROLE_LINKS[role] || "#/pipeline/mine"}">
+          <span class="oh-mine-title">${esc(p.title || "Untitled")}</span>
+          <span class="oh-mine-meta">${esc(stageLabel(p))} · ${p.editorId === uid ? "you're editing" : "you're writing"}${pubDateOf(p) ? ` · publishes ${esc(dayLabel(pubDateOf(p)))}` : ""}</span>
+          <span class="oh-bar" aria-hidden="true"><span style="width:${pct}%"></span></span>
+          <span class="oh-mine-turn${mineNow ? " is-you" : ""}">${mineNow ? "Your move" : waitingOn ? `Waiting on ${esc(String(waitingOn).split(/\s+/)[0])}` : ""}</span>
+        </a>
+      </li>`;
+    }).join("");
   }
 
   return () => unsub();
@@ -559,33 +721,6 @@ async function loadNewsletterReminder(mount, ctx) {
   }
 }
 
-async function loadRecentArticles(mount, ctx) {
-  try {
-    const storiesRef = collection(db, "stories");
-    const snap = await getDocs(query(storiesRef, orderBy("updatedAt", "desc"), limit(6)));
-    if (snap.empty) {
-      mount.innerHTML = `<div class="empty-state">No articles yet. Be the first to submit a draft.</div>`;
-      return;
-    }
-    const list = el("div", { class: "ov-stories" });
-    snap.forEach((d) => {
-      const a = d.data();
-      const live = a.status === "published" && a.url;
-      const row = el(live ? "a" : "div", { class: "ov-story", ...(live ? { href: a.url, target: "_blank", rel: "noopener" } : {}) });
-      row.innerHTML = `
-        <span class="ov-story-main">
-          <span class="ov-story-title">${esc(a.title || "Untitled")}</span>
-          <span class="ov-story-meta">${esc(a.authorName || a.author || "Unknown")} · ${fmtRelative(a.updatedAt)}</span>
-        </span>
-        ${statusPill(a.status)}`;
-      list.appendChild(row);
-    });
-    mount.innerHTML = "";
-    mount.appendChild(list);
-  } catch (err) {
-    mount.innerHTML = `<div class="error-state">Could not load recent articles. ${esc(err?.message || "")}</div>`;
-  }
-}
 
 // ─── Catalyst bot control panel ─────────────────────────────────────────────
 

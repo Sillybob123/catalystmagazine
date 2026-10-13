@@ -168,7 +168,7 @@ function stepDone(p, step) {
 }
 
 // The viewer's roles on a project.
-function rolesOn(p, uid) {
+export function rolesOn(p, uid) {
   const r = [];
   if (p.authorId === uid) r.push("writer");
   if (p.editorId === uid) r.push("editor");
@@ -187,7 +187,7 @@ function myOpenDeadlines(p, uid) {
 
 // Whose move it is on the story right now, and what they owe (worded for
 // the viewer when given: the editor reads "your feedback").
-function whoseTurn(p, uid) {
+export function whoseTurn(p, uid) {
   if (isComplete(p)) return null;
   if (p.proposalStatus !== "approved") return { who: "admin", what: "approve the pitch" };
   if (!stepDone(p, "Article Writing Complete")) {
@@ -198,7 +198,7 @@ function whoseTurn(p, uid) {
   return { who: "writer", what: uid && p.editorId === uid ? "go through your feedback" : "go through the editor's feedback" };
 }
 
-function progressPct(p) {
+export function progressPct(p) {
   const steps = TIMELINE_STEPS.filter((s) => hasInterview(p) || !INTERVIEW_STEPS.includes(s));
   return Math.round((steps.filter((s) => stepDone(p, s)).length / steps.length) * 100);
 }
@@ -209,7 +209,7 @@ function progressPct(p) {
 //   behind    — internal ready-by date passed, still not finished → FALLING BEHIND
 //   at-risk   — internal ready-by within 3 days, still not finished
 //   on-track  — everything else
-function readiness(p) {
+export function readiness(p) {
   if (isComplete(p)) {
     const pub = pubDate(p);
     const d = pub ? daysFromToday(pub) : null;
@@ -233,7 +233,7 @@ const READINESS_META = {
 };
 
 // Human stage label, simplified from the pipeline state machine.
-function stageLabel(p) {
+export function stageLabel(p) {
   const tl = p.timeline || {};
   if (tl["Suggestions Reviewed"]) return "Completed";
   if (p.proposalStatus !== "approved") return `Proposal ${p.proposalStatus || "pending"}`;
@@ -250,7 +250,7 @@ function nextMyDeadline(p, uid) {
 }
 
 // Is the story waiting on this viewer right now?
-function isMyTurn(p, uid) {
+export function isMyTurn(p, uid) {
   const t = whoseTurn(p);
   return !!t && rolesOn(p, uid).includes(t.who);
 }
@@ -258,7 +258,7 @@ function isMyTurn(p, uid) {
 // Nudge copy for the personal strip, written for this viewer's role: the
 // editor is never told to do the writer's work, and someone whose part is
 // done is told who the story is waiting on instead of being told to hurry.
-function nudgeFor(p, uid) {
+export function nudgeFor(p, uid) {
   const pub = pubDate(p);
   const ready = readyDate(p);
   const r = readiness(p);

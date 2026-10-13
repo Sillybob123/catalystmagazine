@@ -25,13 +25,15 @@ html[data-suite-theme="summer"] {
 }
 
 /* Painted washes: soft colour pooling in the corners, like watercolour on paper. */
-html[data-suite-theme] body {
+/* Pinned on its own fixed layer (not background-attachment: fixed, which
+   makes the browser repaint the whole window on every scroll step). */
+html[data-suite-theme] body { background: var(--season-paper); }
+html[data-suite-theme] body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
     radial-gradient(900px 520px at 100% 0%, var(--season-wash-1), transparent 62%),
     radial-gradient(800px 640px at 0% 100%, var(--season-wash-2), transparent 60%),
-    radial-gradient(700px 420px at 55% 105%, var(--season-wash-3), transparent 65%),
-    var(--season-paper);
-  background-attachment: fixed;
+    radial-gradient(700px 420px at 55% 105%, var(--season-wash-3), transparent 65%);
 }
 html[data-suite-theme] .sidebar {
   background:

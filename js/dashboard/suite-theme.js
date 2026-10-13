@@ -216,7 +216,14 @@ class Field {
     const base = { leaves: small ? 7 : 15, petals: small ? 8 : 18, snow: small ? 18 : 36, fireflies: small ? 9 : 18 }[kind];
     this.parts = Array.from({ length: Math.max(4, Math.round(base * this.density)) }, () => this.make(kind, true));
     this.last = performance.now();
-    const loop = (now) => { if (!this.canvas) return; this.frame(now); this.raf = requestAnimationFrame(loop); };
+    // ~30 frames a second is plenty for drifting leaves or snow and halves
+    // the drawing work (motion is time-based, so the speed is unchanged).
+    let drawn = 0;
+    const loop = (now) => {
+      if (!this.canvas) return;
+      if (now - drawn >= 32) { drawn = now; this.frame(now); }
+      this.raf = requestAnimationFrame(loop);
+    };
     this.raf = requestAnimationFrame(loop);
   }
   stop() {
@@ -225,7 +232,7 @@ class Field {
   }
   resize() {
     if (!this.canvas) return;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(1.5, window.devicePixelRatio || 1);   // soft shapes; full Retina isn't worth the pixels
     const r = this.fixed ? { width: window.innerWidth, height: window.innerHeight } : this.host.getBoundingClientRect();
     this.W = Math.max(1, r.width); this.H = Math.max(1, r.height);
     this.canvas.width = Math.round(this.W * dpr); this.canvas.height = Math.round(this.H * dpr);

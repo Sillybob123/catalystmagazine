@@ -88,6 +88,20 @@ export const onRequestPost = async ({ request, env }) => {
     let body;
     try { body = await request.json(); } catch { return badRequest("Invalid JSON"); }
 
+    // Bulk status change ("Mark all as read"): { ids: [...], patch: { status } }.
+    if (Array.isArray(body.ids)) {
+      const ids = [...new Set(body.ids.map((x) => String(x || "").trim()).filter((x) => /^[A-Za-z0-9_-]{1,200}$/.test(x)))].slice(0, 200);
+      const status = body.patch?.status;
+      if (!ids.length) return badRequest("ids is empty");
+      if (typeof status !== "string" || !ALLOWED_STATUSES.has(status)) return badRequest(`status must be one of: ${[...ALLOWED_STATUSES].join(", ")}`);
+      const update = { status, reviewedAt: new Date().toISOString(), reviewedBy: auth.name || auth.email || auth.uid || "admin" };
+      let done = 0;
+      for (const bid of ids) {
+        try { await firestoreUpdate(env, `collaboration_requests/${bid}`, update); done++; } catch (e) { console.warn("[submissions] bulk update", bid, e?.message); }
+      }
+      return json({ ok: true, updated: done, update });
+    }
+
     const id = String(body.id || "").trim();
     if (!id) return badRequest("id is required");
     const patch = body.patch || {};

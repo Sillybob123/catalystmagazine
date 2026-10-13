@@ -25,7 +25,7 @@ import {
 
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
-import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-6";
+import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-7";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -244,7 +244,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=home-1"),
+    loader: () => import("./overview.js?v=home-2"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -252,7 +252,7 @@ const ROUTES = {
     icon: ICONS.calendar,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./calendar-page.js?v=cal-1"),
+    loader: () => import("./calendar-page.js?v=cal-2"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.
@@ -485,7 +485,7 @@ const ROUTES = {
     icon: ICONS.inbox,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./submissions.js?v=2"),
+    loader: () => import("./submissions.js?v=3"),
   },
   "#/admin/games": {
     label: "Games",
@@ -519,7 +519,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-5"),
+    loader: () => import("./admin-import.js?v=theme-6"),
     mountKey: "advanced",
   },
   "#/admin/activity": {

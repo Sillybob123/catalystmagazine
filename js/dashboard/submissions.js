@@ -47,6 +47,7 @@ export async function mount(ctx, container) {
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input class="input" id="sub-search" placeholder="Search name, email, message…" style="width:260px;">
+        <button class="btn btn-secondary btn-sm" id="sub-read-all" type="button" hidden>Mark all as read</button>
         <button class="btn btn-secondary btn-sm" id="sub-refresh" type="button">Refresh</button>
       </div>
     </div>
@@ -65,7 +66,27 @@ export async function mount(ctx, container) {
     tabs:    card.querySelector("#sub-tabs"),
     search:  card.querySelector("#sub-search"),
     refresh: card.querySelector("#sub-refresh"),
+    readAll: card.querySelector("#sub-read-all"),
   };
+
+  // Everything still "New" → "Reviewing" in one go (clears the Overview item).
+  els.readAll.addEventListener("click", async () => {
+    const fresh = submissions.filter((x) => x.status === "new");
+    if (!fresh.length) return;
+    els.readAll.disabled = true;
+    try {
+      const res = await ctx.authedFetch("/api/admin/submissions", { method: "POST", body: JSON.stringify({ ids: fresh.map((x) => x.id), patch: { status: "reviewing" } }) });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      fresh.forEach((x) => { x.status = "reviewing"; });
+      counts.unread = 0;
+      renderTabs(); renderList();
+      toast(`Marked ${data.updated} as read.`, "success");
+    } catch (err) {
+      toast(`Couldn't mark them as read: ${err.message}`, "error");
+    }
+    els.readAll.disabled = false;
+  });
 
   // View state. activeTab/search drive the rendered list; submissions is
   // the canonical server snapshot, mutated in place on status updates.
@@ -104,6 +125,7 @@ export async function mount(ctx, container) {
   }
 
   function renderTabs() {
+    els.readAll.hidden = !submissions.some((x) => x.status === "new");
     els.tabs.innerHTML = TABS.map((t) => {
       const count = t.id === "all" ? counts.total
         : t.id === "join-team" ? counts.joinTeam

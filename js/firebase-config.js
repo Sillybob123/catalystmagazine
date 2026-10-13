@@ -21,6 +21,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
-const analytics = getAnalytics(app);
+// Visitor analytics are for the public site; the Editorial Suite (/admin) is a
+// private staff tool, so it skips the tracker and its 150 KB script.
+const analytics = location.pathname.startsWith("/admin") ? null : getAnalytics(app);
 
 export { app, auth, db, storage, analytics };
