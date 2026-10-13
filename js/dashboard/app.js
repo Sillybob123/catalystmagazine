@@ -342,7 +342,7 @@ const ROUTES = {
     icon: ICONS.bookPen,
     roles: ["admin", "editor", "writer"],
     group: "book-reviews",
-    loader: () => import("./book-reviews-writer.js?v=stars-2"),
+    loader: () => import("./book-reviews-writer.js?v=brm-1"),
     mountKey: "write",
   },
   "#/book-reviews/mine": {
@@ -351,7 +351,7 @@ const ROUTES = {
     icon: ICONS.bookmark,
     roles: ["admin", "editor", "writer"],
     group: "book-reviews",
-    loader: () => import("./book-reviews-writer.js?v=stars-2"),
+    loader: () => import("./book-reviews-writer.js?v=brm-1"),
     mountKey: "mine",
   },
   "#/admin/book-reviews": {

@@ -801,28 +801,24 @@ async function bestCoverForIsbn(isbn) {
 // MINE — writer's own book reviews
 // ============================================================
 async function mountMine(ctx, container) {
-  const card = el("div", { class: "card" });
-  card.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">My book reviews</div>
-        <div class="card-subtitle">Drafts and submitted reviews you've written. Pick one to edit, or start a new one.</div>
+  container.innerHTML = `
+    <div class="brm">
+      <div class="brm-head">
+        <div>
+          <p class="brm-summary" id="brm-summary">Your book reviews, newest first.</p>
+          <div class="brm-filters" id="brm-filters" role="group" aria-label="Show" hidden></div>
+        </div>
+        <a class="btn btn-primary btn-sm brm-new" href="#/book-reviews/write">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New book review
+        </a>
       </div>
-      <div>
-        <a class="btn btn-accent btn-sm" href="#/book-reviews/write">+ New book review</a>
-      </div>
-    </div>
-    <div class="card-body card-body--flush" id="brw-mine-body">
-      <div class="loading-state"><div class="spinner"></div>Loading…</div>
-    </div>
-  `;
-  container.appendChild(card);
+      <div id="brw-mine-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
+    </div>`;
 
-  const body = card.querySelector("#brw-mine-body");
+  const body = container.querySelector("#brw-mine-body");
   try {
-    // Pull every book-review story for this user. Two filters in one query
-    // (where + where) needs a composite index in Firestore; do client-side
-    // filter for category to keep this dependency-free.
+    // Every book review by this person. Category is filtered here so the
+    // query needs no composite index.
     const snap = await getDocs(query(
       collection(db, "stories"),
       where("authorId", "==", ctx.user.uid),
@@ -834,36 +830,80 @@ async function mountMine(ctx, container) {
       if (data.category === "book-review") rows.push({ id: d.id, ...data });
     });
     if (!rows.length) {
-      body.innerHTML = `<div class="empty-state" style="padding:36px 22px;">
-        <p style="margin:0 0 12px;">You haven't written a book review yet.</p>
-        <a class="btn btn-accent btn-sm" href="#/book-reviews/write">Write your first one</a>
-      </div>`;
+      body.innerHTML = `
+        <div class="brm-empty">
+          <span class="brm-empty-ic" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M8 7h8M8 11h6"/></svg></span>
+          <p class="brm-empty-title">No book reviews yet</p>
+          <p>Read something great lately? Write a short review and it can run on the Book reviews page.</p>
+          <a class="btn btn-primary btn-sm" href="#/book-reviews/write">Write your first review</a>
+        </div>`;
       return;
     }
-    body.innerHTML = "";
-    const list = el("div", { class: "articles-list" });
-    rows.forEach((r) => list.appendChild(renderMineRow(r)));
-    body.appendChild(list);
+
+    const groups = [
+      { id: "all", label: "All", match: () => true },
+      { id: "draft", label: "Drafts", match: (r) => (r.status || "draft") === "draft" || r.status === "rejected" },
+      { id: "review", label: "In review", match: (r) => ["pending", "reviewing", "approved"].includes(r.status) },
+      { id: "published", label: "Published", match: (r) => r.status === "published" },
+    ];
+    const counts = Object.fromEntries(groups.map((g) => [g.id, rows.filter(g.match).length]));
+    const published = counts.published;
+    container.querySelector("#brm-summary").innerHTML = `<b>${rows.length}</b> ${rows.length === 1 ? "review" : "reviews"}${published ? ` · ${published} published` : ""}${counts.review ? ` · ${counts.review} in review` : ""}${counts.draft ? ` · ${counts.draft} ${counts.draft === 1 ? "draft" : "drafts"}` : ""}`;
+    let filter = "all";
+    const fEl = container.querySelector("#brm-filters");
+    const render = () => {
+      fEl.innerHTML = groups.filter((g) => g.id === "all" || counts[g.id]).map((g) => `<button type="button" data-f="${g.id}" aria-pressed="${g.id === filter}">${esc(g.label)}<span>${counts[g.id]}</span></button>`).join("");
+      fEl.hidden = groups.filter((g) => g.id !== "all" && counts[g.id]).length < 2;
+      fEl.querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => { filter = b.dataset.f; render(); }));
+      const g = groups.find((x) => x.id === filter);
+      const grid = el("ul", { class: "brm-grid" });
+      rows.filter(g.match).forEach((r) => grid.appendChild(renderMineRow(r)));
+      body.innerHTML = "";
+      body.appendChild(grid);
+    };
+    render();
   } catch (err) {
     body.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
   }
 }
 
+const BRM_STATUS = {
+  draft:     { label: "Draft", tone: "" },
+  pending:   { label: "Waiting for review", tone: "warn" },
+  reviewing: { label: "In review", tone: "info" },
+  approved:  { label: "Approved", tone: "good" },
+  published: { label: "Published", tone: "live" },
+  rejected:  { label: "Needs changes", tone: "bad" },
+};
+
+function brmStars(rating) {
+  const n = Math.max(0, Math.min(5, Number(rating) || 0));
+  const pct = (n / 5) * 100;
+  return `<span class="brm-stars" role="img" aria-label="${n} out of 5"><span class="brm-stars-base">★★★★★</span><span class="brm-stars-fill" style="width:${pct}%">★★★★★</span></span><span class="brm-rating">${n % 1 ? n.toFixed(1) : n}</span>`;
+}
+
 function renderMineRow(r) {
-  const row = el("div", { class: "ar-row" });
-  row.innerHTML = `
-    <div class="ar-main">
-      <div class="ar-title">${esc(r.bookTitle || r.title || "Untitled")}</div>
-      <div class="ar-meta">
-        ${r.bookAuthor ? `<span>by ${esc(r.bookAuthor)}</span>` : ""}
-        ${r.rating != null ? `<span>· ${esc(String(r.rating))}/5</span>` : ""}
-        <span>· updated ${esc(fmtRelative(r.updatedAt))}</span>
+  const status = r.status || "draft";
+  const st = BRM_STATUS[status] || BRM_STATUS.draft;
+  const isbn = String(r.isbn || "").replace(/[^0-9Xx]/g, "");
+  const cover = r.coverImage || (isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg` : "");
+  const title = r.bookTitle || r.title || "Untitled";
+  const live = status === "published" && r.slug ? `/book-review/${encodeURIComponent(r.slug)}` : "";
+  const li = el("li", { class: "brm-card" });
+  li.innerHTML = `
+    <a class="brm-cover${cover ? "" : " is-empty"}" href="#/book-reviews/write?edit=${esc(r.id)}" aria-label="Edit your review of ${esc(title)}">
+      ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async">` : `<span>${esc(title.slice(0, 1))}</span>`}
+    </a>
+    <div class="brm-body">
+      <span class="brm-status${st.tone ? " is-" + st.tone : ""}">${esc(st.label)}</span>
+      <a class="brm-title" href="#/book-reviews/write?edit=${esc(r.id)}">${esc(title)}</a>
+      ${r.bookAuthor ? `<p class="brm-author">by ${esc(r.bookAuthor)}</p>` : ""}
+      ${r.rating != null && r.rating !== "" ? `<div class="brm-rate">${brmStars(r.rating)}</div>` : ""}
+      <p class="brm-updated">${status === "published" && r.publishedAt ? `Published ${esc(fmtDate(typeof r.publishedAt === "string" ? r.publishedAt : (r.publishedAt?.toDate?.() || new Date()).toISOString()))}` : `Updated ${esc(fmtRelative(r.updatedAt))}`}</p>
+      <div class="brm-actions">
+        <a class="btn btn-secondary btn-sm" href="#/book-reviews/write?edit=${esc(r.id)}">Edit</a>
+        ${live ? `<a class="brm-link" href="${esc(live)}" target="_blank" rel="noopener">View live</a>` : ""}
       </div>
-    </div>
-    <div class="ar-actions">
-      ${statusPill(r.status || "draft")}
-      <a class="btn btn-secondary btn-xs" href="#/book-reviews/write?edit=${esc(r.id)}">Edit</a>
-    </div>
-  `;
-  return row;
+    </div>`;
+  return li;
 }
