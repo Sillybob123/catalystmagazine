@@ -883,38 +883,83 @@ function renderTeamSection() {
 // Everyone with the social_media role and the posts they have in progress
 // (Planner content tracker), plus a way for any writer to ask them for one.
 const SOCIAL_STATUS = { planned: "Planned", drafting: "Drafting", scheduled: "Scheduled", open: "Planned" };
+// The social media director coordinates what goes out and when, whatever her
+// Suite role (keep in sync with SOCIAL_LEADS in functions/api/social/request.js).
+const SOCIAL_LEADS = ["dani molloy"];
+const isSocialLead = (u) => SOCIAL_LEADS.includes(String(u?.name || "").trim().toLowerCase());
+const isOpenPost = (a) => a.status !== "published" && a.status !== "done";
+const byDue = (a, b) => String(a.deadline || "9").localeCompare(String(b.deadline || "9"));
+
+function socialLeads() {
+  const seen = new Set();
+  return _allUsers.filter((u) => {
+    const key = String(u.name || "").trim().toLowerCase();
+    if (!isSocialLead(u) || !u.role || u.role === "reader" || seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
+
+function postAssigneeNames(a) {
+  if (Array.isArray(a.assignees) && a.assignees.length) return a.assignees.map((x) => x.name).filter(Boolean);
+  const ids = Array.isArray(a.assigneeIds) && a.assigneeIds.length ? a.assigneeIds : [a.assigneeId];
+  const names = ids.map((id) => _allUsers.find((u) => u.id === id)?.name).filter(Boolean);
+  return names.length ? names : (a.assigneeName ? [a.assigneeName] : []);
+}
 
 function socialTeam() {
   const byName = new Map();
   for (const u of _allUsers) {
-    if (u.role !== "social_media") continue;
+    if (u.role !== "social_media" || isSocialLead(u)) continue;
     const key = (u.name || u.email || u.id).trim().toLowerCase();
     if (!byName.has(key)) byName.set(key, u);
   }
   return [...byName.values()].map((u) => {
     const posts = _socialPosts.filter((a) => {
-      const done = a.status === "published" || a.status === "done";
       const ids = Array.isArray(a.assigneeIds) && a.assigneeIds.length ? a.assigneeIds : [a.assigneeId];
-      return !done && ids.includes(u.id);
-    }).sort((a, b) => String(a.deadline || "9").localeCompare(String(b.deadline || "9")));
+      return isOpenPost(a) && ids.includes(u.id);
+    }).sort(byDue);
     return { u, posts };
   }).sort((a, b) => b.posts.length - a.posts.length || String(a.u.name || "").localeCompare(String(b.u.name || "")));
 }
 
+function postRowHtml(a, { who = false } = {}) {
+  const d = daysUntil(a.deadline);
+  const names = who ? postAssigneeNames(a).map((n) => String(n).split(/\s+/)[0]) : [];
+  return `<li><div class="tr-post">
+    <span class="tr-person-story">${esc(a.articleTitle || "Untitled post")}</span>
+    <span class="tr-person-meta"><span class="tr-role">${esc(SOCIAL_STATUS[a.status] || "Planned")}</span>${a.deadline ? `<span class="${d !== null && d < 0 ? "is-late" : ""}">${d !== null && d < 0 ? `${-d} days late` : `due ${esc(fmtShort(a.deadline))}`}</span>` : ""}${names.length ? `<span>${esc(names.join(", "))}</span>` : ""}${a.kind === "request" && a.requestedByName ? `<span>asked by ${esc(a.requestedByName)}</span>` : ""}</span>
+  </div></li>`;
+}
+
+// The director's card: every open post on the team, soonest first.
+function leadCardHtml(u) {
+  const name = u.name || u.email;
+  const open = _socialPosts.filter(isOpenPost).sort(byDue);
+  return `
+    <article class="tr-card-person tr-card-lead">
+      <header>${avatarHtml(name)}<span class="tr-person-name">${esc(name)}${u.id === _uid ? " <i>(you)</i>" : ""}<small>Social media director</small></span><span class="tr-person-load">${open.length} open</span></header>
+      ${open.length
+        ? `<ul>${open.slice(0, 6).map((a) => postRowHtml(a, { who: true })).join("")}</ul>${open.length > 6 ? `<p class="tr-free-note tr-lead-more">+${open.length - 6} more in the Planner</p>` : ""}`
+        : `<p class="tr-free-note">Coordinates what goes out and when. Nothing open on the team right now.</p>`}
+    </article>`;
+}
+
 function renderSocialSection() {
   const team = socialTeam();
+  const leads = socialLeads();
   const sec = el("section", { class: "tr-team-sec tr-social-sec", "aria-labelledby": "tr-social-h" });
   sec.innerHTML = `
     <header class="tr-team-head">
       <div>
         <h3 id="tr-social-h">Social media team</h3>
-        <p>The posts they&rsquo;re working on. Writing a story that should be on our socials? Ask them for a post.</p>
+        <p>What&rsquo;s going out on our socials and who has it. Writing a story that should be on our socials? Ask them for a post.</p>
       </div>
       <button type="button" class="btn btn-primary btn-sm" data-ask-social>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ask social media for a post
       </button>
     </header>
     <div class="tr-people">
+      ${leads.map(leadCardHtml).join("")}
       ${team.map(({ u, posts }) => {
         const name = u.name || u.email;
         if (!posts.length) {
@@ -923,15 +968,9 @@ function renderSocialSection() {
         return `
           <article class="tr-card-person">
             <header>${avatarHtml(name)}<span class="tr-person-name">${esc(name)}${u.id === _uid ? " <i>(you)</i>" : ""}</span><span class="tr-person-load">${posts.length} ${posts.length === 1 ? "post" : "posts"}</span></header>
-            <ul>${posts.map((a) => {
-              const d = daysUntil(a.deadline);
-              return `<li><div class="tr-post">
-                <span class="tr-person-story">${esc(a.articleTitle || "Untitled post")}</span>
-                <span class="tr-person-meta"><span class="tr-role">${esc(SOCIAL_STATUS[a.status] || "Planned")}</span>${a.deadline ? `<span class="${d !== null && d < 0 ? "is-late" : ""}">${d !== null && d < 0 ? `${-d} days late` : `due ${esc(fmtShort(a.deadline))}`}</span>` : ""}${a.kind === "request" && a.requestedByName ? `<span>asked by ${esc(a.requestedByName)}</span>` : ""}</span>
-              </div></li>`;
-            }).join("")}</ul>
+            <ul>${posts.map((a) => postRowHtml(a)).join("")}</ul>
           </article>`;
-      }).join("") || `<div class="kb-empty">No one has the Social Media role yet.</div>`}
+      }).join("") || (leads.length ? "" : `<div class="kb-empty">No one has the Social Media role yet.</div>`)}
     </div>`;
   sec.querySelector("[data-ask-social]").addEventListener("click", () => openSocialRequestModal());
   return sec;
@@ -942,7 +981,7 @@ function renderSocialSection() {
 function openSocialRequestModal() {
   const mine = _allProjects.filter((p) => !isProjectCompleted(p) && p.proposalStatus !== "rejected"
     && (p.authorId === _uid || p.editorId === _uid));
-  const social = socialTeam().map((t) => String(t.u.name || t.u.email).split(/\s+/)[0]);
+  const social = [...socialLeads(), ...socialTeam().map((t) => t.u)].map((u) => String(u.name || u.email).split(/\s+/)[0]);
   const body = el("div", { class: "tr-ask" });
   body.innerHTML = `
     <p class="tr-ask-lede">It goes to the social media team${social.length ? ` (${esc(social.join(", "))})` : ""} as a post on their list, with an email. They&rsquo;ll aim to have it ready by the date the story publishes.</p>

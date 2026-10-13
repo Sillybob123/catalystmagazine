@@ -17,6 +17,10 @@ import { socialAssignmentEmail } from "../../_utils/reminder-emails.js";
 import { createNotifications } from "../../_utils/notifications.js";
 
 const STAFF = ["admin", "editor", "writer", "newsletter_builder", "marketing", "social_media"];
+// The social media director coordinates the team's posts whatever her Suite
+// role: she is told about every request (keep in sync with SOCIAL_LEADS in
+// js/dashboard/pipeline.js).
+const SOCIAL_LEADS = ["Dani Molloy"];
 const clean = (v, max) => String(v ?? "").replace(/\s+\n/g, "\n").trim().slice(0, max);
 
 export const onRequestPost = async ({ request, env }) => {
@@ -44,8 +48,19 @@ export const onRequestPost = async ({ request, env }) => {
       where: { fieldFilter: { field: { fieldPath: "role" }, op: "EQUAL", value: { stringValue: "social_media" } } },
       limit: 50,
     });
-    const team = rows.map((r) => ({ id: r.id, name: String(r.data.name || r.data.email || ""), email: String(r.data.email || "") }));
+    const person = (r) => ({ id: r.id, name: String(r.data.name || r.data.email || ""), email: String(r.data.email || "") });
+    const leadRows = await firestoreRunQuery(env, {
+      from: [{ collectionId: "users" }],
+      where: { fieldFilter: { field: { fieldPath: "name" }, op: "IN", value: { arrayValue: { values: SOCIAL_LEADS.map((n) => ({ stringValue: n })) } } } },
+      limit: 10,
+    }).catch(() => []);
+    const leads = leadRows.filter((r) => r.data.role && r.data.role !== "reader").map(person);
+    const leadIds = new Set(leads.map((l) => l.id));
+    const team = rows.map(person).filter((t) => !leadIds.has(t.id));
+    // No one under her yet: the post goes to the director herself.
+    if (!team.length) team.push(...leads);
     if (!team.length) return badRequest("There's no one on the social media team yet. Ask an admin.");
+    const told = [...team, ...leads.filter((l) => !team.some((t) => t.id === l.id))];
 
     const requester = auth.name || auth.email || "A writer";
     const notes = [
@@ -83,13 +98,13 @@ export const onRequestPost = async ({ request, env }) => {
     const id = (created?.name || "").split("/").pop() || created?.id || "";
 
     // Heads-up: email + bell. Best-effort; the row is the source of truth.
-    const emails = [...new Set(team.map((t) => t.email).filter(Boolean))];
+    const emails = [...new Set(told.map((t) => t.email).filter(Boolean))];
     if (emails.length) {
       const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
       const { subject, html } = socialAssignmentEmail({ assignment, assignerName: requester, siteUrl });
       await sendEmail(env, { to: emails, subject, html, replyTo: auth.email || env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com" }).catch((e) => console.warn("[social request] email", e?.message));
     }
-    await createNotifications(env, team.map((t) => t.id), {
+    await createNotifications(env, told.map((t) => t.id), {
       type: "assignment",
       title: `${requester} asked for a social post: ${storyTitle}`,
       body: `Needed by ${neededBy}`,
@@ -98,7 +113,7 @@ export const onRequestPost = async ({ request, env }) => {
       actionHash: "#/planner",
     }, (rid) => `socialrequest_${id}_${rid}`).catch(() => {});
 
-    return json({ ok: true, id, team: team.map((t) => t.name) });
+    return json({ ok: true, id, team: told.map((t) => t.name) });
   } catch (err) {
     return serverError(err);
   }

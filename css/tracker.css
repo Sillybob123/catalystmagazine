@@ -93,6 +93,12 @@
 .tr-post { display: grid; gap: 4px; padding: 9px 12px; }
 .tr-social-sec .tr-card-person:not(.is-free) { box-shadow: inset 3px 0 0 #b4507e; }
 
+.tr-person-name small { display: block; font: 600 10.5px/1.4 var(--font); letter-spacing: .1em; text-transform: uppercase; color: #9b3a6e; }
+.tr-card-lead .tr-person-name { white-space: normal; }
+.tr-card-lead { grid-row: span 2; border-color: color-mix(in srgb, #b4507e 35%, var(--hairline-2)); }
+.tr-social-sec .tr-card-lead { box-shadow: inset 3px 0 0 #9b3a6e; }
+.tr-lead-more { padding: 8px 12px 12px; border-top: 1px solid var(--hairline-2); }
+
 /* "Ask social media for a post" pop-up */
 .tr-ask { display: grid; gap: 14px; }
 .tr-ask .field { margin: 0; }
