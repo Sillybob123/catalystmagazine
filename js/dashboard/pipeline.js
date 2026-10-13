@@ -785,7 +785,10 @@ function renderBoard() {
   }
   board.appendChild(renderColumn(COL_READY, projects.filter(p => isProjectCompleted(p) && !live(p))));
 
-  if (below) below.appendChild(renderBelowBar(projects.filter(live)));
+  if (below) {
+    below.appendChild(renderTeamSection());
+    below.appendChild(renderPublishedLink(projects.filter(live)));
+  }
 }
 
 const COL_READY = "Ready to publish";
@@ -817,59 +820,60 @@ function teamMembers() {
     .sort((a, b) => b.projects.length - a.projects.length || String(a.u.name || "").localeCompare(String(b.u.name || "")));
 }
 
-function renderBelowBar(published) {
+// Who's working on what: open on the page for everyone on staff, one card per
+// active team member. People without a story get a card that says so, so the
+// whole team can see who has room (and the person can pitch something).
+function renderTeamSection() {
   const team = teamMembers();
   const busy = team.filter((t) => t.projects.length);
-  const inProgress = _allProjects.filter((p) => !isProjectCompleted(p) && p.proposalStatus !== "rejected").length;
-  const faces = (busy.length ? busy : team).slice(0, 5);
-  const bar = el("div", { class: "tr-below" });
-  bar.innerHTML = `
-    <button type="button" class="tr-team-btn" id="tr-team-open">
-      <span class="kb-people tr-faces">${faces.map((t) => avatarHtml(t.u.name || t.u.email)).join("")}</span>
-      <span class="tr-team-btn-text"><b>See what everyone is working on</b><small>${busy.length} ${busy.length === 1 ? "person" : "people"} on ${inProgress} ${inProgress === 1 ? "story" : "stories"} right now</small></span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-    </button>
-    <button type="button" class="tr-pub-link" id="tr-pub-open">See what&rsquo;s published <span>${published.length}</span></button>`;
-  bar.querySelector("#tr-team-open").addEventListener("click", () => openTeamModal());
-  bar.querySelector("#tr-pub-open").addEventListener("click", () => openPublishedModal(published));
-  return bar;
+  const sec = el("section", { class: "tr-team-sec", "aria-labelledby": "tr-team-h" });
+  sec.innerHTML = `
+    <header class="tr-team-head">
+      <div>
+        <h3 id="tr-team-h">Who&rsquo;s working on what</h3>
+        <p>Everyone on the team and the stories they&rsquo;re on right now. ${busy.length} of ${team.length} ${team.length === 1 ? "person is" : "people are"} on a story.</p>
+      </div>
+    </header>
+    <div class="tr-people">
+      ${team.map(({ u, projects }) => {
+        const me = u.id === _uid;
+        const name = u.name || u.email;
+        if (!projects.length) {
+          return `
+            <article class="tr-card-person is-free">
+              <header>${avatarHtml(name)}<span class="tr-person-name">${esc(name)}${me ? ` <i>(you)</i>` : ""}</span></header>
+              <p class="tr-free-note">Not on a story right now.</p>
+              ${me && canPropose() ? `<button type="button" class="btn btn-secondary btn-xs" data-propose>Propose a story</button>` : ""}
+            </article>`;
+        }
+        return `
+          <article class="tr-card-person">
+            <header>${avatarHtml(name)}<span class="tr-person-name">${esc(name)}${me ? ` <i>(you)</i>` : ""}</span><span class="tr-person-load">${projects.length} ${projects.length === 1 ? "story" : "stories"}</span></header>
+            <ul>${projects.map((p) => {
+              const editing = p.editorId === u.id || (p.editorName || "").trim().toLowerCase() === (u.name || "").trim().toLowerCase();
+              const stage = STAGE_SHORT[getProjectState(p, "all", _uid).column] || "In progress";
+              const d = daysUntil(pubDeadline(p));
+              return `<li><button type="button" data-open="${esc(p.id)}">
+                <span class="tr-person-story">${esc(p.title || "Untitled")}</span>
+                <span class="tr-person-meta"><span class="tr-role">${editing ? "Editor" : "Writer"}</span>${esc(stage)}${d !== null ? ` · <span class="${d < 0 ? "is-late" : ""}">${d < 0 ? `${-d} days late` : `due ${esc(fmtShort(pubDeadline(p)))}`}</span>` : ""}</span>
+              </button></li>`;
+            }).join("")}</ul>
+          </article>`;
+      }).join("") || `<div class="kb-empty">No team members loaded.</div>`}
+    </div>`;
+  sec.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-open]");
+    if (b) { openDetailModal(b.dataset.open); return; }
+    if (e.target.closest("[data-propose]")) openProposalModal();
+  });
+  return sec;
 }
 
-function openTeamModal() {
-  // Active staff only (Readers, i.e. people who have left, are never listed).
-  const team = teamMembers();
-  const busy = team.filter((t) => t.projects.length);
-  const free = team.filter((t) => !t.projects.length);
-  const body = el("div", { class: "tr-team-list" });
-  body.innerHTML = `
-    <p class="tr-team-intro">Every story in progress and who has it, so anyone can see what the team is working on. Open a story for its checklist and dates.</p>
-    ${busy.length ? `<h4 class="tr-team-sub">Working on</h4>` : ""}
-    ${busy.map(({ u, projects }) => `
-    <section class="tr-person">
-      <header class="tr-person-head">
-        ${avatarHtml(u.name || u.email)}
-        <span class="tr-person-name">${esc(u.name || u.email)}</span>
-        <span class="tr-person-load${projects.length ? "" : " is-free"}">${projects.length ? `${projects.length} in progress` : "Free"}</span>
-      </header>
-      ${projects.length ? `<ul>${projects.map((p) => {
-        const editing = p.editorId === u.id || (p.editorName || "").trim().toLowerCase() === (u.name || "").trim().toLowerCase();
-        const stage = STAGE_SHORT[getProjectState(p, "all", _uid).column] || "In progress";
-        const d = daysUntil(pubDeadline(p));
-        return `<li><button type="button" data-open="${esc(p.id)}">
-          <span class="tr-person-story">${esc(p.title || "Untitled")}</span>
-          <span class="tr-person-meta"><span class="tr-role">${editing ? "Editor" : "Writer"}</span>Stage: ${esc(stage)}${d !== null ? ` · <span class="${d < 0 ? "is-late" : ""}">${d < 0 ? `${-d} days late` : `due ${esc(fmtShort(pubDeadline(p)))}`}</span>` : ""}</span>
-        </button></li>`;
-      }).join("")}</ul>` : ""}
-    </section>`).join("")}
-    ${free.length ? `<h4 class="tr-team-sub">Free right now</h4>
-      <div class="tr-free">${free.map(({ u }) => `<span class="tr-free-chip">${avatarHtml(u.name || u.email)}<span>${esc(u.name || u.email)}</span></span>`).join("")}</div>` : ""}
-    ${team.length ? "" : `<div class="kb-empty">No team members loaded.</div>`}`;
-  const m = openModal({ title: "What everyone is working on", body, size: "wide" });
-  body.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-open]"); if (!b) return;
-    m?.close?.();
-    openDetailModal(b.dataset.open);
-  });
+function renderPublishedLink(published) {
+  const row = el("div", { class: "tr-foot" });
+  row.innerHTML = `<button type="button" class="tr-pub-link">See what&rsquo;s published <span>${published.length}</span></button>`;
+  row.querySelector("button").addEventListener("click", () => openPublishedModal(published));
+  return row;
 }
 
 function openPublishedModal(list) {

@@ -56,29 +56,43 @@
   .kb-card-foot { gap: 6px; }
 }
 
-/* ---------- below the board ---------- */
-#pl-below { margin-top: 18px; }
-.tr-below { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; }
-/* The team: a clear, inviting button with the faces of who is busy. */
-.tr-team-btn {
-  display: inline-flex; align-items: center; gap: 14px; min-height: 58px; padding: 9px 18px 9px 12px; text-align: left; cursor: pointer;
-  border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface); color: var(--ink);
-  box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .15s, transform .15s var(--ease-out);
-}
-.tr-team-btn:hover { border-color: var(--ink-2); box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.tr-team-btn:focus-visible { outline: none; box-shadow: var(--focus); }
-.tr-faces .kb-avatar { width: 30px; height: 30px; font-size: 12px; border: 2px solid var(--surface); }
-.tr-faces .kb-avatar + .kb-avatar { margin-left: -9px; }
-.tr-team-btn-text { display: grid; gap: 2px; }
-.tr-team-btn-text b { font: 600 14px/1.25 var(--font); }
-.tr-team-btn-text small { font-size: 12px; color: var(--muted); }
-.tr-team-btn > svg { color: var(--muted); transition: transform .2s var(--ease-out); }
-.tr-team-btn:hover > svg { transform: translateX(3px); color: var(--ink); }
-/* What's published: deliberately quiet; it's all on the site anyway. */
-.tr-pub-link { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 6px; border: 0; background: none; cursor: pointer; font: 500 12.5px var(--font); color: var(--muted); text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 4px; }
+/* ---------- below the board ----------
+   The page fills the screen, so the team section and the published link sit
+   at the bottom instead of floating under a short board. */
+.kb-page { display: flex; flex-direction: column; min-height: calc(100dvh - var(--top-h, 72px) - 104px); }
+#pl-below { margin-top: auto; padding-top: 28px; display: grid; gap: 14px; }
+
+.tr-team-sec { border: 1px solid var(--hairline-2); border-radius: 18px; background: color-mix(in srgb, var(--surface) 92%, transparent); padding: 18px 18px 20px; }
+.tr-team-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; margin-bottom: 14px; }
+.tr-team-head h3 { margin: 0; font: 600 17px/1.25 var(--font); letter-spacing: -0.01em; color: var(--ink); }
+.tr-team-head p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.tr-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; align-items: start; }
+.tr-card-person { min-width: 0; border: 1px solid var(--hairline-2); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.tr-card-person > header { display: flex; align-items: center; gap: 10px; padding: 11px 12px; }
+.tr-card-person .kb-avatar { width: 30px; height: 30px; font-size: 12px; }
+.tr-person-name { flex: 1; min-width: 0; font: 600 13.5px/1.3 var(--font); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-person-name i { font-style: normal; font-weight: 500; color: var(--muted); }
+.tr-person-load { flex: none; padding: 2px 9px; border-radius: 999px; background: var(--ink); color: var(--surface); font: 600 11px/1.5 var(--font); }
+.tr-card-person ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline-2); }
+.tr-card-person li + li { border-top: 1px solid var(--hairline-2); }
+.tr-card-person li button { display: grid; gap: 4px; width: 100%; min-height: 48px; padding: 9px 12px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); }
+.tr-card-person li button:hover { background: var(--surface-2); }
+.tr-card-person li button:focus-visible { outline: none; box-shadow: inset var(--focus); }
+.tr-person-story { font: 500 13px/1.35 var(--font); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tr-person-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12px; color: var(--muted); }
+.tr-person-meta .is-late { color: var(--danger); font-weight: 600; }
+.tr-role { padding: 1px 8px; border-radius: 999px; background: var(--surface-3); font: 600 11px/1.5 var(--font); color: var(--ink-2); }
+/* Not on a story: clearly different, so it's visible who has room. */
+.tr-card-person.is-free { border-style: dashed; border-color: rgba(15, 23, 42, .18); background: color-mix(in srgb, var(--surface-3) 55%, transparent); }
+.tr-card-person.is-free .kb-avatar { filter: grayscale(.6); opacity: .8; }
+.tr-free-note { margin: 0; padding: 0 12px 12px 52px; font-size: 12.5px; color: var(--muted); }
+.tr-card-person.is-free .btn { margin: -4px 12px 12px 52px; }
+
+.tr-foot { display: flex; justify-content: center; }
+.tr-pub-link { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 8px; border: 0; background: none; cursor: pointer; font: 500 12.5px var(--font); color: var(--muted); text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 4px; }
 .tr-pub-link:hover { color: var(--ink); text-decoration-color: currentColor; }
 .tr-pub-link:focus-visible { outline: none; box-shadow: var(--focus); border-radius: 6px; }
-.tr-pub-link span { padding: 1px 7px; border-radius: 999px; background: var(--surface-3); font-size: 11.5px; text-decoration: none; }
+.tr-pub-link span { padding: 1px 7px; border-radius: 999px; background: var(--surface-3); font-size: 11.5px; }
 
 /* Pop-ups */
 .tr-pub-list { margin: -4px -4px 0; }
@@ -93,29 +107,6 @@
 .tr-pub-meta { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 .tr-pub-date { font: 500 12px var(--font); color: var(--good); white-space: nowrap; }
 
-.tr-team-intro { margin: 0 0 14px; font-size: 13.5px; line-height: 1.55; color: var(--muted); }
-.tr-team-sub { margin: 18px 0 8px; font: 600 11px/1.3 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.tr-team-intro + .tr-team-sub { margin-top: 0; }
-.tr-person { border: 1px solid var(--hairline-2); border-radius: 14px; background: var(--surface); overflow: hidden; }
-.tr-person + .tr-person { margin-top: 8px; }
-.tr-person-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; }
-.tr-person-head .kb-avatar { width: 32px; height: 32px; font-size: 13px; }
-.tr-person-name { flex: 1; min-width: 0; display: grid; font: 600 14px/1.25 var(--font); color: var(--ink); }
-.tr-person-name small { font: 500 11.5px/1.3 var(--font); color: var(--muted); text-transform: capitalize; }
-.tr-person-load { padding: 3px 9px; border-radius: 999px; background: var(--ink); color: var(--surface); font: 600 11.5px/1.4 var(--font); white-space: nowrap; }
-.tr-person ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline-2); }
-.tr-person li + li { border-top: 1px solid var(--hairline-2); }
-.tr-person li button { display: grid; gap: 2px; width: 100%; min-height: 48px; padding: 9px 14px 9px 56px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--ink); }
-.tr-person li button:hover { background: var(--surface-2); }
-.tr-person li button:focus-visible { outline: none; box-shadow: inset var(--focus); }
-.tr-person-story { font: 500 13.5px/1.35 var(--font); }
-.tr-person-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12px; color: var(--muted); }
-.tr-role { padding: 1px 8px; border-radius: 999px; background: var(--surface-3); font: 600 11px/1.5 var(--font); color: var(--ink-2); }
-.tr-person-meta .is-late { color: var(--danger); font-weight: 600; }
-.tr-free { display: flex; flex-wrap: wrap; gap: 8px; }
-.tr-free-chip { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 3px 12px 3px 4px; border: 1px solid var(--hairline-2); border-radius: 999px; background: var(--surface); font-size: 12.5px; color: var(--ink-2); }
-.tr-free-chip .kb-avatar { width: 26px; height: 26px; font-size: 11px; }
-
 /* ---------- narrower pages ---------- */
 @container tracker (max-width: 1080px) {
   .tr-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -129,7 +120,6 @@
   .tr-select select { flex: 1; max-width: none; }
   .tr-pub-row { grid-template-columns: minmax(0, 1fr) auto; }
   .tr-pub-meta { grid-row: 2; }
-  .tr-team-btn { width: 100%; }
-  .tr-person li button { padding-left: 14px; }
+  .tr-people { grid-template-columns: minmax(0, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { .tr-team-btn, .tr-team-btn > svg { transition: none; } .tr-team-btn:hover { transform: none; } }
+
