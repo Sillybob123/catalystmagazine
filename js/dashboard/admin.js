@@ -316,69 +316,67 @@ async function getEditors() {
 
 // ====================== USERS ==============================================
 async function mountUsers(ctx, container) {
-  const card = el("div", { class: "card" });
-  card.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">Users &amp; roles</div>
-        <div class="card-subtitle">Assign roles, check who's active, and pause Catalyst bot reminders for specific writers when needed.</div>
+  container.innerHTML = `
+    <div class="ua-page">
+      <div class="ua-toolbar">
+        <label class="ua-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="ua-q" placeholder="Find a person or email" aria-label="Find a person" autocomplete="off">
+        </label>
+        <div class="ua-filters" id="ua-filters" role="group" aria-label="Show"></div>
+        <button class="btn btn-primary btn-sm ua-add" id="add-user-btn" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add user
+        </button>
       </div>
-      <button class="btn btn-accent btn-sm" id="add-user-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-        Add user
-      </button>
-    </div>
-    <div class="card-body" id="users-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-  container.appendChild(card);
-
-  card.querySelector("#add-user-btn").addEventListener("click", () => openAddUserModal(ctx, () => load()));
-  const load = () => loadUsers(card.querySelector("#users-body"), ctx, load);
+      <div id="users-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
+    </div>`;
+  container.querySelector("#add-user-btn").addEventListener("click", () => openAddUserModal(ctx, () => load()));
+  const load = () => loadUsers(container.querySelector("#users-body"), ctx, load, container);
   load();
 }
 
-async function loadUsers(mount, ctx, reload) {
+const UA_GROUPS = [
+  { id: "all", label: "Everyone" },
+  { id: "admin", label: "Admins", roles: ["admin"] },
+  { id: "editorial", label: "Editors & writers", roles: ["editor", "writer"] },
+  { id: "growth", label: "Social & growth", roles: ["social_media", "marketing", "newsletter_builder"] },
+];
+let uaFilter = "all";
+
+function lastSeenText(iso) {
+  if (!iso) return "Never signed in";
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (!Number.isFinite(days)) return "";
+  if (days <= 0) return "Active today";
+  if (days === 1) return "Active yesterday";
+  if (days < 30) return `Active ${days} days ago`;
+  return `Last seen ${fmtDate(iso)}`;
+}
+function uaAvatarColor(str) {
+  let h = 0;
+  for (const ch of String(str || "")) h = ch.charCodeAt(0) + ((h << 5) - h);
+  return `hsl(${Math.abs(h) % 360}, 30%, 44%)`;
+}
+function uaInitials(name, email) {
+  const s = String(name || email || "?").trim();
+  if (s.includes("@") && !name) return s[0].toUpperCase();
+  const parts = s.split(/\s+/);
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+async function loadUsers(mount, ctx, reload, page) {
   mount.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading…</div>`;
   try {
     const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc")));
     if (snap.empty) { mount.innerHTML = `<div class="empty-state">No users yet.</div>`; return; }
 
-    // Pull presence mirror docs.
     const presenceSnap = await getDocs(collection(db, "user_presence"));
     const presence = new Map();
     presenceSnap.forEach((d) => presence.set(d.id, d.data()));
 
-    mount.innerHTML = "";
-
-    // Scroll wrapper so the table never breaks the card layout on any screen size.
-    const scrollWrap = el("div", { style: { overflowX: "auto", width: "100%" } });
-
-    const table = el("table", { class: "table ua-table" });
-    // colgroup lets us set proportional widths without fighting auto-layout.
-    table.style.cssText = "table-layout:fixed;min-width:980px;";
-    table.innerHTML = `
-      <colgroup>
-        <col style="width:14%"><!-- User -->
-        <col style="width:19%"><!-- Email -->
-        <col style="width:15%"><!-- Role (≥147px: fits "Newsletter builder") -->
-        <col style="width:9%"> <!-- Status -->
-        <col style="width:11%"><!-- Bot reminders -->
-        <col style="width:11%"><!-- Last seen -->
-        <col style="width:21%"><!-- Actions -->
-      </colgroup>
-      <thead><tr>
-        <th>User</th>
-        <th>Email</th>
-        <th>Role</th>
-        <th>Status</th>
-        <th>Bot reminders</th>
-        <th>Last seen</th>
-        <th>Actions</th>
-      </tr></thead><tbody></tbody>`;
-    const tbody = table.querySelector("tbody");
-
     // Readers have no Suite access and get no bot reminders (see
-    // isFormerTeamMember in functions/_utils/bot-logic.js): list the team
-    // first, then the readers under a divider, tinted red.
+    // isFormerTeamMember in functions/_utils/bot-logic.js): the team first,
+    // readers folded away underneath.
     const isReader = (u) => (u.role || "reader") === "reader";
     // One person can have several accounts with the same email (e.g. they
     // signed in two different ways). Their roles move together, or a person
@@ -387,58 +385,98 @@ async function loadUsers(mount, ctx, reload) {
     const sameEmail = new Map();
     snap.docs.forEach((d) => { const k = emailKey(d.data()); if (k) sameEmail.set(k, [...(sameEmail.get(k) || []), d.id]); });
     const accountsOf = (id) => { const d = snap.docs.find((x) => x.id === id); const k = d ? emailKey(d.data()) : ""; return k ? sameEmail.get(k) : [id]; };
-    const team = snap.docs.filter((d) => !isReader(d.data()));
-    const readers = snap.docs.filter((d) => isReader(d.data()));
+    const byName = (a, b) => String(a.data().name || a.data().email || "").localeCompare(String(b.data().name || b.data().email || ""));
+    const team = snap.docs.filter((d) => !isReader(d.data())).sort((a, b) => (Number(!!b.data().owner) - Number(!!a.data().owner)) || byName(a, b));
+    const readers = snap.docs.filter((d) => isReader(d.data())).sort(byName);
 
-    [...team, ...readers].forEach((d, i) => {
+    const rowHtml = (d) => {
       const u = d.data();
       const reader = isReader(u);
-      if (reader && i === team.length) {
-        const div = el("tr", { class: "ua-divider" });
-        div.innerHTML = `<td colspan="7">Readers <span class="ua-divider-count">${readers.length}</span><span class="ua-divider-note">No Suite access and no reminder emails. Pick a role to bring someone back.</span></td>`;
-        tbody.appendChild(div);
-      }
       const p = presence.get(d.id);
       const last = p?.lastSeenAt || u.lastSeenAt;
-      const reminderStatus = getBotReminderExemptionState(u);
+      const rem = getBotReminderExemptionState(u);
+      const extra = Array.isArray(u.extraAccess) ? u.extraAccess.length : 0;
+      const limited = !u.owner && Array.isArray(u.blockedAccess) ? u.blockedAccess.length : 0;
+      const dupes = accountsOf(d.id).length;
       const extraEmails = Array.isArray(u.extraEmails) ? u.extraEmails.filter(Boolean) : [];
-      const tr = el("tr", reader ? { class: "ua-row-reader" } : {});
-      // data-label is read by the mobile stylesheet to render a label
-      // next to each cell when the table collapses into stacked cards
-      // on phones. Without it, the cards look like an unlabeled blob.
-      tr.innerHTML = `
-        <td data-label="User" style="font-weight:600;color:var(--ink);">${esc(u.name || "—")}${u.owner ? `<span class="ua-owner" title="Decides which pages everyone can open. Only they can change their own account.">Owner</span>` : ""}${!u.owner && Array.isArray(u.blockedAccess) && u.blockedAccess.length && ctx.isOwner ? `<span class="ua-limited" title="${escAttr(u.blockedAccess.length + " page" + (u.blockedAccess.length === 1 ? "" : "s") + " taken away")}">${u.blockedAccess.length} limited</span>` : ""}${accountsOf(d.id).length > 1 ? `<span class="ua-dupe" title="This email has ${accountsOf(d.id).length} accounts. Changing the role here changes all of them.">${accountsOf(d.id).length} accounts</span>` : ""}</td>
-        <td data-label="Email" style="max-width:0;overflow:hidden;">
-          <div title="${escAttr(u.email || "")}" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email || "")}</div>
-          ${extraEmails.map(e => `<div title="${escAttr(e)}" style="margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:var(--muted);background:var(--surface-2,#f8fafc);border:1px solid var(--hairline,#e2e8f0);border-radius:4px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">${esc(e)}</div>`).join("")}
-        </td>
-        <td data-label="Role">
-          <select class="select" style="font-size:12px;padding:5px 6px;width:100%;" data-action="role" data-id="${esc(d.id)}" ${u.owner && !ctx.isOwner ? 'disabled title="Only the owner can change this account."' : ""}>
-            ${["admin","editor","writer","newsletter_builder","marketing","social_media","reader"].map(r =>
-              `<option value="${r}" ${u.role === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}
-          </select>
-        </td>
-        <td data-label="Status"><span class="pill ${u.status === "active" ? "pill-published" : "pill-draft"}" style="font-size:11px;">${esc(u.status || "active")}</span></td>
-        <td data-label="Bot reminders">${reader ? `<span class="ua-off">Off · reader</span>` : renderBotReminderStatus(reminderStatus)}</td>
-        <td data-label="Last seen" style="white-space:nowrap;" title="${u.createdAt ? "Joined " + escAttr(fmtDate(u.createdAt)) : ""}">
-          ${last
-            ? `<div style="font-size:12px;color:var(--ink-2);">${fmtRelative(last)}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${fmtDate(last)}</div>`
-            : `<span style="color:var(--muted);">—</span>`}
-        </td>
-        <td data-label="Actions">
+      const lockedOwner = u.owner && !ctx.isOwner;
+      const tags = [
+        u.owner ? `<span class="ua-tag ua-tag--owner" title="Decides which pages everyone can open. Only they can change their own account.">Owner</span>` : "",
+        !reader && rem.exists && rem.active ? `<span class="ua-tag ua-tag--warn" title="${escAttr(rem.reason || "")}">Reminders ${esc(rem.label.charAt(0).toLowerCase() + rem.label.slice(1))}</span>` : "",
+        extra ? `<span class="ua-tag" title="Pages added beyond their role">+${extra} page${extra === 1 ? "" : "s"}</span>` : "",
+        limited && ctx.isOwner ? `<span class="ua-tag ua-tag--bad" title="Pages you took away">${limited} limited</span>` : "",
+        dupes > 1 ? `<span class="ua-tag ua-tag--warn" title="This email has ${dupes} accounts. Changing the role here changes all of them.">${dupes} accounts</span>` : "",
+      ].filter(Boolean).join("");
+      return `
+        <li class="ua-row${reader ? " is-reader" : ""}" data-search="${escAttr([u.name, u.email, ...extraEmails].join(" ").toLowerCase())}" data-role="${escAttr(u.role || "reader")}">
+          <div class="ua-who">
+            <span class="ua-av" style="--av:${uaAvatarColor(u.name || u.email)}" aria-hidden="true">${esc(uaInitials(u.name, u.email))}</span>
+            <span class="ua-who-text">
+              <span class="ua-name">${esc(u.name || "No name")}${d.id === ctx.user.uid ? ` <i>(you)</i>` : ""}</span>
+              <span class="ua-email" title="${escAttr([u.email, ...extraEmails].filter(Boolean).join(", "))}">${esc(u.email || "No email")}${extraEmails.length ? ` <span class="ua-more-emails">+${extraEmails.length}</span>` : ""}</span>
+            </span>
+          </div>
+          <label class="ua-role">
+            <span class="sr-only">Role for ${esc(u.name || u.email || "user")}</span>
+            <select class="select" data-action="role" data-id="${esc(d.id)}" ${lockedOwner ? 'disabled title="Only the owner can change this account."' : ""}>
+              ${["admin", "editor", "writer", "newsletter_builder", "marketing", "social_media", "reader"].map((r) => `<option value="${r}" ${u.role === r || (!u.role && r === "reader") ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}
+            </select>
+          </label>
+          <div class="ua-meta">
+            <span class="ua-seen${last && Date.now() - new Date(last).getTime() < 86400000 * 2 ? " is-recent" : ""}">${esc(reader ? "No Suite access" : lastSeenText(last))}</span>
+            ${tags}
+          </div>
           <div class="ua-actions">
-            ${ctx.isOwner && !u.owner && !reader ? `<button class="btn btn-secondary btn-xs" data-action="limit-pages" data-id="${esc(d.id)}" title="Take specific pages away from this person, whatever their role">Limit pages</button>` : ""}
-            <button class="btn btn-secondary btn-xs" data-action="extra-access" data-id="${esc(d.id)}" ${u.owner && !ctx.isOwner ? "disabled" : ""} title="Give this person access to specific pages beyond their role">Pages${Array.isArray(u.extraAccess) && u.extraAccess.length ? ` <span class="ua-count">${u.extraAccess.length}</span>` : ""}</button>
-            <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}" title="Pause or resume the reminder bot's emails to this person">Reminders</button>
-            <button class="btn btn-ghost btn-xs ua-delete" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid || u.owner ? "disabled" : ""} title="Remove this account" aria-label="Delete ${escAttr(u.name || u.email || "user")}">
+            ${ctx.isOwner && !u.owner && !reader ? `<button class="ua-btn" type="button" data-action="limit-pages" data-id="${esc(d.id)}" title="Take specific pages away from this person, whatever their role">Limit pages</button>` : ""}
+            ${!reader ? `<button class="ua-btn" type="button" data-action="extra-access" data-id="${esc(d.id)}" ${lockedOwner ? "disabled" : ""} title="Give extra pages and add email addresses">Access</button>` : ""}
+            ${!reader ? `<button class="ua-btn" type="button" data-action="bot-exemption" data-id="${esc(d.id)}" title="Pause or resume the reminder bot's emails">Reminders</button>` : ""}
+            <button class="ua-btn ua-btn--icon ua-delete" type="button" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid || u.owner ? "disabled" : ""} title="Remove this account" aria-label="Delete ${escAttr(u.name || u.email || "user")}">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
             </button>
           </div>
-        </td>`;
-      tbody.appendChild(tr);
-    });
+        </li>`;
+    };
 
-    scrollWrap.appendChild(table);
+    // A fresh wrapper per load, so reloads never stack event listeners.
+    const wrap = el("div", { class: "ua-wrap" });
+    wrap.innerHTML = `
+      <p class="ua-summary" id="ua-summary"></p>
+      <ul class="ua-list" id="ua-team">${team.map(rowHtml).join("")}</ul>
+      <p class="ua-none" id="ua-none" hidden>No one matches.</p>
+      ${readers.length ? `
+      <details class="ua-readers" id="ua-readers">
+        <summary><span class="ua-readers-title">Readers</span><span class="ua-readers-count">${readers.length}</span><span class="ua-readers-note">No Suite access and no reminder emails. Pick a role to bring someone back.</span></summary>
+        <ul class="ua-list">${readers.map(rowHtml).join("")}</ul>
+      </details>` : ""}`;
+    mount.innerHTML = "";
+    mount.appendChild(wrap);
+    const tbody = wrap;
+
+    // Filters + search (client-side; the list is small).
+    const counts = Object.fromEntries(UA_GROUPS.map((g) => [g.id, g.roles ? team.filter((d) => g.roles.includes(d.data().role)).length : team.length]));
+    const filtersEl = page.querySelector("#ua-filters");
+    const qEl = page.querySelector("#ua-q");
+    const apply = () => {
+      const g = UA_GROUPS.find((x) => x.id === uaFilter) || UA_GROUPS[0];
+      const q = qEl.value.trim().toLowerCase();
+      let shown = 0;
+      mount.querySelectorAll("#ua-team .ua-row").forEach((r) => {
+        const ok = (!g.roles || g.roles.includes(r.dataset.role)) && (!q || r.dataset.search.includes(q));
+        r.hidden = !ok; if (ok) shown++;
+      });
+      let readersShown = 0;
+      mount.querySelectorAll("#ua-readers .ua-row").forEach((r) => { const ok = !q || r.dataset.search.includes(q); r.hidden = !ok; if (ok) readersShown++; });
+      const rd = mount.querySelector("#ua-readers");
+      if (rd) { rd.hidden = !!q && !readersShown; if (q && readersShown) rd.open = true; }
+      mount.querySelector("#ua-none").hidden = shown > 0 || (q && readersShown > 0);
+      filtersEl.querySelectorAll("[data-filter]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.filter === uaFilter)));
+    };
+    filtersEl.innerHTML = UA_GROUPS.map((g) => `<button type="button" data-filter="${g.id}" aria-pressed="${g.id === uaFilter}">${esc(g.label)}<span>${counts[g.id]}</span></button>`).join("");
+    filtersEl.querySelectorAll("[data-filter]").forEach((b) => b.addEventListener("click", () => { uaFilter = b.dataset.filter; apply(); }));
+    qEl.oninput = apply;
+    const active7 = team.filter((d) => { const l = presence.get(d.id)?.lastSeenAt || d.data().lastSeenAt; return l && Date.now() - new Date(l).getTime() < 7 * 86400000; }).length;
+    mount.querySelector("#ua-summary").innerHTML = `<b>${team.length}</b> on the team · ${active7} active this week${readers.length ? ` · ${readers.length} readers` : ""}`;
+    apply();
 
     tbody.addEventListener("change", async (e) => {
       const sel = e.target.closest('[data-action="role"]');
@@ -493,7 +531,6 @@ async function loadUsers(mount, ctx, reload) {
       } catch (err) { ctx.toast("Delete failed: " + err.message, "error"); }
     });
 
-    mount.appendChild(scrollWrap);
   } catch (err) {
     mount.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
   }
