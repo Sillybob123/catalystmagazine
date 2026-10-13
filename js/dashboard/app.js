@@ -275,7 +275,7 @@ const ROUTES = {
     icon: ICONS.list,
     roles: ["*"],
     group: "main",
-    loader: () => import("./tasks.js?v=tasks-v5"),
+    loader: () => import("./tasks.js?v=tasks-v6"),
   },
   // Directory — the whole team with roles + emails, plus private messaging
   // (each chat message is also emailed to the recipient via /api/notify/dm).

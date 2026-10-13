@@ -1,19 +1,22 @@
 /**
- * Tasks module — mirrors the CatalystMonday Tasks board.
+ * Team tasks (#/tasks): the team's to-do board.
  *
- * Columns: Pending Approval | Approved | In Progress | Completed
- * - Any role can create tasks and assign multiple people.
- * - Admins approve/reject tasks.
- * - Assignees mark tasks complete.
+ *   Waiting for approval → To do → In progress → Done
+ *
+ * - Editorial roles (writer, editor, admin) can propose tasks for anyone.
+ *   An admin's own tasks skip approval; everyone else's wait for an admin.
+ * - Approving sends the assignment email and starts the reminder emails
+ *   (/api/tasks/notify keeps the task_reminders/<id> mirror for the bot).
+ * - The people assigned press "Start" (logged in the activity, which is
+ *   what moves the card to In progress) and "Mark done".
+ *
+ * Data model is unchanged from the old board: tasks/{id} with status
+ * pending | approved | rejected | completed and an activity[] log; comments
+ * are activity rows whose text starts with `commented: "`.
+ * Styles: css/tasks.css (all classes are .tk-*).
  */
 
-// Both task documents AND the canonical user directory (Users & Roles)
-// live in the primary catalystwriters-5ce43 Firestore. Earlier the
-// import here was `db as workflowDb` which read fine but was misleading
-// — tasks were never in the secondary catalystmonday project. We now
-// import `db` plainly and use it for both task writes and assignee
-// lookups, so the picker is guaranteed to match what an admin sees on
-// the Users & Roles page (no duplicates, no email-less ghosts).
+// Tasks and the user directory both live in the primary Firestore.
 import { db } from "../firebase-dual-config.js";
 import {
   collection,
@@ -25,152 +28,120 @@ import {
   arrayUnion,
   query,
   orderBy,
-  serverTimestamp,
   getDocs,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, fmtDate, confirmDialog } from "./ui.js";
 
-// ─── Task column logic (mirrors dashboard.js getTaskColumn) ──────────────────
+// ─── Columns ─────────────────────────────────────────────────────────────────
 
-function getTaskColumn(task) {
-  if (task.status === "completed") return "completed";
-  if (task.status === "rejected")  return "pending";
-  if (task.status === "approved") {
-    const acts = task.activity || [];
-    const inProgress = acts.some(a =>
-      (a.text || "").includes("started working") ||
-      (a.text || "").includes("in progress") ||
-      (a.text || "").includes("commented:")
-    );
-    return inProgress ? "in_progress" : "approved";
-  }
-  return "pending";
+const COLUMNS = [
+  { id: "pending",     title: "Waiting for approval", color: "#c58a1b", hint: "Proposed by the team. Once an admin approves, the people assigned get an email." },
+  { id: "approved",    title: "To do",                color: "#2e5a87", hint: "Approved and assigned, not started yet." },
+  { id: "in_progress", title: "In progress",          color: "#6d4bb3", hint: "Someone has started on it." },
+  { id: "completed",   title: "Done",                 color: "#2f6b4f", hint: "Finished in the last 30 days." },
+];
+const COL_BY_ID = Object.fromEntries(COLUMNS.map((c) => [c.id, c]));
+
+const PRIORITY = {
+  urgent: { label: "Urgent", rank: 4 },
+  high:   { label: "High",   rank: 3 },
+  medium: { label: "Medium", rank: 2 },
+  low:    { label: "Low",    rank: 1 },
+};
+const prioOf = (t) => (PRIORITY[t.priority] ? t.priority : "medium");
+
+const isComment = (a) => /^commented: "/.test(a?.text || "");
+const commentText = (a) => String(a.text || "").replace(/^commented: "/, "").replace(/"$/, "");
+
+function assigneeIdsOf(t) {
+  if (Array.isArray(t.assigneeIds) && t.assigneeIds.length) return t.assigneeIds;
+  return t.assigneeId ? [t.assigneeId] : [];
+}
+function assigneeNamesOf(t) {
+  if (Array.isArray(t.assigneeNames) && t.assigneeNames.length) return t.assigneeNames;
+  return t.assigneeName ? [t.assigneeName] : [];
 }
 
-const TASK_COLUMNS = [
-  { id: "pending",     title: "Pending Approval", color: "#f59e0b" },
-  { id: "approved",    title: "Approved",          color: "#10b981" },
-  { id: "in_progress", title: "In Progress",       color: "#3b82f6" },
-  { id: "completed",   title: "Completed",          color: "#2563eb" },
-];
+// Started = someone pressed Start (or, on older tasks, one of the people
+// assigned left a comment, which is how the old board read it).
+function getTaskColumn(t) {
+  if (t.status === "completed") return "completed";
+  if (t.status === "approved") {
+    const ids = assigneeIdsOf(t);
+    const started = (t.activity || []).some((a) => {
+      const text = a.text || "";
+      return text.includes("started working") || text.includes("in progress")
+        || (isComment(a) && ids.includes(a.authorId));
+    });
+    return started ? "in_progress" : "approved";
+  }
+  return "pending";   // pending + rejected (declined ones show folded)
+}
 
-const PRIORITY_COLORS = {
-  urgent: "#dc2626",
-  high:   "#ea580c",
-  medium: "#f59e0b",
-  low:    "#059669",
-};
-
-// ─── Module state ─────────────────────────────────────────────────────────────
+// ─── State ───────────────────────────────────────────────────────────────────
 
 let _allTasks = [];
 let _allUsers = [];
 let _uid, _role, _profile, _ctx;
+let _focus = "mine";      // mine | all | approval
+let _query = "";
+let _showOlderDone = false;
+let _showDeclined = false;
+const FOCUS_KEY = "catalyst.tasks.focus";
 
-// ─── Mount ────────────────────────────────────────────────────────────────────
+const canCreate = () => ["admin", "editor", "writer"].includes(_role);   // firestore.rules: isWriter()
+const canDelete = () => ["admin", "editor"].includes(_role);             // firestore.rules: isEditor()
+const isAdmin = () => _role === "admin";
+const me = () => _profile?.name || _ctx?.user?.email || "Someone";
+const mineFilter = (t) => assigneeIdsOf(t).includes(_uid) || t.creatorId === _uid;
 
-function ensureKanbanStyles() {
-  if (document.getElementById("kanban-styles")) return;
-  const s = document.createElement("style");
-  s.id = "kanban-styles";
-  s.textContent = `
-    .kb-page { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-    .kb-header { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
-      background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 20px;
-      margin-bottom:20px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
-    .kb-header-title { font-size:18px; font-weight:800; color:#0b1220; margin:0 0 2px; }
-    .kb-header-sub { font-size:13px; color:#64748b; margin:0; }
-    .kb-header-actions { display:flex; gap:8px; align-items:center; flex-shrink:0; }
-    .kb-scroll { width:100%; overflow-x:auto; overflow-y:visible; -webkit-overflow-scrolling:touch; padding-bottom:20px; }
-    .kb-board { display:flex; flex-direction:row; flex-wrap:nowrap; gap:14px; align-items:flex-start; }
-    .kb-col { flex:0 0 272px; width:272px; background:#fff; border:1px solid #e5e7eb; border-radius:12px;
-      overflow:hidden; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(15,23,42,.06); }
-    .kb-col-head { padding:12px 14px; background:#f8fafc; border-bottom:1px solid #e5e7eb;
-      display:flex; align-items:center; justify-content:space-between; gap:8px; }
-    .kb-col-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:#374151; }
-    .kb-col-count { background:#e5e7eb; color:#6b7280; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; }
-    .kb-col-body { padding:10px; display:flex; flex-direction:column; gap:8px; flex:1; min-height:200px; }
-    .kb-empty { font-size:12px; color:#9ca3af; text-align:center; padding:24px 8px; }
-    .kb-card { background:#fff; border:1px solid #e5e7eb; border-left:3px solid #94a3b8;
-      border-radius:8px; padding:12px 14px; cursor:pointer;
-      transition:box-shadow .15s, transform .12s; }
-    .kb-card:hover { box-shadow:0 4px 14px rgba(15,118,110,.13); transform:translateY(-2px); }
-    .kb-card-title { font-size:13px; font-weight:600; color:#0b1220; line-height:1.4; margin:0 0 5px; }
-    .kb-card-meta { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:0 0 6px; }
-    .kb-badge { font-size:10px; font-weight:700; background:#f1f5f9; color:#64748b;
-      padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:.05em; }
-    .kb-badge-idle { background:#fee2e2; color:#b91c1c; }
-    .kb-status { font-size:11px; color:#6b7280; }
-    .kb-progress { height:3px; background:#e5e7eb; border-radius:99px; margin:6px 0; overflow:hidden; }
-    .kb-progress-fill { height:100%; background:var(--ink,#0f172a); border-radius:99px; }
-    .kb-card-foot { display:flex; align-items:center; justify-content:space-between; margin-top:6px; gap:8px; }
-    .kb-author { display:flex; align-items:center; gap:6px; font-size:12px; color:#6b7280; min-width:0; overflow:hidden; }
-    .kb-author span { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .kb-avatar { width:22px; height:22px; border-radius:50%; color:#fff; font-size:11px; font-weight:700;
-      display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-    .kb-due { font-size:11px; font-weight:600; color:#94a3b8; white-space:nowrap; }
-    .kb-due.overdue { color:#b91c1c; }
-    .kb-due.soon { color:#f59e0b; }
-    .kb-priority { font-size:10px; font-weight:700; padding:2px 7px; border-radius:4px; color:#fff; letter-spacing:.05em; }
-    .kb-desc { font-size:12px; color:#6b7280; margin:4px 0 6px; line-height:1.4; }
-    .kb-avail-chip { display:flex; align-items:center; gap:10px; padding:8px 10px;
-      border-radius:8px; border:1px solid #e5e7eb; background:#f8fafc; }
-    .kb-avail-name { font-size:12px; font-weight:600; color:#1f2937; }
-    .kb-avail-role { font-size:11px; color:#6b7280; }
-  `;
-  document.head.appendChild(s);
-}
+// ─── Mount ───────────────────────────────────────────────────────────────────
 
 export async function mount(ctx, container) {
   _ctx = ctx; _uid = ctx.user.uid; _role = ctx.role; _profile = ctx.profile;
+  _query = ""; _showOlderDone = false; _showDeclined = false;
+  try { _focus = localStorage.getItem(FOCUS_KEY) || ""; } catch { _focus = ""; }
+  // The old board injected global .kb-* styles; drop them if a stale copy is around.
+  document.getElementById("kanban-styles")?.remove();
 
-  ensureKanbanStyles();
   container.innerHTML = "";
-  container.className = (container.className || "") + " kb-page";
-
-  const header = el("div", { class: "kb-header" });
-  header.innerHTML = `
-    <div>
-      <div class="kb-header-title">Tasks</div>
-      <div class="kb-header-sub">Team tasks — assign, approve, track completion.</div>
+  container.classList.add("tk-page");
+  container.innerHTML = `
+    <div class="tk-toolbar">
+      <div class="tk-focus" role="group" aria-label="Show" id="tk-focus"></div>
+      <div class="tk-tools">
+        <label class="tk-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="tk-q" placeholder="Search tasks" aria-label="Search tasks">
+        </label>
+        ${canCreate() ? `<button type="button" class="btn btn-primary btn-sm tk-new" id="tk-new">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>` : ""}
+      </div>
     </div>
-    <button class="btn btn-accent btn-sm" id="new-task-btn">+ New task</button>`;
-  container.appendChild(header);
+    <p class="tk-glance" id="tk-glance" aria-live="polite"></p>
+    <div class="tk-board" id="tk-board"><div class="loading-state"><div class="spinner"></div> Loading tasks&hellip;</div></div>`;
 
-  const scrollWrap = el("div", { class: "kb-scroll" });
-  const board = el("div", { class: "kb-board", id: "tasks-board" });
-  scrollWrap.appendChild(board);
-  container.appendChild(scrollWrap);
+  container.querySelector("#tk-new")?.addEventListener("click", () => openTaskCreateModal());
+  const q = container.querySelector("#tk-q");
+  q.addEventListener("input", () => { _query = q.value.trim().toLowerCase(); renderBoard(); });
 
   await loadUsers();
 
-  header.querySelector("#new-task-btn").addEventListener("click", () => openTaskCreateModal());
-
-  const unsub = onSnapshot(collection(db, "tasks"), snap => {
-    _allTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const unsub = onSnapshot(collection(db, "tasks"), (snap) => {
+    _allTasks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (!["mine", "all", "approval"].includes(_focus)) _focus = _allTasks.some((t) => mineFilter(t) && t.status !== "completed") ? "mine" : "all";
     renderBoard();
-  }, err => {
-    board.innerHTML = `<div class="error-state">Failed to load tasks: ${esc(err.message)}</div>`;
+  }, (err) => {
+    const board = document.getElementById("tk-board");
+    if (board) board.innerHTML = `<div class="error-state">Couldn't load tasks: ${esc(err.message)}</div>`;
   });
 
   return () => unsub();
 }
 
-// Pull staff users from the same Firestore collection (and same shape)
-// the Users & Roles admin page renders. Matching the source guarantees
-// the assignee picker stays in lock-step with the admin's mental model
-// — what they see on /admin/#/admin/users is what they pick from here.
-//
-// Filters applied:
-//   • role 'reader' is hidden — readers are signed-up subscribers, not
-//     people you'd assign editorial tasks to.
-//   • status === 'inactive' is hidden — no point assigning to someone
-//     who's been off-boarded.
-//   • users with no email are hidden from the picker entirely (they
-//     can't receive reminder emails, and surfacing them just creates
-//     the "ghost" rows the user complained about).
-//   • dedupe on email so the same person on two roles doesn't appear
-//     twice (rare, but happens during migrations).
+// Staff from the same users collection Users & roles shows: no readers, no
+// inactive accounts, no one without an email (they couldn't be notified),
+// one row per email.
 async function loadUsers() {
   try {
     const snap = await getDocs(query(collection(db, "users"), orderBy("name")));
@@ -181,8 +152,7 @@ async function loadUsers() {
       const role = (u.role || "").toLowerCase();
       const status = (u.status || "active").toLowerCase();
       const primaryEmail = (u.email || "").trim().toLowerCase();
-      if (!primaryEmail) return;
-      if (role === "reader") return;
+      if (!primaryEmail || !role || role === "reader") return;
       if (status === "inactive" || status === "suspended") return;
       if (seenEmails.has(primaryEmail)) return;
       seenEmails.add(primaryEmail);
@@ -190,14 +160,11 @@ async function loadUsers() {
         id: u.id,
         name: u.name || u.email,
         email: u.email,
-        // extraEmails (loripreci has two; aidan has two) — preserved so
-        // when we send the assignment notification, every address the
-        // user has on file gets the email.
+        // Some people have more than one address; every one gets the email.
         extraEmails: Array.isArray(u.extraEmails) ? u.extraEmails.filter(Boolean) : [],
         role: u.role || "",
       });
     });
-    // Sort by name ascending, case-insensitive — stable, easy to scan.
     cleaned.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
     _allUsers = cleaned;
   } catch (err) {
@@ -206,382 +173,520 @@ async function loadUsers() {
   }
 }
 
-// ─── Board ────────────────────────────────────────────────────────────────────
+// ─── Dates ───────────────────────────────────────────────────────────────────
 
-function renderBoard() {
-  const board = document.getElementById("tasks-board");
-  if (!board) return;
-  board.innerHTML = "";
-
-  for (const col of TASK_COLUMNS) {
-    const tasks = _allTasks.filter(t => getTaskColumn(t) === col.id);
-    board.appendChild(renderColumn(col, tasks));
-  }
+function daysUntil(iso) {
+  if (!iso) return null;
+  const d = new Date(String(iso).slice(0, 10) + "T00:00:00");
+  if (isNaN(d)) return null;
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((d - t) / 86400000);
 }
-
-function renderColumn(col, tasks) {
-  const colEl = el("div", { class: "kb-col" });
-  colEl.innerHTML = `
-    <div class="kb-col-head" style="border-top:3px solid ${col.color}">
-      <span class="kb-col-title">${esc(col.title)}</span>
-      <span class="kb-col-count">${tasks.length}</span>
-    </div>
-    <div class="kb-col-body"></div>`;
-  const body = colEl.querySelector(".kb-col-body");
-  if (!tasks.length) {
-    body.innerHTML = `<div class="kb-empty">No tasks here</div>`;
-  } else {
-    tasks
-      .sort((a, b) => priorityRank(b.priority) - priorityRank(a.priority))
-      .forEach(t => body.appendChild(renderTaskCard(t)));
-  }
-  return colEl;
+function fmtShort(iso) {
+  const d = new Date(String(iso).slice(0, 10) + "T00:00:00");
+  return isNaN(d) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
-
-function priorityRank(p) {
-  return { urgent: 4, high: 3, medium: 2, low: 1 }[p] || 2;
+function dueLabel(t) {
+  const d = daysUntil(t.deadline);
+  if (d === null) return null;
+  if (t.status === "completed") return { text: `Due ${fmtShort(t.deadline)}`, tone: "" };
+  if (d < -1) return { text: `${-d} days late`, tone: "late" };
+  if (d === -1) return { text: "Due yesterday", tone: "late" };
+  if (d === 0) return { text: "Due today", tone: "soon" };
+  if (d === 1) return { text: "Due tomorrow", tone: "soon" };
+  if (d <= 6) return { text: `Due ${new Date(String(t.deadline).slice(0, 10) + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })}`, tone: d <= 3 ? "soon" : "" };
+  return { text: `Due ${fmtShort(t.deadline)}`, tone: "" };
 }
+const isLate = (t) => t.status !== "completed" && t.status !== "rejected" && (daysUntil(t.deadline) ?? 1) < 0;
+const tsMs = (v) => (v && typeof v === "object" && v.seconds ? v.seconds * 1000 : new Date(v || 0).getTime() || 0);
+const completedMs = (t) => tsMs(t.completedAt || t.updatedAt);
 
-function renderTaskCard(task) {
-  const due = task.deadline ? new Date(task.deadline + "T00:00:00") : null;
-  const days = due ? Math.ceil((due - Date.now()) / 86400000) : null;
-  const isOverdue = days !== null && days < 0 && task.status !== "completed";
-  const isDueSoon = !isOverdue && days !== null && days <= 3;
-  const pColor = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.medium;
-  const assigneeNames = getAssigneeNames(task);
-  const displayNames = assigneeNames.length > 2
-    ? assigneeNames.slice(0, 2).join(", ") + ` +${assigneeNames.length - 2}`
-    : assigneeNames.join(", ") || "Not assigned";
-
-  const card = el("div", {
-    class: `kb-card${isOverdue ? " s-red" : ""}`,
-    onclick: () => openTaskDetailModal(task.id),
-  });
-  card.innerHTML = `
-    <div class="kb-card-title">${esc(task.title)}</div>
-    <div class="kb-card-meta">
-      <span class="kb-priority" style="background:${pColor}">${(task.priority || "medium").toUpperCase()}</span>
-      <span class="kb-status">${(task.status || "pending").replace("_", " ")}</span>
-    </div>
-    ${task.description ? `<div class="kb-desc">${esc(task.description.slice(0, 90))}${task.description.length > 90 ? "…" : ""}</div>` : ""}
-    <div class="kb-card-foot">
-      <div class="kb-author">
-        <div class="kb-avatar" style="background:${stringToColor(task.creatorName)}">${(task.creatorName || "?")[0].toUpperCase()}</div>
-        <span>→ ${esc(displayNames)}</span>
-      </div>
-      <div class="kb-due${isOverdue ? " overdue" : isDueSoon ? " soon" : ""}">
-        ${due ? due.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—"}
-      </div>
-    </div>`;
-  return card;
-}
-
-function getAssigneeNames(task) {
-  if (Array.isArray(task.assigneeNames) && task.assigneeNames.length) return task.assigneeNames;
-  if (task.assigneeName) return [task.assigneeName];
-  return [];
-}
+// ─── People ──────────────────────────────────────────────────────────────────
 
 function stringToColor(str) {
   if (!str) return "#64748b";
   let h = 0;
   for (let i = 0; i < str.length; i++) h = str.charCodeAt(i) + ((h << 5) - h);
-  return `hsl(${Math.abs(h) % 360}, 65%, 50%)`;
+  return `hsl(${Math.abs(h) % 360}, 42%, 42%)`;
+}
+const initials = (name) => String(name || "?").split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+const firstName = (name) => String(name || "").split(/\s+/)[0];
+const avatar = (name, cls = "") => `<span class="tk-av ${cls}" style="--av:${stringToColor(name)}" title="${esc(name)}" aria-hidden="true">${esc(initials(name))}</span>`;
+
+function peopleHtml(names, max = 3) {
+  if (!names.length) return `<span class="tk-people tk-people--none">No one assigned</span>`;
+  const shown = names.slice(0, max);
+  const label = names.length === 1 ? names[0] : names.length === 2 ? names.map(firstName).join(" & ") : `${firstName(names[0])} +${names.length - 1}`;
+  return `<span class="tk-people"><span class="tk-stack">${shown.map((n) => avatar(n)).join("")}</span><span class="tk-people-names">${esc(label)}</span></span>`;
 }
 
-// ─── Task detail modal ────────────────────────────────────────────────────────
+// ─── Board ───────────────────────────────────────────────────────────────────
+
+function matchesQuery(t) {
+  if (!_query) return true;
+  return [t.title, t.description, t.creatorName, ...assigneeNamesOf(t)].some((s) => String(s || "").toLowerCase().includes(_query));
+}
+
+function sortOpen(a, b) {
+  const da = daysUntil(a.deadline), dbb = daysUntil(b.deadline);
+  return (dbb !== null) - (da !== null) || (da ?? 0) - (dbb ?? 0)
+    || PRIORITY[prioOf(b)].rank - PRIORITY[prioOf(a)].rank
+    || tsMs(b.createdAt) - tsMs(a.createdAt);
+}
+
+function renderFocus() {
+  const host = document.getElementById("tk-focus");
+  if (!host) return;
+  const open = _allTasks.filter((t) => t.status !== "completed" && t.status !== "rejected");
+  const counts = {
+    mine: open.filter(mineFilter).length,
+    all: open.length,
+    approval: _allTasks.filter((t) => t.status === "pending").length,
+  };
+  const opts = [["mine", "My tasks"], ["all", "Everyone"]];
+  if (isAdmin()) opts.push(["approval", "Needs approval"]);
+  host.innerHTML = opts.map(([k, label]) => `
+    <button type="button" data-focus="${k}" aria-pressed="${_focus === k}" class="${k === "approval" && counts.approval ? "has-alert" : ""}">
+      ${label}<span>${counts[k]}</span>
+    </button>`).join("");
+  host.querySelectorAll("[data-focus]").forEach((b) => b.addEventListener("click", () => {
+    _focus = b.dataset.focus;
+    try { localStorage.setItem(FOCUS_KEY, _focus); } catch {}
+    renderBoard();
+  }));
+}
+
+function renderGlance(visible) {
+  const g = document.getElementById("tk-glance");
+  if (!g) return;
+  const open = visible.filter((t) => t.status !== "completed" && t.status !== "rejected");
+  const late = open.filter(isLate).length;
+  const week = open.filter((t) => { const d = daysUntil(t.deadline); return d !== null && d >= 0 && d <= 7; }).length;
+  const waiting = open.filter((t) => t.status === "pending").length;
+  const bits = [];
+  if (late) bits.push(`<b class="is-late">${late} overdue</b>`);
+  if (week) bits.push(`${week} due this week`);
+  if (waiting && _focus !== "approval") bits.push(`${waiting} waiting for approval`);
+  const lead = _focus === "mine"
+    ? (open.length ? `You have <b>${open.length}</b> open ${open.length === 1 ? "task" : "tasks"}` : "Nothing on your plate right now")
+    : _focus === "approval"
+      ? (open.length ? `<b>${open.length}</b> ${open.length === 1 ? "task needs" : "tasks need"} your decision` : "Nothing is waiting for approval")
+      : `<b>${open.length}</b> open ${open.length === 1 ? "task" : "tasks"} across the team`;
+  g.innerHTML = `<span>${lead}${bits.length ? "" : "."}</span>` + (bits.length ? `<span class="tk-glance-sep" aria-hidden="true"></span><span>${bits.join(" · ")}</span>` : "");
+}
+
+function renderBoard() {
+  const board = document.getElementById("tk-board");
+  if (!board) return;
+  renderFocus();
+
+  let visible = _allTasks.filter(matchesQuery);
+  if (_focus === "mine") visible = visible.filter(mineFilter);
+  if (_focus === "approval") visible = visible.filter((t) => t.status === "pending");
+  // Declined proposals: only their author and admins see them.
+  visible = visible.filter((t) => t.status !== "rejected" || isAdmin() || t.creatorId === _uid);
+  renderGlance(visible);
+
+  const cols = _focus === "approval" ? [COL_BY_ID.pending] : COLUMNS;
+  board.dataset.cols = String(cols.length);
+  board.innerHTML = "";
+  for (const col of cols) board.appendChild(renderColumn(col, visible.filter((t) => getTaskColumn(t) === col.id)));
+}
+
+function renderColumn(col, tasks) {
+  const colEl = el("section", { class: "tk-col", style: `--col:${col.color}`, "aria-label": col.title });
+  let list = tasks;
+  let extra = "";
+  if (col.id === "completed") {
+    list = [...tasks].sort((a, b) => completedMs(b) - completedMs(a));
+    const cutoff = Date.now() - 30 * 86400000;
+    const recent = list.filter((t) => completedMs(t) >= cutoff);
+    const older = list.length - recent.length;
+    if (!_showOlderDone && older) { list = recent; extra = `<button type="button" class="tk-more" data-more="done">Show ${older} older</button>`; }
+  } else if (col.id === "pending") {
+    const declined = tasks.filter((t) => t.status === "rejected");
+    list = tasks.filter((t) => t.status !== "rejected").sort(sortOpen);
+    if (declined.length) {
+      extra = `<button type="button" class="tk-more" data-more="declined" aria-expanded="${_showDeclined}">${_showDeclined ? "Hide" : "Show"} ${declined.length} declined</button>`;
+      if (_showDeclined) list = [...list, ...declined];
+    }
+  } else {
+    list = [...tasks].sort(sortOpen);
+  }
+  const count = col.id === "pending" ? tasks.filter((t) => t.status !== "rejected").length : tasks.length;
+
+  colEl.innerHTML = `
+    <header class="tk-col-head">
+      <span class="tk-col-dot" aria-hidden="true"></span>
+      <h3 class="tk-col-title">${esc(col.title)}</h3>
+      <span class="tk-col-count">${count}</span>
+      <p class="tk-col-hint">${esc(col.hint)}</p>
+    </header>
+    <div class="tk-col-body"></div>`;
+  colEl.classList.toggle("is-empty", !list.length);
+  const body = colEl.querySelector(".tk-col-body");
+  if (!list.length) body.innerHTML = `<div class="tk-empty">${esc(emptyText(col.id))}</div>`;
+  list.forEach((t) => body.appendChild(renderTaskCard(t)));
+  if (extra) {
+    body.insertAdjacentHTML("beforeend", extra);
+    body.querySelector("[data-more]")?.addEventListener("click", (e) => {
+      if (e.currentTarget.dataset.more === "done") _showOlderDone = true; else _showDeclined = !_showDeclined;
+      renderBoard();
+    });
+  }
+  return colEl;
+}
+
+function emptyText(colId) {
+  const mine = _focus === "mine";
+  return {
+    pending: mine ? "Nothing you've proposed is waiting." : "Nothing waiting for approval.",
+    approved: mine ? "Nothing waiting on you." : "Nothing to start.",
+    in_progress: mine ? "You haven't started anything." : "No one is mid-task.",
+    completed: "Nothing finished lately.",
+  }[colId];
+}
+
+// The one next step for this person on this card, if there is one.
+function quickAction(t) {
+  const col = getTaskColumn(t);
+  const assigned = assigneeIdsOf(t).includes(_uid);
+  if (t.status === "pending" && isAdmin()) return { key: "approve", label: "Approve" };
+  if (col === "approved" && assigned) return { key: "start", label: "Start" };
+  if (col === "in_progress" && (assigned || isAdmin())) return { key: "done", label: "Mark done" };
+  return null;
+}
+
+function renderTaskCard(t) {
+  const col = getTaskColumn(t);
+  const prio = prioOf(t);
+  const due = dueLabel(t);
+  const names = assigneeNamesOf(t);
+  const comments = (t.activity || []).filter(isComment).length;
+  const action = quickAction(t);
+  const declined = t.status === "rejected";
+  const card = el("article", {
+    class: `tk-card${isLate(t) ? " is-late" : ""}${declined ? " is-declined" : ""}${col === "completed" ? " is-done" : ""}`,
+    tabindex: "0", role: "button", "aria-label": `${t.title || "Untitled task"}. Open details`,
+  });
+  card.innerHTML = `
+    <div class="tk-card-top">
+      ${declined ? `<span class="tk-tag tk-tag--declined">Declined</span>` : (prio === "urgent" || prio === "high") ? `<span class="tk-prio tk-prio--${prio}">${PRIORITY[prio].label}</span>` : ""}
+      ${due ? `<span class="tk-due${due.tone ? " is-" + due.tone : ""}">${col === "completed" ? `Done ${esc(fmtShort(new Date(completedMs(t)).toISOString()))}` : esc(due.text)}</span>` : col === "completed" && completedMs(t) ? `<span class="tk-due">Done ${esc(fmtShort(new Date(completedMs(t)).toISOString()))}</span>` : ""}
+    </div>
+    <h4 class="tk-card-title">${esc(t.title || "Untitled task")}</h4>
+    ${t.description ? `<p class="tk-card-desc">${esc(t.description)}</p>` : ""}
+    <div class="tk-card-foot">
+      ${peopleHtml(names)}
+      ${comments ? `<span class="tk-comments" title="${comments} ${comments === 1 ? "comment" : "comments"}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>${comments}</span>` : ""}
+    </div>
+    ${action ? `<button type="button" class="tk-quick" data-quick="${action.key}">${action.label}</button>` : ""}`;
+  const open = () => openTaskDetailModal(t.id);
+  card.addEventListener("click", (e) => { if (!e.target.closest("[data-quick]")) open(); });
+  card.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target === card) { e.preventDefault(); open(); } });
+  card.querySelector("[data-quick]")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const b = e.currentTarget; b.disabled = true;
+    const ok = await runAction(action.key, t);
+    if (!ok) b.disabled = false;
+  });
+  return card;
+}
+
+// ─── Actions (shared by the cards and the detail pop-up) ─────────────────────
+
+const actRow = (text) => ({ text, authorName: me(), authorId: _uid, timestamp: new Date().toISOString() });
+
+async function runAction(key, task) {
+  try {
+    if (key === "approve") {
+      await updateDoc(doc(db, "tasks", task.id), { status: "approved", updatedAt: new Date().toISOString(), activity: arrayUnion(actRow("approved this task")) });
+      // Approval is when the task becomes real for the people assigned: the
+      // assignment email goes out and the reminder mirror is created.
+      const notifySummary = await notifyAssigned({
+        taskId: task.id,
+        title: task.title,
+        description: task.description || "",
+        priority: task.priority || "medium",
+        deadline: task.deadline || null,
+        creatorName: task.creatorName || me(),
+        assignees: zipNotifyList(task.notifyEmails || task.assigneeEmails || [], task.notifyNames || task.assigneeNames || []),
+      });
+      const s = summarizeNotify(notifySummary, "approved");
+      toast(s.message, s.kind, 5500);
+      return true;
+    }
+    if (key === "decline") {
+      const ok = await confirmDialog("Decline this task? Its author will still see it, marked declined.", { confirmText: "Decline", danger: true });
+      if (!ok) return false;
+      await updateDoc(doc(db, "tasks", task.id), { status: "rejected", updatedAt: new Date().toISOString(), activity: arrayUnion(actRow("declined this task")) });
+      toast("Task declined.", "info");
+      return true;
+    }
+    if (key === "start") {
+      await updateDoc(doc(db, "tasks", task.id), { updatedAt: new Date().toISOString(), activity: arrayUnion(actRow("started working on this")) });
+      toast("Moved to In progress.", "success");
+      return true;
+    }
+    if (key === "done") {
+      await updateDoc(doc(db, "tasks", task.id), {
+        status: "completed", completedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        activity: arrayUnion(actRow("marked this task as complete")),
+      });
+      await notifyTaskClosed(task.id, "completed");   // stops its reminder emails
+      toast("Done. Nice work.", "success");
+      return true;
+    }
+    if (key === "delete") {
+      const ok = await confirmDialog(`Delete "${task.title}"? This can't be undone.`, { confirmText: "Delete", danger: true });
+      if (!ok) return false;
+      await deleteDoc(doc(db, "tasks", task.id));
+      await notifyTaskClosed(task.id, "deleted");
+      toast("Task deleted.", "success");
+      return true;
+    }
+  } catch (e) {
+    toast(e.message || "Something went wrong.", "error");
+  }
+  return false;
+}
+
+// ─── Task detail ─────────────────────────────────────────────────────────────
+
+function fmtActTimeFull(v) {
+  const ms = tsMs(v);
+  if (!ms) return "";
+  return fmtActTime(v);
+}
 
 function openTaskDetailModal(taskId) {
-  const task = _allTasks.find(t => t.id === taskId);
-  if (!task) return toast("Task not found.", "error");
+  const task = _allTasks.find((t) => t.id === taskId);
+  if (!task) return toast("That task no longer exists.", "error");
 
-  const isAdmin    = _role === "admin";
-  const isCreator  = task.creatorId === _uid;
-  const isAssignee = (task.assigneeIds || []).includes(_uid) || task.assigneeId === _uid;
-  const pColor     = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS.medium;
-  const assigneeNames = getAssigneeNames(task);
-  const acts = [...(task.activity || [])].reverse();
-  const actHtml = acts.length
-    ? acts.map(a => `
-        <div class="act-row">
-          <span class="act-author">${esc(a.authorName || "Someone")}</span>
-          <span class="act-text"> ${esc(a.text || "")}</span>
-          <span class="act-when"> · ${a.timestamp ? fmtActTime(a.timestamp) : ""}</span>
-        </div>`).join("")
-    : `<div class="act-row" style="color:var(--muted)">No activity yet.</div>`;
+  const col = getTaskColumn(task);
+  const colMeta = COL_BY_ID[col];
+  const prio = prioOf(task);
+  const assigned = assigneeIdsOf(task).includes(_uid);
+  const names = assigneeNamesOf(task);
+  const due = dueLabel(task);
+  const acts = task.activity || [];
+  const comments = acts.filter(isComment);
+  const history = acts.filter((a) => !isComment(a)).slice().reverse();
 
-  const due = task.deadline ? fmtDate(task.deadline + "T00:00:00") : "Not set";
+  // What this person can do next, said plainly.
+  let next = null;
+  if (task.status === "rejected") next = { text: "An admin declined this task.", actions: [] };
+  else if (task.status === "pending") next = isAdmin()
+    ? { text: "Waiting for your approval. Approving emails the people assigned and starts their reminders.", actions: [["approve", "Approve and send", "primary"], ["decline", "Decline", "danger"]] }
+    : { text: "Waiting for an admin to approve it. The people assigned get an email once it's approved.", actions: [] };
+  else if (col === "approved") next = assigned
+    ? { text: "This one is yours. Press Start when you begin so the team can see it's moving.", actions: [["start", "Start working", "primary"], ["done", "Mark done", "secondary"]] }
+    : { text: `Assigned to ${names.join(", ") || "no one"}, not started yet.`, actions: isAdmin() ? [["done", "Mark done", "secondary"]] : [] };
+  else if (col === "in_progress") next = (assigned || isAdmin())
+    ? { text: "In progress. Mark it done when it's finished; that stops the reminder emails.", actions: [["done", "Mark done", "primary"]] }
+    : { text: "In progress.", actions: [] };
+  else if (col === "completed") next = { text: `Completed${task.completedAt ? ` on ${fmtDate(task.completedAt)}` : ""}.`, actions: [] };
 
-  const body = el("div", { class: "detail-modal-body" });
+  const body = el("div", { class: "tk-detail" });
   body.innerHTML = `
-    <div class="detail-top-row" style="margin-bottom:10px;">
-      <span class="kc-priority-badge" style="background:${pColor}">${(task.priority || "medium").toUpperCase()}</span>
-      <span class="pill pill-draft">${(task.status || "pending").replace("_", " ")}</span>
+    <div class="tk-detail-status">
+      <span class="tk-state" style="--col:${colMeta.color}"><span aria-hidden="true"></span>${esc(task.status === "rejected" ? "Declined" : colMeta.title)}</span>
+      <span class="tk-prio tk-prio--${prio}">${PRIORITY[prio].label} priority</span>
+      ${due ? `<span class="tk-due${due.tone ? " is-" + due.tone : ""}">${esc(due.text)}</span>` : ""}
     </div>
-    <div class="detail-meta-row">
-      <span>Created by: <strong>${esc(task.creatorName || "—")}</strong></span>
-      <span>Assigned to: <strong>${esc(assigneeNames.join(", ") || "No one")}</strong></span>
-      <span>Due: <strong>${esc(due)}</strong></span>
-    </div>
-    ${task.description ? `
-    <div class="detail-section">
-      <div class="detail-section-title">Description</div>
-      <div class="detail-proposal-text">${esc(task.description)}</div>
-    </div>` : ""}
-    <div class="detail-section">
-      <div class="detail-section-title">Comments</div>
-      <div style="display:flex;gap:8px;">
-        <input class="input" id="task-comment-input" placeholder="Leave a note…" style="flex:1;">
-        <button class="btn btn-secondary btn-sm" id="task-post-comment-btn">Post</button>
-      </div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-section-title">Activity</div>
-      <div class="act-feed" id="task-act-feed">${actHtml}</div>
-    </div>`;
 
-  const footerBtns = [];
+    <dl class="tk-meta">
+      <div><dt>Assigned to</dt><dd>${names.length ? names.map((n) => `<span class="tk-person">${avatar(n, "tk-av--sm")}${esc(n)}</span>`).join("") : "No one"}</dd></div>
+      <div><dt>Due</dt><dd>${task.deadline ? esc(fmtDate(task.deadline + "T00:00:00")) : "No due date"}</dd></div>
+      <div><dt>Proposed by</dt><dd><span class="tk-person">${avatar(task.creatorName || "?", "tk-av--sm")}${esc(task.creatorName || "Unknown")}</span></dd></div>
+      <div><dt>Created</dt><dd>${task.createdAt ? esc(fmtDate(task.createdAt)) : "—"}</dd></div>
+    </dl>
 
-  // Admin: approve / reject. Approval is when the task becomes "real"
-  // for the assignee, so this is also where the assignment email goes
-  // out + the task_reminders mirror is created (the cron then takes over
-  // for the 2-day-before and day-of nudges).
-  if (isAdmin && task.status === "pending") {
-    const approveBtn = el("button", { class: "btn btn-accent btn-sm" }, "Approve task");
-    approveBtn.onclick = async () => {
-      approveBtn.disabled = true;
-      try {
-        await updateDoc(doc(db, "tasks", task.id), {
-          status: "approved",
-          updatedAt: new Date().toISOString(),
-          activity: arrayUnion({ text: "approved this task", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
-        });
-        const notifySummary = await notifyAssigned({
-          taskId: task.id,
-          title: task.title,
-          description: task.description || "",
-          priority: task.priority || "medium",
-          deadline: task.deadline || null,
-          creatorName: task.creatorName || _profile.name || _ctx.user.email,
-          // Prefer the flat notify list (which already expanded
-          // primary + extraEmails at create time). Fall back to
-          // assigneeEmails for tasks that predate the flat fields.
-          assignees: zipNotifyList(
-            task.notifyEmails || task.assigneeEmails || [],
-            task.notifyNames  || task.assigneeNames  || []
-          ),
-        });
-        const summary = summarizeNotify(notifySummary, "approved");
-        toast(summary.message, summary.kind, 5500); m.close();
-      } catch (e) { toast(e.message, "error"); approveBtn.disabled = false; }
-    };
-    footerBtns.push(approveBtn);
+    ${task.description ? `<section class="tk-sec"><h4>Details</h4><p class="tk-desc-full">${esc(task.description)}</p></section>` : ""}
 
-    const rejectBtn = el("button", { class: "btn btn-secondary btn-sm", style: { color: "var(--danger)" } }, "Reject");
-    rejectBtn.onclick = async () => {
-      const ok = await confirmDialog("Reject this task?", { confirmText: "Reject", danger: true });
-      if (!ok) return;
-      rejectBtn.disabled = true;
-      try {
-        await updateDoc(doc(db, "tasks", task.id), {
-          status: "rejected",
-          updatedAt: new Date().toISOString(),
-          activity: arrayUnion({ text: "rejected this task", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
-        });
-        // Rejected tasks never produced a mirror doc (assignment wasn't
-        // approved), so no notify-deleted call is needed.
-        toast("Task rejected.", "info"); m.close();
-      } catch (e) { toast(e.message, "error"); rejectBtn.disabled = false; }
-    };
-    footerBtns.push(rejectBtn);
+    ${next ? `<section class="tk-next${next.actions.length ? " has-actions" : ""}">
+      <p>${esc(next.text)}</p>
+      ${next.actions.length ? `<div class="tk-next-actions">${next.actions.map(([k, label, kind]) => `<button type="button" class="btn btn-sm ${kind === "primary" ? "btn-primary" : "btn-secondary"}${kind === "danger" ? " tk-btn-danger" : ""}" data-act="${k}">${label}</button>`).join("")}</div>` : ""}
+    </section>` : ""}
+
+    <section class="tk-sec">
+      <h4>Comments${comments.length ? ` <span>${comments.length}</span>` : ""}</h4>
+      <ol class="tk-thread" id="tk-thread">
+        ${comments.map((a) => `<li>${avatar(a.authorName || "?")}<div><p class="tk-thread-who"><b>${esc(a.authorName || "Someone")}</b><time>${esc(fmtActTimeFull(a.timestamp))}</time></p><p class="tk-thread-text">${esc(commentText(a))}</p></div></li>`).join("") || `<li class="tk-thread-empty">No comments yet. Ask a question or leave an update.</li>`}
+      </ol>
+      ${canCreate() ? `<div class="tk-compose">
+        <textarea class="textarea" id="tk-comment" rows="2" maxlength="2000" placeholder="Write a comment…" aria-label="Write a comment"></textarea>
+        <div class="tk-compose-row"><span>⌘ + Enter to post</span><button type="button" class="btn btn-secondary btn-sm" id="tk-post">Post comment</button></div>
+      </div>` : ""}
+    </section>
+
+    ${history.length ? `<details class="tk-history"><summary>History <span>${history.length}</span></summary>
+      <ol>${history.map((a) => `<li><b>${esc(a.authorName || "Someone")}</b> ${esc(a.text || "")}<time>${esc(fmtActTimeFull(a.timestamp))}</time></li>`).join("")}</ol>
+    </details>` : ""}`;
+
+  const footer = [];
+  if (canDelete()) {
+    const del = el("button", { class: "btn btn-ghost btn-sm tk-btn-danger", type: "button", style: { marginRight: "auto" } }, "Delete task");
+    del.addEventListener("click", async () => { if (await runAction("delete", task)) m.close(); });
+    footer.push(del);
   }
+  const closeBtn = el("button", { class: "btn btn-secondary btn-sm", type: "button" }, "Close");
+  footer.push(closeBtn);
+  const m = openModal({ title: task.title || "Untitled task", body, footer });
+  closeBtn.addEventListener("click", () => m.close());
 
-  // Assignee or admin: mark complete. Closing the task silences any
-  // outstanding reminder cron jobs by flipping the mirror's status.
-  if ((isAssignee || isAdmin) && task.status === "approved") {
-    const completeBtn = el("button", { class: "btn btn-accent btn-sm" }, "Mark complete");
-    completeBtn.onclick = async () => {
-      completeBtn.disabled = true;
-      try {
-        await updateDoc(doc(db, "tasks", task.id), {
-          status: "completed",
-          completedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          activity: arrayUnion({ text: "marked this task as complete", authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
-        });
-        await notifyTaskClosed(task.id, "completed");
-        toast("Task completed!", "success"); m.close();
-      } catch (e) { toast(e.message, "error"); completeBtn.disabled = false; }
-    };
-    footerBtns.push(completeBtn);
-  }
+  body.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", async () => {
+    b.disabled = true;
+    if (await runAction(b.dataset.act, task)) m.close(); else b.disabled = false;
+  }));
 
-  // Creator or admin: delete. Same silencing logic as completion.
-  if (isAdmin || isCreator) {
-    const delBtn = el("button", { class: "btn btn-ghost btn-xs", style: { color: "var(--danger)", marginRight: "auto" } }, "Delete task");
-    delBtn.onclick = async () => {
-      const ok = await confirmDialog(`Delete "${task.title}"?`, { confirmText: "Delete", danger: true });
-      if (!ok) return;
-      try {
-        await deleteDoc(doc(db, "tasks", task.id));
-        await notifyTaskClosed(task.id, "deleted");
-        toast("Task deleted.", "success"); m.close();
-      } catch (e) { toast(e.message, "error"); }
-    };
-    footerBtns.unshift(delBtn);
-  }
-
-  const closeBtn = el("button", { class: "btn btn-secondary btn-sm" }, "Close");
-  footerBtns.push(closeBtn);
-
-  const m = openModal({ title: esc(task.title), body, footer: footerBtns });
-  closeBtn.onclick = m.close;
-
-  // Post comment
-  const commentInput = body.querySelector("#task-comment-input");
-  const postComment = async () => {
-    const text = commentInput?.value.trim();
+  const input = body.querySelector("#tk-comment");
+  const post = async () => {
+    const text = input?.value.trim();
     if (!text) return;
-    const btn = body.querySelector("#task-post-comment-btn");
+    const btn = body.querySelector("#tk-post");
     btn.disabled = true;
     try {
-      await updateDoc(doc(db, "tasks", task.id), {
-        activity: arrayUnion({ text: `commented: "${text}"`, authorName: _profile.name || _ctx.user.email, authorId: _uid, timestamp: new Date().toISOString() }),
-        updatedAt: new Date().toISOString(),
-      });
-      const feed = body.querySelector("#task-act-feed");
-      const row = el("div", { class: "act-row" });
-      row.innerHTML = `<span class="act-author">${esc(_profile.name || _ctx.user.email)}</span> <span class="act-text">commented: "${esc(text)}"</span>`;
-      feed.insertBefore(row, feed.firstChild);
-      commentInput.value = "";
-      toast("Comment posted.", "success");
+      await updateDoc(doc(db, "tasks", task.id), { activity: arrayUnion(actRow(`commented: "${text}"`)), updatedAt: new Date().toISOString() });
+      const thread = body.querySelector("#tk-thread");
+      thread.querySelector(".tk-thread-empty")?.remove();
+      thread.insertAdjacentHTML("beforeend", `<li>${avatar(me())}<div><p class="tk-thread-who"><b>${esc(me())}</b><time>just now</time></p><p class="tk-thread-text">${esc(text)}</p></div></li>`);
+      input.value = "";
     } catch (e) { toast(e.message, "error"); }
     btn.disabled = false;
   };
-  body.querySelector("#task-post-comment-btn")?.addEventListener("click", postComment);
-  commentInput?.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); postComment(); } });
+  body.querySelector("#tk-post")?.addEventListener("click", post);
+  input?.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); post(); } });
 }
 
-// ─── Task creation modal ──────────────────────────────────────────────────────
+// ─── New task ────────────────────────────────────────────────────────────────
+
+const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+function quickDates() {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const add = (n) => { const d = new Date(t); d.setDate(d.getDate() + n); return isoDay(d); };
+  const toFri = (5 - t.getDay() + 7) % 7 || 7;
+  return [["Today", add(0)], ["Tomorrow", add(1)], ["Friday", add(toFri)], ["In a week", add(7)], ["In 2 weeks", add(14)]];
+}
 
 function openTaskCreateModal() {
-  // Build user list for multi-select
-  let selectedIds = new Set();
-
-  const body = el("div", {});
+  const selected = new Set();
+  let prio = "medium";
+  const body = el("div", { class: "tk-new-form" });
   body.innerHTML = `
+    ${isAdmin() ? "" : `<p class="tk-new-lede">An admin approves new tasks before they're sent. The people you assign get an email once it's approved, plus reminders before it's due.</p>`}
     <div class="field">
-      <label class="label">Title <span style="color:var(--danger)">*</span></label>
-      <input class="input" id="tc-title" placeholder="What needs to be done?">
+      <label class="label" for="tc-title">Task</label>
+      <input class="input" id="tc-title" maxlength="200" placeholder="What needs to happen? Start with a verb." autocomplete="off">
     </div>
     <div class="field">
-      <label class="label">Description</label>
-      <textarea class="textarea" id="tc-desc" rows="3" placeholder="Optional details…"></textarea>
+      <label class="label" for="tc-desc">Details <span class="tk-opt">(optional)</span></label>
+      <textarea class="textarea" id="tc-desc" rows="3" maxlength="4000" placeholder="Links, context, what done looks like."></textarea>
     </div>
-    <div class="grid grid-2">
-      <div class="field">
-        <label class="label">Priority</label>
-        <select class="select" id="tc-priority">
-          <option value="low">Low</option>
-          <option value="medium" selected>Medium</option>
-          <option value="high">High</option>
-          <option value="urgent">Urgent</option>
-        </select>
+    <div class="field">
+      <span class="label" id="tc-prio-l">Priority</span>
+      <div class="tk-seg" role="radiogroup" aria-labelledby="tc-prio-l" id="tc-prio">
+        ${Object.entries(PRIORITY).reverse().map(([k, p]) => `<button type="button" role="radio" data-prio="${k}" aria-checked="${k === prio}" class="tk-seg-${k}">${p.label}</button>`).join("")}
       </div>
-      <div class="field">
-        <label class="label">Due date</label>
+    </div>
+    <div class="field">
+      <label class="label" for="tc-deadline">Due date <span class="tk-opt">(optional)</span></label>
+      <div class="tk-dates">
         <input class="input" id="tc-deadline" type="date">
+        <div class="tk-chips" id="tc-quick">${quickDates().map(([l, d]) => `<button type="button" class="tk-chip" data-date="${d}" aria-pressed="false">${l}</button>`).join("")}</div>
       </div>
     </div>
     <div class="field">
-      <label class="label">Assign to (select all that apply)</label>
-      <div class="multi-assignee-list" id="tc-assignees"></div>
+      <div class="tk-assign-head">
+        <span class="label" id="tc-assign-l">Assign to</span>
+        <button type="button" class="tk-link" id="tc-me">Assign to me</button>
+      </div>
+      <div class="tk-picked" id="tc-picked" aria-live="polite"></div>
+      <label class="tk-search tk-search--block">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" id="tc-find" placeholder="Find someone" aria-label="Find someone to assign" autocomplete="off">
+      </label>
+      <div class="tk-pick-list" id="tc-list" role="group" aria-labelledby="tc-assign-l"></div>
     </div>
-    <div id="tc-err" style="color:var(--danger);font-size:12px;margin-top:4px;"></div>`;
+    <p class="tk-error" id="tc-err" role="alert" hidden></p>`;
 
-  // Render assignee checkboxes. The list is sourced from the same
-  // primary `users` collection that powers the Users & Roles admin
-  // page, with readers / inactives / email-less ghosts already filtered
-  // out in loadUsers(). Each checkbox carries the user's primary email
-  // *and* any extraEmails (semicolon-joined) so the create flow can
-  // notify every address on file without a second lookup.
-  const assigneeList = body.querySelector("#tc-assignees");
-  for (const u of _allUsers) {
-    const displayName = u.name;
-    const extras = (u.extraEmails || []).filter(Boolean);
-    const allEmails = [u.email, ...extras].filter(Boolean);
-    const row = el("label", { class: "assignee-check-row" });
-    row.innerHTML = `
-      <input type="checkbox"
-             value="${esc(u.id)}"
-             data-name="${esc(displayName)}"
-             data-email="${esc(u.email || "")}"
-             data-extra-emails="${esc(extras.join(";"))}">
-      <div class="kc-avatar" style="background:${stringToColor(displayName)};width:24px;height:24px;font-size:11px;">${displayName[0].toUpperCase()}</div>
-      <span>${esc(displayName)}</span>
-      <span class="assignee-role">${esc(u.role || "")}</span>
-      ${allEmails.length > 1
-        ? `<span class="assignee-role" style="color:var(--muted);font-size:10px;">+${allEmails.length - 1} more email${allEmails.length > 2 ? "s" : ""}</span>`
-        : ""}`;
-    assigneeList.appendChild(row);
-  }
+  const $ = (id) => body.querySelector("#" + id);
+  const ROLE_LABEL = { admin: "Admin", editor: "Editor", writer: "Writer", social_media: "Social media", marketing: "Marketing", newsletter_builder: "Newsletter" };
 
-  const saveBtn = el("button", { class: "btn btn-accent" }, "Create task");
-  const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
+  const renderPicked = () => {
+    const picked = _allUsers.filter((u) => selected.has(u.id));
+    $("tc-picked").innerHTML = picked.length
+      ? picked.map((u) => `<span class="tk-pill">${avatar(u.name, "tk-av--xs")}${esc(u.name)}<button type="button" data-unpick="${esc(u.id)}" aria-label="Remove ${esc(u.name)}">&times;</button></span>`).join("")
+      : `<span class="tk-picked-none">No one yet. Pick at least one person.</span>`;
+    $("tc-picked").querySelectorAll("[data-unpick]").forEach((b) => b.addEventListener("click", () => { selected.delete(b.dataset.unpick); renderPicked(); renderList(); }));
+    $("tc-me").hidden = selected.has(_uid) || !_allUsers.some((u) => u.id === _uid);
+  };
+  const renderList = () => {
+    const q = $("tc-find").value.trim().toLowerCase();
+    const list = _allUsers.filter((u) => !q || u.name.toLowerCase().includes(q) || String(ROLE_LABEL[u.role] || u.role).toLowerCase().includes(q));
+    $("tc-list").innerHTML = list.map((u) => `
+      <label class="tk-pick${selected.has(u.id) ? " is-on" : ""}">
+        <input type="checkbox" value="${esc(u.id)}" ${selected.has(u.id) ? "checked" : ""}>
+        ${avatar(u.name)}
+        <span class="tk-pick-name">${esc(u.name)}${u.id === _uid ? " <i>(you)</i>" : ""}</span>
+        <span class="tk-pick-role">${esc(ROLE_LABEL[u.role] || u.role)}</span>
+        <span class="tk-pick-check" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+      </label>`).join("") || `<p class="tk-pick-none">No one matches “${esc(q)}”.</p>`;
+    $("tc-list").querySelectorAll("input").forEach((c) => c.addEventListener("change", () => {
+      c.checked ? selected.add(c.value) : selected.delete(c.value);
+      c.closest(".tk-pick").classList.toggle("is-on", c.checked);
+      renderPicked();
+    }));
+  };
+  $("tc-find").addEventListener("input", renderList);
+  $("tc-me").addEventListener("click", () => { selected.add(_uid); renderPicked(); renderList(); });
+  $("tc-prio").querySelectorAll("[data-prio]").forEach((b) => b.addEventListener("click", () => {
+    prio = b.dataset.prio;
+    $("tc-prio").querySelectorAll("[data-prio]").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+  }));
+  const syncChips = () => $("tc-quick").querySelectorAll("[data-date]").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.date === $("tc-deadline").value)));
+  $("tc-quick").querySelectorAll("[data-date]").forEach((c) => c.addEventListener("click", () => {
+    $("tc-deadline").value = $("tc-deadline").value === c.dataset.date ? "" : c.dataset.date;
+    syncChips();
+  }));
+  $("tc-deadline").addEventListener("change", syncChips);
+  renderPicked(); renderList();
+
+  const saveBtn = el("button", { class: "btn btn-primary", type: "button" }, isAdmin() ? "Create and send" : "Propose task");
+  const cancelBtn = el("button", { class: "btn btn-secondary", type: "button" }, "Cancel");
   const m = openModal({ title: "New task", body, footer: [cancelBtn, saveBtn] });
-  cancelBtn.onclick = m.close;
+  cancelBtn.addEventListener("click", () => m.close());
+  setTimeout(() => $("tc-title")?.focus(), 30);
 
-  saveBtn.onclick = async () => {
-    const errEl = body.querySelector("#tc-err");
-    errEl.textContent = "";
-    const title    = body.querySelector("#tc-title").value.trim();
-    const desc     = body.querySelector("#tc-desc").value.trim();
-    const priority = body.querySelector("#tc-priority").value;
-    const deadline = body.querySelector("#tc-deadline").value;
+  saveBtn.addEventListener("click", async () => {
+    const err = $("tc-err");
+    const fail = (msg) => { err.textContent = msg; err.hidden = false; };
+    err.hidden = true;
+    const title = $("tc-title").value.trim();
+    const desc = $("tc-desc").value.trim();
+    const deadline = $("tc-deadline").value;
+    if (title.length < 2) return fail("Give the task a name.");
+    const people = _allUsers.filter((u) => selected.has(u.id));
+    if (!people.length) return fail("Pick at least one person to assign.");
 
-    if (title.length < 2) { errEl.textContent = "Title is required."; return; }
-
-    const checked = [...body.querySelectorAll("#tc-assignees input:checked")];
-    const assigneeIds    = checked.map(c => c.value);
-    const assigneeNames  = checked.map(c => c.dataset.name);
-    const assigneeEmails = checked.map(c => c.dataset.email || "");
-    if (!checked.length) {
-      errEl.textContent = "Pick at least one assignee.";
-      return;
-    }
-
-    // Flatten primary + extra emails into a single notification list.
-    // Firestore rejects nested arrays (`[[a,b],[c]]`) so we store two
-    // parallel flat arrays — `notifyEmails` and `notifyNames` — that
-    // line up index-for-index. Each notify entry is one email; users
-    // with extraEmails contribute multiple entries that share a name.
+    const assigneeIds = people.map((u) => u.id);
+    const assigneeNames = people.map((u) => u.name);
+    const assigneeEmails = people.map((u) => u.email || "");
+    // Every address on file gets the email. Two parallel flat arrays,
+    // because Firestore rejects nested arrays.
     const notifyEmails = [];
-    const notifyNames  = [];
-    checked.forEach((c) => {
-      const name = c.dataset.name;
-      const primary = (c.dataset.email || "").trim();
-      const extras  = (c.dataset.extraEmails || "").split(";").map(s => s.trim()).filter(Boolean);
-      [primary, ...extras].forEach((e) => {
-        if (!e) return;
-        notifyEmails.push(e);
-        notifyNames.push(name);
-      });
-    });
+    const notifyNames = [];
+    people.forEach((u) => [u.email, ...(u.extraEmails || [])].filter(Boolean).forEach((e) => { notifyEmails.push(e.trim()); notifyNames.push(u.name); }));
 
-    // Admin-created tasks skip the "pending" stage. The whole point of
-    // pending → approved was to give admins a veto over writer-proposed
-    // tasks; admins shouldn't have to approve their own work. Going
-    // straight to "approved" also means the assignment email goes out
-    // immediately, with the same 2-day-before / day-of cron reminders.
-    const isAdmin = _role === "admin";
-    const initialStatus = isAdmin ? "approved" : "pending";
-    const creatorName = _profile.name || _ctx.user.email;
+    // An admin's own tasks skip approval and go out right away.
+    const initialStatus = isAdmin() ? "approved" : "pending";
+    const creatorName = me();
     const nowIso = new Date().toISOString();
 
-    saveBtn.disabled = true; saveBtn.textContent = "Creating…";
+    saveBtn.disabled = true; saveBtn.textContent = "Saving…";
     try {
       const taskRef = await addDoc(collection(db, "tasks"), {
-        title, description: desc, priority,
+        title, description: desc, priority: prio,
         deadline: deadline || null,
         status: initialStatus,
         creatorId: _uid,
@@ -591,45 +696,28 @@ function openTaskCreateModal() {
         assigneeName: assigneeNames[0] || null,
         assigneeNames,
         assigneeEmails,
-        // Two parallel flat arrays of (email, name) for everyone who
-        // should be notified — primary + extraEmails for each assignee
-        // already expanded out. Stored flat (not [[…]]) because
-        // Firestore rejects nested arrays.
         notifyEmails,
         notifyNames,
         createdAt: nowIso,
         updatedAt: nowIso,
-        activity: [{
-          text: isAdmin ? "created and approved this task" : "created this task",
-          authorName: creatorName,
-          authorId: _uid,
-          timestamp: nowIso,
-        }],
+        activity: [{ text: isAdmin() ? "created and approved this task" : "created this task", authorName: creatorName, authorId: _uid, timestamp: nowIso }],
       });
-
-      // Fire the assignment notification (email + mirror doc) only when
-      // the task is actually approved — pending tasks shouldn't ping the
-      // assignee yet because an admin might still reject it. The bot
-      // notification will fire later when an admin clicks "Approve".
       let notifySummary = null;
       if (initialStatus === "approved") {
         notifySummary = await notifyAssigned({
-          taskId: taskRef.id,
-          title, description: desc, priority,
-          deadline: deadline || null,
-          creatorName,
+          taskId: taskRef.id, title, description: desc, priority: prio,
+          deadline: deadline || null, creatorName,
           assignees: zipNotifyList(notifyEmails, notifyNames),
         });
       }
-
-      // Honest toast: show what actually happened. If the email send
-      // failed (bad address, Resend down, missing env var), tell the
-      // admin instead of a silent "notified by email" lie.
-      const summary = summarizeNotify(notifySummary, initialStatus);
-      toast(summary.message, summary.kind, 5500);
+      const s = summarizeNotify(notifySummary, initialStatus);
+      toast(s.message, s.kind, 5500);
       m.close();
-    } catch (e) { errEl.textContent = e.message; saveBtn.disabled = false; saveBtn.textContent = "Create task"; }
-  };
+    } catch (e) {
+      fail(e.message || "Couldn't save the task.");
+      saveBtn.disabled = false; saveBtn.textContent = isAdmin() ? "Create and send" : "Propose task";
+    }
+  });
 }
 
 // ─── /api/tasks/notify wrapper ───────────────────────────────────────────────
@@ -683,7 +771,7 @@ async function _notify(payload) {
 //   • All emails went out              → green success toast
 function summarizeNotify(summary, initialStatus) {
   if (initialStatus !== "approved") {
-    return { kind: "success", message: "Task created — pending admin approval." };
+    return { kind: "success", message: "Task proposed. It goes out once an admin approves it." };
   }
   if (!summary) {
     return { kind: "success", message: "Task created." };
@@ -711,7 +799,7 @@ function summarizeNotify(summary, initialStatus) {
   }
   return {
     kind: "success",
-    message: `Task saved — ${notified} email${notified === 1 ? "" : "s"} sent to assignees.`,
+    message: `Task sent. ${notified} email${notified === 1 ? "" : "s"} went to the people assigned.`,
   };
 }
 
