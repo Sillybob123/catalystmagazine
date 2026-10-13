@@ -52,6 +52,16 @@ service cloud.firestore {
       return isRealUser() && myExtraAccess().hasAny(list);
     }
 
+    // The owner: one account (flagged users/{uid}.owner == true, set only
+    // with the Admin SDK, never from the app) who decides which pages each
+    // person may open, admins included. users/{uid}.blockedAccess lists the
+    // page hashes taken away from that person; only the owner can change it.
+    // Mirrors isRouteAllowed() in js/dashboard/app.js and requireRole() in
+    // functions/_utils/auth.js.
+    function iAmOwner() { return isRealUser() && myUserDoc().data.get('owner', false) == true; }
+    function myBlocked() { return isRealUser() ? myUserDoc().data.get('blockedAccess', []) : []; }
+    function notBlocked(hash) { return iAmOwner() || !(hash in myBlocked()); }
+
     function isAdmin()             { return hasRole('admin'); }
     function isEditor()            { return hasAnyRole(['admin', 'editor']); }
     function isWriter()            { return hasAnyRole(['admin', 'editor', 'writer']); }
@@ -100,9 +110,23 @@ service cloud.firestore {
       allow update: if isRealUser()
         && request.auth.uid == uid
         && !request.resource.data.diff(resource.data).affectedKeys()
-              .hasAny(['role', 'extraAccess']);
-      // Admins can do anything to any user.
-      allow read, write: if isAdmin();
+              .hasAny(['role', 'extraAccess', 'blockedAccess', 'owner']);
+      // Admins manage everyone except the owner, and never the owner flag or
+      // anyone's page restrictions. An admin whose Users & roles page was
+      // taken away can't change accounts at all.
+      allow read: if isAdmin();
+      allow create: if isAdmin() && notBlocked('#/admin/users')
+        && !request.resource.data.keys().hasAny(['owner', 'blockedAccess']);
+      allow update: if isAdmin() && notBlocked('#/admin/users')
+        && resource.data.get('owner', false) != true
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['owner', 'blockedAccess']);
+      allow delete: if isAdmin() && notBlocked('#/admin/users')
+        && resource.data.get('owner', false) != true;
+      // The owner can change anything on any account except the owner flag.
+      allow update: if iAmOwner()
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['owner']);
+      allow create: if iAmOwner() && !request.resource.data.keys().hasAny(['owner']);
+      allow delete: if iAmOwner() && resource.data.get('owner', false) != true;
     }
 
     // ---------- stories ----------
@@ -419,7 +443,7 @@ service cloud.firestore {
     // optionally also emailed to all staff via /api/notify/announcement.
     match /announcements/{announcementId} {
       allow read: if isStaff();
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdmin() && notBlocked('#/admin/advanced');
     }
 
     // ---------- manual directory entries ----------

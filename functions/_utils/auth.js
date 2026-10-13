@@ -53,14 +53,32 @@ export async function requireRole(request, env, allowedRoles = [], allowedGrants
     );
   }
 
+  // Pages the owner took away from this person (users/{uid}.blockedAccess):
+  // an endpoint that backs one of those pages refuses them, admin or not.
+  const owner = pickBool(userDoc, "owner");
+  const blocked = owner ? [] : pickStringArray(userDoc, "blockedAccess");
+  if (allowedGrants.length && allowedGrants.some((g) => blocked.includes(g))) {
+    return new Response(
+      JSON.stringify({ ok: false, error: "This page has been turned off for your account." }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
   return {
     uid,
     email: claims.email || pickString(userDoc, "email") || null,
     name: claims.name || pickString(userDoc, "name") || null,
     role,
     grants,
+    blocked,
+    owner,
     claims,
   };
+}
+
+function pickBool(doc, key) {
+  const v = doc?.fields?.[key];
+  return !!(v && v.booleanValue === true);
 }
 
 function pickString(doc, key) {

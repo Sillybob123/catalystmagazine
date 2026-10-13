@@ -473,7 +473,7 @@ const ROUTES = {
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-6"),
+    loader: () => import("./admin.js?v=wd-7"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -501,7 +501,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-6"),
+    loader: () => import("./admin.js?v=wd-7"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -510,7 +510,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-6"),
+    loader: () => import("./admin.js?v=wd-7"),
     mountKey: "images",
   },
   "#/admin/advanced": {
@@ -682,9 +682,25 @@ function getExtraAccess() {
   return Array.isArray(list) ? list : [];
 }
 
+// Pages the owner took away from this person (users/{uid}.blockedAccess).
+// The owner is never limited; Overview can't be taken away (it's home).
+// Mirrors notBlocked() in firestore.rules and requireRole() on the server.
+function getBlockedAccess() {
+  if (state.previewUser) {
+    const p = state.previewUser.profile || {};
+    return !p.owner && Array.isArray(p.blockedAccess) ? p.blockedAccess : [];
+  }
+  if (state.previewRole) return [];
+  if (state.profile?.owner) return [];
+  const list = state.profile?.blockedAccess;
+  return Array.isArray(list) ? list : [];
+}
+
 // Returns true if the active user can see/visit a given route.
-// Checks: wildcard, role match, admin override, and per-user extraAccess.
+// Checks: blocked pages first, then wildcard, role match, admin override,
+// and per-user extraAccess.
 function isRouteAllowed(hash, route) {
+  if (hash !== "#/overview" && getBlockedAccess().includes(hash)) return false;
   const active = getActiveRole();
   const effectiveRoles = active === "editor" ? [active, "writer"] : [active];
   if (route.roles.includes("*")) return true;
@@ -961,6 +977,7 @@ function makeContext(route) {
     role: getActiveRole(),
     realRole: state.role,
     isPreviewing: !!state.previewRole || !!state.previewUser,
+    isOwner: !!state.profile?.owner && !state.previewRole && !state.previewUser,
     mountKey: route.mountKey || null,
     toast,
     // Helper to build authorized fetch requests to our own /api endpoints.

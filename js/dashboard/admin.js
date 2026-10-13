@@ -407,13 +407,13 @@ async function loadUsers(mount, ctx, reload) {
       // next to each cell when the table collapses into stacked cards
       // on phones. Without it, the cards look like an unlabeled blob.
       tr.innerHTML = `
-        <td data-label="User" style="font-weight:600;color:var(--ink);">${esc(u.name || "—")}${accountsOf(d.id).length > 1 ? `<span class="ua-dupe" title="This email has ${accountsOf(d.id).length} accounts. Changing the role here changes all of them.">${accountsOf(d.id).length} accounts</span>` : ""}</td>
+        <td data-label="User" style="font-weight:600;color:var(--ink);">${esc(u.name || "—")}${u.owner ? `<span class="ua-owner" title="Decides which pages everyone can open. Only they can change their own account.">Owner</span>` : ""}${!u.owner && Array.isArray(u.blockedAccess) && u.blockedAccess.length && ctx.isOwner ? `<span class="ua-limited" title="${escAttr(u.blockedAccess.length + " page" + (u.blockedAccess.length === 1 ? "" : "s") + " taken away")}">${u.blockedAccess.length} limited</span>` : ""}${accountsOf(d.id).length > 1 ? `<span class="ua-dupe" title="This email has ${accountsOf(d.id).length} accounts. Changing the role here changes all of them.">${accountsOf(d.id).length} accounts</span>` : ""}</td>
         <td data-label="Email" style="max-width:0;overflow:hidden;">
           <div title="${escAttr(u.email || "")}" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(u.email || "")}</div>
           ${extraEmails.map(e => `<div title="${escAttr(e)}" style="margin-top:3px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;color:var(--muted);background:var(--surface-2,#f8fafc);border:1px solid var(--hairline,#e2e8f0);border-radius:4px;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;">${esc(e)}</div>`).join("")}
         </td>
         <td data-label="Role">
-          <select class="select" style="font-size:12px;padding:5px 6px;width:100%;" data-action="role" data-id="${esc(d.id)}">
+          <select class="select" style="font-size:12px;padding:5px 6px;width:100%;" data-action="role" data-id="${esc(d.id)}" ${u.owner && !ctx.isOwner ? 'disabled title="Only the owner can change this account."' : ""}>
             ${["admin","editor","writer","newsletter_builder","marketing","social_media","reader"].map(r =>
               `<option value="${r}" ${u.role === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}
           </select>
@@ -427,9 +427,10 @@ async function loadUsers(mount, ctx, reload) {
         </td>
         <td data-label="Actions">
           <div class="ua-actions">
-            <button class="btn btn-secondary btn-xs" data-action="extra-access" data-id="${esc(d.id)}" title="Give this person access to specific pages beyond their role">Pages${Array.isArray(u.extraAccess) && u.extraAccess.length ? ` <span class="ua-count">${u.extraAccess.length}</span>` : ""}</button>
+            ${ctx.isOwner && !u.owner && !reader ? `<button class="btn btn-secondary btn-xs" data-action="limit-pages" data-id="${esc(d.id)}" title="Take specific pages away from this person, whatever their role">Limit pages</button>` : ""}
+            <button class="btn btn-secondary btn-xs" data-action="extra-access" data-id="${esc(d.id)}" ${u.owner && !ctx.isOwner ? "disabled" : ""} title="Give this person access to specific pages beyond their role">Pages${Array.isArray(u.extraAccess) && u.extraAccess.length ? ` <span class="ua-count">${u.extraAccess.length}</span>` : ""}</button>
             <button class="btn btn-secondary btn-xs" data-action="bot-exemption" data-id="${esc(d.id)}" title="Pause or resume the reminder bot's emails to this person">Reminders</button>
-            <button class="btn btn-ghost btn-xs ua-delete" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid ? "disabled" : ""} title="Remove this account" aria-label="Delete ${escAttr(u.name || u.email || "user")}">
+            <button class="btn btn-ghost btn-xs ua-delete" data-action="delete" data-id="${esc(d.id)}" ${d.id === ctx.user.uid || u.owner ? "disabled" : ""} title="Remove this account" aria-label="Delete ${escAttr(u.name || u.email || "user")}">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
             </button>
           </div>
@@ -460,6 +461,15 @@ async function loadUsers(mount, ctx, reload) {
         const userDoc = snap.docs.find((docSnap) => docSnap.id === uid);
         if (!userDoc) return;
         openBotReminderExemptionModal(ctx, { id: uid, ...userDoc.data() }, reload);
+        return;
+      }
+
+      const limitBtn = e.target.closest('[data-action="limit-pages"]');
+      if (limitBtn) {
+        const uid = limitBtn.dataset.id;
+        const userDoc = snap.docs.find((docSnap) => docSnap.id === uid);
+        if (!userDoc) return;
+        openLimitPagesModal(ctx, { id: uid, ...userDoc.data() }, accountsOf(uid), reload);
         return;
       }
 
@@ -553,6 +563,79 @@ function routeAlreadyVisible(route, userRole) {
   const effective = userRole === "editor" ? ["editor", "writer"] : [userRole];
   if (userRole === "admin") return true;
   return route.baseRoles.some((r) => effective.includes(r));
+}
+
+// Pages the owner can take away. Everything a role normally opens, so the
+// list covers more than GRANTABLE_ROUTES (Story Tracker, Team tasks…).
+// Overview is never listed: it's everyone's home page.
+const LIMITABLE_ROUTES = [
+  { group: "Everyday", hash: "#/calendar",       label: "Editorial calendar", baseRoles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"] },
+  { group: "Everyday", hash: "#/pipeline/all",   label: "Story Tracker",      baseRoles: ["*"] },
+  { group: "Everyday", hash: "#/pipeline/mine",  label: "My assignments",     baseRoles: ["*"] },
+  { group: "Everyday", hash: "#/tasks",          label: "Team tasks",         baseRoles: ["*"] },
+  { group: "Everyday", hash: "#/directory",      label: "Team & messages",    baseRoles: ["*"] },
+  { group: "Admin tools", hash: "#/admin/briefing", label: "Briefing",        baseRoles: ["admin"] },
+  ...GRANTABLE_ROUTES.filter((r) => r.hash !== "#/planner/assign"),
+  { group: "Marketing", hash: "#/planner/assign", label: "Planner: assign social posts + deadlines", baseRoles: ["admin"] },
+];
+
+// Owner only: choose which pages this person may open. Unticking a page
+// adds it to users/{uid}.blockedAccess, on every account with their email.
+// The rules let only the owner write that field.
+function openLimitPagesModal(ctx, user, accountIds, onSaved) {
+  const role = user.role || "reader";
+  const blocked = new Set(Array.isArray(user.blockedAccess) ? user.blockedAccess : []);
+  const extra = new Set(Array.isArray(user.extraAccess) ? user.extraAccess : []);
+  const visible = (r) => r.baseRoles.includes("*") || routeAlreadyVisible(r, role) || extra.has(r.hash);
+  const routes = LIMITABLE_ROUTES.filter(visible);
+  const byGroup = new Map();
+  for (const r of routes) byGroup.set(r.group, [...(byGroup.get(r.group) || []), r]);
+
+  const body = el("div", {});
+  body.innerHTML = `
+    <p style="margin:0 0 14px;font-size:13.5px;line-height:1.55;color:var(--muted);">
+      Untick a page to take it away from <strong style="color:var(--ink);">${esc(user.name || user.email)}</strong>, even though their <strong style="color:var(--ink);">${esc(roleLabel(role))}</strong> role would normally include it. It disappears from their menu, and the Suite and the server refuse it. Only you can change this.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button type="button" class="btn btn-ghost btn-xs" data-all="on">Allow all</button>
+      <button type="button" class="btn btn-ghost btn-xs" data-all="off">Take all away</button>
+    </div>
+    <div class="extra-access-list">
+      ${[...byGroup.entries()].map(([g, list]) => `
+        <div class="extra-access-group">
+          <div class="extra-access-group-title">${esc(g)}</div>
+          ${list.map((r) => `
+            <label class="extra-access-row">
+              <input type="checkbox" data-hash="${esc(r.hash)}" ${blocked.has(r.hash) ? "" : "checked"}>
+              <span class="extra-access-label">${esc(r.label)}</span>
+            </label>`).join("")}
+        </div>`).join("")}
+    </div>
+    <p class="hint" id="lp-msg" style="color:var(--danger);margin-top:10px;"></p>`;
+
+  const cancel = el("button", { class: "btn btn-secondary" }, "Cancel");
+  const save = el("button", { class: "btn btn-primary" }, "Save");
+  const modal = openModal({ title: `Pages ${user.name || user.email} can open`, body, footer: [cancel, save] });
+  cancel.addEventListener("click", () => modal.close());
+  body.querySelectorAll("[data-all]").forEach((b) => b.addEventListener("click", () => {
+    body.querySelectorAll("input[data-hash]").forEach((cb) => { cb.checked = b.dataset.all === "on"; });
+  }));
+  save.addEventListener("click", async () => {
+    // Keep restrictions on pages not shown here (e.g. from an earlier role).
+    const shown = new Set(routes.map((r) => r.hash));
+    const next = [...blocked].filter((h) => !shown.has(h));
+    body.querySelectorAll("input[data-hash]").forEach((cb) => { if (!cb.checked) next.push(cb.dataset.hash); });
+    save.disabled = true; save.textContent = "Saving…";
+    try {
+      await Promise.all((accountIds && accountIds.length ? accountIds : [user.id]).map((id) => updateDoc(doc(db, "users", id), { blockedAccess: next })));
+      ctx.toast(next.length ? `Saved: ${next.length} page${next.length === 1 ? "" : "s"} taken away. It applies on their next page load.` : "Saved: every page is allowed again.", "success");
+      modal.close();
+      onSaved?.();
+    } catch (err) {
+      body.querySelector("#lp-msg").textContent = err?.message || "Couldn't save.";
+      save.disabled = false; save.textContent = "Save";
+    }
+  });
 }
 
 function openExtraAccessModal(ctx, user, onSaved) {

@@ -475,6 +475,8 @@ a.ov-story:hover .ov-story-title { text-decoration: underline; text-underline-of
 .ua-table tr.ua-row-reader td[data-label="User"] { color: var(--danger) !important; }
 .ua-table tr.ua-row-reader td[data-label="Role"] .select { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent) !important; }
 .ua-table tr.ua-row-reader td[data-label="Status"] .pill { color: var(--muted); }
+.ua-owner { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: 10.5px; font-weight: 600; vertical-align: 1px; cursor: help; }
+.ua-limited { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--danger-soft); color: var(--danger); font-size: 10.5px; font-weight: 600; vertical-align: 1px; cursor: help; }
 .ua-dupe { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-size: 10.5px; font-weight: 600; vertical-align: 1px; cursor: help; }
 .ua-off { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; background: var(--danger-soft); color: var(--danger); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .ua-table td[data-label="Status"] .pill-published::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--good); vertical-align: 0; }
