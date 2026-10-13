@@ -11,9 +11,13 @@
 // Resend to hold and deliver later, so we don't need our own queue or cron
 // for delayed sends. Resend returns an id immediately; delivery happens at
 // the requested time.
-export async function sendEmail(env, { to, subject, html, text, replyTo, cc, unsubscribeEmail = null, scheduledAt = null }) {
+// `fromName` swaps only the display name ("Yair Ben-Dor via The Catalyst"),
+// keeping the verified sending address. `attachments` is Resend's shape:
+// [{ filename, content: <base64> }].
+export async function sendEmail(env, { to, subject, html, text, replyTo, cc, unsubscribeEmail = null, scheduledAt = null, fromName = null, attachments = null }) {
   const apiKey = env.RESEND_API_KEY;
-  const from = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
+  const baseFrom = env.MAIL_FROM || "Catalyst Magazine <onboarding@resend.dev>";
+  const from = fromName ? withDisplayName(baseFrom, fromName) : baseFrom;
   const replyToAddr = env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com";
   const siteUrl = env.SITE_URL || "https://www.catalyst-magazine.com";
 
@@ -47,6 +51,7 @@ export async function sendEmail(env, { to, subject, html, text, replyTo, cc, uns
   if (personalizedText) payload.text = personalizedText;
   if (cc) payload.cc = Array.isArray(cc) ? cc : [cc];
   if (scheduledAt) payload.scheduled_at = scheduledAt;
+  if (Array.isArray(attachments) && attachments.length) payload.attachments = attachments;
   if (unsubscribeEmail) {
     payload.headers = {
       // Gmail requires both a mailto: and an https: URL to show its native
@@ -153,4 +158,13 @@ function personalizeUnsubscribeLinks(html, recipient, siteUrl) {
       /https?:\/\/[^"']*\/api\/unsubscribe\?email=[^"'&]*/g,
       `${siteUrl}/api/unsubscribe/${encoded}`
     );
+}
+
+// "Name <addr>" with a new display name; quotes and angle brackets stripped
+// from the name so it can't break the header.
+function withDisplayName(from, name) {
+  const m = /<([^>]+)>/.exec(from);
+  const addr = m ? m[1] : from.trim();
+  const clean = String(name).replace(/["<>\r\n]/g, "").trim().slice(0, 80);
+  return clean ? `"${clean}" <${addr}>` : from;
 }

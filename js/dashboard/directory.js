@@ -51,6 +51,12 @@ const ICON = {
   mail: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
   phone: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/></svg>',
   info: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg>',
+  megaphone: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>',
+  clip: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.1-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>',
+  link: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  ul: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg>',
+  ol: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M4 5h1v4M4 9h2M4 15h2l-2 3h2" stroke-width="1.6"/></svg>',
+  x: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   plus: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
   compose: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
 };
@@ -60,7 +66,9 @@ const ICON = {
 export async function mount(ctx, container) {
   const me = ctx.user.uid;
   const isAdmin = ctx.role === "admin";
-  const startWith = new URLSearchParams((location.hash.split("?")[1] || "")).get("with");
+  const hashParams = new URLSearchParams((location.hash.split("?")[1] || ""));
+  const startWith = hashParams.get("with");
+  const startView = hashParams.get("view");   // "team-emails" (from the bell / email footer)
 
   container.classList.add("tm-content");   // edge to edge under the top bar (the router resets the class)
   container.innerHTML = `
@@ -117,16 +125,26 @@ export async function mount(ctx, container) {
     const q = state.q.trim().toLowerCase();
     if (state.tab === "messages") {
       if (!state.threadsLoaded) { listEl.innerHTML = `<div class="tm-list-note"><div class="spinner"></div></div>`; return; }
+      const teamSel = state.selected?.kind === "team" || state.selected?.kind === "broadcast";
+      const lastB = state.broadcasts?.[0];
+      const teamRow = `<ul class="tm-rows tm-rows--pinned"><li><button type="button" class="tm-row tm-row--team${teamSel ? " is-selected" : ""}" data-team ${teamSel ? 'aria-current="true"' : ""}>
+          <span class="tm-av tm-av--lg tm-av--team" aria-hidden="true">${ICON.megaphone}</span>
+          <span class="tm-row-main">
+            <span class="tm-row-top"><span class="tm-row-name">Everyone on the team</span>${lastB ? `<time>${esc(fmtListTime(lastB.sentAt))}</time>` : ""}</span>
+            <span class="tm-row-sub">${lastB ? `${esc(String(lastB.senderName || "").split(/\s+/)[0])}: ${esc(lastB.subject)}` : "Email the whole team at once"}</span>
+          </span>
+        </button></li></ul>`;
       const rows = state.threads.map((t) => ({ t, p: personForThread(t) }))
         .filter(({ t, p }) => !q || String(p.name || "").toLowerCase().includes(q) || String(t.lastMessage?.text || "").toLowerCase().includes(q));
       if (!rows.length) {
-        listEl.innerHTML = q
+        listEl.innerHTML = (q ? "" : teamRow) + (q
           ? `<div class="tm-list-note">No conversations match “${esc(state.q.trim())}”.</div>`
-          : `<div class="tm-empty-side"><span class="tm-empty-ic">${ICON.chat}</span><p class="tm-empty-title">No messages yet</p><p>Message anyone on the team. They get it here and by email.</p><button type="button" class="btn btn-primary btn-sm" data-new>${ICON.compose}New message</button></div>`;
+          : `<div class="tm-empty-side"><span class="tm-empty-ic">${ICON.chat}</span><p class="tm-empty-title">No messages yet</p><p>Message anyone on the team. They get it here and by email.</p><button type="button" class="btn btn-primary btn-sm" data-new>${ICON.compose}New message</button></div>`);
         listEl.querySelector("[data-new]")?.addEventListener("click", () => select({ kind: "new" }));
+        listEl.querySelector("[data-team]")?.addEventListener("click", () => select({ kind: "team" }));
         return;
       }
-      listEl.innerHTML = `<ul class="tm-rows">${rows.map(({ t, p }) => {
+      listEl.innerHTML = (q ? "" : teamRow) + `<ul class="tm-rows">${rows.map(({ t, p }) => {
         const last = t.lastMessage || {};
         const sel = state.selected?.kind === "chat" && state.selected.id === p.id;
         const unread = isUnread(t);
@@ -140,6 +158,7 @@ export async function mount(ctx, container) {
         </button></li>`;
       }).join("")}</ul>`;
       listEl.querySelectorAll("[data-chat]").forEach((b) => b.addEventListener("click", () => select({ kind: "chat", id: b.dataset.chat })));
+      listEl.querySelector("[data-team]")?.addEventListener("click", () => select({ kind: "team" }));
       return;
     }
 
@@ -184,6 +203,7 @@ export async function mount(ctx, container) {
 
   // ── right pane ──
   function closeThread() {
+    if (typeof state.cleanupComposer === "function") { state.cleanupComposer(); state.cleanupComposer = null; }
     if (typeof state.unsubThread === "function") { try { state.unsubThread(); } catch {} }
     state.unsubThread = null;
     if (state.onVisible) document.removeEventListener("visibilitychange", state.onVisible);
@@ -195,11 +215,13 @@ export async function mount(ctx, container) {
     state.selected = sel;
     shell.dataset.view = sel ? "detail" : "list";
     if (replace) {
-      const base = "#/directory" + (sel?.kind === "chat" ? `?with=${encodeURIComponent(sel.id)}` : "");
+      const base = "#/directory" + (sel?.kind === "chat" ? `?with=${encodeURIComponent(sel.id)}` : sel?.kind === "team" ? "?view=team-emails" : "");
       try { history.replaceState(null, "", base); } catch {}
     }
     renderList();
     if (sel?.kind === "new") return renderNewMessage();
+    if (sel?.kind === "team") return renderTeamEmails();
+    if (sel?.kind === "broadcast") return renderBroadcastComposer();
     if (!sel) return renderPlaceholder();
     const person = personById(sel.id) || (sel.kind === "chat" ? personForThread(state.threads.find((t) => otherIdOf(t) === sel.id) || { participantIds: [me, sel.id] }) : null);
     if (!person) return renderPlaceholder();
@@ -241,10 +263,16 @@ export async function mount(ctx, container) {
         || String(p.name || "").toLowerCase().includes(q)
         || roleLabel(p).toLowerCase().includes(q)
         || (p.allEmails || [p.email]).some((e) => String(e || "").toLowerCase().includes(q)));
-      if (!list.length) { results.innerHTML = `<div class="tm-list-note">No one on the team matches “${esc(input.value.trim())}”.</div>`; return; }
+      if (!list.length && !(q && "everyone team all".includes(q))) { results.innerHTML = `<div class="tm-list-note">No one on the team matches “${esc(input.value.trim())}”.</div>`; return; }
       const groups = {};
       for (const p of list) (groups[ROLE_META[p.role]?.group || "Others"] ||= []).push(p);
-      results.innerHTML = (welcome && !q ? `<p class="tm-new-lede">Pick someone to start a conversation. They'll see it here and get it by email, so it's a quick way to ask a question or check in.</p>` : "")
+      const everyone = !q || "everyone team all".includes(q) ? `
+        <button type="button" class="tm-everyone" data-everyone>
+          <span class="tm-av tm-av--lg tm-av--team" aria-hidden="true">${ICON.megaphone}</span>
+          <span class="tm-pick-text"><b>Everyone on the team</b><small>One email to all ${teamCount()} people, with your name on it</small></span>
+          <span class="tm-pick-go" aria-hidden="true">${ICON.mail}</span>
+        </button>` : "";
+      results.innerHTML = everyone + (welcome && !q ? `<p class="tm-new-lede">Pick someone to start a conversation. They'll see it here and get it by email, so it's a quick way to ask a question or check in.</p>` : "")
         + GROUP_ORDER.filter((g) => groups[g]?.length).map((g) => `
         <section class="tm-pick-group">
           <h3 class="tm-group-title">${esc(g)}<span>${groups[g].length}</span></h3>
@@ -256,6 +284,7 @@ export async function mount(ctx, container) {
             </button>`).join("")}</div>
         </section>`).join("");
       results.querySelectorAll("[data-pick]").forEach((b) => b.addEventListener("click", () => openChatWith(b.dataset.pick)));
+      results.querySelector("[data-everyone]")?.addEventListener("click", () => select({ kind: "broadcast" }));
     };
     input.addEventListener("input", draw);
     input.addEventListener("keydown", (e) => {
@@ -263,6 +292,249 @@ export async function mount(ctx, container) {
     });
     draw();
     if (matchMedia("(min-width: 820px)").matches || !welcome) setTimeout(() => input.focus(), 0);
+  }
+
+  // ── Team emails: the archive and the composer ──
+  const teamPeople = () => {
+    const seen = new Set();
+    return state.people.filter((p) => !p.manual && p.role !== "reader" && p.email && !seen.has(String(p.name || p.email).toLowerCase()) && seen.add(String(p.name || p.email).toLowerCase()));
+  };
+  const teamCount = () => teamPeople().length;
+
+  async function loadBroadcasts() {
+    try {
+      const res = await ctx.authedFetch("/api/team/broadcast");
+      const data = await res.json().catch(() => ({}));
+      state.broadcasts = res.ok && Array.isArray(data.items) ? data.items : [];
+    } catch { state.broadcasts = state.broadcasts || []; }
+    state.broadcastsLoaded = true;
+  }
+
+  async function renderTeamEmails() {
+    mainEl.innerHTML = `
+      <header class="tm-chat-head tm-new-head">
+        ${backBtn()}
+        <span class="tm-av tm-av--team" aria-hidden="true">${ICON.megaphone}</span>
+        <span class="tm-head-text"><b>Everyone on the team</b><small>${teamCount()} people · team emails</small></span>
+        <button type="button" class="btn btn-primary btn-sm tm-head-cta" data-write>${ICON.compose}<span>Write to everyone</span></button>
+      </header>
+      <div class="tm-new-body tm-archive" id="tm-archive"><div class="tm-list-note"><div class="spinner"></div></div></div>`;
+    wireBack();
+    mainEl.querySelector("[data-write]").addEventListener("click", () => select({ kind: "broadcast" }));
+    if (!state.broadcastsLoaded) await loadBroadcasts();
+    if (state.selected?.kind !== "team") return;
+    renderList();
+    const box = mainEl.querySelector("#tm-archive");
+    const items = state.broadcasts || [];
+    if (!items.length) {
+      box.innerHTML = `<div class="tm-placeholder"><span class="tm-empty-ic">${ICON.megaphone}</span><p class="tm-empty-title">No team emails yet</p><p>Need to reach everyone? Write one email and the whole team gets it, with your name on it. Replies come straight to you.</p><button type="button" class="btn btn-primary btn-sm" data-write2>${ICON.compose}Write to everyone</button></div>`;
+      box.querySelector("[data-write2]").addEventListener("click", () => select({ kind: "broadcast" }));
+      return;
+    }
+    box.innerHTML = `<ol class="tm-mails">${items.map((b, i) => `
+      <li class="tm-mail">
+        <details ${i === 0 ? "open" : ""}>
+          <summary>
+            ${avatar(b.senderName || "?")}
+            <span class="tm-mail-head">
+              <span class="tm-mail-top"><b>${esc(b.subject || "(no subject)")}</b><time>${esc(fmtListTime(b.sentAt))}</time></span>
+              <span class="tm-mail-from">${esc(b.senderName || "Someone")}${b.senderRole ? ` · ${esc(b.senderRole)}` : ""} to everyone${b.recipientCount ? ` (${b.recipientCount})` : ""}${b.attachmentNames?.length ? ` · ${ICON.clip}${b.attachmentNames.length}` : ""}</span>
+            </span>
+          </summary>
+          <div class="tm-mail-body">${b.html || ""}</div>
+          ${b.attachmentNames?.length ? `<p class="tm-mail-files">${ICON.clip} ${b.attachmentNames.map((n) => esc(n)).join(", ")} <span class="tm-muted">· in the email</span></p>` : ""}
+        </details>
+      </li>`).join("")}</ol>`;
+  }
+
+  function renderBroadcastComposer() {
+    const people = teamPeople();
+    const meName = ctx.profile?.name || ctx.user.email || "You";
+    const draftKey = `catalyst.teamEmail.draft.${me}`;
+    let draft = {};
+    try { draft = JSON.parse(localStorage.getItem(draftKey) || "{}"); } catch {}
+    const files = [];
+    const MAX = 10 * 1024 * 1024;
+
+    mainEl.innerHTML = `
+      <header class="tm-chat-head tm-new-head">
+        ${backBtn()}
+        <h2 class="tm-new-title">Email the whole team</h2>
+      </header>
+      <form class="tm-mailer" id="tm-mailer" novalidate>
+        <div class="tm-mail-field">
+          <span class="tm-mail-label">To</span>
+          <div class="tm-to-all">
+            <span class="tm-chip-all">${ICON.megaphone}Everyone on the team · ${people.length} people</span>
+            <button type="button" class="tm-link" data-show-names aria-expanded="false">Show names</button>
+          </div>
+        </div>
+        <p class="tm-names" id="tm-names" hidden>${people.map((p) => esc(p.name || p.email)).join(", ")}</p>
+        <div class="tm-mail-field">
+          <span class="tm-mail-label">From</span>
+          <span class="tm-from">${esc(meName)} <span class="tm-muted">via The Catalyst · replies come to you</span></span>
+        </div>
+        <label class="tm-mail-field">
+          <span class="tm-mail-label">Subject</span>
+          <input id="tm-subject" maxlength="160" placeholder="What's this about?" autocomplete="off" value="${esc(draft.subject || "")}">
+        </label>
+        <div class="tm-toolbar" role="toolbar" aria-label="Formatting">
+          <button type="button" data-cmd="bold" aria-label="Bold" title="Bold (⌘B)"><b>B</b></button>
+          <button type="button" data-cmd="italic" aria-label="Italic" title="Italic (⌘I)"><i>I</i></button>
+          <button type="button" data-cmd="underline" aria-label="Underline" title="Underline (⌘U)"><u>U</u></button>
+          <span class="tm-tb-sep" aria-hidden="true"></span>
+          <button type="button" data-cmd="insertUnorderedList" aria-label="Bulleted list" title="Bulleted list">${ICON.ul}</button>
+          <button type="button" data-cmd="insertOrderedList" aria-label="Numbered list" title="Numbered list">${ICON.ol}</button>
+          <span class="tm-tb-sep" aria-hidden="true"></span>
+          <button type="button" data-link aria-label="Add a link" title="Add a link (⌘K)">${ICON.link}</button>
+          <button type="button" data-attach aria-label="Attach files" title="Attach files">${ICON.clip}</button>
+          <input type="file" id="tm-files" multiple hidden>
+        </div>
+        <div class="tm-linkbar" id="tm-linkbar" hidden>
+          <input type="url" id="tm-link-url" placeholder="Paste a link (https://…)" aria-label="Link address">
+          <button type="button" class="btn btn-secondary btn-sm" data-link-add>Add link</button>
+          <button type="button" class="tm-icon-btn tm-icon-btn--sm" data-link-cancel aria-label="Cancel">${ICON.x}</button>
+        </div>
+        <div class="tm-editor-wrap" id="tm-drop">
+          <div class="tm-editor" id="tm-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Message" data-placeholder="Write your message. Paste links straight in; they turn into links. Drag files here to attach them.">${draft.html || ""}</div>
+          <div class="tm-drop-hint" aria-hidden="true">${ICON.clip}Drop to attach</div>
+        </div>
+        <ul class="tm-files" id="tm-file-list"></ul>
+        <footer class="tm-mail-foot">
+          <p class="tm-mail-note" id="tm-mail-note">Everyone gets this by email, and it's kept here under Team emails.</p>
+          <button type="submit" class="btn btn-primary tm-send-all" id="tm-send-all">${ICON.send}<span>Send to ${people.length} people</span></button>
+        </footer>
+      </form>`;
+    wireBack();
+
+    const form = mainEl.querySelector("#tm-mailer");
+    const editor = mainEl.querySelector("#tm-editor");
+    const subject = mainEl.querySelector("#tm-subject");
+    const note = mainEl.querySelector("#tm-mail-note");
+    const sendBtn = mainEl.querySelector("#tm-send-all");
+    const fileInput = mainEl.querySelector("#tm-files");
+    const fileList = mainEl.querySelector("#tm-file-list");
+    const drop = mainEl.querySelector("#tm-drop");
+    const linkbar = mainEl.querySelector("#tm-linkbar");
+    const linkUrl = mainEl.querySelector("#tm-link-url");
+    if (ctx.isPreviewing) { sendBtn.disabled = true; note.textContent = "Sending is off while you preview another account."; }
+
+    mainEl.querySelector("[data-show-names]").addEventListener("click", (e) => {
+      const n = mainEl.querySelector("#tm-names");
+      n.hidden = !n.hidden;
+      e.currentTarget.setAttribute("aria-expanded", String(!n.hidden));
+      e.currentTarget.textContent = n.hidden ? "Show names" : "Hide names";
+    });
+
+    // Save the draft as you type, so nothing is lost if you leave the page.
+    const save = () => { try { localStorage.setItem(draftKey, JSON.stringify({ subject: subject.value, html: editor.innerHTML })); } catch {} };
+    subject.addEventListener("input", save);
+    editor.addEventListener("input", save);
+
+    // Formatting
+    const syncTools = () => mainEl.querySelectorAll("[data-cmd]").forEach((b) => {
+      let on = false; try { on = document.queryCommandState(b.dataset.cmd); } catch {}
+      b.setAttribute("aria-pressed", String(on));
+    });
+    mainEl.querySelectorAll("[data-cmd]").forEach((b) => {
+      b.addEventListener("mousedown", (e) => e.preventDefault());   // keep the selection
+      b.addEventListener("click", () => { editor.focus(); document.execCommand(b.dataset.cmd, false, null); syncTools(); save(); });
+    });
+    document.addEventListener("selectionchange", syncTools);
+    const stopSync = () => document.removeEventListener("selectionchange", syncTools);
+    state.cleanupComposer = stopSync;
+
+    // Links: remember the selection, ask for the address in a small bar.
+    let savedRange = null;
+    const openLink = () => {
+      const sel = window.getSelection();
+      savedRange = sel.rangeCount && editor.contains(sel.anchorNode) ? sel.getRangeAt(0).cloneRange() : null;
+      linkbar.hidden = false; linkUrl.value = ""; linkUrl.focus();
+    };
+    const addLink = () => {
+      let url = linkUrl.value.trim();
+      if (!url) { linkbar.hidden = true; return; }
+      if (!/^(https?:\/\/|mailto:)/i.test(url)) url = (url.includes("@") && !url.includes("/") ? "mailto:" : "https://") + url;
+      editor.focus();
+      const sel = window.getSelection();
+      if (savedRange) { sel.removeAllRanges(); sel.addRange(savedRange); }
+      if (sel.isCollapsed || !savedRange) document.execCommand("insertHTML", false, `<a href="${esc(url)}">${esc(url.replace(/^mailto:/, ""))}</a>&nbsp;`);
+      else document.execCommand("createLink", false, url);
+      linkbar.hidden = true; save();
+    };
+    mainEl.querySelector("[data-link]").addEventListener("mousedown", (e) => e.preventDefault());
+    mainEl.querySelector("[data-link]").addEventListener("click", openLink);
+    mainEl.querySelector("[data-link-add]").addEventListener("click", addLink);
+    mainEl.querySelector("[data-link-cancel]").addEventListener("click", () => { linkbar.hidden = true; editor.focus(); });
+    linkUrl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addLink(); } if (e.key === "Escape") { linkbar.hidden = true; editor.focus(); } });
+    editor.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openLink(); } });
+
+    // Paste as clean text; web addresses become links.
+    editor.addEventListener("paste", (e) => {
+      const text = e.clipboardData?.getData("text/plain");
+      if (text == null) return;
+      e.preventDefault();
+      document.execCommand("insertHTML", false, linkify(text));
+      save();
+    });
+
+    // Attachments
+    const fmtSize = (n) => n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
+    const totalSize = () => files.reduce((n, f) => n + f.size, 0);
+    const drawFiles = () => {
+      fileList.innerHTML = files.map((f, i) => `<li class="tm-file">${ICON.clip}<span class="tm-file-name">${esc(f.name)}</span><span class="tm-muted">${fmtSize(f.size)}</span><button type="button" class="tm-icon-btn tm-icon-btn--sm" data-unfile="${i}" aria-label="Remove ${esc(f.name)}">${ICON.x}</button></li>`).join("")
+        + (files.length ? `<li class="tm-file-total tm-muted">${fmtSize(totalSize())} of 10 MB</li>` : "");
+      fileList.querySelectorAll("[data-unfile]").forEach((b) => b.addEventListener("click", () => { files.splice(+b.dataset.unfile, 1); drawFiles(); }));
+    };
+    const addFiles = (list) => {
+      for (const f of list) {
+        if (files.length >= 10) { note.textContent = "You can attach up to 10 files."; break; }
+        if (/\.(exe|bat|cmd|com|scr|msi|js|vbs|ps1|jar|sh|apk|dmg|app)$/i.test(f.name)) { note.textContent = `"${f.name}" can't be emailed. Share a link to it instead.`; continue; }
+        if (totalSize() + f.size > MAX) { note.textContent = `"${f.name}" would take the attachments over 10 MB. Share a link for big files.`; continue; }
+        files.push(f);
+      }
+      drawFiles();
+    };
+    mainEl.querySelector("[data-attach]").addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => { addFiles([...fileInput.files]); fileInput.value = ""; });
+    ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { if ([...(e.dataTransfer?.types || [])].includes("Files")) { e.preventDefault(); drop.classList.add("is-drop"); } }));
+    ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, () => drop.classList.remove("is-drop")));
+    drop.addEventListener("drop", (e) => { if (e.dataTransfer?.files?.length) { e.preventDefault(); addFiles([...e.dataTransfer.files]); } });
+
+    const toBase64 = (f) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = () => rej(new Error(`Couldn't read ${f.name}`)); r.readAsDataURL(f); });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (ctx.isPreviewing) return;
+      autoLink(editor);
+      const subj = subject.value.trim();
+      const text = editor.innerText.trim();
+      if (!subj) { note.textContent = "Add a subject so people know what it's about."; subject.focus(); return; }
+      if (!text) { note.textContent = "Write a message first."; editor.focus(); return; }
+      const ok = await confirmDialog(`Send “${subj}” to all ${people.length} people on the team?`, { confirmText: `Send to ${people.length} people` });
+      if (!ok) return;
+      sendBtn.disabled = true;
+      sendBtn.querySelector("span").textContent = "Sending…";
+      try {
+        const attachments = [];
+        for (const f of files) attachments.push({ filename: f.name, contentType: f.type || "", content: await toBase64(f) });
+        const clientId = draft.clientId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+        draft.clientId = clientId;
+        const res = await ctx.authedFetch("/api/team/broadcast", { method: "POST", body: JSON.stringify({ clientId, subject: subj, html: editor.innerHTML, attachments }) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || `Couldn't send (${res.status}).`);
+        try { localStorage.removeItem(draftKey); } catch {}
+        ctx.toast?.(`Sent to ${data.recipientCount || people.length} people on the team.`, "success");
+        state.broadcastsLoaded = false;
+        await loadBroadcasts();
+        select({ kind: "team" });
+      } catch (err) {
+        note.textContent = err.message || "Couldn't send. Try again.";
+        sendBtn.disabled = false;
+        sendBtn.querySelector("span").textContent = `Send to ${people.length} people`;
+      }
+    });
+    setTimeout(() => (subject.value ? editor : subject).focus(), 0);
   }
 
   const backBtn = () => `<button type="button" class="tm-back" data-back aria-label="Back">${ICON.back}<span>${state.tab === "people" ? "People" : "Messages"}</span></button>`;
@@ -419,6 +691,7 @@ export async function mount(ctx, container) {
   container.querySelector("#tm-new").addEventListener("click", () => select({ kind: "new" }));
 
   await state.reload();
+  loadBroadcasts().then(() => { if (state.tab === "messages") renderList(); });
 
   state.unsubThreads = onSnapshot(query(collection(db, "dm_threads"), where("participantIds", "array-contains", me)), (snap) => {
     state.threads = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -433,7 +706,8 @@ export async function mount(ctx, container) {
     state.threadsLoaded = true;
     renderList();
     if (first) {
-      if (startWith) select({ kind: "chat", id: startWith }, { replace: false });
+      if (startView === "team-emails") select({ kind: "team" }, { replace: false });
+      else if (startWith) select({ kind: "chat", id: startWith }, { replace: false });
       else if (!state.threads.length) { state.tab = "people"; renderList(); renderNewMessage({ welcome: true }); }
       else if (matchMedia("(min-width: 820px)").matches) select({ kind: "chat", id: otherIdOf(state.threads[0]) });
       else renderPlaceholder();
@@ -451,6 +725,24 @@ export async function mount(ctx, container) {
 }
 
 // ─── Rendering helpers ───────────────────────────────────────────────────────
+
+const URL_RE = /\b((?:https?:\/\/|www\.)[^\s<>"']+[^\s<>"'.,;:!?)\]])/gi;
+// Plain text → safe HTML with web addresses as links (for paste).
+function linkify(text) {
+  return esc(text).replace(URL_RE, (u) => `<a href="${u.startsWith("www.") ? "https://" + u : u}">${u}</a>`).replace(/\n/g, "<br>");
+}
+// Turn bare web addresses typed into the editor into links before sending.
+function autoLink(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => n.parentElement?.closest("a") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const nodes = [];
+  while (walker.nextNode()) { URL_RE.lastIndex = 0; if (URL_RE.test(walker.currentNode.nodeValue)) nodes.push(walker.currentNode); }
+  for (const n of nodes) {
+    URL_RE.lastIndex = 0;
+    const span = document.createElement("span");
+    span.innerHTML = linkify(n.nodeValue).replace(/<br>/g, "\n");
+    n.replaceWith(...span.childNodes);
+  }
+}
 
 function roleLabel(p) {
   if (p.title) return p.title;

@@ -1591,6 +1591,33 @@ export function announcementEmail({ title, message, link, senderName, siteUrl })
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
 
+// ─── Team email (Team & messages → everyone) ───────────────────────────────
+// A teammate writes to the whole team from the Suite. bodyHtml is already
+// sanitized by the endpoint (a small allow-list of tags, links only http(s) /
+// mailto). The sender's name heads the message and replies go to them.
+export function teamBroadcastEmail({ senderName, senderRole, subject, bodyHtml, attachmentNames = [], recipientCount, siteUrl }) {
+  const fromName = senderName || "A teammate";
+  const archiveUrl = `${siteUrl}/admin/#/directory?view=team-emails`;
+  const body = `
+    <div style="margin:0 0 18px 0;padding:0 0 14px 0;border-bottom:1px solid ${COLORS.hairline};">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.muted};margin-bottom:6px;">Message to the whole team</div>
+      <div style="font-size:15px;line-height:1.45;color:${COLORS.ink};"><strong>${escapeHtml(fromName)}</strong>${senderRole ? ` <span style="color:${COLORS.muted};">· ${escapeHtml(senderRole)}</span>` : ""}</div>
+    </div>
+    <div style="font-size:15px;line-height:1.65;color:${COLORS.inkSoft};">${bodyHtml}</div>
+    ${attachmentNames.length ? `
+    <div style="margin:22px 0 0 0;padding:12px 14px;background:${COLORS.footerBg};border:1px solid ${COLORS.hairline};border-radius:8px;">
+      <div style="font-size:12px;font-weight:600;color:${COLORS.muted};margin-bottom:4px;">Attached (${attachmentNames.length})</div>
+      <div style="font-size:14px;line-height:1.6;color:${COLORS.ink};">${attachmentNames.map((n) => escapeHtml(n)).join("<br>")}</div>
+    </div>` : ""}
+    <p style="margin:26px 0 0 0;font-size:13px;line-height:1.6;color:${COLORS.muted};">
+      Sent by ${escapeHtml(fromName)} to everyone on the Catalyst team${recipientCount ? ` (${recipientCount} people)` : ""} from the Editorial Suite.
+      Reply to answer ${escapeHtml(String(fromName).split(/\s+/)[0])} directly, or reply all to answer the team.
+      <a href="${escapeAttr(archiveUrl)}" style="color:${COLORS.ink};">See all team emails</a>
+    </p>`;
+  const subj = truncate(subject, 140);
+  return { subject: subj, html: shell({ title: subj, preheader: `From ${fromName} to the team`, body, siteUrl }) };
+}
+
 // ─── Direct message (Directory chat → email) ─────────────────────────────────
 // Sent when a teammate messages you from the dashboard's Directory tab. The
 // conversation lives in the dashboard chat; this is the "you have a message"
