@@ -822,7 +822,7 @@ function teamMembers() {
   const byName = new Map();
   for (const u of _allUsers) {
     // Admins run the tracker; the social team has its own section below.
-    if (!u.role || u.role === "reader" || u.role === "admin" || u.role === "social_media") continue;
+    if (!u.role || u.role === "reader" || u.role === "admin" || u.role === "social_media" || isSocialLead(u)) continue;
     const key = (u.name || u.email || u.id).trim().toLowerCase();
     if (!byName.has(key)) byName.set(key, u);
   }

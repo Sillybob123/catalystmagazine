@@ -12,8 +12,8 @@ import {
   doc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
-import { renderPipeline } from "./pipeline.js?v=tracker-7";
-import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-4";
+import { renderPipeline } from "./pipeline.js?v=tracker-8";
+import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-5";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 
 // Shortcuts at the top of Overview, per role: the three or four things that

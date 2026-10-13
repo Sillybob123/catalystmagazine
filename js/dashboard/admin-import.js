@@ -15,7 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 import { mountCoverPromptTool } from "./cover-prompt.js?v=5";
-import { mountThemePicker } from "./suite-theme.js?v=st-4";
+import { mountThemePicker } from "./suite-theme.js?v=st-5";
 
 // A user is "recently joined" if their account was created within this many
 // days. The welcome email panel surfaces these at the top so the admin can fire

@@ -72,13 +72,9 @@ export const SEASONS = {
   },
 };
 
-// Little painted touches on the logo (viewBox 60×60; the logo sits at 13–47).
-const LOGO_DECO = {
-  winter: `<path d="M13.5 22.5C13 14 21 9.5 30 9.5S47 14 46.5 22.5c-1.6 1.6-3 .2-4.1 2.6-1 2.2-3.2.6-4-1.4-1.6 1.6-2.6 4.6-4.6 2.4-1.6-1.7-2.8.9-4.6-.6-1.4-1.2-2.6 1.6-4.4-.4-1.2-1.3-2.4.8-3.8-1-1.3-1.6-2.4.4-3.5-.6-1.4-1.2-1.4-.4-2-1Z" fill="#fff" stroke="#b8c8d8" stroke-width=".7"/><path d="M19 15.5c3-2.4 7-3.4 11-3.2" fill="none" stroke="#e9f0f6" stroke-width="1.4" stroke-linecap="round"/><g stroke="#8ea9c1" stroke-width=".8" stroke-linecap="round"><path d="M52 12v6M49.4 13.5l5.2 3M49.4 16.5l5.2-3"/><path d="M7 40v4.4M5.1 41.1l3.8 2.2M5.1 43.3l3.8-2.2"/></g><path d="M10 50c4-3 9-3.4 14-1.6 4-2 10-2 15 .6 4-1.4 8-1 11 1 .4 1.6-1 2-2 2H12c-1.6 0-2.4-.8-2-2Z" fill="#fff" stroke="#c9d6e2" stroke-width=".6"/>`,
-  fall: `<g transform="translate(13 11) rotate(-24) scale(.85)"><path d="M0-10l1.5 3.4 3-1.3-.75 3.4 3.4.55-2.25 2.45 2.65 2.05-3.6.75.55 3.2-2.8-1.7L0 6.2l-1.3-2.4-2.8 1.7.55-3.2-3.6-.75 2.65-2.05-2.25-2.45 3.4-.55-.75-3.4 3 1.3z" fill="#c9832e"/><path d="M0 6v5" stroke="#7a4a22" stroke-width=".8"/></g><g transform="translate(46 9) rotate(30) scale(.5)"><path d="M0-10l1.5 3.4 3-1.3-.75 3.4 3.4.55-2.25 2.45 2.65 2.05-3.6.75.55 3.2-2.8-1.7L0 6.2l-1.3-2.4-2.8 1.7.55-3.2-3.6-.75 2.65-2.05-2.25-2.45 3.4-.55-.75-3.4 3 1.3z" fill="#a8452a"/></g><g transform="translate(9 49)"><ellipse cx="0" cy="1.5" rx="2.6" ry="3.2" fill="#b07a3c"/><path d="M-3 -1h6c0-2-1.4-3-3-3s-3 1-3 3Z" fill="#6e4a26"/><path d="M0-4v-1.6" stroke="#6e4a26" stroke-width=".8"/></g>`,
-  spring: `<g transform="translate(60 0) scale(-1 1)"><path d="M47 56c-1-6 0-11 3-15M47 56c-3-5-7-8-11-9M50 41c2-3 5-5 7-5" fill="none" stroke="#5f8f4e" stroke-width="1.2" stroke-linecap="round"/><path d="M49 49c3-2 6-2 7 0-2 2-5 2-7 0ZM41 52c-2-3-5-3-7-2 1 2 4 3 7 2Z" fill="#79a865"/><g fill="#e79bb8"><circle cx="50.5" cy="38" r="2.2"/><circle cx="54" cy="40.5" r="2.2"/><circle cx="52.8" cy="44.4" r="2.2"/><circle cx="48.6" cy="44.4" r="2.2"/><circle cx="47.4" cy="40.5" r="2.2"/></g><circle cx="50.7" cy="41.6" r="1.6" fill="#f3d27a"/><g fill="#f2bcd0"><circle cx="35" cy="45.5" r="1.7"/><circle cx="37.6" cy="47.4" r="1.7"/><circle cx="36.6" cy="50.4" r="1.7"/><circle cx="33.4" cy="50.4" r="1.7"/><circle cx="32.4" cy="47.4" r="1.7"/></g><circle cx="35" cy="48.2" r="1.2" fill="#f3d27a"/><g fill="#e79bb8"><circle cx="11" cy="12" r="1.5"/><circle cx="13.3" cy="13.6" r="1.5"/><circle cx="12.4" cy="16.2" r="1.5"/><circle cx="9.6" cy="16.2" r="1.5"/><circle cx="8.7" cy="13.6" r="1.5"/></g><circle cx="11" cy="14.4" r="1" fill="#f3d27a"/><path d="M57 34c-1.4-.6-2.6-.2-3 .8 1.2.6 2.4.4 3-.8Z" fill="#79a865"/></g>`,
-  summer: `<defs><radialGradient id="sgl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#f6d77c" stop-opacity=".85"/><stop offset=".55" stop-color="#f3c55a" stop-opacity=".35"/><stop offset="1" stop-color="#f3c55a" stop-opacity="0"/></radialGradient></defs><circle cx="30" cy="30" r="29" fill="url(#sgl)"/><g stroke="#e0a93a" stroke-width="1.3" stroke-linecap="round" opacity=".75"><path d="M30 2v5M30 53v5M2 30h5M53 30h5M10 10l3.5 3.5M46.5 46.5 50 50M10 50l3.5-3.5M46.5 13.5 50 10"/></g>`,
-};
+// A painted half-wreath (pen and watercolour, like the mascots) cradles the
+// logo; the mark itself stays untouched in front of it.
+const WREATH_V = 1;
 
 // Pages where people need to concentrate: no motion at all.
 const FOCUS_ROUTES = [
@@ -164,13 +160,13 @@ function paintThemeSwitch(siteSeason) {
 function paintLogo(season) {
   const brand = document.querySelector(".sidebar .brand");
   if (!brand) return;
-  brand.querySelector(".season-logo-deco")?.remove();
+  brand.querySelectorAll(".season-logo-deco").forEach((n) => n.remove());
   if (!season) return;
   const deco = document.createElement("span");
   deco.className = `season-logo-deco season-logo-deco--${season}`;
   deco.setAttribute("aria-hidden", "true");
-  deco.innerHTML = `<svg viewBox="0 0 60 60" width="60" height="60">${LOGO_DECO[season]}</svg>`;
-  brand.appendChild(deco);
+  deco.innerHTML = `<img src="/beta/suite-theme/${season}-wreath.webp?v=${WREATH_V}" alt="" width="240" height="190" decoding="async">`;
+  (brand.querySelector(".brand-mark") || brand).appendChild(deco);
 }
 
 function paintCorner(season) {

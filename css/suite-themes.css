@@ -50,13 +50,14 @@ html[data-suite-theme] .page-kicker { color: var(--season-accent); }
 .season-canvas--local { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; }
 html[data-suite-theme] .app-shell { position: relative; z-index: 1; }
 
-/* Logo: snow cap, a resting leaf, flowers growing, or a summer glow. */
-html[data-suite-theme] .sidebar .brand { position: relative; }
-html[data-suite-theme] .brand-mark { position: relative; z-index: 1; overflow: visible; }
-.season-logo-deco { position: absolute; left: 7px; top: 7px; z-index: 2; width: 60px; height: 60px; pointer-events: none; }
-.season-logo-deco svg { display: block; overflow: visible; }
-.season-logo-deco--summer { z-index: 0; }
-.season-logo-deco--winter svg, .season-logo-deco--spring svg, .season-logo-deco--fall svg { filter: drop-shadow(0 1px 1px rgba(15, 23, 42, .12)); }
+/* Logo: a painted half-wreath of the season's leaves or blossoms cradles the
+   mark (behind it, so the logo itself is unchanged). */
+html[data-suite-theme] .sidebar .brand { gap: 19px; }
+html[data-suite-theme] .brand-mark { position: relative; isolation: isolate; overflow: visible; }
+html[data-suite-theme] .brand-mark img { position: relative; z-index: 1; }
+.season-logo-deco { position: absolute; left: 50%; bottom: -12px; z-index: 0; width: 66px; transform: translateX(-50%); pointer-events: none; }
+.season-logo-deco img { display: block; width: 100%; height: auto; }
+.season-logo-deco--winter { width: 68px; bottom: -13px; }
 
 /* The season's mascot, standing in the sidebar's bottom corner. It gives up
    its space first when the menu needs the height. */
