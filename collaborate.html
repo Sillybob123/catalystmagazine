@@ -171,6 +171,14 @@
         background: #fff; font: 400 16px/1.4 var(--sans); color: var(--ink);
         transition: border-color .2s, box-shadow .2s;
       }
+      /* Our own chevron, inset like the text, instead of the browser's arrow at the edge. */
+      .cl-field select {
+        -webkit-appearance: none; appearance: none; cursor: pointer; padding-right: 48px;
+        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 18px center / 14px 14px;
+      }
+      .cl-field select:invalid { color: var(--faint); }   /* "Choose a role…" reads as a placeholder */
+      .cl-field select option { color: var(--ink); }
+      .cl-field select::-ms-expand { display: none; }
       .cl-field textarea { min-height: 140px; resize: vertical; font-family: var(--serif); font-size: 17px; line-height: 1.55; }
       .cl-field input::placeholder, .cl-field textarea::placeholder { color: var(--faint); }
       .cl-field input:focus, .cl-field select:focus, .cl-field textarea:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 4px rgba(15,23,42,.08); }
