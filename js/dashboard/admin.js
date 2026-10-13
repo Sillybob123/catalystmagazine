@@ -188,8 +188,8 @@ function renderRow(a, editors, ctx, reload) {
     : status === "published" && live ? `<a class="btn btn-secondary btn-sm" href="${escAttr(live)}" target="_blank" rel="noopener">View live</a>`
     : `<button class="btn btn-secondary btn-sm" type="button" data-action="edit-details">Edit</button>`;
   const menu = [
+    `<button type="button" role="menuitem" data-action="edit-details">Edit details</button>`,
     `<button type="button" role="menuitem" data-action="view">Open in the review editor</button>`,
-    status !== "draft" && status !== "rejected" ? `<button type="button" role="menuitem" data-action="edit-details">Edit details</button>` : "",
     status === "approved" ? `<button type="button" role="menuitem" data-action="final-review">Open the final-review page</button>` : "",
     status === "approved" ? `<button type="button" role="menuitem" data-action="copy-link">Copy the writer's review link</button>` : "",
     status === "published" && live ? `<a role="menuitem" href="${escAttr(live)}" target="_blank" rel="noopener">View on the site</a>` : "",
@@ -201,7 +201,7 @@ function renderRow(a, editors, ctx, reload) {
   tr.innerHTML = `
     <span class="ar-thumb${cover ? "" : " is-empty"}" aria-hidden="true">${cover ? `<img src="${escAttr(cover)}" alt="" loading="lazy" decoding="async">` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>`}</span>
     <div class="ar-main">
-      <button type="button" class="ar-title" data-action="view" title="Open in the review editor">${esc(a.title || "Untitled")}</button>
+      <button type="button" class="ar-title" data-action="edit-details" title="Edit details">${esc(a.title || "Untitled")}</button>
       <div class="ar-meta">
         <span class="ar-chip">${esc(formatStoryCategory(a.category))}</span>
         <span>${esc(book && a.bookAuthor ? `${a.authorName || "Unknown"} on ${a.bookAuthor}` : (a.authorName || "Unknown"))}</span>
@@ -1192,6 +1192,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     { v: "Op-Ed", l: "Op-Ed" }, { v: "News", l: "News" }, { v: "Science", l: "Science" }, { v: "book-review", l: "Book review" },
   ];
   body.innerHTML = `
+    <div class="sd-col sd-col--main">
     ${isBookReview ? `
     <section class="sd-group">
       <h4 class="sd-sec">The book</h4>
@@ -1254,6 +1255,30 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     </section>
 
     <section class="sd-group">
+      <h4 class="sd-sec">Summary</h4>
+      <div class="field">
+        <label class="label" for="sd-dek">${isBookReview ? "One-sentence pitch" : "Dek"} <span class="sd-opt">the line under the headline, on the article and on its card</span></label>
+        <textarea class="textarea sd-dek" id="sd-dek" rows="3" maxlength="400" placeholder="${isBookReview ? "What makes this book worth reading, in one line." : "One or two sentences that make people want to read it."}">${esc(story.dek || story.excerpt || "")}</textarea>
+        <span class="sd-count" id="sd-dek-count"></span>
+      </div>
+    </section>
+
+    <section class="sd-group sd-group--body">
+      <div class="sd-body-head">
+        <h4 class="sd-sec">${isBookReview ? "The review" : "Article"}</h4>
+        <div class="sd-seg" role="tablist" aria-label="Edit the text as">
+          <button type="button" role="tab" data-bodymode="visual" aria-selected="true">Text</button>
+          <button type="button" role="tab" data-bodymode="html" aria-selected="false">HTML</button>
+        </div>
+      </div>
+      <p class="sd-body-note">Fix typos and wording right in the text below. Use HTML for links, images or layout.</p>
+      <div class="sd-visual" id="sd-visual" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Article text"></div>
+      <textarea class="textarea sd-html" id="sd-body" rows="18" aria-label="Article HTML" hidden>${esc(story.body || story.content || story.reviewText || "")}</textarea>
+    </section>
+    </div>
+
+    <div class="sd-col sd-col--side">
+    <section class="sd-group">
       <h4 class="sd-sec">Cover</h4>
       <div class="sd-cover">
         <div class="sd-cover-frame" id="sd-cover-preview"></div>
@@ -1289,20 +1314,34 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       </div>
     </section>
 
-    <section class="sd-group">
-      <h4 class="sd-sec">Summary</h4>
-      <div class="field">
-        <label class="label" for="sd-dek">${isBookReview ? "One-sentence pitch" : "Dek"} <span class="sd-opt">shown under the headline</span></label>
-        <textarea class="textarea" id="sd-dek" rows="3" placeholder="${isBookReview ? "What makes this book worth reading, in one line." : "One or two sentences that make people want to read it."}">${esc(story.dek || story.excerpt || "")}</textarea>
-      </div>
-      <details class="sd-advanced">
-        <summary>Edit the body HTML <span class="sd-opt">for corrections after publishing</span></summary>
-        <textarea class="textarea" id="sd-body" rows="12" aria-label="Body HTML">${esc(story.body || story.content || story.reviewText || "")}</textarea>
-      </details>
-    </section>
-
     <p class="sd-created">Created ${createdAtISO ? esc(fmtDate(createdAtISO)) : "—"}${story.editedByAdminName ? ` · last edited by ${esc(story.editedByAdminName)}` : ""}</p>
+    </div>
     <p id="sd-msg" class="sd-msg" role="alert"></p>`;
+
+  // Article body: edit the text directly (visual) or the HTML. #sd-body is
+  // the source of truth that save and preview read, kept in sync both ways.
+  const visual = body.querySelector("#sd-visual");
+  const html = body.querySelector("#sd-body");
+  visual.innerHTML = html.value;
+  visual.addEventListener("input", () => { html.value = visual.innerHTML; });
+  html.addEventListener("input", () => { visual.innerHTML = html.value; });
+  body.querySelectorAll("[data-bodymode]").forEach((b) => b.addEventListener("click", () => {
+    const toHtml = b.dataset.bodymode === "html";
+    if (toHtml) html.value = visual.innerHTML; else visual.innerHTML = html.value;
+    visual.hidden = toHtml; html.hidden = !toHtml;
+    body.querySelectorAll("[data-bodymode]").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+  }));
+  // Paste as plain text in the visual editor, so pasted styling doesn't leak in.
+  visual.addEventListener("paste", (ev) => {
+    const t = ev.clipboardData?.getData("text/plain");
+    if (t == null) return;
+    ev.preventDefault();
+    document.execCommand("insertText", false, t);
+  });
+  const dekEl = body.querySelector("#sd-dek");
+  const dekCount = body.querySelector("#sd-dek-count");
+  const countDek = () => { const n = dekEl.value.length; dekCount.textContent = `${n} characters${n > 220 ? " · a bit long for a card" : ""}`; dekCount.classList.toggle("is-long", n > 220); };
+  dekEl.addEventListener("input", countDek); countDek();
 
   const authorsMount = body.querySelector("#sd-authors");
   function renderAuthorRows() {
