@@ -1187,172 +1187,131 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
   ];
 
   const body = el("div", { class: "sd-form" });
+  const CATS = [
+    { v: "Feature", l: "Feature" }, { v: "Profile", l: "Profile" }, { v: "Interview", l: "Interview" },
+    { v: "Op-Ed", l: "Op-Ed" }, { v: "News", l: "News" }, { v: "Science", l: "Science" }, { v: "book-review", l: "Book review" },
+  ];
   body.innerHTML = `
-    <h4 class="sd-sec">${isBookReview ? "The book" : "Basics"}</h4>
     ${isBookReview ? `
-      <!-- Book-review-only header. Title is renamed "Book title", and the
-           reviewer's name lives in the Authors block further down. -->
-      <div class="field" style="padding:14px 14px 12px;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2,rgba(122,31,43,.04));margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--accent,#7a1f2b);">Book details</span>
-        </div>
-        <div class="grid grid-2" style="gap:12px;">
-          <div class="field" style="margin:0;">
-            <label class="label">Book title</label>
-            <input class="input" id="sd-book-title" value="${escAttr(initialBookTitle)}" placeholder="e.g. Astrophysics for People in a Hurry">
-          </div>
-          <div class="field" style="margin:0;">
-            <label class="label">Book author</label>
-            <input class="input" id="sd-book-author" value="${escAttr(initialBookAuthor)}" placeholder="e.g. Neil deGrasse Tyson">
-          </div>
-        </div>
-        <div class="grid grid-2" style="gap:12px;margin-top:10px;">
-          <div class="field" style="margin:0;">
-            <label class="label">ISBN</label>
-            <input class="input" id="sd-book-isbn" value="${escAttr(initialIsbn)}" placeholder="optional — fills the cover automatically" inputmode="numeric" pattern="[0-9Xx\\- ]*" maxlength="32">
-            <div class="hint">Helps the public page show the right Open Library cover.</div>
-          </div>
-          <div class="field" style="margin:0;">
-            <label class="label" for="sd-book-rating-input">Rating</label>
-            <div class="brw-rating-slider" id="sd-book-rating-slider" data-value="0" role="group" aria-label="Rating, on a 0 to 5 scale">
-              <div class="brw-rating-slider-track" aria-hidden="true">
-                <input type="range" class="brw-rating-slider-input" id="sd-book-rating-input"
-                       min="0" max="5" step="0.1" value="0" aria-label="Slide to set rating">
-                <div class="brw-rating-slider-stars">
-                  <div class="brw-rating-slider-stars-base"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
-                  <div class="brw-rating-slider-stars-fill"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
-                </div>
-              </div>
-              <div class="brw-rating-slider-value">— None —</div>
-            </div>
-            <span class="hint brw-rating-slider-flavor">Drag to set a rating from 0 to 5. Optional.</span>
-            <input type="hidden" id="sd-book-rating" value="${escAttr(initialRating)}">
-          </div>
-        </div>
-        <div class="field" style="margin:10px 0 0;">
-          <label class="label">Shelf (discipline)</label>
+    <section class="sd-group">
+      <h4 class="sd-sec">The book</h4>
+      <div class="sd-grid">
+        <div class="field"><label class="label" for="sd-book-title">Book title</label><input class="input" id="sd-book-title" value="${escAttr(initialBookTitle)}" placeholder="Astrophysics for People in a Hurry"></div>
+        <div class="field"><label class="label" for="sd-book-author">Book author</label><input class="input" id="sd-book-author" value="${escAttr(initialBookAuthor)}" placeholder="Neil deGrasse Tyson"></div>
+        <div class="field"><label class="label" for="sd-book-isbn">ISBN <span class="sd-opt">fills the cover automatically</span></label><input class="input" id="sd-book-isbn" value="${escAttr(initialIsbn)}" placeholder="Optional" inputmode="numeric" pattern="[0-9Xx\\- ]*" maxlength="32"></div>
+        <div class="field">
+          <label class="label" for="sd-book-genre">Shelf</label>
           <select class="select" id="sd-book-genre">
-            <option value="">— Pick the closest fit —</option>
-            ${SHELVES.map(s => `<option value="${s.v}" ${s.v === initialGenre ? "selected" : ""}>${s.l}</option>`).join("")}
+            <option value="">Pick the closest fit</option>
+            ${SHELVES.map((x) => `<option value="${x.v}" ${x.v === initialGenre ? "selected" : ""}>${x.l}</option>`).join("")}
           </select>
-          <div class="hint">Sorts the review onto the right shelf on /book-reviews.</div>
         </div>
       </div>
-      <!-- Hidden mirror of the title field so the rest of the editor (slug
-           autofill, preview, save patch) keeps working without a parallel
-           code path. We keep sd-title in sync with sd-book-title below. -->
+      <div class="field">
+        <label class="label" for="sd-book-rating-input">Rating</label>
+        <div class="brw-rating-slider" id="sd-book-rating-slider" data-value="0" role="group" aria-label="Rating, on a 0 to 5 scale">
+          <div class="brw-rating-slider-track" aria-hidden="true">
+            <input type="range" class="brw-rating-slider-input" id="sd-book-rating-input" min="0" max="5" step="0.1" value="0" aria-label="Slide to set rating">
+            <div class="brw-rating-slider-stars">
+              <div class="brw-rating-slider-stars-base"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+              <div class="brw-rating-slider-stars-fill"><span>★</span><span>★</span><span>★</span><span>★</span><span>★</span></div>
+            </div>
+          </div>
+          <div class="brw-rating-slider-value">— None —</div>
+        </div>
+        <span class="hint brw-rating-slider-flavor">Drag to set a rating from 0 to 5. Optional.</span>
+        <input type="hidden" id="sd-book-rating" value="${escAttr(initialRating)}">
+      </div>
       <input type="hidden" id="sd-title" value="${escAttr(initialBookTitle)}">
-    ` : `
-      <div class="field">
-        <label class="label">Title</label>
-        <input class="input" id="sd-title" value="${escAttr(story.title || "")}">
-      </div>
-    `}
-    <div class="grid grid-2">
-      <div class="field">
-        <label class="label">Status</label>
-        <select class="select" id="sd-status">
-          ${["draft","pending","reviewing","approved","published","rejected"].map(s =>
-            `<option value="${s}" ${s === (story.status || "draft") ? "selected" : ""}>${esc((AR_STATUS[s] || { label: s }).label)}</option>`).join("")}
-        </select>
-      </div>
-      <div class="field">
-        <label class="label">Category</label>
-        <select class="select" id="sd-category">
-          ${[
-            { v: "Feature",     l: "Feature" },
-            { v: "Profile",     l: "Profile" },
-            { v: "Interview",   l: "Interview" },
-            { v: "Op-Ed",       l: "Op-Ed" },
-            { v: "News",        l: "News" },
-            { v: "Science",     l: "Science" },
-            { v: "book-review", l: "Book Review" },
-          ].map(c =>
-            `<option value="${c.v}" ${categoryKey(c.v) === categoryKey(story.category || "Feature") ? "selected" : ""}>${c.l}</option>`).join("")}
-        </select>
-        <div class="hint">Book Review stories appear on /book-reviews and are hidden from the home page and main Articles index.</div>
-      </div>
-    </div>
-    <div class="grid grid-2">
-      <div class="field">
-        <label class="label">Publish date</label>
-        <input class="input" id="sd-published" type="datetime-local" value="${escAttr(publishedAtISO)}">
-        <div class="hint">Controls the date shown on the article and the publish order.</div>
-      </div>
-      <div class="field">
-        <label class="label">Slug (URL)</label>
-        <input class="input" id="sd-slug" value="${escAttr(story.slug || "")}" placeholder="auto">
-      </div>
-    </div>
+    </section>` : ""}
 
-    <h4 class="sd-sec">People &amp; topics</h4>
-    <div class="field">
-      <label class="label">${isBookReview ? "Reviewer" : "Authors"}</label>
-      <div id="sd-authors"></div>
-      <button class="btn btn-ghost btn-xs" id="sd-add-author" type="button" style="margin-top:6px;">+ Add ${isBookReview ? "reviewer" : "author"}</button>
-      <div class="hint">${isBookReview ? "The Catalyst contributor who wrote this review. Add a second name if it's a joint review." : "Add as many authors as the piece has. The first one is used for bylines that only take a single name."}</div>
-    </div>
-
-    <div class="field">
-      <label class="label">Topics</label>
-      <div id="sd-topics" class="sd-topic-chips" style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${STORY_TOPICS.map(t => {
-          const on = Array.isArray(story.tags) && story.tags.includes(t);
-          return `<button type="button" class="sd-topic-chip${on ? " is-on" : ""}" data-topic="${escAttr(t)}" aria-pressed="${on ? "true" : "false"}"
-            style="padding:6px 14px;border-radius:999px;border:1px solid ${on ? "var(--ink,#0f172a)" : "var(--line,#e6e6e6)"};background:${on ? "var(--ink,#0f172a)" : "var(--surface)"};color:${on ? "var(--surface)" : "var(--ink-2,#475569)"};font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease;">${esc(t)}</button>`;
-        }).join("")}
+    <section class="sd-group">
+      <h4 class="sd-sec">${isBookReview ? "Publishing" : "Story"}</h4>
+      ${isBookReview ? "" : `<div class="field"><label class="label" for="sd-title">Headline</label><input class="input sd-headline" id="sd-title" value="${escAttr(story.title || "")}"></div>`}
+      <div class="sd-grid">
+        <div class="field">
+          <label class="label" for="sd-status">Status</label>
+          <select class="select" id="sd-status">
+            ${["draft","pending","reviewing","approved","published","rejected"].map((x) =>
+              `<option value="${x}" ${x === (story.status || "draft") ? "selected" : ""}>${esc((AR_STATUS[x] || { label: x }).label)}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="sd-category">Section</label>
+          <select class="select" id="sd-category">
+            ${CATS.map((c) => `<option value="${c.v}" ${categoryKey(c.v) === categoryKey(story.category || "Feature") ? "selected" : ""}>${c.l}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="sd-published">Publish date</label>
+          <input class="input" id="sd-published" type="datetime-local" value="${escAttr(publishedAtISO)}">
+        </div>
+        <div class="field">
+          <label class="label" for="sd-slug">Web address</label>
+          <div class="sd-affix"><span>/${isBookReview ? "book-review" : "article"}/</span><input class="input" id="sd-slug" value="${escAttr(story.slug || "")}" placeholder="auto"></div>
+        </div>
       </div>
-      <div class="hint">Topic tags drive the subject filters on the home page and Articles index. Click to add or remove. ${isBookReview ? "(Book reviews are normally filtered by genre, not topics.)" : ""}</div>
-    </div>
+    </section>
 
-    <h4 class="sd-sec">Cover &amp; summary</h4>
-    <div class="field">
-      <label class="label">Cover image</label>
-      <div class="cover-picker">
-        <button type="button" class="btn btn-secondary btn-sm" id="sd-cover-upload-btn">Upload from computer</button>
-        <button type="button" class="btn btn-ghost btn-sm" id="sd-cover-library-btn">Choose from library</button>
-        <input type="file" id="sd-cover-file" accept="image/*" hidden>
+    <section class="sd-group">
+      <h4 class="sd-sec">Cover</h4>
+      <div class="sd-cover">
+        <div class="sd-cover-frame" id="sd-cover-preview"></div>
+        <div class="sd-cover-tools">
+          <button type="button" class="btn btn-secondary btn-sm" id="sd-cover-upload-btn">Upload image</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="sd-cover-library-btn">Choose from library</button>
+          <input type="file" id="sd-cover-file" accept="image/*" hidden>
+        </div>
         <div class="cover-picker-progress" id="sd-cover-progress" hidden>
           <div class="cover-picker-progress-track"><div class="cover-picker-progress-fill" id="sd-cover-progress-fill"></div></div>
           <div class="cover-picker-progress-text" id="sd-cover-progress-text">Uploading…</div>
         </div>
+        <div class="field sd-cover-url"><label class="label" for="sd-cover">Or paste an image link</label><input class="input" id="sd-cover" placeholder="https://…" value="${escAttr(story.coverImage || story.image || "")}"></div>
+        <label class="sd-check"><input type="checkbox" id="sd-light-cover" ${story.lightCover ? "checked" : ""}><span>Bright image: darken it so the headline stays readable</span></label>
       </div>
-      <input class="input" id="sd-cover" placeholder="https://… or upload above" value="${escAttr(story.coverImage || story.image || "")}" style="margin-top:10px;">
-      <div class="hint">Upload an image (auto-converts to WebP), pick from the library, or paste a public URL.</div>
-      <div id="sd-cover-preview" style="margin-top:8px;"></div>
-      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer;font-size:13px;color:var(--ink-2);">
-        <input type="checkbox" id="sd-light-cover" ${story.lightCover ? "checked" : ""} style="width:16px;height:16px;cursor:pointer;">
-        <span>Cover image is bright/white — add dark overlay so the title text is readable</span>
-      </label>
-    </div>
+    </section>
 
-    <div class="field">
-      <label class="label">${isBookReview ? "One-sentence summary" : "Excerpt / dek"}</label>
-      <textarea class="textarea" id="sd-dek" rows="2" ${isBookReview ? 'placeholder="A one-line pitch — what makes this book worth reading. Shows up under the title on the card and at the top of the page."' : ""}>${esc(story.dek || story.excerpt || "")}</textarea>
-      ${isBookReview ? '<div class="hint">Shows up under the title on the review card and at the top of the article.</div>' : ""}
-    </div>
-
-    <details class="sd-advanced">
-      <summary>Advanced: edit the body HTML</summary>
-      <div class="field" style="margin-top:8px;">
-        <label class="label">Body (HTML)</label>
-        <textarea class="textarea" id="sd-body" rows="10" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">${esc(story.body || story.content || story.reviewText || "")}</textarea>
-        <div class="hint">Full rewrite of the article body. Use the review surface for inline edits; this is for post-publish corrections.</div>
+    <section class="sd-group">
+      <h4 class="sd-sec">Byline &amp; topics</h4>
+      <div class="field">
+        <label class="label">${isBookReview ? "Reviewer" : "Authors"}</label>
+        <div id="sd-authors" class="sd-authors"></div>
+        <button class="sd-add" id="sd-add-author" type="button">+ Add ${isBookReview ? "a reviewer" : "an author"}</button>
       </div>
-    </details>
+      <div class="field">
+        <label class="label">Topics <span class="sd-opt">used by the filters on the home page and Articles</span></label>
+        <div id="sd-topics" class="sd-topics">
+          ${STORY_TOPICS.map((t) => {
+            const on = Array.isArray(story.tags) && story.tags.includes(t);
+            return `<button type="button" class="sd-topic-chip${on ? " is-on" : ""}" data-topic="${escAttr(t)}" aria-pressed="${on ? "true" : "false"}">${esc(t)}</button>`;
+          }).join("")}
+        </div>
+      </div>
+    </section>
 
-    <p class="sd-created">Created ${escAttr(createdAtISO ? fmtDate(createdAtISO) : "—")}${story.editedByAdminName ? ` · last edited by ${esc(story.editedByAdminName)}` : ""}</p>
+    <section class="sd-group">
+      <h4 class="sd-sec">Summary</h4>
+      <div class="field">
+        <label class="label" for="sd-dek">${isBookReview ? "One-sentence pitch" : "Dek"} <span class="sd-opt">shown under the headline</span></label>
+        <textarea class="textarea" id="sd-dek" rows="3" placeholder="${isBookReview ? "What makes this book worth reading, in one line." : "One or two sentences that make people want to read it."}">${esc(story.dek || story.excerpt || "")}</textarea>
+      </div>
+      <details class="sd-advanced">
+        <summary>Edit the body HTML <span class="sd-opt">for corrections after publishing</span></summary>
+        <textarea class="textarea" id="sd-body" rows="12" aria-label="Body HTML">${esc(story.body || story.content || story.reviewText || "")}</textarea>
+      </details>
+    </section>
 
-    <div id="sd-msg" class="hint" style="color:var(--danger);"></div>`;
+    <p class="sd-created">Created ${createdAtISO ? esc(fmtDate(createdAtISO)) : "—"}${story.editedByAdminName ? ` · last edited by ${esc(story.editedByAdminName)}` : ""}</p>
+    <p id="sd-msg" class="sd-msg" role="alert"></p>`;
 
   const authorsMount = body.querySelector("#sd-authors");
   function renderAuthorRows() {
     authorsMount.innerHTML = "";
     authors.forEach((a, i) => {
-      const row = el("div", { style: { display: "flex", gap: "8px", marginBottom: "6px" } });
+      const row = el("div", { class: "sd-author" });
       row.innerHTML = `
-        <input class="input" data-idx="${i}" data-k="name" value="${escAttr(a.name || "")}" placeholder="Author name" style="flex:1;">
-        <button class="btn btn-ghost btn-xs" data-remove="${i}" type="button" ${authors.length === 1 ? "disabled" : ""} style="color:var(--danger);">Remove</button>`;
+        <input class="input" data-idx="${i}" data-k="name" value="${escAttr(a.name || "")}" placeholder="Full name" aria-label="Author ${i + 1}">
+        <button class="sd-remove" data-remove="${i}" type="button" ${authors.length === 1 ? "hidden" : ""} aria-label="Remove ${escAttr(a.name || "this author")}">&times;</button>`;
       authorsMount.appendChild(row);
     });
   }
@@ -1381,9 +1340,6 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     chip.addEventListener("click", () => {
       const on = chip.classList.toggle("is-on");
       chip.setAttribute("aria-pressed", on ? "true" : "false");
-      chip.style.background = on ? "var(--ink,#0f172a)" : "var(--surface)";
-      chip.style.color = on ? "var(--surface)" : "var(--ink-2,#475569)";
-      chip.style.borderColor = on ? "var(--ink,#0f172a)" : "var(--line,#e6e6e6)";
     });
   });
 
@@ -1425,10 +1381,14 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
   const coverPreview = body.querySelector("#sd-cover-preview");
   function renderCoverPreview() {
     const url = coverInput.value.trim();
-    if (!url) { coverPreview.innerHTML = ""; return; }
-    coverPreview.innerHTML = `<img src="${escAttr(url)}" alt="" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--hairline);">`;
+    coverPreview.classList.toggle("is-empty", !url);
+    coverPreview.classList.toggle("is-dark", !!body.querySelector("#sd-light-cover")?.checked);
+    coverPreview.innerHTML = url
+      ? `<img src="${escAttr(url)}" alt="Cover preview">`
+      : `<span><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>No cover yet</span>`;
   }
   coverInput.addEventListener("input", renderCoverPreview);
+  body.querySelector("#sd-light-cover")?.addEventListener("change", renderCoverPreview);
   renderCoverPreview();
 
   // Cover upload + library picker — same flow writers get in the compose view.
@@ -1486,6 +1446,8 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     : (story.title || "Untitled story");
   previewBtn.style.marginRight = "auto";
   const m = openModal({ title: modalTitle, body, footer: [previewBtn, cancelBtn, saveBtn], size: "drawer" });
+  const stInfo = AR_STATUS[story.status || "draft"] || AR_STATUS.draft;
+  m.titleEl.innerHTML = `<span class="sd-kicker">${isBookReview ? "Edit book review" : "Edit story"}<span class="ar-status${stInfo.tone ? " is-" + stInfo.tone : ""}">${esc(stInfo.label)}</span></span><span class="sd-head-title">${esc(modalTitle)}</span>`;
   cancelBtn.addEventListener("click", m.close);
 
   previewBtn.addEventListener("click", () => {
