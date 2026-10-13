@@ -14,7 +14,7 @@ import {
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
 import { renderPipeline } from "./pipeline.js?v=tracker-8";
 import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-6";
-import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
+import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js?v=roles-1";
 
 // Shortcuts at the top of Overview, per role: the three or four things that
 // person opens most. Only routes they can reach are listed.

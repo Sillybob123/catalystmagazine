@@ -243,7 +243,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=notify-12"),
+    loader: () => import("./overview.js?v=notify-13"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.

@@ -36,15 +36,27 @@ const READY_LEAD_DAYS = 7; // articles must be done this many days before publis
 const ONE_DAY = 86400000;
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// Personal deadline fields, in workflow order. `step` is the pipeline
-// timeline checkbox that marks the deadline satisfied — checked steps drop
-// off the calendar so it only shows what's still to do.
+// The Story Tracker's checkboxes, in order (pipeline.js TIMELINE_STEPS).
+const TIMELINE_STEPS = [
+  "Topic Proposal Complete",
+  "Interview Scheduled",
+  "Interview Complete",
+  "Article Writing Complete",
+  "Review Complete",
+  "Suggestions Reviewed",
+];
+const INTERVIEW_STEPS = ["Interview Scheduled", "Interview Complete"];
+
+// Personal deadlines, in workflow order. `step` is the tracker checkbox that
+// satisfies it (same mapping as the bot's activity digest); `who` is whose
+// job it is, so the editor never sees the writer's deadlines and vice versa.
+// Interview deadlines only apply to interview pieces.
 const MY_DEADLINE_FIELDS = [
-  { key: "contact",   label: "Contact professor", step: "Contact Professor" },
-  { key: "interview", label: "Conduct interview", step: "Interview Scheduled" },
-  { key: "draft",     label: "Write draft",       step: "Article Writing Complete" },
-  { key: "review",    label: "Editor review",     step: "Review Complete" },
-  { key: "edits",     label: "Review edits",      step: "Edits Addressed" },
+  { key: "contact",   label: "Contact professor", step: "Interview Scheduled",      who: "writer", interview: true },
+  { key: "interview", label: "Conduct interview", step: "Interview Complete",       who: "writer", interview: true },
+  { key: "draft",     label: "Write draft",       step: "Article Writing Complete", who: "writer" },
+  { key: "review",    label: "Editor review",     step: "Review Complete",          who: "editor" },
+  { key: "edits",     label: "Go through edits",  step: "Suggestions Reviewed",     who: "writer" },
 ];
 
 const KIND_META = {
@@ -145,13 +157,50 @@ function readyDate(p)     { const d = parseISO(pubDate(p)); return d ? toISO(add
 function interviewDate(p) { return p.deadlines?.interview || p.interviewDate || null; }
 function isComplete(p)    { return !!p.timeline?.["Suggestions Reviewed"]; }
 function isMine(p, uid)   { return p.authorId === uid || p.editorId === uid; }
+const hasInterview = (p) => p.type === "Interview" && !p.noInterview;
+
+// A step counts as done when it, or any later step, is checked (people skip
+// ticking "Interview Scheduled" once the interview has happened).
+function stepDone(p, step) {
+  const tl = p.timeline || {};
+  const i = TIMELINE_STEPS.indexOf(step);
+  return i < 0 ? !!tl[step] : TIMELINE_STEPS.slice(i).some((s) => tl[s] === true);
+}
+
+// The viewer's roles on a project.
+function rolesOn(p, uid) {
+  const r = [];
+  if (p.authorId === uid) r.push("writer");
+  if (p.editorId === uid) r.push("editor");
+  return r;
+}
+
+// Deadlines that are this viewer's job and still open.
+function myOpenDeadlines(p, uid) {
+  const roles = rolesOn(p, uid);
+  const dl = p.deadlines || {};
+  return MY_DEADLINE_FIELDS.filter((f) => roles.includes(f.who)
+    && !(f.interview && !hasInterview(p))
+    && dl[f.key] && parseISO(dl[f.key])
+    && !stepDone(p, f.step)).map((f) => ({ ...f, date: dl[f.key] }));
+}
+
+// Whose move it is on the story right now, and what they owe (worded for
+// the viewer when given: the editor reads "your feedback").
+function whoseTurn(p, uid) {
+  if (isComplete(p)) return null;
+  if (p.proposalStatus !== "approved") return { who: "admin", what: "approve the pitch" };
+  if (!stepDone(p, "Article Writing Complete")) {
+    if (hasInterview(p) && !stepDone(p, "Interview Complete")) return { who: "writer", what: stepDone(p, "Interview Scheduled") ? "do the interview" : "set up the interview" };
+    return { who: "writer", what: "finish the draft" };
+  }
+  if (!stepDone(p, "Review Complete")) return { who: "editor", what: "review the draft" };
+  return { who: "writer", what: uid && p.editorId === uid ? "go through your feedback" : "go through the editor's feedback" };
+}
 
 function progressPct(p) {
-  const tl = p.timeline;
-  if (!tl) return 0;
-  const vals = Object.values(tl);
-  if (!vals.length) return 0;
-  return Math.round((vals.filter(Boolean).length / vals.length) * 100);
+  const steps = TIMELINE_STEPS.filter((s) => hasInterview(p) || !INTERVIEW_STEPS.includes(s));
+  return Math.round((steps.filter((s) => stepDone(p, s)).length / steps.length) * 100);
 }
 
 // Readiness for the social team: is this article done early enough?
@@ -195,46 +244,53 @@ function stageLabel(p) {
   return "Reviewing feedback";
 }
 
-// The viewer's single next actionable deadline on a project.
-function nextMyDeadline(p) {
-  const today = toISO(todayStart());
-  const dl = p.deadlines || {};
-  const upcoming = [];
-  const past = [];
-  for (const f of MY_DEADLINE_FIELDS) {
-    const v = dl[f.key];
-    if (!v || !parseISO(v)) continue;
-    (v >= today ? upcoming : past).push({ ...f, date: v });
-  }
-  if (upcoming.length) return upcoming.sort((a, b) => a.date.localeCompare(b.date))[0];
-  if (past.length) return past.sort((a, b) => b.date.localeCompare(a.date))[0];
-  return null;
+// The viewer's next open deadline on a project (the earliest; overdue first).
+function nextMyDeadline(p, uid) {
+  return myOpenDeadlines(p, uid).sort((a, b) => a.date.localeCompare(b.date))[0] || null;
 }
 
-// Nudge copy for the personal strip.
-function nudgeFor(p) {
+// Is the story waiting on this viewer right now?
+function isMyTurn(p, uid) {
+  const t = whoseTurn(p);
+  return !!t && rolesOn(p, uid).includes(t.who);
+}
+
+// Nudge copy for the personal strip, written for this viewer's role: the
+// editor is never told to do the writer's work, and someone whose part is
+// done is told who the story is waiting on instead of being told to hurry.
+function nudgeFor(p, uid) {
   const pub = pubDate(p);
   const ready = readyDate(p);
   const r = readiness(p);
-  if (r === "published") return { tone: "good", text: "Published — great work." };
-  if (r === "done") return { tone: "good", text: "Finished — the social team can start working with it. Nice." };
-  if (r === "behind") {
-    const late = Math.abs(daysFromToday(ready));
-    return { tone: "danger", text: `Falling behind: should have been finished ${late}d ago (publishes ${fmtNice(pub)}). If you've made progress, update your tracker — otherwise push the draft over the line now so social can prep posts.` };
-  }
-  if (r === "at-risk") {
+  if (r === "published") return { tone: "good", text: "Published. Great work." };
+  if (r === "done") return { tone: "good", text: "Finished. The social team can start on posts for it." };
+
+  const turn = whoseTurn(p, uid);
+  const mineNow = isMyTurn(p, uid);
+  const other = turn?.who === "editor" ? (p.editorName ? firstName(p.editorName) : "an editor")
+    : turn?.who === "writer" ? (p.authorName ? firstName(p.authorName) : "the writer")
+    : "an admin";
+  const yourJob = mineNow ? turn.what : null;
+
+  if (r === "behind" || r === "at-risk") {
     const left = daysFromToday(ready);
-    return { tone: "warn", text: `${left === 0 ? "Your finish-by date is today" : `Only ${left}d to have this finished`} — articles must be done a week before publishing. Push to finish.` };
+    const when = r === "behind" ? `It should have been finished ${Math.abs(left)}d ago` : left === 0 ? "It should be finished today" : `It should be finished in ${left}d`;
+    const why = `(publishes ${fmtNice(pub)}; stories are done a week ahead so social can prep).`;
+    if (mineNow) return { tone: r === "behind" ? "danger" : "warn", text: `${when} ${why} It's waiting on you to ${yourJob}.` };
+    return { tone: "warn", text: `Your part is done. ${when} ${why} It's waiting on ${other} to ${turn?.what || "finish"}.` };
   }
-  const next = nextMyDeadline(p);
+
+  const next = nextMyDeadline(p, uid);
   if (next) {
     const d = daysFromToday(next.date);
-    if (d !== null && d < 0) return { tone: "danger", text: `"${next.label}" was due ${Math.abs(d)}d ago — wrap it up.` };
-    if (d !== null && d <= 3) return { tone: "warn", text: `"${next.label}" due ${d === 0 ? "today" : `in ${d}d`}.` };
+    if (d !== null && d < 0) return { tone: "danger", text: `"${next.label}" was due ${Math.abs(d)}d ago.` };
+    if (d !== null && d <= 3) return { tone: "warn", text: `"${next.label}" is due ${d === 0 ? "today" : d === 1 ? "tomorrow" : `in ${d}d`}.` };
   }
-  if (pub) return { tone: "ok", text: `On track. Publishes ${fmtNice(pub)} — have it fully finished a week before so social can prep.` };
-  return { tone: "ok", text: "On track. No publish date set yet — propose one so it lands on the calendar." };
+  if (!mineNow && turn) return { tone: "ok", text: `Waiting on ${other} to ${turn.what}${pub ? `. Publishes ${fmtNice(pub)}` : ""}.` };
+  if (pub) return { tone: "ok", text: `On track. Publishes ${fmtNice(pub)}; aim to be finished a week before so social can prep.` };
+  return { tone: "ok", text: "On track. No publish date yet; ask an admin to set one so it shows on the calendar." };
 }
+const firstName = (n) => String(n || "").trim().split(/\s+/)[0];
 
 // ─── Event extraction ─────────────────────────────────────────────────────────
 
@@ -262,16 +318,13 @@ function buildEvents(projects, tasks, assignments, uid, filterMine) {
 
     // Every still-open deadline of the viewer's own projects — not just the
     // next one — so their personal planner shows everything they've got.
+    // Only the deadlines that are the viewer's job (writer or editor) and
+    // still open; checked-off steps drop off.
     if (mine && !done) {
-      const tl = p.timeline || {};
-      const dl = p.deadlines || {};
-      for (const f of MY_DEADLINE_FIELDS) {
-        const v = dl[f.key];
-        if (!v || !parseISO(v)) continue;
-        if (f.step && tl[f.step] === true) continue; // step already checked off
-        // The interview chip above already covers this date — don't double up.
-        if (f.key === "interview" && showInterview && v === iv) continue;
-        push(v, { ...base, kind: "mine", deadlineLabel: f.label });
+      for (const f of myOpenDeadlines(p, uid)) {
+        // The interview chip above already covers this date; don't double up.
+        if (f.key === "interview" && showInterview && f.date === iv) continue;
+        push(f.date, { ...base, kind: "mine", deadlineLabel: f.label });
       }
     }
   }
@@ -730,12 +783,13 @@ function renderProjectDetail(ev) {
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
       <span class="sc-badge" style="background:${m.bg};color:${m.color};">${esc(m.label)}${ev.kind === "mine" && ev.deadlineLabel ? ` · ${esc(ev.deadlineLabel)}` : ""}</span>
       <span class="sc-badge" style="background:${r.bg};color:${r.color};">${esc(r.label)}</span>
-      ${ev.mine ? `<span class="sc-badge" style="background:#ede9fe;color:#5b21b6;">Yours</span>` : ""}
+      ${ev.mine ? `<span class="sc-badge" style="background:#ede9fe;color:#5b21b6;">${esc(rolesOn(p, _ctx.uid).map((r) => r === "editor" ? "You're editing" : "You're writing").join(" · ") || "Yours")}</span>` : ""}
     </div>
     <div style="font-weight:700;font-size:14px;color:var(--ink,#0b1220);">${esc(p.title || "(untitled)")}</div>
     <div style="font-size:12.5px;color:var(--muted,#64748b);margin-top:3px;line-height:1.5;">
       ${esc(p.authorName || "Unassigned")}${p.editorName ? ` · editor: ${esc(p.editorName)}` : ""} · ${esc(stageLabel(p))} · ${progressPct(p)}% done
       ${pub ? `<br>Scheduled publication: <strong>${esc(fmtNice(pub))}</strong> (finished a week before, so social can prep)` : ""}
+      ${ev.mine && !ev.done && whoseTurn(p) ? `<br>${isMyTurn(p, _ctx.uid) ? `<strong>Your move:</strong> ${esc(whoseTurn(p, _ctx.uid).what)}.` : `Waiting on ${esc(whoseTurn(p).who === "editor" ? (p.editorName || "the editor") : whoseTurn(p).who === "writer" ? (p.authorName || "the writer") : "an admin")} to ${esc(whoseTurn(p, _ctx.uid).what)}.`}` : ""}
     </div>
     <div class="sc-bar" style="margin-top:8px;"><div class="sc-bar-fill" style="width:${progressPct(p)}%"></div></div>`;
   return box;
@@ -1050,7 +1104,7 @@ function renderPersonalStrip(state, uid, isSocialRole) {
 
   // Flashing red alert when any of the viewer's stories is falling behind —
   // i.e. its finish-by date (publish − 1 week) has passed and it isn't done.
-  const behind = mine.filter((p) => readiness(p) === "behind");
+  const behind = mine.filter((p) => readiness(p) === "behind" && isMyTurn(p, uid));
   if (behind.length) {
     const titles = behind.map((p) => `"${p.title || "(untitled)"}"`).join(", ");
     const alert = el("div", { class: "sc-alert", role: "alert" });
@@ -1069,9 +1123,9 @@ function renderPersonalStrip(state, uid, isSocialRole) {
   const cards = el("div", { class: "sc-cards" });
   mine.slice(0, 6).forEach((p) => {
     const pct = progressPct(p);
-    const nudge = nudgeFor(p);
-    const next = nextMyDeadline(p);
-    const c = el("div", { class: `sc-pcard${readiness(p) === "behind" ? " behind" : ""}` });
+    const nudge = nudgeFor(p, uid);
+    const next = nextMyDeadline(p, uid);
+    const c = el("div", { class: `sc-pcard${readiness(p) === "behind" && isMyTurn(p, uid) ? " behind" : ""}` });
     c.innerHTML = `
       <div class="sc-pcard-title" title="${esc(p.title || "")}">${esc(p.title || "(untitled)")}</div>
       <div class="sc-pcard-meta">${esc(stageLabel(p))} · ${pct}%${next ? ` · next: ${esc(next.label)} ${esc(fmtNice(next.date))}` : ""}</div>

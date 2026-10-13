@@ -111,6 +111,8 @@ function cancelOut(acts) {
   return list.filter((_, i) => !drop.has(i));
 }
 
+const STEP_ORDER = ["Topic Proposal Complete", "Interview Scheduled", "Interview Complete", "Article Writing Complete", "Review Complete", "Suggestions Reviewed"];
+
 // Behind / on track, against the steps the tracker really uses.
 export function projectHealth(project, now) {
   const deadlines = project.deadlines || {};
@@ -128,7 +130,10 @@ export function projectHealth(project, now) {
   for (const c of checkpoints) {
     if (skipInterview && (c.key === "contact" || c.key === "interview")) continue;
     const ms = Date.parse(deadlines[c.key] || (c.key === "publication" ? project.deadline : "") || "");
-    if (!Number.isFinite(ms) || tl[c.step]) continue;
+    // Done when its step or any later one is checked (people often skip
+    // ticking "Interview Scheduled" once the interview has happened).
+    const later = STEP_ORDER.slice(Math.max(0, STEP_ORDER.indexOf(c.step)));
+    if (!Number.isFinite(ms) || later.some((st) => tl[st])) continue;
     const days = Math.round((ms - now.getTime()) / 86400000);
     if (days < 0) { if (!overdue || days < overdue.days) overdue = { ...c, days }; }
     else if (!upcoming || days < upcoming.days) upcoming = { ...c, days };
