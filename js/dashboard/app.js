@@ -1399,7 +1399,7 @@ function attachGlobalHandlers() {
   // the new view appears underneath the open drawer and they have to tap
   // the scrim to see it.
   sidebar.addEventListener("click", (e) => {
-    const link = e.target.closest(".nav-link");
+    const link = e.target.closest(".nav-link, a.brand");
     if (!link) return;
     if (window.matchMedia("(max-width: 900px)").matches) {
       sidebar.classList.remove("open");

@@ -54,6 +54,11 @@ body { background: var(--surface-2); color: var(--ink); font-size: 14px; line-he
 /* ---------------------------------------------------------------- shell */
 .sidebar { background: var(--surface-3); border-right: 1px solid var(--hairline-2); }
 .brand { padding: 20px 20px 16px; border-bottom: 0; gap: 11px; }
+/* The logo is the way home: a link to Overview. */
+a.brand { color: inherit; text-decoration: none; border-radius: 14px; margin: 4px 6px 0; padding: 16px 14px 16px; transition: background .15s; }
+a.brand:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+a.brand:focus-visible { outline: none; box-shadow: var(--focus); }
+@media (prefers-reduced-motion: reduce) { a.brand { transition: none; } }
 .brand-mark { width: 34px; height: 34px; border-radius: 0; }
 .brand-name { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
 .brand-sub { font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; color: var(--muted); margin-top: 1px; }
