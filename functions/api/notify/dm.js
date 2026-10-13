@@ -96,7 +96,7 @@ export const onRequestPost = async ({ request, env }) => {
       body: message.slice(0, 140),
       actorId: auth.uid,
       actorName: auth.name || auth.email || "",
-      actionHash: "#/directory",
+      actionHash: `#/directory?with=${encodeURIComponent(auth.uid)}`,   // opens this conversation
     });
 
     const stamp = {

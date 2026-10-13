@@ -1,15 +1,19 @@
-// Team directory — everyone on staff with their role, email, and phone,
-// searchable, plus private messaging: click "Message" to open a 1:1 chat
-// thread that lives in Firestore (dm_threads) and emails the recipient a
-// copy of each message (POST /api/notify/dm) so nothing gets missed.
+// Team & messages (#/directory): private messages with teammates and the
+// team directory, in one two-pane view like Messages / Contacts.
+//
+//   Left:  Messages | People, with search. Conversations show unread dots.
+//   Right: the open conversation, or a teammate's card (role, email, phone,
+//          Message / Email / Call). On a phone the panes slide.
+//
+// Messages live in dm_threads/{uidA__uidB} (sorted uids); each one is also
+// emailed to the recipient and drops a bell notification (/api/notify/dm,
+// which links back here with ?with=<sender uid>). "Read" is per person:
+// readAt.<uid> on the thread, which participants may update.
 //
 // Privacy: phone numbers live on users/{uid}.phone and in directory_contacts,
-// both of which are staff-read-only in firestore.rules — nothing here is
-// reachable from the public site or by anonymous visitors.
-//
-// Admins can also add people who don't have dashboard accounts yet (interns,
-// advisors, alumni) as manual entries in directory_contacts, and edit any
-// card's phone number inline.
+// both staff-read-only in firestore.rules. Admins can add people without
+// accounts (directory_contacts) and edit anyone's phone.
+// Styles: css/directory.css (.tm-*).
 
 import { db } from "../firebase-config.js";
 import {
@@ -20,92 +24,455 @@ import {
   limit,
   doc,
   setDoc,
+  updateDoc,
   deleteDoc,
   addDoc,
   onSnapshot,
   arrayUnion,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { el, esc, fmtRelative, openModal, confirmDialog } from "./ui.js";
+import { el, esc, openModal, confirmDialog } from "./ui.js";
 
 const ROLE_META = {
-  admin:              { label: "Administrator",      group: "Leadership",  order: 1, color: "#7c3aed" },
-  editor:             { label: "Editor / Writer",    group: "Editorial",   order: 2, color: "#0f766e" },
-  writer:             { label: "Writer",             group: "Editorial",   order: 3, color: "#0891b2" },
-  newsletter_builder: { label: "Newsletter Builder", group: "Publishing",  order: 4, color: "#b45309" },
-  marketing:          { label: "Marketing",          group: "Publishing",  order: 5, color: "#db2777" },
-  social_media:       { label: "Social Media",       group: "Publishing",  order: 6, color: "#ea580c" },
-  reader:             { label: "Reader",             group: "Community",   order: 7, color: "#64748b" },
+  admin:              { label: "Admin",              group: "Leadership",      order: 1 },
+  editor:             { label: "Editor",             group: "Editors",         order: 2 },
+  writer:             { label: "Writer",             group: "Writers",         order: 3 },
+  social_media:       { label: "Social media",       group: "Social & growth", order: 4 },
+  marketing:          { label: "Marketing",          group: "Social & growth", order: 5 },
+  newsletter_builder: { label: "Newsletter",         group: "Social & growth", order: 6 },
+  reader:             { label: "Reader",             group: "Others",          order: 7 },
+};
+const GROUP_ORDER = ["Leadership", "Editors", "Writers", "Social & growth", "Others"];
+
+const ICON = {
+  search: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  back: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+  send: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  chat: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>',
+  mail: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  phone: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2Z"/></svg>',
+  info: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.6" r=".6" fill="currentColor"/></svg>',
+  plus: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  compose: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
 };
 
-const GROUP_ORDER = ["Leadership", "Editorial", "Publishing", "Community"];
+// ─── Mount ───────────────────────────────────────────────────────────────────
 
 export async function mount(ctx, container) {
-  container.innerHTML = "";
-
-  // Recent conversations — threads the signed-in user is part of, newest
-  // first, so replies are easy to find without hunting through the grid.
-  const convos = el("div", { class: "card" });
-  convos.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">Your messages</div>
-        <div class="card-subtitle">Private conversations with teammates — each message is also emailed to them</div>
-      </div>
-    </div>
-    <div class="card-body" id="dir-convos"><div class="loading-state"><div class="spinner"></div>Loading&hellip;</div></div>`;
-  container.appendChild(convos);
-
-  // Directory grid
+  const me = ctx.user.uid;
   const isAdmin = ctx.role === "admin";
-  const card = el("div", { class: "card", style: { marginTop: "20px" } });
-  card.innerHTML = `
-    <div class="card-header" style="flex-wrap:wrap;gap:12px;align-items:flex-start;">
-      <div style="min-width:240px;flex:1;">
-        <div class="card-title">Team directory</div>
-        <div class="card-subtitle">Everyone on staff — who they are, what they do, and how to reach them. Contact info is visible to staff only.</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:nowrap;flex-shrink:0;">
-        <input id="dir-search" type="search" placeholder="Search the team…" autocomplete="off" aria-label="Search by name, role, email, or phone"
-               style="padding:9px 16px;border:1px solid var(--hairline,#e5e7eb);border-radius:999px;font-size:13px;font-family:inherit;width:clamp(160px,28vw,260px);min-height:38px;background:var(--surface-2,#f8fafc);">
-        ${isAdmin ? `
-          <button type="button" class="btn btn-secondary btn-sm" id="dir-add" style="white-space:nowrap;flex-shrink:0;min-height:38px;display:inline-flex;align-items:center;gap:6px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add person
-          </button>` : ""}
-      </div>
-    </div>
-    <div class="card-body" id="dir-body"><div class="loading-state"><div class="spinner"></div>Loading&hellip;</div></div>`;
-  container.appendChild(card);
+  const startWith = new URLSearchParams((location.hash.split("?")[1] || "")).get("with");
 
-  const state = { people: [], threads: [], unsubThread: null };
+  container.innerHTML = `
+    <div class="tm-page"><div class="tm-shell" id="tm-shell" data-view="list">
+      <aside class="tm-side" aria-label="Messages and people">
+        <div class="tm-side-head">
+          <div class="tm-seg" role="tablist" aria-label="Show">
+            <button type="button" role="tab" id="tm-tab-messages" aria-selected="true" data-tab="messages">Messages<span class="tm-badge" id="tm-unread" hidden></span></button>
+            <button type="button" role="tab" id="tm-tab-people" aria-selected="false" data-tab="people">People</button>
+          </div>
+          <label class="tm-search">${ICON.search}<input type="search" id="tm-q" placeholder="Search" aria-label="Search messages and people" autocomplete="off"></label>
+        </div>
+        <div class="tm-list" id="tm-list" role="tabpanel" aria-labelledby="tm-tab-messages"></div>
+        ${isAdmin ? `<div class="tm-side-foot"><button type="button" class="tm-foot-btn" id="tm-add">${ICON.plus}Add a person without an account</button></div>` : ""}
+      </aside>
+      <section class="tm-main" id="tm-main"></section>
+    </div></div>`;
 
-  const renderGrid = () => renderDirectory(card.querySelector("#dir-body"), ctx, state, card.querySelector("#dir-search").value);
-  const reload = async () => {
+  const shell = container.querySelector("#tm-shell");
+  const listEl = container.querySelector("#tm-list");
+  const mainEl = container.querySelector("#tm-main");
+  const qEl = container.querySelector("#tm-q");
+
+  const state = {
+    people: [], threads: [], tab: "messages", q: "",
+    selected: null,          // { kind: "chat" | "person", id }
+    unsubThreads: null, unsubThread: null, threadsLoaded: false,
+  };
+
+  // ── list (left pane) ──
+  const personById = (id) => state.people.find((p) => p.id === id);
+  const otherIdOf = (t) => (t.participantIds || []).find((id) => id !== me);
+  const personForThread = (t) => {
+    const oid = otherIdOf(t);
+    const o = (t.participants && t.participants[oid]) || {};
+    return personById(oid) || { id: oid, name: o.name || "Teammate", email: o.email || "", role: o.role || "writer", ghost: true };
+  };
+  const isUnread = (t) => t.lastMessage && t.lastMessage.senderId !== me
+    && String(t.readAt?.[me] || "") < String(t.lastMessage.at || t.updatedAt || "");
+
+  function renderTabs() {
+    container.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === state.tab)));
+    listEl.setAttribute("aria-labelledby", `tm-tab-${state.tab}`);
+    const unread = state.threads.filter(isUnread).length;
+    const badge = container.querySelector("#tm-unread");
+    badge.hidden = !unread; badge.textContent = unread;
+  }
+
+  function renderList() {
+    renderTabs();
+    const q = state.q.trim().toLowerCase();
+    if (state.tab === "messages") {
+      if (!state.threadsLoaded) { listEl.innerHTML = `<div class="tm-list-note"><div class="spinner"></div></div>`; return; }
+      const rows = state.threads.map((t) => ({ t, p: personForThread(t) }))
+        .filter(({ t, p }) => !q || String(p.name || "").toLowerCase().includes(q) || String(t.lastMessage?.text || "").toLowerCase().includes(q));
+      if (!rows.length) {
+        listEl.innerHTML = q
+          ? `<div class="tm-list-note">No conversations match “${esc(state.q.trim())}”.</div>`
+          : `<div class="tm-empty-side"><span class="tm-empty-ic">${ICON.chat}</span><p class="tm-empty-title">No messages yet</p><p>Message anyone on the team. They get it here and by email.</p><button type="button" class="btn btn-primary btn-sm" data-goto-people>Find someone</button></div>`;
+        listEl.querySelector("[data-goto-people]")?.addEventListener("click", () => setTab("people"));
+        return;
+      }
+      listEl.innerHTML = `<ul class="tm-rows">${rows.map(({ t, p }) => {
+        const last = t.lastMessage || {};
+        const sel = state.selected?.kind === "chat" && state.selected.id === p.id;
+        const unread = isUnread(t);
+        return `<li><button type="button" class="tm-row${sel ? " is-selected" : ""}${unread ? " is-unread" : ""}" data-chat="${esc(p.id)}" ${sel ? 'aria-current="true"' : ""}>
+          ${avatar(p.name || p.email, "lg")}
+          <span class="tm-row-main">
+            <span class="tm-row-top"><span class="tm-row-name">${esc(p.name || p.email || "Teammate")}</span><time>${esc(fmtListTime(last.at || t.updatedAt))}</time></span>
+            <span class="tm-row-sub">${last.senderId === me ? "You: " : ""}${esc(last.text || "")}</span>
+          </span>
+          ${unread ? `<span class="tm-dot" aria-label="Unread"></span>` : ""}
+        </button></li>`;
+      }).join("")}</ul>`;
+      listEl.querySelectorAll("[data-chat]").forEach((b) => b.addEventListener("click", () => select({ kind: "chat", id: b.dataset.chat })));
+      return;
+    }
+
+    // People
+    const qDigits = q.replace(/\D/g, "");
+    const matches = state.people.filter((p) => {
+      if (!q) return true;
+      const meta = ROLE_META[p.role] || ROLE_META.reader;
+      if ([p.name, p.title, meta.label].some((s) => String(s || "").toLowerCase().includes(q))) return true;
+      if ((p.allEmails || [p.email]).some((e) => String(e || "").toLowerCase().includes(q))) return true;
+      return !!(qDigits && String(p.phone || "").replace(/\D/g, "").includes(qDigits));
+    });
+    if (!matches.length) { listEl.innerHTML = `<div class="tm-list-note">No one matches “${esc(state.q.trim())}”.</div>`; return; }
+    const groups = {};
+    for (const p of matches) (groups[ROLE_META[p.role]?.group || "Others"] ||= []).push(p);
+    listEl.innerHTML = GROUP_ORDER.filter((g) => groups[g]?.length).map((g) => `
+      <div class="tm-group">
+        <h3 class="tm-group-title">${esc(g)}<span>${groups[g].length}</span></h3>
+        <ul class="tm-rows">${groups[g].map((p) => {
+          const sel = state.selected?.kind === "person" && state.selected.id === p.id;
+          return `<li><button type="button" class="tm-row tm-row--person${sel ? " is-selected" : ""}" data-person="${esc(p.id)}" ${sel ? 'aria-current="true"' : ""}>
+            ${avatar(p.name || p.email)}
+            <span class="tm-row-main">
+              <span class="tm-row-name">${esc(p.name || p.email || "Unknown")}${p.id === me ? ` <i>(you)</i>` : ""}</span>
+              <span class="tm-row-sub">${esc(roleLabel(p))}</span>
+            </span>
+          </button></li>`;
+        }).join("")}</ul>
+      </div>`).join("");
+    listEl.querySelectorAll("[data-person]").forEach((b) => b.addEventListener("click", () => select({ kind: "person", id: b.dataset.person })));
+  }
+
+  function setTab(tab) {
+    state.tab = tab;
+    renderList();
+    listEl.scrollTop = 0;
+  }
+
+  // ── right pane ──
+  function closeThread() {
+    if (typeof state.unsubThread === "function") { try { state.unsubThread(); } catch {} }
+    state.unsubThread = null;
+    if (state.onVisible) document.removeEventListener("visibilitychange", state.onVisible);
+    state.onVisible = null;
+  }
+
+  function select(sel, { replace = true } = {}) {
+    closeThread();
+    state.selected = sel;
+    shell.dataset.view = sel ? "detail" : "list";
+    if (replace) {
+      const base = "#/directory" + (sel?.kind === "chat" ? `?with=${encodeURIComponent(sel.id)}` : "");
+      try { history.replaceState(null, "", base); } catch {}
+    }
+    renderList();
+    if (!sel) return renderPlaceholder();
+    const person = personById(sel.id) || (sel.kind === "chat" ? personForThread(state.threads.find((t) => otherIdOf(t) === sel.id) || { participantIds: [me, sel.id] }) : null);
+    if (!person) return renderPlaceholder();
+    if (sel.kind === "chat") renderChat(person); else renderPerson(person);
+  }
+
+  function renderPlaceholder() {
+    mainEl.innerHTML = `
+      <div class="tm-placeholder">
+        <span class="tm-empty-ic">${ICON.chat}</span>
+        <p class="tm-empty-title">${state.threads.length ? "Pick a conversation" : "Talk to the team"}</p>
+        <p>${state.threads.length ? "Or find someone under People to start a new one." : "Find a teammate under People and send them a message. They get it here and by email."}</p>
+        <button type="button" class="btn btn-secondary btn-sm" data-goto-people>${ICON.compose}New message</button>
+      </div>`;
+    mainEl.querySelector("[data-goto-people]").addEventListener("click", () => { setTab("people"); qEl.focus(); });
+  }
+
+  const backBtn = () => `<button type="button" class="tm-back" data-back aria-label="Back">${ICON.back}<span>${state.tab === "people" ? "People" : "Messages"}</span></button>`;
+  const wireBack = () => mainEl.querySelector("[data-back]")?.addEventListener("click", () => select(null));
+
+  // A teammate's card.
+  function renderPerson(p) {
+    const name = p.name || p.email || "Unknown";
+    const isSelf = p.id === me;
+    const phone = String(p.phone || "").trim();
+    const emails = (p.allEmails && p.allEmails.length) ? p.allEmails : (p.email ? [p.email] : []);
+    const canMessage = !isSelf && !p.manual && !p.ghost;
+    mainEl.innerHTML = `
+      <div class="tm-detail-bar">${backBtn()}</div>
+      <div class="tm-card">
+        ${avatar(name, "xl")}
+        <h2 class="tm-card-name">${esc(name)}${isSelf ? ` <i>(you)</i>` : ""}</h2>
+        <p class="tm-card-role">${esc(roleLabel(p))}</p>
+        <div class="tm-actions">
+          ${canMessage ? `<button type="button" class="tm-action" data-msg>${ICON.chat}<span>Message</span></button>` : ""}
+          ${!isSelf && emails[0] ? `<a class="tm-action" href="mailto:${esc(emails[0])}">${ICON.mail}<span>Email</span></a>` : ""}
+          ${!isSelf && phone ? `<a class="tm-action" href="tel:${esc(phone.replace(/[^\d+]/g, ""))}">${ICON.phone}<span>Call</span></a>` : ""}
+        </div>
+        <dl class="tm-facts">
+          ${emails.map((e, i) => `<div><dt>${i ? "Other email" : "Email"}</dt><dd><a href="mailto:${esc(e)}">${esc(e)}</a></dd></div>`).join("")}
+          <div><dt>Phone</dt><dd>${phone ? `<a href="tel:${esc(phone.replace(/[^\d+]/g, ""))}">${esc(fmtPhone(phone))}</a>` : `<span class="tm-muted">Not added</span>`}${isAdmin && !p.manual ? ` <button type="button" class="tm-link" data-edit-phone>${phone ? "Edit" : "Add"}</button>` : ""}</dd></div>
+          <div><dt>Role</dt><dd>${esc(roleLabel(p))}${p.manual ? ` <span class="tm-muted">· no Suite account</span>` : ""}</dd></div>
+        </dl>
+        ${isAdmin && p.manual ? `<button type="button" class="btn btn-secondary btn-sm" data-edit-contact>Edit this entry</button>` : ""}
+        <p class="tm-privacy">Contact details are only visible to signed-in staff.</p>
+      </div>`;
+    wireBack();
+    mainEl.querySelector("[data-msg]")?.addEventListener("click", () => { state.tab = "messages"; select({ kind: "chat", id: p.id }); });
+    mainEl.querySelector("[data-edit-phone]")?.addEventListener("click", () => openPhoneEditor(ctx, state, p));
+    mainEl.querySelector("[data-edit-contact]")?.addEventListener("click", () => openContactEditor(ctx, state, p));
+  }
+
+  // A conversation.
+  function renderChat(person) {
+    const name = person.name || person.email || "Teammate";
+    const first = String(name).split(/\s+/)[0];
+    mainEl.innerHTML = `
+      <header class="tm-chat-head">
+        ${backBtn()}
+        <button type="button" class="tm-chat-who" data-info title="View contact card">
+          ${avatar(name)}
+          <span><b>${esc(name)}</b><small>${esc(roleLabel(person))}</small></span>
+        </button>
+        ${person.ghost ? "" : `<button type="button" class="tm-icon-btn" data-info aria-label="Contact card">${ICON.info}</button>`}
+      </header>
+      <div class="tm-thread" id="tm-thread" tabindex="0" aria-label="Conversation with ${esc(name)}"><div class="tm-list-note"><div class="spinner"></div></div></div>
+      <form class="tm-compose" id="tm-compose">
+        <label class="tm-compose-box">
+          <textarea id="tm-input" rows="1" maxlength="2000" placeholder="Message ${esc(first)}" aria-label="Message ${esc(name)}"></textarea>
+        </label>
+        <button type="submit" class="tm-send" id="tm-send" aria-label="Send" disabled>${ICON.send}</button>
+      </form>
+      <p class="tm-compose-note" id="tm-note">Enter to send · Shift+Enter for a new line · ${esc(first)} also gets it by email</p>`;
+    wireBack();
+    mainEl.querySelectorAll("[data-info]").forEach((b) => b.addEventListener("click", () => { if (!person.ghost) select({ kind: "person", id: person.id }); }));
+
+    const scrollEl = mainEl.querySelector("#tm-thread");
+    const form = mainEl.querySelector("#tm-compose");
+    const input = mainEl.querySelector("#tm-input");
+    const sendBtn = mainEl.querySelector("#tm-send");
+    const noteEl = mainEl.querySelector("#tm-note");
+    if (ctx.isPreviewing || person.ghost) {
+      input.disabled = true;
+      noteEl.textContent = ctx.isPreviewing ? "Messaging is off while you preview another account." : "This person is no longer on the team.";
+    }
+
+    const ref = doc(db, "dm_threads", threadIdFor(me, person.id));
+    let markedAt = "";
+    const markRead = (data) => {
+      const at = data?.lastMessage?.at || data?.updatedAt;
+      if (!data || !at || ctx.isPreviewing || data.lastMessage?.senderId === me) return;
+      if (String(data.readAt?.[me] || "") >= String(at) || markedAt === at) return;
+      markedAt = at;
+      updateDoc(ref, { [`readAt.${me}`]: new Date().toISOString() }).catch(() => {});
+    };
+
+    let lastData = null;
+    state.onVisible = () => { if (document.visibilityState === "visible") markRead(lastData); };
+    document.addEventListener("visibilitychange", state.onVisible);
+    state.unsubThread = onSnapshot(ref, (snap) => {
+      const data = snap.exists() ? snap.data() : null;
+      lastData = data;
+      renderMessages(scrollEl, data, person, me);
+      if (document.visibilityState === "visible") markRead(data);
+    }, (err) => {
+      console.warn("[directory] thread listen failed", err);
+      scrollEl.innerHTML = `<div class="tm-list-note">Couldn't load this conversation. ${esc(err?.message || "")}</div>`;
+    });
+
+    const grow = () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; sendBtn.disabled = !input.value.trim() || input.disabled; };
+    input.addEventListener("input", grow);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
+    });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text || input.disabled) return;
+      sendBtn.disabled = true;
+      input.value = ""; grow();
+      const now = new Date().toISOString();
+      const mine = { name: ctx.profile?.name || ctx.user.email || "", email: ctx.profile?.email || ctx.user.email || "", role: ctx.role || "" };
+      try {
+        await setDoc(ref, {
+          participantIds: [me, person.id].sort(),
+          participants: { [me]: mine, [person.id]: { name: person.name || "", email: person.email || "", role: person.role || "" } },
+          updatedAt: now,
+          lastMessage: { text: text.slice(0, 140), senderId: me, at: now },
+          readAt: { [me]: now },
+          messages: arrayUnion({ senderId: me, senderName: mine.name, text, at: now }),
+        }, { merge: true });
+        noteEl.textContent = "Sending…";
+        // Email copy + bell: best-effort, the chat is the source of truth.
+        try {
+          const res = await ctx.authedFetch("/api/notify/dm", { method: "POST", body: JSON.stringify({ toUserId: person.id, message: text }) });
+          const data = await res.json().catch(() => ({}));
+          noteEl.textContent = res.ok && data.sent ? `Delivered · ${first} also got an email`
+            : res.ok && data.deduped ? "Delivered · email skipped (you wrote them under a minute ago)"
+            : "Delivered here · the email copy didn't go through";
+        } catch { noteEl.textContent = "Delivered here · the email copy didn't go through"; }
+      } catch (err) {
+        console.warn("[directory] send failed", err);
+        input.value = text; grow();
+        noteEl.textContent = `Not sent: ${err?.message || err}`;
+        ctx.toast?.("Message not sent. Try again.", "error");
+      } finally {
+        input.focus();
+      }
+    });
+    setTimeout(() => { if (matchMedia("(min-width: 820px)").matches) input.focus(); }, 0);
+  }
+
+  // ── data ──
+  state.reload = async (keepId) => {
     try {
       state.people = await loadPeople();
-      renderGrid();
     } catch (err) {
       console.warn("[directory] load failed", err);
-      card.querySelector("#dir-body").innerHTML =
-        `<div class="error-state">Could not load the team. ${esc(err?.message || "")}</div>`;
+      listEl.innerHTML = `<div class="tm-list-note">Couldn't load the team. ${esc(err?.message || "")}</div>`;
+      return;
     }
+    renderList();
+    if (keepId && state.selected?.id === keepId) select(state.selected);
   };
-  state.reload = reload;
 
-  card.querySelector("#dir-search").addEventListener("input", renderGrid);
-  if (isAdmin) {
-    card.querySelector("#dir-add").addEventListener("click", () => openContactEditor(ctx, state, null));
-  }
-  await reload();
+  container.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
+  qEl.addEventListener("input", () => { state.q = qEl.value; renderList(); });
+  container.querySelector("#tm-add")?.addEventListener("click", () => openContactEditor(ctx, state, null));
 
-  loadConversations(convos.querySelector("#dir-convos"), ctx, state);
+  await state.reload();
+
+  state.unsubThreads = onSnapshot(query(collection(db, "dm_threads"), where("participantIds", "array-contains", me)), (snap) => {
+    state.threads = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      // Hide conversations with removed team members (see formerTeamOf).
+      .filter((t) => {
+        const oid = otherIdOf(t);
+        const o = (t.participants && t.participants[oid]) || {};
+        return !isFormer({ id: oid, name: o.name, email: o.email });
+      })
+      .sort((a, b) => String(b.lastMessage?.at || b.updatedAt || "").localeCompare(String(a.lastMessage?.at || a.updatedAt || "")));
+    const first = !state.threadsLoaded;
+    state.threadsLoaded = true;
+    renderList();
+    if (first) {
+      if (startWith) select({ kind: "chat", id: startWith }, { replace: false });
+      else if (!state.threads.length) { state.tab = "people"; renderList(); renderPlaceholder(); }
+      else if (matchMedia("(min-width: 820px)").matches) select({ kind: "chat", id: otherIdOf(state.threads[0]) });
+      else renderPlaceholder();
+    }
+  }, (err) => {
+    console.warn("[directory] conversations failed", err);
+    state.threadsLoaded = true;
+    listEl.innerHTML = `<div class="tm-list-note">Couldn't load your messages.</div>`;
+  });
 
   return () => {
-    if (typeof state.unsubThread === "function") {
-      try { state.unsubThread(); } catch {}
-      state.unsubThread = null;
-    }
+    closeThread();
+    if (typeof state.unsubThreads === "function") { try { state.unsubThreads(); } catch {} }
   };
 }
+
+// ─── Rendering helpers ───────────────────────────────────────────────────────
+
+function roleLabel(p) {
+  if (p.title) return p.title;
+  return (ROLE_META[p.role] || ROLE_META.reader).label;
+}
+
+function avatarColor(str) {
+  let h = 0;
+  for (const ch of String(str || "")) h = ch.charCodeAt(0) + ((h << 5) - h);
+  return `hsl(${Math.abs(h) % 360}, 30%, 46%)`;
+}
+function avatar(name, size = "") {
+  return `<span class="tm-av${size ? " tm-av--" + size : ""}" style="--av:${avatarColor(name)}" aria-hidden="true">${esc(getInitials(name))}</span>`;
+}
+
+const dayKey = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+function fmtClock(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+function fmtDay(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const x = new Date(d); x.setHours(0, 0, 0, 0);
+  const diff = Math.round((t - x) / 86400000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  if (diff < 7) return d.toLocaleDateString(undefined, { weekday: "long" });
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", ...(d.getFullYear() !== t.getFullYear() ? { year: "numeric" } : {}) });
+}
+function fmtListTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const day = fmtDay(iso);
+  if (day === "Today") return fmtClock(iso);
+  if (day === "Yesterday") return "Yesterday";
+  const diff = (Date.now() - d.getTime()) / 86400000;
+  if (diff < 7) return d.toLocaleDateString(undefined, { weekday: "short" });
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// Messages, grouped like Messages: a day label when the day changes, bubbles
+// from the same person within five minutes stacked, the time under the last.
+function renderMessages(scrollEl, data, person, me) {
+  const msgs = (Array.isArray(data?.messages) ? data.messages : []).slice().sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  const first = String(person.name || "They").split(/\s+/)[0];
+  if (!msgs.length) {
+    scrollEl.innerHTML = `<div class="tm-thread-empty">${avatar(person.name || person.email, "xl")}<p class="tm-empty-title">${esc(person.name || person.email || "Teammate")}</p><p>${esc(roleLabel(person))}</p><p class="tm-muted">No messages yet. Say hello; ${esc(first)} also gets it by email.</p></div>`;
+    return;
+  }
+  const atBottom = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight < 80;
+  const readByThem = String(data?.readAt?.[person.id] || "");
+  let html = "", prevDay = "", prev = null;
+  msgs.forEach((m, i) => {
+    const mine = m.senderId === me;
+    const day = dayKey(m.at);
+    if (day !== prevDay) { html += `<div class="tm-day"><span>${esc(fmtDay(m.at))}</span></div>`; prev = null; prevDay = day; }
+    const next = msgs[i + 1];
+    const near = (a, b) => a && b && a.senderId === b.senderId && dayKey(a.at) === dayKey(b.at) && Math.abs(new Date(b.at) - new Date(a.at)) < 5 * 60000;
+    const startsGroup = !near(prev, m);
+    const endsGroup = !near(m, next);
+    const isLastMine = mine && !msgs.slice(i + 1).some((x) => x.senderId === me);
+    html += `<div class="tm-msg ${mine ? "is-mine" : "is-theirs"}${startsGroup ? " is-start" : ""}${endsGroup ? " is-end" : ""}">
+      <div class="tm-bubble" title="${esc(fmtDay(m.at) + " " + fmtClock(m.at))}">${esc(m.text || "")}</div>
+      ${endsGroup ? `<span class="tm-time">${esc(fmtClock(m.at))}${isLastMine && readByThem >= String(m.at) ? " · Read" : ""}</span>` : ""}
+    </div>`;
+    prev = m;
+  });
+  scrollEl.innerHTML = html;
+  if (atBottom || !scrollEl.dataset.ready) scrollEl.scrollTop = scrollEl.scrollHeight;
+  scrollEl.dataset.ready = "1";
+}
+
+function threadIdFor(uidA, uidB) {
+  return [uidA, uidB].sort().join("__");
+}
+
+// ─── Team list ───────────────────────────────────────────────────────────────
 
 async function loadPeople() {
   const [snap, contactsSnap] = await Promise.all([
@@ -187,81 +554,6 @@ async function loadPeople() {
   return people;
 }
 
-function renderDirectory(mountEl, ctx, state, search = "") {
-  const q = search.trim().toLowerCase();
-  const qDigits = q.replace(/\D/g, "");
-  const matches = state.people.filter((p) => {
-    if (!q) return true;
-    const meta = ROLE_META[p.role] || ROLE_META.reader;
-    if ([p.name, p.title, meta.label].some((s) => String(s || "").toLowerCase().includes(q))) return true;
-    if ((p.allEmails || [p.email]).some((e) => String(e || "").toLowerCase().includes(q))) return true;
-    if (qDigits && String(p.phone || "").replace(/\D/g, "").includes(qDigits)) return true;
-    return false;
-  });
-
-  if (!matches.length) {
-    mountEl.innerHTML = `<div class="empty-state">No one matches "${esc(search.trim())}".</div>`;
-    return;
-  }
-
-  const groups = {};
-  for (const p of matches) {
-    const g = ROLE_META[p.role]?.group || "Community";
-    (groups[g] = groups[g] || []).push(p);
-  }
-
-  mountEl.innerHTML = "";
-  for (const gName of GROUP_ORDER) {
-    const list = groups[gName];
-    if (!list?.length) continue;
-
-    const section = el("div", { class: "staff-group" });
-    section.innerHTML = `
-      <div class="staff-group-head">
-        <span class="staff-group-title">${esc(gName)}</span>
-        <span class="staff-group-count">${list.length}</span>
-      </div>
-      <div class="staff-grid"></div>`;
-    const grid = section.querySelector(".staff-grid");
-
-    for (const p of list) {
-      const meta = ROLE_META[p.role] || ROLE_META.reader;
-      const roleLabel = p.manual && p.title ? p.title : meta.label;
-      const name = p.name || p.email || "Unknown";
-      const isSelf = p.id === ctx.user.uid;
-      const isAdmin = ctx.role === "admin";
-      const phone = String(p.phone || "").trim();
-      const emailList = (p.allEmails && p.allEmails.length) ? p.allEmails : (p.email ? [p.email] : []);
-      const emailsHtml = emailList.map((em, idx) =>
-        `<div class="staff-email"><a href="mailto:${esc(em)}" style="color:inherit;text-decoration:none;">${esc(em)}</a>${idx > 0 ? ` <span style="font-size:9.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#94a3b8;">alt</span>` : ""}</div>`
-      ).join("");
-      const card = el("div", { class: "staff-card" });
-      card.innerHTML = `
-        <div class="staff-avatar" style="background:${meta.color};">${esc(getInitials(name))}</div>
-        <div class="staff-info" style="min-width:0;">
-          <div class="staff-name">${esc(name)}${isSelf ? ` <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">You</span>` : ""}</div>
-          <div class="staff-role" style="color:${meta.color};">${esc(roleLabel)}</div>
-          ${emailsHtml}
-          ${phone ? `<div class="staff-email"><a href="tel:${esc(phone.replace(/[^\d+]/g, ""))}" style="color:inherit;text-decoration:none;">${esc(fmtPhone(phone))}</a></div>` : ""}
-          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-            ${isSelf || p.manual ? "" : `
-              <button type="button" class="btn btn-secondary btn-xs" data-dm="${esc(p.id)}">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Message
-              </button>`}
-            ${!isSelf && p.email ? `<a class="btn btn-ghost btn-xs" href="mailto:${esc(p.email)}">Email</a>` : ""}
-            ${isAdmin && p.manual ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-contact>Edit</button>` : ""}
-            ${isAdmin && !p.manual ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-phone>${phone ? "Edit phone" : "Add phone"}</button>` : ""}
-          </div>
-        </div>`;
-      const dmBtn = card.querySelector("[data-dm]");
-      if (dmBtn) dmBtn.addEventListener("click", () => openChat(ctx, state, p));
-      card.querySelector("[data-edit-contact]")?.addEventListener("click", () => openContactEditor(ctx, state, p));
-      card.querySelector("[data-edit-phone]")?.addEventListener("click", () => openPhoneEditor(ctx, state, p));
-      grid.appendChild(card);
-    }
-    mountEl.appendChild(section);
-  }
-}
 
 // ─── admin: edit a teammate's phone ─────────────────────────────────────────
 
@@ -272,10 +564,10 @@ function openPhoneEditor(ctx, state, person) {
       Phone for <strong style="color:var(--ink);">${esc(person.name || person.email || "this person")}</strong>.
       Visible to signed-in staff only — never on the public site.
     </div>
-    <label style="display:grid;gap:4px;">
-      <span style="font-weight:600;font-size:13px;">Phone number</span>
+    <label class="field" style="margin:0;">
+      <span class="label">Phone number</span>
       <input id="pe-phone" type="tel" value="${esc(person.phone || "")}" placeholder="+1 (555) 123-4567" autocomplete="off"
-             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+             class="input">
     </label>
     <div id="pe-msg" style="font-size:12.5px;color:var(--danger,#b91c1c);min-height:16px;"></div>`;
 
@@ -293,7 +585,7 @@ function openPhoneEditor(ctx, state, person) {
       await setDoc(doc(db, "users", person.id), { phone }, { merge: true });
       modal.close();
       ctx.toast(phone ? "Phone number saved." : "Phone number removed.", "success");
-      state.reload?.();
+      state.reload?.(person.id);
     } catch (err) {
       form.querySelector("#pe-msg").textContent = err?.message || "Could not save.";
       saveBtn.disabled = false;
@@ -317,34 +609,34 @@ function openContactEditor(ctx, state, contact) {
       ${isEdit ? "Edit this directory entry." : "Add someone to the directory who doesn't have a dashboard account."}
       Contact info is visible to signed-in staff only.
     </div>
-    <label style="display:grid;gap:4px;">
-      <span style="font-weight:600;font-size:13px;">Full name *</span>
+    <label class="field" style="margin:0;">
+      <span class="label">Full name *</span>
       <input id="ce-name" required value="${esc(contact?.name || "")}" autocomplete="off"
-             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+             class="input">
     </label>
-    <label style="display:grid;gap:4px;">
-      <span style="font-weight:600;font-size:13px;">Title / what they do</span>
+    <label class="field" style="margin:0;">
+      <span class="label">Title / what they do</span>
       <input id="ce-title" value="${esc(contact?.title || "")}" placeholder="e.g. Faculty advisor" autocomplete="off"
-             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+             class="input">
     </label>
-    <label style="display:grid;gap:4px;">
-      <span style="font-weight:600;font-size:13px;">Section</span>
-      <select id="ce-role" style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;background:#fff;">
+    <label class="field" style="margin:0;">
+      <span class="label">Section</span>
+      <select id="ce-role" class="select">
         <option value="admin">Leadership</option>
         <option value="writer">Editorial</option>
         <option value="marketing">Publishing</option>
         <option value="reader">Community</option>
       </select>
     </label>
-    <label style="display:grid;gap:4px;">
-      <span style="font-weight:600;font-size:13px;">Email</span>
+    <label class="field" style="margin:0;">
+      <span class="label">Email</span>
       <input id="ce-email" type="email" value="${esc(contact?.email || "")}" autocomplete="off"
-             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+             class="input">
     </label>
-    <label style="display:grid;gap:4px;">
-      <span style="font-weight:600;font-size:13px;">Phone</span>
+    <label class="field" style="margin:0;">
+      <span class="label">Phone</span>
       <input id="ce-phone" type="tel" value="${esc(contact?.phone || "")}" placeholder="+1 (555) 123-4567" autocomplete="off"
-             style="padding:9px 12px;border:1px solid var(--hairline,#e5e7eb);border-radius:8px;font-size:13.5px;font-family:inherit;">
+             class="input">
     </label>
     <div id="ce-msg" style="font-size:12.5px;color:var(--danger,#b91c1c);min-height:16px;"></div>`;
   form.querySelector("#ce-role").value = contact?.role || "writer";
@@ -385,7 +677,7 @@ function openContactEditor(ctx, state, contact) {
       }
       modal.close();
       ctx.toast(isEdit ? "Directory entry updated." : `${data.name} added to the directory.`, "success");
-      state.reload?.();
+      state.reload?.(contact?.id);
     } catch (err) {
       form.querySelector("#ce-msg").textContent = err?.message || "Could not save.";
       saveBtn.disabled = false;
@@ -401,251 +693,12 @@ function openContactEditor(ctx, state, contact) {
       await deleteDoc(doc(db, "directory_contacts", contact.id));
       modal.close();
       ctx.toast("Removed from the directory.", "success");
-      state.reload?.();
+      state.reload?.(contact?.id);
     } catch (err) {
       form.querySelector("#ce-msg").textContent = err?.message || "Could not remove.";
     }
   });
   setTimeout(() => form.querySelector("#ce-name").focus(), 0);
-}
-
-// ─── Conversations list ──────────────────────────────────────────────────────
-
-async function loadConversations(mountEl, ctx, state) {
-  try {
-    const snap = await getDocs(query(
-      collection(db, "dm_threads"),
-      where("participantIds", "array-contains", ctx.user.uid),
-    ));
-    // Sort client-side (array-contains + orderBy would need a composite index).
-    state.threads = snap.docs
-      .map((d) => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
-  } catch (err) {
-    console.warn("[directory] conversations load failed", err);
-    mountEl.innerHTML = `<div class="hint">Could not load your conversations.</div>`;
-    return;
-  }
-
-  // Hide conversations with removed team members (see formerTeamOf).
-  state.threads = state.threads.filter((t) => {
-    const otherId = (t.participantIds || []).find((id) => id !== ctx.user.uid);
-    const other = (t.participants && t.participants[otherId]) || {};
-    return !isFormer({ id: otherId, name: other.name, email: other.email });
-  });
-
-  if (!state.threads.length) {
-    mountEl.innerHTML = `<div class="empty-state">No conversations yet. Find a teammate below and hit <strong>Message</strong> — they'll get it here and by email.</div>`;
-    return;
-  }
-
-  mountEl.innerHTML = "";
-  for (const t of state.threads) {
-    const otherId = (t.participantIds || []).find((id) => id !== ctx.user.uid);
-    const other = (t.participants && t.participants[otherId]) || {};
-    const person = state.people.find((p) => p.id === otherId)
-      || { id: otherId, name: other.name || "Teammate", email: other.email || "", role: other.role || "writer" };
-    const last = t.lastMessage || {};
-    const fromYou = last.senderId === ctx.user.uid;
-    const meta = ROLE_META[person.role] || ROLE_META.reader;
-
-    const row = el("button", {
-      type: "button",
-      style: "display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 12px;border:0;border-top:1px solid var(--hairline,#e5e7eb);background:transparent;cursor:pointer;font:inherit;",
-      onmouseenter: (e) => { e.currentTarget.style.background = "var(--surface-2,#f8fafc)"; },
-      onmouseleave: (e) => { e.currentTarget.style.background = "transparent"; },
-    });
-    row.innerHTML = `
-      <span class="staff-avatar" style="background:${meta.color};width:36px;height:36px;font-size:12px;flex-shrink:0;">${esc(getInitials(person.name || person.email || "?"))}</span>
-      <span style="min-width:0;flex:1;">
-        <span style="display:block;font-weight:600;font-size:13.5px;color:var(--ink);">${esc(person.name || person.email || "Teammate")}</span>
-        <span style="display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fromYou ? "You: " : ""}${esc(last.text || "")}</span>
-      </span>
-      <span style="font-size:11.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;">${esc(fmtRelative(t.updatedAt))}</span>`;
-    row.addEventListener("click", () => openChat(ctx, state, person));
-    mountEl.appendChild(row);
-  }
-}
-
-// ─── 1:1 chat ────────────────────────────────────────────────────────────────
-
-function threadIdFor(uidA, uidB) {
-  return [uidA, uidB].sort().join("__");
-}
-
-function openChat(ctx, state, person) {
-  // Only one live thread listener at a time.
-  if (typeof state.unsubThread === "function") {
-    try { state.unsubThread(); } catch {}
-    state.unsubThread = null;
-  }
-
-  const meta = ROLE_META[person.role] || ROLE_META.reader;
-  // The modal body has 24px padding all around; pull the whole chat out by
-  // that amount on every side so the header, message panel, and composer all
-  // share one consistent edge (no stray gutter on the right) and the message
-  // panel can span the full modal width.
-  const body = el("div", { class: "dm-chat-body", style: "display:flex;flex-direction:column;" });
-  body.innerHTML = `
-    <div style="display:flex;align-items:center;gap:11px;padding:18px 24px;border-bottom:1px solid var(--hairline,#e5e7eb);">
-      <span class="staff-avatar" style="background:${meta.color};width:40px;height:40px;font-size:13px;flex-shrink:0;">${esc(getInitials(person.name || person.email || "?"))}</span>
-      <span style="min-width:0;">
-        <span style="display:block;font-weight:700;font-size:15px;color:var(--ink);line-height:1.3;">${esc(person.name || person.email || "Teammate")}</span>
-        <span style="display:block;font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(meta.label)}${person.email ? ` · ${esc(person.email)}` : ""}</span>
-      </span>
-    </div>
-    <div id="dm-scroll" style="height:min(48vh,380px);overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2,#f8fafc);">
-      <div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>
-    </div>
-    <form id="dm-form" style="display:flex;gap:10px;align-items:flex-end;padding:14px 20px;border-top:1px solid var(--hairline,#e5e7eb);background:#fff;">
-      <textarea id="dm-input" rows="1" placeholder="Write a message…" maxlength="2000" required
-                style="flex:1;min-width:0;resize:none;max-height:120px;padding:11px 16px;border:1px solid var(--hairline,#e5e7eb);border-radius:22px;font-size:14px;font-family:inherit;line-height:1.45;background:#fff;"></textarea>
-      <button type="submit" class="btn btn-primary" id="dm-send" style="min-height:44px;border-radius:22px;padding:0 20px;flex-shrink:0;">Send</button>
-    </form>
-    <div id="dm-note" style="font-size:11.5px;color:var(--muted);padding:0 20px 18px;min-height:15px;line-height:1.4;">They'll also get an email copy of each message.</div>`;
-
-  const modal = openModal({
-    title: "Private message",
-    body,
-    onClose: () => {
-      if (typeof state.unsubThread === "function") {
-        try { state.unsubThread(); } catch {}
-        state.unsubThread = null;
-      }
-    },
-  });
-  if (!modal) return;
-
-  const scrollEl = body.querySelector("#dm-scroll");
-  const form = body.querySelector("#dm-form");
-  const input = body.querySelector("#dm-input");
-  const sendBtn = body.querySelector("#dm-send");
-  const noteEl = body.querySelector("#dm-note");
-
-  if (ctx.isPreviewing) {
-    input.disabled = true;
-    sendBtn.disabled = true;
-    noteEl.textContent = "Messaging is disabled while previewing another account.";
-  }
-
-  const threadId = threadIdFor(ctx.user.uid, person.id);
-  const ref = doc(db, "dm_threads", threadId);
-
-  const renderMessages = (data) => {
-    const msgs = Array.isArray(data?.messages) ? data.messages : [];
-    if (!msgs.length) {
-      scrollEl.innerHTML = `
-        <div style="margin:auto;text-align:center;color:var(--muted,#6b7280);font-size:13px;line-height:1.5;padding:0 24px;">
-          No messages yet — say hi.<br>${esc(person.name?.split(" ")[0] || "They")} will get an email copy.
-        </div>`;
-      return;
-    }
-    scrollEl.innerHTML = "";
-    for (const m of msgs) {
-      const mine = m.senderId === ctx.user.uid;
-      const row = el("div", {
-        style: `display:flex;flex-direction:column;align-items:${mine ? "flex-end" : "flex-start"};max-width:80%;align-self:${mine ? "flex-end" : "flex-start"};`,
-      });
-      const bubble = el("div", {
-        style: `background:${mine ? "var(--accent,#0f172a)" : "#fff"};` +
-               `color:${mine ? "#fff" : "var(--ink,#111)"};` +
-               `border:${mine ? "none" : "1px solid var(--hairline,#e5e7eb)"};` +
-               `border-radius:${mine ? "16px 16px 5px 16px" : "16px 16px 16px 5px"};padding:9px 13px;` +
-               `box-shadow:0 1px 1.5px rgba(15,23,42,0.06);`,
-      });
-      bubble.innerHTML = `<div style="font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word;">${esc(m.text || "")}</div>`;
-      const time = el("div", {
-        style: `font-size:10.5px;color:var(--muted,#94a3b8);margin:3px 4px 0;`,
-      });
-      time.textContent = fmtRelative(m.at);
-      row.appendChild(bubble);
-      row.appendChild(time);
-      scrollEl.appendChild(row);
-    }
-    scrollEl.scrollTop = scrollEl.scrollHeight;
-  };
-
-  state.unsubThread = onSnapshot(ref, (snap) => {
-    renderMessages(snap.exists() ? snap.data() : null);
-  }, (err) => {
-    console.warn("[directory] thread listen failed", err);
-    scrollEl.innerHTML = `<div class="error-state">Could not load this conversation. ${esc(err?.message || "")}</div>`;
-  });
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text || ctx.isPreviewing) return;
-
-    sendBtn.disabled = true;
-    sendBtn.textContent = "Sending…";
-    const now = new Date().toISOString();
-    const me = {
-      name: ctx.profile?.name || ctx.user.email || "",
-      email: ctx.profile?.email || ctx.user.email || "",
-      role: ctx.role || "",
-    };
-    try {
-      await setDoc(ref, {
-        participantIds: [ctx.user.uid, person.id].sort(),
-        participants: {
-          [ctx.user.uid]: me,
-          [person.id]: { name: person.name || "", email: person.email || "", role: person.role || "" },
-        },
-        updatedAt: now,
-        lastMessage: { text: text.slice(0, 140), senderId: ctx.user.uid, at: now },
-        messages: arrayUnion({
-          senderId: ctx.user.uid,
-          senderName: me.name,
-          text,
-          at: now,
-        }),
-      }, { merge: true });
-
-      input.value = "";
-      input.style.height = "auto";
-      noteEl.textContent = "";
-
-      // Email copy — best-effort; the chat itself is the source of truth.
-      try {
-        const res = await ctx.authedFetch("/api/notify/dm", {
-          method: "POST",
-          body: JSON.stringify({ toUserId: person.id, message: text }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.sent) {
-          noteEl.textContent = `Sent — ${person.name || "they"} also got an email copy.`;
-        } else if (res.ok && data.deduped) {
-          noteEl.textContent = "Sent. (Email copy skipped — you messaged them less than a minute ago.)";
-        } else {
-          noteEl.textContent = "Sent in chat. (Email copy didn't go through.)";
-        }
-      } catch {
-        noteEl.textContent = "Sent in chat. (Email copy didn't go through.)";
-      }
-    } catch (err) {
-      console.warn("[directory] send failed", err);
-      ctx.toast(`Could not send: ${err?.message || err}`, "error");
-    } finally {
-      sendBtn.disabled = false;
-      sendBtn.textContent = "Send";
-      input.focus();
-    }
-  });
-
-  // Enter sends, Shift+Enter for a newline — chat muscle memory.
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      form.requestSubmit();
-    }
-  });
-  // Auto-grow the composer as they type, capped by max-height.
-  input.addEventListener("input", () => {
-    input.style.height = "auto";
-    input.style.height = Math.min(input.scrollHeight, 120) + "px";
-  });
-  setTimeout(() => input.focus(), 0);
 }
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
