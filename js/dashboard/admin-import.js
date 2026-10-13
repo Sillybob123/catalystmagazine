@@ -15,6 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 import { mountCoverPromptTool } from "./cover-prompt.js?v=5";
+import { mountThemePicker } from "./suite-theme.js?v=st-1";
 
 // A user is "recently joined" if their account was created within this many
 // days. The welcome email panel surfaces these at the top so the admin can fire
@@ -34,6 +35,14 @@ const RECENT_JOIN_DAYS = 14;
 // GitHub Settings, Linear, Notion) all use a left rail because the eye
 // can pattern-match icon + name in ~200ms vs reading paragraphs.
 const TOOLS = [
+  {
+    id: "theme",
+    label: "Suite theme",
+    summary: "Give the Editorial Suite a seasonal look (fall, winter, spring or summer), or let it follow the current edition.",
+    danger: null,
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-8 6-14 14-14 0 8-6 14-14 14Z"/><path d="M5 19 13 11"/></svg>`,
+    mount: mountThemePicker,
+  },
   {
     id: "announce",
     label: "Announcements",

@@ -13,6 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
 import { renderPipeline } from "./pipeline.js?v=works-2";
+import { currentTheme, SEASONS } from "./suite-theme.js?v=st-1";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 
 // Shortcuts at the top of Overview, per role: the three or four things that
@@ -33,6 +34,8 @@ function greetingFor(name) {
   return first ? `${part}, ${first}.` : `${part}.`;
 }
 
+let _seasonListener = null;
+
 export async function mount(ctx, container) {
   container.innerHTML = "";
   const isAdmin = ctx.role === "admin";
@@ -52,6 +55,19 @@ export async function mount(ctx, container) {
       ${shortcuts.map(([href, label]) => `<a class="ov-shortcut" href="${href}"><span>${esc(label)}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`).join("")}
     </nav>`;
   container.appendChild(hello);
+  // Seasonal theme (Advanced tools): the edition's photograph behind the
+  // greeting. Follows live changes; the previous mount's listener is dropped.
+  const paintSeason = () => {
+    if (!hello.isConnected) return;
+    const { season } = currentTheme();
+    hello.classList.toggle("has-season", !!season);
+    hello.querySelector(".ov-season-credit")?.remove();
+    if (season) hello.insertAdjacentHTML("beforeend", `<p class="ov-season-credit">${esc(SEASONS[season].place)}</p>`);
+  };
+  if (_seasonListener) window.removeEventListener("suitetheme", _seasonListener);
+  _seasonListener = paintSeason;
+  window.addEventListener("suitetheme", paintSeason);
+  paintSeason();
 
   // Staff announcements — admin-authored banners everyone on staff sees.
   // Loaded best-effort so a failure never blanks the page.

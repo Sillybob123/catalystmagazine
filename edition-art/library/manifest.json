@@ -162,8 +162,8 @@
       "season": "summer",
       "landmark": "Lincoln Memorial and the Reflecting Pool",
       "description": "A summer evening: the memorial glowing at the end of the pool, fireflies over the lawn, circuit-like lines in the water on the cover.",
-      "status": "available",
-      "used_by": null,
+      "status": "used",
+      "used_by": "Editorial Suite summer theme (js/dashboard/suite-theme.js)",
       "hero_is_dark": true,
       "cover_sky_is_dark": false,
       "files": {

@@ -25,6 +25,7 @@ import {
 
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
+import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-1";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -242,7 +243,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=notify-3"),
+    loader: () => import("./overview.js?v=notify-4"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.
@@ -509,7 +510,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=cover-6"),
+    loader: () => import("./admin-import.js?v=theme-1"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -599,6 +600,7 @@ onAuthStateChanged(auth, async (user) => {
   paintUserChip();
   renderSidebar();
   attachGlobalHandlers();
+  try { initSuiteTheme(); } catch (e) { console.warn("[dashboard] theme init failed", e); }   // seasonal theme (Advanced tools)
   window.addEventListener("hashchange", handleRoute);
   handleRoute();
 });
@@ -1126,6 +1128,9 @@ function renderUserMenu() {
   const menu = document.getElementById("user-menu");
   if (!menu) return;
   const isAdmin = state.role === "admin";
+  // Each person can switch the seasonal particles off for themselves.
+  const effects = effectsMenuItemHtml();
+  const seasonItem = effects ? `${effects}<div class="user-menu-divider"></div>` : "";
 
   const header = `
     <div class="user-menu-header">
@@ -1138,6 +1143,7 @@ function renderUserMenu() {
   if (!isAdmin) {
     menu.innerHTML = `
       ${header}
+      ${seasonItem}
       <button type="button" class="user-menu-item" data-action="change-password">
         <span class="user-menu-item-dot"></span>
         <span class="user-menu-item-label">Change password</span>
@@ -1164,6 +1170,7 @@ function renderUserMenu() {
 
     menu.innerHTML = `
       ${header}
+      ${seasonItem}
       <div class="user-menu-section-label">View dashboard as</div>
       ${roleItem("admin", "You")}
       ${PREVIEW_ROLES.map((r) => roleItem(r)).join("")}
@@ -1420,6 +1427,11 @@ function attachGlobalHandlers() {
         await signOut(auth);
         location.href = "/admin/login";
       } catch (err) { toast("Sign-out failed: " + err.message, "error"); }
+      return;
+    }
+    if (action === "toggle-season-effects") {
+      toggleEffectsForMe();
+      renderUserMenu();
       return;
     }
     if (action === "change-password") {

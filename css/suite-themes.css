@@ -1,0 +1,103 @@
+/* ==========================================================================
+   Seasonal themes for the Editorial Suite (js/dashboard/suite-theme.js).
+   <html data-suite-theme="fall|winter|spring|summer">, chosen by an admin in
+   Advanced tools. Quiet by design: a tinted page, the season's accent on a
+   few details, a photo banner on the Overview, and a light particle layer
+   that sits behind the cards (it only shows in the gaps between them).
+   Colours come from the edition palettes in edition-art/editions.json.
+   ========================================================================== */
+
+html[data-suite-theme="fall"] {
+  --season-paper: #f6efe4; --season-paper-2: #efe5d6; --season-accent: #9a5a2e; --season-accent-soft: #f1e2cf; --season-deep: #2a1d14; --season-pos: center 30%;
+}
+html[data-suite-theme="winter"] {
+  --season-paper: #eef2f6; --season-paper-2: #e2e9f0; --season-accent: #3b6e8f; --season-accent-soft: #dde8f0; --season-deep: #0b1526; --season-pos: center 48%;
+}
+html[data-suite-theme="spring"] {
+  --season-paper: #f9f2f2; --season-paper-2: #f1e5e7; --season-accent: #9b3a6e; --season-accent-soft: #f4dfe8; --season-deep: #3a1f33; --season-pos: center 58%;
+}
+html[data-suite-theme="summer"] {
+  --season-paper: #f5f2e6; --season-paper-2: #ebe6d2; --season-accent: #5b6b2e; --season-accent-soft: #e8ead3; --season-deep: #1d2414; --season-pos: center 50%;
+}
+
+/* The page and sidebar take the season's paper; cards stay light. */
+html[data-suite-theme] body { background: var(--season-paper); }
+html[data-suite-theme] .sidebar { background: var(--season-paper-2); }
+html[data-suite-theme] .topbar { background: color-mix(in srgb, var(--season-paper) 88%, transparent); }
+
+/* The season's accent on a few details only. */
+html[data-suite-theme] .nav-link.active { box-shadow: inset 3px 0 0 var(--season-accent); }
+html[data-suite-theme] .ov-date,
+html[data-suite-theme] .page-kicker { color: var(--season-accent); }
+
+/* Particles: behind the app, never catching clicks. */
+.season-canvas { position: fixed; inset: 0; z-index: 0; width: 100vw; height: 100vh; pointer-events: none; }
+html[data-suite-theme] .app-shell { position: relative; z-index: 1; }
+
+/* Top bar chip: which theme / edition is on. */
+.season-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; margin-right: 4px;
+  border-radius: 999px; background: var(--season-accent-soft); color: var(--season-accent);
+  font: 600 12px/1 var(--font); white-space: nowrap;
+}
+@media (max-width: 900px) { .season-chip { display: none; } }
+
+/* Overview: the edition's photograph behind the greeting, fading into the page. */
+.ov-hello.has-season {
+  position: relative; isolation: isolate; overflow: hidden;
+  padding: 38px 32px 32px; border: 1px solid var(--hairline-2); border-radius: var(--radius-lg, 20px);
+  background: var(--season-paper);
+}
+.ov-hello.has-season::before {
+  content: ""; position: absolute; inset: 0; z-index: -2;
+  background: var(--season-art) var(--season-pos, center) / cover no-repeat;
+}
+.ov-hello.has-season::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(90deg, var(--season-paper) 0%, color-mix(in srgb, var(--season-paper) 90%, transparent) 30%, color-mix(in srgb, var(--season-paper) 20%, transparent) 56%, transparent 72%);
+}
+.ov-hello.has-season .ov-shortcut { background: color-mix(in srgb, var(--surface) 84%, transparent); border-color: rgba(255, 255, 255, .55); -webkit-backdrop-filter: blur(8px) saturate(140%); backdrop-filter: blur(8px) saturate(140%); }
+.ov-hello.has-season .ov-shortcut:hover { background: var(--surface); }
+.ov-season-credit {
+  position: absolute; right: 14px; bottom: 10px; margin: 0;
+  font: 500 10.5px/1.3 var(--font); color: rgba(255, 255, 255, .86); text-shadow: 0 1px 6px rgba(0, 0, 0, .45);
+}
+@media (max-width: 1100px) {
+  .ov-hello.has-season::after { background: linear-gradient(180deg, color-mix(in srgb, var(--season-paper) 95%, transparent) 0%, color-mix(in srgb, var(--season-paper) 80%, transparent) 55%, color-mix(in srgb, var(--season-paper) 55%, transparent) 100%); }
+  .ov-season-credit { display: none; }
+}
+@media (max-width: 640px) { .ov-hello.has-season { padding: 22px 18px 18px; } }
+
+/* Focus pages keep the plain paper so nothing competes with the words. */
+html[data-suite-theme] body.wr-focus { background: var(--surface-2); }
+
+@media (prefers-reduced-motion: reduce) { .season-canvas { display: none; } }
+
+/* Theme picker (Advanced tools). */
+.st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 12px; }
+.st-tile {
+  position: relative; display: grid; grid-template-rows: 96px auto; overflow: hidden; padding: 0; text-align: left; cursor: pointer;
+  border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface); color: var(--ink);
+  transition: border-color .15s, box-shadow .15s, transform .15s var(--ease-out);
+}
+.st-tile:hover { border-color: var(--ink-2); transform: translateY(-1px); }
+.st-tile:focus-visible { outline: none; box-shadow: var(--focus); }
+.st-tile[aria-checked="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
+.st-tile-art { background: var(--surface-3) center / cover no-repeat; }
+.st-tile-art--off { display: grid; place-items: center; color: var(--muted-2); font: 600 12px var(--font); background: repeating-linear-gradient(135deg, var(--surface-3) 0 10px, var(--surface-2) 10px 20px); }
+.st-tile-art--auto { display: grid; grid-template-columns: repeat(4, 1fr); }
+.st-tile-art--auto span { background: center / cover no-repeat; }
+.st-tile-text { display: grid; gap: 3px; padding: 11px 13px 13px; }
+.st-tile-text b { font: 600 14px/1.3 var(--font); }
+.st-tile-text span { font-size: 12px; line-height: 1.45; color: var(--muted); }
+.st-tile-check {
+  position: absolute; top: 8px; right: 8px; display: none; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--ink); color: var(--surface);
+}
+.st-tile[aria-checked="true"] .st-tile-check { display: grid; }
+.st-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--hairline-2); }
+.st-switch { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; font-size: 13.5px; color: var(--ink-2); }
+.st-switch input { width: 18px; height: 18px; accent-color: var(--ink); }
+.st-status { font-size: 12.5px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .st-tile { transition: none; } .st-tile:hover { transform: none; } }
