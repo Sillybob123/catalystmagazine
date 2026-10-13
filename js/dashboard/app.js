@@ -25,7 +25,7 @@ import {
 
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
-import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-1";
+import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-3";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -243,7 +243,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=notify-4"),
+    loader: () => import("./overview.js?v=notify-5"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.
@@ -510,7 +510,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-1"),
+    loader: () => import("./admin-import.js?v=theme-2"),
     mountKey: "advanced",
   },
   "#/admin/activity": {

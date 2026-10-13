@@ -13,7 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
 import { renderPipeline } from "./pipeline.js?v=works-2";
-import { currentTheme, SEASONS } from "./suite-theme.js?v=st-1";
+import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-3";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js";
 
 // Shortcuts at the top of Overview, per role: the three or four things that
@@ -57,12 +57,24 @@ export async function mount(ctx, container) {
   container.appendChild(hello);
   // Seasonal theme (Advanced tools): the edition's photograph behind the
   // greeting. Follows live changes; the previous mount's listener is dropped.
+  let detachField = null;
   const paintSeason = () => {
-    if (!hello.isConnected) return;
-    const { season } = currentTheme();
+    if (!hello.isConnected) { detachField?.(); detachField = null; return; }
+    const t = currentTheme();
+    const season = t.season;
     hello.classList.toggle("has-season", !!season);
-    hello.querySelector(".ov-season-credit")?.remove();
-    if (season) hello.insertAdjacentHTML("beforeend", `<p class="ov-season-credit">${esc(SEASONS[season].place)}</p>`);
+    hello.querySelectorAll(".ov-season-credit, .ov-season-mascot, .ov-season-line").forEach((n) => n.remove());
+    detachField?.(); detachField = null;
+    if (!season) return;
+    const s = SEASONS[season];
+    // A warm welcome under the greeting, naming the edition when it follows one.
+    const edition = t.mode === "auto" && t.editionName
+      ? ` The <b>${esc(t.editionName)}</b> edition is in the works.` : "";
+    hello.querySelector(".ov-hello-text")?.insertAdjacentHTML("beforeend", `<p class="ov-season-line">${esc(s.hello)}${edition}</p>`);
+    hello.insertAdjacentHTML("beforeend", `
+      <img class="ov-season-mascot" src="${s.hero}" alt="${esc(s.heroAlt)}" decoding="async">
+      <p class="ov-season-credit">${esc(s.place)}</p>`);
+    detachField = attachHeroField(hello);   // its own flurry over the photo
   };
   if (_seasonListener) window.removeEventListener("suitetheme", _seasonListener);
   _seasonListener = paintSeason;

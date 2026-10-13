@@ -1,52 +1,77 @@
 /* ==========================================================================
    Seasonal themes for the Editorial Suite (js/dashboard/suite-theme.js).
    <html data-suite-theme="fall|winter|spring|summer">, chosen by an admin in
-   Advanced tools. Quiet by design: a tinted page, the season's accent on a
-   few details, a photo banner on the Overview, and a light particle layer
-   that sits behind the cards (it only shows in the gaps between them).
+   Advanced tools. Painted washes on the page, a decorated logo, the season's
+   mascot in the sidebar corner, a welcoming Overview hero, and particles that
+   drift behind the cards (and over the hero photo). Focus pages stay plain.
    Colours come from the edition palettes in edition-art/editions.json.
    ========================================================================== */
 
 html[data-suite-theme="fall"] {
   --season-paper: #f6efe4; --season-paper-2: #efe5d6; --season-accent: #9a5a2e; --season-accent-soft: #f1e2cf; --season-deep: #2a1d14; --season-pos: center 30%;
+  --season-wash-1: rgba(201, 131, 46, .16); --season-wash-2: rgba(143, 63, 35, .11); --season-wash-3: rgba(212, 160, 74, .10);
 }
 html[data-suite-theme="winter"] {
-  --season-paper: #eef2f6; --season-paper-2: #e2e9f0; --season-accent: #3b6e8f; --season-accent-soft: #dde8f0; --season-deep: #0b1526; --season-pos: center 48%;
+  --season-paper: #edf2f7; --season-paper-2: #e1e9f1; --season-accent: #3b6e8f; --season-accent-soft: #dde8f0; --season-deep: #0b1526; --season-pos: center 48%;
+  --season-wash-1: rgba(120, 156, 190, .18); --season-wash-2: rgba(59, 110, 143, .10); --season-wash-3: rgba(255, 255, 255, .55);
 }
 html[data-suite-theme="spring"] {
-  --season-paper: #f9f2f2; --season-paper-2: #f1e5e7; --season-accent: #9b3a6e; --season-accent-soft: #f4dfe8; --season-deep: #3a1f33; --season-pos: center 58%;
+  --season-paper: #f9f2f2; --season-paper-2: #f2e6e8; --season-accent: #9b3a6e; --season-accent-soft: #f4dfe8; --season-deep: #3a1f33; --season-pos: center 58%;
+  --season-wash-1: rgba(231, 155, 184, .18); --season-wash-2: rgba(121, 168, 101, .12); --season-wash-3: rgba(243, 210, 122, .10);
 }
 html[data-suite-theme="summer"] {
-  --season-paper: #f5f2e6; --season-paper-2: #ebe6d2; --season-accent: #5b6b2e; --season-accent-soft: #e8ead3; --season-deep: #1d2414; --season-pos: center 50%;
+  --season-paper: #f6f2e4; --season-paper-2: #ece6cf; --season-accent: #5b6b2e; --season-accent-soft: #e8ead3; --season-deep: #1d2414; --season-pos: center 50%;
+  --season-wash-1: rgba(243, 197, 90, .20); --season-wash-2: rgba(91, 107, 46, .10); --season-wash-3: rgba(239, 160, 120, .10);
 }
 
-/* The page and sidebar take the season's paper; cards stay light. */
-html[data-suite-theme] body { background: var(--season-paper); }
-html[data-suite-theme] .sidebar { background: var(--season-paper-2); }
-html[data-suite-theme] .topbar { background: color-mix(in srgb, var(--season-paper) 88%, transparent); }
+/* Painted washes: soft colour pooling in the corners, like watercolour on paper. */
+html[data-suite-theme] body {
+  background:
+    radial-gradient(900px 520px at 100% 0%, var(--season-wash-1), transparent 62%),
+    radial-gradient(800px 640px at 0% 100%, var(--season-wash-2), transparent 60%),
+    radial-gradient(700px 420px at 55% 105%, var(--season-wash-3), transparent 65%),
+    var(--season-paper);
+  background-attachment: fixed;
+}
+html[data-suite-theme] .sidebar {
+  background:
+    radial-gradient(320px 260px at 0% 100%, var(--season-wash-1), transparent 70%),
+    linear-gradient(180deg, var(--season-paper-2), color-mix(in srgb, var(--season-paper-2) 70%, var(--season-paper)));
+}
+html[data-suite-theme] .topbar { background: color-mix(in srgb, var(--season-paper) 82%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 
-/* The season's accent on a few details only. */
+/* The season's accent on a few details. */
 html[data-suite-theme] .nav-link.active { box-shadow: inset 3px 0 0 var(--season-accent); }
 html[data-suite-theme] .ov-date,
 html[data-suite-theme] .page-kicker { color: var(--season-accent); }
 
-/* Particles: behind the app, never catching clicks. */
+/* Particles: the page field sits behind the app; the hero's sits over its photo. */
 .season-canvas { position: fixed; inset: 0; z-index: 0; width: 100vw; height: 100vh; pointer-events: none; }
+.season-canvas--local { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; }
 html[data-suite-theme] .app-shell { position: relative; z-index: 1; }
 
-/* Top bar chip: which theme / edition is on. */
-.season-chip {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; margin-right: 4px;
-  border-radius: 999px; background: var(--season-accent-soft); color: var(--season-accent);
-  font: 600 12px/1 var(--font); white-space: nowrap;
-}
-@media (max-width: 900px) { .season-chip { display: none; } }
+/* Logo: snow cap, a resting leaf, flowers growing, or a summer glow. */
+html[data-suite-theme] .sidebar .brand { position: relative; }
+html[data-suite-theme] .brand-mark { position: relative; z-index: 1; overflow: visible; }
+.season-logo-deco { position: absolute; left: 7px; top: 7px; z-index: 2; width: 60px; height: 60px; pointer-events: none; }
+.season-logo-deco svg { display: block; overflow: visible; }
+.season-logo-deco--summer { z-index: 0; }
+.season-logo-deco--winter svg, .season-logo-deco--spring svg, .season-logo-deco--fall svg { filter: drop-shadow(0 1px 1px rgba(15, 23, 42, .12)); }
 
-/* Overview: the edition's photograph behind the greeting, fading into the page. */
+/* The season's mascot, standing in the sidebar's bottom corner. It gives up
+   its space first when the menu needs the height. */
+.season-corner { flex: 0 50 168px; min-height: 0; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; padding: 6px 12px 0; pointer-events: none; }
+.season-corner img { display: block; width: auto; height: 100%; max-height: 160px; max-width: 100%; object-fit: contain; object-position: bottom; filter: drop-shadow(0 4px 6px rgba(15, 23, 42, .12)); }
+@media (max-height: 640px) { .season-corner { display: none; } }
+
+/* ---------- Overview: the seasonal hero ---------- */
 .ov-hello.has-season {
   position: relative; isolation: isolate; overflow: hidden;
-  padding: 38px 32px 32px; border: 1px solid var(--hairline-2); border-radius: var(--radius-lg, 20px);
+  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "text mascot" "shortcuts mascot";
+  align-items: start; gap: 18px 24px; min-height: 300px;
+  padding: 40px 0 34px 36px; border: 1px solid var(--hairline-2); border-radius: var(--radius-lg, 20px);
   background: var(--season-paper);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 24px 50px -30px color-mix(in srgb, var(--season-deep) 55%, transparent);
 }
 .ov-hello.has-season::before {
   content: ""; position: absolute; inset: 0; z-index: -2;
@@ -54,37 +79,68 @@ html[data-suite-theme] .app-shell { position: relative; z-index: 1; }
 }
 .ov-hello.has-season::after {
   content: ""; position: absolute; inset: 0; z-index: -1;
-  background:
-    linear-gradient(90deg, var(--season-paper) 0%, color-mix(in srgb, var(--season-paper) 90%, transparent) 30%, color-mix(in srgb, var(--season-paper) 20%, transparent) 56%, transparent 72%);
+  background: linear-gradient(90deg, var(--season-paper) 0%, color-mix(in srgb, var(--season-paper) 92%, transparent) 30%, color-mix(in srgb, var(--season-paper) 25%, transparent) 58%, transparent 74%);
 }
-.ov-hello.has-season .ov-shortcut { background: color-mix(in srgb, var(--surface) 84%, transparent); border-color: rgba(255, 255, 255, .55); -webkit-backdrop-filter: blur(8px) saturate(140%); backdrop-filter: blur(8px) saturate(140%); }
+.ov-hello.has-season > :not(canvas) { position: relative; z-index: 1; }
+.ov-hello.has-season .ov-hello-text { grid-area: text; max-width: 560px; }
+.ov-hello.has-season .ov-greeting { font-size: clamp(30px, 3.2vw, 44px); }
+.ov-season-line { margin: 12px 0 0; max-width: 46ch; font: 500 15.5px/1.55 var(--font); color: var(--ink-2); }
+.ov-season-line b { color: var(--season-accent); font-weight: 600; }
+.ov-hello.has-season .ov-lede { display: none; }
+.ov-hello.has-season .ov-shortcuts { grid-area: shortcuts; align-self: end; display: flex; flex-wrap: wrap; gap: 8px; max-width: 640px; }
+.ov-hello.has-season .ov-shortcut {
+  flex: 0 0 auto; min-width: 0; gap: 10px; padding: 0 14px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent); border-color: rgba(255, 255, 255, .6);
+  -webkit-backdrop-filter: blur(8px) saturate(140%); backdrop-filter: blur(8px) saturate(140%);
+}
 .ov-hello.has-season .ov-shortcut:hover { background: var(--surface); }
-.ov-season-credit {
-  position: absolute; right: 14px; bottom: 10px; margin: 0;
-  font: 500 10.5px/1.3 var(--font); color: rgba(255, 255, 255, .86); text-shadow: 0 1px 6px rgba(0, 0, 0, .45);
+.ov-season-mascot {
+  grid-area: mascot; align-self: end; justify-self: end;
+  width: auto; height: 270px; margin: -10px 28px -34px 0;
+  filter: drop-shadow(0 10px 14px rgba(15, 23, 42, .22));
+  transform-origin: 50% 100%;
+  animation: ov-mascot-in .9s var(--ease-out, cubic-bezier(.22, 1, .36, 1)) both;
+}
+@keyframes ov-mascot-in { from { opacity: 0; transform: translateY(18px) scale(.96); } }
+.ov-hello.has-season .ov-season-credit {
+  position: absolute; left: 36px; bottom: 10px; margin: 0;
+  font: 500 10.5px/1.3 var(--font); color: var(--muted);
+}
+@media (max-width: 1240px) {
+  .ov-hello.has-season .ov-season-mascot { height: 220px; margin-right: 18px; }
 }
 @media (max-width: 1100px) {
-  .ov-hello.has-season::after { background: linear-gradient(180deg, color-mix(in srgb, var(--season-paper) 95%, transparent) 0%, color-mix(in srgb, var(--season-paper) 80%, transparent) 55%, color-mix(in srgb, var(--season-paper) 55%, transparent) 100%); }
-  .ov-season-credit { display: none; }
+  .ov-hello.has-season::after { background: linear-gradient(90deg, var(--season-paper) 0%, color-mix(in srgb, var(--season-paper) 88%, transparent) 50%, color-mix(in srgb, var(--season-paper) 40%, transparent) 100%); }
 }
-@media (max-width: 640px) { .ov-hello.has-season { padding: 22px 18px 18px; } }
+@media (max-width: 760px) {
+  .ov-hello.has-season { grid-template-columns: minmax(0, 1fr); grid-template-areas: "text" "shortcuts"; min-height: 0; padding: 26px 18px 22px; }
+  .ov-hello.has-season::after { background: linear-gradient(180deg, color-mix(in srgb, var(--season-paper) 94%, transparent) 0%, color-mix(in srgb, var(--season-paper) 80%, transparent) 60%, color-mix(in srgb, var(--season-paper) 60%, transparent) 100%); }
+  .ov-hello.has-season .ov-season-mascot { position: absolute; right: 10px; top: 14px; height: 112px; margin: 0; z-index: 0; }
+  .ov-hello.has-season .ov-hello-text { padding-right: 70px; }
+  .ov-hello.has-season .ov-shortcut { flex: 1 1 100%; }
+  .ov-hello.has-season .ov-season-credit { display: none; }
+}
 
 /* Focus pages keep the plain paper so nothing competes with the words. */
 html[data-suite-theme] body.wr-focus { background: var(--surface-2); }
 
-@media (prefers-reduced-motion: reduce) { .season-canvas { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .season-canvas { display: none; }
+  .ov-season-mascot { animation: none; }
+}
 
-/* Theme picker (Advanced tools). */
+/* ---------- Theme picker (Advanced tools) ---------- */
 .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 12px; }
 .st-tile {
-  position: relative; display: grid; grid-template-rows: 96px auto; overflow: hidden; padding: 0; text-align: left; cursor: pointer;
+  position: relative; display: grid; grid-template-rows: 112px auto; overflow: hidden; padding: 0; text-align: left; cursor: pointer;
   border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface); color: var(--ink);
   transition: border-color .15s, box-shadow .15s, transform .15s var(--ease-out);
 }
 .st-tile:hover { border-color: var(--ink-2); transform: translateY(-1px); }
 .st-tile:focus-visible { outline: none; box-shadow: var(--focus); }
 .st-tile[aria-checked="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
-.st-tile-art { background: var(--surface-3) center / cover no-repeat; }
+.st-tile-art { position: relative; background: var(--surface-3) center / cover no-repeat; }
+.st-tile-mascot { position: absolute; right: 6px; bottom: -4px; height: 92px; width: auto; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .3)); }
 .st-tile-art--off { display: grid; place-items: center; color: var(--muted-2); font: 600 12px var(--font); background: repeating-linear-gradient(135deg, var(--surface-3) 0 10px, var(--surface-2) 10px 20px); }
 .st-tile-art--auto { display: grid; grid-template-columns: repeat(4, 1fr); }
 .st-tile-art--auto span { background: center / cover no-repeat; }
@@ -92,7 +148,7 @@ html[data-suite-theme] body.wr-focus { background: var(--surface-2); }
 .st-tile-text b { font: 600 14px/1.3 var(--font); }
 .st-tile-text span { font-size: 12px; line-height: 1.45; color: var(--muted); }
 .st-tile-check {
-  position: absolute; top: 8px; right: 8px; display: none; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+  position: absolute; top: 8px; right: 8px; z-index: 1; display: none; place-items: center; width: 24px; height: 24px; border-radius: 50%;
   background: var(--ink); color: var(--surface);
 }
 .st-tile[aria-checked="true"] .st-tile-check { display: grid; }
