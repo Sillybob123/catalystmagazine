@@ -24,89 +24,116 @@ export async function mount(ctx, container) {
 }
 
 // ====================== ARTICLES ==========================================
-async function mountArticles(ctx, container) {
-  const card = el("div", { class: "card" });
-  card.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">All articles &amp; approvals</div>
-        <div class="card-subtitle">Assign editors, approve, publish, or reject. You have ultimate control.</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <select class="select" id="filter-status" style="min-width:180px;">
-          <option value="all">All statuses</option>
-          <option value="pending">Pending review</option>
-          <option value="reviewing">Reviewing</option>
-          <option value="approved">Approved (ready to publish)</option>
-          <option value="published">Published</option>
-          <option value="rejected">Rejected</option>
-          <option value="draft">Drafts</option>
-        </select>
-      </div>
-    </div>
-    <div class="pipeline-tabs article-type-tabs" role="tablist" aria-label="Choose story type">
-      <button class="pipeline-tab active" type="button" role="tab" aria-selected="true" data-type-filter="stories">
-        Stories <span class="count" data-count="stories">0</span>
-      </button>
-      <button class="pipeline-tab" type="button" role="tab" aria-selected="false" data-type-filter="book-reviews">
-        Book reviews <span class="count" data-count="book-reviews">0</span>
-      </button>
-    </div>
-    <div class="card-body card-body--flush" id="articles-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>`;
-  container.appendChild(card);
+// Articles & approvals (#/admin/articles): every story and book review, on
+// the page (no card). Status filters with counts ("Needs a decision" first),
+// search, and one row per story with the next step as its main button; the
+// rarer actions sit in a ⋯ menu. "Edit" opens a side panel.
+const AR_FILTERS = [
+  { id: "decide",    label: "Needs a decision", match: (s) => s === "pending" || s === "reviewing" },
+  { id: "ready",     label: "Ready to publish", match: (s) => s === "approved" },
+  { id: "published", label: "Published",        match: (s) => s === "published" },
+  { id: "draft",     label: "Drafts",           match: (s) => s === "draft" },
+  { id: "rejected",  label: "Rejected",         match: (s) => s === "rejected" },
+  { id: "all",       label: "All",              match: () => true },
+];
+const AR_STATUS = {
+  draft:     { label: "Draft",            tone: "" },
+  pending:   { label: "Waiting for review", tone: "warn" },
+  reviewing: { label: "In review",        tone: "info" },
+  approved:  { label: "Ready to publish", tone: "good" },
+  published: { label: "Published",        tone: "live" },
+  rejected:  { label: "Rejected",         tone: "bad" },
+};
+let arType = "stories";
+let arFilter = null;
 
-  // Cache editors for assignment dropdown.
+async function mountArticles(ctx, container) {
+  container.innerHTML = `
+    <div class="ar-page">
+      <div class="ar-toolbar">
+        <div class="ar-type" role="tablist" aria-label="Story type">
+          <button type="button" role="tab" data-type="stories">Stories <span data-count="stories">0</span></button>
+          <button type="button" role="tab" data-type="book-reviews">Book reviews <span data-count="book-reviews">0</span></button>
+        </div>
+        <label class="ar-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="ar-q" placeholder="Search titles or authors" aria-label="Search stories" autocomplete="off">
+        </label>
+      </div>
+      <div class="ar-filters" id="ar-filters" role="group" aria-label="Status"></div>
+      <div id="articles-body"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
+    </div>`;
+
   const editors = await getEditors();
-  const filterEl = card.querySelector("#filter-status");
-  const typeTabs = [...card.querySelectorAll("[data-type-filter]")];
-  let typeFilter = "stories";
+  const body = container.querySelector("#articles-body");
+  const qEl = container.querySelector("#ar-q");
+  let rows = [];
+
+  const render = () => {
+    const ofType = rows.filter((r) => (arType === "book-reviews") === isBookReviewStory(r));
+    container.querySelector('[data-count="stories"]').textContent = rows.filter((r) => !isBookReviewStory(r)).length;
+    container.querySelector('[data-count="book-reviews"]').textContent = rows.filter(isBookReviewStory).length;
+    container.querySelectorAll("[data-type]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.type === arType)));
+    const counts = Object.fromEntries(AR_FILTERS.map((f) => [f.id, ofType.filter((r) => f.match(r.status || "draft")).length]));
+    if (!arFilter) arFilter = counts.decide ? "decide" : counts.ready ? "ready" : "all";
+    const fEl = container.querySelector("#ar-filters");
+    fEl.innerHTML = AR_FILTERS.map((f) => `<button type="button" data-filter="${f.id}" aria-pressed="${f.id === arFilter}" class="${(f.id === "decide" || f.id === "ready") && counts[f.id] ? "has-items" : ""}">${esc(f.label)}<span>${counts[f.id]}</span></button>`).join("");
+    fEl.querySelectorAll("[data-filter]").forEach((b) => b.addEventListener("click", () => { arFilter = b.dataset.filter; render(); }));
+
+    const f = AR_FILTERS.find((x) => x.id === arFilter) || AR_FILTERS[5];
+    const q = qEl.value.trim().toLowerCase();
+    const list = ofType.filter((r) => f.match(r.status || "draft"))
+      .filter((r) => !q || [r.title, r.authorName, r.bookAuthor, r.editorName].some((x) => String(x || "").toLowerCase().includes(q)));
+    if (!list.length) {
+      body.innerHTML = `<div class="ar-empty">${q ? `Nothing matches “${esc(qEl.value.trim())}”.`
+        : arFilter === "decide" ? "Nothing is waiting for a decision. You're all caught up."
+        : arFilter === "ready" ? "Nothing is ready to publish right now."
+        : "Nothing here."}</div>`;
+      return;
+    }
+    const ul = el("ul", { class: "ar-list" });
+    for (const a of list) ul.appendChild(renderRow(a, editors, ctx, load));
+    body.innerHTML = "";
+    body.appendChild(ul);
+  };
 
   const load = async () => {
-    const body = card.querySelector("#articles-body");
-    body.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading…</div>`;
     try {
       const snap = await getDocs(query(collection(db, "stories"), orderBy("updatedAt", "desc")));
-      const rows = [];
-      snap.forEach((d) => rows.push({ id: d.id, ...d.data() }));
-      const statusFiltered = filterEl.value === "all"
-        ? rows
-        : rows.filter((r) => (r.status || "draft") === filterEl.value);
-      const storyCount = statusFiltered.filter((r) => !isBookReviewStory(r)).length;
-      const bookReviewCount = statusFiltered.filter(isBookReviewStory).length;
-      card.querySelector('[data-count="stories"]').textContent = storyCount;
-      card.querySelector('[data-count="book-reviews"]').textContent = bookReviewCount;
-
-      const filtered = statusFiltered.filter((r) =>
-        typeFilter === "book-reviews" ? isBookReviewStory(r) : !isBookReviewStory(r)
-      );
-
-      if (!filtered.length) {
-        body.innerHTML = `<div class="empty-state">${typeFilter === "book-reviews" ? "No book reviews match this status." : "No regular stories match this status."}</div>`;
-        return;
-      }
-
-      body.innerHTML = "";
-      const list = el("div", { class: "articles-list" });
-      for (const a of filtered) list.appendChild(renderRow(a, editors, ctx, load));
-      body.appendChild(list);
+      rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
     } catch (err) {
       body.innerHTML = `<div class="error-state">${esc(err.message)}</div>`;
     }
   };
 
-  filterEl.addEventListener("change", load);
-  typeTabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      typeFilter = tab.dataset.typeFilter || "stories";
-      typeTabs.forEach((t) => {
-        const active = t === tab;
-        t.classList.toggle("active", active);
-        t.setAttribute("aria-selected", active ? "true" : "false");
-      });
-      load();
+  container.querySelectorAll("[data-type]").forEach((b) => b.addEventListener("click", () => { arType = b.dataset.type; arFilter = null; render(); }));
+  qEl.addEventListener("input", render);
+  load();
+}
+
+// A titled confirm with a plain-language explanation (instead of "Confirm").
+function arAsk({ title, text, confirm, danger = false }) {
+  return new Promise((resolve) => {
+    const body = el("p", { class: "ar-ask" }, text);
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; resolve(v); };
+    const m = openModal({
+      title, body, stack: true,
+      footer: [
+        el("button", { class: "btn btn-secondary", type: "button", onclick: () => { m.close(); finish(false); } }, "Cancel"),
+        el("button", { class: `btn ${danger ? "btn-danger" : "btn-primary"}`, type: "button", onclick: () => { finish(true); m.close(); } }, confirm),
+      ],
+      onClose: () => finish(false),
     });
   });
-  load();
+}
+
+const AR_DOTS = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+
+function liveUrlOf(a) {
+  if (!a.slug) return "";
+  return `/${isBookReviewStory(a) ? "book-review" : "article"}/${encodeURIComponent(a.slug)}`;
 }
 
 function categoryKey(category = "") {
@@ -150,41 +177,75 @@ const STORY_TOPICS = ["AI", "Health", "Medicine", "Biology", "Chemistry",
   "Technology", "Policy"];
 
 function renderRow(a, editors, ctx, reload) {
-  const tr = el("div", { class: "ar-row" });
-  const categoryLabel = esc(formatStoryCategory(a.category));
-  const editorSelect = `<select class="select ar-editor-select" data-action="assign-editor" data-id="${esc(a.id)}">
-      <option value="">— Unassigned —</option>
-      ${editors.map((e) => `<option value="${esc(e.id)}" ${e.id === a.editorId ? "selected" : ""}>${esc(e.name || e.email)}</option>`).join("")}
-    </select>`;
+  const status = a.status || "draft";
+  const st = AR_STATUS[status] || AR_STATUS.draft;
+  const cover = a.coverImage || a.image || "";
+  const live = liveUrlOf(a);
+  const book = isBookReviewStory(a);
+  const primary =
+    status === "pending" || status === "reviewing" ? `<button class="btn btn-primary btn-sm" type="button" data-action="approve" title="Approve and send the writer a final-review link">Approve</button>`
+    : status === "approved" ? `<button class="btn btn-primary btn-sm" type="button" data-action="publish" title="Publish now, without waiting for the writer's final look">Publish now</button>`
+    : status === "published" && live ? `<a class="btn btn-secondary btn-sm" href="${escAttr(live)}" target="_blank" rel="noopener">View live</a>`
+    : `<button class="btn btn-secondary btn-sm" type="button" data-action="edit-details">Edit</button>`;
+  const menu = [
+    `<button type="button" role="menuitem" data-action="view">Open in the review editor</button>`,
+    status !== "draft" && status !== "rejected" ? `<button type="button" role="menuitem" data-action="edit-details">Edit details</button>` : "",
+    status === "approved" ? `<button type="button" role="menuitem" data-action="final-review">Open the final-review page</button>` : "",
+    status === "approved" ? `<button type="button" role="menuitem" data-action="copy-link">Copy the writer's review link</button>` : "",
+    status === "published" && live ? `<a role="menuitem" href="${escAttr(live)}" target="_blank" rel="noopener">View on the site</a>` : "",
+    status !== "rejected" && status !== "published" ? `<button type="button" role="menuitem" data-action="reject" class="is-danger">Reject</button>` : "",
+    `<button type="button" role="menuitem" data-action="delete" class="is-danger">Delete permanently</button>`,
+  ].filter(Boolean).join("");
 
+  const tr = el("li", { class: "ar-row" });
   tr.innerHTML = `
+    <span class="ar-thumb${cover ? "" : " is-empty"}" aria-hidden="true">${cover ? `<img src="${escAttr(cover)}" alt="" loading="lazy" decoding="async">` : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>`}</span>
     <div class="ar-main">
-      <div class="ar-title">${esc(a.title || "Untitled")}</div>
+      <button type="button" class="ar-title" data-action="view" title="Open in the review editor">${esc(a.title || "Untitled")}</button>
       <div class="ar-meta">
-        <span class="category-chip">${categoryLabel}</span>
-        <span class="ar-author">${esc(a.authorName || "Unknown")}</span>
-        <span class="ar-sep">·</span>
-        <span class="ar-time">${fmtRelative(a.updatedAt)}</span>
+        <span class="ar-chip">${esc(formatStoryCategory(a.category))}</span>
+        <span>${esc(book && a.bookAuthor ? `${a.authorName || "Unknown"} on ${a.bookAuthor}` : (a.authorName || "Unknown"))}</span>
+        <span class="ar-dot" aria-hidden="true"></span>
+        <span title="${escAttr(a.updatedAt ? "Last updated " + fmtDate(a.updatedAt) : "")}">${status === "published" && a.publishedAt ? `Published ${esc(fmtDate(typeof a.publishedAt === "string" ? a.publishedAt : (a.publishedAt?.toDate?.() || new Date()).toISOString()))}` : `Updated ${esc(fmtRelative(a.updatedAt))}`}</span>
       </div>
     </div>
-    <div class="ar-side">
-      <div class="ar-status-editor">
-        ${statusPill(a.status)}
-        ${editorSelect}
-      </div>
-      <div class="ar-actions">
-        ${a.status === "approved"
-          ? `<button class="btn btn-ghost btn-xs" data-action="final-review" data-id="${esc(a.id)}" title="Open the final-review page">Open review link</button>
-             <button class="btn btn-accent btn-xs" data-action="publish" data-id="${esc(a.id)}" title="Skip the writer's final review and publish now">Publish now</button>`
-          : (a.status !== "published"
-              ? `<button class="btn btn-accent btn-xs" data-action="approve" data-id="${esc(a.id)}" title="Approve and send to the writer for final review">Approve</button>`
-              : "")}
-        ${a.status !== "rejected" ? `<button class="btn btn-secondary btn-xs" data-action="reject" data-id="${esc(a.id)}">Reject</button>` : ""}
-        <button class="btn btn-ghost btn-xs" data-action="view" data-id="${esc(a.id)}">Review</button>
-        <button class="btn btn-secondary btn-xs" data-action="edit-details" data-id="${esc(a.id)}">Edit</button>
-        <button class="btn btn-ghost btn-xs ar-danger" data-action="delete" data-id="${esc(a.id)}">Delete</button>
+    <div class="ar-state">
+      <span class="ar-status${st.tone ? " is-" + st.tone : ""}">${esc(st.label)}</span>
+      <label class="ar-editor">
+        <span class="sr-only">Editor for ${esc(a.title || "this story")}</span>
+        <select class="select" data-action="assign-editor" data-id="${esc(a.id)}">
+          <option value="">No editor</option>
+          ${editors.map((e) => `<option value="${esc(e.id)}" ${e.id === a.editorId ? "selected" : ""}>${esc(e.name || e.email)}</option>`).join("")}
+        </select>
+      </label>
+    </div>
+    <div class="ar-actions">
+      <button class="ar-link" type="button" data-action="view">Review</button>
+      ${primary}
+      <div class="ar-more">
+        <button class="ar-more-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="More actions for ${escAttr(a.title || "this story")}" data-more>${AR_DOTS}</button>
+        <div class="ar-menu" role="menu" hidden>${menu}</div>
       </div>
     </div>`;
+
+  // ⋯ menu: opens under the button, closes on outside click or Escape.
+  const moreBtn = tr.querySelector("[data-more]");
+  const menuEl = tr.querySelector(".ar-menu");
+  const closeMenu = () => { menuEl.hidden = true; moreBtn.setAttribute("aria-expanded", "false"); document.removeEventListener("click", outside, true); document.removeEventListener("keydown", onKey); };
+  const outside = (e) => { if (!tr.querySelector(".ar-more").contains(e.target)) closeMenu(); };
+  const onKey = (e) => { if (e.key === "Escape") { closeMenu(); moreBtn.focus(); } };
+  moreBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!menuEl.hidden) return closeMenu();
+    document.querySelectorAll(".ar-menu:not([hidden])").forEach((m) => { m.hidden = true; });
+    menuEl.hidden = false; moreBtn.setAttribute("aria-expanded", "true");
+    // Flip upward when there's no room below.
+    menuEl.classList.toggle("is-up", moreBtn.getBoundingClientRect().bottom + menuEl.offsetHeight + 16 > window.innerHeight);
+    menuEl.querySelector("[role=menuitem]")?.focus();
+    document.addEventListener("click", outside, true);
+    document.addEventListener("keydown", onKey);
+  });
+  menuEl.addEventListener("click", () => closeMenu());
 
   tr.addEventListener("change", async (e) => {
     const sel = e.target.closest('[data-action="assign-editor"]');
@@ -212,10 +273,11 @@ function renderRow(a, editors, ctx, reload) {
       // us a shareable final-review URL to send to the writer. Only when the
       // writer (or admin) opens that URL and clicks "Publish now" does the
       // article actually go live.
-      const ok = await confirmDialog(
-        "Approve this article and generate a final-review link to send to the writer? It won't be published until they (or you) click Publish on the review page.",
-        { confirmText: "Approve" }
-      );
+      const ok = await arAsk({
+        title: `Approve “${a.title || "Untitled"}”?`,
+        text: "You'll get a final-review link to send the writer. It stays off the site until they (or you) press Publish on that page.",
+        confirm: "Approve",
+      });
       if (!ok) return;
       try {
         const patch = {
@@ -231,6 +293,12 @@ function renderRow(a, editors, ctx, reload) {
       } catch (err) { ctx.toast("Approve failed: " + err.message, "error"); }
       return;
     }
+    if (action === "copy-link") {
+      const url = `${window.location.origin}/admin/#/final-review?id=${encodeURIComponent(a.id)}`;
+      try { await navigator.clipboard.writeText(url); ctx.toast("Review link copied. Send it to the writer.", "success"); }
+      catch { ctx.toast(url, "info", 8000); }
+      return;
+    }
     if (action === "final-review") {
       location.hash = `#/final-review?id=${encodeURIComponent(a.id)}`;
       return;
@@ -239,10 +307,11 @@ function renderRow(a, editors, ctx, reload) {
       // Admin override: skip the writer's final review and ship now. Useful
       // for tiny corrections or time-critical pieces where the admin has
       // already done a full review.
-      const ok = await confirmDialog(
-        "Publish this article now? It will go live immediately — the writer will not get a chance to approve it first.",
-        { confirmText: "Publish" }
-      );
+      const ok = await arAsk({
+        title: `Publish “${a.title || "Untitled"}” now?`,
+        text: "It goes live on the site right away, without waiting for the writer's final look. The author gets a congratulations email.",
+        confirm: "Publish now",
+      });
       if (!ok) return;
       try {
         const patch = {
@@ -277,7 +346,7 @@ function renderRow(a, editors, ctx, reload) {
       return;
     }
     if (action === "reject") {
-      const ok = await confirmDialog("Reject this article? The writer will see it's been declined.", { confirmText: "Reject", danger: true });
+      const ok = await arAsk({ title: `Reject “${a.title || "Untitled"}”?`, text: "The writer will see it's been declined. You can still edit it or change its status later.", confirm: "Reject", danger: true });
       if (!ok) return;
       try {
         await updateDoc(doc(db, "stories", a.id), {
@@ -291,7 +360,7 @@ function renderRow(a, editors, ctx, reload) {
       } catch (err) { ctx.toast("Failed: " + err.message, "error"); }
     }
     if (action === "delete") {
-      const ok = await confirmDialog("Permanently delete this article? This cannot be undone.", { confirmText: "Delete", danger: true });
+      const ok = await arAsk({ title: `Delete “${a.title || "Untitled"}”?`, text: "This removes the story for good, including from the site if it's published. It can't be undone.", confirm: "Delete permanently", danger: true });
       if (!ok) return;
       try {
         await deleteDoc(doc(db, "stories", a.id));
@@ -1117,8 +1186,9 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     { v: "stem",             l: "Other STEM" },
   ];
 
-  const body = el("div", {});
+  const body = el("div", { class: "sd-form" });
   body.innerHTML = `
+    <h4 class="sd-sec">${isBookReview ? "The book" : "Basics"}</h4>
     ${isBookReview ? `
       <!-- Book-review-only header. Title is renamed "Book title", and the
            reviewer's name lives in the Authors block further down. -->
@@ -1183,7 +1253,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
         <label class="label">Status</label>
         <select class="select" id="sd-status">
           ${["draft","pending","reviewing","approved","published","rejected"].map(s =>
-            `<option value="${s}" ${s === (story.status || "draft") ? "selected" : ""}>${s}</option>`).join("")}
+            `<option value="${s}" ${s === (story.status || "draft") ? "selected" : ""}>${esc((AR_STATUS[s] || { label: s }).label)}</option>`).join("")}
         </select>
       </div>
       <div class="field">
@@ -1215,6 +1285,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       </div>
     </div>
 
+    <h4 class="sd-sec">People &amp; topics</h4>
     <div class="field">
       <label class="label">${isBookReview ? "Reviewer" : "Authors"}</label>
       <div id="sd-authors"></div>
@@ -1228,12 +1299,13 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
         ${STORY_TOPICS.map(t => {
           const on = Array.isArray(story.tags) && story.tags.includes(t);
           return `<button type="button" class="sd-topic-chip${on ? " is-on" : ""}" data-topic="${escAttr(t)}" aria-pressed="${on ? "true" : "false"}"
-            style="padding:6px 14px;border-radius:999px;border:1px solid ${on ? "var(--ink,#0f172a)" : "var(--line,#e6e6e6)"};background:${on ? "var(--ink,#0f172a)" : "#fff"};color:${on ? "#fff" : "var(--ink-2,#475569)"};font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease;">${esc(t)}</button>`;
+            style="padding:6px 14px;border-radius:999px;border:1px solid ${on ? "var(--ink,#0f172a)" : "var(--line,#e6e6e6)"};background:${on ? "var(--ink,#0f172a)" : "var(--surface)"};color:${on ? "var(--surface)" : "var(--ink-2,#475569)"};font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease;">${esc(t)}</button>`;
         }).join("")}
       </div>
       <div class="hint">Topic tags drive the subject filters on the home page and Articles index. Click to add or remove. ${isBookReview ? "(Book reviews are normally filtered by genre, not topics.)" : ""}</div>
     </div>
 
+    <h4 class="sd-sec">Cover &amp; summary</h4>
     <div class="field">
       <label class="label">Cover image</label>
       <div class="cover-picker">
@@ -1260,8 +1332,8 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       ${isBookReview ? '<div class="hint">Shows up under the title on the review card and at the top of the article.</div>' : ""}
     </div>
 
-    <details style="margin-top:12px;">
-      <summary style="cursor:pointer;font-weight:600;color:var(--ink-2);padding:8px 0;">Advanced: edit body HTML</summary>
+    <details class="sd-advanced">
+      <summary>Advanced: edit the body HTML</summary>
       <div class="field" style="margin-top:8px;">
         <label class="label">Body (HTML)</label>
         <textarea class="textarea" id="sd-body" rows="10" style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">${esc(story.body || story.content || story.reviewText || "")}</textarea>
@@ -1269,10 +1341,7 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
       </div>
     </details>
 
-    <div class="field">
-      <label class="label">Created at (read-only)</label>
-      <input class="input" value="${escAttr(createdAtISO || "—")}" disabled>
-    </div>
+    <p class="sd-created">Created ${escAttr(createdAtISO ? fmtDate(createdAtISO) : "—")}${story.editedByAdminName ? ` · last edited by ${esc(story.editedByAdminName)}` : ""}</p>
 
     <div id="sd-msg" class="hint" style="color:var(--danger);"></div>`;
 
@@ -1312,8 +1381,8 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     chip.addEventListener("click", () => {
       const on = chip.classList.toggle("is-on");
       chip.setAttribute("aria-pressed", on ? "true" : "false");
-      chip.style.background = on ? "var(--ink,#0f172a)" : "#fff";
-      chip.style.color = on ? "#fff" : "var(--ink-2,#475569)";
+      chip.style.background = on ? "var(--ink,#0f172a)" : "var(--surface)";
+      chip.style.color = on ? "var(--surface)" : "var(--ink-2,#475569)";
       chip.style.borderColor = on ? "var(--ink,#0f172a)" : "var(--line,#e6e6e6)";
     });
   });
@@ -1406,16 +1475,17 @@ async function openStoryDetailsModal(ctx, storyId, onDone) {
     }
   });
 
-  const saveBtn = el("button", { class: "btn btn-accent" }, "Save changes");
+  const saveBtn = el("button", { class: "btn btn-primary" }, "Save changes");
   const cancelBtn = el("button", { class: "btn btn-secondary" }, "Cancel");
   const previewBtn = el("button", {
     class: "btn btn-ghost",
     title: "Open a full preview of how this article will look when published — with cover, headers, and sections.",
-  }, "Preview as published");
+  }, "Preview");
   const modalTitle = isBookReview
-    ? `Edit book review — ${initialBookTitle || story.title || "Untitled"}`
-    : `Edit story — ${story.title || "Untitled"}`;
-  const m = openModal({ title: modalTitle, body, footer: [cancelBtn, previewBtn, saveBtn] });
+    ? (initialBookTitle || story.title || "Untitled book review")
+    : (story.title || "Untitled story");
+  previewBtn.style.marginRight = "auto";
+  const m = openModal({ title: modalTitle, body, footer: [previewBtn, cancelBtn, saveBtn], size: "drawer" });
   cancelBtn.addEventListener("click", m.close);
 
   previewBtn.addEventListener("click", () => {
@@ -1621,22 +1691,22 @@ function wireAdminRatingSlider(body, initialRating) {
 // push the piece live.
 async function showFinalReviewLinkModal(ctx, storyId, title) {
   const url = `${window.location.origin}/admin/#/final-review?id=${encodeURIComponent(storyId)}`;
-  const body = el("div", {});
+  const body = el("div", { class: "ar-approved" });
   body.innerHTML = `
-    <p style="margin:0 0 10px;">
-      <strong>${esc(title)}</strong> is now approved and staged for final review.
-      It <strong>won't appear on the public site</strong> until someone clicks Publish on the review page below.
-    </p>
-    <p style="margin:0 0 6px;color:var(--muted);">Send this link to the writer so they can approve it as the last step:</p>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <input class="input" id="fr-link-input" readonly value="${escAttr(url)}" style="flex:1;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;">
-      <button class="btn btn-secondary btn-sm" id="fr-link-copy">Copy</button>
+    <div class="ar-approved-head">
+      <span class="ar-approved-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <p><strong>${esc(title)}</strong> is approved. It stays off the site until someone presses Publish on its final-review page.</p>
     </div>
-    <p class="hint" style="margin-top:10px;">You can also open the review page yourself and publish it directly.</p>`;
+    <ol class="ar-steps">
+      <li><b>Send the writer this link</b> so they can take a last look and publish.
+        <div class="ar-copy"><input class="input" id="fr-link-input" readonly value="${escAttr(url)}" aria-label="Final-review link"><button class="btn btn-secondary btn-sm" id="fr-link-copy" type="button">Copy link</button></div>
+      </li>
+      <li><b>Or publish it yourself</b> from the review page, or with <em>Publish now</em> on its row.</li>
+    </ol>`;
 
-  const openBtn = el("button", { class: "btn btn-accent" }, "Open review page");
+  const openBtn = el("button", { class: "btn btn-primary" }, "Open the review page");
   const doneBtn = el("button", { class: "btn btn-secondary" }, "Done");
-  const m = openModal({ title: "Article approved", body, footer: [doneBtn, openBtn] });
+  const m = openModal({ title: "Approved", body, footer: [doneBtn, openBtn] });
   doneBtn.addEventListener("click", m.close);
   openBtn.addEventListener("click", () => {
     m.close();

@@ -473,7 +473,7 @@ const ROUTES = {
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-8"),
+    loader: () => import("./admin.js?v=wd-9"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -501,7 +501,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-8"),
+    loader: () => import("./admin.js?v=wd-9"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -510,7 +510,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-8"),
+    loader: () => import("./admin.js?v=wd-9"),
     mountKey: "images",
   },
   "#/admin/advanced": {
