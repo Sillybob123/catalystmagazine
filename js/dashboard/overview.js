@@ -8,11 +8,14 @@ import {
   orderBy,
   limit,
   getDocs,
+  getDoc,
   deleteDoc,
   doc,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { buildAdminTasks } from "./task-engine.js";
+import { isProjectPublished } from "./publish-sync.js";
 import { el, esc, fmtRelative, statusPill, confirmDialog } from "./ui.js";
-import { renderPipeline } from "./pipeline.js?v=tracker-8";
 import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-6";
 import { renderScheduleCalendar, isStaff } from "./schedule-calendar.js?v=roles-1";
 
@@ -49,7 +52,7 @@ export async function mount(ctx, container) {
     <div class="ov-hello-text">
       <p class="ov-date">${esc(today)}</p>
       <h2 class="ov-greeting">${esc(greetingFor(ctx.profile?.name || ctx.user?.displayName))}</h2>
-      <p class="ov-lede">Here&rsquo;s the newsroom at a glance. Every section is in the menu; pin the pages you use most.</p>
+      ${isAdmin ? "" : `<p class="ov-lede">Here&rsquo;s the newsroom at a glance. Every section is in the menu; pin the pages you use most.</p>`}
     </div>
     <nav class="ov-shortcuts" aria-label="Shortcuts">
       ${shortcuts.map(([href, label]) => `<a class="ov-shortcut" href="${href}"><span>${esc(label)}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>`).join("")}
@@ -87,9 +90,16 @@ export async function mount(ctx, container) {
   container.appendChild(announceMount);
   loadAnnouncements(announceMount, ctx);
 
-  // Admin + newsletter builder: the latest stories beside the newsletter
-  // status, side by side.
-  if (isAdmin || ctx.role === "newsletter_builder") {
+  // Admins get the newsroom home: what needs them, what's coming, the
+  // numbers, then the reminder bot folded away at the bottom.
+  if (isAdmin) {
+    const cleanup = mountAdminHome(container, ctx, hello);
+    container.appendChild(botPanel(ctx));
+    return cleanup;
+  }
+
+  // Newsletter builder: the latest stories beside the newsletter status.
+  if (ctx.role === "newsletter_builder") {
     const row = el("div", { class: "ov-row" });
     if (isAdmin) {
       const recent = el("div", { class: "card ov-recent" });
@@ -126,27 +136,12 @@ export async function mount(ctx, container) {
     }
   }
 
-  if (!isAdmin && ctx.role !== "newsletter_builder") container.appendChild(directoryCard());
+  if (ctx.role !== "newsletter_builder") container.appendChild(directoryCard());
+}
 
-  // For non-admins the Overview ends here — the snapshot and the bot below
-  // are the admin's newsroom-wide view.
-  if (!isAdmin) return;
-
-  const pipeline = el("div", { class: "card" });
-  pipeline.innerHTML = `
-    <div class="card-header">
-      <div>
-        <div class="card-title">Story Tracker</div>
-        <div class="card-subtitle">Where every story stands right now.</div>
-      </div>
-      <a class="btn btn-ghost btn-sm" href="#/pipeline/all">Open the tracker</a>
-    </div>
-    <div id="pipeline-mount"></div>`;
-  container.appendChild(pipeline);
-  renderPipeline(pipeline.querySelector("#pipeline-mount"), ctx, { compact: true });
-
-  // Catalyst bot (admin only): the controls and its email log, folded into
-  // one panel so they don't push the rest of the page down.
+// Catalyst bot (admin only): the controls and its email log, folded into
+// one panel so they don't push the rest of the page down.
+function botPanel(ctx) {
   const bot = el("details", { class: "card ov-bot" });
   bot.innerHTML = `
     <summary class="ov-bot-summary">
@@ -160,9 +155,256 @@ export async function mount(ctx, container) {
     </summary>
     <div class="card-body" id="bot-panel"></div>
     <div class="card-body ov-bot-log" id="bot-email-log"></div>`;
-  container.appendChild(bot);
   mountBotPanel(bot.querySelector("#bot-panel"), ctx);
   mountBotEmailLog(bot.querySelector("#bot-email-log"), ctx);
+  return bot;
+}
+
+// ─── Admin home ──────────────────────────────────────────────────────────────
+// One screen that answers "what needs me, what's coming, how are we doing":
+//   Needs you   the most urgent jobs (same engine as Action items) plus new
+//               submissions and team tasks waiting for approval, one button each
+//   Coming up   the next two weeks as an agenda (publications, interviews,
+//               social posts, team task deadlines); the month grid lives on
+//               its own page, #/calendar
+//   At a glance four numbers, the newsletter, and what was published lately
+
+const DAY = 86400000;
+const startOfToday = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; };
+const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const parseDay = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || "")); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+const daysFromToday = (s) => { const d = parseDay(s); return d ? Math.round((d - startOfToday()) / DAY) : null; };
+const pubDateOf = (p) => p.deadlines?.publication || p.deadline || null;
+const isDone = (p) => !!p.timeline?.["Suggestions Reviewed"];
+const ARROW = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+function dayLabel(iso) {
+  const d = daysFromToday(iso);
+  if (d === 0) return "Today";
+  if (d === 1) return "Tomorrow";
+  return parseDay(iso).toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
+}
+
+function mountAdminHome(container, ctx, hello) {
+  const uid = ctx.user?.uid;
+  const home = el("div", { class: "oh" });
+  home.innerHTML = `
+    <section class="oh-card oh-needs" aria-labelledby="oh-needs-h">
+      <header class="oh-head">
+        <h3 id="oh-needs-h">Needs you</h3>
+        <span class="oh-badge" id="oh-needs-count" hidden></span>
+        <a class="oh-more" href="#/admin/tasks">All action items ${ARROW}</a>
+      </header>
+      <ol class="oh-list" id="oh-needs"><li class="oh-skel"></li><li class="oh-skel"></li><li class="oh-skel"></li></ol>
+    </section>
+
+    <section class="oh-card oh-agenda" aria-labelledby="oh-agenda-h">
+      <header class="oh-head">
+        <h3 id="oh-agenda-h">Coming up</h3>
+        <span class="oh-sub">Next two weeks</span>
+        <a class="oh-more" href="#/calendar">Full calendar ${ARROW}</a>
+      </header>
+      <div id="oh-agenda"><div class="oh-skel"></div><div class="oh-skel"></div></div>
+    </section>
+
+    <aside class="oh-side" aria-label="At a glance">
+      <section class="oh-card">
+        <header class="oh-head"><h3>At a glance</h3></header>
+        <div class="oh-stats" id="oh-stats"></div>
+      </section>
+      <section class="oh-card oh-nl" id="nl-reminder"><div class="oh-skel"></div></section>
+      <section class="oh-card" aria-labelledby="oh-pub-h">
+        <header class="oh-head"><h3 id="oh-pub-h">Recently published</h3><a class="oh-more" href="#/admin/articles">All articles ${ARROW}</a></header>
+        <ul class="oh-pub" id="oh-pub"><li class="oh-skel"></li></ul>
+      </section>
+    </aside>`;
+  container.appendChild(home);
+  loadNewsletterReminder(home.querySelector("#nl-reminder"), ctx);
+
+  const state = { projects: null, users: [], overrides: {}, teamTasks: [], posts: [], submissions: null, published: null };
+  const render = () => { renderNeeds(); renderAgenda(); renderStats(); renderSummary(); };
+
+  // Live: the stories in the works. Everything else is read once.
+  const unsub = onSnapshot(collection(db, "projects"), (snap) => {
+    state.projects = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    render();
+  }, (err) => {
+    home.querySelector("#oh-needs").innerHTML = `<li class="oh-empty">Couldn't load the stories. ${esc(err?.message || "")}</li>`;
+  });
+  getDocs(collection(db, "users")).then((s) => { state.users = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }).catch(() => {});
+  if (uid) getDoc(doc(db, "taskPrefs", uid)).then((s) => { state.overrides = (s.exists() && s.data().overrides) || {}; render(); }).catch(() => {});
+  getDocs(collection(db, "tasks")).then((s) => { state.teamTasks = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }).catch(() => {});
+  getDocs(collection(db, "social_assignments")).then((s) => { state.posts = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }).catch(() => {});
+  ctx.authedFetch("/api/admin/submissions").then((r) => r.json()).then((d) => { state.submissions = d?.ok ? (d.submissions || []) : []; render(); }).catch(() => { state.submissions = []; });
+  fetchRecentPublished().then((list) => { state.published = list; renderPublished(); renderStats(); }).catch(() => { state.published = []; renderPublished(); });
+
+  // ── Needs you ──
+  function needsItems() {
+    if (!state.projects) return null;
+    const byId = new Map(state.projects.map((p) => [p.id, p]));
+    const { active } = buildAdminTasks(state.projects, state.users, state.overrides, {});
+    // A "publish it" job for a story that's already live isn't a job.
+    const jobs = active.filter((t) => !(t.kind === "publish" && isProjectPublished(byId.get(String(t.key).split(":")[0]))));
+    const extra = [];
+    const fresh = (state.submissions || []).filter((x) => x.status === "new");
+    if (fresh.length) {
+      const joins = fresh.filter((x) => /join/i.test(x.source || x.type || "")).length;
+      const pitches = fresh.length - joins;
+      const parts = [joins && `${joins} ${joins === 1 ? "application" : "applications"}`, pitches && `${pitches} ${pitches === 1 ? "pitch" : "pitches"}`].filter(Boolean);
+      extra.push({ priority: "high", headline: `Read ${parts.join(" and ")} from the website`, context: "Submissions inbox", actionHref: "#/admin/submissions", actionLabel: "Open inbox" });
+    }
+    const waiting = state.teamTasks.filter((t) => t.status === "pending");
+    if (waiting.length) {
+      extra.push({ priority: "high", headline: `Approve ${waiting.length} team ${waiting.length === 1 ? "task" : "tasks"}`, context: waiting.slice(0, 2).map((t) => esc(t.title || "")).join(" · ") + (waiting.length > 2 ? ` · +${waiting.length - 2}` : ""), actionHref: "#/tasks", actionLabel: "Review" });
+    }
+    const urgent = jobs.filter((t) => t.priority === "urgent");
+    return [...urgent, ...extra, ...jobs.filter((t) => t.priority !== "urgent")];
+  }
+
+  function renderNeeds() {
+    const list = home.querySelector("#oh-needs");
+    const items = needsItems();
+    if (!items) return;
+    const count = home.querySelector("#oh-needs-count");
+    count.hidden = !items.length; count.textContent = items.length;
+    if (!items.length) {
+      list.innerHTML = `<li class="oh-clear"><span class="oh-clear-ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>You're all caught up.</b> Nothing is waiting on you right now.</span></li>`;
+      return;
+    }
+    const shown = items.slice(0, 6);
+    list.innerHTML = shown.map((t) => `
+      <li class="oh-job is-${t.priority}">
+        <span class="oh-job-dot" aria-hidden="true"></span>
+        <span class="oh-job-text">
+          <span class="oh-job-title">${t.headline}</span>
+          ${t.context ? `<span class="oh-job-meta">${t.context}</span>` : ""}
+        </span>
+        ${t.actionHref ? `<a class="oh-job-btn" href="${esc(t.actionHref)}">${esc(t.actionLabel || "Open")}</a>` : ""}
+      </li>`).join("")
+      + (items.length > shown.length ? `<li class="oh-list-more"><a href="#/admin/tasks">${items.length - shown.length} more in Action items ${ARROW}</a></li>` : "");
+  }
+
+  // ── Coming up ──
+  function renderAgenda() {
+    const box = home.querySelector("#oh-agenda");
+    if (!state.projects) return;
+    const horizon = 14;
+    const inRange = (iso) => { const d = daysFromToday(iso); return d !== null && d >= 0 && d < horizon; };
+    const events = [];
+    for (const p of state.projects) {
+      if (p.proposalStatus === "rejected") continue;
+      const pub = pubDateOf(p);
+      if (pub && inRange(pub)) {
+        const live = isProjectPublished(p);
+        const ready = isDone(p);
+        const behind = !ready && !live && (daysFromToday(pub) - 7) < 0;
+        events.push({ date: pub.slice(0, 10), kind: "Publishes", title: p.title, who: p.authorName,
+          tone: live ? "good" : ready ? "good" : behind ? "bad" : "", status: live ? "Published" : ready ? "Ready" : behind ? "Behind" : "In progress", href: "#/pipeline/all" });
+      }
+      const iv = p.deadlines?.interview || p.interviewDate;
+      if (iv && inRange(iv) && !p.timeline?.["Interview Complete"]) events.push({ date: String(iv).slice(0, 10), kind: "Interview", title: p.title, who: p.authorName, href: "#/pipeline/all" });
+    }
+    for (const a of state.posts) {
+      if (a.status === "published" || a.status === "done" || !inRange(a.deadline)) continue;
+      events.push({ date: String(a.deadline).slice(0, 10), kind: "Social post", title: a.articleTitle, who: a.assigneeName, href: "#/planner" });
+    }
+    for (const t of state.teamTasks) {
+      if (t.status !== "approved" || !inRange(t.deadline)) continue;
+      events.push({ date: String(t.deadline).slice(0, 10), kind: "Task due", title: t.title, who: (t.assigneeNames || [])[0], href: "#/tasks" });
+    }
+    events.sort((a, b) => a.date.localeCompare(b.date) || a.kind.localeCompare(b.kind));
+    if (!events.length) {
+      box.innerHTML = `<p class="oh-empty">Nothing scheduled in the next two weeks. <a href="#/calendar">Open the calendar</a> to plan ahead.</p>`;
+      return;
+    }
+    const byDay = new Map();
+    for (const e of events.slice(0, 14)) (byDay.get(e.date) || byDay.set(e.date, []).get(e.date)).push(e);
+    box.innerHTML = [...byDay.entries()].map(([day, list]) => `
+      <div class="oh-day">
+        <h4 class="oh-day-label${daysFromToday(day) <= 1 ? " is-soon" : ""}">${esc(dayLabel(day))}</h4>
+        <ul>${list.map((e) => `
+          <li><a class="oh-event" href="${e.href}">
+            <span class="oh-kind oh-kind--${e.kind.replace(/\s+/g, "-").toLowerCase()}">${esc(e.kind)}</span>
+            <span class="oh-event-title">${esc(e.title || "Untitled")}</span>
+            ${e.who ? `<span class="oh-event-who">${esc(e.who)}</span>` : ""}
+            ${e.status ? `<span class="oh-status${e.tone ? " is-" + e.tone : ""}">${esc(e.status)}</span>` : ""}
+          </a></li>`).join("")}</ul>
+      </div>`).join("") + (events.length > 14 ? `<p class="oh-agenda-more"><a href="#/calendar">${events.length - 14} more on the calendar ${ARROW}</a></p>` : "");
+  }
+
+  // ── At a glance ──
+  function renderStats() {
+    const box = home.querySelector("#oh-stats");
+    if (!state.projects) return;
+    const ps = state.projects.filter((p) => p.proposalStatus !== "rejected" && !isProjectPublished(p));
+    const pitches = ps.filter((p) => p.proposalStatus !== "approved").length;
+    const working = ps.filter((p) => p.proposalStatus === "approved" && !isDone(p)).length;
+    const behind = ps.filter((p) => { const pub = pubDateOf(p); const d = pub ? daysFromToday(pub) : null; return p.proposalStatus === "approved" && !isDone(p) && d !== null && d - 7 < 0; }).length;
+    const month = state.published ? state.published.filter((x) => x.at && Date.now() - x.at < 30 * DAY).length : null;
+    const tile = (n, label, href, tone = "") => `<a class="oh-stat${tone ? " is-" + tone : ""}" href="${href}"><b>${n ?? "–"}</b><span>${label}</span></a>`;
+    box.innerHTML = tile(working, "Stories in the works", "#/pipeline/all")
+      + tile(pitches, pitches === 1 ? "Pitch to review" : "Pitches to review", "#/pipeline/all", pitches ? "warn" : "")
+      + tile(behind, "Behind schedule", "#/pipeline/all", behind ? "bad" : "")
+      + tile(month, "Published this month", "#/admin/articles");
+  }
+
+  function renderPublished() {
+    const box = home.querySelector("#oh-pub");
+    const list = state.published || [];
+    if (!list.length) { box.innerHTML = `<li class="oh-empty">Nothing published yet.</li>`; return; }
+    box.innerHTML = list.slice(0, 5).map((x) => `
+      <li><a href="${esc(x.href)}" target="_blank" rel="noopener">
+        <span class="oh-pub-title">${esc(x.title)}</span>
+        <span class="oh-pub-meta">${esc(x.author || "")}${x.at ? ` · ${esc(fmtRelative(new Date(x.at).toISOString()))}` : ""}</span>
+      </a></li>`).join("");
+  }
+
+  // One line under the greeting: how much is waiting.
+  function renderSummary() {
+    const items = needsItems();
+    if (!items) return;
+    let line = hello.querySelector(".ov-summary");
+    if (!line) { line = el("p", { class: "ov-summary" }); hello.querySelector(".ov-hello-text")?.appendChild(line); }
+    const urgent = items.filter((t) => t.priority === "urgent").length;
+    const week = (state.projects || []).filter((p) => { const d = daysFromToday(pubDateOf(p)); return d !== null && d >= 0 && d < 7 && !isProjectPublished(p); }).length;
+    line.innerHTML = (items.length
+      ? `<b>${items.length} ${items.length === 1 ? "thing needs" : "things need"} you</b>${urgent ? `, ${urgent} urgent` : ""}.`
+      : `<b>You're all caught up.</b>`)
+      + (week ? ` ${week} ${week === 1 ? "story publishes" : "stories publish"} this week.` : "");
+  }
+
+  return () => unsub();
+}
+
+// Published stories, newest first, without downloading article bodies: the
+// public REST runQuery with a field projection (published stories are
+// world-readable). Sorted here so no composite index is needed.
+async function fetchRecentPublished() {
+  const res = await fetch("https://firestore.googleapis.com/v1/projects/catalystwriters-5ce43/databases/(default)/documents:runQuery", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ structuredQuery: {
+      from: [{ collectionId: "stories" }],
+      where: { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+      select: { fields: ["title", "authorName", "author", "slug", "category", "publishedAt", "updatedAt"].map((f) => ({ fieldPath: f })) },
+      limit: 1000,
+    } }),
+  });
+  if (!res.ok) throw new Error(`Firestore ${res.status}`);
+  const rows = await res.json();
+  const val = (f) => f ? (f.stringValue ?? f.timestampValue ?? f.integerValue ?? null) : null;
+  return (Array.isArray(rows) ? rows : []).filter((r) => r.document).map((r) => {
+    const f = r.document.fields || {};
+    const slug = val(f.slug);
+    const book = /book/i.test(val(f.category) || "");
+    const at = Date.parse(val(f.publishedAt) || val(f.updatedAt) || "") || 0;
+    return {
+      title: val(f.title) || "Untitled",
+      author: val(f.authorName) || val(f.author) || "",
+      at: at > Date.now() + DAY ? 0 : at,
+      href: slug ? `/${book ? "book-review" : "article"}/${encodeURIComponent(slug)}` : "/articles",
+    };
+  }).sort((a, b) => b.at - a.at);
 }
 
 function directoryCard() {

@@ -44,6 +44,7 @@ const ROLE_LABELS = {
 // the meaning is genuinely the same (e.g. both editing screens use `check`).
 const ICONS = {
   // Workspace
+  calendar:    `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>`,
   home:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
   // Story Tracker — kanban columns (every story, grouped by edition)
   board:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="5.5" y1="7" x2="6.5" y2="7"/><line x1="11.5" y1="7" x2="12.5" y2="7"/><line x1="11.5" y1="11" x2="12.5" y2="11"/><line x1="17.5" y1="7" x2="18.5" y2="7"/></svg>`,
@@ -239,11 +240,19 @@ function getActiveRole() {
 const ROUTES = {
   "#/overview": {
     label: "Overview",
-    desc: "What needs you today, the editorial calendar and the latest from the newsroom.",
+    desc: "What needs you today, what's coming up, and how the newsroom is doing.",
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=notify-13"),
+    loader: () => import("./overview.js?v=home-1"),
+  },
+  "#/calendar": {
+    label: "Editorial calendar",
+    desc: "The month at a glance: publication dates, interviews, your deadlines, social posts and shared tasks.",
+    icon: ICONS.calendar,
+    roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
+    group: "main",
+    loader: () => import("./calendar-page.js?v=cal-1"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.

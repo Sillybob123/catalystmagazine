@@ -1,0 +1,124 @@
+/* ==========================================================================
+   Admin Overview (#/overview for admins), rendered by mountAdminHome in
+   js/dashboard/overview.js. Two columns on a laptop:
+     left   Needs you (the jobs, one button each), then Coming up (agenda)
+     right  At a glance (four numbers), the newsletter, recently published
+   One column below 1000px. The month calendar lives on #/calendar.
+   ========================================================================== */
+
+.ov-summary { margin: 10px 0 0; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+.ov-summary b { font-weight: 600; color: var(--ink); }
+
+.oh {
+  display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(290px, 1fr);
+  grid-template-areas: "needs side" "agenda side"; gap: 20px; align-items: start;
+}
+.oh-needs { grid-area: needs; }
+.oh-agenda { grid-area: agenda; }
+.oh-side { grid-area: side; display: grid; gap: 20px; min-width: 0; }
+
+.oh-card { min-width: 0; padding: 20px 22px 22px; border: 1px solid var(--hairline-2); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-sm); }
+.oh-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 14px; }
+.oh-head h3 { margin: 0; font: 600 17px/1.3 var(--font); letter-spacing: -0.015em; color: var(--ink); }
+.oh-sub { font-size: 13px; color: var(--muted); }
+.oh-badge { min-width: 24px; padding: 2px 8px; border-radius: 999px; background: var(--ink); color: var(--surface); font: 600 12px/1.5 var(--font); text-align: center; }
+.oh-more { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; min-height: 36px; padding: 0 4px; border-radius: 8px; font: 500 13px var(--font); color: var(--ink-2); text-decoration: none; }
+.oh-more:hover { color: var(--ink); }
+.oh-more:focus-visible { outline: none; box-shadow: var(--focus); }
+
+/* Needs you */
+.oh-list { list-style: none; margin: 0; padding: 0; }
+.oh-job { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 4px 14px; padding: 13px 4px; border-top: 1px solid var(--hairline-2); }
+.oh-job:first-child { border-top: 0; padding-top: 4px; }
+.oh-job-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted-2); }
+.oh-job.is-urgent .oh-job-dot { background: var(--danger); box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 14%, transparent); }
+.oh-job.is-high .oh-job-dot { background: #c58a1b; }
+.oh-job-text { display: grid; gap: 3px; min-width: 0; }
+.oh-job-title { font-size: 14.5px; line-height: 1.45; color: var(--ink); }
+.oh-job-title strong { font-weight: 600; }
+.oh-job-meta { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.oh-job-meta .admin-task-due { margin-left: 4px; font-weight: 600; }
+.oh-job-meta .admin-task-due-over { color: var(--danger); }
+.oh-job-meta .admin-task-due-soon { color: var(--warn); }
+.oh-job-btn {
+  display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border: 1px solid var(--hairline); border-radius: 999px;
+  background: var(--surface); font: 600 12.5px var(--font); color: var(--ink); text-decoration: none; white-space: nowrap; transition: background .15s, color .15s, border-color .15s;
+}
+.oh-job-btn:hover { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.oh-job-btn:focus-visible { outline: none; box-shadow: var(--focus); }
+.oh-job.is-urgent .oh-job-btn { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.oh-list-more { padding: 12px 4px 0; border-top: 1px solid var(--hairline-2); }
+.oh-list-more a { display: inline-flex; align-items: center; gap: 5px; font: 500 13px var(--font); color: var(--ink-2); text-decoration: none; }
+.oh-list-more a:hover { color: var(--ink); }
+.oh-clear { display: flex; align-items: center; gap: 12px; padding: 6px 4px 2px; font-size: 14.5px; color: var(--ink-2); }
+.oh-clear b { color: var(--ink); font-weight: 600; }
+.oh-clear-ic { display: grid; place-items: center; flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--good-soft); color: var(--good); }
+
+/* Coming up */
+.oh-day + .oh-day { margin-top: 14px; }
+.oh-day-label { margin: 0 0 6px; font: 600 11.5px/1.3 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.oh-day-label.is-soon { color: var(--ink); }
+.oh-day ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.oh-event { display: grid; grid-template-columns: 98px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; min-height: 46px; padding: 6px 10px; border-radius: 12px; color: var(--ink); text-decoration: none; }
+.oh-event:hover { background: var(--surface-2); }
+.oh-event:focus-visible { outline: none; box-shadow: var(--focus); }
+.oh-kind { justify-self: start; padding: 2px 9px; border-radius: 999px; font: 600 11px/1.5 var(--font); white-space: nowrap; background: var(--surface-3); color: var(--ink-2); }
+.oh-kind--publishes { background: color-mix(in srgb, #0f766e 12%, var(--surface)); color: #0f5f58; }
+.oh-kind--interview { background: color-mix(in srgb, #2e5a87 12%, var(--surface)); color: #2e5a87; }
+.oh-kind--social-post { background: color-mix(in srgb, #9b3a6e 11%, var(--surface)); color: #8a2f60; }
+.oh-event-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 14px/1.35 var(--font); }
+.oh-event-who { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.oh-status { font: 600 11.5px var(--font); color: var(--muted); white-space: nowrap; }
+.oh-status.is-good { color: var(--good); }
+.oh-status.is-bad { color: var(--danger); }
+.oh-agenda-more { margin: 12px 0 0; }
+.oh-agenda-more a { display: inline-flex; align-items: center; gap: 5px; font: 500 13px var(--font); color: var(--ink-2); text-decoration: none; }
+
+/* At a glance */
+.oh-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.oh-stat { display: grid; gap: 2px; padding: 14px 14px 12px; border-radius: 14px; background: var(--surface-2); color: var(--ink); text-decoration: none; transition: background .15s; }
+.oh-stat:hover { background: var(--surface-3); }
+.oh-stat:focus-visible { outline: none; box-shadow: var(--focus); }
+.oh-stat b { font: 600 28px/1.1 var(--font); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.oh-stat span { font-size: 12.5px; line-height: 1.35; color: var(--muted); }
+.oh-stat.is-warn b { color: var(--warn); }
+.oh-stat.is-bad { background: var(--danger-soft); }
+.oh-stat.is-bad b { color: var(--danger); }
+
+/* Newsletter (the shared .ov-nl block, inside a card here) */
+.oh-nl .ov-nl-title { font-size: 17px; }
+
+/* Recently published */
+.oh-pub { list-style: none; margin: -4px 0 0; padding: 0; }
+.oh-pub li + li { border-top: 1px solid var(--hairline-2); }
+.oh-pub a { display: grid; gap: 2px; padding: 10px 4px; border-radius: 10px; color: var(--ink); text-decoration: none; }
+.oh-pub a:hover .oh-pub-title { text-decoration: underline; text-underline-offset: 3px; }
+.oh-pub a:focus-visible { outline: none; box-shadow: var(--focus); }
+.oh-pub-title { font: 500 14px/1.4 var(--font); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.oh-pub-meta { font-size: 12.5px; color: var(--muted); }
+
+.oh-empty { margin: 0; padding: 4px 4px 2px; font-size: 14px; color: var(--muted); list-style: none; }
+.oh-empty a { color: var(--ink); }
+.oh-skel { height: 44px; margin: 6px 0; border-radius: 12px; background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2)); background-size: 200% 100%; animation: oh-shimmer 1.2s linear infinite; list-style: none; }
+@keyframes oh-shimmer { to { background-position: -200% 0; } }
+
+/* The reminder bot keeps its folded card, below everything. */
+.content.ov > .ov-bot { margin-top: 20px; }
+
+@media (max-width: 1000px) {
+  .oh { grid-template-columns: minmax(0, 1fr); grid-template-areas: "needs" "side" "agenda"; }
+}
+@media (max-width: 600px) {
+  .content.ov .ov-shortcuts { grid-template-columns: 1fr 1fr; }
+  .content.ov .ov-shortcut { min-height: 48px; padding: 0 12px; font-size: 13px; }
+  .oh-card { padding: 16px 14px 18px; border-radius: 16px; }
+  .oh-job { grid-template-columns: auto minmax(0, 1fr); }
+  .oh-job-btn { grid-column: 2; justify-self: start; margin-top: 4px; }
+  .oh-event { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
+  .oh-kind { grid-column: 1 / -1; }
+  .oh-event-who { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oh-skel { animation: none; }
+  .oh-job-btn, .oh-stat { transition: none; }
+}
