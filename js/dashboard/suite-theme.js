@@ -72,9 +72,9 @@ export const SEASONS = {
   },
 };
 
-// A painted half-wreath (pen and watercolour, like the mascots) cradles the
-// logo; the mark itself stays untouched in front of it.
-const WREATH_V = 1;
+// The logo itself in the season's dress: the same hexagon and orbits, the
+// frame made of ice and snow, autumn leaves, cherry blossom, or summer sun.
+const LOGO_V = 1;
 
 // Pages where people need to concentrate: no motion at all.
 const FOCUS_ROUTES = [
@@ -159,14 +159,12 @@ function paintThemeSwitch(siteSeason) {
 
 function paintLogo(season) {
   const brand = document.querySelector(".sidebar .brand");
-  if (!brand) return;
-  brand.querySelectorAll(".season-logo-deco").forEach((n) => n.remove());
-  if (!season) return;
-  const deco = document.createElement("span");
-  deco.className = `season-logo-deco season-logo-deco--${season}`;
-  deco.setAttribute("aria-hidden", "true");
-  deco.innerHTML = `<img src="/beta/suite-theme/${season}-wreath.webp?v=${WREATH_V}" alt="" width="240" height="190" decoding="async">`;
-  (brand.querySelector(".brand-mark") || brand).appendChild(deco);
+  const img = brand?.querySelector(".brand-mark img");
+  if (!img) return;
+  if (!img.dataset.plainSrc) img.dataset.plainSrc = img.getAttribute("src");
+  const want = season ? `/beta/suite-theme/${season}-logo.webp?v=${LOGO_V}` : img.dataset.plainSrc;
+  if (img.getAttribute("src") !== want) img.setAttribute("src", want);
+  brand.querySelector(".brand-mark").dataset.season = season || "";
 }
 
 function paintCorner(season) {
