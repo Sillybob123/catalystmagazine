@@ -473,7 +473,7 @@ const ROUTES = {
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-12"),
+    loader: () => import("./admin.js?v=wd-13"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -487,15 +487,16 @@ const ROUTES = {
     group: "admin",
     loader: () => import("./submissions.js?v=3"),
   },
-  // Bio requests — bios people sent from their name menu (Update bio),
-  // waiting for an admin before they go on the About page.
+  // Team bios — everyone on the About page: admins edit bios, titles,
+  // photos, sections and who shows; bios people send from their name menu
+  // (Update bio) wait here for approval.
   "#/admin/bios": {
-    label: "Bio requests",
-    desc: "Bios people sent for the About page. Approve to put them live, or send back with a note.",
+    label: "Team bios",
+    desc: "Everyone on the About page. Edit bios, titles, photos and sections, hide people, and approve bios the team sends.",
     icon: ICONS.users,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./bios.js?v=1"),
+    loader: () => import("./bios.js?v=2"),
   },
   "#/admin/games": {
     label: "Games",
@@ -511,7 +512,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-12"),
+    loader: () => import("./admin.js?v=wd-13"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -520,7 +521,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-12"),
+    loader: () => import("./admin.js?v=wd-13"),
     mountKey: "images",
   },
   "#/admin/advanced": {
@@ -1266,7 +1267,7 @@ function closeUserMenu() {
 // Always the signed-in person's own bio, even while previewing someone.
 async function openMyBioEditor() {
   try {
-    const { openBioEditor } = await import("./bios.js?v=1");
+    const { openBioEditor } = await import("./bios.js?v=2");
     const ctx = makeContext({});
     await openBioEditor({ ...ctx, user: state.user, profile: state.profile });
   } catch (err) {

@@ -437,8 +437,10 @@
     document.getElementById('ab-roster').innerHTML = rosterGroups.map(function (g) {
       var clusters = g.clusters.map(function (c) {
         var cards = c.members.map(function (n) { return byName[n]; }).filter(Boolean).map(personCard).join('');
+        if (!cards) return '';                                   // everyone moved out or hidden
         return (c.subtitle ? '<p class="ab-cluster">' + esc(c.subtitle) + '</p>' : '') + '<div class="ab-people">' + cards + '</div>';
       }).join('');
+      if (!clusters) return '';
       return '<div class="ab-group"><div class="ab-group-head"><h3>' + esc(g.title) + '</h3>' +
         (g.blurb ? '<p>' + esc(g.blurb) + '</p>' : '') + '</div>' + clusters + '</div>';
     }).join('');
@@ -447,8 +449,10 @@
         '<div class="ab-people">' + alumniMembers.map(personCard).join('') + '</div>';
     }
     observeReveals(document.getElementById('team'));
-    // numbers
-    setCount('team', teamMembers.length);
+    // numbers: everyone shown in a team section, once
+    var shown = {};
+    rosterGroups.forEach(function (g) { g.clusters.forEach(function (c) { c.members.forEach(function (n) { if (byName[n]) shown[n] = 1; }); }); });
+    setCount('team', Object.keys(shown).length);
     return true;
   }
 
@@ -506,10 +510,11 @@
     .then(function (rows) { setCount('stories', (Array.isArray(rows) ? rows : []).filter(function (x) { return x.document; }).length); })
     .catch(function () { setCount('stories', 60); });
 
-  // Live bios: team_bios in Firestore holds every approved bio (people send
-  // them from the Editorial Suite, an admin approves). They replace the
-  // built-in text from js/main.js, and someone new joins the section the
-  // admin chose. If Firestore is slow or down, the built-in text stays.
+  // Live bios: team_bios in Firestore is the team as admins manage it in the
+  // Editorial Suite (Team bios): bio, title, photo, which sections each
+  // person appears in, and whether they're hidden. People also send their own
+  // bio for approval. This lays it over the built-in roster from js/main.js;
+  // if Firestore is slow or down, the built-in roster stays.
   var liveBios = new Promise(function (resolve) {
     var done = false, finish = function (v) { if (!done) { done = true; resolve(v); } };
     setTimeout(function () { finish([]); }, 2500);
@@ -518,31 +523,46 @@
       .then(function (d) {
         finish((d.documents || []).map(function (doc) {
           var f = doc.fields || {}, s = function (k) { return f[k] && f[k].stringValue || ''; };
-          return { name: s('name'), bio: s('bio'), role: s('role'), image: s('image'), section: s('section') };
-        }).filter(function (b) { return b.name && b.bio; }));
+          var secs = f.sections && f.sections.arrayValue ? (f.sections.arrayValue.values || []).map(function (v) { return v.stringValue; }).filter(Boolean)
+            : (s('section') ? [s('section')] : null);   // older entries: one section, or none (keep their place)
+          return { name: s('name'), bio: s('bio'), role: s('role'), image: s('image'), hasImage: 'image' in f,
+            sections: secs, hidden: !!(f.hidden && f.hidden.booleanValue) };
+        }).filter(function (b) { return b.name; }));
       })
       .catch(function () { finish([]); });
   });
   function applyLiveBios(list) {
-    if (typeof teamMembers === 'undefined' || typeof rosterGroups === 'undefined') return;
+    if (!list.length || typeof teamMembers === 'undefined' || typeof rosterGroups === 'undefined') return;
     var alumni = typeof alumniMembers !== 'undefined' ? alumniMembers : [];
+    var live = {}, member = {};
+    teamMembers.concat(alumni).forEach(function (m) { member[m.name] = m; });
     list.forEach(function (b) {
-      var m = teamMembers.concat(alumni).filter(function (x) { return x.name === b.name; })[0];
-      if (m) {
-        m.bio = b.bio;
-        if (b.role) m.role = b.role;
-        if (b.image) m.image = b.image;
-        return;
-      }
-      if (!b.section) return;
-      var person = { name: b.name, role: b.role || 'Writer', bio: b.bio, image: b.image || '' };
-      if (b.section === 'alumni') { alumni.push(person); return; }
-      var parts = b.section.split(':'), group = rosterGroups.filter(function (g) { return g.id === parts[0]; })[0];
-      if (!group) return;
-      var cluster = group.clusters.filter(function (c) { return (c.subtitle || '') === (parts[1] || ''); })[0] || group.clusters[0];
-      teamMembers.push(person);
-      cluster.members.push(b.name);
+      live[b.name] = b;
+      var m = member[b.name];
+      if (!m) { m = member[b.name] = { name: b.name, role: b.role || 'Writer', bio: b.bio, image: b.image }; }
+      if (b.bio) m.bio = b.bio;
+      if (b.role) m.role = b.role;
+      if (b.hasImage) m.image = b.image;               // "" = they show as initials
+      if (teamMembers.indexOf(m) < 0) teamMembers.push(m);   // cards are looked up here
     });
+    // Is this person in this section? People without a live entry keep their place.
+    var wants = function (name, id) {
+      var b = live[name];
+      if (!b || !b.sections) return null;
+      return !b.hidden && b.sections.indexOf(id) >= 0;
+    };
+    rosterGroups.forEach(function (g) {
+      g.clusters.forEach(function (c) {
+        var id = c.subtitle ? g.id + ':' + c.subtitle : g.id;
+        var kept = c.members.filter(function (n) { return wants(n, id) !== false; });
+        list.forEach(function (b) { if (wants(b.name, id) && kept.indexOf(b.name) < 0) kept.push(b.name); });
+        c.members = kept;
+      });
+    });
+    var keptAlumni = alumni.filter(function (m) { return wants(m.name, 'alumni') !== false; });
+    list.forEach(function (b) { if (wants(b.name, 'alumni') && !keptAlumni.some(function (m) { return m.name === b.name; })) keptAlumni.push(member[b.name]); });
+    alumni.length = 0;
+    Array.prototype.push.apply(alumni, keptAlumni);
   }
   function startTeam() {
     liveBios.then(applyLiveBios).catch(function () {}).then(renderTeam);

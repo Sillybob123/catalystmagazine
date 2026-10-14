@@ -21,7 +21,8 @@ import { bioDecisionEmail } from "../../_utils/reminder-emails.js";
 import { createNotification } from "../../_utils/notifications.js";
 
 // About page sections (rosterGroups in js/main.js, plus Alumni). Keep in sync
-// with SECTIONS in js/dashboard/bios.js and the placement code in js/about.js.
+// with SECTIONS in js/dashboard/bios.js, functions/api/bio/manage.js and the
+// placement code in js/about.js.
 const SECTIONS = ["eboard", "staff:Editing", "staff:Social Media", "undergraduate-fellows", "graduate-fellows", "alumni"];
 
 export const onRequestPost = async ({ request, env }) => {
@@ -69,6 +70,9 @@ export const onRequestPost = async ({ request, env }) => {
       };
       if (role) fields.role = role;
       if (section) fields.section = section;
+      // sections (several allowed) is what the About page reads; a first bio
+      // starts in the one section chosen here.
+      if (!live && section) { fields.sections = [section]; fields.hidden = false; }
       await firestoreUpdate(env, `team_bios/${slug}`, fields);
     }
 

@@ -5,10 +5,11 @@
 //                       bio yet — what to write. Sending it creates
 //                       bio_requests/{uid} via /api/bio/request, which tells
 //                       the admins. The site doesn't change yet.
-//   mount(ctx, el)      #/admin/bios — admins read each request next to the
-//                       live bio, fix wording, and approve (/api/bio/review
-//                       writes team_bios/{slug}, live at once) or send it back
-//                       with a note.
+//   mount(ctx, el)      #/admin/bios (Team bios) — every entry on the About
+//                       page, hidden ones, and staff without a bio. Admins
+//                       edit anyone's bio, title, photo, sections and
+//                       visibility (/api/bio/manage, live at once), and
+//                       approve or send back requests (/api/bio/review).
 //
 // The live copy, team_bios/{slug}, is what js/about.js and the writer pages
 // (functions/author/[slug].js) show.
@@ -21,8 +22,8 @@ import { el, esc, toast, fmtRelative, slugify, openModal } from "./ui.js";
 
 const MIN = 120, MAX = 1400;
 
-// Where someone new appears on the About page. Keep in sync with SECTIONS in
-// functions/api/bio/review.js and rosterGroups in js/main.js.
+// About page sections, in page order. Keep in sync with SECTIONS in
+// functions/api/bio/review.js + manage.js and rosterGroups in js/main.js.
 const SECTIONS = [
   { id: "eboard", label: "Executive Board" },
   { id: "staff:Editing", label: "Staff · Editing" },
@@ -113,7 +114,74 @@ const STYLE = `
   .bio-pill.is-approved { background: var(--good-soft); color: var(--good); }
   .bio-pill.is-changes { background: var(--warn-soft); color: var(--warn); }
   .bio-empty { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border: 1px dashed var(--hairline); border-radius: 16px; font-size: 14.5px; color: var(--ink-2); }
-  @media (max-width: 800px) { .bio-cols, .bio-place { grid-template-columns: minmax(0, 1fr); } .bio-req { padding: 16px 14px; border-radius: 16px; } }
+
+  /* team list */
+  .bio-top { margin-bottom: 8px; }
+  .bio-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .bio-tools .btn { min-height: 44px; }
+  .bio-search { position: relative; flex: 1 1 260px; max-width: 360px; }
+  .bio-search svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .bio-search input { width: 100%; min-height: 44px; padding: 0 14px 0 40px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); font: 400 14px var(--font); color: var(--ink); box-sizing: border-box; }
+  .bio-search input:focus { outline: none; border-color: var(--ink); box-shadow: var(--focus); }
+  .bio-stats { margin: 14px 0 0; font-size: 13.5px; color: var(--muted); }
+  .bio-stats b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bio-group { margin-top: 18px; }
+  .bio-group h3 { display: flex; align-items: baseline; gap: 8px; margin: 0 0 4px; font: 600 12px/1.3 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .bio-group h3 span { font-weight: 500; letter-spacing: 0; color: var(--muted-2); }
+  .bio-group-note { margin: 0 0 6px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  .bio-group.is-hidden .bio-row { opacity: .72; }
+  .bio-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hairline-2); }
+  .bio-list li { border-bottom: 1px solid var(--hairline-2); }
+  .bio-row { display: grid; grid-template-columns: 48px minmax(160px, 260px) minmax(0, 1fr) auto; align-items: center; gap: 16px; width: 100%; min-height: 72px; padding: 10px 8px; border: 0; border-radius: 12px; background: none; text-align: left; font: inherit; color: var(--ink); cursor: pointer; }
+  .bio-row:hover { background: var(--surface-3); }
+  .bio-row:focus-visible { outline: none; box-shadow: var(--focus); }
+  .bio-row-main { display: grid; gap: 2px; min-width: 0; }
+  .bio-row-name { font: 600 14.5px/1.35 var(--font); }
+  .bio-row-name .bio-tag { margin-left: 4px; vertical-align: 1px; }
+  .bio-row-role { font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+  .bio-row-bio { font: 400 14px/1.5 var(--serif); color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .bio-row-bio i { font-family: var(--font); font-size: 13px; color: var(--muted); }
+  .bio-row-edit { padding: 7px 14px; border: 1px solid var(--hairline); border-radius: 999px; font: 600 12.5px var(--font); color: var(--ink); white-space: nowrap; }
+  .bio-row:hover .bio-row-edit { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .bio-ph, .bio-ph-lg { display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: var(--paper-3); color: var(--ink-2); font: 600 15px var(--font); }
+  .bio-ph { width: 48px; height: 48px; }
+  .bio-ph-lg { width: 100%; aspect-ratio: 1; border-radius: 20px; font-size: 44px; letter-spacing: .02em; }
+  .bio-ph:has(img), .bio-ph-lg:has(img) { background: none; border-radius: 0; }
+  .bio-ph img, .bio-ph-lg img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+  /* entry editor */
+  .bio-edit { display: grid; gap: 14px; }
+  .bio-edit-grid { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 24px; align-items: start; }
+  .bio-edit-side { display: grid; gap: 10px; }
+  .bio-edit-photo-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .bio-edit-photo-btns .btn { min-height: 40px; }
+  .bio-upload { cursor: pointer; }
+  .bio-upload:focus-within { box-shadow: var(--focus); }
+  .bio-hint { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+  .bio-switch { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; margin-top: 6px; padding: 12px; border: 1px solid var(--hairline); border-radius: 14px; cursor: pointer; }
+  .bio-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .bio-switch-track { position: relative; width: 40px; height: 24px; border-radius: 999px; background: var(--paper-3); transition: background .2s; }
+  .bio-switch-track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(15,23,42,.25); transition: transform .2s; }
+  .bio-switch input:checked + .bio-switch-track { background: var(--ink); }
+  .bio-switch input:checked + .bio-switch-track::after { transform: translateX(16px); }
+  .bio-switch input:focus-visible + .bio-switch-track { box-shadow: var(--focus); }
+  .bio-switch b { display: block; font: 600 13px/1.35 var(--font); color: var(--ink); }
+  .bio-switch small { display: block; margin-top: 2px; font-size: 12px; line-height: 1.4; color: var(--muted); }
+  .bio-edit-main { display: grid; gap: 14px; min-width: 0; }
+  .bio-field input[readonly] { background: var(--surface-3); color: var(--ink-2); }
+  .bio-secs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
+  .bio-secs legend { width: 100%; margin-bottom: 6px; padding: 0; font: 600 13px var(--font); color: var(--ink); }
+  .bio-secs legend small { margin-left: 6px; font: 400 12px var(--font); color: var(--muted); }
+  .bio-chip { position: relative; cursor: pointer; }
+  .bio-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .bio-chip span { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--hairline); border-radius: 999px; font: 500 13px var(--font); color: var(--ink-2); background: var(--surface); transition: background .15s, color .15s, border-color .15s; }
+  .bio-chip input:checked + span { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .bio-chip input:focus-visible + span { box-shadow: var(--focus); }
+  .bio-edit textarea.bio-text { min-height: 240px; }
+
+  @media (max-width: 900px) { .bio-row { grid-template-columns: 48px minmax(0, 1fr) auto; } .bio-row-bio { display: none; } }
+  @media (max-width: 800px) { .bio-cols, .bio-place, .bio-edit-grid { grid-template-columns: minmax(0, 1fr); } .bio-req { padding: 16px 14px; border-radius: 16px; } .bio-edit-side { grid-template-columns: 120px minmax(0, 1fr); align-items: center; } .bio-edit-side .bio-switch { grid-column: 1 / -1; } }
+  @media (prefers-reduced-motion: reduce) { .bio-switch-track, .bio-switch-track::after, .bio-chip span { transition: none; } }
 `;
 
 function injectStyle() {
@@ -237,18 +305,122 @@ export async function openBioEditor(ctx) {
   });
 }
 
-// ── Admins: #/admin/bios ──────────────────────────────────────────────────
+// ── Admins: #/admin/bios (Team bios) ──────────────────────────────────────
+// Everyone on the About page, grouped the way the page is, plus anyone
+// hidden and staff who have no bio yet. Admins edit any entry directly
+// (/api/bio/manage, live at once): bio, title, photo, sections, shown or
+// hidden. Requests people sent from their name menu wait at the top.
+const STAFF_ROLES = ["admin", "editor", "writer", "newsletter_builder", "marketing", "social_media"];
+const sectionLabel = (id) => SECTIONS.find((s) => s.id === id)?.label || id;
+const sectionsOfBio = (b) => Array.isArray(b?.sections) ? b.sections : (b?.section ? [b.section] : []);
+const initialsOf = (n) => String(n || "").split(/\s+/).filter(Boolean).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+const photo = (b, size = "") => b?.image
+  ? `<span class="bio-ph${size}"><img src="${esc(b.image)}" alt="" loading="lazy" decoding="async"></span>`
+  : `<span class="bio-ph${size} is-initials" aria-hidden="true">${esc(initialsOf(b?.name))}</span>`;
+
+// About-page portraits are framed hexagons (a dark rim, a light band, the
+// photo on white inside), drawn into the image itself, like /YairCatalyst.webp.
+// framePortrait() puts any photo into that same frame so uploads match the
+// rest of the team. A file that already has see-through corners is taken to
+// be framed already and is used as it is.
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That file couldn't be read as an image.")); };
+    img.src = url;
+  });
+}
+function hexPath(g, x, y, w, h, r) {
+  const pts = [[x + w / 2, y], [x + w, y + h / 4], [x + w, y + h * 3 / 4], [x + w / 2, y + h], [x, y + h * 3 / 4], [x, y + h / 4]];
+  const start = [(pts[5][0] + pts[0][0]) / 2, (pts[5][1] + pts[0][1]) / 2];
+  g.beginPath();
+  g.moveTo(start[0], start[1]);
+  for (let i = 0; i < 6; i++) {
+    const p = pts[i], n = pts[(i + 1) % 6];
+    g.arcTo(p[0], p[1], n[0], n[1], r);
+  }
+  g.closePath();
+}
+export async function framePortrait(file) {
+  const img = await loadImage(file);
+  // Already framed? (a transparent top-left corner)
+  const probe = document.createElement("canvas");
+  probe.width = probe.height = 1;
+  const pg = probe.getContext("2d");
+  pg.drawImage(img, 0, 0, 2, 2, 0, 0, 1, 1);
+  const alreadyFramed = pg.getImageData(0, 0, 1, 1).data[3] < 16;
+
+  const W = 1200, H = Math.round(W * 1.172);
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  if (alreadyFramed) {
+    const k = Math.min(W / img.naturalWidth, H / img.naturalHeight);
+    const dw = img.naturalWidth * k, dh = img.naturalHeight * k;
+    g.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  } else {
+    // concentric hexagons: inset d on the sides is d / cos 30° at the points
+    const ring = (d) => [d, d * 1.1547, W - 2 * d, H - 2 * d * 1.1547];
+    const [ox, oy, ow, oh] = ring(4);
+    hexPath(g, ox, oy, ow, oh, W * 0.075); g.fillStyle = "#1e1c1d"; g.fill();
+    const [lx, ly, lw, lh] = ring(W * 0.09);
+    hexPath(g, lx, ly, lw, lh, W * 0.05); g.fillStyle = "#d1d3d4"; g.fill();
+    const [ix, iy, iw, ih] = ring(W * 0.143);
+    hexPath(g, ix, iy, iw, ih, W * 0.035);
+    g.save(); g.clip();
+    g.fillStyle = "#ffffff"; g.fillRect(ix, iy, iw, ih);
+    // cover the inner hexagon, keeping the upper part (faces) in view
+    const k = Math.max(iw / img.naturalWidth, ih / img.naturalHeight);
+    const dw = img.naturalWidth * k, dh = img.naturalHeight * k;
+    g.drawImage(img, ix + (iw - dw) / 2, iy + (ih - dh) * 0.3, dw, dh);
+    g.restore();
+  }
+  const blob = await new Promise((resolve) => c.toBlob(resolve, "image/webp", 0.9));
+  if (!blob) throw new Error("Couldn't prepare the photo.");
+  return blob;
+}
+
+// Team photos go where the Suite already uploads story images (the admin's
+// own folder), named by content hash so the same photo is stored once.
+async function uploadPhoto(file, ctx) {
+  const [{ storage }, { ref, uploadBytes, getDownloadURL }] = await Promise.all([
+    import("../firebase-config.js"),
+    import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"),
+  ]);
+  const framed = await framePortrait(file);
+  const digest = await crypto.subtle.digest("SHA-256", await framed.arrayBuffer());
+  const hash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const r = ref(storage, `stories/${ctx.user.uid}/images/${hash}.webp`);
+  await uploadBytes(r, framed, { contentType: "image/webp" });
+  return getDownloadURL(r);
+}
+
 export async function mount(ctx, container) {
   injectStyle();
   container.innerHTML = "";
   const page = el("div", { class: "bio-page" });
   page.innerHTML = `
-    <p class="bio-intro">When someone updates their bio in the Suite, it waits here. Read it next to what's on the site now, fix any wording, then approve it to put it live on the About page and their writer page, or send it back with a note.</p>
-    <div id="bio-pending"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
+    <div class="bio-top">
+      <p class="bio-intro">Everyone on the About page, as it appears there. Edit anyone's bio, title, photo and sections, or hide them. Your changes go live straight away. When someone sends their own bio from the Suite, it waits at the top for approval.</p>
+      <div class="bio-tools">
+        <label class="bio-search"><span class="sr-only">Find someone</span>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="bio-q" placeholder="Find someone" autocomplete="off">
+        </label>
+        <button type="button" class="btn btn-secondary" id="bio-add">Add someone</button>
+        <a class="btn btn-ghost" href="/about#team" target="_blank" rel="noopener">View About page</a>
+      </div>
+      <p class="bio-stats" id="bio-stats"></p>
+    </div>
+    <div id="bio-pending"></div>
+    <div id="bio-team"><div class="loading-state"><div class="spinner"></div>Loading…</div></div>
     <div id="bio-history"></div>`;
   container.appendChild(page);
 
   let requests = [], bios = new Map(), users = new Map();
+  let q = "";
   const load = async () => {
     const [rq, tb, us] = await Promise.all([
       getDocs(collection(db, "bio_requests")),
@@ -256,29 +428,202 @@ export async function mount(ctx, container) {
       getDocs(collection(db, "users")).catch(() => null),
     ]);
     requests = rq.docs.map((d) => ({ id: d.id, ...d.data() }));
-    bios = new Map(tb.docs.map((d) => [d.id, d.data()]));
+    bios = new Map(tb.docs.map((d) => [d.id, { slug: d.id, ...d.data() }]));
     users = new Map((us?.docs || []).map((d) => [d.id, d.data()]));
     render();
   };
 
-  function render() {
+  page.querySelector("#bio-q").addEventListener("input", (e) => { q = e.target.value.trim().toLowerCase(); renderTeam(); });
+  page.querySelector("#bio-add").addEventListener("click", () => openEntryEditor({ isNew: true }));
+
+  function render() { renderPending(); renderTeam(); renderHistory(); }
+
+  // ── waiting requests ──
+  function renderPending() {
     const pending = requests.filter((r) => r.status === "pending").sort((a, b) => String(a.submittedAt).localeCompare(String(b.submittedAt)));
-    const done = requests.filter((r) => r.status === "approved" || r.status === "changes")
-      .sort((a, b) => String(b.decidedAt || "").localeCompare(String(a.decidedAt || ""))).slice(0, 15);
-
     const box = page.querySelector("#bio-pending");
-    box.innerHTML = `<h2 class="bio-h">Waiting for you ${pending.length ? `<span class="n">${pending.length}</span>` : ""}</h2>`;
-    if (!pending.length) {
-      box.insertAdjacentHTML("beforeend", `<div class="bio-empty">No bios waiting. When someone sends one, every admin gets a notification and an email.</div>`);
-    }
+    box.innerHTML = pending.length ? `<h2 class="bio-h">Waiting for approval <span class="n">${pending.length}</span></h2>` : "";
     pending.forEach((r) => box.appendChild(requestCard(r)));
+  }
 
+  // ── the team ──
+  function staffWithoutBio() {
+    const seen = new Set(bios.keys());
+    const out = [];
+    for (const [uid, u] of users) {
+      const name = String(u.name || "").trim();
+      const slug = slugify(name);
+      if (!name || !slug || seen.has(slug) || !STAFF_ROLES.includes(u.role)) continue;
+      seen.add(slug);
+      out.push({ uid, name, slug, suiteRole: u.role });
+    }
+    return out.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function renderTeam() {
+    const all = [...bios.values()];
+    const match = (b) => !q || String(b.name || "").toLowerCase().includes(q) || String(b.role || "").toLowerCase().includes(q);
+    const shown = all.filter((b) => !b.hidden && sectionsOfBio(b).length);
+    const hidden = all.filter((b) => b.hidden || !sectionsOfBio(b).length);
+    const missing = staffWithoutBio();
+    page.querySelector("#bio-stats").innerHTML = `<b>${shown.length}</b> on the About page · <b>${hidden.length}</b> hidden · <b>${missing.length}</b> staff without a bio`;
+
+    const row = (b, section) => {
+      const others = sectionsOfBio(b).filter((s) => s !== section);
+      const pending = requests.some((r) => r.status === "pending" && r.slug === b.slug);
+      return `
+        <li><button type="button" class="bio-row" data-slug="${esc(b.slug)}">
+          ${photo(b)}
+          <span class="bio-row-main">
+            <span class="bio-row-name">${esc(b.name)}${pending ? ` <span class="bio-tag">Sent a new bio</span>` : ""}</span>
+            <span class="bio-row-role">${esc(b.role || "No title")}${others.length ? ` · also in ${others.map((s) => esc(sectionLabel(s))).join(", ")}` : ""}</span>
+          </span>
+          <span class="bio-row-bio">${b.bio ? esc(b.bio) : "<i>No bio yet</i>"}</span>
+          <span class="bio-row-edit">Edit</span>
+        </button></li>`;
+    };
+    const groups = SECTIONS.map((s) => {
+      const people = shown.filter((b) => sectionsOfBio(b).includes(s.id) && match(b)).sort((a, b) => a.name.localeCompare(b.name));
+      if (!people.length) return "";
+      return `<section class="bio-group"><h3>${esc(s.label)} <span>${people.length}</span></h3><ul class="bio-list">${people.map((b) => row(b, s.id)).join("")}</ul></section>`;
+    }).join("");
+    const hid = hidden.filter(match).sort((a, b) => a.name.localeCompare(b.name));
+    const miss = missing.filter((m) => !q || m.name.toLowerCase().includes(q));
+    const box = page.querySelector("#bio-team");
+    box.innerHTML = `
+      <h2 class="bio-h">On the About page</h2>
+      ${groups || `<div class="bio-empty">${q ? "No one on the About page matches that." : "No one is on the About page yet."}</div>`}
+      ${hid.length ? `<section class="bio-group is-hidden"><h3>Hidden from the About page <span>${hid.length}</span></h3><p class="bio-group-note">Their entry is kept, so you can bring them back any time.</p><ul class="bio-list">${hid.map((b) => row(b, "")).join("")}</ul></section>` : ""}
+      ${miss.length ? `<section class="bio-group"><h3>Staff without a bio <span>${miss.length}</span></h3><p class="bio-group-note">On the team in the Suite but not on the About page. Write a bio for them, or ask them to send one from their name menu.</p>
+        <ul class="bio-list">${miss.map((m) => `<li><button type="button" class="bio-row" data-new-uid="${esc(m.uid)}">${photo(m)}<span class="bio-row-main"><span class="bio-row-name">${esc(m.name)}</span><span class="bio-row-role">${esc(m.suiteRole.replace("_", " "))} in the Suite</span></span><span class="bio-row-bio"><i>No bio yet</i></span><span class="bio-row-edit">Add</span></button></li>`).join("")}</ul></section>` : ""}`;
+    box.querySelectorAll("[data-slug]").forEach((b) => b.addEventListener("click", () => openEntryEditor({ entry: bios.get(b.dataset.slug) })));
+    box.querySelectorAll("[data-new-uid]").forEach((b) => b.addEventListener("click", () => {
+      const m = missing.find((x) => x.uid === b.dataset.newUid);
+      const def = DEFAULT_FOR_ROLE[m.suiteRole] || DEFAULT_FOR_ROLE.writer;
+      openEntryEditor({ isNew: true, entry: { name: m.name, uid: m.uid, role: def.role, sections: [def.section], bio: "", image: "" } });
+    }));
+  }
+
+  function renderHistory() {
+    const done = requests.filter((r) => r.status === "approved" || r.status === "changes")
+      .sort((a, b) => String(b.decidedAt || "").localeCompare(String(a.decidedAt || ""))).slice(0, 12);
     page.querySelector("#bio-history").innerHTML = done.length ? `
-      <h2 class="bio-h">Recently handled</h2>
+      <h2 class="bio-h">Recent requests</h2>
       <ul class="bio-hist">${done.map((r) => `
-        <li><span>${esc(r.name)}</span><span class="bio-pill is-${r.status}">${r.status === "approved" ? "Live" : "Sent back"}</span>
+        <li><span>${esc(r.name)}</span><span class="bio-pill is-${r.status}">${r.status === "approved" ? "Approved" : "Sent back"}</span>
         <small>${r.status === "approved" ? "Approved" : "Sent back"} by ${esc(r.decidedByName || "an admin")} ${esc(fmtRelative(r.decidedAt))}${r.note ? ` · “${esc(r.note.slice(0, 120))}${r.note.length > 120 ? "…" : ""}”` : ""}</small></li>`).join("")}
       </ul>` : "";
+  }
+
+  // ── edit one entry (or add someone) ──
+  function openEntryEditor({ entry = null, isNew = false }) {
+    const e = entry || { name: "", role: "", sections: [], bio: "", image: "" };
+    const secs = new Set(sectionsOfBio(e));
+    let image = e.image || "";
+    const pending = !isNew && requests.find((r) => r.status === "pending" && r.slug === e.slug);
+    const body = el("div", { class: "bio-edit" });
+    body.innerHTML = `
+      ${pending ? `<div class="bio-banner is-wait"><b>${esc(e.name.split(/\s+/)[0])} sent a new bio that's waiting for approval</b><span>It's at the top of this page. Saving here doesn't touch their request.</span></div>` : ""}
+      <div class="bio-edit-grid">
+        <div class="bio-edit-side">
+          <div class="bio-edit-photo" id="be-photo"></div>
+          <div class="bio-edit-photo-btns">
+            <label class="btn btn-secondary btn-sm bio-upload">Upload photo<input type="file" accept="image/*" id="be-file" hidden></label>
+            <button type="button" class="btn btn-ghost btn-sm" id="be-remove">Remove</button>
+          </div>
+          <p class="bio-hint" id="be-photo-hint">Any photo works: it goes in the same hexagon frame as everyone else's. A head-and-shoulders shot looks best. Without one, their initials show.</p>
+          <label class="bio-switch">
+            <input type="checkbox" id="be-show" ${e.hidden ? "" : "checked"}>
+            <span class="bio-switch-track" aria-hidden="true"></span>
+            <span><b>Show on the About page</b><small>Turn off to hide them without losing their entry.</small></span>
+          </label>
+        </div>
+        <div class="bio-edit-main">
+          <label class="bio-field">Name
+            <input type="text" id="be-name" value="${esc(e.name)}" ${isNew && !e.uid ? "" : "readonly"} placeholder="First and last name">
+            ${isNew && !e.uid ? `<small>Use the name they publish under, so their articles link to their writer page.</small>` : ""}
+          </label>
+          <label class="bio-field">Title under their name
+            <input type="text" id="be-role" value="${esc(e.role || "")}" placeholder="For example: Undergraduate Fellow">
+          </label>
+          <fieldset class="bio-secs">
+            <legend>Sections of the About page <small>Pick one or more.</small></legend>
+            ${SECTIONS.map((s) => `<label class="bio-chip"><input type="checkbox" value="${esc(s.id)}" ${secs.has(s.id) ? "checked" : ""}><span>${esc(s.label)}</span></label>`).join("")}
+          </fieldset>
+          <div>
+            <label class="bio-label" for="be-bio"><span>Bio</span><span class="bio-count" id="be-count"></span></label>
+            <textarea class="bio-text" id="be-bio" placeholder="${esc((e.name || "They").split(/\s+/)[0])} is a …"></textarea>
+          </div>
+          ${!isNew && e.updatedAt ? `<p class="bio-hint">Last changed ${esc(fmtRelative(e.updatedAt))}${e.approvedByName ? ` · ${esc(e.approvedByName)}` : ""}</p>` : ""}
+        </div>
+      </div>
+      <p class="bio-err" id="be-err" role="alert"></p>`;
+    const ta = body.querySelector("#be-bio");
+    ta.value = e.bio || "";
+    wireCounter(ta, body.querySelector("#be-count"));
+    const err = body.querySelector("#be-err");
+    const paintPhoto = () => {
+      body.querySelector("#be-photo").innerHTML = photo({ name: body.querySelector("#be-name").value || e.name, image }, "-lg");
+      body.querySelector("#be-remove").hidden = !image;
+    };
+    paintPhoto();
+    body.querySelector("#be-name").addEventListener("input", () => { if (!image) paintPhoto(); });
+    body.querySelector("#be-remove").addEventListener("click", () => { image = ""; paintPhoto(); });
+    body.querySelector("#be-file").addEventListener("change", async (ev) => {
+      const file = ev.target.files?.[0];
+      ev.target.value = "";
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { err.textContent = "Choose an image file (JPG, PNG or WebP)."; return; }
+      if (file.size > 15 * 1024 * 1024) { err.textContent = "That photo is over 15 MB. Choose a smaller one."; return; }
+      const hint = body.querySelector("#be-photo-hint");
+      hint.textContent = "Framing and uploading…"; err.textContent = "";
+      try {
+        image = await uploadPhoto(file, ctx);
+        paintPhoto();
+        hint.textContent = "Uploaded. Save to put it on the About page.";
+      } catch (x) {
+        hint.textContent = "Any photo works: it goes in the same hexagon frame as everyone else's.";
+        err.textContent = `Couldn't upload the photo: ${x?.message || x}`;
+      }
+    });
+
+    const cancel = el("button", { type: "button", class: "btn btn-secondary" }, "Cancel");
+    const save = el("button", { type: "button", class: "btn btn-primary" }, isNew ? "Add to the About page" : "Save changes");
+    const modal = openModal({ title: isNew ? (e.name ? `Add ${e.name} to the About page` : "Add someone to the About page") : `Edit ${e.name}`, body, footer: [cancel, save], size: "wide" });
+    if (!modal) return;
+    cancel.addEventListener("click", () => modal.close());
+    save.addEventListener("click", async () => {
+      err.textContent = "";
+      const payload = {
+        slug: isNew ? undefined : e.slug,
+        uid: e.uid || undefined,
+        name: body.querySelector("#be-name").value.trim(),
+        role: body.querySelector("#be-role").value.trim(),
+        sections: [...body.querySelectorAll(".bio-secs input:checked")].map((x) => x.value),
+        hidden: !body.querySelector("#be-show").checked,
+        bio: ta.value.trim(),
+        image,
+      };
+      if (!payload.name) { err.textContent = "Give them a name."; return; }
+      if (isNew && bios.has(slugify(payload.name))) { err.textContent = `${payload.name} is already on the list. Edit their entry instead.`; return; }
+      if (!payload.hidden) {
+        if (payload.bio.length < 40) { err.textContent = "Write a bio first, or turn off Show on the About page."; ta.focus(); return; }
+        if (!payload.role) { err.textContent = "Give them a title, for example Writer."; return; }
+        if (!payload.sections.length) { err.textContent = "Choose at least one section."; return; }
+      }
+      save.disabled = true; save.textContent = "Saving…";
+      try {
+        const res = await ctx.authedFetch("/api/bio/manage", { method: "POST", body: JSON.stringify(payload) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data.error || `Request failed (${res.status})`);
+        modal.close();
+        toast(payload.hidden ? `${payload.name.split(/\s+/)[0]} is hidden from the About page.` : `Saved. ${payload.name.split(/\s+/)[0]}'s entry is live on the About page.`, "success");
+        await load();
+      } catch (x) {
+        err.textContent = x.message || "Couldn't save. Try again.";
+        save.disabled = false; save.textContent = isNew ? "Add to the About page" : "Save changes";
+      }
+    });
   }
 
   function requestCard(r) {
@@ -356,6 +701,6 @@ export async function mount(ctx, container) {
   try {
     await load();
   } catch (e) {
-    page.querySelector("#bio-pending").innerHTML = `<div class="error-state">Couldn't load bio requests: ${esc(e?.message || e)}</div>`;
+    page.querySelector("#bio-team").innerHTML = `<div class="error-state">Couldn't load the team: ${esc(e?.message || e)}</div>`;
   }
 }

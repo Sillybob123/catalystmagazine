@@ -681,7 +681,7 @@ const LIMITABLE_ROUTES = [
   { group: "Everyday", hash: "#/tasks",          label: "Team tasks",         baseRoles: ["*"] },
   { group: "Everyday", hash: "#/directory",      label: "Team & messages",    baseRoles: ["*"] },
   { group: "Admin tools", hash: "#/admin/briefing", label: "Briefing",        baseRoles: ["admin"] },
-  { group: "Admin tools", hash: "#/admin/bios",     label: "Bio requests",    baseRoles: ["admin"] },
+  { group: "Admin tools", hash: "#/admin/bios",     label: "Team bios",       baseRoles: ["admin"] },
   ...GRANTABLE_ROUTES.filter((r) => r.hash !== "#/planner/assign"),
   { group: "Marketing", hash: "#/planner/assign", label: "Planner: assign social posts + deadlines", baseRoles: ["admin"] },
 ];
