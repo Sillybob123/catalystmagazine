@@ -2084,7 +2084,7 @@
         sync();
       }
 
-      var editionsReady = fetch('/edition-art/editions.json').then(function (r) { if (!r.ok) throw new Error('editions ' + r.status); return r.json(); })
+      var editionsReady = fetch('/edition-art/editions.json?v=2').then(function (r) { if (!r.ok) throw new Error('editions ' + r.status); return r.json(); })
         .then(function (d) {
           EDS = d;
           Object.keys(d).forEach(function (id) { d[id].id = id; d[id].stories.forEach(function (s) { bySlug[s.slug] = d[id]; }); });

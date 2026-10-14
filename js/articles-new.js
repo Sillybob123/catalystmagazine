@@ -411,7 +411,7 @@
     // season its date falls in. Shown as a quiet note in the byline row.
     let EDITIONS = null;
     const edBySlug = {};
-    fetch('/edition-art/editions.json')
+    fetch('/edition-art/editions.json?v=2')
         .then(r => (r.ok ? r.json() : null))
         .then(d => {
             if (!d) return;

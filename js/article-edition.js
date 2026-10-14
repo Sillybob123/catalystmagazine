@@ -19,7 +19,7 @@
   }
   if (!id || !/^[a-z0-9-]+$/.test(id)) return;
 
-  var ready = fetch('/edition-art/editions.json', { cache: 'force-cache' })
+  var ready = fetch('/edition-art/editions.json?v=2')
     .then(function (r) { if (!r.ok) throw new Error('editions ' + r.status); return r.json(); })
     .then(function (all) { return all[id] || null; })
     .catch(function (e) { console.warn('[edition] could not load editions.json', e); return null; });

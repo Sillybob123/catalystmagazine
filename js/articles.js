@@ -100,7 +100,7 @@
         return list;
       });
   }
-  var editionsReady = fetch('/edition-art/editions.json').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
+  var editionsReady = fetch('/edition-art/editions.json?v=2').then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; });
 
   /* ---------------- state ---------------- */
   var ALL = [], EDS = {}, EDLIST = [], bySlug = {};

@@ -54,3 +54,8 @@
 # the page when an image is replaced.
 /edition-art/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Except the edition list: it changes whenever a story joins an edition.
+/edition-art/editions.json
+  ! Cache-Control
+  Cache-Control: public, max-age=300, must-revalidate
