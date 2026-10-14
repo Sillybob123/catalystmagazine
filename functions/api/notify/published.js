@@ -25,6 +25,7 @@ import { buildArticleUrl } from "../../_utils/article-meta.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { articlePublishedEmail, socialPublishedEmail } from "../../_utils/reminder-emails.js";
 import { createNotification, getAdminUsers } from "../../_utils/notifications.js";
+import { pingIndexNow, purgeSitemapCache } from "../../_utils/seo-notify.js";
 
 const ID_RE = /^[A-Za-z0-9_-]{1,200}$/;
 
@@ -94,6 +95,14 @@ export const onRequestPost = async ({ request, env }) => {
     const slug = field(fields, "slug");
     const authorName = field(fields, "authorName") || field(fields, "author") || "there";
     const articleUrl = buildArticleUrl({ title, slug, category }, siteUrl);
+
+    // Tell Bing and the other IndexNow engines about the new page right away
+    // (Cloudflare's own hints only ever sent images and files), and clear the
+    // cached sitemap so crawlers see it. Best-effort; never blocks the emails.
+    await Promise.allSettled([
+      pingIndexNow(siteUrl, [articleUrl, "/articles", "/"]),
+      purgeSitemapCache(env, [articleUrl]),
+    ]);
 
     // Tell the social media team a story just went live — they plan the
     // announcement posts from the Planner. Best-effort: a social-send failure

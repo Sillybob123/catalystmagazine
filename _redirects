@@ -80,8 +80,10 @@
 # deindexes the old URL faster than 404/410.
 #
 # /post/<slug> is the Wix article URL pattern. The Catalyst slug for the
-# same article matches, so /post/<slug> -> /article/<slug>. If a slug
-# does not resolve, functions/article/[slug].js falls back to /articles.
+# same article usually matches, so /post/<slug> -> /article/<slug>. When it
+# doesn't (Wix wrote "huang-s"/"d-c", cut slugs at 100 chars, or the piece was
+# renamed), functions/article/[slug].js finds the article and 301s to it; old
+# posts that never moved over 301 to /articles (RENAMED / RETIRED there).
 /copy-of-home            /                          301
 /copy-of-*               /                          301
 /collaborateold          /collaborate               301

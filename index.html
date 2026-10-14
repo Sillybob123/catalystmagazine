@@ -13,7 +13,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>The Catalyst Magazine | STEM in Washington D.C.</title>
-    <meta name="description" content="Washington, D.C.&#39;s student-run STEM magazine: profiles, interviews and features on the science, research and innovation shaping the capital, every season.">
+    <meta name="description" content="Washington, D.C.’s student-run science magazine: interviews, profiles and features on the research and people shaping the capital.">
     <meta name="keywords" content="The Catalyst Magazine, Catalyst Magazine, Catalyst DC, The Catalyst, STEM magazine Washington DC, student-run science magazine, science journalism DC, research profiles, science interviews">
     <meta name="author" content="The Catalyst Magazine">
     <meta name="robots" content="index, follow, max-image-preview:large">
@@ -1801,7 +1801,7 @@
       function figure(s, widths, sizes, eager) {
         var src = sized(s.img, widths[0]);
         var srcset = widths.map(function (w) { return esc(sized(s.img, w)) + ' ' + w + 'w'; }).join(', ');
-        return '<div class="fig"><img src="' + esc(src) + '" srcset="' + srcset + '" sizes="' + sizes + '" alt="" ' +
+        return '<div class="fig"><img src="' + esc(src) + '" srcset="' + srcset + '" sizes="' + sizes + '" alt="' + esc(s.title || '') + '" ' +
           (eager ? 'fetchpriority="high" ' : 'loading="lazy" ') + 'decoding="async" ' +
           'onload="this.classList.add(\'ok\')" onerror="this.onerror=null;this.srcset=\'\';this.src=\'' + FALLBACK_IMG + '\'"></div>';
       }

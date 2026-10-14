@@ -21,6 +21,46 @@ import { renderArticleSsr } from "../_utils/article-ssr.js";
 
 const SITE_NAME = "The Catalyst Magazine";
 
+// Old Wix addresses whose article was renamed when it moved here, so no
+// slug rule can find it. /post/<slug> 301s to /article/<slug> (_redirects),
+// then this sends it on to the article as it's named now.
+const RENAMED = {
+  "the-road-from-academia-to-forensic-applications-of-chemistry": "from-fluorine-to-forensics-the-road-from-academia-to-forensic-chemistry",
+  "transition-metals-the-capacity-of-the-d-block-to-color-our-world": "chromatic-chemistry-transition-metals-and-natures-hidden-color-palette",
+  "paradoxes-in-science-where-models-go-to-break": "the-fascinating-role-of-paradoxes-in-science",
+  "sitting-down-with-the-editor-in-chief-of-science-magazine-to-talk-about-the-future-of-scientific-co": "the-role-of-science-communication-in-todays-discourse",
+  "elucidating-the-brain-s-language-circuitry-with-dr-michael-ullman": "the-declarativeprocedural-model-understanding-language-and-memory",
+  "reframing-health-as-a-national-security-issue": "from-battling-a-rare-bioweapon-pathogen-to-pioneering-global-health-security",
+};
+
+// Old Wix posts that were never moved here (template pages, newsletter
+// notes and a few retired pieces). They go to the Articles page rather
+// than a dead end, so their links still land somewhere useful.
+const RETIRED = new Set([
+  "template-product-review", "newsletter-1",
+  "stay-informed-and-inspired-with-the-catalyst-newsletter",
+  "stay-informed-latest-stem-breakthroughs-and-wellness-tips",
+  "empowering-college-students-the-catalyst-newsletter-highlights",
+  "unveiling-the-future-the-groundbreaking-new-scientific-innovation-that-s-changing-everything",
+  "how-to-manage-your-time-in-stem", "how-to-study-effectively-in-stem",
+  "who-will-lead-the-next-generation-of-computer-chips",
+  "science-meets-stoicism-how-ancient-wisdom-fuels-modern-stem",
+  "can-google-s-ai-diagnose-you-with-a-sneeze-inside-the-future-of-health-acoustic-representations",
+  "from-discoveries-to-therapies-the-race-to-cure-epilepsy",
+  "designing-a-sustainable-future-with-sun-wind-and-water",
+  "the-electric-romance-of-electricity-and-magnetism",
+  "urban-forests-growing-green-in-d-c",
+]);
+
+const permanent = (location) => new Response(null, {
+  status: 301,
+  headers: { Location: location, "Cache-Control": "public, max-age=3600, s-maxage=86400" },
+});
+
+// Slugs compared without hyphens: Wix wrote "huang-s"/"d-c" where we write
+// "huangs"/"dc", and cut long slugs at 100 characters.
+const squash = (x) => String(x || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
 export const onRequestGet = async ({ request, env, params, next }) => {
   const slug = params.slug || "";
   if (!slug) return next();
@@ -30,6 +70,8 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   // canonical (NFKD-folded) slug AND a legacy form so historic URLs that
   // dropped non-ASCII letters (e.g. "g-del-…" for "Gödel…") still resolve.
   const wanted = slug.toLowerCase();
+  if (RENAMED[wanted]) return permanent(`${getSiteUrl(request, env)}/article/${RENAMED[wanted]}`);
+  if (RETIRED.has(wanted)) return permanent(`${getSiteUrl(request, env)}/articles`);
   let article = await findArticleBySlug(wanted).catch(() => null);
   // Set when the full list loaded but nothing matched — a real 404, as
   // opposed to Firestore being briefly unreachable (empty list).
@@ -47,6 +89,13 @@ export const onRequestGet = async ({ request, env, params, next }) => {
       (wanted.length >= 40 ? articles.find((a) => {
         const full = titleToSlug(a.title);
         return full && full.length > wanted.length && full.startsWith(wanted);
+      }) : null) ||
+      // Same words, different punctuation (old Wix slugs). Long slugs only,
+      // so short ones can't match the start of a different article.
+      (squash(wanted).length >= 24 ? articles.find((a) => {
+        const w = squash(wanted);
+        const have = squash(a.slug || titleToSlug(a.title));
+        return have && (have === w || (w.length >= 40 && have.startsWith(w)) || (have.length >= 40 && w.startsWith(have)));
       }) : null) ||
       null;
     // listAllArticles caps at 200; past that, an older story could simply
