@@ -31,9 +31,9 @@ const TYPES = {
     label: "Article cover", ratio: "16:9", px: "1920 × 1080", sheet: sheet("cover"),
     use: "the cover image at the top of an article on our website",
     sheetSays: "9 of our article covers. Each is one continuous painting that fills the frame edge to edge.",
-    composition: `FULL BLEED. The painting fills the entire frame and runs off all four edges, like a crop from a larger watercolour; no part of the frame is left as empty paper. Keep the subject and anything important inside the central 84 percent, because the site trims the edges on small screens. A clear focal point slightly off-centre, with depth: a foreground detail, the subject in the middle ground, and a soft background.`,
+    composition: `FULL BLEED. The painting fills the entire frame and runs off all four edges, like a crop from a larger watercolor; no part of the frame is left as empty paper. Keep the subject and anything important inside the central 84 percent, because the site trims the edges on small screens. A clear focal point slightly off-center, with depth: a foreground detail, the subject in the middle ground, and a soft background.`,
     check: "The painting reaches all four edges; nothing important sits in the outer 8 percent.",
-    closing: "Edge-to-edge watercolour painting filling the whole 16:9 frame, no text, no lettering, no border.",
+    closing: "Edge-to-edge watercolor painting filling the whole 16:9 frame, no text, no lettering, no border.",
   },
   post: {
     label: "Instagram post", ratio: "1:1", px: "1080 × 1080", sheet: sheet("post"),
@@ -41,15 +41,15 @@ const TYPES = {
     sheetSays: "9 of our Instagram posts. Notice the empty paper across the top of every one: that is where our headline goes.",
     composition: paperZone(45, 486, 1080),
     check: "Look only at the top 45 percent: it is plain paper with nothing in it. If anything is painted there, redo it.",
-    closing: "Watercolour painting in the bottom 55 percent only, plain bare paper above it, 1:1, no text, no lettering, no border.",
+    closing: "Watercolor painting in the bottom 55 percent only, plain bare paper above it, 1:1, no text, no lettering, no border.",
   },
   carousel: {
     label: "Instagram carousel", ratio: "1:1", px: "1080 × 1080", sheet: sheet("carousel"), set: true,
     use: "the slides of one Instagram carousel; we add each slide's text in the empty top later",
     sheetSays: "one of our real carousels, slides 1 to 6 in order. Notice how the slides match: the same paper, light, palette and painting height on every slide, and each one shows the next part of the story.",
     composition: paperZone(45, 486, 1080) + `\n- Every slide keeps exactly the same 45 percent line, so the set lines up when someone swipes.`,
-    check: "Top 45 percent is plain paper; the painting height, paper colour, light and palette match the slides before it.",
-    closing: "Watercolour painting in the bottom 55 percent only, plain bare paper above it, 1:1, no text, no lettering, no border.",
+    check: "Top 45 percent is plain paper; the painting height, paper color, light and palette match the slides before it.",
+    closing: "Watercolor painting in the bottom 55 percent only, plain bare paper above it, 1:1, no text, no lettering, no border.",
   },
   story: {
     label: "Story", ratio: "9:16", px: "1080 × 1920", sheet: sheet("story"),
@@ -57,32 +57,32 @@ const TYPES = {
     sheetSays: "4 of our stories. Notice the tall empty paper above each painting: that is where the story's text goes.",
     composition: paperZone(50, 960, 1920) + `\n- Keep faces and key details above the bottom 12 percent (above row 1690), which Instagram covers with its reply bar; the painting itself can still run off the bottom edge.`,
     check: "The top half is plain paper; key details sit above the bottom 12 percent.",
-    closing: "Watercolour painting in the bottom half only, plain bare paper above it, 9:16, no text, no lettering, no border.",
+    closing: "Watercolor painting in the bottom half only, plain bare paper above it, 9:16, no text, no lettering, no border.",
   },
   edition: {
     label: "Edition cover", ratio: "3:4", px: "1536 × 2048", sheet: sheet("edition"),
     use: "the cover of one of our seasonal magazine editions; we add the masthead, title and cover lines on top later",
     sheetSays: "8 of our edition covers (the Jefferson Memorial in fall and in winter, the Library of Congress with magnolias, Arlington Memorial Bridge, the Capitol in cherry blossom, Union Station in snow, the Natural History Museum in fall, and the Smithsonian Castle gardens in spring). Notice what they share: one real Washington, D.C. landmark seen straight on, seasonal trees framing it, a path or water leading in from the bottom, and a pale, empty sky across the top for the masthead.",
     composition: `EDITION COVER LAYOUT.
-- One REAL, named place in Washington, D.C., drawn accurately enough that a local recognises it at once: for example the Jefferson Memorial, Lincoln Memorial, U.S. Capitol, Washington Monument, Library of Congress, Smithsonian Castle, National Museum of Natural History, Union Station, Washington National Cathedral, Healy Hall at Georgetown, Arlington Memorial Bridge, the Tidal Basin, Dupont Circle or a Georgetown street. No invented, generic or ruined buildings. Already used for past editions (pick something else unless asked): Dupont Circle, the Library of Congress, the Washington Monument, the Einstein Memorial, the Jefferson Memorial, the Capitol and the Tidal Basin.
+- One REAL, named place in Washington, D.C., drawn accurately enough that a local recognizes it at once: for example the Jefferson Memorial, Lincoln Memorial, U.S. Capitol, Washington Monument, Library of Congress, Smithsonian Castle, National Museum of Natural History, Union Station, Washington National Cathedral, Healy Hall at Georgetown, Arlington Memorial Bridge, the Tidal Basin, Dupont Circle or a Georgetown street. No invented, generic or ruined buildings. Already used for past editions (pick something else unless asked): Dupont Circle, the Library of Congress, the Washington Monument, the Einstein Memorial, the Jefferson Memorial, the Capitol and the Tidal Basin.
 - Show it in a calm, centred, one-point-perspective view, with seasonal trees framing the left and right edges and a path, lawn, steps or water leading in from the bottom edge.
 - SKY ZONE, from the top edge down to 32 percent of the height (rows 0 to 655 of 2048): an almost-white pale sky wash with nothing in it, because the masthead sits there. No birds, branches, detailed clouds or rooftops reach into it. The tallest point of the landmark stays below the 38 percent line.
-- Airy and light: delicate pen-and-ink with pale, transparent watercolour, plenty of white paper showing in the sky and the ground, softer and lighter than our other images.
+- Airy and light: delicate pen-and-ink with pale, transparent watercolor, plenty of white paper showing in the sky and the ground, softer and lighter than our other images.
 - The season is unmistakable: falling leaves and warm reds for fall, blossoms for spring, snow and bare branches for winter, deep green for summer.`,
     check: "The top 32 percent is a pale empty sky; the landmark is centred and correct; the season is clear.",
-    closing: "Light pen-and-ink and pale watercolour edition cover, empty pale sky across the top third, 3:4, no text, no lettering, no border.",
+    closing: "Light pen-and-ink and pale watercolor edition cover, empty pale sky across the top third, 3:4, no text, no lettering, no border.",
   },
 };
 
 // The house style, written once and pasted word for word into every prompt
 // so a set of images (or a whole season of covers) stays consistent.
 export const STYLE_LOCK = `[CATALYST STYLE LOCK — DO NOT DEVIATE]
-Medium: transparent watercolour with fine sepia and soft charcoal ink linework over a faint pencil underdrawing, on warm off-white cold-press cotton paper (bare paper about #F4EFE3).
+Medium: transparent watercolor with fine sepia and soft charcoal ink linework over a faint pencil underdrawing, on warm off-white cold-press cotton paper (bare paper about #F4EFE3).
 Line: thin, slightly wavering, confident ink lines of varied weight; light hatching in the shadows; a few pencil construction lines still visible.
 Paint: soft layered washes, visible pigment granulation, gentle blooms and wet-into-wet bleeds, small patches of untouched paper as highlights.
-Palette: sage green, ochre, terracotta, dusty rose, slate blue, warm grey and soft charcoal; one gentle accent at most; muted, natural, never neon.
+Palette: sage green, ochre, terracotta, dusty rose, slate blue, warm gray and soft charcoal; one gentle accent at most; muted, natural, never neon.
 Light and mood: soft daylight from one side; calm, curious, warm, a light touch of wit; natural-history plate meets New Yorker editorial illustration.
-Finish: it must look like a scan of a real painting, not a digital image. Washes are uneven and slightly blotchy, with hard dried edges where puddles of paint dried, granulating pigment that settles into the paper's tooth, colour that wanders a little outside the ink lines, and some areas left as loose suggestion while others are detailed. Ink lines are drawn by hand: they vary in weight, break, overlap and are sometimes redrawn. Colour is muted and slightly chalky, never clean, smooth or evenly saturated.
+Finish: it must look like a scan of a real painting, not a digital image. Washes are uneven and slightly blotchy, with hard dried edges where puddles of paint dried, granulating pigment that settles into the paper's tooth, color that wanders a little outside the ink lines, and some areas left as loose suggestion while others are detailed. Ink lines are drawn by hand: they vary in weight, break, overlap and are sometimes redrawn. Color is muted and slightly chalky, never clean, smooth or evenly saturated.
 Accuracy: animals, anatomy, plants, lab equipment and D.C. landmarks drawn correctly; people with natural proportions, gentle simple faces, five-fingered hands and a natural mix of ages and backgrounds.
 Never: lettering of any kind, logos, signatures, borders, frames; and never the digital look: smooth even gradients, crisp uniform outlines, perfectly clean flat fills, glossy or airbrushed shading, glowing highlights, a 3D-render or photographic finish, or splashy decorative paint blotches added around the scene.`;
 
@@ -121,7 +121,7 @@ STEP 1: CREATIVE DNA (think privately, don't show me)
 - Story truth: what is physically real in this ${source}? (a place, an organism, an instrument, a process, a person's work)
 - Reader desire: what should a curious high-school or college reader feel when they see it?
 - Central mechanism: the one visual idea that captures it.
-- Forbidden clichés for THIS ${source}: generic devices that would make the image interchangeable (always include: glowing brains, light bulbs, puzzle pieces, handshakes, circuit patterns, DNA made of light, floating icons, a lone figure staring at a galaxy).${type === "edition" ? `\n- Season: ${season || "the edition's season"}. Landmark: one real D.C. place that suits the edition's theme (if one is named below, use it), with plants and weather true to D.C. in that season (cherry blossoms are late March to early April; magnolias and redbuds in April; full fall colour in late October; snow only in winter).` : ""}
+- Forbidden clichés for THIS ${source}: generic devices that would make the image interchangeable (always include: glowing brains, light bulbs, puzzle pieces, handshakes, circuit patterns, DNA made of light, floating icons, a lone figure staring at a galaxy).${type === "edition" ? `\n- Season: ${season || "the edition's season"}. Landmark: one real D.C. place that suits the edition's theme (if one is named below, use it), with plants and weather true to D.C. in that season (cherry blossoms are late March to early April; magnolias and redbuds in April; full fall color in late October; snow only in winter).` : ""}
 
 STEP 2: ${T.set ? "PLAN THE SET" : "THREE CONCEPTS, THEN CHOOSE"}
 ${T.set
@@ -149,7 +149,7 @@ ${T.set
 1. First show me the plan from Step 2 as a numbered list, one line per slide.
 2. Then make ONLY slide 1 (attach Image 1 as the style reference), show its prompt under it, and stop.
 3. Wait for me. When I reply "next" (or "ready" or "go"), make the next slide, and only that one, with its prompt. Keep going until all ${n} are done, then say "That's the set."
-4. After each slide, check it against Step 4 (including physical truth) and redo it before showing me if it fails. Before every slide, re-read the style lock, the plan and the fixed descriptions, and look at the slides you've already made: the new one must sit naturally next to them (same paper colour, same light direction, same 45 percent line, similar amount of detail) while showing the next part of the story.
+4. After each slide, check it against Step 4 (including physical truth) and redo it before showing me if it fails. Before every slide, re-read the style lock, the plan and the fixed descriptions, and look at the slides you've already made: the new one must sit naturally next to them (same paper color, same light direction, same 45 percent line, similar amount of detail) while showing the next part of the story.
 5. If I reply "redo" with a note, remake the same slide with only that change.
 If you can't make images at all, give me all ${n} prompts, numbered, in one code block instead.`
     : `- If you can make images: make it from your prompt, attaching Image 1 as the style reference, and show me the prompt you used.
@@ -181,7 +181,7 @@ export function mountCoverPromptTool(ctx, root) {
   root.innerHTML = `
     <header class="adv-pane-header">
       <h2 class="adv-pane-title">Cover art prompt</h2>
-      <p class="adv-pane-sub">Pick what you're making, paste an article or describe the idea, and this builds a detailed prompt for an image AI (ChatGPT, Gemini or Higgsfield) in The Catalyst's watercolour style. Each kind of image has its own style sheet: attach it to the same chat so the AI copies the right layout.</p>
+      <p class="adv-pane-sub">Pick what you're making, paste an article or describe the idea, and this builds a detailed prompt for an image AI (ChatGPT, Gemini or Higgsfield) in The Catalyst's watercolor style. Each kind of image has its own style sheet: attach it to the same chat so the AI copies the right layout.</p>
     </header>
     <div class="cvp">
       <div class="cvp-form">

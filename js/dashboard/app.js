@@ -25,7 +25,7 @@ import {
 
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
-import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-7";
+import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-8";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -244,7 +244,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=home-3"),
+    loader: () => import("./overview.js?v=home-4"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -302,7 +302,7 @@ const ROUTES = {
     icon: ICONS.pen,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js?v=wd-4"),
+    loader: () => import("./writer.js?v=wd-5"),
     mountKey: "draft",
   },
   "#/writer/mine": {
@@ -311,7 +311,7 @@ const ROUTES = {
     icon: ICONS.pages,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./writer.js?v=wd-4"),
+    loader: () => import("./writer.js?v=wd-5"),
     mountKey: "mine",
   },
   "#/writer/feed": {
@@ -406,7 +406,7 @@ const ROUTES = {
     icon: ICONS.chart,
     roles: ["admin", "marketing", "newsletter_builder", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-26"),
+    loader: () => import("./marketing.js?v=studio-27"),
     mountKey: "analytics",
   },
   "#/marketing/subscribers": {
@@ -415,7 +415,7 @@ const ROUTES = {
     icon: ICONS.users,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-26"),
+    loader: () => import("./marketing.js?v=studio-27"),
     mountKey: "subscribers",
   },
   "#/marketing/collabs": {
@@ -424,7 +424,7 @@ const ROUTES = {
     icon: ICONS.handshake,
     roles: ["admin", "marketing"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-26"),
+    loader: () => import("./marketing.js?v=studio-27"),
     mountKey: "collabs",
   },
   "#/marketing/social": {
@@ -433,7 +433,7 @@ const ROUTES = {
     icon: ICONS.share,
     roles: ["admin", "marketing", "social_media"],
     group: "marketing",
-    loader: () => import("./marketing.js?v=studio-26"),
+    loader: () => import("./marketing.js?v=studio-27"),
     mountKey: "social",
   },
   "#/marketing/searchability": {
@@ -530,7 +530,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-6"),
+    loader: () => import("./admin-import.js?v=theme-7"),
     mountKey: "advanced",
   },
   "#/admin/activity": {

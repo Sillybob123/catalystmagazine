@@ -712,7 +712,7 @@ const TEMPLATES = [
       ...kicker(c.kicker || "Word of the week", 88, 170),
       txt({ text: c.headline || "Myelin", x: 80, y: 220, w: W - 160, size: 150, font: "serif", weight: 600, lh: 1, ls: -0.02, name: "Word" }),
       txt({ text: c.pron || "/ˈmaɪ.ə.lɪn/ · noun", x: 88, y: 0, w: W - 176, size: 28, color: "#5b6678", markup: false, name: "Pronunciation", after: ["Word", 14] }),
-      txt({ text: c.sub || "The fatty coat around nerve fibres that lets signals travel fast. In MS, the immune system attacks it.", x: 88, y: 0, w: W - 176, size: 36, font: "serif", lh: 1.35, color: "#334155", name: "Definition", after: ["Pronunciation", 30] }),
+      txt({ text: c.sub || "The fatty coat around nerve fibers that lets signals travel fast. In MS, the immune system attacks it.", x: 88, y: 0, w: W - 176, size: 36, font: "serif", lh: 1.35, color: "#334155", name: "Definition", after: ["Pronunciation", 30] }),
     ] },
   { id: "inside-hospital", name: "Inside the hospital", cat: "Health", bg: "med-bg-corridor",
     build: (W, H, c, ink) => [
@@ -1831,14 +1831,14 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
   }
   function swatches(cur, attr, { none = false } = {}) {
     const hex = /^#[0-9a-f]{6}$/i.test(cur || "") ? cur.toLowerCase() : "";
-    const sw = (c) => `<button type="button" class="ds-sw${hex === c.toLowerCase() ? " is-on" : ""}" data-${attr}="${c}" style="--c:${c}" title="${c}" aria-label="Colour ${c}"></button>`;
+    const sw = (c) => `<button type="button" class="ds-sw${hex === c.toLowerCase() ? " is-on" : ""}" data-${attr}="${c}" style="--c:${c}" title="${c}" aria-label="Color ${c}"></button>`;
     const used = designColours();
     return `<div class="ds-swatches">
-      ${none ? `<button type="button" class="ds-sw ds-sw-none${!cur ? " is-on" : ""}" data-${attr}="none" title="None" aria-label="No colour"></button>` : ""}
+      ${none ? `<button type="button" class="ds-sw ds-sw-none${!cur ? " is-on" : ""}" data-${attr}="none" title="None" aria-label="No color"></button>` : ""}
       ${used.length ? used.map(sw).join("") + `<span class="ds-sw-sep" aria-hidden="true"></span>` : ""}
       ${PALETTE.map(sw).join("")}
-      <label class="ds-sw ds-sw-custom" title="Pick any colour"><input type="color" data-${attr}-custom value="${hex || "#0f172a"}" aria-label="Pick any colour"></label>
-      <input class="ds-hex" type="text" maxlength="7" spellcheck="false" value="${hex}" placeholder="#hex" data-${attr}-hex aria-label="Hex colour">
+      <label class="ds-sw ds-sw-custom" title="Pick any color"><input type="color" data-${attr}-custom value="${hex || "#0f172a"}" aria-label="Pick any color"></label>
+      <input class="ds-hex" type="text" maxlength="7" spellcheck="false" value="${hex}" placeholder="#hex" data-${attr}-hex aria-label="Hex color">
     </div>`;
   }
   function paintToolbar() { $("#ds-toolbar").innerHTML = toolbarHTML(); }
@@ -1965,7 +1965,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
           <input type="number" min="6" max="400" value="${Math.round(L.size)}" data-prop="size" aria-label="Font size">
           <button type="button" data-act="size-inc" aria-label="Bigger">+</button>
         </div>
-        ${popBtn("color", `<span class="ds-colorA" style="--c:${esc(L.color || "#0f172a")}">A</span>`, "Text colour", `<div class="ds-pophead">Text colour</div>${swatches(L.color, "color")}`)}
+        ${popBtn("color", `<span class="ds-colorA" style="--c:${esc(L.color || "#0f172a")}">A</span>`, "Text color", `<div class="ds-pophead">Text color</div>${swatches(L.color, "color")}`)}
         <button type="button" class="ds-icon${(L.weight || 400) >= 600 ? " is-on" : ""}" data-act="bold" title="Bold" aria-label="Bold">${I(ICONS.bold)}</button>
         <button type="button" class="ds-icon${L.italic ? " is-on" : ""}" data-toggle="italic" title="Italic" aria-label="Italic">${I(ICONS.italic)}</button>
         <button type="button" class="ds-icon${L.upper ? " is-on" : ""}" data-toggle="upper" title="Uppercase" aria-label="Uppercase">${I(ICONS.upper)}</button>
@@ -1987,10 +1987,10 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     } else {
       const isLine = L.type === "line";
       return `
-        ${popBtn("fill", colourDot(L.fill), isLine ? "Line colour" : "Colour", `<div class="ds-pophead">${isLine ? "Line colour" : "Colour"}</div>${swatches(L.fill, "fill")}`)}
+        ${popBtn("fill", colourDot(L.fill), isLine ? "Line color" : "Color", `<div class="ds-pophead">${isLine ? "Line color" : "Color"}</div>${swatches(L.fill, "fill")}`)}
         ${isLine
           ? popBtn("border", I(ICONS.border), "Thickness", field("Thickness", `<input type="range" min="1" max="24" step="0.5" value="${L.sw || 2}" data-prop="sw">`, L.sw || 2))
-          : popBtn("border", I(ICONS.border), "Border", `${field("Border width", `<input type="range" min="0" max="24" step="0.5" value="${L.sw || 0}" data-prop="sw">`, L.sw || 0)}<div class="ds-pophead">Border colour</div>${swatches(L.stroke, "stroke")}`)}
+          : popBtn("border", I(ICONS.border), "Border", `${field("Border width", `<input type="range" min="0" max="24" step="0.5" value="${L.sw || 0}" data-prop="sw">`, L.sw || 0)}<div class="ds-pophead">Border color</div>${swatches(L.stroke, "stroke")}`)}
         ${!isLine && L.type !== "ellipse" ? popBtn("corners", I(ICONS.corners), "Rounded corners", field("Rounded corners", `<input type="range" min="0" max="300" step="2" value="${L.radius || 0}" data-prop="radius">`, Math.round(L.radius || 0))) : ""}
         ${commonRight(L)}`;
     }
@@ -2002,7 +2002,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     const hasImg = !!bg.image;
     if (inPanel) {
       return `
-      <div class="ds-bgctl"><span class="ds-tb-label">${hasImg ? "Plain colour" : "Colour"}</span>${swatches(hasImg ? "" : bg.color, "bgc")}</div>
+      <div class="ds-bgctl"><span class="ds-tb-label">${hasImg ? "Plain color" : "Color"}</span>${swatches(hasImg ? "" : bg.color, "bgc")}</div>
       ${hasImg ? `<div class="ds-bgctl"><span class="ds-tb-label">Wash over image</span>${swatches(bg.tintAlpha > 0 ? bg.tintColor : "", "tint", { none: true })}
         <label class="ds-tb-field">Strength<input type="range" min="0" max="0.85" step="0.01" value="${bg.tintAlpha || 0}" data-bgprop="tintAlpha"></label></div>
       <div class="ds-bgctl"><label class="ds-tb-field">Position<select data-act="bg-fit"><option value="cover"${bg.fit !== "bottom" ? " selected" : ""}>Fill the page</option><option value="bottom"${bg.fit === "bottom" ? " selected" : ""}>Fit width, at the bottom</option></select></label>
@@ -2012,7 +2012,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
     }
     return `
       <span class="ds-tb-label">Page ${pageIdx + 1}</span><span class="ds-tb-sep"></span>
-      ${popBtn("bgc", `${colourDot(hasImg ? "" : bg.color || PAPER)}<span>Background</span>`, "Background colour", `<div class="ds-pophead">${hasImg ? "Swap the image for a plain colour" : "Background colour"}</div>${swatches(hasImg ? "" : bg.color, "bgc")}`, "has-label")}
+      ${popBtn("bgc", `${colourDot(hasImg ? "" : bg.color || PAPER)}<span>Background</span>`, "Background color", `<div class="ds-pophead">${hasImg ? "Swap the image for a plain color" : "Background color"}</div>${swatches(hasImg ? "" : bg.color, "bgc")}`, "has-label")}
       ${hasImg ? `
       ${popBtn("wash", `${I(ICONS.wash)}<span>Wash</span>`, "Wash over the image", `<div class="ds-pophead">Wash over the image</div>${swatches(bg.tintAlpha > 0 ? bg.tintColor : "", "tint", { none: true })}${field("Strength", `<input type="range" min="0" max="0.85" step="0.01" value="${bg.tintAlpha || 0}" data-bgprop="tintAlpha">`, `${Math.round((bg.tintAlpha || 0) * 100)}%`)}`, "has-label")}
       <select class="ds-tbselect" data-act="bg-fit" aria-label="Image position" title="Image position"><option value="cover"${bg.fit !== "bottom" ? " selected" : ""}>Fill the page</option><option value="bottom"${bg.fit === "bottom" ? " selected" : ""}>Fit width, at the bottom</option></select>
@@ -2198,7 +2198,7 @@ export async function mountDesignStudio(ctx, container, { savePost, onSaved, onC
       p.innerHTML = `<h3>Background</h3>
         <div class="ds-panel-bgctl" id="ds-panel-bgctl">${bgControls({ inPanel: true })}</div>
         <h4>Illustrations</h4>
-        <p class="ds-panel-hint">Watercolour scenes with room for text, washes and night skies.</p>
+        <p class="ds-panel-hint">Watercolor scenes with room for text, washes and night skies.</p>
         <div class="ds-chips">${["All", ...cats].map((c, i) => `<button type="button" data-bgcat="${esc(c)}" class="${i === 0 ? "is-on" : ""}">${esc(c)}</button>`).join("")}</div>
         <div class="ds-bgrid" id="ds-bgrid"></div>`;
       const paintBg = (cat) => {

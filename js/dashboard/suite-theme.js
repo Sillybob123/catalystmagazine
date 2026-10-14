@@ -414,7 +414,7 @@ export function mountThemePicker(ctx, root) {
   root.innerHTML = `
     <header class="adv-pane-header">
       <h2 class="adv-pane-title">Suite theme</h2>
-      <p class="adv-pane-sub">Give the Editorial Suite a seasonal look for everyone on staff: the season's colours and painted washes, a decorated logo, a mascot in the sidebar corner, a welcoming Overview with the edition's photograph, and leaves, snowflakes, petals or fireflies drifting behind the pages. It never animates on focus pages (Write a draft, reviews, the newsletter builder, Social Studio), and anyone can switch the effects off for themselves from the menu under their name.</p>
+      <p class="adv-pane-sub">Give the Editorial Suite a seasonal look for everyone on staff: the season's colors and painted washes, a decorated logo, a mascot in the sidebar corner, a welcoming Overview with the edition's photograph, and leaves, snowflakes, petals or fireflies drifting behind the pages. It never animates on focus pages (Write a draft, reviews, the newsletter builder, Social Studio), and anyone can switch the effects off for themselves from the menu under their name.</p>
     </header>
     <div class="st-grid" role="radiogroup" aria-label="Suite theme" id="st-grid"></div>
     <div class="st-row">

@@ -17,7 +17,7 @@ import {
 import { buildAdminTasks } from "./task-engine.js";
 import { isProjectPublished } from "./publish-sync.js";
 import { el, esc, fmtRelative, confirmDialog } from "./ui.js";
-import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-7";
+import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-8";
 import { isStaff, whoseTurn, isMyTurn, nudgeFor, progressPct, stageLabel, readiness } from "./schedule-calendar.js?v=roles-2";
 
 // Shortcuts at the top of Overview, per role: the three or four things that

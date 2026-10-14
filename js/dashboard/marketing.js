@@ -972,7 +972,7 @@ async function mountSocialPosts(ctx, container) {
   function dueInfo(p) {
     if (!p.deadline) return { text: p.status === "posted" ? "Posted" : "No date set", cls: p.status === "posted" ? "is-done" : "is-none" };
     const [yy, mm, dd] = String(p.deadline).split("-").map(Number);
-    const d = new Date(yy, (mm || 1) - 1, dd || 1);   // local midnight, so day maths is exact
+    const d = new Date(yy, (mm || 1) - 1, dd || 1);   // local midnight, so day math is exact
     if (!yy || Number.isNaN(d.getTime())) return { text: p.deadline, cls: "" };
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const days = Math.round((d - today) / 86400000);
@@ -1011,7 +1011,7 @@ async function mountSocialPosts(ctx, container) {
 
   // Live previews for Studio designs (always the latest saved layout).
   let _studioMod = null;
-  const studioModule = () => _studioMod || (_studioMod = import("./design-studio.js?v=19"));
+  const studioModule = () => _studioMod || (_studioMod = import("./design-studio.js?v=20"));
   const FORMAT_W = { post: 1080, square: 1080, story: 1080, linkedin: 1200, wide: 1600 };
   const liveCache = new Map();
   async function renderDesignImage(p, page = 0, width = 420, type = "image/jpeg") {

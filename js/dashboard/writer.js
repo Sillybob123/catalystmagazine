@@ -201,11 +201,11 @@ function mountDraftEditor(ctx, container) {
         ${wdBtn('data-cmd="strikeThrough"', "strike", "Strikethrough", "mod+shift+x")}
         ${wdBtn('data-cmd="superscript"', "sup", "Superscript (x²)", "mod+.")}
         ${wdBtn('data-cmd="subscript"', "sub", "Subscript (H₂O)", "mod+,")}
-        <label class="rt-btn rt-btn-color" data-tip="Text colour" aria-label="Text colour">
+        <label class="rt-btn rt-btn-color" data-tip="Text color" aria-label="Text color">
           <span class="rt-color-glyph">${wdIco("color")}<span class="rt-color-bar" id="rt-color-bar-fg" style="background:#0f172a"></span></span>
           <input type="color" data-color="foreground" value="#0f172a" tabindex="-1" aria-hidden="true">
         </label>
-        <label class="rt-btn rt-btn-color" data-tip="Highlight" aria-label="Highlight colour">
+        <label class="rt-btn rt-btn-color" data-tip="Highlight" aria-label="Highlight color">
           <span class="rt-color-glyph">${wdIco("highlight")}<span class="rt-color-bar" id="rt-color-bar-bg" style="background:#fde68a"></span></span>
           <input type="color" data-color="background" value="#fde68a" tabindex="-1" aria-hidden="true">
         </label>
@@ -220,7 +220,7 @@ function mountDraftEditor(ctx, container) {
           <button type="button" class="rt-btn rt-btn-drop" data-menu="align" data-tip="Alignment" aria-label="Alignment" aria-haspopup="menu" aria-expanded="false"><span id="rt-align-ico">${wdIco("alignLeft")}</span>${wdIco("chevron", 12)}</button>
           <div class="rt-menu rt-menu-row" role="menu" data-menu-for="align" hidden>
             ${wdBtn('role="menuitem" data-cmd="justifyLeft"', "alignLeft", "Align left", "mod+shift+l")}
-            ${wdBtn('role="menuitem" data-cmd="justifyCenter"', "alignCenter", "Centre", "mod+shift+e")}
+            ${wdBtn('role="menuitem" data-cmd="justifyCenter"', "alignCenter", "Center", "mod+shift+e")}
             ${wdBtn('role="menuitem" data-cmd="justifyRight"', "alignRight", "Align right", "mod+shift+r")}
             ${wdBtn('role="menuitem" data-cmd="justifyFull"', "alignJustify", "Justify", "mod+shift+j")}
           </div>
@@ -1372,7 +1372,7 @@ function openShortcutsDialog() {
   const groups = [
     ["Writing", [["Save draft", "mod+s"], ["Undo", "mod+z"], ["Redo", "mod+shift+z"], ["Find and replace", "mod+f"], ["Add a link", "mod+k"], ["Line break in a paragraph", "shift+Enter"], ["This list", "mod+/"]]],
     ["Characters", [["Bold", "mod+b"], ["Italic", "mod+i"], ["Underline", "mod+u"], ["Strikethrough", "mod+shift+x"], ["Superscript (x²)", "mod+."], ["Subscript (H₂O)", "mod+,"], ["Clear formatting", "mod+\\"]]],
-    ["Paragraphs", [["Body text", "mod+alt+0"], ["Heading", "mod+alt+1"], ["Subheading", "mod+alt+2"], ["Section label", "mod+alt+3"], ["Lead paragraph", "mod+alt+4"], ["Small print", "mod+alt+5"], ["Bulleted list", "mod+shift+8"], ["Numbered list", "mod+shift+7"], ["Indent", "Tab"], ["Decrease indent", "shift+Tab"], ["Align left · centre · right · justify", "mod+shift+l / e / r / j"]]],
+    ["Paragraphs", [["Body text", "mod+alt+0"], ["Heading", "mod+alt+1"], ["Subheading", "mod+alt+2"], ["Section label", "mod+alt+3"], ["Lead paragraph", "mod+alt+4"], ["Small print", "mod+alt+5"], ["Bulleted list", "mod+shift+8"], ["Numbered list", "mod+shift+7"], ["Indent", "Tab"], ["Decrease indent", "shift+Tab"], ["Align left · center · right · justify", "mod+shift+l / e / r / j"]]],
     ["Type at the start of a line", [["Heading", "# then space"], ["Subheading", "## then space"], ["Section label", "### then space"], ["Bulleted list", "- then space"], ["Numbered list", "1. then space"], ["Divider", "--- then Enter"]]],
     ["Smart punctuation", [["Curly quotes", "\" and '"], ["Em dash —", "--"], ["Ellipsis …", "..."]]],
   ];
