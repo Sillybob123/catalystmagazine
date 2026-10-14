@@ -36,7 +36,7 @@ export function sanitizeStoryHtml(html) {
 // Mirror of getResizedImageUrl() in js/main.js: the server's cover <img>
 // must request the exact URL the client re-renders with, or readers would
 // download the photo twice.
-function resizedImageUrl(src, width, quality) {
+export function resizedImageUrl(src, width, quality) {
   if (!src || src.startsWith("data:") || src.startsWith("blob:")) return src;
   try {
     if (!/^https?:\/\//i.test(src)) return src;
@@ -97,6 +97,21 @@ function timeTag(article) {
     : esc(article.date);
 }
 
+// Each name in the byline links to that writer's page (/author/<slug>).
+// Same split as bylineNames and same slug rule as titleToSlug
+// (article-meta.js), mirrored by authorBylineLink in js/main.js.
+function authorLink(author) {
+  const slugOf = (n) => n.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    .replace(/[\u2018\u2019']/g, "").replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const parts = String(author || "").split(/(\s*(?:,|&|\band\b)\s*)/i);
+  return `<strong>${parts.map((part, i) => {
+    if (i % 2) return esc(part);
+    const name = part.trim();
+    if (!name || /^the catalyst( magazine)?$/i.test(name) || !slugOf(name)) return esc(part);
+    return `<a class="article-hero__author" href="/author/${slugOf(name)}" rel="author">${esc(name)}</a>`;
+  }).join("")}</strong>`;
+}
+
 // Same structure as renderArticleDetail() in js/main.js. The cover is a
 // real <img> so it can be indexed by image search.
 export function renderArticleSsr(article, category) {
@@ -110,7 +125,7 @@ export function renderArticleSsr(article, category) {
                     <h1 class="article-hero__title">${esc(article.title)}</h1>
                     ${article.deck ? `<p class="article-hero__deck">${esc(article.deck)}</p>` : ""}
                     <div class="article-hero__meta">
-                        <span>By <strong>${esc(author)}</strong></span>
+                        <span>By ${authorLink(author)}</span>
                         <span class="dot"></span>
                         <span>${timeTag(article)}</span>
                         <span class="dot"></span>

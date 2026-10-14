@@ -451,7 +451,14 @@ body[data-page="article"] { --hero-frame: min(1152px, calc(100% - 186px)); }
 .article-hero--light-cover .article-hero__meta {
   color: rgba(255,255,255,0.92);
 }
-.article-hero--light-cover .article-hero__meta .dot {
+.article-hero--light-cover .article-hero__meta .article-hero__author {
+  color: inherit; text-decoration: none;
+  /* taller hit area without moving the line */
+  display: inline-block; padding: 12px 0; margin: -12px 0;
+}
+.article-hero__meta .article-hero__author:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.article-hero__meta .article-hero__author:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 3px; }
+.article-hero__meta .dot {
   background: rgba(255,255,255,0.72);
 }
 .article-hero__inner {

@@ -8,7 +8,7 @@
 // changed (bump it when a page is meaningfully rewritten); the home page,
 // /articles, /editions and the current edition follow the newest story.
 
-import { listAllArticles, titleToSlug, SITE_URL, getSiteUrl } from "./_utils/article-meta.js";
+import { listAllArticles, titleToSlug, bylineNames, SITE_URL, getSiteUrl } from "./_utils/article-meta.js";
 
 // lastmod "latest" = date of the newest published story.
 const STATIC_PAGES = [
@@ -80,6 +80,23 @@ export const onRequestGet = async ({ request, env }) => {
     const image = a.image ? `<image:image><image:loc>${escapeXml(a.image)}</image:loc><image:title>${escapeXml(a.title)}</image:title></image:image>` : "";
     urls.push(
       `<url><loc>${escapeXml(loc)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority>${image}</url>`
+    );
+  }
+
+  // Writer pages (/author/<slug>): one per byline with at least one story
+  // that isn't a book review, dated by that writer's newest story.
+  const writers = new Map();
+  for (const a of articles) {
+    if (isReview(a)) continue;
+    const day = toIsoDate(a.publishedAt || a.date);
+    for (const name of bylineNames(a.author)) {
+      const slug = titleToSlug(name);
+      if (slug && (!writers.has(slug) || day > writers.get(slug))) writers.set(slug, day);
+    }
+  }
+  for (const [slug, day] of writers) {
+    urls.push(
+      `<url><loc>${escapeXml(`${siteUrl}/author/${slug}`)}</loc><lastmod>${day || latest}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
     );
   }
 

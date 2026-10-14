@@ -20,6 +20,7 @@ import {
   findArticleBySlug,
   listAllArticles,
   titleToSlug,
+  bylineNames,
   titleToLegacySlug,
   resolveOgImage,
   getSiteUrl,
@@ -187,7 +188,9 @@ function buildBookReviewJsonLd({ article, title, description, image, author, pub
     name: article.title,
     description,
     image: [image],
-    author: { "@type": "Person", name: author },
+    author: bylineNames(author).length
+      ? bylineNames(author).map((name) => ({ "@type": "Person", "@id": `${siteUrl}/author/${titleToSlug(name)}#person`, name, url: `${siteUrl}/author/${titleToSlug(name)}` }))
+      : { "@type": "Organization", name: SITE_NAME, url: `${siteUrl}/` },
     publisher: {
       "@type": "Organization",
       "@id": `${siteUrl}/#organization`,

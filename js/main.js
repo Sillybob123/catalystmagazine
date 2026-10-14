@@ -1690,7 +1690,7 @@ function renderArticleDetail(article) {
                     <h1 class="article-hero__title">${escapeHtmlAttr(article.title)}</h1>
                     ${deckHtml}
                     <div class="article-hero__meta">
-                        <span>By <strong>${escapeHtmlAttr(article.author || 'The Catalyst')}</strong></span>
+                        <span>By ${authorBylineLink(article.author)}</span>
                         <span class="dot"></span>
                         <span>${escapeHtmlAttr(article.date || '')}</span>
                         <span class="dot"></span>
@@ -3630,6 +3630,19 @@ function slugKey(link = '') {
     if (!link) return '';
     const match = String(link).match(/\/post\/([^/?#]+)/i);
     return match ? match[1].toLowerCase() : '';
+}
+
+// Each byline name → that writer's page (/author/<slug>), as the server
+// renders it (authorLink in functions/_utils/article-ssr.js).
+function authorBylineLink(author) {
+    const parts = String(author || 'The Catalyst').split(/(\s*(?:,|&|\band\b)\s*)/i);
+    return `<strong>${parts.map((part, i) => {
+        if (i % 2) return escapeHtmlAttr(part);
+        const name = part.trim();
+        const slug = titleToSlug(name);
+        if (!name || !slug || /^the catalyst( magazine)?$/i.test(name)) return escapeHtmlAttr(part);
+        return `<a class="article-hero__author" href="/author/${slug}" rel="author">${escapeHtmlAttr(name)}</a>`;
+    }).join('')}</strong>`;
 }
 
 // Derive a Wix-style post slug from a title so JSON articles (which carry no

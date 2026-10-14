@@ -16,7 +16,7 @@
 //   c) Fall back to serving the bare article.html shell (client JS will
 //      redirect to /articles if nothing is found).
 
-import { findArticleBySlug, listAllArticles, titleToSlug, titleToLegacySlug, resolveOgImage, getSiteUrl, getFallbackImage, buildArticleDescription } from "../_utils/article-meta.js";
+import { findArticleBySlug, listAllArticles, titleToSlug, bylineNames, titleToLegacySlug, resolveOgImage, getSiteUrl, getFallbackImage, buildArticleDescription } from "../_utils/article-meta.js";
 import { renderArticleSsr } from "../_utils/article-ssr.js";
 
 const SITE_NAME = "The Catalyst Magazine";
@@ -222,6 +222,9 @@ export const onRequestGet = async ({ request, env, params, next }) => {
           el.append(`<meta property="article:tag" content="${escapeAttr(tag)}">`, { html: true });
         }
         el.append(`<meta name="author" content="${escapeAttr(author)}">`, { html: true });
+        for (const name of bylineNames(author)) {
+          el.append(`<link rel="author" href="${escapeAttr(`${siteUrl}/author/${titleToSlug(name)}`)}">`, { html: true });
+        }
         // Same id js/main.js upserts, so the page ends up with one block.
         el.append(`<script type="application/ld+json" id="catalyst-article-jsonld">${jsonLd}</script>`, { html: true });
         el.append(`<script type="application/ld+json" id="catalyst-breadcrumb-jsonld">${crumbsLd}</script>`, { html: true });
@@ -294,7 +297,7 @@ function buildArticleJsonLd({ title, description, image, author, published, modi
     headline: title,
     description,
     image: [image],
-    author: [{ "@type": "Person", name: author }],
+    author: authorNodes(author, siteUrl),
     publisher: { "@type": "Organization", "@id": `${siteUrl}/#organization`, name: SITE_NAME, url: `${siteUrl}/`, logo: { "@type": "ImageObject", url: `${siteUrl}/NewLogoShape.png` } },
     mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
     url: canonical,
@@ -314,6 +317,16 @@ function buildArticleJsonLd({ title, description, image, author, published, modi
     };
   }
   return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
+// The byline as People, each pointing at their writer's page (/author/<slug>).
+function authorNodes(author, siteUrl) {
+  const names = bylineNames(author);
+  if (!names.length) return [{ "@type": "Organization", name: SITE_NAME, url: `${siteUrl}/` }];
+  return names.map((name) => {
+    const slug = titleToSlug(name);
+    return { "@type": "Person", "@id": `${siteUrl}/author/${slug}#person`, name, url: `${siteUrl}/author/${slug}` };
+  });
 }
 
 function escapeHtml(s) {

@@ -411,6 +411,15 @@ export function titleToSlug(title) {
     .replace(/^-+|-+$/g, "");
 }
 
+// The people in a byline: "Lori Preci and Yair Ben-Dor" → both names.
+// House bylines ("The Catalyst") aren't people and give an empty list.
+export function bylineNames(author) {
+  return String(author || "")
+    .split(/\s*(?:,|&|\band\b)\s*/i)
+    .map((n) => n.trim())
+    .filter((n) => n && !/^the catalyst( magazine)?$/i.test(n));
+}
+
 // Legacy slug form: some historic slugs were saved before the NFKD
 // normalization landed, so non-ASCII letters (\u00f6, \u00e9, \u00fc \u2026) collapsed into a
 // "-" gap instead of being transliterated to their base letter.
