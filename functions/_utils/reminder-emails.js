@@ -1868,3 +1868,59 @@ function escapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 function escapeAttr(s) { return escapeHtml(s); }
+
+// ─── About-page bios (Suite → your name → Update bio) ───────────────────────
+
+function bioBox(label, text) {
+  return `
+    <div style="margin:0 0 14px 0;border:1px solid ${COLORS.hairline};border-radius:6px;padding:14px 16px;background:#fafafa;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;color:${COLORS.muted};text-transform:uppercase;margin-bottom:8px;">${escapeHtml(label)}</div>
+      <div style="font-size:14px;line-height:1.6;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(text)}</div>
+    </div>`;
+}
+
+// To the admins: someone sent a new or changed bio for approval.
+export function adminBioRequestEmail({ name, bio, currentBio, siteUrl }) {
+  const first = String(name || "A teammate").split(/\s+/)[0];
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">Hi team,</p>
+    <p style="margin:14px 0 18px 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">
+      ${escapeHtml(first)} ${currentBio ? "wants to update their bio" : "wrote their first bio"} for the About page.
+    </p>
+    ${bioBox(currentBio ? "Proposed bio" : "Their bio", bio)}
+    ${currentBio ? bioBox("On the site now", currentBio) : ""}
+    <p style="margin:4px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">
+      Nothing changes on the website until an admin approves it. You can fix wording before you approve.
+    </p>
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(`${siteUrl}/admin/#/admin/bios`)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Review the bio</a>
+    </div>`;
+  const subject = `${name} sent a bio for the About page`;
+  const preheader = `Approve it and it goes live on the About page and ${first}'s writer page.`;
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}
+
+// To the writer: their bio was approved (and is live) or sent back with a note.
+export function bioDecisionEmail({ name, approved, bio, note, slug, siteUrl }) {
+  const first = String(name || "there").split(/\s+/)[0];
+  const body = approved ? `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">Hi ${escapeHtml(first)},</p>
+    <p style="margin:14px 0 18px 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">Your bio is live on the website.</p>
+    ${bioBox("Your bio", bio)}
+    ${note ? bioBox("A note from the editors", note) : ""}
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(`${siteUrl}/about#team`)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">See the About page</a>
+      ${slug ? `<a href="${escapeAttr(`${siteUrl}/author/${slug}`)}" style="display:inline-block;margin-left:14px;color:${COLORS.ink};font-size:14px;font-weight:600;">Your writer page</a>` : ""}
+    </div>` : `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">Hi ${escapeHtml(first)},</p>
+    <p style="margin:14px 0 18px 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">Your bio needs a few changes before it goes up.</p>
+    ${note ? bioBox("What to change", note) : ""}
+    ${bioBox("What you sent", bio)}
+    <p style="margin:4px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">Open the Editorial Suite, click your name, then Update bio to send a new version.</p>
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(`${siteUrl}/admin/#/overview?bio=1`)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Edit my bio</a>
+    </div>`;
+  const subject = approved ? "Your bio is live on The Catalyst" : "Your bio needs a few changes";
+  const preheader = approved ? "It's on the About page and your writer page now." : "An editor left a note on what to change.";
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}

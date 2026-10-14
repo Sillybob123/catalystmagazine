@@ -506,8 +506,49 @@
     .then(function (rows) { setCount('stories', (Array.isArray(rows) ? rows : []).filter(function (x) { return x.document; }).length); })
     .catch(function () { setCount('stories', 60); });
 
+  // Live bios: team_bios in Firestore holds every approved bio (people send
+  // them from the Editorial Suite, an admin approves). They replace the
+  // built-in text from js/main.js, and someone new joins the section the
+  // admin chose. If Firestore is slow or down, the built-in text stays.
+  var liveBios = new Promise(function (resolve) {
+    var done = false, finish = function (v) { if (!done) { done = true; resolve(v); } };
+    setTimeout(function () { finish([]); }, 2500);
+    fetch('https://firestore.googleapis.com/v1/projects/catalystwriters-5ce43/databases/(default)/documents/team_bios?pageSize=300')
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (d) {
+        finish((d.documents || []).map(function (doc) {
+          var f = doc.fields || {}, s = function (k) { return f[k] && f[k].stringValue || ''; };
+          return { name: s('name'), bio: s('bio'), role: s('role'), image: s('image'), section: s('section') };
+        }).filter(function (b) { return b.name && b.bio; }));
+      })
+      .catch(function () { finish([]); });
+  });
+  function applyLiveBios(list) {
+    if (typeof teamMembers === 'undefined' || typeof rosterGroups === 'undefined') return;
+    var alumni = typeof alumniMembers !== 'undefined' ? alumniMembers : [];
+    list.forEach(function (b) {
+      var m = teamMembers.concat(alumni).filter(function (x) { return x.name === b.name; })[0];
+      if (m) {
+        m.bio = b.bio;
+        if (b.role) m.role = b.role;
+        if (b.image) m.image = b.image;
+        return;
+      }
+      if (!b.section) return;
+      var person = { name: b.name, role: b.role || 'Writer', bio: b.bio, image: b.image || '' };
+      if (b.section === 'alumni') { alumni.push(person); return; }
+      var parts = b.section.split(':'), group = rosterGroups.filter(function (g) { return g.id === parts[0]; })[0];
+      if (!group) return;
+      var cluster = group.clusters.filter(function (c) { return (c.subtitle || '') === (parts[1] || ''); })[0] || group.clusters[0];
+      teamMembers.push(person);
+      cluster.members.push(b.name);
+    });
+  }
+  function startTeam() {
+    liveBios.then(applyLiveBios).catch(function () {}).then(renderTeam);
+  }
   // main.js is deferred ahead of this file, so its roster is ready now
-  if (!renderTeam()) window.addEventListener('load', renderTeam);
+  if (typeof teamMembers !== 'undefined') startTeam(); else window.addEventListener('load', startTeam);
 
   // Subscribe opens the site's newsletter modal
   document.getElementById('ab-subscribe').addEventListener('click', function () {

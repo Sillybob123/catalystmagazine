@@ -4112,6 +4112,10 @@ function initScrollAnimations() {
 // ============================================
 // ABOUT PAGE - TEAM SECTION
 // ============================================
+// Live bios come from Firestore team_bios: people update them in the
+// Editorial Suite (their name → Update bio) and an admin approves them under
+// Bio requests; js/about.js lays them over these. The text below is the
+// fallback, and where scripts/seed-team-bios.mjs copies a new person from.
 const teamMembers = [
     {
         name: "Yair Ben-Dor",

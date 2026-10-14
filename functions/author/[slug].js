@@ -41,7 +41,15 @@ export const onRequestGet = async ({ request, env, params }) => {
   }
 
   const name = bylineNames(stories[0].author).find((n) => titleToSlug(n) === slug);
-  const person = people.find((p) => titleToSlug(p.name) === slug) || null;
+  // The approved bio (team_bios, updated from the Suite) wins over the
+  // About page's structured data, which only changes when the page does.
+  const about = people.find((p) => titleToSlug(p.name) === slug) || null;
+  const live = await loadLiveBio(slug);
+  const person = about || live ? {
+    ...(about || {}),
+    ...(live?.bio ? { description: live.bio } : {}),
+    ...(live?.role ? { jobTitle: live.role } : {}),
+  } : null;
   const canonical = `${siteUrl}/author/${slug}`;
   const items = stories.map((a) => ({
     ...a,
@@ -63,6 +71,18 @@ async function loadEditions(origin) {
     return Object.entries((await res.json()) || {}).map(([id, e]) => ({ id, ...e }));
   } catch {
     return [];
+  }
+}
+
+// team_bios/{slug}: the bio an admin approved (public read).
+async function loadLiveBio(slug) {
+  try {
+    const res = await fetch(`https://firestore.googleapis.com/v1/projects/catalystwriters-5ce43/databases/(default)/documents/team_bios/${encodeURIComponent(slug)}`, { cf: { cacheTtl: 120 } });
+    if (!res.ok) return null;
+    const f = (await res.json()).fields || {};
+    return { bio: f.bio?.stringValue || "", role: f.role?.stringValue || "" };
+  } catch {
+    return null;
   }
 }
 

@@ -244,7 +244,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=home-2"),
+    loader: () => import("./overview.js?v=home-3"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -473,7 +473,7 @@ const ROUTES = {
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-11"),
+    loader: () => import("./admin.js?v=wd-12"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -486,6 +486,16 @@ const ROUTES = {
     roles: ["admin"],
     group: "admin",
     loader: () => import("./submissions.js?v=3"),
+  },
+  // Bio requests — bios people sent from their name menu (Update bio),
+  // waiting for an admin before they go on the About page.
+  "#/admin/bios": {
+    label: "Bio requests",
+    desc: "Bios people sent for the About page. Approve to put them live, or send back with a note.",
+    icon: ICONS.users,
+    roles: ["admin"],
+    group: "admin",
+    loader: () => import("./bios.js?v=1"),
   },
   "#/admin/games": {
     label: "Games",
@@ -501,7 +511,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-11"),
+    loader: () => import("./admin.js?v=wd-12"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -510,7 +520,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-11"),
+    loader: () => import("./admin.js?v=wd-12"),
     mountKey: "images",
   },
   "#/admin/advanced": {
@@ -902,6 +912,12 @@ async function handleRoute() {
     state.currentRoute = hash;
     state.currentModule = mod;
     injectPreviewBanner(content);
+    // "Edit my bio" links (emails, notifications) carry ?bio=1.
+    if (/[?&]bio=1\b/.test(hash)) {
+      history.replaceState(null, "", hashPath);
+      state.currentRoute = hashPath;
+      openMyBioEditor();
+    }
   } catch (err) {
     console.error("[dashboard] route mount failed", err);
     content.innerHTML = `<div class="error-state">Failed to load this page: ${err?.message || err}</div>`;
@@ -1170,6 +1186,10 @@ function renderUserMenu() {
     menu.innerHTML = `
       ${header}
       ${seasonItem}
+      <button type="button" class="user-menu-item" data-action="update-bio">
+        <span class="user-menu-item-dot"></span>
+        <span class="user-menu-item-label">Update bio</span>
+      </button>
       <button type="button" class="user-menu-item" data-action="change-password">
         <span class="user-menu-item-dot"></span>
         <span class="user-menu-item-label">Change password</span>
@@ -1215,6 +1235,10 @@ function renderUserMenu() {
         </button>
       ` : ""}
       <div class="user-menu-divider"></div>
+      <button type="button" class="user-menu-item" data-action="update-bio">
+        <span class="user-menu-item-dot"></span>
+        <span class="user-menu-item-label">Update bio</span>
+      </button>
       <button type="button" class="user-menu-item" data-action="change-password">
         <span class="user-menu-item-dot"></span>
         <span class="user-menu-item-label">Change password</span>
@@ -1236,6 +1260,18 @@ function closeUserMenu() {
   menu.hidden = true;
   const chip = document.getElementById("user-chip");
   if (chip) chip.setAttribute("aria-expanded", "false");
+}
+
+// ---------- About-page bio ----------
+// Always the signed-in person's own bio, even while previewing someone.
+async function openMyBioEditor() {
+  try {
+    const { openBioEditor } = await import("./bios.js?v=1");
+    const ctx = makeContext({});
+    await openBioEditor({ ...ctx, user: state.user, profile: state.profile });
+  } catch (err) {
+    toast("Couldn't open your bio: " + (err?.message || err), "error");
+  }
 }
 
 // ---------- change password ----------
@@ -1463,6 +1499,11 @@ function attachGlobalHandlers() {
     if (action === "change-password") {
       closeUserMenu();
       openChangePasswordModal();
+      return;
+    }
+    if (action === "update-bio") {
+      closeUserMenu();
+      openMyBioEditor();
       return;
     }
     if (action === "exit-preview") {

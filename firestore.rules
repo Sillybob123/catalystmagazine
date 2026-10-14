@@ -246,6 +246,22 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ---------- About-page bios ----------
+    // team_bios/{slug}: the approved bios the About page and writer pages
+    // show — public. bio_requests/{uid}: a staff member's bio waiting for an
+    // admin (Suite → Update bio). Both are written only by the server
+    // (/api/bio/request, /api/bio/review), which notifies the admins.
+    match /team_bios/{slug} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /bio_requests/{uid} {
+      allow read: if isRealUser() && (request.auth.uid == uid
+        || (isAdmin() && notBlocked('#/admin/bios'))
+        || hasGrant('#/admin/bios'));
+      allow write: if false;
+    }
+
     // ---------- public book-review submissions ("The Catalyzers") ----------
     // Reader-submitted book reviews. The ONLY write path is the server-side
     // POST /api/book-reviews/submit endpoint (Cloudflare Pages Function,

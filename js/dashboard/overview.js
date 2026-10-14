@@ -186,7 +186,7 @@ function mountAdminHome(container, ctx, hello) {
   container.appendChild(home);
   loadNewsletterReminder(home.querySelector("#nl-reminder"), ctx);
 
-  const state = { projects: null, users: [], overrides: {}, teamTasks: [], posts: [], submissions: null, published: null };
+  const state = { projects: null, users: [], overrides: {}, teamTasks: [], posts: [], submissions: null, published: null, bios: [] };
   const render = () => { renderNeeds(); renderAgenda(); renderStats(); renderSummary(); };
 
   // Live: the stories in the works. Everything else is read once.
@@ -200,6 +200,7 @@ function mountAdminHome(container, ctx, hello) {
   if (uid) getDoc(doc(db, "taskPrefs", uid)).then((s) => { state.overrides = (s.exists() && s.data().overrides) || {}; render(); }).catch(() => {});
   getDocs(collection(db, "tasks")).then((s) => { state.teamTasks = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }).catch(() => {});
   getDocs(collection(db, "social_assignments")).then((s) => { state.posts = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }).catch(() => {});
+  getDocs(query(collection(db, "bio_requests"), where("status", "==", "pending"))).then((s) => { state.bios = s.docs.map((d) => d.data()); render(); }).catch(() => {});
   ctx.authedFetch("/api/admin/submissions").then((r) => r.json()).then((d) => { state.submissions = d?.ok ? (d.submissions || []) : []; render(); }).catch(() => { state.submissions = []; });
   fetchRecentPublished().then((list) => { state.published = list; renderPublished(); renderStats(); }).catch(() => { state.published = []; renderPublished(); });
 
@@ -218,6 +219,10 @@ function mountAdminHome(container, ctx, hello) {
       const parts = [joins && `${joins} ${joins === 1 ? "application" : "applications"}`, pitches && `${pitches} ${pitches === 1 ? "pitch" : "pitches"}`].filter(Boolean);
       extra.push({ priority: "high", headline: `Read ${parts.join(" and ")} from the website`, context: "Submissions inbox · already read them? Mark them as read to clear this.", actionHref: "#/admin/submissions", actionLabel: "Open inbox",
         secondary: { label: "Mark as read", run: () => markSubmissionsRead(fresh) } });
+    }
+    if (state.bios.length) {
+      const n = state.bios.length;
+      extra.push({ priority: "high", headline: `Approve ${n} ${n === 1 ? "bio" : "bios"} for the About page`, context: state.bios.slice(0, 3).map((b) => esc(b.name || "")).join(" · ") + (n > 3 ? ` · +${n - 3}` : ""), actionHref: "#/admin/bios", actionLabel: "Review" });
     }
     const waiting = state.teamTasks.filter((t) => t.status === "pending");
     if (waiting.length) {
