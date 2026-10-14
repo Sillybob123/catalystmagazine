@@ -1954,7 +1954,7 @@
          EDITIONS — /edition-art/editions.json (written by the edition
          build): which edition each story belongs to, the current
          edition's spread and the shelf of every edition. A story
-         opened from here reads in its edition's design (?edition=).
+         opened from here reads in its edition's design (#edition=).
          ============================================================ */
       var EDS = null, bySlug = {};
       function edFor(s) {
@@ -1967,7 +1967,7 @@
         }
         return null;
       }
-      function edLink(s) { var e = edFor(s); return e ? s.href + '?edition=' + encodeURIComponent(e.id) : s.href; }
+      function edLink(s) { var e = edFor(s); return e ? s.href + '#edition=' + encodeURIComponent(e.id) : s.href; }
       function edMeta(s) { var e = edFor(s); return e ? '<span class="ed"> &middot; ' + esc(e.label) + ' edition</span>' : ''; }
       function coverTitle(e) { return esc(e.title); }
 
@@ -1994,7 +1994,7 @@
         $('ce-lede').textContent = cur.lede;
         $('ce-count').textContent = cur.count + (cur.count === 1 ? ' story' : ' stories') + ' · ' + cur.span;
         $('ce-toc').innerHTML = cur.stories.slice(0, 5).map(function (s) {
-          return '<li><a href="/article/' + encodeURIComponent(s.slug) + '?edition=' + encodeURIComponent(cur.id) + '"><b>' + esc(s.title) + '</b><span>' + esc(s.author) + '</span></a></li>';
+          return '<li><a href="/article/' + encodeURIComponent(s.slug) + '#edition=' + encodeURIComponent(cur.id) + '"><b>' + esc(s.title) + '</b><span>' + esc(s.author) + '</span></a></li>';
         }).join('');
         $('ce-open').href = cur.page;
         sec.hidden = false;

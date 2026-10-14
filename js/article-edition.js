@@ -1,6 +1,6 @@
 /* ============================================================
-   Article, read from an edition (/article/<slug>?edition=<id>).
-   Edition pages link their stories with ?edition=; this dresses
+   Article, read from an edition (/article/<slug>#edition=<id>).
+   Edition pages link their stories with #edition=; this dresses
    the article in that edition: a quiet accent colour, a light "from
    this edition" strip under the hero, and a way on to the
    previous / next story and back to the edition. Without the
@@ -10,7 +10,13 @@
    ============================================================ */
 (function () {
   'use strict';
-  var id = new URLSearchParams(location.search).get('edition');
+  // The edition rides in the hash (#edition=<id>) so search engines only ever
+  // see the article's one clean URL; ?edition= from older links still works
+  // and is tidied into the hash.
+  var id = (location.hash.match(/(?:^#|&)edition=([\w-]+)/) || [])[1] || new URLSearchParams(location.search).get('edition');
+  if (id && /[?&]edition=/.test(location.search)) {
+    try { history.replaceState(null, '', location.pathname + '#edition=' + encodeURIComponent(id)); } catch (e) {}
+  }
   if (!id || !/^[a-z0-9-]+$/.test(id)) return;
 
   var ready = fetch('/edition-art/editions.json', { cache: 'force-cache' })
@@ -35,7 +41,7 @@
   }
 
   function storyCard(s, ed, dir) {
-    return '<a class="ed-next__card" href="/article/' + encodeURIComponent(s.slug) + '?edition=' + encodeURIComponent(id) + '">' +
+    return '<a class="ed-next__card" href="/article/' + encodeURIComponent(s.slug) + '#edition=' + encodeURIComponent(id) + '">' +
       '<span class="ed-next__img"><img src="' + esc(s.img) + '" alt="" loading="lazy" decoding="async"></span>' +
       '<span class="ed-next__dir">' + (dir < 0 ? BACK + 'Previous story' : 'Next story' + ARROW) + '</span>' +
       '<span class="ed-next__kicker">' + esc(s.kicker) + '</span>' +

@@ -115,7 +115,7 @@
     }
     return null;
   }
-  function href(s) { return '/article/' + encodeURIComponent(s.slug) + (s.ed ? '?edition=' + encodeURIComponent(s.ed.id) : ''); }
+  function href(s) { return '/article/' + encodeURIComponent(s.slug) + (s.ed ? '#edition=' + encodeURIComponent(s.ed.id) : ''); }
 
   function readURL() {
     var p = new URLSearchParams(location.search);

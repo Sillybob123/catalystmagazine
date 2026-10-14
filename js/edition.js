@@ -402,7 +402,7 @@
           if (!tagged && !inSpan) return null;
           if (titles[norm(str('title'))]) return null;
           var href = (cat === 'book-review' ? '/book-review/' : '/article/') + encodeURIComponent(str('slug') || slugify(str('title')));
-          if (body.dataset.editionId && cat !== 'book-review') href += '?edition=' + encodeURIComponent(body.dataset.editionId);
+          if (body.dataset.editionId && cat !== 'book-review') href += '#edition=' + encodeURIComponent(body.dataset.editionId);
           if (have[href.split('?')[0]]) return null;
           var img = str('coverImage');
           if (img && !/^https?:\/\//i.test(img)) img = location.origin + '/' + img.replace(/^\/+/, '');

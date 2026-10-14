@@ -171,7 +171,11 @@ export const onRequestGet = async ({ request, env, params, next }) => {
   const section = formatCategory(article.category);
   const tags = Array.isArray(article.tags) ? article.tags : [];
 
-  const jsonLd = buildArticleJsonLd({ title: article.title, description, image, author, published, modified, section, tags, canonical, siteUrl });
+  // Which edition this story ran in, so Google can tie the article to it
+  // (breadcrumb + isPartOf) instead of only ranking the edition page.
+  const edition = await findEdition(origin, canonicalSlug, published).catch(() => null);
+  const jsonLd = buildArticleJsonLd({ title: article.title, description, image, author, published, modified, section, tags, canonical, siteUrl, edition });
+  const crumbsLd = buildBreadcrumbJsonLd({ title: article.title, canonical, siteUrl, edition });
   const bodyHtml = renderArticleSsr(article, section);
 
   const rewriter = new HTMLRewriter()
@@ -220,6 +224,7 @@ export const onRequestGet = async ({ request, env, params, next }) => {
         el.append(`<meta name="author" content="${escapeAttr(author)}">`, { html: true });
         // Same id js/main.js upserts, so the page ends up with one block.
         el.append(`<script type="application/ld+json" id="catalyst-article-jsonld">${jsonLd}</script>`, { html: true });
+        el.append(`<script type="application/ld+json" id="catalyst-breadcrumb-jsonld">${crumbsLd}</script>`, { html: true });
         // Embed the article ID so client JS can load without a slug→id lookup.
         el.append(`<meta name="catalyst-article-id" content="${escapeAttr(String(article.id))}">`, { html: true });
       },
@@ -251,7 +256,38 @@ function formatCategory(cat) {
   return map[cat] || cat.charAt(0).toUpperCase() + cat.slice(1);
 }
 
-function buildArticleJsonLd({ title, description, image, author, published, modified, section, tags, canonical, siteUrl }) {
+// The edition a story belongs to, from /edition-art/editions.json: listed by
+// slug in an edition's stories, or else published within its date span
+// (the current edition also takes new stories by date).
+async function findEdition(origin, slug, published) {
+  const res = await fetch(`${origin}/edition-art/editions.json`, { cf: { cacheTtl: 600, cacheEverything: true } });
+  if (!res.ok) return null;
+  const all = await res.json();
+  const list = Object.entries(all || {}).map(([id, e]) => ({ id, ...e }));
+  const bySlug = list.find((e) => Array.isArray(e.stories) && e.stories.some((x) => x.slug === slug));
+  if (bySlug) return bySlug;
+  const day = String(published || "").slice(0, 10);
+  if (!day) return null;
+  return list.find((e) => e.start && e.end && !e.upcoming && day >= e.start && day < e.end) || null;
+}
+
+function editionName(e) {
+  return `${e.label} Edition${e.title ? `: ${e.title}` : ""}`;
+}
+
+function buildBreadcrumbJsonLd({ title, canonical, siteUrl, edition }) {
+  const items = [{ name: "The Catalyst Magazine", item: `${siteUrl}/` }];
+  if (edition && edition.page) items.push({ name: `${edition.label} Edition`, item: `${siteUrl}${edition.page}` });
+  else items.push({ name: "Articles", item: `${siteUrl}/articles` });
+  items.push({ name: title, item: canonical });
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((x, i) => ({ "@type": "ListItem", position: i + 1, name: x.name, item: x.item })),
+  }).replace(/</g, "\\u003c");
+}
+
+function buildArticleJsonLd({ title, description, image, author, published, modified, section, tags, canonical, siteUrl, edition }) {
   const data = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
@@ -268,6 +304,15 @@ function buildArticleJsonLd({ title, description, image, author, published, modi
   };
   if (tags && tags.length) data.keywords = tags.join(", ");
   if (published) { data.datePublished = published; data.dateModified = modified || published; }
+  if (edition && edition.page) {
+    data.isPartOf = {
+      "@type": "PublicationIssue",
+      name: editionName(edition),
+      url: `${siteUrl}${edition.page}`,
+      ...(edition.no ? { issueNumber: String(edition.no) } : {}),
+      isPartOf: { "@type": "Periodical", name: SITE_NAME, url: `${siteUrl}/` },
+    };
+  }
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
