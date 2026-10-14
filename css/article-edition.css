@@ -54,9 +54,6 @@ body[data-page="article"].in-edition {
 
 /* ---------- the body, in the edition's colours ---------- */
 .in-edition .article-body > p:first-of-type::first-letter { color: var(--ed-acc); font-size: 5.2em; }
-.in-edition .article-body h2::before {
-  content: ""; display: block; width: 36px; height: 2px; margin-bottom: 16px; background: var(--ed-acc);
-}
 .in-edition .article-body figure.rt-pullquote,
 .in-edition .article-body blockquote { border-top-color: var(--ed-acc); border-bottom-color: var(--ed-acc); }
 .in-edition .article-byline__avatar { background: var(--ed-acc); color: #fff; }
