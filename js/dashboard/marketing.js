@@ -630,6 +630,10 @@ async function firestoreQuery(authedFetch, structuredQuery) {
       coverImageUrl: str("coverImageUrl"),
       imageUrls: (f.imageUrls?.arrayValue?.values || []).map((v) => v.stringValue || "").filter(Boolean),
       bank: f.bank?.booleanValue === true,
+      // A bank post someone has used: marked posted, kept in Archived so it
+      // isn't posted twice ("Return to bank" undoes it).
+      fromBank: f.fromBank?.booleanValue === true,
+      postedAt: str("postedAt"),
       series: str("series"),
       boardType: str("boardType"),
       seriesNo: Number(f.seriesNo?.integerValue ?? f.seriesNo?.doubleValue ?? 0),
@@ -944,7 +948,8 @@ async function mountSocialPosts(ctx, container) {
       p.article = articleFor(p);
       p.type = typeOf(p);
       const t = Date.parse(p.article?.publishedAt || "");
-      p.stale = !p.bank && Number.isFinite(t) && t < cutoff && p.status !== "posted" && !p.assign;
+      p.used = !p.bank && p.fromBank && p.status === "posted";
+      p.stale = p.used || (!p.bank && Number.isFinite(t) && t < cutoff && p.status !== "posted" && !p.assign);
     }
   }
 
@@ -983,6 +988,21 @@ async function mountSocialPosts(ctx, container) {
     if (days <= 3) return { text: `Due ${txt}`, cls: "is-soon" };
     return { text: `Due ${txt}`, cls: "" };
   }
+  // A bank post has gone out: take it out of the bank and keep it in
+  // Archived, dated today, so no one picks it again.
+  async function markBankPosted(p) {
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    try {
+      await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { bank: false, fromBank: true, status: "posted", postedAt: now.toISOString(), deadline: today });
+      ctx.toast(`Marked as posted: “${cleanTitle(p.title)}” is in Archived now, so it won't be used again.`, "success", 5200);
+      await loadPosts();
+      return true;
+    } catch (err) {
+      ctx.toast("Could not mark it posted: " + err.message, "error");
+      return false;
+    }
+  }
   function postCardHTML(p) {
     const due = p.bank ? { text: SERIES_LABEL[p.series] || "Ready anytime", cls: "is-series" } : dueInfo(p), st = p.bank ? "bank" : (p.status || "proposed");
     const live = !!designOf(p);
@@ -996,6 +1016,7 @@ async function mountSocialPosts(ctx, container) {
           <div class="spc-hover">
             ${live || p.backgroundId ? `<button type="button" class="spc-act" data-card-act="studio">Edit</button>` : ""}
             <button type="button" class="spc-act" data-card-act="open">Details</button>
+            ${p.bank ? `<button type="button" class="spc-act" data-card-act="posted" title="We've posted this: move it to Archived so it isn't used again">Mark posted</button>` : ""}
           </div>
         </div>
         <div class="spc-body">
@@ -1066,7 +1087,7 @@ async function mountSocialPosts(ctx, container) {
     const isMine = (p) => p.status !== "posted" && p.owners?.some((o) => o.id === myUid);
     counts.mine = base.filter(isMine).length;
     statusTabs.innerHTML = [["", "All"], ...(counts.mine || sf === "mine" ? [["mine", "For me"]] : []), ["proposed", "Drafts"], ["approved", "Approved"], ["assigned", "Assigned"], ["posted", "Posted"], ...(counts.archived || sf === "archived" ? [["archived", "Archived"]] : []), ["bank", "Post bank"]]
-      .map(([k, label]) => `<button type="button" role="tab" data-status="${k}" class="${sf === k ? "is-on" : ""}${k === "bank" ? " is-bank" : ""}" aria-selected="${sf === k}"${k === "archived" ? ` title="Drafts for stories published more than ${STALE_DAYS} days ago: too late to post"` : ""}>${label}<span>${counts[k] || 0}</span></button>`).join("");
+      .map(([k, label]) => `<button type="button" role="tab" data-status="${k}" class="${sf === k ? "is-on" : ""}${k === "bank" ? " is-bank" : ""}" aria-selected="${sf === k}"${k === "archived" ? ` title="Bank posts you've already used, and drafts for stories published more than ${STALE_DAYS} days ago (too late to post)"` : ""}>${label}<span>${counts[k] || 0}</span></button>`).join("");
     const bankBar = container.querySelector("#sp-bank-bar");
     bankBar.hidden = sf !== "bank";
     if (sf === "bank") {
@@ -1202,6 +1223,7 @@ async function mountSocialPosts(ctx, container) {
     const p = allPosts.find((x) => x.id === card.dataset.id); if (!p) return;
     const act = e.target.closest("[data-card-act]")?.dataset.cardAct;
     if (act === "studio") return openInStudio(p);
+    if (act === "posted") return markBankPosted(p);
     openDetail(p);
   });
   listEl.addEventListener("keydown", (e) => {
@@ -1544,6 +1566,24 @@ async function mountSocialPosts(ctx, container) {
         } catch (err) { ctx.toast("Could not move it: " + err.message, "error"); useBtn.disabled = false; }
       });
       footer.appendChild(useBtn);
+      const postedBtn = el("button", { class: "btn btn-primary btn-sm", title: "We've posted this: move it to Archived so it isn't used again" }, "Mark as posted");
+      postedBtn.addEventListener("click", async () => {
+        postedBtn.disabled = true;
+        if (await markBankPosted(p, { quiet: true })) closeDetail(); else postedBtn.disabled = false;
+      });
+      footer.appendChild(postedBtn);
+    }
+    if (p.used) {
+      const backBtn = el("button", { class: "btn btn-secondary btn-sm", title: "Marked posted by mistake? Put it back in the post bank" }, "Return to bank");
+      backBtn.addEventListener("click", async () => {
+        backBtn.disabled = true;
+        try {
+          await firestoreWrite(ctx.authedFetch, `social_posts/${p.id}`, { bank: true, fromBank: false, status: "proposed", postedAt: "", deadline: "" });
+          ctx.toast("Back in the post bank.", "success");
+          closeDetail(); await loadPosts();
+        } catch (err) { ctx.toast("Could not move it: " + err.message, "error"); backBtn.disabled = false; }
+      });
+      footer.appendChild(backBtn);
     }
     // Assigned posts are marked posted from the "who posts it" block above.
     if (canStatus && !p.bank && !p.assign) {

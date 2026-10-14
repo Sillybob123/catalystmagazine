@@ -400,7 +400,12 @@ service cloud.firestore {
       allow create: if isStaff()
         && request.resource.data.proposerId == request.auth.uid;
       allow update: if isEditor()
-        || (isStaff() && resource.data.proposerId == request.auth.uid);
+        || (isStaff() && resource.data.proposerId == request.auth.uid)
+        // The social team posts from the bank: they may move a post between
+        // the bank, drafts and posted (Mark as posted / Return to bank /
+        // Move to drafts), touching only those fields.
+        || (isMarketingOS() && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['bank', 'fromBank', 'status', 'postedAt', 'deadline']));
       allow delete: if isAdmin()
         || (isStaff() && resource.data.proposerId == request.auth.uid);
     }
