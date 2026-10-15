@@ -221,6 +221,12 @@ function renderPage({ name, person, portrait, items, canonical, siteUrl }) {
             </a>
           </li>`;
 
+  // The bio's first sentence leads, larger; the rest follows. (A sentence ends
+  // at . ! or ? followed by a capital, so "M.D. candidate" doesn't split.)
+  const split = bio.match(/^(.+?[.!?])\s+(?=[A-Z"“])/);
+  const lede = split && bio.length > 200 ? split[1] : bio;
+  const restBio = split && bio.length > 200 ? bio.slice(split[0].length).trim() : "";
+  const roles = role.split(/\s*,\s*/).filter(Boolean);
   const portraitHtml = portrait
     ? `<img src="${esc(portrait)}" alt="Portrait of ${esc(name)}" width="600" height="705" decoding="async" fetchpriority="high">`
     : `<span class="au-initials" aria-hidden="true">${esc(name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase())}</span>`;
@@ -284,26 +290,29 @@ function renderPage({ name, person, portrait, items, canonical, siteUrl }) {
       .au-kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; }
       a:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 4px; }
 
-      /* hero: the portrait, then who they are */
-      .au-hero { padding: calc(96px + clamp(32px, 6vh, 72px)) 0 clamp(44px, 6vh, 72px); }
-      .au-hero-grid { display: grid; grid-template-columns: clamp(200px, 24vw, 300px) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
-      .au-portrait { padding-top: 8px; }
-      .au-portrait { margin: 0; }
-      .au-portrait img { display: block; width: 100%; height: auto; }
+      /* hero: a paper band — portrait and facts on one side, who they are on the other */
+      .au-hero { padding: calc(96px + clamp(36px, 6vh, 72px)) 0 clamp(48px, 7vh, 80px); background: var(--paper-2); border-bottom: 1px solid var(--hair-2); }
+      .au-hero-grid { display: grid; grid-template-columns: minmax(220px, 320px) minmax(0, 1fr); gap: clamp(36px, 6vw, 96px); align-items: center; }
+      .au-side { display: grid; justify-items: center; gap: 26px; }
+      .au-portrait { width: 100%; margin: 0; }
+      .au-portrait img { display: block; width: 100%; height: auto; filter: drop-shadow(0 18px 30px rgba(15, 23, 42, .14)); }
       .au-initials { display: grid; place-items: center; width: 92%; aspect-ratio: 1; margin: 4%; clip-path: polygon(50% 2%, 92% 26%, 92% 74%, 50% 98%, 8% 74%, 8% 26%); background: var(--ink); color: var(--paper); font: 600 clamp(40px, 5vw, 64px)/1 var(--sans); }
-      .au-hero h1 { margin: 16px 0 0; font: 700 clamp(40px, 5.4vw, 76px)/1.02 var(--sans); letter-spacing: -0.04em; text-wrap: balance; }
-      .au-role { margin: 12px 0 0; font: italic 400 clamp(18px, 1.5vw, 21px)/1.4 var(--serif); color: var(--ink-2); }
-      .au-bio { margin: 22px 0 0; max-width: 64ch; font: 400 clamp(16.5px, 1.2vw, 18px)/1.7 var(--serif); color: var(--ink-2); }
-      .au-facts { display: flex; flex-wrap: wrap; gap: 0; margin: 26px 0 0; padding: 0; list-style: none; border-top: 1px solid var(--hair); }
-      .au-facts li { display: grid; gap: 2px; padding: 14px 28px 0 0; margin-right: 28px; border-right: 1px solid var(--hair-2); }
-      .au-facts li:last-child { border-right: 0; margin-right: 0; }
-      .au-facts b { font: 600 22px/1.1 var(--sans); letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
-      .au-facts span { font: 500 12px/1.3 var(--sans); letter-spacing: .04em; color: var(--muted); }
-      .au-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
-      .au-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border: 1px solid var(--ink); border-radius: 999px; font: 600 14px/1 var(--sans); color: var(--ink); text-decoration: none; transition: background .2s, color .2s; }
-      .au-btn:hover { background: var(--ink); color: var(--paper); }
-      .au-btn.is-quiet { border-color: var(--hair); }
-      .au-btn.is-quiet:hover { border-color: var(--ink); }
+      .au-stats { display: flex; justify-content: center; margin: 0; padding: 0; list-style: none; }
+      .au-stats li { display: grid; justify-items: center; gap: 4px; padding: 0 clamp(14px, 1.6vw, 22px); text-align: center; }
+      .au-stats li + li { border-left: 1px solid var(--hair); }
+      .au-stats b { font: 600 clamp(20px, 1.8vw, 24px)/1 var(--sans); letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .au-stats span { font: 600 10.5px/1.2 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+      .au-text { min-width: 0; max-width: 680px; }
+      .au-hero h1 { margin: 18px 0 0; font: 700 clamp(44px, 6.2vw, 88px)/0.98 var(--sans); letter-spacing: -0.045em; text-wrap: balance; }
+      .au-roles { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; padding: 0; list-style: none; }
+      .au-roles li { display: inline-flex; align-items: center; min-height: 32px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 999px; background: var(--paper); font: 500 13px/1 var(--sans); color: var(--ink-2); }
+      .au-lede { margin: 30px 0 0; padding-top: 26px; border-top: 1px solid var(--hair); font: 400 clamp(19px, 1.55vw, 23px)/1.5 var(--serif); color: var(--ink); text-wrap: pretty; }
+      .au-rest { margin: 14px 0 0; font: 400 clamp(16px, 1.15vw, 17.5px)/1.75 var(--serif); color: var(--ink-2); text-wrap: pretty; }
+      .au-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+      .au-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 22px; border: 1px solid var(--ink); border-radius: 999px; background: var(--ink); font: 600 14px/1 var(--sans); color: var(--paper); text-decoration: none; transition: background .2s, color .2s, border-color .2s; }
+      .au-btn:hover { background: #1e293b; }
+      .au-btn.is-quiet { background: transparent; border-color: var(--hair); color: var(--ink); }
+      .au-btn.is-quiet:hover { border-color: var(--ink); background: transparent; }
 
       /* sections */
       .au-sec { padding: clamp(40px, 6vh, 64px) 0 0; }
@@ -347,10 +356,12 @@ function renderPage({ name, person, portrait, items, canonical, siteUrl }) {
         .au-grid.is-reviews { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .au-lead a { grid-template-columns: minmax(0, 1fr); }
       }
-      @media (max-width: 720px) {
-        .au-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
-        .au-portrait { width: min(200px, 56vw); }
-        .au-facts li { padding-right: 18px; margin-right: 18px; }
+      @media (max-width: 760px) {
+        .au-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+        .au-side { grid-template-columns: minmax(0, 150px) minmax(0, 1fr); justify-items: start; align-items: center; gap: 20px; }
+        .au-stats { flex-direction: column; justify-content: flex-start; gap: 12px; }
+        .au-stats li { justify-items: start; padding: 0; text-align: left; }
+        .au-stats li + li { border-left: 0; padding-top: 12px; border-top: 1px solid var(--hair); }
       }
       @media (max-width: 560px) {
         .au-grid { grid-template-columns: minmax(0, 1fr); }
@@ -368,19 +379,22 @@ function renderPage({ name, person, portrait, items, canonical, siteUrl }) {
     <main>
         <section class="au-hero" aria-labelledby="au-name">
             <div class="au-wrap au-hero-grid">
-                <figure class="au-portrait">${portraitHtml}</figure>
-                <div>
-                    <p class="au-kicker">The Catalyst &middot; ${esc(role.split(",")[0])}</p>
-                    <h1 id="au-name">${esc(name)}</h1>
-                    <p class="au-role">${esc(role)}</p>
-                    ${bio ? `<p class="au-bio">${esc(bio)}</p>` : ""}
-                    <ul class="au-facts">
+                <div class="au-side">
+                    <figure class="au-portrait">${portraitHtml}</figure>
+                    <ul class="au-stats" aria-label="At The Catalyst">
                         <li><b>${n}</b><span>${n === 1 ? "Story" : "Stories"}</span></li>
                         ${editions.length ? `<li><b>${editions.length}</b><span>${editions.length === 1 ? "Edition" : "Editions"}</span></li>` : ""}
-                        ${since && !isNaN(since) ? `<li><b>${esc(since.toLocaleDateString("en-US", { month: "short", year: "numeric" }))}</b><span>Writing since</span></li>` : ""}
+                        ${since && !isNaN(since) ? `<li><b>${esc(since.toLocaleDateString("en-US", { month: "short", year: "numeric" }))}</b><span>Since</span></li>` : ""}
                     </ul>
+                </div>
+                <div class="au-text">
+                    <p class="au-kicker">Contributor &middot; The Catalyst</p>
+                    <h1 id="au-name">${esc(name)}</h1>
+                    <ul class="au-roles" aria-label="Role">${roles.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+                    ${lede ? `<p class="au-lede">${esc(lede)}</p>` : ""}
+                    ${restBio ? `<p class="au-rest">${esc(restBio)}</p>` : ""}
                     <div class="au-links">
-                        ${lead ? `<a class="au-btn" href="#au-stories">Read ${esc(first)}&rsquo;s stories</a>` : ""}
+                        ${lead ? `<a class="au-btn" href="#au-stories">Read ${esc(first)}&rsquo;s stories <span aria-hidden="true">&darr;</span></a>` : ""}
                         <a class="au-btn is-quiet" href="/about#team">Meet the team</a>
                     </div>
                 </div>
