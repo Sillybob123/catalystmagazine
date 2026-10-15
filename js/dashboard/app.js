@@ -25,7 +25,7 @@ import {
 
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
-import { needsAgreement, showAgreementGate } from "./agreement.js?v=2";
+import { needsAgreement, showAgreementGate } from "./agreement.js?v=3";
 import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-8";
 
 // Role → display label
@@ -531,7 +531,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-9"),
+    loader: () => import("./admin-import.js?v=theme-10"),
     mountKey: "advanced",
   },
   "#/admin/activity": {

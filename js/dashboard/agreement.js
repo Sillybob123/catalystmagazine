@@ -46,7 +46,6 @@ const STYLE = `
   @media (prefers-reduced-motion: reduce) { .ag-gate, .ag-card { animation: none; } }
   .ag-card { width: min(760px, 100%); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: calc(100dvh - 40px); border: 1px solid var(--hairline, rgba(15,23,42,.11)); border-radius: 22px; background: var(--surface, #fdfcf9); box-shadow: var(--shadow-lg, 0 30px 60px -24px rgba(15,23,42,.32)); overflow: hidden; }
   .ag-head { padding: 24px 28px 16px; border-bottom: 1px solid var(--hairline-2, rgba(15,23,42,.07)); }
-  .ag-head img { width: 34px; height: 34px; display: block; margin-bottom: 12px; }
   .ag-head h1 { margin: 0; font: 600 21px/1.25 var(--font, Poppins, sans-serif); letter-spacing: -0.015em; color: var(--ink, #0f172a); }
   .ag-head p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--muted, #5b6678); }
   .ag-scroll { overflow-y: auto; padding: 18px 28px 26px; font: 400 12.5px/1.6 var(--serif, Georgia, serif); color: var(--ink-2, #334155); scroll-behavior: smooth; }
@@ -122,7 +121,6 @@ export function showAgreementGate({ profile, authedFetch, onSignOut }) {
     gate.innerHTML = `
       <div class="ag-card">
         <header class="ag-head">
-          <img src="/NewLogoShape.png" alt="">
           <h1 id="ag-title">${asked ? "Please review the Contributor Agreement again" : wasAsked ? "Please read the Contributor Agreement" : "Welcome to the Editorial Suite"}</h1>
           <p>Before you start, please read The Catalyst Contributor Agreement. Scroll to the end, then click I agree.</p>
         </header>
