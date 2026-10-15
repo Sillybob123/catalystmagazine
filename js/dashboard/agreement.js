@@ -20,7 +20,7 @@ import { db } from "../firebase-config.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, fmtRelative } from "./ui.js";
 
-export const AGREEMENT_VERSION = "2026-10-15d";
+export const AGREEMENT_VERSION = "2026-10-15e";
 const DOC_URL = `/legal/contributor-agreement-${AGREEMENT_VERSION}`;
 
 // Accounts created from this date on sign on their first visit; people who
@@ -162,7 +162,7 @@ export function showAgreementGate({ uid, profile, authedFetch, onSignOut }) {
               <button type="button" class="btn btn-primary ag-agree" id="ag-agree" disabled>I agree</button>
             </div>
           </div>
-          <p class="ag-link">Version 4, October 15, 2026 · <a href="${DOC_URL}" target="_blank" rel="noopener">Open it in a new tab</a> · Questions? stemcatalystmagazine@gmail.com</p>
+          <p class="ag-link">Version 5, October 15, 2026 · <a href="${DOC_URL}" target="_blank" rel="noopener">Open it in a new tab</a> · Questions? stemcatalystmagazine@gmail.com</p>
         </footer>
       </div>`;
     document.body.appendChild(gate);
