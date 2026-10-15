@@ -178,9 +178,17 @@ const STYLE = `
   .bio-chip input:checked + span { background: var(--ink); border-color: var(--ink); color: var(--surface); }
   .bio-chip input:focus-visible + span { box-shadow: var(--focus); }
   .bio-edit textarea.bio-text { min-height: 240px; }
+  .bio-prev { display: block; width: 100%; height: auto; cursor: grab; touch-action: none; user-select: none; }
+  .bio-prev.is-dragging { cursor: grabbing; }
+  .bio-adjust { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 14px; }
+  .bio-range { display: grid; gap: 2px; font: 600 12.5px var(--font); color: var(--ink); }
+  .bio-range span { display: flex; justify-content: space-between; }
+  .bio-range output { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bio-range input[type="range"] { width: 100%; min-height: 28px; margin: 0; accent-color: var(--ink); cursor: pointer; }
+  .bio-adjust .btn { justify-self: start; min-height: 36px; padding-left: 0; }
 
   @media (max-width: 900px) { .bio-row { grid-template-columns: 48px minmax(0, 1fr) auto; } .bio-row-bio { display: none; } }
-  @media (max-width: 800px) { .bio-cols, .bio-place, .bio-edit-grid { grid-template-columns: minmax(0, 1fr); } .bio-req { padding: 16px 14px; border-radius: 16px; } .bio-edit-side { grid-template-columns: 120px minmax(0, 1fr); align-items: center; } .bio-edit-side .bio-switch { grid-column: 1 / -1; } }
+  @media (max-width: 800px) { .bio-cols, .bio-place, .bio-edit-grid { grid-template-columns: minmax(0, 1fr); } .bio-req { padding: 16px 14px; border-radius: 16px; } .bio-edit-side { grid-template-columns: 120px minmax(0, 1fr); align-items: center; } .bio-edit-side .bio-switch, .bio-edit-side .bio-adjust, .bio-edit-side .bio-hint { grid-column: 1 / -1; } }
   @media (prefers-reduced-motion: reduce) { .bio-switch-track, .bio-switch-track::after, .bio-chip span { transition: none; } }
 `;
 
@@ -320,21 +328,29 @@ const photo = (b, size = "") => b?.image
 
 // About-page portraits: a black-and-white photo inside the Catalyst hexagon
 // frame (/beta/social/brand/hex-frame.png: dark rim, light band, white
-// center), like /YairCatalyst.webp. framePortrait() does it for any upload:
-// the photo goes black and white and is clipped to the frame's white center.
+// center), like /YairCatalyst.webp.
+//
+// The original photo is kept (team_bios.imageSource) with how it sits in the
+// frame (imageFit: { zoom, x, y }), so admins can make someone bigger or move
+// them later; the framed picture (team_bios.image) is rebuilt from those.
 // Cut-out photos (transparent background) sit on white with the shoulders at
-// the bottom edge; ordinary photos fill the center. A file that already has
-// the dark rim (framed by hand) is used as it is.
+// the bottom edge; ordinary photos fill the center. A portrait that already
+// has the frame (framed by hand, or an older upload) gives up its center as
+// the original.
+export const DEFAULT_FIT = { zoom: 1, x: 0, y: 0 };
 function loadImage(src) {
   return new Promise((resolve, reject) => {
-    const url = typeof src === "string" ? src : URL.createObjectURL(src);
+    const isUrl = typeof src === "string";
+    const url = isUrl ? src : URL.createObjectURL(src);
     const img = new Image();
-    img.onload = () => { if (typeof src !== "string") URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = () => { if (typeof src !== "string") URL.revokeObjectURL(url); reject(new Error("That file couldn't be read as an image.")); };
+    if (isUrl && /^https?:/i.test(url)) img.crossOrigin = "anonymous";   // Storage allows the site (bucket CORS)
+    img.onload = () => { if (!isUrl) URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { if (!isUrl) URL.revokeObjectURL(url); reject(new Error("That image couldn't be loaded.")); };
     img.src = url;
   });
 }
-const canvasOf = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+const canvasOf = (w, h) => { const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; };
+const sizeOf = (img) => ({ w: img.naturalWidth || img.width, h: img.naturalHeight || img.height });
 
 // The frame, measured once: its outline box, the white center's box, and a
 // mask of the white center (soft at the edge where it meets the grey band).
@@ -366,92 +382,114 @@ async function frameTemplate() {
   return frameTpl;
 }
 
-// Alpha at a point of an image (0–255), via a 1×1 draw.
+// Alpha and brightness at a point of an image, via a 1×1 draw.
 function alphaAt(img, fx, fy) {
+  const { w, h } = sizeOf(img);
   const c = canvasOf(1, 1), g = c.getContext("2d");
-  const sx = Math.min(img.naturalWidth - 2, Math.max(0, Math.round(img.naturalWidth * fx)));
-  const sy = Math.min(img.naturalHeight - 2, Math.max(0, Math.round(img.naturalHeight * fy)));
-  g.drawImage(img, sx, sy, 2, 2, 0, 0, 1, 1);
+  g.drawImage(img, Math.min(w - 2, Math.max(0, Math.round(w * fx))), Math.min(h - 2, Math.max(0, Math.round(h * fy))), 2, 2, 0, 0, 1, 1);
   const p = g.getImageData(0, 0, 1, 1).data;
   return { a: p[3], lum: 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2] };
 }
 
-// The part of an image that isn't transparent, in its own pixels (found on a
-// small copy, so it's quick).
+// The part of an image that isn't transparent, in its own pixels.
 function opaqueBox(img) {
-  const w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, 400 / Math.max(w, h));
-  const sw = Math.max(1, Math.round(w * k)), sh = Math.max(1, Math.round(h * k));
-  const c = canvasOf(sw, sh), g = c.getContext("2d");
-  g.drawImage(img, 0, 0, sw, sh);
-  const d = g.getImageData(0, 0, sw, sh).data;
-  let x0 = sw, y0 = sh, x1 = -1, y1 = -1;
-  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) if (d[(y * sw + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const { w, h } = sizeOf(img), k = Math.min(1, 400 / Math.max(w, h));
+  const c = canvasOf(w * k, h * k), g = c.getContext("2d");
+  g.drawImage(img, 0, 0, c.width, c.height);
+  const d = g.getImageData(0, 0, c.width, c.height).data;
+  let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   if (x1 < 0) return { x: 0, y: 0, w, h };
   return { x: x0 / k, y: y0 / k, w: Math.min(w, (x1 - x0 + 1) / k), h: Math.min(h, (y1 - y0 + 1) / k) };
 }
 
-export async function framePortrait(file) {
-  const photo = await loadImage(file);
-  const corner = alphaAt(photo, 0, 0), rim = alphaAt(photo, 0.5, 0.004);
-  const alreadyFramed = corner.a < 16 && rim.a > 200 && rim.lum < 70;
-  const F = await frameTemplate();
-  const OW = 1200, OH = Math.round(OW * F.frame.h / F.frame.w);
-  const out = canvasOf(OW, OH), og = out.getContext("2d");
+const isFramed = (img) => { const corner = alphaAt(img, 0, 0), rim = alphaAt(img, 0.5, 0.004); return corner.a < 16 && rim.a > 200 && rim.lum < 70; };
 
-  if (alreadyFramed) {
-    const k = Math.min(OW / photo.naturalWidth, OH / photo.naturalHeight);
-    og.drawImage(photo, (OW - photo.naturalWidth * k) / 2, (OH - photo.naturalHeight * k) / 2, photo.naturalWidth * k, photo.naturalHeight * k);
-  } else {
-    const ib = F.inner;
-    const pc = canvasOf(F.W, F.H), pg = pc.getContext("2d");
-    pg.fillStyle = "#ffffff";
-    pg.fillRect(ib.x, ib.y, ib.w, ib.h);
-    const pw = photo.naturalWidth, ph = photo.naturalHeight;
-    const cutOut = corner.a < 16 && alphaAt(photo, 1, 0).a < 16;
-    if (cutOut) {
-      // a person on a transparent background: trim the empty margins, then
-      // sit the shoulders on the bottom edge, about as big as the others
-      const b = opaqueBox(photo);
-      const k = Math.min((ib.w * 1.2) / b.w, (ib.h * 0.84) / b.h);   // shoulders may run past the sides, like the others
-      pg.drawImage(photo, b.x, b.y, b.w, b.h, ib.x + (ib.w - b.w * k) / 2, ib.y + ib.h - b.h * k + 2, b.w * k, b.h * k);
-    } else {
-      // an ordinary photo fills the center, keeping the upper part (faces)
-      const k = Math.max(ib.w / pw, ib.h / ph);
-      pg.drawImage(photo, ib.x + (ib.w - pw * k) / 2, ib.y + (ib.h - ph * k) * 0.3, pw * k, ph * k);
-    }
-    // black and white (by hand, so it works in every browser)
-    const px = pg.getImageData(ib.x, ib.y, ib.w, ib.h), d = px.data;
-    for (let i = 0; i < d.length; i += 4) {
-      const y = Math.max(0, Math.min(255, (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] - 128) * 1.06 + 128));
-      d[i] = d[i + 1] = d[i + 2] = y;
-    }
-    pg.putImageData(px, ib.x, ib.y);
-    // keep only what's inside the white center
-    pg.globalCompositeOperation = "destination-in";
-    pg.drawImage(F.mask, 0, 0);
-    const fr = F.frame;
-    og.drawImage(F.img, fr.x, fr.y, fr.w, fr.h, 0, 0, OW, OH);
-    og.drawImage(pc, fr.x, fr.y, fr.w, fr.h, 0, 0, OW, OH);
+// Turn a loaded image into a source to frame: { img, kind, box, derived }.
+// A framed portrait gives up its white center (the person on white).
+export async function prepareSource(img) {
+  const F = await frameTemplate();
+  if (isFramed(img)) {
+    const { w, h } = sizeOf(img), fr = F.frame, ib = F.inner;
+    const k = Math.min(w / fr.w, h / fr.h);                     // the image is the frame box, contained
+    const ox = (w - fr.w * k) / 2, oy = (h - fr.h * k) / 2;
+    const c = canvasOf(ib.w * k, ib.h * k), g = c.getContext("2d");
+    g.fillStyle = "#ffffff"; g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(img, ox + (ib.x - fr.x) * k, oy + (ib.y - fr.y) * k, ib.w * k, ib.h * k, 0, 0, c.width, c.height);
+    return { img: c, kind: "photo", derived: true };
   }
-  // WebP where the browser can make it (Safari falls back to PNG)
-  const blob = await new Promise((resolve) => out.toBlob(resolve, "image/webp", 0.9));
-  if (!blob) throw new Error("Couldn't prepare the photo.");
-  return blob;
+  const cutOut = alphaAt(img, 0, 0).a < 16 && alphaAt(img, 1, 0).a < 16;
+  return cutOut ? { img, kind: "cutout", box: opaqueBox(img) } : { img, kind: "photo" };
+}
+
+// The framed portrait as a canvas `outW` wide, with the photo placed by `fit`.
+// zoom 1 = the standard size; x / y move it by a share of the center's width
+// and height.
+export async function renderFramed(src, fit = DEFAULT_FIT, outW = 1200) {
+  const F = await frameTemplate(), fr = F.frame, ib = F.inner;
+  const s = outW / fr.w, W = outW, H = Math.round(fr.h * s);
+  const X = (v) => (v - fr.x) * s, Y = (v) => (v - fr.y) * s;
+  const zoom = Math.max(0.3, Math.min(3, Number(fit.zoom) || 1)), fx = Number(fit.x) || 0, fy = Number(fit.y) || 0;
+  const pc = canvasOf(W, H), pg = pc.getContext("2d");
+  pg.fillStyle = "#ffffff";
+  pg.fillRect(X(ib.x), Y(ib.y), ib.w * s, ib.h * s);
+  const { w: pw, h: ph } = sizeOf(src.img);
+  if (src.kind === "cutout") {
+    const b = src.box;
+    const k = Math.min((ib.w * 1.2) / b.w, (ib.h * 0.84) / b.h) * zoom;   // shoulders may run past the sides, like the others
+    const dw = b.w * k, dh = b.h * k;
+    pg.drawImage(src.img, b.x, b.y, b.w, b.h, X(ib.x + (ib.w - dw) / 2 + fx * ib.w), Y(ib.y + ib.h - dh + 2 + fy * ib.h), dw * s, dh * s);
+  } else {
+    const k = Math.max(ib.w / pw, ib.h / ph) * zoom;
+    const dw = pw * k, dh = ph * k;
+    pg.drawImage(src.img, X(ib.x + (ib.w - dw) / 2 + fx * ib.w), Y(ib.y + (ib.h - dh) * 0.3 + fy * ib.h), dw * s, dh * s);
+  }
+  // black and white (by hand, so it works in every browser)
+  const rx = Math.max(0, Math.floor(X(ib.x))), ry = Math.max(0, Math.floor(Y(ib.y)));
+  const rw = Math.min(W - rx, Math.ceil(ib.w * s) + 1), rh = Math.min(H - ry, Math.ceil(ib.h * s) + 1);
+  const px = pg.getImageData(rx, ry, rw, rh), d = px.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const v = Math.max(0, Math.min(255, (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] - 128) * 1.06 + 128));
+    d[i] = d[i + 1] = d[i + 2] = v;
+  }
+  pg.putImageData(px, rx, ry);
+  // keep only what's inside the white center, then lay it in the frame
+  pg.globalCompositeOperation = "destination-in";
+  pg.drawImage(F.mask, fr.x, fr.y, fr.w, fr.h, 0, 0, W, H);
+  const out = canvasOf(W, H), og = out.getContext("2d");
+  og.drawImage(F.img, fr.x, fr.y, fr.w, fr.h, 0, 0, W, H);
+  og.drawImage(pc, 0, 0);
+  return out;
+}
+
+const toBlob = (canvas) => new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Couldn't prepare the photo."))), "image/webp", 0.9));   // PNG on Safari
+
+// One step for any upload: the framed portrait at the standard fit.
+export async function framePortrait(file) {
+  return toBlob(await renderFramed(await prepareSource(await loadImage(file))));
+}
+
+// The original, kept for later adjusting (longest side up to 1600px, keeping
+// transparency).
+async function sourceBlob(src) {
+  const { w, h } = sizeOf(src.img), k = Math.min(1, 1600 / Math.max(w, h));
+  const c = canvasOf(w * k, h * k);
+  c.getContext("2d").drawImage(src.img, 0, 0, c.width, c.height);
+  return toBlob(c);
 }
 
 // Team photos go where the Suite already uploads story images (the admin's
-// own folder), named by content hash so the same photo is stored once.
-async function uploadPhoto(file, ctx) {
+// own folder), named by content hash so the same file is stored once.
+async function uploadBlob(blob, ctx) {
   const [{ storage }, { ref, uploadBytes, getDownloadURL }] = await Promise.all([
     import("../firebase-config.js"),
     import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"),
   ]);
-  const framed = await framePortrait(file);
-  const ext = framed.type === "image/png" ? "png" : "webp";
-  const digest = await crypto.subtle.digest("SHA-256", await framed.arrayBuffer());
+  const ext = blob.type === "image/png" ? "png" : "webp";
+  const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
   const hash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
   const r = ref(storage, `stories/${ctx.user.uid}/images/${hash}.${ext}`);
-  await uploadBytes(r, framed, { contentType: framed.type || "image/webp" });
+  await uploadBytes(r, blob, { contentType: blob.type || "image/webp" });
   return getDownloadURL(r);
 }
 
@@ -577,7 +615,9 @@ export async function mount(ctx, container) {
   function openEntryEditor({ entry = null, isNew = false }) {
     const e = entry || { name: "", role: "", sections: [], bio: "", image: "" };
     const secs = new Set(sectionsOfBio(e));
-    let image = e.image || "";
+    let image = e.image || "", imageSource = e.imageSource || "";
+    let fit = { ...DEFAULT_FIT, ...(e.imageFit || {}) };
+    let src = null, newSource = false, photoDirty = false;   // src: the photo being framed (see prepareSource)
     const pending = !isNew && requests.find((r) => r.status === "pending" && r.slug === e.slug);
     const body = el("div", { class: "bio-edit" });
     body.innerHTML = `
@@ -585,6 +625,12 @@ export async function mount(ctx, container) {
       <div class="bio-edit-grid">
         <div class="bio-edit-side">
           <div class="bio-edit-photo" id="be-photo"></div>
+          <div class="bio-adjust" id="be-adjust" hidden>
+            <label class="bio-range"><span>Size <output id="be-zoom-v">100%</output></span><input type="range" id="be-zoom" min="0.5" max="2" step="0.01" aria-label="Size in the hexagon"></label>
+            <label class="bio-range"><span>Left / right</span><input type="range" id="be-x" min="-0.5" max="0.5" step="0.005" aria-label="Move left or right"></label>
+            <label class="bio-range"><span>Up / down</span><input type="range" id="be-y" min="-0.5" max="0.5" step="0.005" aria-label="Move up or down"></label>
+            <button type="button" class="btn btn-ghost btn-sm" id="be-reset">Reset size and position</button>
+          </div>
           <div class="bio-edit-photo-btns">
             <label class="btn btn-secondary btn-sm bio-upload">Upload photo<input type="file" accept="image/*" id="be-file" hidden></label>
             <button type="button" class="btn btn-ghost btn-sm" id="be-remove">Remove</button>
@@ -620,28 +666,86 @@ export async function mount(ctx, container) {
     ta.value = e.bio || "";
     wireCounter(ta, body.querySelector("#be-count"));
     const err = body.querySelector("#be-err");
-    const paintPhoto = () => {
-      body.querySelector("#be-photo").innerHTML = photo({ name: body.querySelector("#be-name").value || e.name, image }, "-lg");
-      body.querySelector("#be-remove").hidden = !image;
+    // ── the photo: live preview, size and position ──
+    const photoBox = body.querySelector("#be-photo"), adjust = body.querySelector("#be-adjust");
+    const zoomEl = body.querySelector("#be-zoom"), xEl = body.querySelector("#be-x"), yEl = body.querySelector("#be-y"), zoomV = body.querySelector("#be-zoom-v");
+    const hint = body.querySelector("#be-photo-hint");
+    const ADJUST_HINT = "Drag the photo, or use the sliders, to size and place them in the hexagon.";
+    let preview = null, raf = 0, drawing = false, again = false;
+    const syncControls = () => { zoomEl.value = fit.zoom; xEl.value = fit.x; yEl.value = fit.y; zoomV.textContent = `${Math.round(fit.zoom * 100)}%`; };
+    const drawPreview = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(async () => {
+        if (!src) return;
+        if (drawing) { again = true; return; }
+        drawing = true;
+        try {
+          const c = await renderFramed(src, fit, 460);
+          if (!preview) {
+            preview = document.createElement("canvas");
+            preview.className = "bio-prev";
+            preview.setAttribute("aria-label", "Photo in the hexagon. Drag to move it.");
+            wireDrag(preview);
+          }
+          if (preview.parentNode !== photoBox) { photoBox.innerHTML = ""; photoBox.appendChild(preview); }
+          preview.width = c.width; preview.height = c.height;
+          preview.getContext("2d").drawImage(c, 0, 0);
+        } finally {
+          drawing = false;
+          if (again) { again = false; drawPreview(); }
+        }
+      });
     };
+    const paintPhoto = () => {
+      body.querySelector("#be-remove").hidden = !image && !src;
+      if (src) { adjust.hidden = false; syncControls(); drawPreview(); return; }
+      adjust.hidden = true;
+      photoBox.innerHTML = photo({ name: body.querySelector("#be-name").value || e.name, image }, "-lg");
+    };
+    const setFit = (next) => { fit = { ...fit, ...next }; photoDirty = true; syncControls(); drawPreview(); };
+    zoomEl.addEventListener("input", () => setFit({ zoom: +zoomEl.value }));
+    xEl.addEventListener("input", () => setFit({ x: +xEl.value }));
+    yEl.addEventListener("input", () => setFit({ y: +yEl.value }));
+    body.querySelector("#be-reset").addEventListener("click", () => setFit({ ...DEFAULT_FIT }));
+    // drag the photo inside the hexagon
+    function wireDrag(c) {
+      let start = null;
+      c.addEventListener("pointerdown", (ev) => { start = { x: ev.clientX, y: ev.clientY, fx: fit.x, fy: fit.y }; c.setPointerCapture(ev.pointerId); c.classList.add("is-dragging"); });
+      c.addEventListener("pointermove", (ev) => {
+        if (!start || !frameTpl) return;
+        const fr = frameTpl.frame, ib = frameTpl.inner;
+        const clamp = (v) => Math.max(-0.5, Math.min(0.5, v));
+        setFit({ x: clamp(start.fx + (ev.clientX - start.x) / (c.clientWidth * ib.w / fr.w)), y: clamp(start.fy + (ev.clientY - start.y) / (c.clientHeight * ib.h / fr.h)) });
+      });
+      const end = () => { start = null; c.classList.remove("is-dragging"); };
+      c.addEventListener("pointerup", end); c.addEventListener("pointercancel", end);
+    }
     paintPhoto();
-    body.querySelector("#be-name").addEventListener("input", () => { if (!image) paintPhoto(); });
-    body.querySelector("#be-remove").addEventListener("click", () => { image = ""; paintPhoto(); });
+    // The saved original (or the center of an older framed portrait) can be adjusted.
+    if (imageSource || image) {
+      loadImage(imageSource || image).then(prepareSource).then((sx) => {
+        if (src) return;                       // a new upload got there first
+        src = sx; newSource = !imageSource;
+        hint.textContent = ADJUST_HINT;
+        paintPhoto();
+      }).catch(() => { hint.textContent = "This photo can't be resized here. Upload it again to size and place it."; });
+    }
+    body.querySelector("#be-name").addEventListener("input", () => { if (!image && !src) paintPhoto(); });
+    body.querySelector("#be-remove").addEventListener("click", () => { image = ""; imageSource = ""; src = null; photoDirty = true; paintPhoto(); });
     body.querySelector("#be-file").addEventListener("change", async (ev) => {
       const file = ev.target.files?.[0];
       ev.target.value = "";
       if (!file) return;
       if (!/^image\//.test(file.type)) { err.textContent = "Choose an image file (JPG, PNG or WebP)."; return; }
       if (file.size > 15 * 1024 * 1024) { err.textContent = "That photo is over 15 MB. Choose a smaller one."; return; }
-      const hint = body.querySelector("#be-photo-hint");
-      hint.textContent = "Framing and uploading…"; err.textContent = "";
+      err.textContent = "";
       try {
-        image = await uploadPhoto(file, ctx);
+        src = await prepareSource(await loadImage(file));
+        newSource = true; photoDirty = true; fit = { ...DEFAULT_FIT };
+        hint.textContent = `${ADJUST_HINT} Save to put it on the About page.`;
         paintPhoto();
-        hint.textContent = "Uploaded. Save to put it on the About page.";
       } catch (x) {
-        hint.textContent = "Upload any photo: it's made black and white and put in the Catalyst hexagon automatically.";
-        err.textContent = `Couldn't upload the photo: ${x?.message || x}`;
+        err.textContent = `Couldn't read that photo: ${x?.message || x}`;
       }
     });
 
@@ -660,7 +764,6 @@ export async function mount(ctx, container) {
         sections: [...body.querySelectorAll(".bio-secs input:checked")].map((x) => x.value),
         hidden: !body.querySelector("#be-show").checked,
         bio: ta.value.trim(),
-        image,
       };
       if (!payload.name) { err.textContent = "Give them a name."; return; }
       if (isNew && bios.has(slugify(payload.name))) { err.textContent = `${payload.name} is already on the list. Edit their entry instead.`; return; }
@@ -671,6 +774,16 @@ export async function mount(ctx, container) {
       }
       save.disabled = true; save.textContent = "Saving…";
       try {
+        // A new or adjusted photo: keep the original, and save the framed picture.
+        if (photoDirty && src) {
+          save.textContent = "Saving photo…";
+          if (newSource) { imageSource = await uploadBlob(await sourceBlob(src), ctx); newSource = false; }
+          image = await uploadBlob(await toBlob(await renderFramed(src, fit, 1200)), ctx);
+          save.textContent = "Saving…";
+        }
+        payload.image = image;
+        payload.imageSource = photoDirty ? (src ? imageSource : "") : (e.imageSource || "");
+        payload.imageFit = photoDirty ? (src ? fit : null) : (e.imageFit || null);
         const res = await ctx.authedFetch("/api/bio/manage", { method: "POST", body: JSON.stringify(payload) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || `Request failed (${res.status})`);

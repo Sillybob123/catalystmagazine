@@ -496,7 +496,7 @@ const ROUTES = {
     icon: ICONS.users,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./bios.js?v=4"),
+    loader: () => import("./bios.js?v=5"),
   },
   "#/admin/games": {
     label: "Games",
@@ -1267,7 +1267,7 @@ function closeUserMenu() {
 // Always the signed-in person's own bio, even while previewing someone.
 async function openMyBioEditor() {
   try {
-    const { openBioEditor } = await import("./bios.js?v=4");
+    const { openBioEditor } = await import("./bios.js?v=5");
     const ctx = makeContext({});
     await openBioEditor({ ...ctx, user: state.user, profile: state.profile });
   } catch (err) {

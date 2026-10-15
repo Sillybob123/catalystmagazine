@@ -6,11 +6,13 @@
 // page (js/about.js) and the writer pages read, so it's live at once. No
 // approval step: admins are the approvers.
 //
-// Body: { slug?, name, uid?, role, sections: string[], hidden, bio, image }
+// Body: { slug?, name, uid?, role, sections: string[], hidden, bio, image, imageSource?, imageFit? }
 //   slug     omitted for someone new (made from the name)
 //   sections where they appear (see SECTIONS); several are allowed
 //   hidden   true keeps them off the About page without losing their entry
-//   image    a photo URL ("" for initials)
+//   image    the framed photo URL ("" for initials)
+//   imageSource / imageFit  the original photo and its { zoom, x, y } in the
+//            hexagon, so an admin can resize it later
 // Auth: admin, or anyone granted #/admin/bios.
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
@@ -40,11 +42,18 @@ export const onRequestPost = async ({ request, env }) => {
     const sections = [...new Set((Array.isArray(body.sections) ? body.sections : []).filter((s) => SECTIONS.includes(s)))];
     const hidden = body.hidden === true;
     const image = String(body.image || "").trim().slice(0, 1500);
+    // The original photo and how it sits in the hexagon, so it can be resized later.
+    const imageSource = String(body.imageSource || "").trim().slice(0, 1500);
+    const num = (v, lo, hi, d) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d);
+    const imageFit = body.imageFit && typeof body.imageFit === "object"
+      ? { zoom: num(body.imageFit.zoom, 0.3, 3, 1), x: num(body.imageFit.x, -1, 1, 0), y: num(body.imageFit.y, -1, 1, 0) }
+      : null;
 
     if (!hidden && bio.length < 40) return badRequest("Write a bio first (or hide them from the About page).");
     if (!hidden && !role) return badRequest("Give them a title, for example Writer.");
     if (!hidden && !sections.length) return badRequest("Choose at least one section of the About page.");
-    if (image && !/^(https:\/\/|\/)[^\s"'<>]+$/.test(image)) return badRequest("That photo link doesn't look right.");
+    const okUrl = (u) => !u || /^(https:\/\/|\/)[^\s"'<>]+$/.test(u);
+    if (!okUrl(image) || !okUrl(imageSource)) return badRequest("That photo link doesn't look right.");
 
     const path = `team_bios/${slug}`;
     const existing = await firestoreGet(env, path).catch(() => null);
@@ -59,6 +68,8 @@ export const onRequestPost = async ({ request, env }) => {
       section: sections[0] || before.section || "",
       hidden,
       image,
+      imageSource,
+      imageFit,
       updatedAt: new Date().toISOString(),
       approvedByName: `Edited by ${auth.name || auth.email || "an admin"}`,
     };
