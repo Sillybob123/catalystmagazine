@@ -15,7 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 import { mountCoverPromptTool } from "./cover-prompt.js?v=6";
-import { mountAgreementTool } from "./agreement.js?v=7";
+import { mountAgreementTool } from "./agreement.js?v=8";
 import { mountThemePicker } from "./suite-theme.js?v=st-8";
 
 // A user is "recently joined" if their account was created within this many
