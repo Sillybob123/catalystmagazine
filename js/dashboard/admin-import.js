@@ -15,6 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 import { mountCoverPromptTool } from "./cover-prompt.js?v=6";
+import { mountAgreementTool } from "./agreement.js?v=1";
 import { mountThemePicker } from "./suite-theme.js?v=st-8";
 
 // A user is "recently joined" if their account was created within this many
@@ -36,6 +37,14 @@ const RECENT_JOIN_DAYS = 14;
 // can pattern-match icon + name in ~200ms vs reading paragraphs.
 const TOOLS = [
   {
+    id: "agreement",
+    label: "Contributor agreement",
+    summary: "Who has signed the agreement everyone accepts on first sign-in, each signature's record, and asking people to sign.",
+    danger: "writes",
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 15.5c1.2-1.6 2.2-1.6 3 0s1.8 1.6 3.5-.5"/></svg>`,
+    mount: (ctx, root) => mountAgreementTool(ctx, root, paneHeader),
+  },
+  {
     id: "theme",
     label: "Suite theme",
     summary: "Give the Editorial Suite a seasonal look (fall, winter, spring or summer), or let it follow the current edition.",
@@ -54,7 +63,7 @@ const TOOLS = [
   {
     id: "cover-prompt",
     label: "Cover art prompt",
-    summary: "Turn an article or an idea into a detailed AI prompt for a watercolour cover in our style, plus a style sheet to attach.",
+    summary: "Turn an article or an idea into a detailed AI prompt for a watercolor cover in our style, plus a style sheet to attach.",
     danger: null,
     iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-1.5a1.5 1.5 0 0 0-1 2.6A1.5 1.5 0 0 1 14.4 22z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="11" cy="7" r="1"/><circle cx="15.5" cy="8" r="1"/></svg>`,
     mount: mountCoverPromptTool,

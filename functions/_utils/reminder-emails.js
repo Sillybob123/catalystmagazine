@@ -1924,3 +1924,21 @@ export function bioDecisionEmail({ name, approved, bio, note, slug, siteUrl }) {
   const preheader = approved ? "It's on the About page and your writer page now." : "An editor left a note on what to change.";
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
+
+// ─── Contributor Agreement (Advanced tools → Contributor agreement) ─────────
+
+export function agreementRequestEmail({ name, senderName, siteUrl }) {
+  const first = String(name || "there").split(/\s+/)[0];
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">Hi ${escapeHtml(first)},</p>
+    <p style="margin:14px 0 14px 0;font-size:17px;line-height:1.4;color:${COLORS.ink};font-weight:600;letter-spacing:-0.01em;">Please read and sign The Catalyst Contributor Agreement.</p>
+    <p style="margin:0 0 14px 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">It covers how we work together: your role as a volunteer, how editing and publishing decisions are made, who owns published work, and keeping the newsroom confidential. It opens automatically the next time you sign in to the Editorial Suite, and takes a few minutes to read.</p>
+    <div style="margin:22px 0 0 0;">
+      <a href="${escapeAttr(`${siteUrl}/admin/`)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:6px;font-weight:600;font-size:14px;">Open the Editorial Suite</a>
+      <a href="${escapeAttr(`${siteUrl}/legal/contributor-agreement-2026-10-15`)}" style="display:inline-block;margin-left:14px;color:${COLORS.ink};font-size:14px;font-weight:600;">Read it first</a>
+    </div>
+    <p style="margin:24px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">Questions about any part of it? Just reply to this email.<br><span style="color:${COLORS.muted};">Sent by ${escapeHtml(senderName || "The Catalyst editors")}</span></p>`;
+  const subject = "Please sign The Catalyst Contributor Agreement";
+  const preheader = "It opens when you next sign in to the Editorial Suite.";
+  return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
+}

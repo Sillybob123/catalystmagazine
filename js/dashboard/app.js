@@ -25,6 +25,7 @@ import {
 
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
+import { needsAgreement, showAgreementGate } from "./agreement.js?v=1";
 import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-8";
 
 // Role → display label
@@ -530,7 +531,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-7"),
+    loader: () => import("./admin-import.js?v=theme-8"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -594,6 +595,17 @@ onAuthStateChanged(auth, async (user) => {
       </div>`;
     paintUserChip();
     return;
+  }
+
+  // The Contributor Agreement: everyone signs the current version (and again
+  // when an admin asks) before the Suite opens. See js/dashboard/agreement.js.
+  if (needsAgreement(state.profile)) {
+    document.getElementById("content").innerHTML = "";
+    await showAgreementGate({
+      profile: state.profile,
+      authedFetch: makeContext({}).authedFetch,
+      onSignOut: async () => { try { await signOut(auth); } finally { location.href = "/admin/login"; } },
+    });
   }
 
   // Restore any previous preview (role or person) chosen this session (admin only).

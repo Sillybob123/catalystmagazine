@@ -246,6 +246,17 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // ---------- Contributor Agreement acceptances ----------
+    // One record per person per version, written only by the server
+    // (/api/agreement/accept) so the time and details are trustworthy.
+    // Admins see everyone's (Advanced tools → Contributor agreement); each
+    // person can see their own.
+    match /agreement_acceptances/{id} {
+      allow read: if isRealUser() && ((isAdmin() && notBlocked('#/admin/advanced'))
+        || resource.data.uid == request.auth.uid);
+      allow write: if false;
+    }
+
     // ---------- About-page bios ----------
     // team_bios/{slug}: the approved bios the About page and writer pages
     // show — public. bio_requests/{uid}: a staff member's bio waiting for an
