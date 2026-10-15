@@ -1,8 +1,9 @@
 // The Catalyst Contributor Agreement.
 //
-//   needsAgreement(profile)   true for a new account (created from
-//                             NEW_ACCOUNTS_FROM on) until it agrees to the current
-//                             version, and for anyone an admin asked to sign.
+//   needsAgreement(profile, uid)  true only for a new account (created from
+//                             NEW_ACCOUNTS_FROM on) that has never signed, and
+//                             for anyone an admin sent it to since they last
+//                             signed. A new version alone never re-shows it.
 //   showAgreementGate(opts)   the full-screen agreement shown on sign-in
 //                             (app.js, before the Suite loads). "I agree" works
 //                             once they've scrolled to the end; it posts to
@@ -26,15 +27,24 @@ const DOC_URL = `/legal/contributor-agreement-${AGREEMENT_VERSION}`;
 const NEW_ACCOUNTS_FROM = Date.parse("2026-10-15T00:00:00Z");
 const timeOf = (v) => (v && typeof v.toDate === "function" ? v.toDate().getTime() : Date.parse(v || ""));
 
-export function needsAgreement(profile) {
+// It shows at most once: a new account on its first visit, and after that
+// only when an admin sends it again (users.agreementRequestedAt newer than
+// their last signature). Publishing a new version never re-shows it by
+// itself. A copy of their signing time is kept in this browser too, so a
+// slow save or a reload can't bring it back.
+const localKey = (uid) => `catalyst.agreementSigned.${uid}`;
+const localSigned = (uid) => { try { return timeOf(localStorage.getItem(localKey(uid))); } catch { return NaN; } };
+
+export function needsAgreement(profile, uid) {
   if (!profile) return false;
+  const times = [timeOf(profile.agreementAcceptedAt), uid ? localSigned(uid) : NaN].filter(Number.isFinite);
+  const signedAt = times.length ? Math.max(...times) : NaN;
+  const hasSigned = Number.isFinite(signedAt) || !!profile.agreementVersion;
   const asked = timeOf(profile.agreementRequestedAt);
-  const signedCurrent = profile.agreementVersion === AGREEMENT_VERSION;
-  const signedAt = timeOf(profile.agreementAcceptedAt);
-  if (Number.isFinite(asked) && (!signedCurrent || !Number.isFinite(signedAt) || asked > signedAt)) return true;   // an admin asked
-  if (signedCurrent) return false;
+  if (Number.isFinite(asked)) return !hasSigned || (Number.isFinite(signedAt) && asked > signedAt);   // an admin sent it
+  if (hasSigned) return false;
   const created = timeOf(profile.createdAt);
-  return Number.isFinite(created) && created >= NEW_ACCOUNTS_FROM;                                          // a new account
+  return Number.isFinite(created) && created >= NEW_ACCOUNTS_FROM;                                // a new account's first visit
 }
 
 const STYLE = `
@@ -110,9 +120,25 @@ async function agreementHtml() {
   return art.innerHTML;
 }
 
+// Posts the acceptance; retries a few times on a bad connection.
+async function saveAcceptance(authedFetch) {
+  let last;
+  for (let i = 0; i < 4; i++) {
+    try {
+      const res = await authedFetch("/api/agreement/accept", { method: "POST", body: JSON.stringify({ version: AGREEMENT_VERSION }), keepalive: true });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) return data;
+      last = new Error(data.error || `HTTP ${res.status}`);
+      if (res.status >= 400 && res.status < 500) break;   // won't change on retry
+    } catch (e) { last = e; }
+    await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+  }
+  throw last;
+}
+
 // ── The sign-in agreement ─────────────────────────────────────────────────
 // Resolves once they've agreed. { user, profile, authedFetch, onSignOut }
-export function showAgreementGate({ profile, authedFetch, onSignOut }) {
+export function showAgreementGate({ uid, profile, authedFetch, onSignOut }) {
   injectStyle();
   return new Promise((resolve) => {
     const gate = el("div", { class: "ag-gate", role: "dialog", "aria-modal": "true", "aria-labelledby": "ag-title" });
@@ -144,7 +170,7 @@ export function showAgreementGate({ profile, authedFetch, onSignOut }) {
     behind.forEach((c) => c.setAttribute("inert", ""));
     const release = () => behind.forEach((c) => c.removeAttribute("inert"));
     const scroller = gate.querySelector("#ag-scroll"), bar = gate.querySelector("#ag-bar"), agree = gate.querySelector("#ag-agree");
-    const hint = gate.querySelector("#ag-hint"), err = gate.querySelector("#ag-err");
+    const hint = gate.querySelector("#ag-hint");
     let reachedEnd = false;
     const check = () => {
       const max = scroller.scrollHeight - scroller.clientHeight;
@@ -160,23 +186,21 @@ export function showAgreementGate({ profile, authedFetch, onSignOut }) {
     agreementHtml().then((html) => { scroller.innerHTML = html; scroller.scrollTop = 0; requestAnimationFrame(check); scroller.focus({ preventScroll: true }); })
       .catch((e) => { scroller.innerHTML = `<p>${esc(e.message)} Reload the page to try again.</p>`; });
     gate.querySelector("#ag-out").addEventListener("click", () => onSignOut && onSignOut());
-    agree.addEventListener("click", async () => {
+    agree.addEventListener("click", () => {
       if (!reachedEnd) return;
-      err.textContent = "";
-      agree.disabled = true; agree.textContent = "Saving…";
-      try {
-        const res = await authedFetch("/api/agreement/accept", { method: "POST", body: JSON.stringify({ version: AGREEMENT_VERSION }) });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) throw new Error(data.error || `Couldn't save (${res.status}).`);
-        profile.agreementVersion = AGREEMENT_VERSION;
-        profile.agreementAcceptedAt = data.acceptedAt;
-        gate.remove();
-        release();
-        resolve();
-      } catch (e) {
-        err.textContent = `${e.message || e} Try again.`;
-        agree.disabled = false; agree.textContent = "I agree";
-      }
+      // Close at once; the record saves in the background (and retries).
+      const signedAt = new Date().toISOString();
+      try { if (uid) localStorage.setItem(localKey(uid), signedAt); } catch { /* private mode: the server record still counts */ }
+      profile.agreementVersion = AGREEMENT_VERSION;
+      profile.agreementAcceptedAt = signedAt;
+      gate.remove();
+      release();
+      resolve();
+      saveAcceptance(authedFetch).catch(() => {
+        // Never saved: forget the local copy so it's asked again next time.
+        try { if (uid) localStorage.removeItem(localKey(uid)); } catch {}
+        toast("We couldn't save your agreement. It will open again next time you sign in.", "error", 7000);
+      });
     });
   });
 }
@@ -208,8 +232,9 @@ export function mountAgreementTool(ctx, root, paneHeader) {
 
   async function load() {
     const [us, ac] = await Promise.all([getDocs(collection(db, "users")), getDocs(collection(db, "agreement_acceptances"))]);
+    // each person's most recent signature, whichever version it was
     records = new Map();
-    ac.docs.map((d) => d.data()).filter((r) => r.version === AGREEMENT_VERSION).forEach((r) => records.set(r.uid, r));
+    ac.docs.map((d) => d.data()).forEach((r) => { const cur = records.get(r.uid); if (!cur || String(r.acceptedAt) > String(cur.acceptedAt)) records.set(r.uid, r); });
     people = us.docs.map((d) => ({ id: d.id, ...d.data() })).filter((u) => u.role && u.role !== "reader")
       .sort((a, b) => String(a.name || a.email).localeCompare(String(b.name || b.email)));
     render();
@@ -217,11 +242,11 @@ export function mountAgreementTool(ctx, root, paneHeader) {
 
   function render() {
     const signed = people.filter((u) => statusOf(u) === "signed").length;
-    root.querySelector("#agt-stats").innerHTML = `<b>${signed}</b> of <b>${people.length}</b> staff have signed the current version (October 15, 2026, revised).`;
+    root.querySelector("#agt-stats").innerHTML = `<b>${signed}</b> of <b>${people.length}</b> staff have signed. People only see the agreement again if you send it to them.`;
     const list = people.filter((u) => !q || `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(q));
     root.querySelector("#agt-list").innerHTML = list.map((u) => {
       const st = statusOf(u), rec = records.get(u.id);
-      const label = st === "signed" ? `<span class="agt-pill is-signed">Signed</span>${esc(fmt(rec.acceptedAt))}`
+      const label = st === "signed" ? `<span class="agt-pill is-signed">Signed</span>${esc(fmt(rec.acceptedAt))}${rec.version !== AGREEMENT_VERSION ? ` · earlier version` : ""}`
         : st === "asked" ? `<span class="agt-pill is-asked">Asked</span>${esc(fmtRelative(u.agreementRequestedAt))}, not signed yet`
         : `<span class="agt-pill is-none">Not signed</span>`;
       return `<li data-uid="${esc(u.id)}">

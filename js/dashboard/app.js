@@ -25,7 +25,7 @@ import {
 
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
-import { needsAgreement, showAgreementGate } from "./agreement.js?v=3";
+import { needsAgreement, showAgreementGate } from "./agreement.js?v=4";
 import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-8";
 
 // Role → display label
@@ -531,7 +531,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-10"),
+    loader: () => import("./admin-import.js?v=theme-11"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -627,9 +627,10 @@ onAuthStateChanged(auth, async (user) => {
 
   // The Contributor Agreement, over the Suite (which shows through, blurred,
   // and can't be used until they agree). New accounts sign on their first
-  // visit; anyone else when an admin asks. See js/dashboard/agreement.js.
-  if (needsAgreement(state.profile)) {
+  // visit and never again, unless an admin sends it. See js/dashboard/agreement.js.
+  if (needsAgreement(state.profile, state.user.uid)) {
     showAgreementGate({
+      uid: state.user.uid,
       profile: state.profile,
       authedFetch: makeContext({}).authedFetch,
       onSignOut: async () => { try { await signOut(auth); } finally { location.href = "/admin/login"; } },
