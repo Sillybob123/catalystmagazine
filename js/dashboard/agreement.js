@@ -183,6 +183,8 @@ export function showAgreementGate({ uid, profile, authedFetch, onSignOut }) {
       }
     };
     scroller.addEventListener("scroll", check, { passive: true });
+    // Get the server ready while they read, so saving is quick.
+    authedFetch("/api/agreement/accept", { method: "POST", body: JSON.stringify({ warm: true }) }).catch(() => {});
     agreementHtml().then((html) => { scroller.innerHTML = html; scroller.scrollTop = 0; requestAnimationFrame(check); scroller.focus({ preventScroll: true }); })
       .catch((e) => { scroller.innerHTML = `<p>${esc(e.message)} Reload the page to try again.</p>`; });
     gate.querySelector("#ag-out").addEventListener("click", () => onSignOut && onSignOut());

@@ -8,7 +8,7 @@
 // their IP address, country and browser. users/{uid} gets
 // agreementVersion / agreementAcceptedAt so the Suite stops asking.
 //
-// Body: { version }
+// Body: { version }   (or { warm: true } to get ready without recording)
 // Auth: any signed-in account with a profile.
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
@@ -36,6 +36,12 @@ export const onRequestPost = async ({ request, env }) => {
 
     let body = {};
     try { body = JSON.parse((await request.text()) || "{}"); } catch { return badRequest("Invalid JSON body"); }
+    // Sent when the agreement opens, while they read: gets the sign-in check and
+    // the text hash ready so the real save is quick. Records nothing.
+    if (body.warm) {
+      await agreementHash(`${new URL(request.url).origin}/legal/contributor-agreement-${CURRENT_VERSION}.html`).catch(() => {});
+      return json({ ok: true, warm: true });
+    }
     if (body.version !== CURRENT_VERSION) return badRequest("That version of the agreement is out of date. Reload the page.");
 
     // The exact text they were shown, fingerprinted (once per server instance).
