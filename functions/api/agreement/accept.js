@@ -16,7 +16,7 @@ import { firestoreGet, firestoreCreate, firestoreUpdate, fromFirestoreDoc } from
 import { requireRole } from "../../_utils/auth.js";
 
 // Keep in sync with AGREEMENT_VERSION in js/dashboard/agreement.js.
-const CURRENT_VERSION = "2026-10-15";
+const CURRENT_VERSION = "2026-10-15b";
 
 export const onRequestPost = async ({ request, env }) => {
   try {

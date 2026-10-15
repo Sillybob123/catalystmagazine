@@ -25,7 +25,7 @@ import {
 
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
-import { needsAgreement, showAgreementGate } from "./agreement.js?v=1";
+import { needsAgreement, showAgreementGate } from "./agreement.js?v=2";
 import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-8";
 
 // Role → display label
@@ -531,7 +531,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-8"),
+    loader: () => import("./admin-import.js?v=theme-9"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -597,17 +597,6 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
 
-  // The Contributor Agreement: everyone signs the current version (and again
-  // when an admin asks) before the Suite opens. See js/dashboard/agreement.js.
-  if (needsAgreement(state.profile)) {
-    document.getElementById("content").innerHTML = "";
-    await showAgreementGate({
-      profile: state.profile,
-      authedFetch: makeContext({}).authedFetch,
-      onSignOut: async () => { try { await signOut(auth); } finally { location.href = "/admin/login"; } },
-    });
-  }
-
   // Restore any previous preview (role or person) chosen this session (admin only).
   if (state.role === "admin") {
     const saved = sessionStorage.getItem(PREVIEW_KEY);
@@ -635,6 +624,17 @@ onAuthStateChanged(auth, async (user) => {
   try { initSuiteTheme(); } catch (e) { console.warn("[dashboard] theme init failed", e); }   // seasonal theme (Advanced tools)
   window.addEventListener("hashchange", handleRoute);
   handleRoute();
+
+  // The Contributor Agreement, over the Suite (which shows through, blurred,
+  // and can't be used until they agree). New accounts sign on their first
+  // visit; anyone else when an admin asks. See js/dashboard/agreement.js.
+  if (needsAgreement(state.profile)) {
+    showAgreementGate({
+      profile: state.profile,
+      authedFetch: makeContext({}).authedFetch,
+      onSignOut: async () => { try { await signOut(auth); } finally { location.href = "/admin/login"; } },
+    });
+  }
 });
 
 async function ensureProfile(user) {

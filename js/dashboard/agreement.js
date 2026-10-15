@@ -18,7 +18,7 @@ import { db } from "../firebase-config.js";
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, fmtRelative } from "./ui.js";
 
-export const AGREEMENT_VERSION = "2026-10-15";
+export const AGREEMENT_VERSION = "2026-10-15b";
 const DOC_URL = `/legal/contributor-agreement-${AGREEMENT_VERSION}`;
 
 // Accounts created from this date on sign on their first visit; people who
@@ -38,7 +38,12 @@ export function needsAgreement(profile) {
 }
 
 const STYLE = `
-  .ag-gate { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 20px; background: var(--surface-2, #f8f7f3); overflow: auto; }
+  /* over the Suite: it shows through, dimmed and blurred, but can't be used until they agree */
+  .ag-gate { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 20px; background: rgba(15, 23, 42, .32); -webkit-backdrop-filter: blur(5px) saturate(.9); backdrop-filter: blur(5px) saturate(.9); overflow: auto; animation: ag-in .35s ease-out; }
+  @keyframes ag-in { from { opacity: 0; } }
+  .ag-card { animation: ag-card .45s cubic-bezier(.22,1,.36,1); }
+  @keyframes ag-card { from { opacity: 0; transform: translateY(14px) scale(.985); } }
+  @media (prefers-reduced-motion: reduce) { .ag-gate, .ag-card { animation: none; } }
   .ag-card { width: min(760px, 100%); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: calc(100dvh - 40px); border: 1px solid var(--hairline, rgba(15,23,42,.11)); border-radius: 22px; background: var(--surface, #fdfcf9); box-shadow: var(--shadow-lg, 0 30px 60px -24px rgba(15,23,42,.32)); overflow: hidden; }
   .ag-head { padding: 24px 28px 16px; border-bottom: 1px solid var(--hairline-2, rgba(15,23,42,.07)); }
   .ag-head img { width: 34px; height: 34px; display: block; margin-bottom: 12px; }
@@ -132,10 +137,14 @@ export function showAgreementGate({ profile, authedFetch, onSignOut }) {
               <button type="button" class="btn btn-primary ag-agree" id="ag-agree" disabled>I agree</button>
             </div>
           </div>
-          <p class="ag-link">Version of October 15, 2026 · <a href="${DOC_URL}" target="_blank" rel="noopener">Open it in a new tab</a> · Questions? stemcatalystmagazine@gmail.com</p>
+          <p class="ag-link">Version of October 15, 2026 (revised) · <a href="${DOC_URL}" target="_blank" rel="noopener">Open it in a new tab</a> · Questions? stemcatalystmagazine@gmail.com</p>
         </footer>
       </div>`;
     document.body.appendChild(gate);
+    // The Suite behind can't be clicked, typed in or tabbed to until they agree.
+    const behind = [...document.body.children].filter((c) => c !== gate && !c.hasAttribute("inert"));
+    behind.forEach((c) => c.setAttribute("inert", ""));
+    const release = () => behind.forEach((c) => c.removeAttribute("inert"));
     const scroller = gate.querySelector("#ag-scroll"), bar = gate.querySelector("#ag-bar"), agree = gate.querySelector("#ag-agree");
     const hint = gate.querySelector("#ag-hint"), err = gate.querySelector("#ag-err");
     let reachedEnd = false;
@@ -164,6 +173,7 @@ export function showAgreementGate({ profile, authedFetch, onSignOut }) {
         profile.agreementVersion = AGREEMENT_VERSION;
         profile.agreementAcceptedAt = data.acceptedAt;
         gate.remove();
+        release();
         resolve();
       } catch (e) {
         err.textContent = `${e.message || e} Try again.`;
@@ -209,7 +219,7 @@ export function mountAgreementTool(ctx, root, paneHeader) {
 
   function render() {
     const signed = people.filter((u) => statusOf(u) === "signed").length;
-    root.querySelector("#agt-stats").innerHTML = `<b>${signed}</b> of <b>${people.length}</b> staff have signed the current version (October 15, 2026).`;
+    root.querySelector("#agt-stats").innerHTML = `<b>${signed}</b> of <b>${people.length}</b> staff have signed the current version (October 15, 2026, revised).`;
     const list = people.filter((u) => !q || `${u.name} ${u.email} ${u.role}`.toLowerCase().includes(q));
     root.querySelector("#agt-list").innerHTML = list.map((u) => {
       const st = statusOf(u), rec = records.get(u.id);
