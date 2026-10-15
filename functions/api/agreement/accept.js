@@ -16,7 +16,7 @@ import { firestoreCreate, firestoreUpdate } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
 
 // Keep in sync with AGREEMENT_VERSION in js/dashboard/agreement.js.
-const CURRENT_VERSION = "2026-10-15e";
+const CURRENT_VERSION = "2026-10-15f";
 
 const hashes = new Map();   // version file URL → SHA-256, kept while the instance lives
 async function agreementHash(url) {
