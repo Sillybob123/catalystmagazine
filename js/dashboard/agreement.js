@@ -9,7 +9,8 @@
 //                             once they've scrolled to the end; it posts to
 //                             /api/agreement/accept, which keeps the record.
 //   mountAgreementTool(ctx)   Advanced tools → Contributor agreement: who has
-//                             signed, their records, and "Ask to sign".
+//                             signed, their records, and "Ask to sign" (opens
+//                             it on their next visit; no email).
 //
 // The text lives in /legal/contributor-agreement-<version>.html. A published
 // version is never edited: copy it to a new dated file and bump
@@ -211,7 +212,7 @@ export function showAgreementGate({ uid, profile, authedFetch, onSignOut }) {
 export function mountAgreementTool(ctx, root, paneHeader) {
   injectStyle();
   root.innerHTML = `
-    ${paneHeader("Contributor agreement", `New staff sign The Catalyst Contributor Agreement the first time they sign in; anyone already on staff signs when you ask them here. See who has signed, open each record (time, version, IP address), and ask people to sign. <a href="${DOC_URL}" target="_blank" rel="noopener">Read the agreement</a>`)}
+    ${paneHeader("Contributor agreement", `New staff sign The Catalyst Contributor Agreement the first time they sign in; anyone already on staff sees it on their next visit after you ask them here (no email is sent). See who has signed, open each record (time, version, IP address), and ask people to sign. <a href="${DOC_URL}" target="_blank" rel="noopener">Read the agreement</a>`)}
     <div class="adv-pane-body">
       <div class="agt-top">
         <button type="button" class="btn btn-primary btn-sm" id="agt-ask-all">Ask everyone who hasn't signed</button>
@@ -271,7 +272,7 @@ export function mountAgreementTool(ctx, root, paneHeader) {
       const res = await ctx.authedFetch("/api/agreement/request", { method: "POST", body: JSON.stringify({ uids }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error || `Request failed (${res.status})`);
-      toast(`Sent to ${data.sent} ${data.sent === 1 ? "person" : "people"}${data.emailed < data.sent ? ` (${data.emailed} by email)` : ""}. It opens when they next sign in.`, "success", 5200);
+      toast(`Done. The agreement will open for ${data.sent === 1 ? "them" : `these ${data.sent} people`} the next time they open the Editorial Suite. No email is sent.`, "success", 5200);
       await load();
     } catch (e) { toast(e.message || "Couldn't send.", "error"); }
     finally { btn.disabled = false; }

@@ -15,7 +15,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 import { mountCoverPromptTool } from "./cover-prompt.js?v=6";
-import { mountAgreementTool } from "./agreement.js?v=6";
+import { mountAgreementTool } from "./agreement.js?v=7";
 import { mountThemePicker } from "./suite-theme.js?v=st-8";
 
 // A user is "recently joined" if their account was created within this many
@@ -39,7 +39,7 @@ const TOOLS = [
   {
     id: "agreement",
     label: "Contributor agreement",
-    summary: "Who has signed the agreement everyone accepts on first sign-in, each signature's record, and asking people to sign.",
+    summary: "Who has signed the agreement everyone accepts on first sign-in, each signature's record, and asking people to sign (no email; it opens on their next visit).",
     danger: "writes",
     iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M8.5 15.5c1.2-1.6 2.2-1.6 3 0s1.8 1.6 3.5-.5"/></svg>`,
     mount: (ctx, root) => mountAgreementTool(ctx, root, paneHeader),
