@@ -894,6 +894,10 @@
       .ab-bio-text h3 { margin: 0; font: 700 clamp(26px, 3vw, 36px)/1.05 var(--sans); letter-spacing: -0.03em; }
       .ab-bio-text .role { margin: 10px 0 20px; font: 600 12px/1.4 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--signal); }
       .ab-bio-text p { margin: 0; font: 400 17px/1.7 var(--serif); color: var(--ink-2); }
+      .ab-bio-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 24px; padding: 0 20px; border: 1px solid var(--ink); border-radius: 999px; font: 600 14px/1 var(--sans); color: var(--ink); text-decoration: none; transition: background .2s, color .2s; }
+      .ab-bio-link:hover { background: var(--ink); color: var(--paper); }
+      .ab-bio-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      .ab-bio-link[hidden] { display: none; }
       .ab-bio-close { position: absolute; right: 12px; top: 12px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--hair); background: rgba(255,255,255,.9); cursor: pointer; display: grid; place-items: center; color: var(--ink); }
       .ab-bio-close:hover { border-color: var(--ink); }
       @media (max-width: 640px) {
@@ -1265,6 +1269,7 @@
                 <h3 id="ab-bio-name"></h3>
                 <p class="role" id="ab-bio-role"></p>
                 <p id="ab-bio-text"></p>
+                <a class="ab-bio-link" id="ab-bio-link" href="#" hidden></a>
             </div>
         </div>
         <button type="button" class="ab-bio-close" id="ab-bio-close" aria-label="Close">
@@ -1279,7 +1284,7 @@
     <script defer src="/js/data.js"></script>
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
     <script defer src="/js/main.js?v=20261012-staff"></script>
-    <script defer src="/js/about.js?v=22"></script>
+    <script defer src="/js/about.js?v=23"></script>
     <script>
     /* In-page menu: shows once the opening is behind you, lights the section in
        the middle of the screen, glides to a section on click, steps aside for the footer */

@@ -415,6 +415,14 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
   var people = {}, seen = {};
+  // Stories per byline slug (filled by the stories count below), for the
+  // "Read their stories" link in the bio. Same slug rule as titleToSlug in
+  // functions/_utils/article-meta.js, which the /author/<slug> pages use.
+  var writers = {};
+  function authorSlug(name) {
+    return String(name || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+      .replace(/[\u2018\u2019']/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
   function initialsOf(name) {
     return String(name || '').split(/\s+/).filter(Boolean).map(function (w) { return w[0]; }).slice(0, 2).join('').toUpperCase();
   }
@@ -478,6 +486,13 @@
     document.getElementById('ab-bio-name').textContent = m.name;
     document.getElementById('ab-bio-role').textContent = m.role;
     document.getElementById('ab-bio-text').textContent = m.bio;
+    // their writer page, if they've published anything
+    var link = document.getElementById('ab-bio-link'), slug = authorSlug(m.name), count = writers[slug] || 0;
+    link.hidden = !count;
+    if (count) {
+      link.href = '/author/' + slug;
+      link.innerHTML = 'Read ' + esc(String(m.name).split(/\s+/)[0]) + '&rsquo;s ' + (count === 1 ? 'story' : count + ' stories') + ' <span aria-hidden="true">&rarr;</span>';
+    }
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
   });
   document.getElementById('ab-bio-close').addEventListener('click', function () { dlg.close(); });
@@ -516,10 +531,18 @@
     body: JSON.stringify({ structuredQuery: {
       from: [{ collectionId: 'stories' }],
       where: { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'published' } } },
-      select: { fields: [{ fieldPath: 'title' }] }, limit: 1000
+      select: { fields: [{ fieldPath: 'title' }, { fieldPath: 'authorName' }] }, limit: 1000
     } })
   }).then(function (r) { return r.ok ? r.json() : []; })
-    .then(function (rows) { setCount('stories', (Array.isArray(rows) ? rows : []).filter(function (x) { return x.document; }).length); })
+    .then(function (rows) {
+      var docs = (Array.isArray(rows) ? rows : []).filter(function (x) { return x.document; });
+      setCount('stories', docs.length);
+      // who has a writer page (/author/<slug>): everyone named in a byline
+      docs.forEach(function (x) {
+        var f = x.document.fields || {}, by = f.authorName && f.authorName.stringValue || '';
+        by.split(/\s*(?:,|&|\band\b)\s*/i).forEach(function (n) { n = n.trim(); if (n) writers[authorSlug(n)] = (writers[authorSlug(n)] || 0) + 1; });
+      });
+    })
     .catch(function () { setCount('stories', 60); });
 
   // Live bios: team_bios in Firestore is the team as admins manage it in the
