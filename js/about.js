@@ -435,12 +435,24 @@
     var byName = {};
     teamMembers.forEach(function (m) { byName[m.name] = m; });
     document.getElementById('ab-roster').innerHTML = rosterGroups.map(function (g) {
-      var clusters = g.clusters.map(function (c) {
-        var cards = c.members.map(function (n) { return byName[n]; }).filter(Boolean).map(personCard).join('');
-        if (!cards) return '';                                   // everyone moved out or hidden
-        return (c.subtitle ? '<p class="ab-cluster">' + esc(c.subtitle) + '</p>' : '') + '<div class="ab-people">' + cards + '</div>';
-      }).join('');
-      if (!clusters) return '';
+      var shown = g.clusters.map(function (c) {
+        return { c: c, people: c.members.map(function (n) { return byName[n]; }).filter(Boolean) };
+      }).filter(function (x) { return x.people.length; });         // everyone moved out or hidden
+      if (!shown.length) return '';
+      // A group split into named teams (Staff: Editing, Social Media) lays
+      // the teams side by side, each under its own heading, so a row isn't
+      // left half empty and the split is plain to see.
+      var split = shown.length > 1 && shown.some(function (x) { return x.c.subtitle; });
+      var clusters = split
+        ? '<div class="ab-clusters">' + shown.map(function (x) {
+            return '<section class="ab-cl" style="--n:' + x.people.length + '">' +
+              (x.c.subtitle ? '<h4 class="ab-cluster">' + esc(x.c.subtitle) + '<span>' + x.people.length + '</span></h4>' : '') +
+              '<div class="ab-people">' + x.people.map(personCard).join('') + '</div></section>';
+          }).join('') + '</div>'
+        : shown.map(function (x) {
+            return (x.c.subtitle ? '<h4 class="ab-cluster">' + esc(x.c.subtitle) + '<span>' + x.people.length + '</span></h4>' : '') +
+              '<div class="ab-people">' + x.people.map(personCard).join('') + '</div>';
+          }).join('');
       return '<div class="ab-group"><div class="ab-group-head"><h3>' + esc(g.title) + '</h3>' +
         (g.blurb ? '<p>' + esc(g.blurb) + '</p>' : '') + '</div>' + clusters + '</div>';
     }).join('');

@@ -318,66 +318,123 @@ const photo = (b, size = "") => b?.image
   ? `<span class="bio-ph${size}"><img src="${esc(b.image)}" alt="" loading="lazy" decoding="async"></span>`
   : `<span class="bio-ph${size} is-initials" aria-hidden="true">${esc(initialsOf(b?.name))}</span>`;
 
-// About-page portraits are framed hexagons (a dark rim, a light band, the
-// photo on white inside), drawn into the image itself, like /YairCatalyst.webp.
-// framePortrait() puts any photo into that same frame so uploads match the
-// rest of the team. A file that already has see-through corners is taken to
-// be framed already and is used as it is.
-function loadImage(file) {
+// About-page portraits: a black-and-white photo inside the Catalyst hexagon
+// frame (/beta/social/brand/hex-frame.png: dark rim, light band, white
+// center), like /YairCatalyst.webp. framePortrait() does it for any upload:
+// the photo goes black and white and is clipped to the frame's white center.
+// Cut-out photos (transparent background) sit on white with the shoulders at
+// the bottom edge; ordinary photos fill the center. A file that already has
+// the dark rim (framed by hand) is used as it is.
+function loadImage(src) {
   return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    const url = typeof src === "string" ? src : URL.createObjectURL(src);
     const img = new Image();
-    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("That file couldn't be read as an image.")); };
+    img.onload = () => { if (typeof src !== "string") URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { if (typeof src !== "string") URL.revokeObjectURL(url); reject(new Error("That file couldn't be read as an image.")); };
     img.src = url;
   });
 }
-function hexPath(g, x, y, w, h, r) {
-  const pts = [[x + w / 2, y], [x + w, y + h / 4], [x + w, y + h * 3 / 4], [x + w / 2, y + h], [x, y + h * 3 / 4], [x, y + h / 4]];
-  const start = [(pts[5][0] + pts[0][0]) / 2, (pts[5][1] + pts[0][1]) / 2];
-  g.beginPath();
-  g.moveTo(start[0], start[1]);
-  for (let i = 0; i < 6; i++) {
-    const p = pts[i], n = pts[(i + 1) % 6];
-    g.arcTo(p[0], p[1], n[0], n[1], r);
-  }
-  g.closePath();
-}
-export async function framePortrait(file) {
-  const img = await loadImage(file);
-  // Already framed? (a transparent top-left corner)
-  const probe = document.createElement("canvas");
-  probe.width = probe.height = 1;
-  const pg = probe.getContext("2d");
-  pg.drawImage(img, 0, 0, 2, 2, 0, 0, 1, 1);
-  const alreadyFramed = pg.getImageData(0, 0, 1, 1).data[3] < 16;
+const canvasOf = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
 
-  const W = 1200, H = Math.round(W * 1.172);
-  const c = document.createElement("canvas");
-  c.width = W; c.height = H;
-  const g = c.getContext("2d");
-  if (alreadyFramed) {
-    const k = Math.min(W / img.naturalWidth, H / img.naturalHeight);
-    const dw = img.naturalWidth * k, dh = img.naturalHeight * k;
-    g.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
-  } else {
-    // concentric hexagons: inset d on the sides is d / cos 30° at the points
-    const ring = (d) => [d, d * 1.1547, W - 2 * d, H - 2 * d * 1.1547];
-    const [ox, oy, ow, oh] = ring(4);
-    hexPath(g, ox, oy, ow, oh, W * 0.075); g.fillStyle = "#1e1c1d"; g.fill();
-    const [lx, ly, lw, lh] = ring(W * 0.09);
-    hexPath(g, lx, ly, lw, lh, W * 0.05); g.fillStyle = "#d1d3d4"; g.fill();
-    const [ix, iy, iw, ih] = ring(W * 0.143);
-    hexPath(g, ix, iy, iw, ih, W * 0.035);
-    g.save(); g.clip();
-    g.fillStyle = "#ffffff"; g.fillRect(ix, iy, iw, ih);
-    // cover the inner hexagon, keeping the upper part (faces) in view
-    const k = Math.max(iw / img.naturalWidth, ih / img.naturalHeight);
-    const dw = img.naturalWidth * k, dh = img.naturalHeight * k;
-    g.drawImage(img, ix + (iw - dw) / 2, iy + (ih - dh) * 0.3, dw, dh);
-    g.restore();
+// The frame, measured once: its outline box, the white center's box, and a
+// mask of the white center (soft at the edge where it meets the grey band).
+let frameTpl = null;
+async function frameTemplate() {
+  if (frameTpl) return frameTpl;
+  const img = await loadImage("/beta/social/brand/hex-frame.png?v=1");
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const c = canvasOf(W, H), g = c.getContext("2d");
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, W, H).data;
+  const mask = canvasOf(W, H), mg = mask.getContext("2d"), md = mg.createImageData(W, H);
+  const box = () => ({ x0: Infinity, y0: Infinity, x1: -1, y1: -1 });
+  const fb = box(), ib = box();
+  const grow = (b, x, y) => { if (x < b.x0) b.x0 = x; if (x > b.x1) b.x1 = x; if (y < b.y0) b.y0 = y; if (y > b.y1) b.y1 = y; };
+  for (let y = 0, i = 0; y < H; y++) {
+    for (let x = 0; x < W; x++, i += 4) {
+      const a = d[i + 3];
+      if (a > 8) grow(fb, x, y);
+      if (a > 200) {
+        const m = Math.max(0, Math.min(1, (Math.min(d[i], d[i + 1], d[i + 2]) - 214) / 36));
+        if (m > 0) { md.data[i + 3] = Math.round(m * 255); if (m > 0.5) grow(ib, x, y); }
+      }
+    }
   }
-  const blob = await new Promise((resolve) => c.toBlob(resolve, "image/webp", 0.9));
+  mg.putImageData(md, 0, 0);
+  const rect = (b) => ({ x: b.x0, y: b.y0, w: b.x1 - b.x0 + 1, h: b.y1 - b.y0 + 1 });
+  frameTpl = { img, W, H, mask, frame: rect(fb), inner: rect(ib) };
+  return frameTpl;
+}
+
+// Alpha at a point of an image (0–255), via a 1×1 draw.
+function alphaAt(img, fx, fy) {
+  const c = canvasOf(1, 1), g = c.getContext("2d");
+  const sx = Math.min(img.naturalWidth - 2, Math.max(0, Math.round(img.naturalWidth * fx)));
+  const sy = Math.min(img.naturalHeight - 2, Math.max(0, Math.round(img.naturalHeight * fy)));
+  g.drawImage(img, sx, sy, 2, 2, 0, 0, 1, 1);
+  const p = g.getImageData(0, 0, 1, 1).data;
+  return { a: p[3], lum: 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2] };
+}
+
+// The part of an image that isn't transparent, in its own pixels (found on a
+// small copy, so it's quick).
+function opaqueBox(img) {
+  const w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, 400 / Math.max(w, h));
+  const sw = Math.max(1, Math.round(w * k)), sh = Math.max(1, Math.round(h * k));
+  const c = canvasOf(sw, sh), g = c.getContext("2d");
+  g.drawImage(img, 0, 0, sw, sh);
+  const d = g.getImageData(0, 0, sw, sh).data;
+  let x0 = sw, y0 = sh, x1 = -1, y1 = -1;
+  for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) if (d[(y * sw + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return { x: 0, y: 0, w, h };
+  return { x: x0 / k, y: y0 / k, w: Math.min(w, (x1 - x0 + 1) / k), h: Math.min(h, (y1 - y0 + 1) / k) };
+}
+
+export async function framePortrait(file) {
+  const photo = await loadImage(file);
+  const corner = alphaAt(photo, 0, 0), rim = alphaAt(photo, 0.5, 0.004);
+  const alreadyFramed = corner.a < 16 && rim.a > 200 && rim.lum < 70;
+  const F = await frameTemplate();
+  const OW = 1200, OH = Math.round(OW * F.frame.h / F.frame.w);
+  const out = canvasOf(OW, OH), og = out.getContext("2d");
+
+  if (alreadyFramed) {
+    const k = Math.min(OW / photo.naturalWidth, OH / photo.naturalHeight);
+    og.drawImage(photo, (OW - photo.naturalWidth * k) / 2, (OH - photo.naturalHeight * k) / 2, photo.naturalWidth * k, photo.naturalHeight * k);
+  } else {
+    const ib = F.inner;
+    const pc = canvasOf(F.W, F.H), pg = pc.getContext("2d");
+    pg.fillStyle = "#ffffff";
+    pg.fillRect(ib.x, ib.y, ib.w, ib.h);
+    const pw = photo.naturalWidth, ph = photo.naturalHeight;
+    const cutOut = corner.a < 16 && alphaAt(photo, 1, 0).a < 16;
+    if (cutOut) {
+      // a person on a transparent background: trim the empty margins, then
+      // sit the shoulders on the bottom edge, about as big as the others
+      const b = opaqueBox(photo);
+      const k = Math.min((ib.w * 1.2) / b.w, (ib.h * 0.84) / b.h);   // shoulders may run past the sides, like the others
+      pg.drawImage(photo, b.x, b.y, b.w, b.h, ib.x + (ib.w - b.w * k) / 2, ib.y + ib.h - b.h * k + 2, b.w * k, b.h * k);
+    } else {
+      // an ordinary photo fills the center, keeping the upper part (faces)
+      const k = Math.max(ib.w / pw, ib.h / ph);
+      pg.drawImage(photo, ib.x + (ib.w - pw * k) / 2, ib.y + (ib.h - ph * k) * 0.3, pw * k, ph * k);
+    }
+    // black and white (by hand, so it works in every browser)
+    const px = pg.getImageData(ib.x, ib.y, ib.w, ib.h), d = px.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const y = Math.max(0, Math.min(255, (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2] - 128) * 1.06 + 128));
+      d[i] = d[i + 1] = d[i + 2] = y;
+    }
+    pg.putImageData(px, ib.x, ib.y);
+    // keep only what's inside the white center
+    pg.globalCompositeOperation = "destination-in";
+    pg.drawImage(F.mask, 0, 0);
+    const fr = F.frame;
+    og.drawImage(F.img, fr.x, fr.y, fr.w, fr.h, 0, 0, OW, OH);
+    og.drawImage(pc, fr.x, fr.y, fr.w, fr.h, 0, 0, OW, OH);
+  }
+  // WebP where the browser can make it (Safari falls back to PNG)
+  const blob = await new Promise((resolve) => out.toBlob(resolve, "image/webp", 0.9));
   if (!blob) throw new Error("Couldn't prepare the photo.");
   return blob;
 }
@@ -390,10 +447,11 @@ async function uploadPhoto(file, ctx) {
     import("https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"),
   ]);
   const framed = await framePortrait(file);
+  const ext = framed.type === "image/png" ? "png" : "webp";
   const digest = await crypto.subtle.digest("SHA-256", await framed.arrayBuffer());
   const hash = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
-  const r = ref(storage, `stories/${ctx.user.uid}/images/${hash}.webp`);
-  await uploadBytes(r, framed, { contentType: "image/webp" });
+  const r = ref(storage, `stories/${ctx.user.uid}/images/${hash}.${ext}`);
+  await uploadBytes(r, framed, { contentType: framed.type || "image/webp" });
   return getDownloadURL(r);
 }
 
@@ -531,7 +589,7 @@ export async function mount(ctx, container) {
             <label class="btn btn-secondary btn-sm bio-upload">Upload photo<input type="file" accept="image/*" id="be-file" hidden></label>
             <button type="button" class="btn btn-ghost btn-sm" id="be-remove">Remove</button>
           </div>
-          <p class="bio-hint" id="be-photo-hint">Any photo works: it goes in the same hexagon frame as everyone else's. A head-and-shoulders shot looks best. Without one, their initials show.</p>
+          <p class="bio-hint" id="be-photo-hint">Upload any photo: it's made black and white and put in the Catalyst hexagon automatically. A head-and-shoulders shot works best. Without one, their initials show.</p>
           <label class="bio-switch">
             <input type="checkbox" id="be-show" ${e.hidden ? "" : "checked"}>
             <span class="bio-switch-track" aria-hidden="true"></span>
@@ -582,7 +640,7 @@ export async function mount(ctx, container) {
         paintPhoto();
         hint.textContent = "Uploaded. Save to put it on the About page.";
       } catch (x) {
-        hint.textContent = "Any photo works: it goes in the same hexagon frame as everyone else's.";
+        hint.textContent = "Upload any photo: it's made black and white and put in the Catalyst hexagon automatically.";
         err.textContent = `Couldn't upload the photo: ${x?.message || x}`;
       }
     });
