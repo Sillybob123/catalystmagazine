@@ -363,6 +363,9 @@ async function frameTemplate() {
   g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, W, H).data;
   const mask = canvasOf(W, H), mg = mask.getContext("2d"), md = mg.createImageData(W, H);
+  // hard: only the pure-white center (no soft edge), for cutting a person out
+  // of an old framed portrait without bringing any grey along
+  const hard = canvasOf(W, H), hg = hard.getContext("2d"), hd = hg.createImageData(W, H);
   const box = () => ({ x0: Infinity, y0: Infinity, x1: -1, y1: -1 });
   const fb = box(), ib = box();
   const grow = (b, x, y) => { if (x < b.x0) b.x0 = x; if (x > b.x1) b.x1 = x; if (y < b.y0) b.y0 = y; if (y > b.y1) b.y1 = y; };
@@ -373,12 +376,14 @@ async function frameTemplate() {
       if (a > 200) {
         const m = Math.max(0, Math.min(1, (Math.min(d[i], d[i + 1], d[i + 2]) - 214) / 36));
         if (m > 0) { md.data[i + 3] = Math.round(m * 255); if (m > 0.5) grow(ib, x, y); }
+        if (Math.min(d[i], d[i + 1], d[i + 2]) >= 253) hd.data[i + 3] = 255;
       }
     }
   }
   mg.putImageData(md, 0, 0);
+  hg.putImageData(hd, 0, 0);
   const rect = (b) => ({ x: b.x0, y: b.y0, w: b.x1 - b.x0 + 1, h: b.y1 - b.y0 + 1 });
-  frameTpl = { img, W, H, mask, frame: rect(fb), inner: rect(ib) };
+  frameTpl = { img, W, H, mask, hard, frame: rect(fb), inner: rect(ib) };
   return frameTpl;
 }
 
@@ -406,8 +411,12 @@ function opaqueBox(img) {
 const isFramed = (img) => { const corner = alphaAt(img, 0, 0), rim = alphaAt(img, 0.5, 0.004); return corner.a < 16 && rim.a > 200 && rim.lum < 70; };
 
 // Turn a loaded image into a source to frame: { img, kind, box, derived }.
-// A framed portrait gives up its white center (the person on white).
-export async function prepareSource(img) {
+//   framed  the person from an older framed portrait: its white center, cut
+//           along the hexagon's inner edge so none of the old frame comes along
+//   cutout  a person on a transparent background
+//   photo   an ordinary photo
+// `kind` is the kind saved with the original (imageFit.kind), when known.
+export async function prepareSource(img, kind) {
   const F = await frameTemplate();
   if (isFramed(img)) {
     const { w, h } = sizeOf(img), fr = F.frame, ib = F.inner;
@@ -416,8 +425,11 @@ export async function prepareSource(img) {
     const c = canvasOf(ib.w * k, ib.h * k), g = c.getContext("2d");
     g.fillStyle = "#ffffff"; g.fillRect(0, 0, c.width, c.height);
     g.drawImage(img, ox + (ib.x - fr.x) * k, oy + (ib.y - fr.y) * k, ib.w * k, ib.h * k, 0, 0, c.width, c.height);
-    return { img: c, kind: "photo", derived: true };
+    g.globalCompositeOperation = "destination-in";             // keep only the white center
+    g.drawImage(F.hard, ib.x, ib.y, ib.w, ib.h, 0, 0, c.width, c.height);
+    return { img: c, kind: "framed", derived: true };
   }
+  if (kind === "framed") return { img, kind: "framed" };     // a center saved earlier
   const cutOut = alphaAt(img, 0, 0).a < 16 && alphaAt(img, 1, 0).a < 16;
   return cutOut ? { img, kind: "cutout", box: opaqueBox(img) } : { img, kind: "photo" };
 }
@@ -425,13 +437,32 @@ export async function prepareSource(img) {
 // The framed portrait as a canvas `outW` wide, with the photo placed by `fit`.
 // zoom 1 = the standard size; x / y move it by a share of the center's width
 // and height.
-export async function renderFramed(src, fit = DEFAULT_FIT, outW = 1200) {
+// An old framed portrait has no picture beyond its hexagon, so it can be made
+// bigger but not smaller, and moved only as far as the extra size allows;
+// otherwise its old edge would show. (Upload the original to go further.)
+export function clampFit(fit, kind) {
+  const f = { zoom: Number(fit.zoom) || 1, x: Number(fit.x) || 0, y: Number(fit.y) || 0 };
+  if (kind !== "framed") return f;
+  f.zoom = Math.max(1, Math.min(2, f.zoom));
+  const slack = f.zoom - 1;
+  // Sideways: the extra width allows half the slack each way. The hexagon's
+  // slanted top and bottom edges rise half a unit per unit across, so moving
+  // sideways by x needs at least |x|/2 of room below and above; y (0 = the
+  // bottom points meet) is kept inside that window.
+  f.x = Math.max(-slack / 2, Math.min(slack / 2, f.x));
+  const lo = Math.abs(f.x) / 2, hi = slack - Math.abs(f.x) / 2;
+  f.y = Math.max(lo, Math.min(hi, f.y));
+  return f;
+}
+
+export async function renderFramed(src, fit = DEFAULT_FIT, outW = 1200, behind = "#ffffff") {
+  fit = clampFit(fit, src.kind);
   const F = await frameTemplate(), fr = F.frame, ib = F.inner;
   const s = outW / fr.w, W = outW, H = Math.round(fr.h * s);
   const X = (v) => (v - fr.x) * s, Y = (v) => (v - fr.y) * s;
   const zoom = Math.max(0.3, Math.min(3, Number(fit.zoom) || 1)), fx = Number(fit.x) || 0, fy = Number(fit.y) || 0;
   const pc = canvasOf(W, H), pg = pc.getContext("2d");
-  pg.fillStyle = "#ffffff";
+  pg.fillStyle = behind;                                     // white, like the frame's center
   pg.fillRect(X(ib.x), Y(ib.y), ib.w * s, ib.h * s);
   const { w: pw, h: ph } = sizeOf(src.img);
   if (src.kind === "cutout") {
@@ -439,6 +470,13 @@ export async function renderFramed(src, fit = DEFAULT_FIT, outW = 1200) {
     const k = Math.min((ib.w * 1.2) / b.w, (ib.h * 0.84) / b.h) * zoom;   // shoulders may run past the sides, like the others
     const dw = b.w * k, dh = b.h * k;
     pg.drawImage(src.img, b.x, b.y, b.w, b.h, X(ib.x + (ib.w - dw) / 2 + fx * ib.w), Y(ib.y + ib.h - dh + 2 + fy * ib.h), dw * s, dh * s);
+  } else if (src.kind === "framed") {
+    // The old portrait's center, scaled about the hexagon's bottom point: its
+    // own cut edges then run along the frame's lower edges at any size, so
+    // the shoulders still meet the frame and no old outline shows.
+    const k = Math.max(ib.w / pw, ib.h / ph) * zoom;
+    const dw = pw * k, dh = ph * k;
+    pg.drawImage(src.img, X(ib.x + (ib.w - dw) / 2 + fx * ib.w), Y(ib.y + ib.h - dh + fy * ib.h), dw * s, dh * s);
   } else {
     const k = Math.max(ib.w / pw, ib.h / ph) * zoom;
     const dw = pw * k, dh = ph * k;
@@ -672,7 +710,11 @@ export async function mount(ctx, container) {
     const hint = body.querySelector("#be-photo-hint");
     const ADJUST_HINT = "Drag the photo, or use the sliders, to size and place them in the hexagon.";
     let preview = null, raf = 0, drawing = false, again = false;
-    const syncControls = () => { zoomEl.value = fit.zoom; xEl.value = fit.x; yEl.value = fit.y; zoomV.textContent = `${Math.round(fit.zoom * 100)}%`; };
+    const syncControls = () => {
+      const framed = src?.kind === "framed";
+      zoomEl.min = framed ? "1" : "0.5";
+      zoomEl.value = fit.zoom; xEl.value = fit.x; yEl.value = fit.y; zoomV.textContent = `${Math.round(fit.zoom * 100)}%`;
+    };
     const drawPreview = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(async () => {
@@ -702,7 +744,7 @@ export async function mount(ctx, container) {
       adjust.hidden = true;
       photoBox.innerHTML = photo({ name: body.querySelector("#be-name").value || e.name, image }, "-lg");
     };
-    const setFit = (next) => { fit = { ...fit, ...next }; photoDirty = true; syncControls(); drawPreview(); };
+    const setFit = (next) => { fit = { ...clampFit({ ...fit, ...next }, src?.kind) }; photoDirty = true; syncControls(); drawPreview(); };
     zoomEl.addEventListener("input", () => setFit({ zoom: +zoomEl.value }));
     xEl.addEventListener("input", () => setFit({ x: +xEl.value }));
     yEl.addEventListener("input", () => setFit({ y: +yEl.value }));
@@ -723,10 +765,13 @@ export async function mount(ctx, container) {
     paintPhoto();
     // The saved original (or the center of an older framed portrait) can be adjusted.
     if (imageSource || image) {
-      loadImage(imageSource || image).then(prepareSource).then((sx) => {
+      loadImage(imageSource || image).then((img) => prepareSource(img, imageSource ? e.imageFit?.kind : undefined)).then((sx) => {
         if (src) return;                       // a new upload got there first
         src = sx; newSource = !imageSource;
-        hint.textContent = ADJUST_HINT;
+        fit = clampFit(fit, src.kind);
+        hint.textContent = src.kind === "framed"
+          ? "Drag the photo, or use the sliders, to make them bigger and place them. This photo came from the hexagon version, so it can't go below 100%; upload the original photo to make them smaller."
+          : ADJUST_HINT;
         paintPhoto();
       }).catch(() => { hint.textContent = "This photo can't be resized here. Upload it again to size and place it."; });
     }
@@ -783,7 +828,7 @@ export async function mount(ctx, container) {
         }
         payload.image = image;
         payload.imageSource = photoDirty ? (src ? imageSource : "") : (e.imageSource || "");
-        payload.imageFit = photoDirty ? (src ? fit : null) : (e.imageFit || null);
+        payload.imageFit = photoDirty ? (src ? { zoom: fit.zoom, x: fit.x, y: fit.y, kind: src.kind } : null) : (e.imageFit || null);
         const res = await ctx.authedFetch("/api/bio/manage", { method: "POST", body: JSON.stringify(payload) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || `Request failed (${res.status})`);

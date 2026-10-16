@@ -46,7 +46,8 @@ export const onRequestPost = async ({ request, env }) => {
     const imageSource = String(body.imageSource || "").trim().slice(0, 1500);
     const num = (v, lo, hi, d) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d);
     const imageFit = body.imageFit && typeof body.imageFit === "object"
-      ? { zoom: num(body.imageFit.zoom, 0.3, 3, 1), x: num(body.imageFit.x, -1, 1, 0), y: num(body.imageFit.y, -1, 1, 0) }
+      ? { zoom: num(body.imageFit.zoom, 0.3, 3, 1), x: num(body.imageFit.x, -1, 1, 0), y: num(body.imageFit.y, -1, 1, 0),
+          kind: ["framed", "cutout", "photo"].includes(body.imageFit.kind) ? body.imageFit.kind : "" }
       : null;
 
     if (!hidden && bio.length < 40) return badRequest("Write a bio first (or hide them from the About page).");
