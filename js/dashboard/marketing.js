@@ -2,8 +2,9 @@
 //   - "analytics": headline stats + 30-day growth sparkline
 //   - "collabs":   collaboration-request pipeline
 
-import { el, esc, fmtRelative, fmtDate, confirmDialog } from "./ui.js";
-import { canAssign, loadAssignments, loadTeam, applyPlan, scheduleHTML, mountPlan, avatar, avatarStack, creatorName, fmtTime } from "./social-plan.js?v=2";
+import { el, esc, fmtRelative, fmtDate, confirmDialog, openModal } from "./ui.js";
+import { canAssign, loadAssignments, loadTeam, applyPlan, scheduleHTML, mountPlan, avatar, avatarStack, creatorName, fmtTime } from "./social-plan.js?v=3";
+import { POST_TIMES, GENERAL_TIPS, RESEARCHED, guideTableHTML, bestTimeAdvice } from "./post-times.js?v=1";
 
 export async function mount(ctx, container) {
   container.innerHTML = "";
@@ -723,6 +724,7 @@ async function mountSocialPosts(ctx, container) {
           <p>Every post for Instagram, LinkedIn and X: design it in the Studio, then copy the caption and download the images when it's time to post.</p>
         </div>
         <div class="spb-hero-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="sp-best-times" title="The best days and times to post on each platform, for our East Coast audience"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Best times to post</button>
           <button type="button" class="btn btn-secondary btn-sm" id="sp-goto-create" title="Turn a published article into a carousel">Carousel from an article</button>
           <button type="button" class="btn btn-primary btn-sm" id="sp-new-design"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Create a design</button>
         </div>
@@ -884,6 +886,27 @@ async function mountSocialPosts(ctx, container) {
   tabCreate.addEventListener("click", () => { setActiveTab("create"); ensureCreateInitialized(); });
   container.querySelector("#sp-goto-create").addEventListener("click", () => { setActiveTab("create"); ensureCreateInitialized(); });
   container.querySelector("#sp-new-design").addEventListener("click", openNewDesign);
+  container.querySelector("#sp-best-times").addEventListener("click", () => openBestTimes());
+
+  // The research on when to post (post-times.js), one platform at a time.
+  function openBestTimes(platform = "instagram") {
+    const body = el("div", { class: "pt-guide" });
+    const tabs = Object.entries(POST_TIMES).map(([k, v]) => `<button type="button" role="tab" data-pt="${k}" aria-selected="${k === platform}">${esc(v.label)}</button>`).join("");
+    body.innerHTML = `
+      <p class="pt-lead">When our audience in Washington, D.C. and the East Coast is most likely to see and engage with a post. All times are Eastern Time.</p>
+      <div class="pt-tabs" role="tablist" aria-label="Platform">${tabs}</div>
+      <div id="pt-table"></div>
+      <h4 class="pt-h">Good to know</h4>
+      <ul class="pt-tips">${GENERAL_TIPS.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+      <p class="pt-src">Based on Sprout Social's 2026 study (nearly 2 billion engagements across about 307,000 accounts, including education and nonprofit breakdowns) and Buffer's 2026 State of Social Engagement (52 million posts), checked against Hootsuite. Researched ${esc(RESEARCHED)}.</p>`;
+    const paint = (k) => {
+      body.querySelector("#pt-table").innerHTML = guideTableHTML(k);
+      body.querySelectorAll("[data-pt]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.pt === k)));
+    };
+    body.querySelector(".pt-tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-pt]"); if (b) paint(b.dataset.pt); });
+    paint(POST_TIMES[platform] ? platform : "instagram");
+    openModal({ title: "Best times to post", body, size: "wide" });
+  }
   // Leaving the page (another dashboard route) must not leave the body locked.
   window.addEventListener("hashchange", () => { if (!container.isConnected) document.body.classList.remove("ds-lock"); });
 
@@ -1488,6 +1511,18 @@ async function mountSocialPosts(ctx, container) {
     // Who posts it, and when (social-plan.js). Bank posts just keep a date
     // for when they move to the drafts.
     const dueEl = detailModal.querySelector("#spd-due");
+    // Bank posts: the best time for the day picked (post-times.js).
+    if (dueEl) {
+      const tip = el("p", { class: "spp-best", "aria-live": "polite" });
+      dueEl.closest(".spd-due").after(tip);
+      const paintTip = () => {
+        const adv = bestTimeAdvice(p.platform || "instagram", dueEl.value);
+        tip.hidden = !adv;
+        if (adv) { tip.className = `spp-best is-${adv.tone}`; tip.innerHTML = `<span class="spp-best-text">${esc(adv.text)}</span>`; }
+      };
+      dueEl.addEventListener("input", paintTip);
+      paintTip();
+    }
     const planEl = detailModal.querySelector("#spd-plan");
     if (planEl) {
       ensureTeam().then((t) => {

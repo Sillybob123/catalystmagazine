@@ -10,6 +10,7 @@
 // people the Firestore rules let write assignments for others). Owners can
 // mark their own post as posted.
 
+import { bestTimeAdvice, fmtClock, POST_TIMES } from "./post-times.js?v=1";
 import { esc } from "./ui.js";
 
 const PLAN_ROLES = ["admin", "marketing", "social_media"];
@@ -169,6 +170,7 @@ export function mountPlan(el, { p, ctx, team, lead, api, onChange }) {
           <input type="time" id="spp-time" value="${esc(p.postTime || "")}" ${canDate ? "" : "disabled"} aria-label="Time (optional)" step="900">
         </div>
       </div>
+      <div class="spp-best" id="spp-best" aria-live="polite" hidden></div>
       <div class="spp-row">
         <span class="spd-label">Who posts it</span>
         <div class="spp-people"><span id="spp-people">${peopleHTML()}</span>
@@ -247,6 +249,28 @@ export function mountPlan(el, { p, ctx, team, lead, api, onChange }) {
     const b = e.target.closest("[data-unpick]"); if (b) { picked = picked.filter((x) => x !== b.dataset.unpick); $("#spp-people").innerHTML = peopleHTML(); if (!menu?.hidden) paintList(); refresh(); return; }
     if (menu && !menu.hidden && e.target.isConnected && !e.target.closest(".spp-addwrap")) closeMenu();
   });
+  // When to post: the research-based best time for this day and platform
+  // (post-times.js), with one-click "use this time" / "move to a better day".
+  const bestEl = $("#spp-best");
+  const paintBest = () => {
+    const adv = bestTimeAdvice(p.platform || "instagram", dateEl.value, timeEl.value);
+    bestEl.hidden = !adv;
+    if (!adv) return;
+    bestEl.className = `spp-best is-${adv.tone}`;
+    bestEl.innerHTML = `<span class="spp-best-text">${esc(adv.text)}</span>${canDate ? `<span class="spp-best-acts">${adv.useTime && timeEl.value !== adv.useTime ? `<button type="button" data-use-time="${esc(adv.useTime)}">Use ${esc(fmtClock(adv.useTime))}</button>` : ""}${adv.moveTo ? `<button type="button" data-move-to="${esc(adv.moveTo)}">${esc(adv.moveLabel)}</button>` : ""}</span>` : ""}`;
+  };
+  bestEl.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-use-time]"), m = e.target.closest("[data-move-to]");
+    if (t) { timeEl.value = t.dataset.useTime; timeEl.dispatchEvent(new Event("input")); timeEl.dispatchEvent(new Event("change")); }
+    if (m) {
+      dateEl.value = m.dataset.moveTo;
+      const best = POST_TIMES[p.platform || "instagram"]?.days[new Date(m.dataset.moveTo + "T12:00:00").getDay()]?.best;
+      if (best && !timeEl.value) timeEl.value = best;
+      dateEl.dispatchEvent(new Event("input")); dateEl.dispatchEvent(new Event("change"));
+    }
+  });
+  [dateEl, timeEl].forEach((x) => x.addEventListener("input", paintBest));
+  paintBest();
   [dateEl, timeEl].forEach((x) => x.addEventListener("input", refresh));
   taskEl?.addEventListener("input", refresh);
 
