@@ -153,6 +153,14 @@ export function buildArticleUrl(article = {}, siteUrl = SITE_URL) {
 
 // Cover images in JSON posts are either (a) already-absolute URLs (Wix CDN)
 // or (b) repo-relative paths like "postimages/foo.webp". Resolve both.
+// "postimages/x.webp" → "/postimages/x.webp"; full URLs, data: URLs and
+// paths that already start with "/" are left as they are.
+export function rootRelative(src) {
+  const v = String(src || "").trim();
+  if (!v || /^(https?:|data:|blob:|\/)/i.test(v)) return v;
+  return "/" + v.replace(/^(\.\/)+/, "");
+}
+
 function resolveImage(src, siteUrl = SITE_URL) {
   if (!src) return getFallbackImage(siteUrl);
   if (/^https?:\/\//i.test(src)) return src;
@@ -238,8 +246,10 @@ function firestoreDocToArticle(doc) {
     author: str("authorName") || str("author") || "The Catalyst",
     date,
     image: resolveImage(str("coverImage") || str("image")),
-    // Unresolved cover, as the client sees it (for the server-rendered <img>).
-    rawImage: str("coverImage") || str("image"),
+    // The cover for server-rendered <img>s (article hero, writer pages). A
+    // stored relative path ("postimages/x.webp") becomes root-relative, or it
+    // would resolve against the page's own path (/author/postimages/x.webp).
+    rawImage: rootRelative(str("coverImage") || str("image")),
     excerpt,
     deck,
     // Full story HTML — rendered into the article shell server-side.
