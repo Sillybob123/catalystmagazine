@@ -381,10 +381,76 @@ async function frameTemplate() {
     }
   }
   mg.putImageData(md, 0, 0);
+  // Pull the hard edge in (~1.2% of the width): older portraits' frames sit a
+  // few pixels differently from this template, and none of their grey band
+  // may come along.
+  erodeAlpha(hd.data, W, H, Math.round(W * 0.012));
   hg.putImageData(hd, 0, 0);
   const rect = (b) => ({ x: b.x0, y: b.y0, w: b.x1 - b.x0 + 1, h: b.y1 - b.y0 + 1 });
   frameTpl = { img, W, H, mask, hard, frame: rect(fb), inner: rect(ib) };
   return frameTpl;
+}
+
+// An old portrait's center stops at the old hexagon edge. To let it be made
+// smaller or moved without that edge showing, carry the picture outward: the
+// shoulders and body continue to the sides and down; hair and head fade to the
+// white background just past the old edge.
+// Returns { ext, inner }: the extended canvas, and where the original sits in it.
+function extendEdges(src) {
+  const { w, h } = sizeOf(src);
+  const px = Math.round(w * 0.6), top = Math.round(h * 0.25), bot = Math.round(h * 0.6);
+  const W = w + px * 2, H = h + top + bot;
+  const c = canvasOf(W, H), g = c.getContext("2d");
+  g.drawImage(src, px, top, w, h);
+  const img = g.getImageData(0, 0, W, H), d = img.data;
+  const at = (x, y) => (y * W + x) * 4;
+  const copy = (from, to) => { d[to] = d[from]; d[to + 1] = d[from + 1]; d[to + 2] = d[from + 2]; d[to + 3] = 255; };
+  // the average of a few pixels just inside the edge, so one odd pixel can't streak
+  const avg = (x0, step, y, n) => { let r = 0, gg = 0, b = 0, k = 0; for (let i = 2; i < 2 + n; i++) { const p = at(x0 + step * i, y); if (d[p + 3] > 200) { r += d[p]; gg += d[p + 1]; b += d[p + 2]; k++; } } return k ? [r / k, gg / k, b / k] : null; };
+  const fill = (rgb, to) => { d[to] = rgb[0]; d[to + 1] = rgb[1]; d[to + 2] = rgb[2]; d[to + 3] = 255; };
+  // Shoulders and body (the lower part) carry on outward in full; above that
+  // (hair, head) the edge color fades to white within a short distance, so
+  // nothing smears across the background.
+  const bodyFrom = top + Math.round(h * 0.6), fadePx = Math.max(8, Math.round(w * 0.04));
+  const WHITE = [255, 255, 255];
+  const mix = (rgb, t) => [rgb[0] + (255 - rgb[0]) * t, rgb[1] + (255 - rgb[1]) * t, rgb[2] + (255 - rgb[2]) * t];
+  let lastRow = -1;
+  for (let y = top; y < top + h; y++) {
+    let x0 = -1, x1 = -1;
+    for (let x = px; x < px + w; x++) if (d[at(x, y) + 3] > 200) { if (x0 < 0) x0 = x; x1 = x; }
+    if (x0 < 0) { for (let x = 0; x < W; x++) fill(WHITE, at(x, y)); continue; }
+    lastRow = y;
+    const L = avg(x0, 1, y, 6) || WHITE, R = avg(x1, -1, y, 6) || WHITE;
+    const body = y >= bodyFrom;
+    for (let x = x0 + 1; x >= 0; x--) fill(body ? L : mix(L, Math.min(1, (x0 + 1 - x) / fadePx)), at(x, y));
+    for (let x = x1 - 1; x < W; x++) fill(body ? R : mix(R, Math.min(1, (x - x1 + 1) / fadePx)), at(x, y));
+  }
+  // above the old portrait: background; below it: the body carries on down
+  for (let y = 0; y < top; y++) for (let x = 0; x < W; x++) fill(WHITE, at(x, y));
+  if (lastRow >= 0) for (let y = lastRow + 1; y < H; y++) for (let x = 0; x < W; x++) copy(at(x, lastRow), at(x, y));
+  g.putImageData(img, 0, 0);
+  return { ext: c, inner: { x: px, y: top, w, h } };
+}
+
+// Shrinks the opaque area of an RGBA buffer by r pixels (a pixel stays only if
+// every pixel within r of it, across and down, is opaque).
+function erodeAlpha(d, W, H, r) {
+  const a = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) a[i] = d[i * 4 + 3] > 0 ? 1 : 0;
+  const pass = (len, n, idx) => {
+    const out = new Uint8Array(W * H), pre = new Int32Array(len + 1);
+    for (let line = 0; line < n; line++) {
+      for (let i = 0; i < len; i++) pre[i + 1] = pre[i] + a[idx(line, i)];
+      for (let i = 0; i < len; i++) {
+        const lo = Math.max(0, i - r), hi = Math.min(len, i + r + 1);
+        out[idx(line, i)] = pre[hi] - pre[lo] === hi - lo ? 1 : 0;
+      }
+    }
+    a.set(out);
+  };
+  pass(W, H, (y, x) => y * W + x);
+  pass(H, W, (x, y) => y * W + x);
+  for (let i = 0; i < W * H; i++) d[i * 4 + 3] = a[i] ? 255 : 0;
 }
 
 // Alpha and brightness at a point of an image, via a 1×1 draw.
@@ -427,9 +493,9 @@ export async function prepareSource(img, kind) {
     g.drawImage(img, ox + (ib.x - fr.x) * k, oy + (ib.y - fr.y) * k, ib.w * k, ib.h * k, 0, 0, c.width, c.height);
     g.globalCompositeOperation = "destination-in";             // keep only the white center
     g.drawImage(F.hard, ib.x, ib.y, ib.w, ib.h, 0, 0, c.width, c.height);
-    return { img: c, kind: "framed", derived: true };
+    return { img: c, kind: "framed", derived: true, ...extendEdges(c) };
   }
-  if (kind === "framed") return { img, kind: "framed" };     // a center saved earlier
+  if (kind === "framed") return { img, kind: "framed", ...extendEdges(img) };   // a center saved earlier
   const cutOut = alphaAt(img, 0, 0).a < 16 && alphaAt(img, 1, 0).a < 16;
   return cutOut ? { img, kind: "cutout", box: opaqueBox(img) } : { img, kind: "photo" };
 }
@@ -437,21 +503,17 @@ export async function prepareSource(img, kind) {
 // The framed portrait as a canvas `outW` wide, with the photo placed by `fit`.
 // zoom 1 = the standard size; x / y move it by a share of the center's width
 // and height.
-// An old framed portrait has no picture beyond its hexagon, so it can be made
-// bigger but not smaller, and moved only as far as the extra size allows;
-// otherwise its old edge would show. (Upload the original to go further.)
+// An older framed portrait (kind "framed") has no real picture past its old
+// edge, only the carried-on shoulders, so it can be any size but only nudged
+// sideways and moved down, never up.
 export function clampFit(fit, kind) {
-  const f = { zoom: Number(fit.zoom) || 1, x: Number(fit.x) || 0, y: Number(fit.y) || 0 };
-  if (kind !== "framed") return f;
-  f.zoom = Math.max(1, Math.min(2, f.zoom));
-  const slack = f.zoom - 1;
-  // Sideways: the extra width allows half the slack each way. The hexagon's
-  // slanted top and bottom edges rise half a unit per unit across, so moving
-  // sideways by x needs at least |x|/2 of room below and above; y (0 = the
-  // bottom points meet) is kept inside that window.
-  f.x = Math.max(-slack / 2, Math.min(slack / 2, f.x));
-  const lo = Math.abs(f.x) / 2, hi = slack - Math.abs(f.x) / 2;
-  f.y = Math.max(lo, Math.min(hi, f.y));
+  const c = (v, lo, hi, d) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, +v)) : d);
+  const f = { zoom: c(fit.zoom, 0.5, 2, 1), x: c(fit.x, -0.5, 0.5, 0), y: c(fit.y, -0.5, 0.5, 0) };
+  if (kind === "framed") {
+    const xl = Math.max(0.08, (f.zoom - 1) / 2);
+    f.x = Math.max(-xl, Math.min(xl, f.x));
+    f.y = Math.max(0, f.y);
+  }
   return f;
 }
 
@@ -471,12 +533,13 @@ export async function renderFramed(src, fit = DEFAULT_FIT, outW = 1200, behind =
     const dw = b.w * k, dh = b.h * k;
     pg.drawImage(src.img, b.x, b.y, b.w, b.h, X(ib.x + (ib.w - dw) / 2 + fx * ib.w), Y(ib.y + ib.h - dh + 2 + fy * ib.h), dw * s, dh * s);
   } else if (src.kind === "framed") {
-    // The old portrait's center, scaled about the hexagon's bottom point: its
-    // own cut edges then run along the frame's lower edges at any size, so
-    // the shoulders still meet the frame and no old outline shows.
-    const k = Math.max(ib.w / pw, ib.h / ph) * zoom;
-    const dw = pw * k, dh = ph * k;
-    pg.drawImage(src.img, X(ib.x + (ib.w - dw) / 2 + fx * ib.w), Y(ib.y + ib.h - dh + fy * ib.h), dw * s, dh * s);
+    // The old portrait's center, scaled about the hexagon's bottom point (so at
+    // 100% it sits exactly where it was), drawn from the extended picture so
+    // nothing ends at the old edge when it's smaller or moved.
+    const I = src.inner, E = src.ext;
+    const k = Math.max(ib.w / I.w, ib.h / I.h) * zoom;
+    const dx = ib.x + (ib.w - I.w * k) / 2 + fx * ib.w, dy = ib.y + ib.h - I.h * k + fy * ib.h;
+    pg.drawImage(E, X(dx - I.x * k), Y(dy - I.y * k), E.width * k * s, E.height * k * s);
   } else {
     const k = Math.max(ib.w / pw, ib.h / ph) * zoom;
     const dw = pw * k, dh = ph * k;
@@ -711,8 +774,6 @@ export async function mount(ctx, container) {
     const ADJUST_HINT = "Drag the photo, or use the sliders, to size and place them in the hexagon.";
     let preview = null, raf = 0, drawing = false, again = false;
     const syncControls = () => {
-      const framed = src?.kind === "framed";
-      zoomEl.min = framed ? "1" : "0.5";
       zoomEl.value = fit.zoom; xEl.value = fit.x; yEl.value = fit.y; zoomV.textContent = `${Math.round(fit.zoom * 100)}%`;
     };
     const drawPreview = () => {
@@ -744,7 +805,7 @@ export async function mount(ctx, container) {
       adjust.hidden = true;
       photoBox.innerHTML = photo({ name: body.querySelector("#be-name").value || e.name, image }, "-lg");
     };
-    const setFit = (next) => { fit = { ...clampFit({ ...fit, ...next }, src?.kind) }; photoDirty = true; syncControls(); drawPreview(); };
+    const setFit = (next) => { fit = clampFit({ ...fit, ...next }, src?.kind); photoDirty = true; syncControls(); drawPreview(); };
     zoomEl.addEventListener("input", () => setFit({ zoom: +zoomEl.value }));
     xEl.addEventListener("input", () => setFit({ x: +xEl.value }));
     yEl.addEventListener("input", () => setFit({ y: +yEl.value }));
@@ -769,9 +830,7 @@ export async function mount(ctx, container) {
         if (src) return;                       // a new upload got there first
         src = sx; newSource = !imageSource;
         fit = clampFit(fit, src.kind);
-        hint.textContent = src.kind === "framed"
-          ? "Drag the photo, or use the sliders, to make them bigger and place them. This photo came from the hexagon version, so it can't go below 100%; upload the original photo to make them smaller."
-          : ADJUST_HINT;
+        hint.textContent = ADJUST_HINT;
         paintPhoto();
       }).catch(() => { hint.textContent = "This photo can't be resized here. Upload it again to size and place it."; });
     }
