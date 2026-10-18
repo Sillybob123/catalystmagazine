@@ -450,9 +450,12 @@
       // A group split into named teams (Staff: Editing, Social Media) lays
       // the teams side by side, each under its own heading, so a row isn't
       // left half empty and the split is plain to see.
-      var split = shown.length > 1 && shown.some(function (x) { return x.c.subtitle; });
+      // Side by side only while the teams fit one row (five people in all);
+      // more than that, they stack under their headings.
+      var total = shown.reduce(function (n, x) { return n + x.people.length; }, 0);
+      var split = shown.length > 1 && total <= 5 && shown.some(function (x) { return x.c.subtitle; });
       var clusters = split
-        ? '<div class="ab-clusters">' + shown.map(function (x) {
+        ? '<div class="ab-clusters" style="grid-template-columns:' + shown.map(function (x) { return x.people.length + 'fr'; }).join(' ') + '">' + shown.map(function (x) {
             return '<section class="ab-cl" style="--n:' + x.people.length + '">' +
               (x.c.subtitle ? '<h4 class="ab-cluster">' + esc(x.c.subtitle) + '<span>' + x.people.length + '</span></h4>' : '') +
               '<div class="ab-people">' + x.people.map(personCard).join('') + '</div></section>';

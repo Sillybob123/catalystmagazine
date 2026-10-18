@@ -836,10 +836,17 @@
       .ab-cluster span { font: 500 13px/1 var(--sans); letter-spacing: 0; color: var(--muted); }
       .ab-people + .ab-cluster { margin-top: 40px; }
       /* teams side by side (Staff: Editing | Social Media); cards stay the size of every other row */
-      .ab-clusters { display: flex; flex-wrap: wrap; gap: 40px 0; }
-      .ab-cl { flex: 0 1 auto; min-width: 0; }
-      .ab-cl + .ab-cl { margin-left: 28px; padding-left: 28px; border-left: 1px solid rgba(15, 23, 42, 0.14); }
-      .ab-cl .ab-people { grid-template-columns: repeat(var(--n), minmax(150px, 211px)); }
+      /* Teams side by side (about.js sets one column per person, so every hexagon is the same size) */
+      .ab-clusters { display: grid; column-gap: 56px; align-items: start; }
+      .ab-cl { position: relative; min-width: 0; }
+      .ab-cl + .ab-cl::before { content: ""; position: absolute; top: 0; bottom: 0; left: -28px; border-left: 1px solid rgba(15, 23, 42, 0.14); }   /* the divider sits in the gap, so both teams' hexagons stay the same size */
+      .ab-cl .ab-people { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+      @media (max-width: 960px) {
+        .ab-clusters { display: block; }
+        .ab-cl + .ab-cl { margin-top: 40px; }
+        .ab-cl + .ab-cl::before { display: none; }
+        .ab-cl .ab-people { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+      }
       .ab-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 36px 24px; }
       .ab-person {
         display: grid; gap: 12px; width: 100%; padding: 0; margin: 0; border: 0; background: none; text-align: left; cursor: pointer; color: inherit;
@@ -874,8 +881,6 @@
       @media (max-width: 560px) {
         .ab-team-head { grid-template-columns: 1fr; }
         .ab-people, .ab-alumni .ab-people { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 14px; }
-        .ab-cl { flex: 1 1 100%; }
-        .ab-cl + .ab-cl { margin-left: 0; padding-left: 0; border-left: 0; }
         .ab-cl .ab-people { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .ab-person strong { font-size: 15.5px; }
         .ab-person span { font-size: 13.5px; }
@@ -1284,7 +1289,7 @@
     <script defer src="/js/data.js"></script>
     <!-- main.js holds the team roster (teamMembers / rosterGroups / alumniMembers) -->
     <script defer src="/js/main.js?v=20261012-staff"></script>
-    <script defer src="/js/about.js?v=23"></script>
+    <script defer src="/js/about.js?v=24"></script>
     <script>
     /* In-page menu: shows once the opening is behind you, lights the section in
        the middle of the screen, glides to a section on click, steps aside for the footer */
