@@ -248,7 +248,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=home-5"),
+    loader: () => import("./overview.js?v=home-6"),
   },
   // This edition — the planning hub for the edition in progress: proposals by
   // section, key dates, next steps, and questions & updates for everyone.
@@ -258,7 +258,7 @@ const ROUTES = {
     icon: ICONS.edition,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./edition-hub.js?v=3"),
+    loader: () => import("./edition-hub.js?v=4"),
   },
   "#/calendar": {
     label: "Editorial calendar",

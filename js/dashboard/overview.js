@@ -18,6 +18,7 @@ import { buildAdminTasks } from "./task-engine.js";
 import { isProjectPublished } from "./publish-sync.js";
 import { el, esc, fmtRelative, confirmDialog } from "./ui.js";
 import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-9";
+import { editionDeadlinesCard } from "./edition-deadlines.js?v=1";
 import { isStaff, whoseTurn, isMyTurn, nudgeFor, progressPct, stageLabel, readiness } from "./schedule-calendar.js?v=roles-2";
 
 // Shortcuts at the top of Overview, per role: the three or four things that
@@ -90,6 +91,10 @@ export async function mount(ctx, container) {
   const announceMount = el("div", { id: "overview-announcements" });
   container.appendChild(announceMount);
   loadAnnouncements(announceMount, ctx);
+
+  // The edition in progress: its hard deadlines and launch, with a countdown,
+  // and this person's own pieces (edition-deadlines.js).
+  if (isAdmin || isStaff(ctx.role)) container.appendChild(editionDeadlinesCard(ctx));
 
   // Admins get the newsroom home: what needs them, what's coming, the
   // numbers, then the reminder bot folded away at the bottom.

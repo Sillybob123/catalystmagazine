@@ -322,42 +322,22 @@ export async function mount(ctx, container) {
     return list.sort((a, b) => a.n - b.n)[0] || null;
   }
 
+  // The deadlines everyone works to: each hard deadline and launch day, with
+  // a countdown. The next one is dark.
   function nextUp() {
-    const node = el("section", { class: "eh-tiles", "aria-label": "What's next" });
-    const nh = nextHard();
-    const launchN = daysUntil(hub.launch);
-    const mine = sorted(pieces.filter((p) => isMine(p) && p.section !== "held"));
-    const big = (n) => (n === 0 ? `<span class="n">Today</span>` : `<span class="n">${n}</span><span class="u">${n === 1 ? "day" : "days"}</span>`);
-    let third = "";
-    const step = mine.flatMap((p) => (p.nextSteps || []).filter((s) => !s.done).map((s) => ({ p, s })))[0];
-    if (mine.length) {
-      third = step
-        ? `<p class="eh-tile-k">Your next step</p><p class="eh-tile-text">${esc(step.s.text)}</p><button type="button" class="eh-tile-link" data-piece="${esc(step.p.id)}">${esc(clip(step.p.title, 46))} ${ICON.chev}</button>`
-        : `<p class="eh-tile-k">Your next steps</p><p class="eh-tile-text">All done. Your editor will be in touch about what comes next.</p><button type="button" class="eh-tile-link" data-piece="${esc(mine[0].id)}">Open your piece ${ICON.chev}</button>`;
-    } else if (mySections().length) {
-      const s = mySections()[0];
-      const qs = openQs((m) => m.authorUid !== me.uid && (m.sectionId === s.id || pieces.some((p) => p.id === m.pieceId && p.section === s.id)));
-      third = `<p class="eh-tile-k">Waiting on you</p><p class="eh-tile-big"><span class="n">${qs.length}</span><span class="u">open ${qs.length === 1 ? "question" : "questions"}</span></p><button type="button" class="eh-tile-link" data-go="talk">Open questions ${ICON.chev}</button>`;
-    } else if (["social_media", "marketing"].includes(ctx.role)) {
-      third = `<p class="eh-tile-k">The lineup</p><p class="eh-tile-text">Hooks, people to tag and copy-ready lines for launch day.</p><button type="button" class="eh-tile-link" data-go="social">Plan the launch ${ICON.chev}</button>`;
-    } else {
-      const qs = openQs(() => true).length;
-      third = `<p class="eh-tile-k">Open questions</p><p class="eh-tile-big"><span class="n">${qs}</span></p><button type="button" class="eh-tile-link" data-go="talk">Questions ${ICON.chev}</button>`;
-    }
-    node.innerHTML = `
-      <article class="eh-tile is-main">
-        ${nh ? `<p class="eh-tile-k">Next deadline${nh.hard ? ` <span class="eh-hard">Hard deadline</span>` : ""}</p>
-          <p class="eh-tile-big${nh.n <= 7 ? " is-soon" : ""}">${big(nh.n)}</p>
-          <p class="eh-tile-title">${esc(nh.label)}</p>
-          <p class="eh-tile-sub">${esc(fmtDay(nh.date, LONG))}</p>`
-        : `<p class="eh-tile-k">Deadlines</p><p class="eh-tile-title">All deadlines have passed.</p>`}
-      </article>
-      <article class="eh-tile">
-        <p class="eh-tile-k">Launch</p>
-        <p class="eh-tile-big">${launchN > 0 ? big(launchN) : `<span class="n">Live</span>`}</p>
-        <p class="eh-tile-sub">${esc(fmtDay(hub.launch, LONG))}</p>
-      </article>
-      <article class="eh-tile">${third}</article>`;
+    const node = el("section", { class: "eh-tiles", "aria-label": "Deadlines" });
+    const items = [...(hub.dates || []).filter((d) => d.hard), { id: "launch", label: "Launch day", date: hub.launch, launch: true }];
+    const nextIdx = items.findIndex((d) => daysUntil(d.date) >= 0);
+    node.innerHTML = items.map((d, i) => {
+      const n = daysUntil(d.date);
+      const next = i === nextIdx;
+      return `<article class="eh-tile${next ? " is-main" : ""}${n < 0 ? " is-past" : ""}">
+        <p class="eh-tile-k">${next ? "Next deadline" : d.launch ? "Launch" : "Deadline"}${d.hard ? ` <span class="eh-hard">Hard deadline</span>` : ""}</p>
+        <p class="eh-tile-big${!d.launch && n >= 0 && n <= 7 ? " is-soon" : ""}">${n < 0 ? `<span class="n">${d.launch ? "Live" : "Done"}</span>` : n === 0 ? `<span class="n">Today</span>` : `<span class="n">${n}</span><span class="u">${n === 1 ? "day" : "days"}</span>`}</p>
+        <p class="eh-tile-title">${esc(d.label)}</p>
+        <p class="eh-tile-sub">${esc(fmtDay(d.date, LONG))}</p>
+      </article>`;
+    }).join("");
     return node;
   }
 
@@ -479,7 +459,9 @@ export async function mount(ctx, container) {
           <ul class="eh-ticks">${(hub.interviewTips || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>
         <details><summary><span>Where your work goes</span>${ICON.down}</summary>
           <dl class="eh-where">${(hub.whereWork || []).map((w) => `<dt>${esc(w.label)}</dt><dd>${esc(w.text)}</dd>`).join("")}</dl>
-          ${drive.length ? `<p class="eh-btnrow">${drive.map((s) => `<a class="btn btn-secondary btn-sm" href="${esc(s.driveUrl)}" target="_blank" rel="noopener">${ICON.drive} ${esc(s.name)} folder</a>`).join("")}</p>` : ""}</details>
+          ${drive.length ? `<p class="eh-btnrow">${drive.map((s) => `<a class="btn btn-secondary btn-sm" href="${esc(s.draftsUrl || s.driveUrl)}" target="_blank" rel="noopener">${ICON.drive} ${esc(s.name)} drafts</a>`).join("")}</p>` : ""}</details>
+        ${(hub.links || []).length ? `<details><summary><span>Documents: templates and guides</span>${ICON.down}</summary>
+          <ul class="eh-doclinks">${hub.links.map((l) => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener">${ICON.link}<span><strong>${esc(l.label)}</strong>${l.note ? `<small>${esc(l.note)}</small>` : ""}</span></a></li>`).join("")}</ul></details>` : ""}
       </div>`;
     return node;
   }
@@ -570,10 +552,14 @@ export async function mount(ctx, container) {
   // ── a piece
   // Left: the work (feedback to address, the full proposal, questions).
   // Right: where it stands and what to do next, always in view.
+  // Notes are plain strings (the editors' inline notes in the proposal) or
+  // { text, by } (comments from the Google Doc, with who wrote them).
+  const noteText = (n) => (typeof n === "string" ? n : n?.text || "");
+  const noteBy = (n) => (typeof n === "string" ? "" : n?.by || "");
   const noteList = (p) => [
-    ...(p.general || []).map((text, i) => ({ id: `general:${i}`, field: "general", text })),
+    ...(p.general || []).map((n, i) => ({ id: `general:${i}`, field: "general", text: noteText(n), by: noteBy(n) })),
     ...PROPOSAL.flatMap((g) => [...(g.lead ? [[g.lead, `${g.group} (overall)`]] : []), ...g.fields])
-      .flatMap(([k]) => (p.notes?.[k] || []).map((text, i) => ({ id: `${k}:${i}`, field: k, text }))),
+      .flatMap(([k]) => (p.notes?.[k] || []).map((n, i) => ({ id: `${k}:${i}`, field: k, text: noteText(n), by: noteBy(n) }))),
   ];
   const doneSet = (p) => new Set(Array.isArray(p.notesDone) ? p.notesDone : []);
   const fieldLabel = (k) => (k === "general" ? "Overall" : k === "outline" ? "Outline (overall)" : PROPOSAL.flatMap((g) => g.fields).find(([f]) => f === k)?.[1] || k);
@@ -644,7 +630,7 @@ export async function mount(ctx, container) {
     }
     node.innerHTML = `
       <div class="card-header eh-ch">
-        <div><h2 class="card-title">Feedback from the editors</h2>
+        <div><h2 class="card-title">Feedback from the editors</h2>${p.docUrl ? `<p class="card-subtitle"><a class="eh-link" href="${esc(p.docUrl)}" target="_blank" rel="noopener">Open the proposal in Google Docs</a></p>` : ""}
           <p class="card-subtitle">${doneN === notes.length ? "Every note is addressed. Nice work." : `${doneN} of ${notes.length} addressed.${can ? " Tick each note once you've dealt with it in your draft." : ""}`}</p></div>
         ${doneN ? `<label class="eh-switch"><input type="checkbox" ${view.hideDone ? "checked" : ""} data-hide-done><span class="tr" aria-hidden="true"></span>Hide addressed</label>` : ""}
       </div>
@@ -659,7 +645,7 @@ export async function mount(ctx, container) {
             ${v ? `<details class="eh-fb-quote"><summary><span class="eh-fb-q">“${esc(clip(String(v).replace(/\s+/g, " "), 150))}”</span><span class="eh-fb-more">What you wrote</span></summary><div class="eh-ftext">${rich(v)}</div></details>` : ""}
             <ul class="eh-checks">${items.map((n) => `<li><label class="eh-check eh-fb-item${done.has(n.id) ? " is-done" : ""}">
               <input type="checkbox" data-note-done="${esc(n.id)}" data-piece-id="${esc(p.id)}" ${done.has(n.id) ? "checked" : ""} ${can ? "" : "disabled"}>
-              <span class="box">${ICON.check}</span><span class="txt">${rich(n.text)}</span></label></li>`).join("")}</ul>
+              <span class="box">${ICON.check}</span><span class="txt">${n.by ? `<span class="eh-by">${esc(n.by)}</span>` : ""}${rich(n.text)}</span></label></li>`).join("")}</ul>
           </section>`;
         }).join("")}
       </div>`;
@@ -689,6 +675,7 @@ export async function mount(ctx, container) {
         <div><h2 class="card-title">Proposal by ${esc(names(p.writers))}</h2>${p.updatedAt && p.updatedByName && !/seeded/i.test(p.updatedByName) ? `<p class="card-subtitle">Updated ${esc(fmtRelative(p.updatedAt))}</p>` : `<p class="card-subtitle">As the writer sent it.</p>`}</div>
         <div class="eh-doc-ctl">
           ${nN ? `<label class="eh-switch"><input type="checkbox" ${view.showNotes ? "checked" : ""} data-toggle-notes><span class="tr" aria-hidden="true"></span>Show notes</label>` : ""}
+          ${p.docUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.link} Google Doc</a>` : ""}
           ${canProp ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-proposal="${esc(p.id)}">${ICON.edit} Edit</button>` : ""}
         </div>
       </div>
@@ -708,14 +695,14 @@ export async function mount(ctx, container) {
       }
       html += `</section>`;
     }
-    if (p.general?.length) html += `<section class="eh-pg eh-general"><h3 class="section-title">The editors' overall feedback</h3>${p.general.map((t) => `<div class="eh-gnote">${rich(t)}</div>`).join("")}</section>`;
+    if (p.general?.length) html += `<section class="eh-pg eh-general"><h3 class="section-title">The editors' overall feedback</h3>${p.general.map((n) => `<div class="eh-gnote">${noteBy(n) ? `<span class="eh-note-k">${esc(noteBy(n))}</span>` : ""}${rich(noteText(n))}</div>`).join("")}</section>`;
     html += `</div>`;
     node.innerHTML = html;
     return node;
   }
   function notesHtml(list) {
     if (!list?.length) return "";
-    return `<div class="eh-notes">${list.map((t) => `<aside class="eh-note"><span class="eh-note-k">Editor's note</span>${rich(t)}</aside>`).join("")}</div>`;
+    return `<div class="eh-notes">${list.map((n) => `<aside class="eh-note"><span class="eh-note-k">${esc(noteBy(n) || "Editor's note")}</span>${rich(noteText(n))}</aside>`).join("")}</div>`;
   }
 
   function sideCards(p) {
@@ -736,8 +723,10 @@ export async function mount(ctx, container) {
         <div class="eh-side-links">
           ${p.draftUrl ? `<a class="btn btn-secondary btn-sm" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">${ICON.link} Open the draft</a>` : ""}
           ${prog ? `<button type="button" class="btn btn-ghost btn-sm" data-draft-link="${esc(p.id)}">${p.draftUrl ? "Change draft link" : `${ICON.plus} Add the draft link`}</button>` : ""}
+          ${section(p.section)?.draftsUrl && i < STAGE_INDEX.final ? `<a class="btn ${i < STAGE_INDEX.draft1 && isMine(p) ? "btn-primary" : "btn-ghost"} btn-sm" href="${esc(section(p.section).draftsUrl)}" target="_blank" rel="noopener">${ICON.drive} ${i < STAGE_INDEX.draft1 ? "Upload your first draft" : "Drafts folder"}</a>` : ""}
           ${section(p.section)?.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(section(p.section).driveUrl)}" target="_blank" rel="noopener">${ICON.drive} Section folder</a>` : ""}
-        </div>`;
+        </div>
+        ${section(p.section)?.draftsUrl && i < STAGE_INDEX.draft1 ? `<p class="eh-side-hint">Name it “Name_Title_Draft1”, then set the stage to First draft in.</p>` : ""}`;
       out.push(c);
     }
     const steps = p.nextSteps || [];
@@ -1452,7 +1441,8 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-badge.is-alert { background: var(--warn-soft); color: var(--warn); }
 
 /* tiles */
-.eh-tiles { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 20px; }
+.eh-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.eh-tile.is-past { opacity: .55; }
 .eh-tiles.is-sm { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 28px 0 0; }
 .eh-tile { display: flex; flex-direction: column; min-width: 0; padding: 22px 24px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow-sm); }
 .eh-tile.is-main { background: var(--ink); border-color: var(--ink); color: var(--surface-2); box-shadow: var(--shadow-md); }
@@ -1716,6 +1706,15 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-group li .eh-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eh-group li .eh-muted { flex: none; }
 .eh-stale { margin: 18px 0 0; font-size: 13.5px; color: var(--ink-2); }
+
+.eh-by { display: block; margin: 0 0 2px; font: 600 11px/1.3 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--warn); }
+.eh-gnote .eh-note-k { color: var(--muted); }
+.eh-doclinks { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.eh-doclinks a { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 12px 14px; border-radius: 12px; background: var(--surface-3); color: var(--ink); text-decoration: none; }
+.eh-doclinks a:hover { background: var(--paper-3); }
+.eh-doclinks a svg { flex: none; margin-top: 2px; color: var(--muted); }
+.eh-doclinks strong { display: block; font-size: 14px; font-weight: 600; }
+.eh-doclinks small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
 
 /* questions */
 .eh-compose-card { padding: 18px 20px; }
