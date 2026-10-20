@@ -122,7 +122,7 @@ export async function mount(ctx, container) {
     piece: params.get("piece") || null,
     pieceTab: ["talk", "feedback", "proposal"].includes(params.get("view")) ? params.get("view") : "",
     sec: params.get("sec") || "",
-    q: "", filter: "all", talkFilter: "all", showNotes: true, hideDone: false,
+    q: "", filter: "all", talkFilter: "all", showNotes: true,
   };
   const me = { uid: ctx.user?.uid || "", name: ctx.profile?.name || ctx.user?.displayName || "" };
   const isAdmin = ctx.role === "admin";
@@ -367,7 +367,7 @@ export async function mount(ctx, container) {
             <p class="eh-meta">${esc(section(p.section)?.name || "")}${p.format ? ` · ${esc(p.format)}` : ""}</p>
             <p class="eh-mine-title">${esc(p.title)}</p>
             <div class="eh-prog" aria-label="Stage: ${esc(STAGES[STAGE_INDEX[p.status] ?? 0]?.label || "")}"><span style="width:${progressPct(p)}%"></span></div>
-            <p class="eh-mine-facts">${stage(p)}${steps.length ? `<span>${done} of ${steps.length} steps done</span>` : ""}${(() => { const ns = noteList(p); const d = ns.filter((n) => doneSet(p).has(n.id)).length; return ns.length ? `<span>${d} of ${ns.length} notes addressed</span>` : ""; })()}${ed ? `<span>Editor: ${esc(ed.name)}</span>` : ""}${qN ? `<span class="eh-tag is-info">${plural(qN, "question")} for you</span>` : ""}${f && f.tone !== "muted" ? `<span class="eh-tag is-${f.tone}">${esc(f.text)}</span>` : ""}</p>
+            <p class="eh-mine-facts">${stage(p)}${steps.length ? `<span>${done} of ${steps.length} steps done</span>` : ""}${(() => { const n = noteList(p).length; return n ? `<span>${plural(n, "editor's note", "editors' notes")}</span>` : ""; })()}${ed ? `<span>Editor: ${esc(ed.name)}</span>` : ""}${qN ? `<span class="eh-tag is-info">${plural(qN, "question")} for you</span>` : ""}${f && f.tone !== "muted" ? `<span class="eh-tag is-${f.tone}">${esc(f.text)}</span>` : ""}</p>
           </div>
           <span class="eh-chev">${ICON.chev}</span>
         </li>`;
@@ -784,7 +784,6 @@ export async function mount(ctx, container) {
     ...PROPOSAL.flatMap((g) => [...(g.lead ? [[g.lead, `${g.group} (overall)`]] : []), ...g.fields])
       .flatMap(([k]) => (p.notes?.[k] || []).map((n, i) => ({ id: `${k}:${i}`, field: k, text: noteText(n), by: noteBy(n) }))),
   ];
-  const doneSet = (p) => new Set(Array.isArray(p.notesDone) ? p.notesDone : []);
   const fieldLabel = (k) => (k === "general" ? "Overall" : k === "outline" ? "Outline (overall)" : PROPOSAL.flatMap((g) => g.fields).find(([f]) => f === k)?.[1] || k);
   const fieldValue = (p, k) => (k === "title" ? p.title : k === "subtitle" ? p.subtitle : k === "format" ? p.format : p.proposal?.[k] || "");
 
@@ -795,8 +794,6 @@ export async function mount(ctx, container) {
     const threads = threadOf((m) => m.pieceId === p.id);
     const openN = threads.filter((m) => m.kind === "question" && !m.resolved).length;
     const notes = noteList(p);
-    const done = doneSet(p);
-    const left = notes.filter((n) => !done.has(n.id)).length;
     if (!view.pieceTab || (view.pieceTab === "feedback" && !notes.length)) view.pieceTab = notes.length ? "feedback" : "proposal";
     wrap.innerHTML = `
       <button type="button" class="eh-back" data-go="pieces">${ICON.back} All pieces</button>
@@ -823,10 +820,10 @@ export async function mount(ctx, container) {
         <div class="eh-pmain">
           <nav class="eh-seg eh-ptabs" aria-label="This piece">
             ${[
-              ...(notes.length ? [["feedback", "Feedback", left ? `${left} to do` : "All done"]] : []),
+              ...(notes.length ? [["feedback", "Feedback", String(notes.length)]] : []),
               ["proposal", "Full proposal", ""],
               ["talk", "Questions", threads.length ? (openN ? `${openN} open` : String(threads.length)) : ""],
-            ].map(([id, l, n]) => `<button type="button" class="eh-seg-b${view.pieceTab === id ? " is-on" : ""}" data-pv="${id}" ${view.pieceTab === id ? 'aria-current="page"' : ""}>${l}${n ? `<span class="eh-badge${(id === "talk" && openN) || (id === "feedback" && left) ? " is-alert" : ""}">${n}</span>` : ""}</button>`).join("")}
+            ].map(([id, l, n]) => `<button type="button" class="eh-seg-b${view.pieceTab === id ? " is-on" : ""}" data-pv="${id}" ${view.pieceTab === id ? 'aria-current="page"' : ""}>${l}${n ? `<span class="eh-badge${(id === "talk" && openN) || false ? " is-alert" : ""}">${n}</span>` : ""}</button>`).join("")}
           </nav>
           <div class="eh-pbody"></div>
         </div>
@@ -835,17 +832,16 @@ export async function mount(ctx, container) {
     if (view.pieceTab === "talk") {
       body.appendChild(composerCard({ pieceId: p.id }));
       body.appendChild(threadCard(threads, { showContext: false, empty: "No questions or updates yet. Ask the first one." }));
-    } else if (view.pieceTab === "feedback" && notes.length) body.appendChild(feedbackView(p, notes, done));
+    } else if (view.pieceTab === "feedback" && notes.length) body.appendChild(feedbackView(p, notes));
     else body.appendChild(proposalView(p));
     wrap.querySelector(".eh-pside").append(...sideCards(p));
     return wrap;
   }
 
-  // Every editor's note as a checklist the writer works through.
-  function feedbackView(p, notes, done) {
+  // Every editor's note in one place, grouped by the part of the proposal
+  // it's about, with what the writer wrote there one tap away. Read-only.
+  function feedbackView(p, notes) {
     const node = el("section", { class: "card" });
-    const can = canProgress(p);
-    const doneN = notes.filter((n) => done.has(n.id)).length;
     const byField = [];
     for (const n of notes) {
       let g = byField.find((x) => x.field === n.field);
@@ -854,22 +850,17 @@ export async function mount(ctx, container) {
     }
     node.innerHTML = `
       <div class="card-header eh-ch">
-        <div><h2 class="card-title">Feedback from the editors</h2>${p.docUrl ? `<p class="card-subtitle"><a class="eh-link eh-inline-g" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.gdoc} Open the proposal in Google Docs</a></p>` : ""}
-          <p class="card-subtitle">${doneN === notes.length ? "Every note is addressed. Nice work." : `${doneN} of ${notes.length} addressed.${can ? " Tick each note once you've dealt with it in your draft." : ""}`}</p></div>
-        ${doneN ? `<label class="eh-switch"><input type="checkbox" ${view.hideDone ? "checked" : ""} data-hide-done><span class="tr" aria-hidden="true"></span>Hide addressed</label>` : ""}
+        <div><h2 class="card-title">Feedback from the editors</h2>
+          <p class="card-subtitle">${plural(notes.length, "note")} on this proposal, grouped by the part each one is about.</p>
+          ${p.docUrl ? `<p class="card-subtitle"><a class="eh-link eh-inline-g" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.gdoc} Open the proposal in Google Docs</a></p>` : ""}</div>
       </div>
-      <div class="eh-prog is-flat"><span style="width:${(doneN / notes.length) * 100}%"></span></div>
       <div class="eh-fb">
         ${byField.map((g) => {
-          const items = g.items.filter((n) => !(view.hideDone && done.has(n.id)));
-          if (!items.length) return "";
           const v = g.field === "general" || g.field === "outline" ? "" : fieldValue(p, g.field);
           return `<section class="eh-fb-g">
             <h3 class="eh-fb-h">${esc(fieldLabel(g.field))}</h3>
-            ${v ? `<details class="eh-fb-quote"><summary><span class="eh-fb-q">“${esc(clip(String(v).replace(/\s+/g, " "), 150))}”</span><span class="eh-fb-more">What you wrote</span></summary><div class="eh-ftext">${rich(v)}</div></details>` : ""}
-            <ul class="eh-checks">${items.map((n) => `<li><label class="eh-check eh-fb-item${done.has(n.id) ? " is-done" : ""}">
-              <input type="checkbox" data-note-done="${esc(n.id)}" data-piece-id="${esc(p.id)}" ${done.has(n.id) ? "checked" : ""} ${can ? "" : "disabled"}>
-              <span class="box">${ICON.check}</span><span class="txt">${n.by ? `<span class="eh-by">${esc(n.by)}</span>` : ""}${rich(n.text)}</span></label></li>`).join("")}</ul>
+            ${v ? `<details class="eh-fb-quote"><summary><span class="eh-fb-q">\u201c${esc(clip(String(v).replace(/\s+/g, " "), 150))}\u201d</span><span class="eh-fb-more">What you wrote</span></summary><div class="eh-ftext">${rich(v)}</div></details>` : ""}
+            <ul class="eh-fb-notes">${g.items.map((n) => `<li class="eh-fb-note">${n.by ? `<span class="eh-by">${esc(n.by)}</span>` : ""}${rich(n.text)}</li>`).join("")}</ul>
           </section>`;
         }).join("")}
       </div>`;
@@ -1576,16 +1567,6 @@ export async function mount(ctx, container) {
       savePiece(p.id, { status: t.value }, { note: `Moved this piece to “${STAGES[STAGE_INDEX[t.value]].label}”.` });
       return;
     }
-    if (t.matches("[data-hide-done]")) { view.hideDone = t.checked; render(); return; }
-    if (t.matches("[data-note-done]")) {
-      const p = pieces.find((x) => x.id === t.dataset.pieceId);
-      if (!p) return;
-      const set = doneSet(p);
-      if (t.checked) set.add(t.dataset.noteDone); else set.delete(t.dataset.noteDone);
-      t.closest(".eh-check")?.classList.toggle("is-done", t.checked);
-      savePiece(p.id, { notesDone: [...set] });
-      return;
-    }
     if (t.matches("[data-step]")) {
       const p = pieces.find((x) => x.id === t.dataset.pieceId);
       if (!p) return;
@@ -1918,9 +1899,10 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-fb-more { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
 .eh-fb-quote[open] summary .eh-fb-q { display: none; }
 .eh-fb-quote[open] .eh-ftext { padding: 10px 12px 0; font-size: 14.5px; }
-.eh-fb-item .txt p { margin: 0 0 6px; } .eh-fb-item .txt p:last-child { margin: 0; }
-.eh-fb-item .txt { line-height: 1.6; }
-.eh-fb-item .txt a { color: var(--info); }
+.eh-fb-notes { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.eh-fb-note { padding: 12px 14px 12px 16px; border-left: 3px solid #c99a3d; border-radius: 0 12px 12px 0; background: color-mix(in srgb, var(--warn-soft) 60%, var(--surface)); font-size: 14px; line-height: 1.6; color: var(--ink); }
+.eh-fb-note p { margin: 0 0 6px; } .eh-fb-note p:last-child { margin: 0; }
+.eh-fb-note a { color: var(--info); }
 
 /* progress card */
 .eh-prog-big { margin: 0; font-size: 15px; color: var(--ink-2); }
