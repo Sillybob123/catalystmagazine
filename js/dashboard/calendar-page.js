@@ -3,7 +3,7 @@
 // (schedule-calendar.js): publications, interviews, your deadlines, social
 // posts and shared tasks.
 
-import { renderScheduleCalendar } from "./schedule-calendar.js?v=roles-2";
+import { renderScheduleCalendar } from "./schedule-calendar.js?v=roles-3";
 
 export function mount(ctx, container) {
   container.innerHTML = "";

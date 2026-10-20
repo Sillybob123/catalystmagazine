@@ -29,6 +29,7 @@ import {
   onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, toast, confirmDialog } from "./ui.js";
+import { CURRENT_EDITION } from "./edition-deadlines.js?v=1";
 
 const STAFF_ROLES = ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"];
 const READY_LEAD_DAYS = 7; // articles must be done this many days before publish
@@ -65,7 +66,28 @@ const KIND_META = {
   mine:       { label: "My deadline",           color: "#5b21b6", bg: "#ede9fe", dot: "#7c3aed" },
   task:       { label: "Task",                  color: "#5b21b6", bg: "#ede9fe", dot: "#7c3aed" },
   assignment: { label: "Social post due",       color: "#9d174d", bg: "#fce7f3", dot: "#db2777" },
+  // The edition in progress (This edition, edition_hub/{CURRENT_EDITION}):
+  // its key dates for everyone, and the interviews writers have booked.
+  edition:    { label: "Edition date",          color: "#f8f7f3", bg: "#0f172a", dot: "#0f172a" },
+  edinterview:{ label: "Interview",             color: "#1d4ed8", bg: "#dbeafe", dot: "#3b82f6" },
 };
+
+// "Fri, Oct 30 · 1:00 PM (Teams)" → "2026-10-30": the free-text interview
+// date from This edition, given the year that puts it nearest the launch.
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+function editionInterviewISO(when, launchISO) {
+  const m = String(when || "").match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b/i);
+  if (!m) return null;
+  const mon = MONTHS.indexOf(m[1].slice(0, 3).toLowerCase());
+  const launch = parseISO(launchISO) || new Date();
+  let best = null;
+  for (const y of [launch.getFullYear() - 1, launch.getFullYear(), launch.getFullYear() + 1]) {
+    const d = new Date(y, mon, +m[2]);
+    const diff = Math.abs(d - launch);
+    if (!best || diff < best.diff) best = { d, diff };
+  }
+  return toISO(best.d);
+}
 
 // Task color palette — the creator picks one; it renders the same on every
 // participant's calendar so a shared task is instantly recognizable.
@@ -295,7 +317,7 @@ const firstName = (n) => String(n || "").trim().split(/\s+/)[0];
 // ─── Event extraction ─────────────────────────────────────────────────────────
 
 // Build { "YYYY-MM-DD": [event, …] } for everything visible to this viewer.
-function buildEvents(projects, tasks, assignments, uid, filterMine) {
+function buildEvents(projects, tasks, assignments, uid, filterMine, edition = null) {
   const map = new Map();
   const push = (iso, ev) => {
     if (!iso || !parseISO(iso)) return;
@@ -346,9 +368,41 @@ function buildEvents(projects, tasks, assignments, uid, filterMine) {
     push(a.deadline, { kind: "assignment", assignment: a, mine: isAssignee, done: false });
   }
 
-  const order = { publish: 0, interview: 1, task: 2, assignment: 3, mine: 4 };
+  // The edition's key dates — everyone's, so they show even on "Just mine" —
+  // and its booked interviews (on "Just mine" only your own pieces').
+  if (edition?.hub) {
+    const hub = edition.hub;
+    const name = hub.name || "This";
+    for (const d of hub.dates || []) {
+      if (d.end) {
+        push(d.date, { kind: "edition", edition: { ...d, name, launch: hub.launch }, text: `Begins: ${d.label}` });
+        push(d.end, { kind: "edition", edition: { ...d, name, launch: hub.launch }, text: `Ends: ${d.label}` });
+      } else {
+        push(d.date, { kind: "edition", edition: { ...d, name, launch: hub.launch }, text: `${d.label}${d.hard ? " (hard deadline)" : ""}` });
+      }
+    }
+    if (hub.launch && !(hub.dates || []).some((d) => d.id === "launch")) {
+      push(hub.launch, { kind: "edition", edition: { id: "launch", label: "Launch day", date: hub.launch, name }, text: `Launch day: ${name} edition` });
+    }
+    const myName = String(_ctx?.name || "").trim().toLowerCase();
+    for (const p of edition.pieces || []) {
+      if (p.section === "held" || p.status === "open") continue;
+      const mine = (p.writerUids || []).includes(uid) || (p.writers || []).some((w) => String(w.name || "").trim().toLowerCase() === myName);
+      if (filterMine && !mine) continue;
+      for (const v of p.interviews || []) {
+        if (!["scheduled", "done"].includes(v.status)) continue;
+        const iso = editionInterviewISO(v.when, hub.launch);
+        if (!iso) continue;
+        const who = (p.writers || []).map((w) => String(w.name || "").split(/\s+/)[0]).join(" & ");
+        push(iso, { kind: "edinterview", piece: p, interview: v, mine, done: v.status === "done", text: `Interview: ${v.person}${who ? ` (${who})` : ""}` });
+      }
+    }
+  }
+
+  const order = { edition: -1, publish: 0, interview: 1, edinterview: 1, task: 2, assignment: 3, mine: 4 };
   for (const list of map.values()) {
-    list.sort((a, b) => (order[a.kind] - order[b.kind]) || ((b.mine ? 1 : 0) - (a.mine ? 1 : 0)));
+    const rank = (e) => (e.kind === "edition" && e.edition?.hard ? -2 : order[e.kind]);
+    list.sort((a, b) => (rank(a) - rank(b)) || ((b.mine ? 1 : 0) - (a.mine ? 1 : 0)));
   }
   return map;
 }
@@ -410,6 +464,7 @@ function ensureStyles() {
     .sc-day-add { position:absolute; bottom:4px; right:4px; opacity:0; font-size:14px; font-weight:700; line-height:1;
       color:var(--accent,#0f766e); background:var(--accent-soft,#ccfbf1); border-radius:6px; padding:2px 6px;
       transition:opacity .12s; pointer-events:none; }
+    .sc-chip.sc-chip-edition b { background:#f3c98b !important; }
     .sc-chip { display:flex; align-items:center; gap:5px; min-width:0; font-size:10.5px; font-weight:600; line-height:1.25;
       padding:3px 6px; border-radius:6px; }
     .sc-chip > b { flex-shrink:0; width:6px; height:6px; border-radius:50%; }
@@ -535,6 +590,7 @@ export function renderScheduleCalendar(container, ctx) {
     loaded: false,
     tasksAvailable: true,
     error: null,
+    edition: { hub: null, pieces: [] },
   };
 
   const card = el("div", { class: "card", style: { marginTop: container.childElementCount ? "20px" : "0" } });
@@ -586,6 +642,17 @@ export function renderScheduleCalendar(container, ctx) {
     state.tasksAvailable = false;
   }));
 
+  // The edition in progress — additive: staff who can't open This edition
+  // just don't see its dates.
+  _unsubs.push(onSnapshot(doc(workflowDb, "edition_hub", CURRENT_EDITION), (snap) => {
+    state.edition.hub = snap.exists() ? snap.data() : null;
+    if (state.loaded) render();
+  }, (err) => console.warn("[calendar] edition unavailable:", err?.message)));
+  _unsubs.push(onSnapshot(collection(workflowDb, "edition_hub", CURRENT_EDITION, "pieces"), (snap) => {
+    state.edition.pieces = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (state.loaded) render();
+  }, (err) => console.warn("[calendar] edition pieces unavailable:", err?.message)));
+
   // Social post assignments — additive, same graceful-degradation as tasks.
   // Assigned posts land on the assignee's (and assigner's) calendar live.
   _unsubs.push(onSnapshot(collection(workflowDb, "social_assignments"), (snap) => {
@@ -633,6 +700,7 @@ function renderToolbar(state, rerender) {
 function renderLegend() {
   const lg = el("div", { class: "sc-legend" });
   lg.innerHTML = `
+    <span><i style="background:${KIND_META.edition.dot}"></i>Edition deadline &amp; launch</span>
     <span><i style="background:${KIND_META.publish.dot}"></i>Scheduled publication</span>
     <span><i style="background:#15803d"></i>Published / ready</span>
     <span><i style="background:#b91c1c"></i>Falling behind</span>
@@ -646,7 +714,7 @@ function renderLegend() {
 // ─── Calendar grid ────────────────────────────────────────────────────────────
 
 function renderGrid(state, uid, rerender) {
-  const events = buildEvents(state.projects, state.tasks, state.assignments, uid, state.filterMine);
+  const events = buildEvents(state.projects, state.tasks, state.assignments, uid, state.filterMine, state.edition);
   const wrap = el("div", {});
 
   const head = el("div", { class: "sc-grid-head" });
@@ -726,7 +794,9 @@ function chipMeta(ev) {
 function renderChip(ev) {
   const m = chipMeta(ev);
   let text;
-  if (ev.kind === "task") {
+  if (ev.kind === "edition" || ev.kind === "edinterview") {
+    text = ev.text;
+  } else if (ev.kind === "task") {
     const shared = (ev.task.participantIds?.length || 1) > 1;
     text = `${shared ? "👥 " : ""}${ev.task.title || "(task)"}`;
   } else if (ev.kind === "publish") {
@@ -746,7 +816,7 @@ function renderChip(ev) {
   }
 
   const chip = el("div", {
-    class: `sc-chip${ev.mine && ev.kind !== "task" ? " mine" : ""}${ev.done && ev.kind !== "publish" ? " done" : ""}`,
+    class: `sc-chip${ev.mine && ev.kind !== "task" ? " mine" : ""}${ev.done && ev.kind !== "publish" ? " done" : ""}${ev.kind === "edition" ? " sc-chip-edition" : ""}`,
     style: { background: m.bg, color: m.color },
     title: text,
   });
@@ -763,6 +833,7 @@ function openDayModal(iso, events, rerender) {
   for (const ev of events) {
     if (ev.kind === "task") body.appendChild(renderTaskDetail(ev.task, iso, rerender));
     else if (ev.kind === "assignment") body.appendChild(renderAssignmentDetail(ev));
+    else if (ev.kind === "edition" || ev.kind === "edinterview") body.appendChild(renderEditionDetail(ev));
     else body.appendChild(renderProjectDetail(ev));
   }
 
@@ -771,6 +842,38 @@ function openDayModal(iso, events, rerender) {
   const m = openModal({ title: fmtNice(iso), body, footer: [closeBtn, addBtn] });
   closeBtn.onclick = () => m.close();
   addBtn.onclick = () => { m.close(); openTaskModal({ date: iso, onSaved: rerender }); };
+}
+
+// Day-modal card for an edition date or a booked interview, with a way into
+// This edition for the full picture.
+function renderEditionDetail(ev) {
+  const box = el("div", { style: { border: "1px solid var(--hairline,#e5e7eb)", borderRadius: "10px", padding: "12px 14px", marginBottom: "10px" } });
+  if (ev.kind === "edition") {
+    const d = ev.edition;
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+        <span class="sc-badge" style="background:#0f172a;color:#f8f7f3;">${esc(d.name)} edition</span>
+        ${d.hard ? `<span class="sc-badge" style="background:#fee2e2;color:#b91c1c;">Hard deadline</span>` : ""}
+        ${d.who ? `<span class="sc-badge" style="background:#f1efe8;color:#334155;">${esc(d.who)}</span>` : ""}
+      </div>
+      <div style="font-weight:700;font-size:14px;color:var(--ink,#0b1220);">${esc(ev.text)}</div>
+      ${d.detail ? `<div style="font-size:13px;color:var(--ink-2,#334155);margin-top:4px;line-height:1.55;">${esc(d.detail)}</div>` : ""}
+      <a href="#/edition" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:var(--ink,#0f172a);">Open This edition &rarr;</a>`;
+  } else {
+    const p = ev.piece, v = ev.interview;
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+        <span class="sc-badge" style="background:${KIND_META.edinterview.bg};color:${KIND_META.edinterview.color};">${v.status === "done" ? "Interview done" : "Interview"}</span>
+        ${ev.mine ? `<span class="sc-badge" style="background:#ede9fe;color:#5b21b6;">Your piece</span>` : ""}
+      </div>
+      <div style="font-weight:700;font-size:14px;color:var(--ink,#0b1220);">${esc(v.person)}</div>
+      <div style="font-size:12.5px;color:var(--muted,#64748b);margin-top:3px;line-height:1.5;">
+        ${v.affiliation ? `${esc(v.affiliation)}<br>` : ""}${v.when ? `${esc(v.when)}<br>` : ""}For <strong>${esc(p.title || "")}</strong> by ${esc((p.writers || []).map((w) => w.name).join(" & "))}
+        ${v.note ? `<br><em>${esc(v.note)}</em>` : ""}
+      </div>
+      <a href="#/edition?piece=${encodeURIComponent(p.id)}" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:var(--ink,#0f172a);">Open the piece &rarr;</a>`;
+  }
+  return box;
 }
 
 function renderProjectDetail(ev) {
