@@ -53,6 +53,14 @@ const TOOLS = [
     mount: mountThemePicker,
   },
   {
+    id: "sidebar",
+    label: "Sidebar pages",
+    summary: "Choose which pages show in everyone's sidebar. Hide one for now and bring it back any time.",
+    danger: "writes",
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="M5.5 8h1M5.5 11h1M5.5 14h1"/></svg>`,
+    mount: mountSidebarTool,
+  },
+  {
     id: "announce",
     label: "Announcements",
     summary: "Post a red alert banner to every staff member's Overview — meetings, When2meets, urgent asks.",
@@ -230,6 +238,115 @@ function paneHeader(title, sub) {
       <h2 class="adv-pane-title">${esc(title)}</h2>
       ${sub ? `<p class="adv-pane-sub">${sub}</p>` : ""}
     </header>`;
+}
+
+// ─── Sidebar pages ───────────────────────────────────────────────────────────
+// Which pages appear in everyone's sidebar. Saved to settings/suiteNav
+// { hidden: [hash] }; app.js leaves hidden pages out of the sidebar and the
+// Pinned list (links to them still work). Overview and Advanced tools are
+// locked on so this page can always be reached.
+const SB_ROLE = { admin: "Admins", editor: "Editors", writer: "Writers", marketing: "Marketing", newsletter_builder: "Newsletter", social_media: "Social media" };
+function mountSidebarTool(ctx, root) {
+  ensureSidebarToolStyles();
+  root.innerHTML = paneHeader("Sidebar pages", "Turn a page off to take it out of everyone's sidebar (and their Pinned list) for now. Turn it back on whenever you like. Links to a hidden page, like notifications, still open it, so nothing breaks. Overview and Advanced tools always stay.")
+    + `<div class="adv-pane-body sb-tool"><div class="loading-state"><div class="spinner"></div>Loading&hellip;</div></div>`;
+  const body = root.querySelector(".sb-tool");
+  const routes = typeof ctx.navRoutes === "function" ? ctx.navRoutes() : [];
+  const groups = typeof ctx.navGroups === "function" ? ctx.navGroups() : [];
+  const ref = doc(db, "settings", "suiteNav");
+  let hidden = new Set();
+  const who = (roles) => (roles.includes("*") ? "Everyone" : roles.map((r) => SB_ROLE[r] || r).join(", "));
+
+  const paint = () => {
+    const off = routes.filter((r) => hidden.has(r.hash) && !r.locked);
+    body.innerHTML = `
+      <div class="sb-summary">
+        <p><strong>${routes.length - off.length}</strong> of ${routes.length} pages showing${off.length ? ` · hidden: ${off.map((r) => esc(r.label)).join(", ")}` : ""}</p>
+        ${off.length ? `<button type="button" class="btn btn-secondary btn-sm" data-sb-all>Show every page</button>` : ""}
+      </div>
+      ${groups.map((g) => {
+        const rs = routes.filter((r) => r.group === g.id);
+        if (!rs.length) return "";
+        return `<section class="sb-group">
+          <h3 class="sb-group-h">${esc(g.label)}</h3>
+          <ul class="sb-list">${rs.map((r) => {
+            const on = r.locked || !hidden.has(r.hash);
+            return `<li class="${on ? "" : "is-off"}">
+              <div class="sb-text"><p class="sb-label">${esc(r.label)}${r.locked ? ` <span class="sb-lock">Always shown</span>` : ""}</p>
+                <p class="sb-desc">${esc(r.desc)}</p><p class="sb-who">Seen by: ${esc(who(r.roles))}</p></div>
+              <label class="sb-switch"><span class="sr-only">${on ? "Hide" : "Show"} ${esc(r.label)}</span>
+                <input type="checkbox" role="switch" data-sb="${esc(r.hash)}" ${on ? "checked" : ""} ${r.locked ? "disabled" : ""} aria-checked="${on}">
+                <span class="sb-track" aria-hidden="true"></span></label>
+            </li>`;
+          }).join("")}</ul>
+        </section>`;
+      }).join("")}`;
+  };
+
+  const save = async (msg) => {
+    try {
+      await setDoc(ref, { hidden: [...hidden], updatedAt: new Date().toISOString(), updatedBy: ctx.profile?.name || "" }, { merge: true });
+      toast(msg, "success", 1800);
+    } catch (err) {
+      console.warn("[sidebar pages]", err);
+      toast("Couldn't save. Only admins can change this.", "error");
+    }
+  };
+
+  body.addEventListener("change", (e) => {
+    const t = e.target.closest("[data-sb]");
+    if (!t) return;
+    const r = routes.find((x) => x.hash === t.dataset.sb);
+    if (!r || r.locked) return;
+    if (t.checked) hidden.delete(r.hash); else hidden.add(r.hash);
+    paint();
+    save(t.checked ? `${r.label} is back in the sidebar.` : `${r.label} is hidden from the sidebar.`);
+  });
+  body.addEventListener("click", (e) => {
+    if (!e.target.closest("[data-sb-all]")) return;
+    hidden = new Set();
+    paint();
+    save("Every page is showing again.");
+  });
+
+  getDoc(ref).then((snap) => {
+    hidden = new Set(Array.isArray(snap.data()?.hidden) ? snap.data().hidden : []);
+    paint();
+  }).catch(() => { body.innerHTML = `<div class="error-state">Couldn't load the sidebar settings.</div>`; });
+}
+
+function ensureSidebarToolStyles() {
+  if (document.getElementById("sb-tool-style")) return;
+  const st = document.createElement("style");
+  st.id = "sb-tool-style";
+  st.textContent = `
+    .sb-tool { display: flex; flex-direction: column; gap: 22px; max-width: 760px; }
+    .sb-tool .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .sb-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-radius: 12px; background: var(--surface-3); }
+    .sb-summary p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+    .sb-group-h { margin: 0 0 8px; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .sb-list { margin: 0; padding: 0; list-style: none; border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface); overflow: hidden; }
+    .sb-list li { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 14px 18px; border-top: 1px solid var(--hairline-2); }
+    .sb-list li:first-child { border-top: 0; }
+    .sb-list li.is-off { background: var(--surface-2); }
+    .sb-list li.is-off .sb-label { color: var(--muted); }
+    .sb-text { min-width: 0; }
+    .sb-label { margin: 0; font: 600 14px/1.35 var(--font); color: var(--ink); }
+    .sb-lock { margin-left: 6px; padding: 1px 8px; border-radius: 99px; background: var(--surface-3); font-size: 11px; font-weight: 500; color: var(--muted); }
+    .sb-desc { margin: 2px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+    .sb-who { margin: 4px 0 0; font-size: 11.5px; color: var(--muted-2); }
+    .sb-switch { position: relative; flex: none; display: inline-flex; align-items: center; min-width: 44px; min-height: 44px; justify-content: center; cursor: pointer; }
+    .sb-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .sb-track { position: relative; width: 40px; height: 24px; border-radius: 99px; background: var(--paper-3); transition: background .2s; }
+    .sb-track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(15,23,42,.25); transition: transform .2s cubic-bezier(.22,1,.36,1); }
+    .sb-switch input:checked + .sb-track { background: var(--ink); }
+    .sb-switch input:checked + .sb-track::after { transform: translateX(16px); }
+    .sb-switch input:focus-visible + .sb-track { outline: 2px solid var(--ink); outline-offset: 2px; }
+    .sb-switch input:disabled + .sb-track { opacity: .45; }
+    .sb-switch:has(input:disabled) { cursor: default; }
+    @media (prefers-reduced-motion: reduce) { .sb-track, .sb-track::after { transition: none; } }
+  `;
+  document.head.appendChild(st);
 }
 
 // ─── Homepage hero image ─────────────────────────────────────────────────────

@@ -21,6 +21,7 @@ import {
   collection,
   getDocs,
   serverTimestamp,
+  onSnapshot,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { el, toast, initials, openModal } from "./ui.js";
@@ -544,7 +545,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-18"),
+    loader: () => import("./admin-import.js?v=theme-19"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -581,6 +582,23 @@ const GROUPS = [
   { id: "marketing", label: "Marketing" },
   { id: "admin", label: "Admin" },
 ];
+
+// ---------- sidebar pages admins have turned off ----------
+// Advanced tools → Sidebar pages writes settings/suiteNav { hidden: [hash] }.
+// A hidden page leaves everyone's sidebar (and Pinned), but links to it still
+// work. Overview and Advanced tools can never be hidden, so an admin can
+// always turn pages back on.
+const NAV_LOCKED = ["#/overview", "#/admin/advanced"];
+let navHidden = new Set();
+const isNavHidden = (hash) => navHidden.has(hash) && !NAV_LOCKED.includes(hash);
+function watchNavSettings() {
+  try {
+    onSnapshot(doc(db, "settings", "suiteNav"), (snap) => {
+      navHidden = new Set(Array.isArray(snap.data()?.hidden) ? snap.data().hidden : []);
+      renderSidebar();
+    }, (err) => console.warn("[dashboard] sidebar settings", err?.message));
+  } catch (e) { console.warn(e); }
+}
 
 // ---------- auth bootstrap ----------
 onAuthStateChanged(auth, async (user) => {
@@ -633,6 +651,7 @@ onAuthStateChanged(auth, async (user) => {
   try { state.unsubNotifs = initNotificationBell(makeContext({}), makeContext); } catch (e) { console.warn("[dashboard] notif bell init failed", e); }
   paintUserChip();
   renderSidebar();
+  watchNavSettings();
   attachGlobalHandlers();
   try { initSuiteTheme(); } catch (e) { console.warn("[dashboard] theme init failed", e); }   // seasonal theme (Advanced tools)
   window.addEventListener("hashchange", handleRoute);
@@ -796,7 +815,7 @@ function renderSidebar() {
   const byGroup = new Map();
   for (const [hash, route] of Object.entries(ROUTES)) {
     if (!isRouteAllowed(hash, route)) continue;
-    if (route.hidden) continue;
+    if (route.hidden || isNavHidden(hash)) continue;
     const g = route.group || "main";
     if (!byGroup.has(g)) byGroup.set(g, []);
     byGroup.get(g).push({ hash, ...route });
@@ -805,7 +824,7 @@ function renderSidebar() {
   // Only keep pins that are real, visible, allowed routes (a role change or a
   // removed route shouldn't leave a dangling pin). Preserve pin order.
   const pinnedHashes = state.pins.filter(
-    (h) => ROUTES[h] && !ROUTES[h].hidden && isRouteAllowed(h, ROUTES[h]) && h !== "#/overview");
+    (h) => ROUTES[h] && !ROUTES[h].hidden && !isNavHidden(h) && isRouteAllowed(h, ROUTES[h]) && h !== "#/overview");
   const defaultPins = new Set(defaultPinsForActive());
 
   const frag = document.createDocumentFragment();
@@ -853,6 +872,8 @@ function renderSidebar() {
   }
   nav.innerHTML = "";
   nav.appendChild(frag);
+  const here = (location.hash || "").split("?")[0];
+  nav.querySelectorAll(".nav-link").forEach((a) => a.classList.toggle("active", a.dataset.route === here));
 
   // Ensure a default route exists
   if (!location.hash) location.hash = "#/overview";
@@ -1040,6 +1061,12 @@ function makeContext(route) {
       return fetch(target, { ...init, headers });
     },
     navigate: (hash) => { location.hash = hash; },
+    // Every page that can appear in the sidebar, for Advanced tools → Sidebar pages.
+    navRoutes: () => Object.entries(ROUTES)
+      .filter(([, r]) => !r.hidden && !r.redirect && r.label)
+      .map(([hash, r]) => ({ hash, label: r.label, desc: r.desc || "", group: r.group || "main",
+        groupLabel: GROUPS.find((g) => g.id === (r.group || "main"))?.label || "", roles: r.roles || [], locked: NAV_LOCKED.includes(hash) })),
+    navGroups: () => GROUPS.map((g) => ({ ...g })),
   };
 }
 
