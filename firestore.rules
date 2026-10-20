@@ -307,6 +307,14 @@ service cloud.firestore {
                     'updatedAt', 'updatedBy', 'updatedByName']));
       }
 
+      // The note a section's editor pins for their writers (one per section).
+      // Only that section's editor (hub.sectionEditors[sid]) or an admin.
+      match /banners/{sid} {
+        allow read: if canSeeHub();
+        allow write: if isAdmin()
+          || (canSeeHub() && request.auth.uid in hubData().get('sectionEditors', {}).get(sid, []));
+      }
+
       match /messages/{mid} {
         allow read: if canSeeHub();
         allow create: if canSeeHub()

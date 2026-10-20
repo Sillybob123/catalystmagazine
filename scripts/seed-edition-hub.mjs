@@ -47,6 +47,7 @@ const hub = {
   id,
   sections,
   editorUids: [...new Set(sections.flatMap((s) => s.editor?.uids || []))],
+  sectionEditors: Object.fromEntries(sections.map((s) => [s.id, s.editor?.uids || []])),
   updatedAt: now,
 };
 const existingHub = await hubRef.get();

@@ -27,7 +27,7 @@
 
 import { db, auth } from "../firebase-config.js";
 import {
-  collection, doc, onSnapshot, query, orderBy, limit, addDoc, updateDoc, deleteDoc, getDocs,
+  collection, doc, onSnapshot, query, orderBy, limit, addDoc, updateDoc, deleteDoc, getDocs, setDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, fmtRelative, openModal, confirmDialog, slugify, initials } from "./ui.js";
 
@@ -67,7 +67,7 @@ const KIND = {
 
 // Kept between mounts, so coming back (or opening a piece from the bell)
 // paints at once while the live listeners catch up.
-const cache = { hub: null, pieces: null, messages: null, bios: null, staff: null };
+const cache = { hub: null, pieces: null, messages: null, bios: null, staff: null, banners: null };
 
 const DAY = 86400000;
 const parseDay = (s) => { const [y, m, d] = String(s || "").split("-").map(Number); return y ? new Date(y, m - 1, d) : null; };
@@ -121,6 +121,7 @@ export async function mount(ctx, container) {
     tab: TABS.includes(tabParam) ? tabParam : "overview",
     piece: params.get("piece") || null,
     pieceTab: ["talk", "feedback", "proposal"].includes(params.get("view")) ? params.get("view") : "",
+    sec: params.get("sec") || "",
     q: "", filter: "all", talkFilter: "all", showNotes: true, hideDone: false,
   };
   const me = { uid: ctx.user?.uid || "", name: ctx.profile?.name || ctx.user?.displayName || "" };
@@ -135,6 +136,7 @@ export async function mount(ctx, container) {
 
   let hub = cache.hub, pieces = cache.pieces || [], messages = cache.messages || [];
   let bios = cache.bios || new Map();
+  let banners = cache.banners || new Map();
   const unsubs = [];
 
   container.innerHTML = "";
@@ -153,6 +155,9 @@ export async function mount(ctx, container) {
     messages = s.docs.map((d) => ({ id: d.id, ...d.data() }));
     cache.messages = messages; render();
   }, (err) => console.warn("[edition] messages", err?.message)));
+  unsubs.push(onSnapshot(collection(hubRef, "banners"), (s) => {
+    banners = new Map(s.docs.map((d) => [d.id, d.data()])); cache.banners = banners; render();
+  }, (err) => console.warn("[edition] banners", err?.message)));
   if (!cache.bios) {
     getDocs(collection(db, "team_bios")).then((s) => {
       bios = new Map(s.docs.map((d) => [d.id, d.data()])); cache.bios = bios; render();
@@ -223,7 +228,7 @@ export async function mount(ctx, container) {
     Object.assign(view, next);
     const qs = new URLSearchParams();
     if (view.piece) { qs.set("piece", view.piece); if (view.pieceTab) qs.set("view", view.pieceTab); }
-    else if (view.tab !== "overview") qs.set("tab", view.tab);
+    else if (view.tab !== "overview") { qs.set("tab", view.tab); if (view.tab === "pieces" && view.sec && view.sec !== "all") qs.set("sec", view.sec); }
     const hash = `#/edition${qs.toString() ? `?${qs}` : ""}`;
     if (location.hash !== hash) history.pushState(null, "", hash);
     render();
@@ -308,16 +313,16 @@ export async function mount(ctx, container) {
   function overviewView() {
     const wrap = el("div", { class: "eh-stack" });
     wrap.appendChild(nextUp());
+    // Pinned notes from the sections this person writes or edits in.
+    const mySecIds = new Set([...mySections().map((s) => s.id), ...pieces.filter((p) => isMine(p)).map((p) => p.section)]);
+    const notes = (hub.sections || []).filter((s) => mySecIds.has(s.id) && banners.get(s.id)?.text);
+    if (notes.length) { const n = el("div", { class: "eh-stack eh-notes-top" }); n.innerHTML = notes.map((s) => bannerHtml(s, { compact: true })).join(""); wrap.appendChild(n); }
     const mine = sorted(pieces.filter((p) => isMine(p) && p.section !== "held"));
     if (mine.length) wrap.appendChild(myPieces(mine));
     mySections().forEach((s) => wrap.appendChild(mySection(s)));
     wrap.appendChild(timeline());
-    if (canEdit()) {
-      const g = el("div", { class: "eh-grid-2" });
-      g.appendChild(attention());
-      g.appendChild(editorsDesk());
-      wrap.appendChild(g);
-    } else wrap.appendChild(attention());
+    wrap.appendChild(attention());
+    if (canEdit()) wrap.appendChild(editorsDesk());
     wrap.appendChild(guides());
     return wrap;
   }
@@ -405,10 +410,11 @@ export async function mount(ctx, container) {
     return node;
   }
 
-  // Plain-language progress: how many first drafts are in, then every piece
-  // listed under where it is.
+  // Progress at a glance: the one number that matters right now (first
+  // drafts in, then final drafts), the stages as a strip, and every piece as
+  // a small card under the stage it's at, left to right like a board.
   function attention() {
-    const node = el("section", { class: "card" });
+    const node = el("section", { class: "card eh-progress" });
     const list = sorted(realPieces());
     const first = hardDate("first-draft"), fin = hardDate("final-draft");
     const firstN = list.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.draft1).length;
@@ -416,20 +422,39 @@ export async function mount(ctx, container) {
     const pastFirst = first && daysUntil(first.date) < 0;
     const [got, due, label] = pastFirst && fin ? [finalN, fin, "final drafts in"] : [firstN, first, "first drafts in"];
     const open = live().filter((p) => p.status === "open");
-    const groups = STAGES.map((s) => ({ s, ps: list.filter((p) => (p.status || "idea") === s.id) })).filter((g) => g.ps.length);
+    const groups = STAGES.map((s) => ({ s, ps: list.filter((p) => (p.status || "idea") === s.id) }));
     const stale = openQs((m) => Date.now() - new Date(m.createdAt).getTime() > 2 * DAY).length;
+    const dn = due ? daysUntil(due.date) : null;
+    const pct = list.length ? Math.round((got / list.length) * 100) : 0;
+    const card = (p) => `<li><button type="button" class="eh-pc" data-piece="${esc(p.id)}" title="${esc(p.title)}">
+        <span class="eh-pc-av">${(p.writers || []).slice(0, 2).map((w) => avatar(w, 24)).join("")}</span>
+        <span class="eh-pc-t">${esc(p.title)}</span>
+        <span class="eh-pc-w">${esc(firstNames(p.writers))}</span>
+      </button></li>`;
     node.innerHTML = `
-      <div class="card-header eh-ch"><div><h2 class="card-title">Progress</h2><p class="card-subtitle">Where every piece is right now.</p></div></div>
+      <div class="card-header eh-ch">
+        <div><h2 class="card-title">Progress</h2><p class="card-subtitle">Where every piece is right now. Tap one to open it.</p></div>
+      </div>
       <div class="card-body">
-        <p class="eh-prog-big"><strong>${got}</strong> of ${list.length} ${label}</p>
-        <div class="eh-prog is-lg"><span style="width:${list.length ? (got / list.length) * 100 : 0}%"></span></div>
-        ${due ? `<p class="eh-meta">Due ${esc(fmtDay(due.date, LONG))} (${esc(inDays(daysUntil(due.date)))})</p>` : ""}
-        <div class="eh-groups">
-          ${groups.map(({ s, ps }) => `<div class="eh-group">
-            <p class="eh-group-h" data-stage="${s.id}"><i></i>${esc(s.label)} <span>${ps.length}</span></p>
-            <ul>${ps.map((p) => `<li><button type="button" class="eh-link" data-piece="${esc(p.id)}" title="${esc(p.title)}">${esc(p.title)}</button><span class="eh-muted">${esc(firstNames(p.writers))}</span></li>`).join("")}</ul>
-          </div>`).join("")}
-          ${open.length ? `<div class="eh-group"><p class="eh-group-h is-open"><i></i>Open slots <span>${open.length}</span></p><ul>${open.map((p) => `<li><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(section(p.section)?.name)}: ${esc(p.title !== "Open slot" ? p.title.replace(/^Open slot:\s*/i, "") : "an op-ed or Q&A")}</button></li>`).join("")}</ul></div>` : ""}
+        <div class="eh-pg-top">
+          <div class="eh-pg-num"><strong>${got}</strong><span>of ${list.length}</span></div>
+          <div class="eh-pg-meta">
+            <p class="eh-pg-label">${esc(label.charAt(0).toUpperCase() + label.slice(1))}</p>
+            <div class="eh-prog is-lg" role="img" aria-label="${pct}%"><span style="width:${pct}%"></span></div>
+            ${due ? `<p class="eh-meta">${esc(due.label)}: ${esc(fmtDay(due.date, LONG))} <span class="${dn <= 7 ? "eh-soon" : ""}">(${esc(inDays(dn))})</span></p>` : ""}
+          </div>
+        </div>
+        <ol class="eh-strip" aria-label="Pieces at each stage">${groups.map(({ s, ps }) => `
+          <li class="${ps.length ? "" : "is-zero"}" data-stage="${s.id}"><span class="eh-strip-n">${ps.length}</span><span class="eh-strip-l">${esc(s.label)}</span></li>`).join("")}</ol>
+        <div class="eh-board">
+          ${groups.filter((g) => g.ps.length).map(({ s, ps }) => `<section class="eh-col" data-stage="${s.id}">
+            <h3 class="eh-col-h"><i></i>${esc(s.label)}<span>${ps.length}</span></h3>
+            <ul>${ps.map(card).join("")}</ul>
+          </section>`).join("")}
+          ${open.length ? `<section class="eh-col is-open">
+            <h3 class="eh-col-h"><i></i>Open slots<span>${open.length}</span></h3>
+            <ul>${open.map((p) => `<li><button type="button" class="eh-pc is-open" data-piece="${esc(p.id)}"><span class="eh-pc-t">${esc(section(p.section)?.name)}</span><span class="eh-pc-w">${esc(p.title !== "Open slot" ? p.title.replace(/^Open slot:\s*/i, "") : "An op-ed or Q&A")}</span></button></li>`).join("")}</ul>
+          </section>` : ""}
         </div>
         ${stale ? `<p class="eh-stale"><span class="eh-tag is-info">${plural(stale, "question")}</span> waiting more than two days for an answer. <button type="button" class="eh-link" data-go="talk">Answer</button></p>` : ""}
       </div>`;
@@ -441,11 +466,11 @@ export async function mount(ctx, container) {
     const row = (t, key, attr) => `<li><label class="eh-check${t[key] ? " is-done" : ""}"><input type="checkbox" ${attr}="${esc(t.id)}" ${t[key] ? "checked" : ""}><span class="box">${ICON.check}</span><span class="txt">${esc(t.text)}</span></label></li>`;
     node.innerHTML = `
       <div class="card-header eh-ch"><div><h2 class="card-title">Editors' desk</h2><p class="card-subtitle">Shared by the editors. Tick things off as you go.</p></div></div>
-      <div class="card-body">
-        <p class="section-title eh-st">To do</p>
-        <ul class="eh-checks">${(hub.editorTodos || []).map((t) => row(t, "done", "data-todo")).join("")}</ul>
-        <p class="section-title eh-st">Still deciding</p>
-        <ul class="eh-checks">${(hub.decisions || []).map((t) => row(t, "resolved", "data-decision")).join("")}</ul>
+      <div class="card-body eh-desk-cols">
+        <div><p class="section-title eh-st">To do</p>
+        <ul class="eh-checks">${(hub.editorTodos || []).map((t) => row(t, "done", "data-todo")).join("")}</ul></div>
+        <div><p class="section-title eh-st">Still deciding</p>
+        <ul class="eh-checks">${(hub.decisions || []).map((t) => row(t, "resolved", "data-decision")).join("")}</ul></div>
       </div>`;
     return node;
   }
@@ -504,54 +529,247 @@ export async function mount(ctx, container) {
     </li>`;
   }
 
+  // ── section banners: a note each section's editor pins for their writers
+  // (edition_hub/{ed}/banners/{sectionId}; see firestore.rules).
+  const TONES = {
+    note: { label: "Note", icon: svg(`<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a3 3 0 0 1 0 6M18 6a7 7 0 0 1 0 12"/>`, 18) },
+    important: { label: "Important", icon: svg(`<path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/>`, 18) },
+    good: { label: "Good news", icon: svg(`<path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>`, 18) },
+  };
+  const canEditSection = (s) => isAdmin || edits(s);
+  function bannerHtml(s, { compact = false } = {}) {
+    const b = banners.get(s.id);
+    const can = canEditSection(s);
+    if (!b?.text) return can && !compact ? `<button type="button" class="eh-banner-add" data-banner="${esc(s.id)}">${ICON.plus}<span><strong>Pin a note for ${esc(s.name)}</strong><small>Announcements, reminders, remarks. Everyone in the section sees it here and on their piece.</small></span></button>` : "";
+    const t = TONES[b.tone] || TONES.note;
+    return `<aside class="eh-banner is-${esc(b.tone || "note")}${compact ? " is-compact" : ""}">
+      <span class="eh-banner-ic">${t.icon}</span>
+      <div class="eh-banner-body">
+        <p class="eh-banner-k">${compact ? `${esc(s.name)} · ` : ""}${esc(t.label)} from ${esc(b.byName || "the editor")}<span> · ${esc(fmtRelative(b.at))}</span></p>
+        <div class="eh-banner-text">${rich(b.text)}</div>
+      </div>
+      ${can && !compact ? `<button type="button" class="btn btn-ghost btn-sm" data-banner="${esc(s.id)}">${ICON.edit} Edit</button>` : ""}
+    </aside>`;
+  }
+
+  // Everyone writing in a section (not the open slots), as people.
+  const sectionWriters = (s) => {
+    const out = [];
+    pieces.filter((p) => p.section === s.id && p.status !== "open").flatMap((p) => p.writers || [])
+      .forEach((w) => { if (!out.some((x) => sameName(x.name, w.name))) out.push(w); });
+    return out;
+  };
+
+  // ── Pieces: a switcher across the sections; "All" shows them side by side,
+  // a section opens its own page with its editor, note and pieces.
+  function defaultSection() {
+    const mine = mySections()[0]?.id;
+    if (mine) return mine;
+    const secs = [...new Set(pieces.filter((p) => isMine(p) && p.section !== "held").map((p) => p.section))];
+    return secs.length === 1 ? secs[0] : "all";
+  }
   function piecesView() {
+    if (!view.sec) view.sec = defaultSection();
+    const wrap = el("div", { class: "eh-stack" });
+    const held = pieces.filter((p) => p.section === "held");
+    const count = (id) => pieces.filter((p) => p.section === id && p.status !== "open").length;
+    const tabs = [["all", "All sections", realPieces().length], ...(hub.sections || []).map((s) => [s.id, s.name, count(s.id)]), ...(held.length ? [["held", "Held", held.length]] : [])];
+    const sw = el("nav", { class: "eh-seg eh-secnav", "aria-label": "Sections" });
+    sw.innerHTML = tabs.map(([id, l, n]) => {
+      const s = section(id);
+      const me2 = s && (edits(s) || pieces.some((p) => p.section === id && isMine(p)));
+      return `<button type="button" class="eh-seg-b${view.sec === id ? " is-on" : ""}" data-sec="${esc(id)}" ${view.sec === id ? 'aria-current="page"' : ""}>${esc(l)}<span class="eh-badge">${n}</span>${me2 ? `<span class="eh-dot-you" title="You're in this section"></span>` : ""}</button>`;
+    }).join("");
+    wrap.appendChild(sw);
+    if (view.sec === "all") wrap.appendChild(allSections());
+    else if (view.sec === "held") wrap.appendChild(heldPage(held));
+    else if (section(view.sec)) wrap.appendChild(sectionPage(section(view.sec)));
+    else { view.sec = "all"; wrap.appendChild(allSections()); }
+    return wrap;
+  }
+
+  function allSections() {
     const wrap = el("div", { class: "eh-stack" });
     const bar = el("div", { class: "eh-toolbar" });
     bar.innerHTML = `
       <label class="eh-search">${ICON.search}<span class="sr-only">Find a piece</span>
         <input type="search" placeholder="Search pieces, writers, interviewees" value="${esc(view.q)}" data-keep="q" autocomplete="off"></label>
       <div class="eh-seg is-sm" role="group" aria-label="Show">
-        ${[["all", "All"], ["mine", "Mine"], ["open", "Open slots"]].map(([id, l]) => `<button type="button" class="eh-seg-b${view.filter === id ? " is-on" : ""}" data-filter="${id}" aria-pressed="${view.filter === id}">${l}</button>`).join("")}
+        ${[["all", "Everything"], ["mine", "Mine"], ["open", "Open slots"]].map(([id, l]) => `<button type="button" class="eh-seg-b${view.filter === id ? " is-on" : ""}" data-filter="${id}" aria-pressed="${view.filter === id}">${l}</button>`).join("")}
       </div>`;
-    const list = el("div", { class: "eh-stack" });
-    bar.querySelector("input").addEventListener("input", (e) => { view.q = e.target.value.trim().toLowerCase(); list.innerHTML = ""; fillSections(list); });
-    wrap.append(bar, list);
-    fillSections(list);
+    const body = el("div", { class: "eh-stack" });
+    const paint = () => { body.innerHTML = ""; body.appendChild(view.q || view.filter !== "all" ? searchResults() : sectionGrid()); };
+    bar.querySelector("input").addEventListener("input", (e) => { view.q = e.target.value.trim().toLowerCase(); paint(); });
+    wrap.append(bar, body);
+    paint();
     return wrap;
   }
 
-  function fillSections(list) {
+  function sectionGrid() {
+    const grid = el("div", { class: "eh-secgrid" });
+    grid.innerHTML = (hub.sections || []).map((s, i) => {
+      const ps = sorted(pieces.filter((p) => p.section === s.id));
+      const real = ps.filter((p) => p.status !== "open");
+      const drafts = real.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.draft1).length;
+      const mine = edits(s) || ps.some(isMine);
+      return `<section class="card eh-seccard${mine ? " is-mine" : ""}">
+        <button type="button" class="eh-seccard-h" data-sec="${esc(s.id)}" aria-label="Open ${esc(s.name)}">
+          <span class="eh-sec-num">${String(i + 1).padStart(2, "0")}</span>
+          <span class="eh-seccard-t"><span class="eh-sec-name">${esc(s.name)}</span><span class="eh-meta">${plural(real.length, "piece")} · ${drafts} first ${drafts === 1 ? "draft" : "drafts"} in${mine ? ` · <b>You're here</b>` : ""}</span></span>
+          ${s.editor ? `<span class="eh-person sm">${avatar(s.editor, 26)}<span><small>Editor</small>${esc(s.editor.name)}</span></span>` : ""}
+        </button>
+        ${banners.get(s.id)?.text ? `<div class="eh-seccard-b">${bannerHtml(s, { compact: true })}</div>` : ""}
+        <ul class="eh-mini-list">${ps.map((p) => p.status === "open"
+          ? `<li class="is-open"><button type="button" data-piece="${esc(p.id)}"><span class="eh-ml-t">Open slot</span><span class="eh-ml-w">${esc(p.subtitle || "")}</span></button></li>`
+          : `<li><button type="button" data-piece="${esc(p.id)}"><span class="eh-ml-t">${esc(p.title)}</span><span class="eh-ml-w">${esc(firstNames(p.writers))}</span>${stage(p)}</button></li>`).join("") || `<li class="eh-muted">No pieces yet.</li>`}</ul>
+        <div class="eh-seccard-f"><button type="button" class="btn btn-secondary btn-sm" data-sec="${esc(s.id)}">Open ${esc(s.name)} ${ICON.chev}</button></div>
+      </section>`;
+    }).join("");
+    return grid;
+  }
+
+  function searchResults() {
+    const wrap = el("div", { class: "eh-stack" });
     let shown = 0;
-    (hub.sections || []).forEach((s, i) => {
+    [...(hub.sections || []), { id: "held", name: "Held for a later edition" }].forEach((s) => {
       const ps = sorted(pieces.filter((p) => p.section === s.id)).filter(matches);
-      if ((view.q || view.filter !== "all") && !ps.length) return;
+      if (!ps.length) return;
       shown += ps.length;
-      const count = pieces.filter((p) => p.section === s.id && p.status !== "open").length;
-      const node = el("section", { class: "card eh-sec", id: `sec-${s.id}` });
-      node.innerHTML = `
-        <div class="card-header eh-ch eh-sec-h">
-          <div class="eh-sec-t">
-            <p class="eh-sec-num">${String(i + 1).padStart(2, "0")}</p>
-            <div><h2 class="eh-sec-name">${esc(s.name)}</h2><p class="card-subtitle">${plural(count, "piece")}</p></div>
-          </div>
-          <div class="eh-sec-ed">
-            ${s.editor ? `<span class="eh-person">${avatar(s.editor, 30)}<span><small>Editor</small>${esc(s.editor.name)}</span></span>` : `<span class="eh-muted">No editor yet</span>`}
-            ${s.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(s.driveUrl)}" target="_blank" rel="noopener" aria-label="${esc(s.name)} folder in Google Drive" title="${esc(s.name)} folder in Google Drive">${ICON.gdrive}</a>` : ""}
-            ${isAdmin ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-section="${esc(s.id)}" aria-label="Edit ${esc(s.name)}">${ICON.edit}</button>` : ""}
-          </div>
-        </div>
-        <details class="eh-secabout"><summary>About this section ${ICON.down}</summary><p>${esc(s.blurb || "")}</p>${s.belongs ? `<p class="eh-belongs"><strong>What belongs here.</strong> ${esc(s.belongs)}</p>` : ""}</details>
-        <ul class="eh-list">${ps.map(pieceRow).join("") || `<li class="eh-row is-empty">No pieces yet.</li>`}</ul>
-        ${canEdit() ? `<div class="eh-card-foot"><button type="button" class="btn btn-ghost btn-sm" data-add-piece="${esc(s.id)}">${ICON.plus} Add a piece</button></div>` : ""}`;
-      list.appendChild(node);
+      const c = el("section", { class: "card" });
+      c.innerHTML = `<div class="card-header eh-ch"><div><h2 class="card-title">${esc(s.name)}</h2><p class="card-subtitle">${plural(ps.length, "match", "matches")}</p></div></div><ul class="eh-list">${ps.map(pieceRow).join("")}</ul>`;
+      wrap.appendChild(c);
     });
-    const held = sorted(pieces.filter((p) => p.section === "held")).filter(matches);
-    if (held.length && view.filter === "all") {
-      const d = el("details", { class: "card eh-held" });
-      d.innerHTML = `<summary class="card-header eh-ch"><div><h2 class="card-title">Held for a later edition</h2><p class="card-subtitle">${plural(held.length, "piece")}</p></div>${ICON.down}</summary><ul class="eh-list">${held.map(pieceRow).join("")}</ul>`;
-      list.appendChild(d);
-    }
-    if (!shown && !held.length) list.innerHTML = `<div class="card"><div class="card-empty">Nothing matches. <button type="button" class="eh-link" data-filter="all" data-clear>Show everything</button></div></div>`;
+    if (!shown) wrap.innerHTML = `<div class="card"><div class="card-empty">Nothing matches. <button type="button" class="eh-link" data-filter="all" data-clear>Show everything</button></div></div>`;
+    return wrap;
+  }
+
+  function sectionPage(s) {
+    const i = sectionIndex(s.id);
+    const ps = sorted(pieces.filter((p) => p.section === s.id));
+    const real = ps.filter((p) => p.status !== "open");
+    const drafts = real.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.draft1).length;
+    const qs = openQs((m) => m.sectionId === s.id || ps.some((p) => p.id === m.pieceId)).length;
+    const can = canEditSection(s);
+    const inSection = ps.some(isMine);
+    const recent = threadOf((m) => m.sectionId === s.id && !m.pieceId).slice(0, 4);
+    const wrap = el("div", { class: "eh-stack" });
+    const hero = el("section", { class: "card eh-sechero" });
+    hero.innerHTML = `
+      <div class="eh-sechero-top">
+        <div class="eh-sechero-t">
+          <p class="eh-eyebrow">${String(i + 1).padStart(2, "0")} · The Future of Health is…</p>
+          <h2 class="eh-sechero-name">${esc(s.name)}</h2>
+          <p class="eh-sechero-stats"><span><strong>${real.length}</strong> pieces</span><span><strong>${drafts}</strong> first drafts in</span><span><strong>${qs}</strong> open ${qs === 1 ? "question" : "questions"}</span></p>
+        </div>
+        <div class="eh-sechero-ed">
+          ${s.editor ? `<span class="eh-person">${avatar(s.editor, 44)}<span><small>Section editor</small>${esc(s.editor.name)}</span></span>` : `<span class="eh-muted">No editor yet</span>`}
+        </div>
+      </div>
+      <div class="eh-sechero-actions">
+        ${can ? `<button type="button" class="btn btn-primary btn-sm" data-email-sec="${esc(s.id)}">${svg(`<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>`, 15)} Email the section</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-banner="${esc(s.id)}">${TONES.note.icon} ${banners.get(s.id)?.text ? "Edit the pinned note" : "Pin a note"}</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-compose="announcement" data-sec-for="${esc(s.id)}">${ICON.note} Post an update</button>` : ""}
+        ${!can && inSection && s.editor ? `<button type="button" class="btn btn-primary btn-sm" data-ask-sec="${esc(s.id)}">${ICON.q} Ask ${esc(firstName(s.editor.name))}</button>` : ""}
+        ${s.draftsUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(s.draftsUrl)}" target="_blank" rel="noopener">${ICON.gdrive} Drafts folder <span class="eh-g-k">Google Drive</span></a>` : ""}
+        ${s.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(s.driveUrl)}" target="_blank" rel="noopener">${ICON.gdrive} Section folder <span class="eh-g-k">Google Drive</span></a>` : ""}
+        ${isAdmin ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-section="${esc(s.id)}">${ICON.edit} Section settings</button>` : ""}
+      </div>
+      ${bannerHtml(s)}
+      <div class="eh-sechero-about">
+        <div><p class="section-title">About this section</p><p>${esc(s.blurb || "")}</p></div>
+        ${s.belongs ? `<div><p class="section-title">What belongs here</p><p>${esc(s.belongs)}</p></div>` : ""}
+      </div>`;
+    wrap.appendChild(hero);
+    const list = el("section", { class: "card" });
+    list.innerHTML = `
+      <div class="card-header eh-ch"><div><h2 class="card-title">Pieces in ${esc(s.name)}</h2><p class="card-subtitle">${plural(real.length, "piece")}${ps.length > real.length ? ` · ${plural(ps.length - real.length, "open slot")}` : ""}</p></div>
+        ${canEdit() ? `<button type="button" class="btn btn-ghost btn-sm" data-add-piece="${esc(s.id)}">${ICON.plus} Add a piece</button>` : ""}</div>
+      <ul class="eh-list">${ps.map(pieceRow).join("") || `<li class="eh-row is-empty">No pieces yet.</li>`}</ul>`;
+    wrap.appendChild(list);
+    const talk = el("section", { class: "card" });
+    talk.innerHTML = `<div class="card-header eh-ch"><div><h2 class="card-title">Section updates and questions</h2><p class="card-subtitle">Posts to the whole of ${esc(s.name)}, not one piece.</p></div><button type="button" class="btn btn-ghost btn-sm" data-go="talk">All questions ${ICON.chev}</button></div>`;
+    talk.appendChild(recent.length ? (() => { const u = el("ul", { class: "eh-threads" }); u.innerHTML = recent.map((m) => messageHtml(m, { showContext: false })).join(""); return u; })() : el("div", { class: "card-empty", html: `Nothing yet.${can ? " Post an update to everyone in the section." : ""}` }));
+    wrap.appendChild(talk);
+    return wrap;
+  }
+
+  function heldPage(held) {
+    const c = el("section", { class: "card" });
+    c.innerHTML = `<div class="card-header eh-ch"><div><h2 class="card-title">Held for a later edition</h2><p class="card-subtitle">${plural(held.length, "piece")} saved for another time.</p></div></div><ul class="eh-list">${sorted(held).map(pieceRow).join("")}</ul>`;
+    return c;
+  }
+
+  // Pin, change or remove a section's note; optionally ring everyone's bell.
+  function editBanner(s) {
+    if (!canEditSection(s)) return;
+    const cur = banners.get(s.id) || {};
+    let tone = cur.tone || "note";
+    const body = el("form", { class: "eh-form" });
+    const paint = () => {
+      const text = body.querySelector("textarea")?.value ?? cur.text ?? "";
+      body.innerHTML = `
+        <p class="eh-f-h">Pinned at the top of ${esc(s.name)} and on every piece in it, until you change or remove it.</p>
+        <div class="eh-seg is-sm" role="radiogroup" aria-label="Kind of note">${Object.entries(TONES).map(([k, t]) => `<button type="button" role="radio" aria-checked="${tone === k}" class="eh-seg-b${tone === k ? " is-on" : ""}" data-tone="${k}">${esc(t.label)}</button>`).join("")}</div>
+        ${field("Note", area("text", text, 4))}
+        <label class="eh-inline-check"><input type="checkbox" name="notify" ${cur.text ? "" : "checked"}> Also ring the bell for everyone in ${esc(s.name)}</label>`;
+    };
+    paint();
+    body.addEventListener("click", (e) => { const b = e.target.closest("[data-tone]"); if (b) { tone = b.dataset.tone; paint(); } });
+    const footer = [
+      ...(cur.text ? [el("button", { type: "button", class: "btn btn-ghost eh-left", onclick: async () => {
+        try { await deleteDoc(doc(hubRef, "banners", s.id)); m.close(); toast("Note removed."); } catch { toast("Couldn't remove it.", "error"); }
+      } }, "Remove note")] : []),
+      el("button", { type: "button", class: "btn btn-secondary", onclick: () => m.close() }, "Cancel"),
+      el("button", { type: "button", class: "btn btn-primary", onclick: () => body.requestSubmit() }, "Pin note"),
+    ];
+    const m = openModal({ title: `Pinned note for ${s.name}`, body, footer });
+    body.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!canWrite()) return;
+      const fd = new FormData(body);
+      const text = String(fd.get("text") || "").trim().slice(0, 2000);
+      if (!text) { body.querySelector("textarea").focus(); return; }
+      try {
+        await setDoc(doc(hubRef, "banners", s.id), { text, tone, byName: me.name, byUid: me.uid, at: new Date().toISOString() });
+        if (fd.get("notify")) post({ kind: "announcement", text, sectionId: s.id });
+        m.close(); toast("Note pinned.", "success");
+      } catch (err) { console.warn(err); toast("Couldn't save the note.", "error"); }
+    });
+  }
+
+  // Email everyone in a section: Gmail, the person's own mail app, or copy.
+  async function emailSection(s) {
+    const people = sectionWriters(s);
+    const body = el("div", { class: "eh-form" });
+    body.innerHTML = `<div class="loading-state"><div class="spinner"></div>Finding everyone's email&hellip;</div>`;
+    const m = openModal({ title: `Email ${s.name}`, body });
+    let users = new Map();
+    try { const snap = await getDocs(collection(db, "users")); users = new Map(snap.docs.map((d) => [d.id, d.data()])); }
+    catch { body.innerHTML = `<p class="eh-f-h">Couldn't load the team's emails. Try again in a moment.</p>`; return; }
+    const STAFF = ["admin", "editor", "writer", "social_media", "marketing", "newsletter_builder"];
+    const valid = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && !/\.invalid$/i.test(e) && !/@catalyst-magazine\.com$/i.test(e);
+    const emailOf = (person) => {
+      const accts = (person.uids || []).map((u) => users.get(u)).filter(Boolean);
+      const pick = accts.find((u) => STAFF.includes(u.role) && valid(String(u.email || ""))) || accts.find((u) => valid(String(u.email || "")));
+      return pick ? String(pick.email).trim() : "";
+    };
+    const rows = people.map((p) => ({ ...p, email: emailOf(p) }));
+    const emails = [...new Set(rows.map((r) => r.email.toLowerCase()).filter(Boolean))];
+    const subject = `The Catalyst · ${hub.name} · ${s.name}`;
+    const gmail = `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(emails.join(","))}&su=${encodeURIComponent(subject)}`;
+    const mailto = `mailto:?bcc=${encodeURIComponent(emails.join(","))}&subject=${encodeURIComponent(subject)}`;
+    body.innerHTML = `
+      <p class="eh-f-h">Everyone writing in ${esc(s.name)}, as BCC so replies come back to you.</p>
+      <ul class="eh-recips">${rows.map((r) => `<li>${avatar(r, 26)}<span><strong>${esc(r.name)}</strong>${r.email ? "" : `<small>No email on file</small>`}</span></li>`).join("") || `<li class="eh-muted">No writers in this section yet.</li>`}</ul>
+      ${emails.length ? `<div class="eh-btnrow eh-email-actions">
+        <a class="btn btn-primary" href="${esc(gmail)}" target="_blank" rel="noopener">${svg(`<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>`, 15)} Write in Gmail</a>
+        <a class="btn btn-secondary" href="${esc(mailto)}">Open my email app</a>
+        <button type="button" class="btn btn-ghost" data-copy-emails>${ICON.copy} Copy addresses</button>
+      </div>` : ""}`;
+    body.querySelector("[data-copy-emails]")?.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(emails.join(", ")); toast("Addresses copied.", "success", 1600); } catch { toast("Couldn't copy.", "info"); }
+    });
+    void m;
   }
 
   // ── a piece
@@ -599,6 +817,7 @@ export async function mount(ctx, container) {
           ${canEdit() ? `<button type="button" class="btn btn-ghost" data-edit-piece="${esc(p.id)}">${ICON.edit} Edit piece</button>` : isMine(p) ? `<button type="button" class="btn btn-ghost" data-edit-mine="${esc(p.id)}">${ICON.edit} Edit title</button>` : ""}
         </div>
       </header>
+      ${s && banners.get(s.id)?.text ? `<div class="eh-piece-note">${bannerHtml(s, { compact: true })}</div>` : ""}
       <div class="eh-pgrid">
         <aside class="eh-pside"></aside>
         <div class="eh-pmain">
@@ -1237,7 +1456,8 @@ export async function mount(ctx, container) {
       if (url && !/^https:\/\/[^\s"'<>]+$/.test(url)) { toast("That link should start with https://", "info"); return; }
       const sections = (hub.sections || []).map((x) => x.id !== s.id ? x : { ...x, driveUrl: url, editor: pick ? { name: pick.name, slug: pick.slug, uids: pick.uids } : null });
       const editorUids = [...new Set(sections.flatMap((x) => x.editor?.uids || []))];
-      if (await saveHub({ sections, editorUids })) { m.close(); toast("Saved.", "success"); }
+      const sectionEditors = Object.fromEntries(sections.map((x) => [x.id, x.editor?.uids || []]));
+      if (await saveHub({ sections, editorUids, sectionEditors })) { m.close(); toast("Saved.", "success"); }
     });
   }
 
@@ -1314,11 +1534,15 @@ export async function mount(ctx, container) {
     if (!t || !root.contains(t)) return;
     const d = t.dataset;
     if (d.go) { go({ tab: d.go, piece: null }); return; }
+    if (d.sec) { view.sec = d.sec; view.q = ""; view.filter = "all"; go({ tab: "pieces", piece: null }); return; }
+    if (d.banner) { editBanner(section(d.banner)); return; }
+    if (d.emailSec) { emailSection(section(d.emailSec)); return; }
+    if (d.askSec) { composeModal({ sectionId: d.askSec, kind: "question" }); return; }
     if (d.piece) { go({ piece: d.piece, pieceTab: d.pv || "" }); return; }
     if (d.pv) { go({ pieceTab: d.pv }); return; }
     if (d.filter) { view.filter = d.filter; if (d.clear !== undefined) view.q = ""; render(); return; }
     if (d.tfilter) { view.talkFilter = d.tfilter; render(); return; }
-    if (d.compose) { composeModal({ pieceId: d.for, kind: d.compose }); return; }
+    if (d.compose) { composeModal({ pieceId: d.for || "", sectionId: d.secFor || "", kind: d.compose }); return; }
     if (d.pitch) { const s = section(d.pitch); composeModal({ sectionId: d.pitch, kind: "question", prefill: `I'd like to pitch for an open slot in ${s?.name || "this section"}. My idea: ` }); return; }
     if (d.reply) { openReplies.add(d.reply); openReply(d.reply); return; }
     if (d.resolve) { resolve(d.resolve, d.val === "1"); return; }
@@ -1730,6 +1954,99 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-inline-g { display: inline-flex; align-items: center; gap: 6px; }
 .eh-tag.is-iv-contacted { background: var(--surface-3); color: var(--muted); }
 
+/* progress board */
+.eh-pg-top { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: center; }
+.eh-pg-num { display: flex; align-items: baseline; gap: 8px; }
+.eh-pg-num strong { font: 600 56px/1 var(--font); letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
+.eh-pg-num span { font-size: 16px; color: var(--muted); }
+.eh-pg-label { margin: 0; font: 600 16px/1.3 var(--font); letter-spacing: -0.01em; }
+.eh-pg-meta .eh-prog.is-lg { margin: 10px 0 8px; height: 10px; }
+.eh-soon { color: var(--warn); font-weight: 600; }
+.eh-strip { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; margin: 22px 0 0; padding: 0; list-style: none; }
+.eh-strip li { display: flex; flex-direction: column; gap: 4px; padding: 10px 10px 9px; border-radius: 10px; background: var(--surface-3); border-top: 3px solid var(--dot); min-width: 0; }
+.eh-strip li.is-zero { opacity: .45; }
+.eh-strip-n { font: 600 20px/1 var(--font); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.eh-strip-l { font-size: 11.5px; line-height: 1.25; color: var(--ink-2); }
+.eh-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin: 22px 0 0; align-items: start; }
+.eh-col { padding: 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--hairline-2); }
+.eh-col.is-open { border-style: dashed; border-color: color-mix(in srgb, var(--warn) 45%, transparent); background: color-mix(in srgb, var(--warn-soft) 35%, var(--surface)); }
+.eh-col-h { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font: 600 13px/1.3 var(--font); color: var(--ink); }
+.eh-col-h i { width: 9px; height: 9px; border-radius: 50%; background: var(--dot, var(--muted-2)); flex: none; }
+.eh-col.is-open .eh-col-h i { background: none; border: 1.5px dashed var(--warn); }
+.eh-col-h span { margin-left: auto; min-width: 22px; height: 22px; padding: 0 7px; display: inline-grid; place-items: center; border-radius: 99px; background: var(--surface); font-size: 11.5px; color: var(--ink-2); }
+.eh-col ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.eh-pc { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "av t" "av w"; gap: 2px 10px; align-items: center; width: 100%; min-height: 52px; padding: 10px 12px; border: 1px solid var(--hairline-2); border-radius: 12px; background: var(--surface); text-align: left; cursor: pointer; font: inherit; color: inherit; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.eh-pc:hover { border-color: color-mix(in srgb, var(--ink) 22%, transparent); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.eh-pc-av { grid-area: av; display: flex; }
+.eh-pc-av .eh-av + .eh-av { margin-left: -8px; }
+.eh-pc-t { grid-area: t; font: 600 13.5px/1.35 var(--font); color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.eh-pc-w { grid-area: w; font-size: 12px; color: var(--muted); }
+.eh-pc.is-open { grid-template-columns: minmax(0, 1fr); grid-template-areas: "t" "w"; background: transparent; border-style: dashed; }
+
+/* section notes */
+.eh-banner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; margin: 20px 0 0; padding: 16px 18px; border-radius: 14px; background: var(--surface-3); border: 1px solid var(--hairline-2); }
+.eh-banner.is-compact { margin: 0; padding: 14px 16px; grid-template-columns: auto minmax(0, 1fr); }
+.eh-banner-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--ink); color: var(--surface-2); }
+.eh-banner.is-important { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 25%, transparent); }
+.eh-banner.is-important .eh-banner-ic { background: var(--warn); }
+.eh-banner.is-good { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 25%, transparent); }
+.eh-banner.is-good .eh-banner-ic { background: var(--good); }
+.eh-banner-k { margin: 0 0 4px; font: 600 11px/1.4 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.eh-banner-k span { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.eh-banner-text { font-size: 14.5px; line-height: 1.6; color: var(--ink); }
+.eh-banner-text p { margin: 0 0 6px; } .eh-banner-text p:last-child { margin: 0; }
+.eh-banner-add { display: flex; align-items: center; gap: 14px; width: 100%; margin: 20px 0 0; padding: 16px 18px; border: 1.5px dashed var(--hairline); border-radius: 14px; background: none; text-align: left; cursor: pointer; font: inherit; color: var(--ink); }
+.eh-banner-add:hover { background: var(--surface-3); border-color: color-mix(in srgb, var(--ink) 25%, transparent); }
+.eh-banner-add strong { display: block; font-size: 14px; }
+.eh-banner-add small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+.eh-notes-top { gap: 12px; }
+.eh-piece-note { margin: 22px 0 0; }
+
+/* section switcher */
+.eh-secnav { display: flex; width: 100%; }
+.eh-secnav .eh-seg-b { flex: 1 0 auto; justify-content: center; position: relative; }
+.eh-dot-you { position: absolute; top: 7px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--info); }
+
+/* all sections */
+.eh-secgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.eh-seccard { display: flex; flex-direction: column; overflow: hidden; }
+.eh-seccard.is-mine { border-color: color-mix(in srgb, var(--info) 35%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--info) 8%, transparent), var(--shadow-sm); }
+.eh-seccard-h { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; width: 100%; padding: 20px 22px; border: 0; border-bottom: 1px solid var(--hairline-2); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.eh-seccard-h:hover { background: var(--surface-3); }
+.eh-seccard-t { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.eh-seccard-t .eh-meta { margin: 0; }
+.eh-seccard-t b { color: var(--info); font-weight: 600; }
+.eh-seccard-b { padding: 14px 16px 0; }
+.eh-mini-list { margin: 0; padding: 8px 10px; list-style: none; }
+.eh-mini-list button { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t s" "w s"; gap: 1px 12px; align-items: center; width: 100%; min-height: 48px; padding: 8px 12px; border: 0; border-radius: 10px; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.eh-mini-list button:hover { background: var(--surface-3); }
+.eh-ml-t { grid-area: t; font: 600 13.5px/1.35 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eh-ml-w { grid-area: w; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eh-mini-list .eh-stage { grid-area: s; }
+.eh-mini-list li.is-open .eh-ml-t { color: var(--warn); }
+.eh-mini-list li.eh-muted { padding: 12px; font-size: 13.5px; }
+.eh-seccard-f { margin-top: auto; padding: 12px 16px 16px; border-top: 1px solid var(--hairline-2); }
+
+/* one section */
+.eh-sechero { padding: 26px 28px 24px; }
+.eh-sechero-top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 32px; }
+.eh-sechero-name { margin: 0; font: 600 clamp(28px, 3.6vw, 38px)/1.1 var(--font); letter-spacing: -0.035em; }
+.eh-sechero-stats { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 12px 0 0; font-size: 13.5px; color: var(--muted); }
+.eh-sechero-stats strong { color: var(--ink); font-weight: 600; }
+.eh-sechero-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; padding: 18px 0 0; border-top: 1px solid var(--hairline-2); }
+.eh-sechero-actions .btn svg { flex: none; }
+.eh-sechero-about { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 40px; margin: 22px 0 0; }
+.eh-sechero-about .section-title { margin: 0 0 8px; }
+.eh-sechero-about p:not(.section-title) { margin: 0; font-size: 14px; line-height: 1.65; color: var(--ink-2); }
+.eh-desk-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 40px; }
+.eh-desk-cols .eh-st { margin-top: 0 !important; }
+
+/* email the section */
+.eh-recips { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.eh-recips li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--surface-3); font-size: 13.5px; }
+.eh-recips small { display: block; font-size: 11.5px; color: var(--danger); }
+.eh-email-actions { margin-top: 6px; }
+
 /* questions */
 .eh-compose-card { padding: 18px 20px; }
 .eh-compose-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
@@ -1800,6 +2117,9 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-empty p { margin: 0; color: var(--muted); }
 
 @media (max-width: 960px) {
+  .eh-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .eh-secgrid, .eh-sechero-about, .eh-desk-cols { grid-template-columns: minmax(0, 1fr); }
+  .eh-secnav { display: inline-flex; width: auto; max-width: 100%; }
   .eh-pgrid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "side" "main"; }
   .eh-pside { position: static; }
   .eh-tiles, .eh-tiles.is-sm { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1843,6 +2163,14 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
   .eh-lu, .eh-iv { padding: 16px 18px; }
   .eh-hook { flex-direction: column; }
   .eh-tl li { grid-template-columns: 24px 64px minmax(0, 1fr); }
+  .eh-pg-top { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .eh-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .eh-board { grid-template-columns: minmax(0, 1fr); }
+  .eh-sechero { padding: 20px 18px; }
+  .eh-seccard-h { grid-template-columns: auto minmax(0, 1fr); }
+  .eh-seccard-h .eh-person { grid-column: 1 / -1; }
+  .eh-banner { grid-template-columns: auto minmax(0, 1fr); }
+  .eh-banner > .btn { grid-column: 2; justify-self: start; }
 }
 @media (prefers-reduced-motion: reduce) {
   .eh *, .eh *::before, .eh *::after { transition: none !important; animation: none !important; }
