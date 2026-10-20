@@ -469,10 +469,14 @@ export async function mount(ctx, container) {
 
   // Live subscriptions: projects + the edition list (the detail and proposal
   // modals need editions on My Assignments too, not just the tracker).
+  // "#/pipeline/all?project=<id>" (links from This edition) opens that
+  // story's card once the projects have loaded.
+  let deepLink = new URLSearchParams(location.hash.split("?")[1] || "").get("project");
   const unsubProjects = onSnapshot(collection(workflowDb, "projects"), snap => {
     _allProjects = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderEditionBar();
     renderBoard();
+    if (deepLink && _allProjects.some((p) => p.id === deepLink)) { const id = deepLink; deepLink = null; openDetailModal(id); }
   }, err => {
     boardEl.innerHTML = `<div class="error-state">Failed to load projects: ${esc(err.message)}</div>`;
   });

@@ -102,6 +102,11 @@ const ICON = {
   copy: svg(`<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>`, 14),
   search: svg(`<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>`, 16),
   plus: svg(`<path d="M12 5v14M5 12h14"/>`, 15),
+  // Google's own marks, so a button reads at a glance as "this opens Google Drive / Docs".
+  gdrive: `<svg class="eh-gicon" viewBox="0 0 87.3 78" width="16" height="16" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>`,
+  gdoc: `<svg class="eh-gicon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14.5 2H6.2A2.2 2.2 0 0 0 4 4.2v15.6A2.2 2.2 0 0 0 6.2 22h11.6a2.2 2.2 0 0 0 2.2-2.2V7.5z" fill="#4285f4"/><path d="M14.5 2v4.3a1.2 1.2 0 0 0 1.2 1.2H20z" fill="#a1c2fa"/><path d="M8 12h8M8 15h8M8 18h5" stroke="#f8f7f3" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  ext: svg(`<path d="M7 17 17 7M8 7h9v9"/>`, 13),
+  tracker: svg(`<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>`, 15),
   link: svg(`<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>`, 15),
 };
 
@@ -459,9 +464,9 @@ export async function mount(ctx, container) {
           <ul class="eh-ticks">${(hub.interviewTips || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>
         <details><summary><span>Where your work goes</span>${ICON.down}</summary>
           <dl class="eh-where">${(hub.whereWork || []).map((w) => `<dt>${esc(w.label)}</dt><dd>${esc(w.text)}</dd>`).join("")}</dl>
-          ${drive.length ? `<p class="eh-btnrow">${drive.map((s) => `<a class="btn btn-secondary btn-sm" href="${esc(s.draftsUrl || s.driveUrl)}" target="_blank" rel="noopener">${ICON.drive} ${esc(s.name)} drafts</a>`).join("")}</p>` : ""}</details>
+          ${drive.length ? `<p class="eh-btnrow">${drive.map((s) => `<a class="btn btn-secondary btn-sm eh-g" href="${esc(s.draftsUrl || s.driveUrl)}" target="_blank" rel="noopener">${ICON.gdrive} ${esc(s.name)} drafts <span class="eh-g-k">Google Drive</span></a>`).join("")}</p>` : ""}</details>
         ${(hub.links || []).length ? `<details><summary><span>Documents: templates and guides</span>${ICON.down}</summary>
-          <ul class="eh-doclinks">${hub.links.map((l) => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener">${ICON.link}<span><strong>${esc(l.label)}</strong>${l.note ? `<small>${esc(l.note)}</small>` : ""}</span></a></li>`).join("")}</ul></details>` : ""}
+          <ul class="eh-doclinks">${hub.links.map((l) => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener">${/\/folders\//.test(l.url) ? ICON.gdrive : ICON.gdoc}<span><strong>${esc(l.label)}</strong>${l.note ? `<small>${esc(l.note)}</small>` : ""}</span></a></li>`).join("")}</ul></details>` : ""}
       </div>`;
     return node;
   }
@@ -531,7 +536,7 @@ export async function mount(ctx, container) {
           </div>
           <div class="eh-sec-ed">
             ${s.editor ? `<span class="eh-person">${avatar(s.editor, 30)}<span><small>Editor</small>${esc(s.editor.name)}</span></span>` : `<span class="eh-muted">No editor yet</span>`}
-            ${s.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(s.driveUrl)}" target="_blank" rel="noopener" aria-label="${esc(s.name)} Drive folder">${ICON.drive}</a>` : ""}
+            ${s.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(s.driveUrl)}" target="_blank" rel="noopener" aria-label="${esc(s.name)} folder in Google Drive" title="${esc(s.name)} folder in Google Drive">${ICON.gdrive}</a>` : ""}
             ${isAdmin ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-section="${esc(s.id)}" aria-label="Edit ${esc(s.name)}">${ICON.edit}</button>` : ""}
           </div>
         </div>
@@ -630,7 +635,7 @@ export async function mount(ctx, container) {
     }
     node.innerHTML = `
       <div class="card-header eh-ch">
-        <div><h2 class="card-title">Feedback from the editors</h2>${p.docUrl ? `<p class="card-subtitle"><a class="eh-link" href="${esc(p.docUrl)}" target="_blank" rel="noopener">Open the proposal in Google Docs</a></p>` : ""}
+        <div><h2 class="card-title">Feedback from the editors</h2>${p.docUrl ? `<p class="card-subtitle"><a class="eh-link eh-inline-g" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.gdoc} Open the proposal in Google Docs</a></p>` : ""}
           <p class="card-subtitle">${doneN === notes.length ? "Every note is addressed. Nice work." : `${doneN} of ${notes.length} addressed.${can ? " Tick each note once you've dealt with it in your draft." : ""}`}</p></div>
         ${doneN ? `<label class="eh-switch"><input type="checkbox" ${view.hideDone ? "checked" : ""} data-hide-done><span class="tr" aria-hidden="true"></span>Hide addressed</label>` : ""}
       </div>
@@ -675,7 +680,7 @@ export async function mount(ctx, container) {
         <div><h2 class="card-title">Proposal by ${esc(names(p.writers))}</h2>${p.updatedAt && p.updatedByName && !/seeded/i.test(p.updatedByName) ? `<p class="card-subtitle">Updated ${esc(fmtRelative(p.updatedAt))}</p>` : `<p class="card-subtitle">As the writer sent it.</p>`}</div>
         <div class="eh-doc-ctl">
           ${nN ? `<label class="eh-switch"><input type="checkbox" ${view.showNotes ? "checked" : ""} data-toggle-notes><span class="tr" aria-hidden="true"></span>Show notes</label>` : ""}
-          ${p.docUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.link} Google Doc</a>` : ""}
+          ${p.docUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.gdoc} Open in Google Docs</a>` : ""}
           ${canProp ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-proposal="${esc(p.id)}">${ICON.edit} Edit</button>` : ""}
         </div>
       </div>
@@ -721,10 +726,11 @@ export async function mount(ctx, container) {
         ${prog ? `<p class="eh-side-hint">Change it when the piece moves on. ${isMine(p) ? "Your editor sees it." : "The writer sees it."}</p>` : ""}
         ${due ? `<div class="eh-side-due${dn < 0 ? " is-late" : dn <= 7 ? " is-soon" : ""}"><span>${esc(due.label)}</span><strong>${dn < 0 ? "Overdue" : esc(inDays(dn).replace(/^in /, "In "))}</strong><small>${esc(fmtDay(due.date, LONG))}</small></div>` : ""}
         <div class="eh-side-links">
-          ${p.draftUrl ? `<a class="btn btn-secondary btn-sm" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">${ICON.link} Open the draft</a>` : ""}
+          ${p.draftUrl ? `<a class="btn btn-secondary btn-sm eh-g" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">${ICON.gdoc} Open the draft <span class="eh-g-k">Google Docs</span></a>` : ""}
           ${prog ? `<button type="button" class="btn btn-ghost btn-sm" data-draft-link="${esc(p.id)}">${p.draftUrl ? "Change draft link" : `${ICON.plus} Add the draft link`}</button>` : ""}
-          ${section(p.section)?.draftsUrl && i < STAGE_INDEX.final ? `<a class="btn ${i < STAGE_INDEX.draft1 && isMine(p) ? "btn-primary" : "btn-ghost"} btn-sm" href="${esc(section(p.section).draftsUrl)}" target="_blank" rel="noopener">${ICON.drive} ${i < STAGE_INDEX.draft1 ? "Upload your first draft" : "Drafts folder"}</a>` : ""}
-          ${section(p.section)?.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(section(p.section).driveUrl)}" target="_blank" rel="noopener">${ICON.drive} Section folder</a>` : ""}
+          ${section(p.section)?.draftsUrl && i < STAGE_INDEX.final ? `<a class="btn ${i < STAGE_INDEX.draft1 && isMine(p) ? "btn-primary" : "btn-ghost"} btn-sm" href="${esc(section(p.section).draftsUrl)}" target="_blank" rel="noopener">${ICON.gdrive} ${i < STAGE_INDEX.draft1 ? "Upload your first draft" : "Drafts folder"} <span class="eh-g-k">Google Drive</span></a>` : ""}
+          ${section(p.section)?.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(section(p.section).driveUrl)}" target="_blank" rel="noopener">${ICON.gdrive} Section folder <span class="eh-g-k">Google Drive</span></a>` : ""}
+          ${p.trackerId ? `<a class="btn btn-ghost btn-sm" href="#/pipeline/all?project=${esc(p.trackerId)}">${ICON.tracker} Open in the Story Tracker</a>` : ""}
         </div>
         ${section(p.section)?.draftsUrl && i < STAGE_INDEX.draft1 ? `<p class="eh-side-hint">Name it “Name_Title_Draft1”, then set the stage to First draft in.</p>` : ""}`;
       out.push(c);
@@ -740,7 +746,7 @@ export async function mount(ctx, container) {
     }
     const ivs = p.interviews || [];
     if (ivs.length || prog) {
-      const lbl = { done: "Done", scheduled: "Scheduled", planned: "Planned", wanted: "Wanted" };
+      const lbl = { done: "Done", scheduled: "Scheduled", contacted: "Contacted", planned: "Planned", wanted: "Wanted" };
       const c = el("section", { class: "card eh-side" });
       c.innerHTML = `
         <div class="eh-side-h"><p class="section-title">Interviews</p>${prog ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-iv="${esc(p.id)}">${ivs.length ? `${ICON.edit} Edit` : `${ICON.plus} Add`}</button>` : ""}</div>
@@ -1152,7 +1158,7 @@ export async function mount(ctx, container) {
           </div>
           <div class="eh-f-row">
             ${field("When", input(`when-${i}`, v.when, 'maxlength="80" placeholder="Oct 28"'))}
-            ${field("Status", `<select class="input" name="status-${i}">${[["wanted", "Wanted"], ["planned", "Planned"], ["scheduled", "Scheduled"], ["done", "Done"]].map(([id, l]) => `<option value="${id}"${v.status === id ? " selected" : ""}>${l}</option>`).join("")}</select>`)}
+            ${field("Status", `<select class="input" name="status-${i}">${[["wanted", "Wanted"], ["planned", "Planned"], ["contacted", "Contacted, no reply yet"], ["scheduled", "Scheduled"], ["done", "Done"]].map(([id, l]) => `<option value="${id}"${v.status === id ? " selected" : ""}>${l}</option>`).join("")}</select>`)}
           </div>
           ${field("Note", input(`note-${i}`, v.note || "", 'maxlength="200"'))}
           <button type="button" class="btn btn-ghost btn-xs" data-rm="${i}">Remove</button>
@@ -1715,6 +1721,14 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-doclinks a svg { flex: none; margin-top: 2px; color: var(--muted); }
 .eh-doclinks strong { display: block; font-size: 14px; font-weight: 600; }
 .eh-doclinks small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+
+.eh-gicon { flex: none; }
+.eh .btn.eh-g { gap: 8px; }
+.eh-g-k { font-size: 11px; font-weight: 500; color: var(--muted); }
+.eh .btn-primary .eh-g-k { color: rgba(248,247,243,.7); }
+.eh .btn-primary .eh-gicon { background: var(--surface); border-radius: 4px; padding: 2px; width: 20px; height: 20px; }
+.eh-inline-g { display: inline-flex; align-items: center; gap: 6px; }
+.eh-tag.is-iv-contacted { background: var(--surface-3); color: var(--muted); }
 
 /* questions */
 .eh-compose-card { padding: 18px 20px; }

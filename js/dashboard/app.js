@@ -258,7 +258,7 @@ const ROUTES = {
     icon: ICONS.edition,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./edition-hub.js?v=4"),
+    loader: () => import("./edition-hub.js?v=5"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -276,7 +276,7 @@ const ROUTES = {
     icon: ICONS.board,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js?v=tracker-8"),
+    loader: () => import("./pipeline.js?v=tracker-9"),
     mountKey: "all",
   },
   // Old split-board hashes — kept so bookmarks, saved pins, and links in
@@ -289,7 +289,7 @@ const ROUTES = {
     icon: ICONS.clipboard,
     roles: ["*"],
     group: "main",
-    loader: () => import("./pipeline.js?v=tracker-8"),
+    loader: () => import("./pipeline.js?v=tracker-9"),
     mountKey: "mine",
   },
   "#/tasks": {
@@ -334,7 +334,7 @@ const ROUTES = {
     icon: ICONS.feed,
     roles: ["admin", "editor", "writer"],
     group: "write",
-    loader: () => import("./pipeline.js?v=tracker-8"),
+    loader: () => import("./pipeline.js?v=tracker-9"),
     mountKey: "works",
   },
   "#/writer/guidelines": {
