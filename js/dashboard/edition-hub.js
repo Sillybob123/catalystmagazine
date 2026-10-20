@@ -36,14 +36,14 @@ import { el, esc, toast, fmtRelative, openModal, confirmDialog, slugify, initial
 const EDITION = "winter-2027";
 
 const STAGES = [
-  { id: "idea", label: "Idea", hint: "No proposal yet" },
-  { id: "proposal", label: "Proposal in", hint: "The editors have commented" },
-  { id: "reporting", label: "Reporting", hint: "Interviews and research" },
-  { id: "drafting", label: "Drafting", hint: "Writing the first draft" },
-  { id: "draft1", label: "First draft in", hint: "Uploaded to the Drive" },
-  { id: "editing", label: "Editing", hint: "Back and forth with the editor" },
-  { id: "final", label: "Final draft in", hint: "Submitted in the Suite" },
-  { id: "ready", label: "Ready", hint: "Ready to publish" },
+  { id: "idea", label: "Needs a proposal", short: "Proposal", hint: "No proposal yet" },
+  { id: "proposal", label: "Proposal reviewed", short: "Reviewed", hint: "The editors have left feedback" },
+  { id: "reporting", label: "Interviewing and research", short: "Reporting", hint: "Interviews and research" },
+  { id: "drafting", label: "Writing the first draft", short: "Writing", hint: "Turning it into a draft" },
+  { id: "draft1", label: "First draft in", short: "Draft in", hint: "Uploaded to the Drive" },
+  { id: "editing", label: "Editing with the editor", short: "Editing", hint: "Back and forth with the editor" },
+  { id: "final", label: "Final draft in", short: "Final in", hint: "Submitted in the Suite" },
+  { id: "ready", label: "Ready to publish", short: "Ready", hint: "Ready to go out" },
 ];
 const STAGE_INDEX = Object.fromEntries(STAGES.map((s, i) => [s.id, i]));
 const SPECIAL = { open: "Open slot", held: "Held" };
@@ -115,8 +115,8 @@ export async function mount(ctx, container) {
   const view = {
     tab: TABS.includes(tabParam) ? tabParam : "overview",
     piece: params.get("piece") || null,
-    pieceTab: ["talk", "steps"].includes(params.get("view")) ? params.get("view") : "proposal",
-    q: "", filter: "all", talkFilter: "all", showNotes: true,
+    pieceTab: ["talk", "feedback", "proposal"].includes(params.get("view")) ? params.get("view") : "",
+    q: "", filter: "all", talkFilter: "all", showNotes: true, hideDone: false,
   };
   const me = { uid: ctx.user?.uid || "", name: ctx.profile?.name || ctx.user?.displayName || "" };
   const isAdmin = ctx.role === "admin";
@@ -217,7 +217,7 @@ export async function mount(ctx, container) {
   function go(next) {
     Object.assign(view, next);
     const qs = new URLSearchParams();
-    if (view.piece) { qs.set("piece", view.piece); if (view.pieceTab !== "proposal") qs.set("view", view.pieceTab); }
+    if (view.piece) { qs.set("piece", view.piece); if (view.pieceTab) qs.set("view", view.pieceTab); }
     else if (view.tab !== "overview") qs.set("tab", view.tab);
     const hash = `#/edition${qs.toString() ? `?${qs}` : ""}`;
     if (location.hash !== hash) history.pushState(null, "", hash);
@@ -312,7 +312,7 @@ export async function mount(ctx, container) {
       g.appendChild(attention());
       g.appendChild(editorsDesk());
       wrap.appendChild(g);
-    }
+    } else wrap.appendChild(attention());
     wrap.appendChild(guides());
     return wrap;
   }
@@ -332,7 +332,7 @@ export async function mount(ctx, container) {
     const step = mine.flatMap((p) => (p.nextSteps || []).filter((s) => !s.done).map((s) => ({ p, s })))[0];
     if (mine.length) {
       third = step
-        ? `<p class="eh-tile-k">Your next step</p><p class="eh-tile-text">${esc(step.s.text)}</p><button type="button" class="eh-tile-link" data-piece="${esc(step.p.id)}" data-pv="steps">${esc(clip(step.p.title, 46))} ${ICON.chev}</button>`
+        ? `<p class="eh-tile-k">Your next step</p><p class="eh-tile-text">${esc(step.s.text)}</p><button type="button" class="eh-tile-link" data-piece="${esc(step.p.id)}">${esc(clip(step.p.title, 46))} ${ICON.chev}</button>`
         : `<p class="eh-tile-k">Your next steps</p><p class="eh-tile-text">All done. Your editor will be in touch about what comes next.</p><button type="button" class="eh-tile-link" data-piece="${esc(mine[0].id)}">Open your piece ${ICON.chev}</button>`;
     } else if (mySections().length) {
       const s = mySections()[0];
@@ -377,7 +377,7 @@ export async function mount(ctx, container) {
             <p class="eh-meta">${esc(section(p.section)?.name || "")}${p.format ? ` · ${esc(p.format)}` : ""}</p>
             <p class="eh-mine-title">${esc(p.title)}</p>
             <div class="eh-prog" aria-label="Stage: ${esc(STAGES[STAGE_INDEX[p.status] ?? 0]?.label || "")}"><span style="width:${progressPct(p)}%"></span></div>
-            <p class="eh-mine-facts">${stage(p)}${steps.length ? `<span>${done} of ${steps.length} steps done</span>` : ""}${ed ? `<span>Editor: ${esc(ed.name)}</span>` : ""}${qN ? `<span class="eh-tag is-info">${plural(qN, "question")} for you</span>` : ""}${f && f.tone !== "muted" ? `<span class="eh-tag is-${f.tone}">${esc(f.text)}</span>` : ""}</p>
+            <p class="eh-mine-facts">${stage(p)}${steps.length ? `<span>${done} of ${steps.length} steps done</span>` : ""}${(() => { const ns = noteList(p); const d = ns.filter((n) => doneSet(p).has(n.id)).length; return ns.length ? `<span>${d} of ${ns.length} notes addressed</span>` : ""; })()}${ed ? `<span>Editor: ${esc(ed.name)}</span>` : ""}${qN ? `<span class="eh-tag is-info">${plural(qN, "question")} for you</span>` : ""}${f && f.tone !== "muted" ? `<span class="eh-tag is-${f.tone}">${esc(f.text)}</span>` : ""}</p>
           </div>
           <span class="eh-chev">${ICON.chev}</span>
         </li>`;
@@ -420,21 +420,33 @@ export async function mount(ctx, container) {
     return node;
   }
 
+  // Plain-language progress: how many first drafts are in, then every piece
+  // listed under where it is.
   function attention() {
     const node = el("section", { class: "card" });
-    const list = realPieces();
-    const counts = STAGES.map((s) => list.filter((p) => (p.status || "idea") === s.id).length);
-    const items = [];
-    live().filter((p) => p.status === "open").forEach((p) => items.push(`<li><span class="eh-tag is-warn">Open slot</span><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(section(p.section)?.name)}${p.title !== "Open slot" ? `: ${esc(p.title.replace(/^Open slot:\s*/i, ""))}` : ""}</button></li>`));
-    list.forEach((p) => { const f = flag(p); if (f) items.push(`<li><span class="eh-tag is-${f.tone}">${esc(f.text)}</span><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(clip(p.title, 64))}</button></li>`); });
+    const list = sorted(realPieces());
+    const first = hardDate("first-draft"), fin = hardDate("final-draft");
+    const firstN = list.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.draft1).length;
+    const finalN = list.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.final).length;
+    const pastFirst = first && daysUntil(first.date) < 0;
+    const [got, due, label] = pastFirst && fin ? [finalN, fin, "final drafts in"] : [firstN, first, "first drafts in"];
+    const open = live().filter((p) => p.status === "open");
+    const groups = STAGES.map((s) => ({ s, ps: list.filter((p) => (p.status || "idea") === s.id) })).filter((g) => g.ps.length);
     const stale = openQs((m) => Date.now() - new Date(m.createdAt).getTime() > 2 * DAY).length;
-    if (stale) items.push(`<li><span class="eh-tag is-info">${plural(stale, "question")}</span><button type="button" class="eh-link" data-go="talk">unanswered for more than two days</button></li>`);
     node.innerHTML = `
-      <div class="card-header eh-ch"><div><h2 class="card-title">Where things stand</h2><p class="card-subtitle">${plural(list.length, "piece")} · ${plural(list.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.draft1).length, "first draft")} in</p></div></div>
+      <div class="card-header eh-ch"><div><h2 class="card-title">Progress</h2><p class="card-subtitle">Where every piece is right now.</p></div></div>
       <div class="card-body">
-        <div class="eh-bar" role="img" aria-label="${esc(STAGES.map((s, i) => `${counts[i]} ${s.label}`).join(", "))}">${STAGES.map((s, i) => counts[i] ? `<span data-stage="${s.id}" style="flex:${counts[i]}" title="${esc(`${s.label}: ${counts[i]}`)}"></span>` : "").join("")}</div>
-        <p class="eh-bar-key">${STAGES.map((s, i) => counts[i] ? `<span data-stage="${s.id}"><i></i>${esc(s.label)} ${counts[i]}</span>` : "").join("")}</p>
-        <ul class="eh-attn">${items.join("") || `<li class="eh-muted">Nothing needs attention.</li>`}</ul>
+        <p class="eh-prog-big"><strong>${got}</strong> of ${list.length} ${label}</p>
+        <div class="eh-prog is-lg"><span style="width:${list.length ? (got / list.length) * 100 : 0}%"></span></div>
+        ${due ? `<p class="eh-meta">Due ${esc(fmtDay(due.date, LONG))} (${esc(inDays(daysUntil(due.date)))})</p>` : ""}
+        <div class="eh-groups">
+          ${groups.map(({ s, ps }) => `<div class="eh-group">
+            <p class="eh-group-h" data-stage="${s.id}"><i></i>${esc(s.label)} <span>${ps.length}</span></p>
+            <ul>${ps.map((p) => `<li><button type="button" class="eh-link" data-piece="${esc(p.id)}" title="${esc(p.title)}">${esc(p.title)}</button><span class="eh-muted">${esc(firstNames(p.writers))}</span></li>`).join("")}</ul>
+          </div>`).join("")}
+          ${open.length ? `<div class="eh-group"><p class="eh-group-h is-open"><i></i>Open slots <span>${open.length}</span></p><ul>${open.map((p) => `<li><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(section(p.section)?.name)}: ${esc(p.title !== "Open slot" ? p.title.replace(/^Open slot:\s*/i, "") : "an op-ed or Q&A")}</button></li>`).join("")}</ul></div>` : ""}
+        </div>
+        ${stale ? `<p class="eh-stale"><span class="eh-tag is-info">${plural(stale, "question")}</span> waiting more than two days for an answer. <button type="button" class="eh-link" data-go="talk">Answer</button></p>` : ""}
       </div>`;
     return node;
   }
@@ -556,19 +568,27 @@ export async function mount(ctx, container) {
   }
 
   // ── a piece
+  // Left: the work (feedback to address, the full proposal, questions).
+  // Right: where it stands and what to do next, always in view.
+  const noteList = (p) => [
+    ...(p.general || []).map((text, i) => ({ id: `general:${i}`, field: "general", text })),
+    ...PROPOSAL.flatMap((g) => [...(g.lead ? [[g.lead, `${g.group} (overall)`]] : []), ...g.fields])
+      .flatMap(([k]) => (p.notes?.[k] || []).map((text, i) => ({ id: `${k}:${i}`, field: k, text }))),
+  ];
+  const doneSet = (p) => new Set(Array.isArray(p.notesDone) ? p.notesDone : []);
+  const fieldLabel = (k) => (k === "general" ? "Overall" : k === "outline" ? "Outline (overall)" : PROPOSAL.flatMap((g) => g.fields).find(([f]) => f === k)?.[1] || k);
+  const fieldValue = (p, k) => (k === "title" ? p.title : k === "subtitle" ? p.subtitle : k === "format" ? p.format : p.proposal?.[k] || "");
+
   function pieceView(p) {
     const s = section(p.section);
     const ed = editorOf(p);
     const wrap = el("div", { class: "eh-piece" });
     const threads = threadOf((m) => m.pieceId === p.id);
     const openN = threads.filter((m) => m.kind === "question" && !m.resolved).length;
-    const prog = canProgress(p);
-    const steps = p.nextSteps || [];
-    const done = steps.filter((x) => x.done).length;
-    const first = hardDate("first-draft");
-    const i = STAGE_INDEX[p.status] ?? 0;
-    const firstDone = i >= STAGE_INDEX.draft1;
-    const fn = first ? daysUntil(first.date) : null;
+    const notes = noteList(p);
+    const done = doneSet(p);
+    const left = notes.filter((n) => !done.has(n.id)).length;
+    if (!view.pieceTab || (view.pieceTab === "feedback" && !notes.length)) view.pieceTab = notes.length ? "feedback" : "proposal";
     wrap.innerHTML = `
       <button type="button" class="eh-back" data-go="pieces">${ICON.back} All pieces</button>
       <header class="eh-ph">
@@ -583,44 +603,67 @@ export async function mount(ctx, container) {
           ${p.placement ? `<p class="eh-placement">${esc(p.placement)}</p>` : ""}
         </div>
         <div class="eh-ph-actions">
-          ${p.status !== "open" ? `<button type="button" class="btn btn-primary" data-compose="question" data-for="${esc(p.id)}">${ICON.q} Ask a question</button>
+          ${p.status !== "open" ? `<button type="button" class="btn btn-primary" data-compose="question" data-for="${esc(p.id)}">${ICON.q} ${isMine(p) && ed ? `Ask ${esc(firstName(ed.name))}` : "Ask a question"}</button>
           <button type="button" class="btn btn-secondary" data-compose="update" data-for="${esc(p.id)}">${ICON.note} Share an update</button>` : ""}
-          ${canEdit() ? `<button type="button" class="btn btn-ghost" data-edit-piece="${esc(p.id)}">${ICON.edit} Edit</button>` : isMine(p) ? `<button type="button" class="btn btn-ghost" data-edit-mine="${esc(p.id)}">${ICON.edit} Edit title</button>` : ""}
+          ${canEdit() ? `<button type="button" class="btn btn-ghost" data-edit-piece="${esc(p.id)}">${ICON.edit} Edit piece</button>` : isMine(p) ? `<button type="button" class="btn btn-ghost" data-edit-mine="${esc(p.id)}">${ICON.edit} Edit title</button>` : ""}
         </div>
       </header>
-      ${SPECIAL[p.status] ? "" : `
-      <section class="eh-tiles is-sm" aria-label="Progress">
-        <article class="eh-tile">
-          <p class="eh-tile-k">Stage</p>
-          ${prog ? `<label class="eh-stage-pick"><span class="sr-only">Move this piece to</span><select data-stage-select="${esc(p.id)}">${STAGES.map((x) => `<option value="${x.id}"${x.id === (p.status || "idea") ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>${ICON.down}</label>` : `<p class="eh-tile-title">${esc(STAGES[i].label)}</p>`}
-          <div class="eh-prog"><span style="width:${progressPct(p)}%"></span></div>
-          <p class="eh-tile-sub">Step ${i + 1} of ${STAGES.length} · ${esc(STAGES[i].hint)}</p>
-        </article>
-        <article class="eh-tile">
-          <p class="eh-tile-k">Next steps</p>
-          <p class="eh-tile-title">${steps.length ? `${done} of ${steps.length} done` : "None yet"}</p>
-          <div class="eh-prog"><span style="width:${steps.length ? (done / steps.length) * 100 : 0}%"></span></div>
-          <button type="button" class="eh-tile-link" data-pv="steps">See steps ${ICON.chev}</button>
-        </article>
-        <article class="eh-tile">
-          <p class="eh-tile-k">First draft</p>
-          <p class="eh-tile-title${!firstDone && fn != null && fn <= 7 ? " is-soon" : ""}">${firstDone ? "In" : fn == null ? "—" : fn < 0 ? "Overdue" : `Due ${esc(inDays(fn))}`}</p>
-          <p class="eh-tile-sub">${first ? esc(fmtDay(first.date, LONG)) : ""}</p>
-          ${p.draftUrl ? `<a class="eh-tile-link" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">Open the draft ${ICON.chev}</a>` : prog ? `<button type="button" class="eh-tile-link" data-draft-link="${esc(p.id)}">Add the draft link ${ICON.chev}</button>` : ""}
-        </article>
-      </section>`}
-      <nav class="eh-seg eh-ptabs" aria-label="This piece">
-        ${[["proposal", "Proposal", noteCount(p) ? `${noteCount(p)} notes` : ""], ["steps", "Steps<span class=\"eh-wide\"> & interviews</span>", ""], ["talk", "Questions", threads.length ? (openN ? `${openN} open` : String(threads.length)) : ""]].map(([id, l, n]) => `
-          <button type="button" class="eh-seg-b${view.pieceTab === id ? " is-on" : ""}" data-pv="${id}" ${view.pieceTab === id ? 'aria-current="page"' : ""}>${l}${n ? `<span class="eh-badge${id === "talk" && openN ? " is-alert" : ""}">${n}</span>` : ""}</button>`).join("")}
-      </nav>
-      <div class="eh-pbody"></div>`;
+      <div class="eh-pgrid">
+        <aside class="eh-pside"></aside>
+        <div class="eh-pmain">
+          <nav class="eh-seg eh-ptabs" aria-label="This piece">
+            ${[
+              ...(notes.length ? [["feedback", "Feedback", left ? `${left} to do` : "All done"]] : []),
+              ["proposal", "Full proposal", ""],
+              ["talk", "Questions", threads.length ? (openN ? `${openN} open` : String(threads.length)) : ""],
+            ].map(([id, l, n]) => `<button type="button" class="eh-seg-b${view.pieceTab === id ? " is-on" : ""}" data-pv="${id}" ${view.pieceTab === id ? 'aria-current="page"' : ""}>${l}${n ? `<span class="eh-badge${(id === "talk" && openN) || (id === "feedback" && left) ? " is-alert" : ""}">${n}</span>` : ""}</button>`).join("")}
+          </nav>
+          <div class="eh-pbody"></div>
+        </div>
+      </div>`;
     const body = wrap.querySelector(".eh-pbody");
     if (view.pieceTab === "talk") {
       body.appendChild(composerCard({ pieceId: p.id }));
       body.appendChild(threadCard(threads, { showContext: false, empty: "No questions or updates yet. Ask the first one." }));
-    } else if (view.pieceTab === "steps") body.appendChild(stepsView(p, prog));
+    } else if (view.pieceTab === "feedback" && notes.length) body.appendChild(feedbackView(p, notes, done));
     else body.appendChild(proposalView(p));
+    wrap.querySelector(".eh-pside").append(...sideCards(p));
     return wrap;
+  }
+
+  // Every editor's note as a checklist the writer works through.
+  function feedbackView(p, notes, done) {
+    const node = el("section", { class: "card" });
+    const can = canProgress(p);
+    const doneN = notes.filter((n) => done.has(n.id)).length;
+    const byField = [];
+    for (const n of notes) {
+      let g = byField.find((x) => x.field === n.field);
+      if (!g) byField.push(g = { field: n.field, items: [] });
+      g.items.push(n);
+    }
+    node.innerHTML = `
+      <div class="card-header eh-ch">
+        <div><h2 class="card-title">Feedback from the editors</h2>
+          <p class="card-subtitle">${doneN === notes.length ? "Every note is addressed. Nice work." : `${doneN} of ${notes.length} addressed.${can ? " Tick each note once you've dealt with it in your draft." : ""}`}</p></div>
+        ${doneN ? `<label class="eh-switch"><input type="checkbox" ${view.hideDone ? "checked" : ""} data-hide-done><span class="tr" aria-hidden="true"></span>Hide addressed</label>` : ""}
+      </div>
+      <div class="eh-prog is-flat"><span style="width:${(doneN / notes.length) * 100}%"></span></div>
+      <div class="eh-fb">
+        ${byField.map((g) => {
+          const items = g.items.filter((n) => !(view.hideDone && done.has(n.id)));
+          if (!items.length) return "";
+          const v = g.field === "general" || g.field === "outline" ? "" : fieldValue(p, g.field);
+          return `<section class="eh-fb-g">
+            <h3 class="eh-fb-h">${esc(fieldLabel(g.field))}</h3>
+            ${v ? `<details class="eh-fb-quote"><summary><span class="eh-fb-q">“${esc(clip(String(v).replace(/\s+/g, " "), 150))}”</span><span class="eh-fb-more">What you wrote</span></summary><div class="eh-ftext">${rich(v)}</div></details>` : ""}
+            <ul class="eh-checks">${items.map((n) => `<li><label class="eh-check eh-fb-item${done.has(n.id) ? " is-done" : ""}">
+              <input type="checkbox" data-note-done="${esc(n.id)}" data-piece-id="${esc(p.id)}" ${done.has(n.id) ? "checked" : ""} ${can ? "" : "disabled"}>
+              <span class="box">${ICON.check}</span><span class="txt">${rich(n.text)}</span></label></li>`).join("")}</ul>
+          </section>`;
+        }).join("")}
+      </div>`;
+    return node;
   }
 
   function proposalView(p) {
@@ -632,20 +675,20 @@ export async function mount(ctx, container) {
     if (!pr) {
       node.innerHTML = `<div class="eh-noprop">
         <h2>No proposal here yet</h2>
-        <p>${esc(p.proposalNote || (p.status === "open" ? "This slot is open. Pitch an idea, and the section editor will get back to you." : "Once the proposal is in, it shows here with the editors' notes."))}</p>
+        <p>${esc(p.proposalNote || (p.status === "open" ? "This slot is open. Pitch an idea, and the section editor will get back to you." : "Once the proposal is in, it shows here, and the editors' notes become a checklist under Feedback."))}</p>
         ${p.candidates?.length ? `<p class="section-title eh-st">Ideas on the table</p><ul class="eh-ticks">${p.candidates.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
         ${canProp && p.status !== "open" ? `<button type="button" class="btn btn-primary" data-edit-proposal="${esc(p.id)}">${mine ? "Add your proposal" : "Add the proposal"}</button>` : ""}
         ${p.status === "open" ? `<button type="button" class="btn btn-primary" data-pitch="${esc(p.section)}">Pitch an idea</button>` : ""}
       </div>`;
       return node;
     }
-    const valueOf = (k) => (k === "title" ? p.title : k === "subtitle" ? p.subtitle : k === "format" ? p.format : pr[k]);
+    const valueOf = (k) => fieldValue(p, k);
     const notesFor = (k) => (p.notes?.[k] || []);
     let html = `
       <div class="card-header eh-ch">
-        <div><h2 class="card-title">Proposal by ${esc(names(p.writers))}</h2>${p.updatedAt && p.updatedByName && !/seeded/i.test(p.updatedByName) ? `<p class="card-subtitle">Updated ${esc(fmtRelative(p.updatedAt))}</p>` : ""}</div>
+        <div><h2 class="card-title">Proposal by ${esc(names(p.writers))}</h2>${p.updatedAt && p.updatedByName && !/seeded/i.test(p.updatedByName) ? `<p class="card-subtitle">Updated ${esc(fmtRelative(p.updatedAt))}</p>` : `<p class="card-subtitle">As the writer sent it.</p>`}</div>
         <div class="eh-doc-ctl">
-          ${nN ? `<label class="eh-switch"><input type="checkbox" ${view.showNotes ? "checked" : ""} data-toggle-notes><span class="tr" aria-hidden="true"></span>Editors' notes</label>` : ""}
+          ${nN ? `<label class="eh-switch"><input type="checkbox" ${view.showNotes ? "checked" : ""} data-toggle-notes><span class="tr" aria-hidden="true"></span>Show notes</label>` : ""}
           ${canProp ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-proposal="${esc(p.id)}">${ICON.edit} Edit</button>` : ""}
         </div>
       </div>
@@ -675,34 +718,51 @@ export async function mount(ctx, container) {
     return `<div class="eh-notes">${list.map((t) => `<aside class="eh-note"><span class="eh-note-k">Editor's note</span>${rich(t)}</aside>`).join("")}</div>`;
   }
 
-  function stepsView(p, prog) {
-    const wrap = el("div", { class: "eh-grid-2" });
-    const steps = p.nextSteps || [];
-    const done = steps.filter((s) => s.done).length;
-    const a = el("section", { class: "card" });
-    a.innerHTML = `
-      <div class="card-header eh-ch"><div><h2 class="card-title">Next steps</h2><p class="card-subtitle">${steps.length ? `${done} of ${steps.length} done${prog ? ". Tick them off as you go." : ""}` : "None yet."}</p></div>
-        ${canEdit() ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-steps="${esc(p.id)}">${ICON.edit} Edit</button>` : ""}</div>
-      <div class="card-body"><ul class="eh-checks">${steps.map((s) => `<li><label class="eh-check${s.done ? " is-done" : ""}"><input type="checkbox" data-step="${esc(s.id)}" data-piece-id="${esc(p.id)}" ${s.done ? "checked" : ""} ${prog ? "" : "disabled"}><span class="box">${ICON.check}</span><span class="txt">${esc(s.text)}</span></label></li>`).join("") || `<li class="eh-muted">The editors haven't added steps yet.</li>`}</ul></div>`;
-    const ivs = p.interviews || [];
-    const lbl = { done: "Done", scheduled: "Scheduled", planned: "Planned", wanted: "Wanted" };
-    const b = el("section", { class: "card" });
-    b.innerHTML = `
-      <div class="card-header eh-ch"><div><h2 class="card-title">Interviews</h2><p class="card-subtitle">${ivs.length ? `Send your angle and questions to ${editorOf(p) ? esc(firstName(editorOf(p).name)) : "your editor"} first, and ask permission to record.` : "None listed yet."}</p></div>
-        ${prog ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-iv="${esc(p.id)}">${ivs.length ? `${ICON.edit} Edit` : `${ICON.plus} Add`}</button>` : ""}</div>
-      <ul class="eh-list">${ivs.map((v) => `<li class="eh-iv">
-        <div><p class="eh-row-title">${esc(v.person)}</p><p class="eh-meta">${esc([v.affiliation, v.when].filter(Boolean).join(" · "))}</p>${v.note ? `<p class="eh-meta eh-iv-note">${esc(v.note)}</p>` : ""}</div>
-        <span class="eh-tag is-iv-${esc(v.status || "planned")}">${esc(lbl[v.status] || "Planned")}</span>
-      </li>`).join("")}</ul>`;
-    wrap.append(a, b);
-    const sd = section(p.section)?.driveUrl;
-    if (p.draftUrl || sd || prog) {
-      const c = el("section", { class: "card eh-span-2" });
-      c.innerHTML = `<div class="card-header eh-ch"><div><h2 class="card-title">The draft</h2><p class="card-subtitle">Upload it to your section's Drive folder as “Name_Title_Draft1”, then set the stage to First draft in.</p></div>
-        <div class="eh-btnrow">${p.draftUrl ? `<a class="btn btn-secondary btn-sm" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">${ICON.link} Open the draft</a>` : ""}${sd ? `<a class="btn btn-ghost btn-sm" href="${esc(sd)}" target="_blank" rel="noopener">${ICON.drive} Section folder</a>` : ""}${prog ? `<button type="button" class="btn btn-ghost btn-sm" data-draft-link="${esc(p.id)}">${p.draftUrl ? "Change link" : `${ICON.plus} Add the link`}</button>` : ""}</div></div>`;
-      wrap.appendChild(c);
+  function sideCards(p) {
+    const out = [];
+    const prog = canProgress(p);
+    const i = STAGE_INDEX[p.status] ?? 0;
+    const first = hardDate("first-draft"), fin = hardDate("final-draft");
+    const due = i < STAGE_INDEX.draft1 ? first : i < STAGE_INDEX.final ? fin : null;
+    const dn = due ? daysUntil(due.date) : null;
+    if (!SPECIAL[p.status]) {
+      const c = el("section", { class: "card eh-side" });
+      c.innerHTML = `
+        <p class="section-title">Where it is</p>
+        ${prog ? `<label class="eh-stage-pick"><span class="sr-only">Move this piece to</span><select data-stage-select="${esc(p.id)}">${STAGES.map((x) => `<option value="${x.id}"${x.id === (p.status || "idea") ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>${ICON.down}</label>` : `<p class="eh-side-big">${esc(STAGES[i].label)}</p>`}
+        <ol class="eh-steps" aria-hidden="true">${STAGES.map((x, k) => `<li class="${k < i ? "is-done" : k === i ? "is-now" : ""}" title="${esc(x.label)}"></li>`).join("")}</ol>
+        ${prog ? `<p class="eh-side-hint">Change it when the piece moves on. ${isMine(p) ? "Your editor sees it." : "The writer sees it."}</p>` : ""}
+        ${due ? `<div class="eh-side-due${dn < 0 ? " is-late" : dn <= 7 ? " is-soon" : ""}"><span>${esc(due.label)}</span><strong>${dn < 0 ? "Overdue" : esc(inDays(dn).replace(/^in /, "In "))}</strong><small>${esc(fmtDay(due.date, LONG))}</small></div>` : ""}
+        <div class="eh-side-links">
+          ${p.draftUrl ? `<a class="btn btn-secondary btn-sm" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">${ICON.link} Open the draft</a>` : ""}
+          ${prog ? `<button type="button" class="btn btn-ghost btn-sm" data-draft-link="${esc(p.id)}">${p.draftUrl ? "Change draft link" : `${ICON.plus} Add the draft link`}</button>` : ""}
+          ${section(p.section)?.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(section(p.section).driveUrl)}" target="_blank" rel="noopener">${ICON.drive} Section folder</a>` : ""}
+        </div>`;
+      out.push(c);
     }
-    return wrap;
+    const steps = p.nextSteps || [];
+    if (steps.length || canEdit()) {
+      const done = steps.filter((s) => s.done).length;
+      const c = el("section", { class: "card eh-side" });
+      c.innerHTML = `
+        <div class="eh-side-h"><p class="section-title">Next steps</p>${steps.length ? `<span class="eh-muted">${done} of ${steps.length}</span>` : ""}${canEdit() ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-steps="${esc(p.id)}">${ICON.edit} Edit</button>` : ""}</div>
+        <ul class="eh-checks">${steps.map((s) => `<li><label class="eh-check${s.done ? " is-done" : ""}"><input type="checkbox" data-step="${esc(s.id)}" data-piece-id="${esc(p.id)}" ${s.done ? "checked" : ""} ${prog ? "" : "disabled"}><span class="box">${ICON.check}</span><span class="txt">${esc(s.text)}</span></label></li>`).join("") || `<li class="eh-muted">None yet.</li>`}</ul>`;
+      out.push(c);
+    }
+    const ivs = p.interviews || [];
+    if (ivs.length || prog) {
+      const lbl = { done: "Done", scheduled: "Scheduled", planned: "Planned", wanted: "Wanted" };
+      const c = el("section", { class: "card eh-side" });
+      c.innerHTML = `
+        <div class="eh-side-h"><p class="section-title">Interviews</p>${prog ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-iv="${esc(p.id)}">${ivs.length ? `${ICON.edit} Edit` : `${ICON.plus} Add`}</button>` : ""}</div>
+        <ul class="eh-ivs">${ivs.map((v) => `<li>
+          <div><p class="eh-iv-who">${esc(v.person)}</p><p class="eh-meta">${esc([v.affiliation, v.when].filter(Boolean).join(" · "))}</p>${v.note ? `<p class="eh-meta eh-iv-note">${esc(v.note)}</p>` : ""}</div>
+          <span class="eh-tag is-iv-${esc(v.status || "planned")}">${esc(lbl[v.status] || "Planned")}</span>
+        </li>`).join("") || `<li class="eh-muted">None listed yet.</li>`}</ul>
+        ${ivs.length ? `<p class="eh-side-hint">Send your angle and questions to ${editorOf(p) ? esc(firstName(editorOf(p).name)) : "your editor"} before each interview, and ask permission to record.</p>` : ""}`;
+      out.push(c);
+    }
+    return out;
   }
 
   // ── Questions & updates
@@ -1033,7 +1093,7 @@ export async function mount(ctx, container) {
               interviews: [], nextSteps: [], proposal: null, notes: {}, general: [],
               createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), updatedBy: me.uid, updatedByName: me.name,
             });
-            m.close(); go({ piece: ref.id, pieceTab: "proposal" }); toast("Added.", "success");
+            m.close(); go({ piece: ref.id, pieceTab: "" }); toast("Added.", "success");
           } catch (err) { console.warn(err); toast("Couldn't add it.", "error"); }
           return;
         }
@@ -1259,7 +1319,7 @@ export async function mount(ctx, container) {
     if (!t || !root.contains(t)) return;
     const d = t.dataset;
     if (d.go) { go({ tab: d.go, piece: null }); return; }
-    if (d.piece) { go({ piece: d.piece, pieceTab: d.pv || "proposal" }); return; }
+    if (d.piece) { go({ piece: d.piece, pieceTab: d.pv || "" }); return; }
     if (d.pv) { go({ pieceTab: d.pv }); return; }
     if (d.filter) { view.filter = d.filter; if (d.clear !== undefined) view.q = ""; render(); return; }
     if (d.tfilter) { view.talkFilter = d.tfilter; render(); return; }
@@ -1295,6 +1355,16 @@ export async function mount(ctx, container) {
       const p = pieces.find((x) => x.id === t.dataset.stageSelect);
       if (!p || p.status === t.value) return;
       savePiece(p.id, { status: t.value }, { note: `Moved this piece to “${STAGES[STAGE_INDEX[t.value]].label}”.` });
+      return;
+    }
+    if (t.matches("[data-hide-done]")) { view.hideDone = t.checked; render(); return; }
+    if (t.matches("[data-note-done]")) {
+      const p = pieces.find((x) => x.id === t.dataset.pieceId);
+      if (!p) return;
+      const set = doneSet(p);
+      if (t.checked) set.add(t.dataset.noteDone); else set.delete(t.dataset.noteDone);
+      t.closest(".eh-check")?.classList.toggle("is-done", t.checked);
+      savePiece(p.id, { notesDone: [...set] });
       return;
     }
     if (t.matches("[data-step]")) {
@@ -1583,6 +1653,70 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-iv { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px 24px; }
 .eh-iv-note { font-style: italic; }
 
+/* piece layout: status and steps beside the work */
+.eh-pgrid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; grid-template-areas: "main side"; gap: 24px; align-items: start; margin-top: 30px; }
+.eh-pmain { grid-area: main; min-width: 0; }
+.eh-pside { grid-area: side; position: sticky; top: calc(var(--top-h, 72px) + 20px); display: flex; flex-direction: column; gap: 16px; }
+.eh-pmain .eh-ptabs { margin: 0 0 16px; }
+.eh-side { padding: 18px 20px; }
+.eh-side .section-title { margin: 0; }
+.eh-side-h { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; }
+.eh-side-h .section-title { flex: 1; }
+.eh-side-h .eh-muted { font-size: 12.5px; }
+.eh-side-big { margin: 10px 0 0; font: 600 17px/1.3 var(--font); letter-spacing: -0.015em; }
+.eh-side .eh-stage-pick { margin-top: 6px; max-width: 100%; }
+.eh-side .eh-stage-pick select { max-width: 100%; text-overflow: ellipsis; }
+.eh-steps { display: flex; gap: 3px; margin: 10px 0 0; padding: 0; list-style: none; }
+.eh-steps li { flex: 1; height: 5px; border-radius: 99px; background: var(--paper-3); }
+.eh-steps li.is-done { background: var(--ink-2); }
+.eh-steps li.is-now { background: var(--ink); }
+.eh-side-hint { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.eh-side-due { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; margin: 16px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--surface-3); }
+.eh-side-due span { font-size: 13px; font-weight: 600; }
+.eh-side-due strong { grid-row: 1 / span 2; grid-column: 2; align-self: center; font: 600 14px var(--font); }
+.eh-side-due small { font-size: 12px; color: var(--muted); }
+.eh-side-due.is-soon { background: var(--warn-soft); } .eh-side-due.is-soon strong { color: var(--warn); }
+.eh-side-due.is-late { background: var(--danger-soft); } .eh-side-due.is-late strong { color: var(--danger); }
+.eh-side-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; }
+.eh-side-links:empty { display: none; }
+.eh-side .eh-check { font-size: 13.5px; }
+.eh-ivs { margin: 4px 0 0; padding: 0; list-style: none; }
+.eh-ivs li { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--hairline-2); }
+.eh-ivs li:first-child { border-top: 0; }
+.eh-iv-who { margin: 0; font: 600 13.5px/1.35 var(--font); }
+
+/* feedback checklist */
+.eh-prog.is-flat { margin: 0; border-radius: 0; height: 3px; }
+.eh-fb { padding: 6px 24px 18px; }
+.eh-fb-g { padding: 18px 0 6px; border-top: 1px solid var(--hairline-2); }
+.eh-fb-g:first-child { border-top: 0; }
+.eh-fb-h { margin: 0 0 8px; font: 600 14px/1.3 var(--font); color: var(--ink); }
+.eh-fb-quote { margin: 0 0 8px; }
+.eh-fb-quote summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; list-style: none; cursor: pointer; padding: 8px 12px; border-radius: 10px; background: var(--surface-3); font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.eh-fb-quote summary::-webkit-details-marker { display: none; }
+.eh-fb-q { flex: 1 1 260px; font-style: italic; }
+.eh-fb-more { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.eh-fb-quote[open] summary .eh-fb-q { display: none; }
+.eh-fb-quote[open] .eh-ftext { padding: 10px 12px 0; font-size: 14.5px; }
+.eh-fb-item .txt p { margin: 0 0 6px; } .eh-fb-item .txt p:last-child { margin: 0; }
+.eh-fb-item .txt { line-height: 1.6; }
+.eh-fb-item .txt a { color: var(--info); }
+
+/* progress card */
+.eh-prog-big { margin: 0; font-size: 15px; color: var(--ink-2); }
+.eh-prog-big strong { font: 600 34px/1 var(--font); letter-spacing: -0.03em; color: var(--ink); margin-right: 4px; }
+.eh-prog.is-lg { height: 8px; margin: 14px 0 8px; }
+.eh-groups { display: flex; flex-direction: column; gap: 14px; margin: 20px 0 0; padding: 18px 0 0; border-top: 1px solid var(--hairline-2); }
+.eh-group-h { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font: 600 13px/1.3 var(--font); color: var(--ink); }
+.eh-group-h i { width: 8px; height: 8px; border-radius: 50%; background: var(--dot, var(--muted-2)); }
+.eh-group-h.is-open i { background: none; border: 1.5px dashed var(--warn); }
+.eh-group-h span { color: var(--muted); font-weight: 500; }
+.eh-group ul { margin: 0; padding: 0 0 0 16px; list-style: none; }
+.eh-group li { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 13.5px; line-height: 1.45; }
+.eh-group li .eh-link { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eh-group li .eh-muted { flex: none; }
+.eh-stale { margin: 18px 0 0; font-size: 13.5px; color: var(--ink-2); }
+
 /* questions */
 .eh-compose-card { padding: 18px 20px; }
 .eh-compose-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
@@ -1653,6 +1787,8 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-empty p { margin: 0; color: var(--muted); }
 
 @media (max-width: 960px) {
+  .eh-pgrid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "side" "main"; }
+  .eh-pside { position: static; }
   .eh-tiles, .eh-tiles.is-sm { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .eh-tiles > .is-main { grid-column: 1 / -1; }
   .eh-tiles.is-sm > :first-child { grid-column: 1 / -1; }
@@ -1682,6 +1818,7 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
   .eh-mine { padding: 18px; }
   .eh-sec-ed { width: 100%; }
   .eh-doc-body { padding: 4px 18px 22px; }
+  .eh-fb { padding: 4px 18px 16px; }
   .eh-msg { padding: 16px 18px; gap: 10px; grid-template-columns: 32px minmax(0, 1fr); }
   .eh-msg-head time { margin-left: 0; flex-basis: 100%; }
   .eh-about select { flex: 1; max-width: none; }

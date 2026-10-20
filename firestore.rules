@@ -281,7 +281,7 @@ service cloud.firestore {
     //   • admins change anything
     //   • section editors (hub.editorUids) edit any piece, and tick the
     //     editors' to-dos / open decisions on the hub
-    //   • a piece's writers (piece.writerUids) update its progress, checklist,
+    //   • a piece's writers (piece.writerUids) update its progress, checklists (next steps, notes addressed),
     //     interviews, title, format and their own proposal, never the
     //     editors' notes, section or byline
     match /edition_hub/{ed} {
@@ -303,7 +303,7 @@ service cloud.firestore {
           || (canSeeHub()
               && request.auth.uid in resource.data.get('writerUids', [])
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
-                   ['status', 'nextSteps', 'interviews', 'proposal', 'title', 'subtitle', 'format', 'draftUrl',
+                   ['status', 'nextSteps', 'notesDone', 'interviews', 'proposal', 'title', 'subtitle', 'format', 'draftUrl',
                     'updatedAt', 'updatedBy', 'updatedByName']));
       }
 
