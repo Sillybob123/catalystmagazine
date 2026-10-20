@@ -81,6 +81,7 @@ const FOCUS_ROUTES = [
   "#/writer/draft", "#/book-reviews/write", "#/final-review",
   "#/newsletter/builder", "#/marketing/social",
   "#/edition",   // This edition: a plain, calm page
+  "#/calendar",  // Editorial calendar: a plain page too
 ];
 const isFocusRoute = (hash) => {
   const path = String(hash || "").split("?")[0];

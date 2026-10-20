@@ -561,11 +561,134 @@ function ensureStyles() {
   document.head.appendChild(s);
 }
 
+// Page mode: the calendar sits on the page itself, in the Suite's paper, ink
+// and Poppins. A hairline grid instead of boxes, quiet labels with a colored
+// dot, today circled, the edition's dates in ink.
+function ensurePageStyles() {
+  if (document.getElementById("sched-cal-page-styles")) return;
+  const s = document.createElement("style");
+  s.id = "sched-cal-page-styles";
+  s.textContent = `
+    body.scp-calm, html[data-suite-theme] body.scp-calm { background: var(--surface-2); }
+    body.scp-calm::before { display: none !important; }
+    html[data-suite-theme] body.scp-calm .topbar { background: color-mix(in srgb, var(--surface-2) 88%, transparent); }
+    .scp { max-width: 1180px; margin: 0 auto; padding: 8px 0 72px; font-family: var(--font); color: var(--ink); }
+    .scp button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+    .scp-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 32px; padding: 28px 0 28px; }
+    .scp-title { flex: 1 1 380px; min-width: 0; }
+    .scp-controls { flex: none; }
+    .scp-eyebrow { margin: 0 0 10px; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .scp-month { margin: 0; font: 600 clamp(32px, 4.4vw, 48px)/1.05 var(--font); letter-spacing: -0.04em; }
+    .scp-month span { color: var(--muted-2); font-weight: 500; }
+    .scp-sub { margin: 12px 0 0; max-width: 46ch; font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+    .scp-link { padding: 0; border: 0; background: none; font: inherit; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+    .scp-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .scp-nav { display: inline-flex; align-items: center; gap: 4px; padding: 4px; border-radius: 999px; background: var(--surface-3); border: 1px solid var(--hairline-2); }
+    .scp-round { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: none; color: var(--ink); cursor: pointer; transition: background .15s; }
+    .scp-round:hover { background: var(--surface); }
+    .scp-pill { min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--surface); font: 600 13px var(--font); color: var(--ink); cursor: pointer; box-shadow: 0 1px 2px rgba(15,23,42,.08); }
+    .scp-pill:disabled { background: none; box-shadow: none; color: var(--muted); cursor: default; }
+    .scp-seg { display: inline-flex; gap: 2px; padding: 4px; border-radius: 999px; background: var(--surface-3); border: 1px solid var(--hairline-2); }
+    .scp-seg button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: none; font: 500 13px var(--font); color: var(--ink-2); cursor: pointer; transition: background .15s, color .15s; }
+    .scp-seg button.is-on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(15,23,42,.08), 0 2px 8px -2px rgba(15,23,42,.1); }
+    .scp-add { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px; border: 0; border-radius: 999px; background: var(--ink); color: var(--surface-2); font: 600 14px var(--font); cursor: pointer; box-shadow: var(--shadow-md); transition: transform .15s, box-shadow .15s; }
+    .scp-add:hover { transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+
+    .scp-section-k { margin: 0 0 12px; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .scp-next { margin: 0 0 28px; }
+    .scp-next-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .scp-next-item { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 12px 16px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface); text-align: left; cursor: pointer; font: inherit; color: inherit; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s, border-color .15s; }
+    .scp-next-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--ink) 20%, transparent); }
+    .scp-next-item.is-edition .scp-next-date { background: var(--ink); color: var(--surface-2); }
+    .scp-next-item.is-edition .scp-next-date .m { color: rgba(248,247,243,.65); }
+    .scp-next-item.is-hard { background: var(--ink); border-color: var(--ink); color: var(--surface-2); }
+    .scp-next-item.is-hard .scp-next-date { background: rgba(248,247,243,.12); }
+    .scp-next-date { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 46px; height: 50px; border-radius: 12px; background: var(--surface-3); }
+    .scp-next-date .m { font: 600 10px/1 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+    .scp-next-date .d { margin-top: 3px; font: 600 20px/1 var(--font); letter-spacing: -0.02em; }
+    .scp-next-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .scp-next-when { font-size: 12px; color: var(--muted); }
+    .scp-next-item.is-hard .scp-next-when { color: rgba(248,247,243,.65); }
+    .scp-next-when em { margin-left: 2px; padding: 1px 7px; border-radius: 99px; background: rgba(248,247,243,.14); font: 600 10px/1.5 var(--font); font-style: normal; letter-spacing: .05em; text-transform: uppercase; color: #f3c98b; }
+    .scp-next-t { display: flex; align-items: flex-start; gap: 7px; min-width: 0; font: 600 13.5px/1.35 var(--font); }
+    .scp-next-t i { flex: none; width: 7px; height: 7px; margin-top: 6px; border-radius: 50%; }
+    .scp-next-t span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* the month: one sheet with hairline rules */
+    .scp .sc-grid-head { gap: 0; margin: 0; }
+    .scp .sc-grid-head div { padding: 0 12px 10px; text-align: left; font: 600 11px/1 var(--font); letter-spacing: .12em; color: var(--muted); }
+    .scp .sc-grid { gap: 1px; background: var(--hairline-2); border: 1px solid var(--hairline); border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-sm); }
+    .scp .sc-day { min-height: 128px; padding: 10px 8px 8px; gap: 3px; border: 0; border-radius: 0; background: var(--surface); box-shadow: none; transition: background .15s; }
+    .scp .sc-day:hover { background: color-mix(in srgb, var(--surface-3) 60%, var(--surface)); border: 0; box-shadow: none; }
+    .scp .sc-day.weekend:not(.other) { background: color-mix(in srgb, var(--surface-2) 60%, var(--surface)); }
+    .scp .sc-day.other { background: var(--surface-2); }
+    .scp .sc-day.today { box-shadow: none; border: 0; }
+    .scp .sc-day:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+    .scp .sc-day-num { margin: 0 0 4px 4px; }
+    .scp .sc-num { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 999px; font: 500 14px/1 var(--font); color: var(--ink); }
+    .scp .sc-day.other .sc-num { color: var(--muted-2); opacity: 1; }
+    .scp .sc-day.today .sc-num { background: var(--ink); color: var(--surface-2); font-weight: 600; padding: 0 6px; }
+    .scp .sc-more { font: 600 11px var(--font); color: var(--muted); }
+    .scp .sc-day-add { bottom: 8px; right: 8px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border-radius: 50%; background: var(--surface-3); color: var(--ink-2); font-size: 15px; font-weight: 500; }
+    .scp .sc-chip { gap: 7px; padding: 4px 6px; border-radius: 7px; font: 500 12px/1.3 var(--font); background: transparent !important; color: var(--ink) !important; }
+    .scp .sc-chip:hover { background: var(--surface-3) !important; }
+    .scp .sc-chip > b { width: 7px; height: 7px; }
+    .scp .sc-chip > span { font-weight: 500; }
+    .scp .sc-chip.mine { box-shadow: none; }
+    .scp .sc-chip.mine > span { font-weight: 600; }
+    .scp .sc-chip.sc-chip-edition { background: var(--ink) !important; color: var(--surface-2) !important; font-weight: 600; }
+    .scp .sc-chip.sc-chip-edition > span { font-weight: 600; }
+    .scp .sc-chip.done { opacity: .5; }
+    .scp .sc-day.other .sc-chip { opacity: .5; }
+    .scp .sc-legend { gap: 8px 18px; margin: 16px 0 0; font-size: 12px; color: var(--muted); }
+    .scp .sc-legend i { width: 8px; height: 8px; }
+    .scp .sc-empty { padding: 24px; }
+
+    /* below the month */
+    .scp-below { display: grid; gap: 36px; margin-top: 44px; }
+    .scp .sc-strip, .scp .sc-runway { margin: 0; padding: 0; border: 0; }
+    .scp .sc-strip-title { margin: 0 0 14px; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .scp .sc-runway .sc-strip-title:not(:first-child) { margin-top: 28px; }
+    .scp .sc-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .scp .sc-pcard { padding: 18px 18px 16px; border-radius: 16px; border-color: var(--hairline); box-shadow: var(--shadow-sm); }
+    .scp .sc-pcard-title { font: 600 15px/1.35 var(--font); letter-spacing: -0.01em; }
+    .scp .sc-pcard-meta { font-size: 12.5px; margin: 4px 0 12px; }
+    .scp .sc-bar { height: 5px; margin-bottom: 12px; background: var(--paper-3); }
+    .scp .sc-nudge { padding: 10px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+    .scp .sc-runway-row { padding: 14px 4px; border-bottom: 1px solid var(--hairline-2); border-style: solid; }
+    .scp .sc-runway-title { font: 600 14px/1.35 var(--font); }
+    .scp .sc-runway-meta { margin-top: 3px; font-size: 12.5px; }
+    .scp .sc-empty[style] { padding: 16px 18px !important; border-radius: 14px; background: var(--surface-3); color: var(--ink-2); font-size: 13.5px; }
+    .scp .sc-alert { border-radius: 16px; animation: none; border-width: 1px; }
+    .scp .sc-alert-icon { animation: none; border-radius: 10px; }
+    .scp .sc-badge { padding: 3px 9px; font-size: 10.5px; }
+
+    @media (max-width: 720px) {
+      .scp-head { padding-top: 14px; }
+      .scp-controls { width: 100%; }
+      .scp-add { margin-left: auto; }
+      .scp .sc-day { min-height: 64px; padding: 6px 4px; }
+      .scp .sc-grid-head div { padding: 0 4px 8px; text-align: center; }
+      .scp .sc-day-num { margin: 0; justify-content: center; }
+      .scp .sc-num { min-width: 26px; height: 26px; font-size: 13px; }
+      .scp .sc-dots { justify-content: center; }
+      .scp-next-row { grid-template-columns: minmax(0, 1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .scp *, .scp *::before, .scp *::after { transition: none !important; }
+    }
+  `;
+  document.head.appendChild(s);
+}
+
 // ─── Main render ──────────────────────────────────────────────────────────────
 
-export function renderScheduleCalendar(container, ctx) {
+export function renderScheduleCalendar(container, ctx, opts = {}) {
   if (!isStaff(ctx.role)) return;
   ensureStyles();
+  const pageMode = !!opts.page;
+  if (pageMode) ensurePageStyles();
 
   // Replace any prior live subscriptions (overview can be remounted).
   for (const u of _unsubs) { try { u(); } catch {} }
@@ -593,7 +716,15 @@ export function renderScheduleCalendar(container, ctx) {
     edition: { hub: null, pieces: [] },
   };
 
-  const card = el("div", { class: "card", style: { marginTop: container.childElementCount ? "20px" : "0" } });
+  // Page mode (the Editorial calendar page): no card, the calendar is the page.
+  let root;
+  if (pageMode) {
+    root = el("div", { class: "scp sc-wrap" });
+    root.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading the calendar&hellip;</div>`;
+    container.appendChild(root);
+  }
+  const card = pageMode ? null : el("div", { class: "card", style: { marginTop: container.childElementCount ? "20px" : "0" } });
+  if (!pageMode) {
   card.innerHTML = `
     <div class="card-header">
       <div>
@@ -605,7 +736,8 @@ export function renderScheduleCalendar(container, ctx) {
     </div>
     <div class="card-body"><div class="sc-wrap" id="sc-root"><div class="loading-state"><div class="spinner"></div>Loading schedule…</div></div></div>`;
   container.appendChild(card);
-  const root = card.querySelector("#sc-root");
+  root = card.querySelector("#sc-root");
+  }
 
   const render = () => {
     if (state.error) {
@@ -614,6 +746,18 @@ export function renderScheduleCalendar(container, ctx) {
     }
     if (!state.loaded) return;
     root.innerHTML = "";
+    if (pageMode) {
+      root.appendChild(renderPageHeader(state, render, isSocialRole));
+      root.appendChild(renderUpNext(state, _ctx.uid, render));
+      root.appendChild(renderGrid(state, _ctx.uid, render));
+      root.appendChild(renderLegend());
+      const below = el("div", { class: "scp-below" });
+      const strip = renderPersonalStrip(state, _ctx.uid, isSocialRole);
+      if (strip.childElementCount) below.appendChild(strip);
+      below.appendChild(renderRunway(state, _ctx.uid));
+      root.appendChild(below);
+      return;
+    }
     root.appendChild(renderPersonalStrip(state, _ctx.uid, isSocialRole));
     root.appendChild(renderToolbar(state, render));
     root.appendChild(renderLegend());
@@ -661,6 +805,80 @@ export function renderScheduleCalendar(container, ctx) {
   }, (err) => {
     console.warn("[calendar] assignments unavailable:", err?.message);
   }));
+}
+
+// ─── Page mode: header and "Up next" ─────────────────────────────────────────
+
+function renderPageHeader(state, rerender, isSocialRole) {
+  const head = el("header", { class: "scp-head" });
+  const now = todayStart();
+  const isThisMonth = state.month.getFullYear() === now.getFullYear() && state.month.getMonth() === now.getMonth();
+  const monthName = state.month.toLocaleDateString("en-US", { month: "long" });
+  head.innerHTML = `
+    <div class="scp-title">
+      <p class="scp-eyebrow">Editorial calendar</p>
+      <h1 class="scp-month">${esc(monthName)} <span>${state.month.getFullYear()}</span></h1>
+      <p class="scp-sub">${isThisMonth ? `Today is ${esc(now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }))}.` : `<button type="button" class="scp-link" data-today>Back to today</button>`} ${isSocialRole ? "Every article is finished a week before it publishes, so plan posts off these dates." : "Deadlines, interviews, publications and your tasks, all in one place."}</p>
+    </div>
+    <div class="scp-controls">
+      <div class="scp-nav">
+        <button type="button" class="scp-round" data-nav="-1" aria-label="Previous month"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>
+        <button type="button" class="scp-pill" data-today ${isThisMonth ? "disabled" : ""}>Today</button>
+        <button type="button" class="scp-round" data-nav="1" aria-label="Next month"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+      </div>
+      <div class="scp-seg" role="group" aria-label="Show">
+        <button type="button" class="${state.filterMine ? "" : "is-on"}" data-mine="0" aria-pressed="${!state.filterMine}">Everyone</button>
+        <button type="button" class="${state.filterMine ? "is-on" : ""}" data-mine="1" aria-pressed="${state.filterMine}">Just mine</button>
+      </div>
+      <button type="button" class="scp-add" data-add><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add task</button>
+    </div>`;
+  head.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.nav) { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + Number(b.dataset.nav), 1); rerender(); }
+    else if (b.dataset.today !== undefined) { state.month = new Date(now.getFullYear(), now.getMonth(), 1); rerender(); }
+    else if (b.dataset.mine !== undefined) { state.filterMine = b.dataset.mine === "1"; rerender(); }
+    else if (b.dataset.add !== undefined) openTaskModal({ date: toISO(todayStart()), onSaved: rerender });
+  });
+  return head;
+}
+
+// The next few things on the calendar (three weeks out), as a quiet row of
+// date tiles. Tap one to open that day.
+function renderUpNext(state, uid, rerender) {
+  const events = buildEvents(state.projects, state.tasks, state.assignments, uid, state.filterMine, state.edition);
+  const today = todayStart();
+  const items = [];
+  for (let i = 0; i <= 21 && items.length < 4; i++) {
+    const iso = toISO(addDays(today, i));
+    for (const ev of events.get(iso) || []) {
+      if (ev.done) continue;
+      items.push({ iso, ev, all: events.get(iso) });
+      if (items.length >= 4) break;
+    }
+  }
+  const wrap = el("section", { class: "scp-next", "aria-label": "Up next" });
+  if (!items.length) return wrap;
+  wrap.innerHTML = `<p class="scp-section-k">Up next</p>`;
+  const row = el("div", { class: "scp-next-row" });
+  for (const { iso, ev, all } of items) {
+    const d = parseISO(iso);
+    const n = daysFromToday(iso);
+    const m = chipMeta(ev);
+    const hard = ev.kind === "edition" && ev.edition?.hard;
+    const label = ev.kind === "edition" ? ev.text.replace(/ \(hard deadline\)$/, "") : eventText(ev);
+    const b = el("button", { type: "button", class: `scp-next-item${ev.kind === "edition" ? " is-edition" : ""}${hard ? " is-hard" : ""}` });
+    b.innerHTML = `
+      <span class="scp-next-date"><span class="m">${esc(d.toLocaleDateString("en-US", { month: "short" }))}</span><span class="d">${d.getDate()}</span></span>
+      <span class="scp-next-body">
+        <span class="scp-next-when">${n === 0 ? "Today" : n === 1 ? "Tomorrow" : `In ${n} days`} \u00b7 ${hard ? `<em>Hard deadline</em>` : esc(d.toLocaleDateString("en-US", { weekday: "long" }))}</span>
+        <span class="scp-next-t"><i style="background:${ev.kind === "edition" ? (hard ? "#f3c98b" : "#0f172a") : m.dot}"></i><span>${esc(label)}</span></span>
+      </span>`;
+    b.addEventListener("click", () => openDayModal(iso, all, rerender));
+    row.appendChild(b);
+  }
+  wrap.appendChild(row);
+  return wrap;
 }
 
 // ─── Toolbar / legend ─────────────────────────────────────────────────────────
@@ -791,8 +1009,7 @@ function chipMeta(ev) {
   return { bg: m.bg, color: m.color, dot: m.dot };
 }
 
-function renderChip(ev) {
-  const m = chipMeta(ev);
+function eventText(ev) {
   let text;
   if (ev.kind === "edition" || ev.kind === "edinterview") {
     text = ev.text;
@@ -814,7 +1031,12 @@ function renderChip(ev) {
   } else {
     text = `${ev.deadlineLabel}: ${ev.project.title || "(untitled)"}`;
   }
+  return text;
+}
 
+function renderChip(ev) {
+  const m = chipMeta(ev);
+  const text = eventText(ev);
   const chip = el("div", {
     class: `sc-chip${ev.mine && ev.kind !== "task" ? " mine" : ""}${ev.done && ev.kind !== "publish" ? " done" : ""}${ev.kind === "edition" ? " sc-chip-edition" : ""}`,
     style: { background: m.bg, color: m.color },

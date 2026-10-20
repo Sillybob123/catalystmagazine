@@ -17,9 +17,9 @@ import {
 import { buildAdminTasks } from "./task-engine.js";
 import { isProjectPublished } from "./publish-sync.js";
 import { el, esc, fmtRelative, confirmDialog } from "./ui.js";
-import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-9";
+import { currentTheme, SEASONS, attachHeroField } from "./suite-theme.js?v=st-10";
 import { editionDeadlinesCard } from "./edition-deadlines.js?v=1";
-import { isStaff, whoseTurn, isMyTurn, nudgeFor, progressPct, stageLabel, readiness } from "./schedule-calendar.js?v=roles-3";
+import { isStaff, whoseTurn, isMyTurn, nudgeFor, progressPct, stageLabel, readiness } from "./schedule-calendar.js?v=roles-4";
 
 // Shortcuts at the top of Overview, per role: the three or four things that
 // person opens most. Only routes they can reach are listed.
