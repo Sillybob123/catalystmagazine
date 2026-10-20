@@ -120,9 +120,9 @@ export async function mount(ctx, container) {
   const view = {
     tab: TABS.includes(tabParam) ? tabParam : "overview",
     piece: params.get("piece") || null,
-    pieceTab: ["talk", "feedback", "proposal"].includes(params.get("view")) ? params.get("view") : "",
+    pieceTab: params.get("view") === "talk" ? "talk" : "",
     sec: params.get("sec") || "",
-    q: "", filter: "all", talkFilter: "all", showNotes: true,
+    q: "", filter: "all", talkFilter: "all", showNotes: false,
   };
   const me = { uid: ctx.user?.uid || "", name: ctx.profile?.name || ctx.user?.displayName || "" };
   const isAdmin = ctx.role === "admin";
@@ -797,7 +797,8 @@ export async function mount(ctx, container) {
     const threads = threadOf((m) => m.pieceId === p.id);
     const openN = threads.filter((m) => m.kind === "question" && !m.resolved).length;
     const notes = noteList(p);
-    if (!view.pieceTab || (view.pieceTab === "feedback" && !notes.length)) view.pieceTab = notes.length ? "feedback" : "proposal";
+    if (view.pieceTab !== "talk") view.pieceTab = "proposal";
+    void notes;
     wrap.innerHTML = `
       <button type="button" class="eh-back" data-go="pieces">${ICON.back} All pieces</button>
       <header class="eh-ph">
@@ -823,8 +824,7 @@ export async function mount(ctx, container) {
         <div class="eh-pmain">
           <nav class="eh-seg eh-ptabs" aria-label="This piece">
             ${[
-              ...(notes.length ? [["feedback", "Feedback", String(notes.length)]] : []),
-              ["proposal", "Full proposal", ""],
+              ["proposal", "Proposal", ""],
               ["talk", "Questions", threads.length ? (openN ? `${openN} open` : String(threads.length)) : ""],
             ].map(([id, l, n]) => `<button type="button" class="eh-seg-b${view.pieceTab === id ? " is-on" : ""}" data-pv="${id}" ${view.pieceTab === id ? 'aria-current="page"' : ""}>${l}${n ? `<span class="eh-badge${(id === "talk" && openN) || false ? " is-alert" : ""}">${n}</span>` : ""}</button>`).join("")}
           </nav>
@@ -835,87 +835,89 @@ export async function mount(ctx, container) {
     if (view.pieceTab === "talk") {
       body.appendChild(composerCard({ pieceId: p.id }));
       body.appendChild(threadCard(threads, { showContext: false, empty: "No questions or updates yet. Ask the first one." }));
-    } else if (view.pieceTab === "feedback" && notes.length) body.appendChild(feedbackView(p, notes));
-    else body.appendChild(proposalView(p));
+    } else body.appendChild(proposalView(p));
     wrap.querySelector(".eh-pside").append(...sideCards(p));
     return wrap;
   }
 
-  // Every editor's note in one place, grouped by the part of the proposal
-  // it's about, with what the writer wrote there one tap away. Read-only.
-  function feedbackView(p, notes) {
-    const node = el("section", { class: "card" });
-    const byField = [];
-    for (const n of notes) {
-      let g = byField.find((x) => x.field === n.field);
-      if (!g) byField.push(g = { field: n.field, items: [] });
-      g.items.push(n);
-    }
-    node.innerHTML = `
-      <div class="card-header eh-ch">
-        <div><h2 class="card-title">Feedback from the editors</h2>
-          <p class="card-subtitle">${plural(notes.length, "note")} on this proposal, grouped by the part each one is about.</p>
-          ${p.docUrl ? `<p class="card-subtitle"><a class="eh-link eh-inline-g" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.gdoc} Open the proposal in Google Docs</a></p>` : ""}</div>
-      </div>
-      <div class="eh-fb">
-        ${byField.map((g) => {
-          const v = g.field === "general" || g.field === "outline" ? "" : fieldValue(p, g.field);
-          return `<section class="eh-fb-g">
-            <h3 class="eh-fb-h">${esc(fieldLabel(g.field))}</h3>
-            ${v ? `<details class="eh-fb-quote"><summary><span class="eh-fb-q">\u201c${esc(clip(String(v).replace(/\s+/g, " "), 150))}\u201d</span><span class="eh-fb-more">What you wrote</span></summary><div class="eh-ftext">${rich(v)}</div></details>` : ""}
-            <ul class="eh-fb-notes">${g.items.map((n) => `<li class="eh-fb-note">${n.by ? `<span class="eh-by">${esc(n.by)}</span>` : ""}${rich(n.text)}</li>`).join("")}</ul>
-          </section>`;
-        }).join("")}
-      </div>`;
-    return node;
-  }
-
+  // The proposal as a one-page brief: the editors' take first (their overall
+  // verdict and named Google Doc comments; the line-by-line notes stay in the
+  // Doc, or inline on request), then the writer's proposal laid out by what
+  // each part is for, not as one long list.
   function proposalView(p) {
     const node = el("section", { class: "card eh-doc" });
     const pr = p.proposal;
     const mine = isMine(p);
     const canProp = mine || canEdit();
-    const nN = noteCount(p);
+    const notes = noteList(p);
     if (!pr) {
       node.innerHTML = `<div class="eh-noprop">
         <h2>No proposal here yet</h2>
-        <p>${esc(p.proposalNote || (p.status === "open" ? "This slot is open. Pitch an idea, and the section editor will get back to you." : "Once the proposal is in, it shows here, and the editors' notes become a checklist under Feedback."))}</p>
+        <p>${esc(p.proposalNote || (p.status === "open" ? "This slot is open. Pitch an idea, and the section editor will get back to you." : "Once the proposal is in, it shows here with the editors' take."))}</p>
         ${p.candidates?.length ? `<p class="section-title eh-st">Ideas on the table</p><ul class="eh-ticks">${p.candidates.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
         ${canProp && p.status !== "open" ? `<button type="button" class="btn btn-primary" data-edit-proposal="${esc(p.id)}">${mine ? "Add your proposal" : "Add the proposal"}</button>` : ""}
         ${p.status === "open" ? `<button type="button" class="btn btn-primary" data-pitch="${esc(p.section)}">Pitch an idea</button>` : ""}
       </div>`;
       return node;
     }
-    const valueOf = (k) => fieldValue(p, k);
-    const notesFor = (k) => (p.notes?.[k] || []);
-    let html = `
+    const val = (k) => { const v = String(fieldValue(p, k) || "").trim(); return v && !/^(tbd\b|\?+$|n\/a$)/i.test(v) ? v : ""; };
+    const inline = (k) => (view.showNotes ? notesHtml(p.notes?.[k] || []) : "");
+    const long = (t) => t.length > 420;
+    const cell = (k, label, cls = "") => {
+      const v = val(k);
+      if (!v && !(view.showNotes && (p.notes?.[k] || []).length)) return "";
+      return `<div class="eh-cell ${cls}${long(v) ? " is-long" : ""}">
+        <p class="eh-cell-k">${esc(label)}</p>
+        ${v ? `<div class="eh-cell-v">${rich(v)}</div>${long(v) ? `<button type="button" class="eh-more" data-more>Read more</button>` : ""}` : `<p class="eh-cell-v is-blank">Left blank</p>`}
+        ${inline(k)}
+      </div>`;
+    };
+
+    // Editors' take: the overall verdict, or the named Doc comments.
+    const general = (p.general || []).map((n) => ({ text: noteText(n), by: noteBy(n) }));
+    const named = notes.filter((n) => n.by && n.field !== "general");
+    const take = general.length ? general : named.length ? named : notes.slice(0, 2);
+    const rest = notes.length - take.length;
+    const takeHtml = notes.length ? `<section class="eh-take">
+        <div class="eh-take-h"><p class="eh-take-k">The editors' take</p>
+          ${p.docUrl ? `<a class="btn btn-secondary btn-sm" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.gdoc} All comments in Google Docs</a>` : ""}</div>
+        <ul class="eh-take-list">${take.map((n) => `<li>${n.by ? `<span class="eh-by">${esc(n.by)}${n.field && n.field !== "general" ? ` · on ${esc(fieldLabel(n.field).toLowerCase())}` : ""}</span>` : ""}${rich(n.text)}</li>`).join("")}</ul>
+        ${rest > 0 ? `<p class="eh-take-more">${plural(rest, "more comment")} on specific parts of the proposal${p.docUrl ? " are in the Google Doc" : ""}.
+          <label class="eh-switch"><input type="checkbox" ${view.showNotes ? "checked" : ""} data-toggle-notes><span class="tr" aria-hidden="true"></span>Show them here</label></p>` : ""}
+      </section>` : "";
+
+    const facts = [["Format", val("format")], ["Earliest delivery", val("delivery") || "Not given"]].filter(([, v]) => v);
+    const outline = [["opening", "Opening"], ["context", "Context"], ["core", "Core"], ["tensions", "Tensions"], ["resolution", "Resolution"]].filter(([k]) => val(k));
+    const ideaCells = [cell("theme", "How it connects to the theme"), cell("whyNow", "Why now"), cell("whyMatters", "Why it matters"), cell("whatsNew", "What's new here")].filter(Boolean);
+    const audCells = [cell("audience", "Who it's for"), cell("assumed", "What readers already know"), cell("angle", "The angle")].filter(Boolean);
+    const lines = (t) => String(t).split(/\n+/).map((x) => x.trim()).filter(Boolean);
+
+    node.innerHTML = `
       <div class="card-header eh-ch">
-        <div><h2 class="card-title">Proposal by ${esc(names(p.writers))}</h2>${p.updatedAt && p.updatedByName && !/seeded/i.test(p.updatedByName) ? `<p class="card-subtitle">Updated ${esc(fmtRelative(p.updatedAt))}</p>` : `<p class="card-subtitle">As the writer sent it.</p>`}</div>
+        <div><h2 class="card-title">Proposal by ${esc(names(p.writers))}</h2>
+          <p class="card-subtitle">${facts.map(([k, v]) => `<span class="eh-fact"><b>${esc(k)}</b> ${esc(v)}</span>`).join("")}</p></div>
         <div class="eh-doc-ctl">
-          ${nN ? `<label class="eh-switch"><input type="checkbox" ${view.showNotes ? "checked" : ""} data-toggle-notes><span class="tr" aria-hidden="true"></span>Show notes</label>` : ""}
           ${p.docUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(p.docUrl)}" target="_blank" rel="noopener">${ICON.gdoc} Open in Google Docs</a>` : ""}
           ${canProp ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-proposal="${esc(p.id)}">${ICON.edit} Edit</button>` : ""}
         </div>
       </div>
-      <div class="eh-doc-body${view.showNotes ? "" : " hide-notes"}">`;
-    for (const g of PROPOSAL) {
-      const rows = g.fields.filter(([k]) => (valueOf(k) && String(valueOf(k)).trim() && !/^tbd\b/i.test(String(valueOf(k)).trim())) || notesFor(k).length);
-      const lead = g.lead ? notesFor(g.lead) : [];
-      if (!rows.length && !lead.length) continue;
-      html += `<section class="eh-pg"><h3 class="section-title">${esc(g.group)}</h3>${notesHtml(lead)}`;
-      for (const [k, label] of rows) {
-        const v = valueOf(k);
-        html += `<div class="eh-field${k === "takeaway" ? " is-key" : ""}">
-          <p class="eh-flabel">${esc(label)}</p>
-          ${v ? `<div class="eh-ftext">${rich(v)}</div>` : `<p class="eh-ftext is-blank">Left blank</p>`}
-          ${notesHtml(notesFor(k))}
-        </div>`;
-      }
-      html += `</section>`;
-    }
-    if (p.general?.length) html += `<section class="eh-pg eh-general"><h3 class="section-title">The editors' overall feedback</h3>${p.general.map((n) => `<div class="eh-gnote">${noteBy(n) ? `<span class="eh-note-k">${esc(noteBy(n))}</span>` : ""}${rich(noteText(n))}</div>`).join("")}</section>`;
-    html += `</div>`;
-    node.innerHTML = html;
+      <div class="eh-brief">
+        ${takeHtml}
+        ${val("takeaway") ? `<section class="eh-takeaway${val("takeaway").length > 240 ? " is-long" : ""}"><p class="eh-cell-k">Main takeaway</p><blockquote>${rich(val("takeaway"))}</blockquote>${inline("takeaway")}</section>` : ""}
+        ${val("pitch") ? `<section class="eh-pitch"><p class="eh-cell-k">The pitch</p><div class="eh-lead">${rich(val("pitch"))}</div>${inline("pitch")}</section>` : ""}
+        ${ideaCells.length ? `<section class="eh-bsec"><h3 class="eh-bsec-h">Why this story</h3><div class="eh-cells is-2">${ideaCells.join("")}</div></section>` : ""}
+        ${audCells.length ? `<section class="eh-bsec"><h3 class="eh-bsec-h">Readers and angle</h3><div class="eh-cells is-3">${audCells.join("")}</div></section>` : ""}
+        ${outline.length || val("visuals") ? `<section class="eh-bsec"><h3 class="eh-bsec-h">The plan</h3>
+          ${view.showNotes ? notesHtml(p.notes?.outline || []) : ""}
+          ${outline.length ? `<ol class="eh-path">${outline.map(([k, l]) => `<li><span class="eh-path-k">${esc(l)}</span><div class="eh-path-v">${rich(val(k))}</div>${inline(k)}</li>`).join("")}</ol>` : ""}
+          ${val("visuals") ? `<div class="eh-cells">${cell("visuals", "Visual ideas")}</div>` : ""}
+        </section>` : ""}
+        ${val("research") || val("people") ? `<section class="eh-bsec"><h3 class="eh-bsec-h">Sources</h3><div class="eh-cells is-2">
+          ${val("research") ? `<div class="eh-cell"><p class="eh-cell-k">Research</p><ul class="eh-srcs">${lines(val("research")).map((l) => `<li>${rich(l)}</li>`).join("")}</ul>${inline("research")}</div>` : ""}
+          ${val("people") ? `<div class="eh-cell"><p class="eh-cell-k">People</p><ul class="eh-srcs">${lines(val("people")).map((l) => `<li>${rich(l)}</li>`).join("")}</ul>${inline("people")}</div>` : ""}
+        </div></section>` : ""}
+        ${val("feedback") ? `<section class="eh-ask"><p class="eh-cell-k">${esc(firstNames(p.writers))} asked the editors</p><div class="eh-ask-v">${rich(val("feedback"))}</div>${inline("feedback")}</section>` : ""}
+      </div>`;
     return node;
   }
   function notesHtml(list) {
@@ -1527,6 +1529,7 @@ export async function mount(ctx, container) {
     const t = e.target.closest("button, a");
     if (!t || !root.contains(t)) return;
     const d = t.dataset;
+    if (d.more !== undefined) { const c = t.closest(".eh-cell"); const open = c.classList.toggle("is-open"); t.textContent = open ? "Show less" : "Read more"; return; }
     if (d.go) { go({ tab: d.go, piece: null }); return; }
     if (d.sec) { view.sec = d.sec; view.q = ""; view.filter = "all"; go({ tab: "pieces", piece: null }); return; }
     if (d.banner) { editBanner(section(d.banner)); return; }
@@ -1563,7 +1566,7 @@ export async function mount(ctx, container) {
   });
   root.addEventListener("change", (e) => {
     const t = e.target;
-    if (t.matches("[data-toggle-notes]")) { view.showNotes = t.checked; root.querySelector(".eh-doc-body")?.classList.toggle("hide-notes", !t.checked); return; }
+    if (t.matches("[data-toggle-notes]")) { view.showNotes = t.checked; render(); return; }
     if (t.matches("[data-stage-select]")) {
       const p = pieces.find((x) => x.id === t.dataset.stageSelect);
       if (!p || p.status === t.value) return;
@@ -2032,6 +2035,53 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-recips small { display: block; font-size: 11.5px; color: var(--danger); }
 .eh-email-actions { margin-top: 6px; }
 
+/* proposal brief */
+.eh-fact { display: inline-flex; gap: 6px; margin-right: 18px; }
+.eh-fact b { font-weight: 600; color: var(--ink-2); }
+.eh-brief { display: flex; flex-direction: column; gap: 30px; padding: 26px 28px 30px; }
+.eh-take { padding: 18px 20px; border-radius: 16px; background: #fbf6ec; border: 1px solid #eadbbd; }
+.eh-take-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
+.eh-take-k { margin: 0; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: #7a4f12; }
+.eh-take-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.eh-take-list li { font-size: 14.5px; line-height: 1.65; color: var(--ink); }
+.eh-take-list li + li { padding-top: 12px; border-top: 1px solid #eadbbd; }
+.eh-take-list p { margin: 0 0 6px; } .eh-take-list p:last-child { margin: 0; }
+.eh-take-list a { color: var(--info); }
+.eh-take .eh-by { color: #7a4f12; }
+.eh-take-more { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid #eadbbd; font-size: 13px; color: #8a6a3a; }
+.eh-cell-k { margin: 0 0 8px; font: 600 11px/1.2 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.eh-takeaway blockquote { margin: 0; padding: 4px 0 4px 22px; border-left: 3px solid var(--ink); font: 500 clamp(18px, 2vw, 21px)/1.5 var(--font); letter-spacing: -0.012em; color: var(--ink); }
+.eh-takeaway.is-long blockquote { font-size: 17px; line-height: 1.6; }
+.eh-takeaway blockquote p { margin: 0 0 8px; } .eh-takeaway blockquote p:last-child { margin: 0; }
+.eh-lead { font-size: 16px; line-height: 1.75; color: var(--ink); max-width: 72ch; }
+.eh-lead p { margin: 0 0 10px; } .eh-lead p:last-child { margin: 0; }
+.eh-bsec { padding-top: 26px; border-top: 1px solid var(--hairline-2); }
+.eh-bsec-h { margin: 0 0 16px; font: 600 17px/1.3 var(--font); letter-spacing: -0.015em; }
+.eh-cells { display: grid; gap: 14px; }
+.eh-cells.is-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.eh-cells.is-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.eh-cell { position: relative; padding: 16px 18px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--hairline-2); min-width: 0; }
+.eh-cell-v { font-size: 14px; line-height: 1.65; color: var(--ink-2); overflow-wrap: anywhere; }
+.eh-cell-v p { margin: 0 0 8px; } .eh-cell-v p:last-child { margin: 0; }
+.eh-cell-v a, .eh-srcs a, .eh-lead a, .eh-path-v a, .eh-ask-v a { color: var(--info); }
+.eh-cell-v.is-blank { color: var(--muted-2); font-style: italic; }
+.eh-cell.is-long:not(.is-open) .eh-cell-v { display: -webkit-box; -webkit-line-clamp: 7; -webkit-box-orient: vertical; overflow: hidden; }
+.eh-more { margin-top: 8px; padding: 0; border: 0; background: none; font: 600 13px var(--font); color: var(--ink); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; min-height: 32px; }
+.eh-path { margin: 0 0 14px; padding: 0; list-style: none; counter-reset: st; }
+.eh-path li { counter-increment: st; position: relative; padding: 0 0 18px 44px; }
+.eh-path li::before { content: counter(st); position: absolute; left: 0; top: -2px; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-3); font: 600 12px/1 var(--font); color: var(--ink); }
+.eh-path li:not(:last-child)::after { content: ""; position: absolute; left: 13.5px; top: 30px; bottom: 2px; width: 1px; background: var(--hairline); }
+.eh-path-k { display: block; margin: 2px 0 4px; font: 600 13px var(--font); color: var(--ink); }
+.eh-path-v { font-size: 14px; line-height: 1.65; color: var(--ink-2); }
+.eh-path-v p { margin: 0 0 6px; } .eh-path-v p:last-child { margin: 0; }
+.eh-srcs { margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
+.eh-srcs p { margin: 0; }
+.eh-ask { padding: 18px 20px; border-radius: 16px; background: var(--info-soft); }
+.eh-ask .eh-cell-k { color: var(--info); }
+.eh-ask-v { font-size: 14.5px; line-height: 1.65; color: var(--ink); }
+.eh-ask-v p { margin: 0 0 8px; } .eh-ask-v p:last-child { margin: 0; }
+.eh-brief .eh-notes { margin-top: 10px; }
+
 /* questions */
 .eh-compose-card { padding: 18px 20px; }
 .eh-compose-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
@@ -2102,6 +2152,7 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-empty p { margin: 0; color: var(--muted); }
 
 @media (max-width: 960px) {
+  .eh-cells.is-3 { grid-template-columns: minmax(0, 1fr); }
   .eh-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .eh-secgrid, .eh-sechero-about, .eh-desk-cols { grid-template-columns: minmax(0, 1fr); }
   .eh-secnav { display: inline-flex; width: auto; max-width: 100%; }
@@ -2149,6 +2200,8 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
   .eh-hook { flex-direction: column; }
   .eh-tl li { grid-template-columns: 24px 64px minmax(0, 1fr); }
   .eh-pg-top { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .eh-cells.is-2 { grid-template-columns: minmax(0, 1fr); }
+  .eh-brief { padding: 18px; gap: 24px; }
   .eh-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .eh-board { grid-template-columns: minmax(0, 1fr); }
   .eh-sechero { padding: 20px 18px; }
