@@ -68,7 +68,8 @@ const KIND_META = {
   assignment: { label: "Social post due",       color: "#9d174d", bg: "#fce7f3", dot: "#db2777" },
   // The edition in progress (This edition, edition_hub/{CURRENT_EDITION}):
   // its key dates for everyone, and the interviews writers have booked.
-  edition:    { label: "Edition date",          color: "#f8f7f3", bg: "#0f172a", dot: "#0f172a" },
+  edition:    { label: "Edition date",          color: "#7a4f12", bg: "#f5ecd9", dot: "#c99a3d" },
+  edhard:     { label: "Hard deadline",         color: "#9a3412", bg: "#fbe6dc", dot: "#c2410c" },
   edinterview:{ label: "Interview",             color: "#1d4ed8", bg: "#dbeafe", dot: "#3b82f6" },
 };
 
@@ -464,7 +465,6 @@ function ensureStyles() {
     .sc-day-add { position:absolute; bottom:4px; right:4px; opacity:0; font-size:14px; font-weight:700; line-height:1;
       color:var(--accent,#0f766e); background:var(--accent-soft,#ccfbf1); border-radius:6px; padding:2px 6px;
       transition:opacity .12s; pointer-events:none; }
-    .sc-chip.sc-chip-edition b { background:#f3c98b !important; }
     .sc-chip { display:flex; align-items:center; gap:5px; min-width:0; font-size:10.5px; font-weight:600; line-height:1.25;
       padding:3px 6px; border-radius:6px; }
     .sc-chip > b { flex-shrink:0; width:6px; height:6px; border-radius:50%; }
@@ -572,10 +572,10 @@ function ensurePageStyles() {
     body.scp-calm, html[data-suite-theme] body.scp-calm { background: var(--surface-2); }
     body.scp-calm::before { display: none !important; }
     html[data-suite-theme] body.scp-calm .topbar { background: color-mix(in srgb, var(--surface-2) 88%, transparent); }
-    .scp { max-width: 1180px; margin: 0 auto; padding: 8px 0 72px; font-family: var(--font); color: var(--ink); }
+    .scp { max-width: 1180px; margin: 0 auto; padding: 0 0 72px; font-family: var(--font); color: var(--ink); }
     .scp button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-    .scp-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 32px; padding: 28px 0 28px; }
+    .scp-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 32px; padding: 4px 0 26px; }
     .scp-title { flex: 1 1 380px; min-width: 0; }
     .scp-controls { flex: none; }
     .scp-eyebrow { margin: 0 0 10px; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
@@ -600,17 +600,18 @@ function ensurePageStyles() {
     .scp-next-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
     .scp-next-item { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 12px 16px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface); text-align: left; cursor: pointer; font: inherit; color: inherit; box-shadow: var(--shadow-sm); transition: transform .15s, box-shadow .15s, border-color .15s; }
     .scp-next-item:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); border-color: color-mix(in srgb, var(--ink) 20%, transparent); }
-    .scp-next-item.is-edition .scp-next-date { background: var(--ink); color: var(--surface-2); }
-    .scp-next-item.is-edition .scp-next-date .m { color: rgba(248,247,243,.65); }
-    .scp-next-item.is-hard { background: var(--ink); border-color: var(--ink); color: var(--surface-2); }
-    .scp-next-item.is-hard .scp-next-date { background: rgba(248,247,243,.12); }
+    .scp-next-item.is-edition { background: #fbf6ec; border-color: #eadbbd; }
+    .scp-next-item.is-edition .scp-next-date { background: #f5ecd9; color: #7a4f12; }
+    .scp-next-item.is-edition .scp-next-date .m { color: #a17a3d; }
+    .scp-next-item.is-hard { background: #fdf3ee; border-color: #f2cdbd; }
+    .scp-next-item.is-hard .scp-next-date { background: #fbe6dc; color: #9a3412; }
+    .scp-next-item.is-hard .scp-next-date .m { color: #c2410c; }
     .scp-next-date { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 46px; height: 50px; border-radius: 12px; background: var(--surface-3); }
     .scp-next-date .m { font: 600 10px/1 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
     .scp-next-date .d { margin-top: 3px; font: 600 20px/1 var(--font); letter-spacing: -0.02em; }
     .scp-next-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .scp-next-when { font-size: 12px; color: var(--muted); }
-    .scp-next-item.is-hard .scp-next-when { color: rgba(248,247,243,.65); }
-    .scp-next-when em { margin-left: 2px; padding: 1px 7px; border-radius: 99px; background: rgba(248,247,243,.14); font: 600 10px/1.5 var(--font); font-style: normal; letter-spacing: .05em; text-transform: uppercase; color: #f3c98b; }
+    .scp-next-when em { margin-left: 2px; padding: 1px 7px; border-radius: 99px; background: #fbe6dc; font: 600 10px/1.5 var(--font); font-style: normal; letter-spacing: .05em; text-transform: uppercase; color: #9a3412; }
     .scp-next-t { display: flex; align-items: flex-start; gap: 7px; min-width: 0; font: 600 13.5px/1.35 var(--font); }
     .scp-next-t i { flex: none; width: 7px; height: 7px; margin-top: 6px; border-radius: 50%; }
     .scp-next-t span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -628,7 +629,7 @@ function ensurePageStyles() {
     .scp .sc-day-num { margin: 0 0 4px 4px; }
     .scp .sc-num { display: inline-grid; place-items: center; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 999px; font: 500 14px/1 var(--font); color: var(--ink); }
     .scp .sc-day.other .sc-num { color: var(--muted-2); opacity: 1; }
-    .scp .sc-day.today .sc-num { background: var(--ink); color: var(--surface-2); font-weight: 600; padding: 0 6px; }
+    .scp .sc-day.today .sc-num { background: #c2410c; color: #fdf7f2; font-weight: 600; padding: 0 6px; }
     .scp .sc-more { font: 600 11px var(--font); color: var(--muted); }
     .scp .sc-day-add { bottom: 8px; right: 8px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border-radius: 50%; background: var(--surface-3); color: var(--ink-2); font-size: 15px; font-weight: 500; }
     .scp .sc-chip { gap: 7px; padding: 4px 6px; border-radius: 7px; font: 500 12px/1.3 var(--font); background: transparent !important; color: var(--ink) !important; }
@@ -637,7 +638,8 @@ function ensurePageStyles() {
     .scp .sc-chip > span { font-weight: 500; }
     .scp .sc-chip.mine { box-shadow: none; }
     .scp .sc-chip.mine > span { font-weight: 600; }
-    .scp .sc-chip.sc-chip-edition { background: var(--ink) !important; color: var(--surface-2) !important; font-weight: 600; }
+    .scp .sc-chip.sc-chip-edition { background: #f5ecd9 !important; color: #7a4f12 !important; }
+    .scp .sc-chip.sc-chip-edition.is-hard { background: #fbe6dc !important; color: #9a3412 !important; }
     .scp .sc-chip.sc-chip-edition > span { font-weight: 600; }
     .scp .sc-chip.done { opacity: .5; }
     .scp .sc-day.other .sc-chip { opacity: .5; }
@@ -816,7 +818,6 @@ function renderPageHeader(state, rerender, isSocialRole) {
   const monthName = state.month.toLocaleDateString("en-US", { month: "long" });
   head.innerHTML = `
     <div class="scp-title">
-      <p class="scp-eyebrow">Editorial calendar</p>
       <h1 class="scp-month">${esc(monthName)} <span>${state.month.getFullYear()}</span></h1>
       <p class="scp-sub">${isThisMonth ? `Today is ${esc(now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }))}.` : `<button type="button" class="scp-link" data-today>Back to today</button>`} ${isSocialRole ? "Every article is finished a week before it publishes, so plan posts off these dates." : "Deadlines, interviews, publications and your tasks, all in one place."}</p>
     </div>
@@ -872,7 +873,7 @@ function renderUpNext(state, uid, rerender) {
       <span class="scp-next-date"><span class="m">${esc(d.toLocaleDateString("en-US", { month: "short" }))}</span><span class="d">${d.getDate()}</span></span>
       <span class="scp-next-body">
         <span class="scp-next-when">${n === 0 ? "Today" : n === 1 ? "Tomorrow" : `In ${n} days`} \u00b7 ${hard ? `<em>Hard deadline</em>` : esc(d.toLocaleDateString("en-US", { weekday: "long" }))}</span>
-        <span class="scp-next-t"><i style="background:${ev.kind === "edition" ? (hard ? "#f3c98b" : "#0f172a") : m.dot}"></i><span>${esc(label)}</span></span>
+        <span class="scp-next-t"><i style="background:${m.dot}"></i><span>${esc(label)}</span></span>
       </span>`;
     b.addEventListener("click", () => openDayModal(iso, all, rerender));
     row.appendChild(b);
@@ -918,7 +919,8 @@ function renderToolbar(state, rerender) {
 function renderLegend() {
   const lg = el("div", { class: "sc-legend" });
   lg.innerHTML = `
-    <span><i style="background:${KIND_META.edition.dot}"></i>Edition deadline &amp; launch</span>
+    <span><i style="background:${KIND_META.edhard.dot}"></i>Hard deadline</span>
+    <span><i style="background:${KIND_META.edition.dot}"></i>Edition date &amp; launch</span>
     <span><i style="background:${KIND_META.publish.dot}"></i>Scheduled publication</span>
     <span><i style="background:#15803d"></i>Published / ready</span>
     <span><i style="background:#b91c1c"></i>Falling behind</span>
@@ -1001,7 +1003,7 @@ function chipMeta(ev) {
     const c = taskColor(ev.task.color);
     return { bg: c.bg, color: c.ink, dot: c.dot };
   }
-  let m = KIND_META[ev.kind];
+  let m = ev.kind === "edition" && ev.edition?.hard ? KIND_META.edhard : KIND_META[ev.kind];
   if (ev.kind === "publish") {
     if (ev.readiness === "published" || ev.readiness === "done") return { bg: "#dcfce7", color: "#15803d", dot: "#15803d" };
     if (ev.readiness === "behind") return { bg: "#fee2e2", color: "#b91c1c", dot: "#b91c1c" };
@@ -1038,7 +1040,7 @@ function renderChip(ev) {
   const m = chipMeta(ev);
   const text = eventText(ev);
   const chip = el("div", {
-    class: `sc-chip${ev.mine && ev.kind !== "task" ? " mine" : ""}${ev.done && ev.kind !== "publish" ? " done" : ""}${ev.kind === "edition" ? " sc-chip-edition" : ""}`,
+    class: `sc-chip${ev.mine && ev.kind !== "task" ? " mine" : ""}${ev.done && ev.kind !== "publish" ? " done" : ""}${ev.kind === "edition" ? ` sc-chip-edition${ev.edition?.hard ? " is-hard" : ""}` : ""}`,
     style: { background: m.bg, color: m.color },
     title: text,
   });
@@ -1074,8 +1076,8 @@ function renderEditionDetail(ev) {
     const d = ev.edition;
     box.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-        <span class="sc-badge" style="background:#0f172a;color:#f8f7f3;">${esc(d.name)} edition</span>
-        ${d.hard ? `<span class="sc-badge" style="background:#fee2e2;color:#b91c1c;">Hard deadline</span>` : ""}
+        <span class="sc-badge" style="background:${KIND_META.edition.bg};color:${KIND_META.edition.color};">${esc(d.name)} edition</span>
+        ${d.hard ? `<span class="sc-badge" style="background:${KIND_META.edhard.bg};color:${KIND_META.edhard.color};">Hard deadline</span>` : ""}
         ${d.who ? `<span class="sc-badge" style="background:#f1efe8;color:#334155;">${esc(d.who)}</span>` : ""}
       </div>
       <div style="font-weight:700;font-size:14px;color:var(--ink,#0b1220);">${esc(ev.text)}</div>
