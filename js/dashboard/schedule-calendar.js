@@ -819,7 +819,7 @@ function renderPageHeader(state, rerender, isSocialRole) {
   head.innerHTML = `
     <div class="scp-title">
       <h1 class="scp-month">${esc(monthName)} <span>${state.month.getFullYear()}</span></h1>
-      <p class="scp-sub">${isThisMonth ? `Today is ${esc(now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }))}.` : `<button type="button" class="scp-link" data-today>Back to today</button>`} ${isSocialRole ? "Every article is finished a week before it publishes, so plan posts off these dates." : "Deadlines, interviews, publications and your tasks, all in one place."}</p>
+      <p class="scp-sub">${isThisMonth ? `Today is ${esc(now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }))}.` : `<button type="button" class="scp-link" data-today>Back to today</button>`}${isSocialRole ? " Every article is finished a week before it publishes, so plan posts off these dates." : ""}</p>
     </div>
     <div class="scp-controls">
       <div class="scp-nav">

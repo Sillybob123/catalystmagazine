@@ -4,7 +4,7 @@
 // as before (schedule-calendar.js): publications, interviews, deadlines, the
 // edition's key dates, social posts and shared tasks.
 
-import { renderScheduleCalendar } from "./schedule-calendar.js?v=roles-5";
+import { renderScheduleCalendar } from "./schedule-calendar.js?v=roles-6";
 
 export function mount(ctx, container) {
   container.innerHTML = "";

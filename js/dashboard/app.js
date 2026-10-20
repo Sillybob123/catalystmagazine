@@ -249,7 +249,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=home-9"),
+    loader: () => import("./overview.js?v=home-10"),
   },
   // This edition — the planning hub for the edition in progress: proposals by
   // section, key dates, next steps, and questions & updates for everyone.
@@ -259,7 +259,7 @@ const ROUTES = {
     icon: ICONS.edition,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./edition-hub.js?v=7"),
+    loader: () => import("./edition-hub.js?v=8"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -267,7 +267,7 @@ const ROUTES = {
     icon: ICONS.calendar,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./calendar-page.js?v=cal-5"),
+    loader: () => import("./calendar-page.js?v=cal-6"),
   },
   // One board for every story (interviews and op-eds alike), filtered by
   // edition. Replaces the old Catalyst in the Capital / Op-Eds split.

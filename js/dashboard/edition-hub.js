@@ -285,7 +285,7 @@ export async function mount(ctx, container) {
     const node = el("header", { class: "eh-head" });
     node.innerHTML = `
       <p class="eh-eyebrow">${esc(hub.name)} edition</p>
-      <h1 class="eh-title" aria-label="${esc(hub.theme || "The Future of Health is blank.")}">The Future of Health is <span class="eh-blank" aria-hidden="true"><span class="eh-word"></span></span>.</h1>
+      <h1 class="eh-title" aria-label="${esc(hub.theme || "The Future of Health is blank.")}">The Future of Health is <span class="eh-blank" aria-hidden="true"><span class="eh-word"></span></span><span class="eh-stop" aria-hidden="true">.</span></h1>
       <p class="eh-lede">${plural(total, "piece")} in ${plural((hub.sections || []).length, "section")}. Launches ${esc(fmtDay(hub.launch, LONG))}.</p>
       <nav class="eh-seg eh-tabs" aria-label="This edition">
         ${[["overview", "Overview", ""], ["pieces", "Pieces", ""], ["talk", "Questions", open ? String(open) : ""], ["social", "Social", ""]].map(([id, l, n]) => `
@@ -293,16 +293,19 @@ export async function mount(ctx, container) {
       </nav>`;
     // The blank fills itself in with each section's name.
     const slot = node.querySelector(".eh-word");
+    // "Decided in D.C." and "Human?" bring their own punctuation.
+    const stop = node.querySelector(".eh-stop");
+    const setWord = (w) => { slot.textContent = w; stop.hidden = /[.?!]$/.test(w); };
     clearInterval(wordTimer);
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if (words.length) {
       let i = 0;
-      slot.textContent = words[0];
+      setWord(words[0]);
       slot.classList.add("is-in");
       if (!reduce) {
         wordTimer = setInterval(() => {
           slot.classList.remove("is-in");
-          setTimeout(() => { i = (i + 1) % words.length; slot.textContent = words[i]; slot.classList.add("is-in"); }, 280);
+          setTimeout(() => { i = (i + 1) % words.length; setWord(words[i]); slot.classList.add("is-in"); }, 280);
         }, 3200);
       }
     }
@@ -1611,7 +1614,7 @@ body.eh-calm, html[data-suite-theme] body.eh-calm { background: var(--surface-2)
 body.eh-calm::before { display: none !important; }
 html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var(--surface-2) 88%, transparent); }
 
-.eh { max-width: 1080px; margin: 0 auto; padding: 8px 0 72px; color: var(--ink); }
+.eh { max-width: 1080px; margin: 0 auto; padding: 0 0 72px; color: var(--ink); }
 .eh .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .eh button:focus-visible, .eh a:focus-visible, .eh select:focus-visible, .eh textarea:focus-visible, .eh input:focus-visible, .eh summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .eh .card + .card { margin-top: 0; }
@@ -1632,7 +1635,7 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh .btn-sm { min-height: 36px; }
 
 /* header */
-.eh-head { padding: 28px 0 26px; }
+.eh-head { padding: 4px 0 24px; }
 .eh-eyebrow { margin: 0 0 12px; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .eh-title { margin: 0; font: 600 clamp(30px, 4.4vw, 46px)/1.1 var(--font); letter-spacing: -0.035em; color: var(--ink); }
 .eh-blank { display: inline-block; min-width: 3.6em; padding: 0 .06em; border-bottom: 3px solid currentColor; line-height: 1.05; }
@@ -1656,25 +1659,25 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-tile.is-past { opacity: .55; }
 .eh-tiles.is-sm { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 28px 0 0; }
 .eh-tile { display: flex; flex-direction: column; min-width: 0; padding: 22px 24px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow-sm); }
-.eh-tile.is-main { background: var(--ink); border-color: var(--ink); color: var(--surface-2); box-shadow: var(--shadow-md); }
+.eh-tile.is-main { background: #fdf3ee; border-color: #f2cdbd; color: var(--ink); box-shadow: var(--shadow-md); }
 .eh-tile-k { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font: 600 11px/1.2 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.eh-tile.is-main .eh-tile-k { color: rgba(248,247,243,.6); }
+.eh-tile.is-main .eh-tile-k { color: #9a3412; }
 .eh-tile-big { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 0; }
 .eh-tile-big .n { font: 600 48px/1 var(--font); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
 .eh-tile-big .u { font-size: 15px; color: var(--muted); }
-.eh-tile.is-main .eh-tile-big .u { color: rgba(248,247,243,.65); }
-.eh-tile-big.is-soon .n { color: #f3c98b; }
+.eh-tile.is-main .eh-tile-big .n { color: #9a3412; }
+.eh-tile-big.is-soon .n { color: #c2410c; }
 .eh-tile-title { margin: 10px 0 0; font: 600 17px/1.3 var(--font); letter-spacing: -0.015em; }
 .eh-tile-title.is-soon { color: var(--warn); }
 .eh-tile-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
-.eh-tile.is-main .eh-tile-sub { color: rgba(248,247,243,.7); }
+.eh-tile.is-main .eh-tile-sub { color: #a8644a; }
 .eh-tile-text { margin: 12px 0 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
 .eh-tile-link { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; margin-top: auto; padding: 14px 0 0; border: 0; background: none; font: 600 13px/1.3 var(--font); color: var(--ink); text-decoration: none; cursor: pointer; text-align: left; }
 .eh-tile-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .eh-tile-link svg { flex: none; transition: transform .2s var(--ease-out); }
 .eh-tile-link:hover svg { transform: translateX(2px); }
 .eh-hard { display: inline-flex; padding: 2px 8px; border-radius: 99px; background: var(--danger-soft); color: var(--danger); font: 600 10px/1.5 var(--font); letter-spacing: .06em; }
-.eh-tile.is-main .eh-hard { background: rgba(248,247,243,.14); color: var(--surface-2); }
+.eh-tile.is-main .eh-hard { background: #fbe6dc; color: #9a3412; }
 
 /* progress */
 .eh-prog { height: 4px; margin: 12px 0 0; border-radius: 99px; background: var(--paper-3); overflow: hidden; }
@@ -1808,7 +1811,7 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-held > summary { padding-right: 24px; }
 
 /* a piece */
-.eh-back { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin: 18px 0 0 -10px; padding: 0 12px 0 8px; border: 0; border-radius: 10px; background: none; font: 500 13.5px var(--font); color: var(--ink-2); cursor: pointer; }
+.eh-back { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin: 0 0 0 -10px; padding: 0 12px 0 8px; border: 0; border-radius: 10px; background: none; font: 500 13.5px var(--font); color: var(--ink-2); cursor: pointer; }
 .eh-back:hover { background: var(--surface-3); color: var(--ink); }
 .eh-ph { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 40px; align-items: start; padding: 18px 0 0; }
 .eh-ph-title { margin: 0; max-width: 30ch; font: 600 clamp(26px, 3.4vw, 36px)/1.15 var(--font); letter-spacing: -0.035em; text-wrap: balance; }
@@ -2119,7 +2122,7 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
   .eh-tl-hard { grid-column: 3; }
 }
 @media (max-width: 640px) {
-  .eh-head { padding-top: 14px; }
+  .eh-head { padding-top: 0; }
   .eh-tiles { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .eh-tiles.is-sm { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .eh-tiles.is-sm .eh-tile { padding: 16px; }
