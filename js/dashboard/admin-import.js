@@ -16,7 +16,7 @@ import {
 import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 import { mountCoverPromptTool } from "./cover-prompt.js?v=6";
 import { mountAgreementTool } from "./agreement.js?v=10";
-import { mountThemePicker } from "./suite-theme.js?v=st-8";
+import { mountThemePicker } from "./suite-theme.js?v=st-9";
 
 // A user is "recently joined" if their account was created within this many
 // days. The welcome email panel surfaces these at the top so the admin can fire

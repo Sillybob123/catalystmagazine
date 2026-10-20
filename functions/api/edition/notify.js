@@ -109,7 +109,7 @@ export const onRequestPost = async ({ request, env }) => {
         : `${who} replied on ${where}`,
       announcement: `${who} posted to everyone working on ${hub.name || "this edition"}`,
     }[msg.kind] || `${who} posted on ${where}`;
-    const actionHash = msg.pieceId ? `#/edition?piece=${msg.pieceId}` : "#/edition?tab=talk";
+    const actionHash = msg.pieceId ? `#/edition?piece=${msg.pieceId}&view=talk` : "#/edition?tab=talk";
 
     const recipients = [...to];
     const sent = await createNotifications(env, recipients, {

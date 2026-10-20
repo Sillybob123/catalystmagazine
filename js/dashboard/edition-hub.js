@@ -1,30 +1,28 @@
 // This edition (#/edition) — the planning hub for the edition in progress.
 //
-// One page for everyone working on it:
-//   • Overview   the theme, a countdown to the next deadline, the key dates,
-//                what each person needs to do ("For you"), where the edition
-//                stands, and the editors' guidance for everyone
-//   • Sections   the four sections, each with its editor, and every piece in
-//                it; open a piece for its full proposal (with the editors'
-//                notes beside the part they comment on), next steps,
-//                interviews and its own questions & updates
-//   • Questions & updates   everything people have asked or shared, across
-//                the edition; ask a question, share an update, reply, mark
-//                answered
-//   • For social  the lineup with hooks, people and places to tag, visual
-//                ideas and copy-ready lines for launch
+// Built to be calm: a solid page (no seasonal washes or drifting effects
+// here), one thing at a time, and the next thing to do always at the top.
+//   • Overview   what's next (the next deadline, launch, your next step),
+//                your pieces or your section, the timeline, and the editors'
+//                guides folded away until you need them
+//   • Pieces     the four sections as cards, each with its editor and its
+//                pieces; open a piece for its proposal (the editors' notes
+//                beside the part they comment on), next steps, interviews
+//                and its questions
+//   • Questions  everything people have asked or shared; ask, update, reply,
+//                mark answered
+//   • Social     the lineup with hooks, people to tag and copy-ready lines
 //
 // Data (Firestore, staff only — see firestore.rules "This edition"):
 //   edition_hub/{EDITION}            sections + editors, dates, guidance
 //   edition_hub/{EDITION}/pieces     one doc per piece (proposal, notes, status)
 //   edition_hub/{EDITION}/messages   questions, updates, replies, announcements
-// The hub and pieces were seeded from the proposals by
-// scripts/seed-edition-hub.mjs (the data file is private, outside git).
-// Posting a message also calls /api/edition/notify, which rings the bell for
-// the piece's writers and section editor.
+// Seeded from the proposals by scripts/seed-edition-hub.mjs (the data file is
+// private, outside git). Posting also calls /api/edition/notify, which rings
+// the bell for the piece's writers and section editor.
 //
 // Who can change what (mirrors the rules): admins anything; section editors
-// any piece and the editors' to-dos; a piece's writers its progress,
+// any piece and the editors' to-dos; a piece's writers its stage,
 // checklist, interviews, title/format and their own proposal.
 
 import { db, auth } from "../firebase-config.js";
@@ -64,7 +62,7 @@ const PROPOSAL_EDITABLE = PROPOSAL.flatMap((g) => g.fields).filter(([k]) => !["t
 const KIND = {
   question: { label: "Question", verb: "Ask a question", ph: "What do you want to ask? Be specific: the piece, the part, what you've tried." },
   update: { label: "Update", verb: "Share an update", ph: "What's new? An interview done, a draft uploaded, a change of angle, something you're stuck on." },
-  announcement: { label: "Announcement", verb: "Post an announcement", ph: "Something everyone working on the edition should know." },
+  announcement: { label: "Announcement", verb: "Post to everyone", ph: "Something everyone working on the edition should know." },
 };
 
 // Kept between mounts, so coming back (or opening a piece from the bell)
@@ -76,11 +74,13 @@ const parseDay = (s) => { const [y, m, d] = String(s || "").split("-").map(Numbe
 const today = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
 const daysUntil = (s) => { const d = parseDay(s); return d ? Math.round((d - today()) / DAY) : null; };
 const fmtDay = (s, opts = { weekday: "short", month: "short", day: "numeric" }) => { const d = parseDay(s); return d ? d.toLocaleDateString("en-US", opts) : ""; };
+const LONG = { weekday: "long", month: "long", day: "numeric" };
 const sameName = (a, b) => !!a && !!b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 const firstName = (n) => String(n || "").trim().split(/\s+/)[0] || "Someone";
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const endStop = (t) => (/[.?!]$/.test(String(t)) ? t : `${t}.`);
 const inDays = (n) => (n === 0 ? "today" : n === 1 ? "tomorrow" : n === -1 ? "yesterday" : n > 0 ? `in ${n} days` : `${-n} days ago`);
+const clip = (t, n) => (String(t).length > n ? `${String(t).slice(0, n - 1)}…` : String(t));
 
 // Escape, keep line breaks, and turn bare links into links.
 function rich(text) {
@@ -89,28 +89,33 @@ function rich(text) {
   return linked.split(/\n+/).map((p) => `<p>${p}</p>`).join("");
 }
 
+const svg = (d, size = 16, sw = 2) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ICON = {
-  back: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>`,
-  arrow: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
-  q: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>`,
-  notes: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>`,
-  note: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
-  check: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>`,
-  edit: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`,
-  drive: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
-  copy: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
-  search: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
-  plus: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  back: svg(`<path d="M15 18l-6-6 6-6"/>`),
+  chev: svg(`<path d="M9 18l6-6-6-6"/>`, 16),
+  down: svg(`<path d="M6 9l6 6 6-6"/>`, 16),
+  q: svg(`<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>`, 15),
+  note: svg(`<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>`, 15),
+  check: svg(`<polyline points="20 6 9 17 4 12"/>`, 13, 2.6),
+  edit: svg(`<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>`, 14),
+  drive: svg(`<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>`, 15),
+  copy: svg(`<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>`, 14),
+  search: svg(`<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>`, 16),
+  plus: svg(`<path d="M12 5v14M5 12h14"/>`, 15),
+  link: svg(`<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>`, 15),
 };
 
 export async function mount(ctx, container) {
   injectStyle();
+  document.body.classList.add("eh-calm");
   container.classList.add("eh-content");
   const params = new URLSearchParams((location.hash.split("?")[1]) || "");
+  const TABS = ["overview", "pieces", "talk", "social"];
+  const tabParam = params.get("tab") === "sections" ? "pieces" : params.get("tab");
   const view = {
-    tab: ["overview", "sections", "talk", "social"].includes(params.get("tab")) ? params.get("tab") : "overview",
+    tab: TABS.includes(tabParam) ? tabParam : "overview",
     piece: params.get("piece") || null,
-    pieceTab: params.get("view") === "talk" ? "talk" : "proposal",
+    pieceTab: ["talk", "steps"].includes(params.get("view")) ? params.get("view") : "proposal",
     q: "", filter: "all", talkFilter: "all", showNotes: true,
   };
   const me = { uid: ctx.user?.uid || "", name: ctx.profile?.name || ctx.user?.displayName || "" };
@@ -170,6 +175,7 @@ export async function mount(ctx, container) {
   const openQs = (pred) => messages.filter((m) => m.kind === "question" && !m.resolved && pred(m));
   const threadOf = (pred) => messages.filter((m) => m.kind !== "reply" && pred(m));
   const repliesTo = (id) => messages.filter((m) => m.parentId === id).sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  const hardDate = (id) => (hub?.dates || []).find((d) => d.id === id);
 
   function roleLabelFor(uid, name) {
     const ed = (hub?.sections || []).find((s) => s.editor && ((s.editor.uids || []).includes(uid) || sameName(s.editor.name, name)));
@@ -179,7 +185,7 @@ export async function mount(ctx, container) {
   }
 
   // Hexagon portrait from the About page, or initials in a hexagon.
-  function avatar(person, size = 34) {
+  function avatar(person, size = 32) {
     const slug = person?.slug || slugify(person?.name || "");
     const img = bios.get(slug)?.image;
     const s = `width:${size}px;height:${size}px`;
@@ -187,29 +193,31 @@ export async function mount(ctx, container) {
     return `<span class="eh-av eh-av-init" style="${s};font-size:${Math.round(size * 0.34)}px" aria-hidden="true">${esc(initials(person?.name || "?"))}</span>`;
   }
   const names = (people) => (people || []).map((p) => p.name).join(" & ");
+  const firstNames = (people) => (people || []).map((p) => firstName(p.name)).join(" & ");
 
-  function statusPill(p) {
-    if (SPECIAL[p.status]) return `<span class="eh-pill is-${p.status}">${SPECIAL[p.status]}</span>`;
+  function stage(p) {
+    if (SPECIAL[p.status]) return `<span class="eh-stage is-${p.status}"><i></i>${SPECIAL[p.status]}</span>`;
     const st = STAGES[STAGE_INDEX[p.status] ?? 0];
-    return `<span class="eh-pill is-stage" data-stage="${esc(p.status)}">${esc(st.label)}</span>`;
+    return `<span class="eh-stage" data-stage="${esc(st.id)}"><i></i>${esc(st.label)}</span>`;
   }
+  const progressPct = (p) => Math.round((((STAGE_INDEX[p.status] ?? 0) + 1) / STAGES.length) * 100);
   // Behind schedule? Compared with the edition's two hard deadlines.
   function flag(p) {
     if (SPECIAL[p.status]) return null;
     const i = STAGE_INDEX[p.status] ?? 0;
-    const due = (hub?.dates || []).filter((d) => d.hard);
-    const first = due.find((d) => d.id === "first-draft"), fin = due.find((d) => d.id === "final-draft");
+    const first = hardDate("first-draft"), fin = hardDate("final-draft");
     if (fin && i < STAGE_INDEX.final) { const n = daysUntil(fin.date); if (n < 0) return { tone: "danger", text: "Final draft overdue" }; if (n <= 5) return { tone: "warn", text: `Final draft due ${inDays(n)}` }; }
     if (first && i < STAGE_INDEX.draft1) { const n = daysUntil(first.date); if (n < 0) return { tone: "danger", text: "First draft overdue" }; if (n <= 7) return { tone: "warn", text: `First draft due ${inDays(n)}` }; }
-    if (p.status === "idea") return { tone: "muted", text: "Proposal needed" };
+    if (p.status === "idea") return { tone: "muted", text: "Needs a proposal" };
     return null;
   }
+  const noteCount = (p) => Object.values(p.notes || {}).reduce((n, a) => n + (a?.length || 0), 0) + (p.general?.length || 0);
 
   // ── URL (in-page moves push a history entry without remounting)
   function go(next) {
     Object.assign(view, next);
     const qs = new URLSearchParams();
-    if (view.piece) { qs.set("piece", view.piece); if (view.pieceTab === "talk") qs.set("view", "talk"); }
+    if (view.piece) { qs.set("piece", view.piece); if (view.pieceTab !== "proposal") qs.set("view", view.pieceTab); }
     else if (view.tab !== "overview") qs.set("tab", view.tab);
     const hash = `#/edition${qs.toString() ? `?${qs}` : ""}`;
     if (location.hash !== hash) history.pushState(null, "", hash);
@@ -218,7 +226,7 @@ export async function mount(ctx, container) {
   }
 
   // ── render
-  let heroTimer = null;
+  let wordTimer = null;
   function render() {
     if (!hub && !cache.hub) {
       root.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading the edition&hellip;</div>`;
@@ -227,354 +235,288 @@ export async function mount(ctx, container) {
     if (!hub) { root.innerHTML = `<div class="eh-empty"><h2>No edition is being planned yet.</h2><p>An admin can set one up.</p></div>`; return; }
     const focus = captureFocus();
     root.innerHTML = "";
-    root.classList.toggle("eh-piece-mode", !!view.piece);
-    // A piece gets the whole page; the big hero is for the edition views.
-    if (!view.piece) root.appendChild(hero()); else clearInterval(heroTimer);
-    root.appendChild(tabs());
-    const body = el("div", { class: "eh-body" });
-    root.appendChild(body);
     if (view.piece) {
+      clearInterval(wordTimer);
       const p = pieces.find((x) => x.id === view.piece);
-      if (p) body.appendChild(pieceView(p));
-      else body.appendChild(el("div", { class: "eh-empty", html: `<h2>That piece isn't in this edition.</h2><p><button type="button" class="btn btn-secondary" data-go="sections">See all pieces</button></p>` }));
-    } else if (view.tab === "sections") body.appendChild(sectionsView());
-    else if (view.tab === "talk") body.appendChild(talkView());
-    else if (view.tab === "social") body.appendChild(socialView());
-    else body.appendChild(overviewView());
+      root.appendChild(p ? pieceView(p) : el("div", { class: "eh-empty", html: `<h2>That piece isn't in this edition.</h2><p><button type="button" class="btn btn-secondary" data-go="pieces">See all pieces</button></p>` }));
+    } else {
+      root.appendChild(header());
+      const body = el("div", { class: "eh-body" });
+      root.appendChild(body);
+      if (view.tab === "pieces") body.appendChild(piecesView());
+      else if (view.tab === "talk") body.appendChild(talkView());
+      else if (view.tab === "social") body.appendChild(socialView());
+      else body.appendChild(overviewView());
+    }
     restoreFocus(focus);
   }
 
   // Live updates re-render the page; keep typing where it was.
+  const drafts = new Map();   // unsent text, by composer key
+  root.addEventListener("input", (e) => { const k = e.target?.dataset?.keep; if (k) drafts.set(k, e.target.value); });
   function captureFocus() {
     const a = document.activeElement;
     if (!a || !root.contains(a) || !a.dataset.keep) return null;
     return { key: a.dataset.keep, value: a.value, start: a.selectionStart, end: a.selectionEnd };
   }
   function restoreFocus(f) {
-    root.querySelectorAll("[data-keep]").forEach((n) => { const v = drafts.get(n.dataset.keep); if (v != null && !n.value) n.value = v; });
     if (!f) return;
     const n = root.querySelector(`[data-keep="${CSS.escape(f.key)}"]`);
     if (!n) return;
     n.value = f.value; n.focus();
     try { n.setSelectionRange(f.start, f.end); } catch {}
   }
-  const drafts = new Map();   // unsent text, by composer key
-  root.addEventListener("input", (e) => { const k = e.target?.dataset?.keep; if (k) drafts.set(k, e.target.value); });
 
-  // ── hero
-  function nextDate() {
-    const t = today();
-    const list = (hub.dates || []).filter((d) => !d.end).map((d) => ({ ...d, n: daysUntil(d.date) })).filter((d) => d.n >= 0);
-    return list.sort((a, b) => a.n - b.n)[0] || null;
-  }
-  function hero() {
+  // ── page header: the theme, and the four views
+  function header() {
     const words = (hub.sections || []).map((s) => s.name);
-    const nd = nextDate();
     const total = realPieces().length;
-    const launchN = daysUntil(hub.launch);
-    const dates = hub.dates || [];
-    const start = parseDay(dates[0]?.date) || today(), end = parseDay(hub.launch) || today();
-    const pos = (s) => Math.max(0, Math.min(100, ((parseDay(s) - start) / Math.max(1, end - start)) * 100));
-    const nowPct = Math.max(0, Math.min(100, ((today() - start) / Math.max(1, end - start)) * 100));
-    const node = el("section", { class: "eh-hero", "aria-label": `${hub.name} edition` });
+    const open = openQs(() => true).length;
+    const node = el("header", { class: "eh-head" });
     node.innerHTML = `
-      <div class="eh-hero-main">
-        <p class="eh-kicker">The Catalyst &middot; ${esc(hub.name)} edition</p>
-        <h1 class="eh-theme">The Future of Health is <span class="eh-blank"><span class="eh-blank-word" aria-hidden="true"></span><span class="sr-only">blank</span></span>.</h1>
-        <p class="eh-intro">${esc(hub.intro || "")}</p>
-        <ul class="eh-facts">
-          <li><strong>${total}</strong> pieces</li>
-          <li><strong>${(hub.sections || []).length}</strong> sections</li>
-          <li>Launch <strong>${esc(fmtDay(hub.launch, { weekday: "short", month: "short", day: "numeric" }))}</strong>${launchN > 0 ? ` <span>(${plural(launchN, "day")})</span>` : ""}</li>
-        </ul>
-      </div>
-      <aside class="eh-next" aria-label="Next deadline">
-        ${nd ? `
-          <p class="eh-next-label">${nd.hard ? "Next deadline" : "Coming up"}</p>
-          <p class="eh-next-days"><span class="n">${nd.n === 0 ? "Today" : nd.n}</span>${nd.n === 0 ? "" : `<span class="u">${nd.n === 1 ? "day" : "days"}</span>`}</p>
-          <p class="eh-next-what">${esc(nd.label)}</p>
-          <p class="eh-next-date">${esc(fmtDay(nd.date, { weekday: "long", month: "long", day: "numeric" }))}${nd.hard ? ` <span class="eh-hard">Hard deadline</span>` : ""}</p>`
-        : `<p class="eh-next-label">The edition is out</p><p class="eh-next-what">Launched ${esc(fmtDay(hub.launch))}</p>`}
-        <div class="eh-track" aria-hidden="true">
-          <span class="eh-track-fill" style="width:${nowPct}%"></span>
-          ${dates.map((d) => `<span class="eh-track-dot${d.hard ? " is-hard" : ""}${daysUntil(d.end || d.date) < 0 ? " is-past" : ""}" style="left:${pos(d.date)}%" title="${esc(`${fmtDay(d.date)} · ${d.label}`)}"></span>`).join("")}
-          <span class="eh-track-now" style="left:${nowPct}%"><span>Today</span></span>
-        </div>
-        <div class="eh-track-ends"><span>${esc(fmtDay(dates[0]?.date, { month: "short", day: "numeric" }))}</span><span>Launch ${esc(fmtDay(hub.launch, { month: "short", day: "numeric" }))}</span></div>
-      </aside>`;
+      <p class="eh-eyebrow">${esc(hub.name)} edition</p>
+      <h1 class="eh-title" aria-label="${esc(hub.theme || "The Future of Health is blank.")}">The Future of Health is <span class="eh-blank" aria-hidden="true"><span class="eh-word"></span></span>.</h1>
+      <p class="eh-lede">${plural(total, "piece")} in ${plural((hub.sections || []).length, "section")}. Launches ${esc(fmtDay(hub.launch, LONG))}.</p>
+      <nav class="eh-seg eh-tabs" aria-label="This edition">
+        ${[["overview", "Overview", ""], ["pieces", "Pieces", ""], ["talk", "Questions", open ? String(open) : ""], ["social", "Social", ""]].map(([id, l, n]) => `
+          <button type="button" class="eh-seg-b${view.tab === id ? " is-on" : ""}" data-go="${id}" ${view.tab === id ? 'aria-current="page"' : ""}>${l}${n ? `<span class="eh-badge">${n}</span>` : ""}</button>`).join("")}
+      </nav>`;
     // The blank fills itself in with each section's name.
-    const slot = node.querySelector(".eh-blank-word");
-    let i = 0;
+    const slot = node.querySelector(".eh-word");
+    clearInterval(wordTimer);
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    clearInterval(heroTimer);
-    if (words.length && !reduce) {
-      const show = () => { slot.classList.remove("is-in"); setTimeout(() => { slot.textContent = words[i % words.length]; slot.classList.add("is-in"); i++; }, 260); };
-      show();
-      heroTimer = setInterval(show, 2800);
+    if (words.length) {
+      let i = 0;
+      slot.textContent = words[0];
+      slot.classList.add("is-in");
+      if (!reduce) {
+        wordTimer = setInterval(() => {
+          slot.classList.remove("is-in");
+          setTimeout(() => { i = (i + 1) % words.length; slot.textContent = words[i]; slot.classList.add("is-in"); }, 280);
+        }, 3200);
+      }
     }
     return node;
-  }
-
-  // ── tabs
-  function tabs() {
-    const open = openQs(() => true).length;
-    const list = [
-      ["overview", "Overview", ""],
-      ["sections", "Sections & pieces", String(realPieces().length)],
-      ["talk", "Questions & updates", open ? `${open} open` : ""],
-      ["social", "For social", ""],
-    ];
-    const active = view.piece ? "sections" : view.tab;
-    const nav = el("nav", { class: "eh-tabs", "aria-label": "This edition" });
-    nav.innerHTML = list.map(([id, label, n]) => `
-      <button type="button" class="eh-tab${active === id ? " is-active" : ""}" data-go="${id}" ${active === id ? 'aria-current="page"' : ""}>
-        ${esc(label)}${n ? `<span class="eh-tab-n${id === "talk" ? " is-alert" : ""}">${esc(n)}</span>` : ""}
-      </button>`).join("");
-    return nav;
   }
 
   // ── Overview
   function overviewView() {
-    const wrap = el("div", { class: "eh-ov" });
-    const forYou = forYouBlock();
-    if (forYou) wrap.appendChild(forYou);
-
-    const grid = el("div", { class: "eh-ov-grid" });
-    grid.appendChild(datesBlock());
-    grid.appendChild(progressBlock());
-    wrap.appendChild(grid);
-
-    wrap.appendChild(guidanceBlock());
-    wrap.appendChild(editorsDesk());
+    const wrap = el("div", { class: "eh-stack" });
+    wrap.appendChild(nextUp());
+    const mine = sorted(pieces.filter((p) => isMine(p) && p.section !== "held"));
+    if (mine.length) wrap.appendChild(myPieces(mine));
+    mySections().forEach((s) => wrap.appendChild(mySection(s)));
+    wrap.appendChild(timeline());
+    if (canEdit()) {
+      const g = el("div", { class: "eh-grid-2" });
+      g.appendChild(attention());
+      g.appendChild(editorsDesk());
+      wrap.appendChild(g);
+    }
+    wrap.appendChild(guides());
     return wrap;
   }
 
-  function forYouBlock() {
+  function nextHard() {
+    const list = (hub.dates || []).filter((d) => d.hard).map((d) => ({ ...d, n: daysUntil(d.date) })).filter((d) => d.n >= 0);
+    return list.sort((a, b) => a.n - b.n)[0] || null;
+  }
+
+  function nextUp() {
+    const node = el("section", { class: "eh-tiles", "aria-label": "What's next" });
+    const nh = nextHard();
+    const launchN = daysUntil(hub.launch);
     const mine = sorted(pieces.filter((p) => isMine(p) && p.section !== "held"));
-    const secs = mySections();
-    const role = ctx.role;
-    if (!mine.length && !secs.length && !isAdmin && !["social_media", "marketing"].includes(role)) return null;
-    const node = el("section", { class: "eh-block eh-foryou" });
-    let html = `<header class="eh-bh"><h2>For you</h2><p>${esc(firstName(me.name))}, here's what's yours in this edition.</p></header>`;
-
+    const big = (n) => (n === 0 ? `<span class="n">Today</span>` : `<span class="n">${n}</span><span class="u">${n === 1 ? "day" : "days"}</span>`);
+    let third = "";
+    const step = mine.flatMap((p) => (p.nextSteps || []).filter((s) => !s.done).map((s) => ({ p, s })))[0];
     if (mine.length) {
-      html += `<div class="eh-fy-group"><h3 class="eh-h3">Your ${mine.length === 1 ? "piece" : "pieces"}</h3><div class="eh-fy-list">`;
-      for (const p of mine) {
-        const ed = editorOf(p);
-        const steps = (p.nextSteps || []);
-        const nextStep = steps.find((s) => !s.done);
-        const doneN = steps.filter((s) => s.done).length;
-        const f = flag(p);
-        const qN = openQs((m) => m.pieceId === p.id && m.authorUid !== me.uid).length;
-        html += `
-          <article class="eh-fy-card">
-            <p class="eh-fy-kicker">${esc(section(p.section)?.name || "")}${p.format ? ` &middot; ${esc(p.format)}` : ""}</p>
-            <h4 class="eh-fy-title"><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(p.title)}</button></h4>
-            ${miniStepper(p)}
-            <div class="eh-fy-meta">
-              ${statusPill(p)}${f ? `<span class="eh-flag is-${f.tone}">${esc(f.text)}</span>` : ""}
-              ${qN ? `<span class="eh-flag is-info">${plural(qN, "question")} for you</span>` : ""}
-            </div>
-            ${nextStep ? `<p class="eh-fy-next"><span>Next step${steps.length ? ` (${doneN}/${steps.length} done)` : ""}</span>${esc(nextStep.text)}</p>` : steps.length ? `<p class="eh-fy-next is-done"><span>Next steps</span>All done. Nice work.</p>` : ""}
-            <div class="eh-fy-foot">
-              ${ed ? `<span class="eh-person">${avatar(ed, 26)}<span><small>Your editor</small>${esc(ed.name)}</span></span>` : `<span class="eh-person"><span><small>Your editor</small>Being assigned</span></span>`}
-              <span class="eh-fy-actions">
-                <button type="button" class="btn btn-secondary btn-sm" data-ask="${esc(p.id)}">Ask ${ed ? esc(firstName(ed.name)) : "the editors"}</button>
-                <button type="button" class="btn btn-primary btn-sm" data-piece="${esc(p.id)}">Open</button>
-              </span>
-            </div>
-          </article>`;
-      }
-      html += `</div></div>`;
+      third = step
+        ? `<p class="eh-tile-k">Your next step</p><p class="eh-tile-text">${esc(step.s.text)}</p><button type="button" class="eh-tile-link" data-piece="${esc(step.p.id)}" data-pv="steps">${esc(clip(step.p.title, 46))} ${ICON.chev}</button>`
+        : `<p class="eh-tile-k">Your next steps</p><p class="eh-tile-text">All done. Your editor will be in touch about what comes next.</p><button type="button" class="eh-tile-link" data-piece="${esc(mine[0].id)}">Open your piece ${ICON.chev}</button>`;
+    } else if (mySections().length) {
+      const s = mySections()[0];
+      const qs = openQs((m) => m.authorUid !== me.uid && (m.sectionId === s.id || pieces.some((p) => p.id === m.pieceId && p.section === s.id)));
+      third = `<p class="eh-tile-k">Waiting on you</p><p class="eh-tile-big"><span class="n">${qs.length}</span><span class="u">open ${qs.length === 1 ? "question" : "questions"}</span></p><button type="button" class="eh-tile-link" data-go="talk">Open questions ${ICON.chev}</button>`;
+    } else if (["social_media", "marketing"].includes(ctx.role)) {
+      third = `<p class="eh-tile-k">The lineup</p><p class="eh-tile-text">Hooks, people to tag and copy-ready lines for launch day.</p><button type="button" class="eh-tile-link" data-go="social">Plan the launch ${ICON.chev}</button>`;
+    } else {
+      const qs = openQs(() => true).length;
+      third = `<p class="eh-tile-k">Open questions</p><p class="eh-tile-big"><span class="n">${qs}</span></p><button type="button" class="eh-tile-link" data-go="talk">Questions ${ICON.chev}</button>`;
     }
-
-    for (const s of secs) {
-      const list = sorted(pieces.filter((p) => p.section === s.id));
-      const waiting = openQs((m) => m.authorUid !== me.uid && (m.sectionId === s.id || list.some((p) => p.id === m.pieceId)));
-      html += `<div class="eh-fy-group"><h3 class="eh-h3">You edit ${esc(s.name)} <span class="eh-muted">&middot; ${plural(list.filter((p) => p.status !== "open").length, "piece")}${waiting.length ? ` &middot; <button type="button" class="eh-link" data-go="talk">${plural(waiting.length, "open question")}</button>` : ""}</span></h3>
-        <ul class="eh-rows">${list.map((p) => pieceRow(p, { compact: true })).join("")}</ul></div>`;
-    }
-
-    if (!mine.length && !secs.length) {
-      if (["social_media", "marketing"].includes(role)) {
-        html += `<p class="eh-fy-social">The <button type="button" class="eh-link" data-go="social">For social</button> tab has the lineup, hooks, people to tag and copy-ready lines for launch on ${esc(fmtDay(hub.launch, { weekday: "long", month: "long", day: "numeric" }))}.</p>`;
-      } else if (isAdmin) {
-        const noProp = realPieces().filter((p) => p.status === "idea").length;
-        const open = live().filter((p) => p.status === "open").length;
-        const qs = openQs(() => true).length;
-        html += `<ul class="eh-glance">
-          <li><strong>${realPieces().length}</strong><span>pieces in the lineup</span></li>
-          <li><strong>${open}</strong><span>open ${open === 1 ? "slot" : "slots"}</span></li>
-          <li><strong>${noProp}</strong><span>still need a proposal</span></li>
-          <li><strong>${qs}</strong><span>open ${qs === 1 ? "question" : "questions"}</span></li>
-        </ul>`;
-      }
-    }
-    node.innerHTML = html;
-    return node;
-  }
-
-  function miniStepper(p) {
-    if (SPECIAL[p.status]) return "";
-    const i = STAGE_INDEX[p.status] ?? 0;
-    return `<ol class="eh-mini" aria-label="Stage ${i + 1} of ${STAGES.length}: ${esc(STAGES[i].label)}">${STAGES.map((s, k) => `<li class="${k < i ? "is-done" : k === i ? "is-now" : ""}" title="${esc(s.label)}"></li>`).join("")}</ol>`;
-  }
-
-  function datesBlock() {
-    const node = el("section", { class: "eh-block eh-dates" });
-    const list = hub.dates || [];
-    const nd = nextDate();
     node.innerHTML = `
-      <header class="eh-bh"><h2>Key dates</h2>${isAdmin ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-dates>${ICON.edit} Edit</button>` : ""}</header>
-      <ol class="eh-dl">${list.map((d) => {
-        const past = daysUntil(d.end || d.date) < 0;
-        const now = d.end && daysUntil(d.date) <= 0 && daysUntil(d.end) >= 0;
-        const isNext = nd && nd.id === d.id;
-        const dt = parseDay(d.date);
-        return `<li class="eh-d${past ? " is-past" : ""}${isNext ? " is-next" : ""}${now ? " is-now" : ""}${d.hard ? " is-hard" : ""}">
-          <span class="eh-d-cal" aria-hidden="true"><span class="m">${dt ? dt.toLocaleDateString("en-US", { month: "short" }) : ""}</span><span class="d">${dt ? dt.getDate() : ""}</span></span>
-          <div class="eh-d-body">
-            <p class="eh-d-when">${esc(fmtDay(d.date, { weekday: "long", month: "long", day: "numeric" }))}${d.end ? ` – ${esc(fmtDay(d.end, { month: "long", day: "numeric" }))}` : ""}
-              ${d.hard ? `<span class="eh-hard">Hard deadline</span>` : ""}${now ? `<span class="eh-now">Happening now</span>` : ""}${isNext ? `<span class="eh-now">${esc(inDays(nd.n))}</span>` : ""}</p>
-            <h3 class="eh-d-label">${esc(d.label)}</h3>
-            ${d.detail ? `<p class="eh-d-detail">${esc(d.detail)}</p>` : ""}
-            ${d.who ? `<p class="eh-d-who">${esc(d.who)}</p>` : ""}
-          </div>
-        </li>`;
-      }).join("")}</ol>`;
+      <article class="eh-tile is-main">
+        ${nh ? `<p class="eh-tile-k">Next deadline${nh.hard ? ` <span class="eh-hard">Hard deadline</span>` : ""}</p>
+          <p class="eh-tile-big${nh.n <= 7 ? " is-soon" : ""}">${big(nh.n)}</p>
+          <p class="eh-tile-title">${esc(nh.label)}</p>
+          <p class="eh-tile-sub">${esc(fmtDay(nh.date, LONG))}</p>`
+        : `<p class="eh-tile-k">Deadlines</p><p class="eh-tile-title">All deadlines have passed.</p>`}
+      </article>
+      <article class="eh-tile">
+        <p class="eh-tile-k">Launch</p>
+        <p class="eh-tile-big">${launchN > 0 ? big(launchN) : `<span class="n">Live</span>`}</p>
+        <p class="eh-tile-sub">${esc(fmtDay(hub.launch, LONG))}</p>
+      </article>
+      <article class="eh-tile">${third}</article>`;
     return node;
   }
 
-  function progressBlock() {
-    const node = el("section", { class: "eh-block eh-progress" });
+  function myPieces(list) {
+    const node = el("section", { class: "card" });
+    node.innerHTML = `
+      <div class="card-header eh-ch"><div><h2 class="card-title">Your ${list.length === 1 ? "piece" : "pieces"}</h2></div></div>
+      <ul class="eh-list">${list.map((p) => {
+        const ed = editorOf(p);
+        const steps = p.nextSteps || [];
+        const done = steps.filter((s) => s.done).length;
+        const qN = openQs((m) => m.pieceId === p.id && m.authorUid !== me.uid).length;
+        const f = flag(p);
+        return `<li class="eh-mine">
+          <button type="button" class="eh-hit" data-piece="${esc(p.id)}" aria-label="Open ${esc(p.title)}"></button>
+          <div class="eh-mine-main">
+            <p class="eh-meta">${esc(section(p.section)?.name || "")}${p.format ? ` · ${esc(p.format)}` : ""}</p>
+            <p class="eh-mine-title">${esc(p.title)}</p>
+            <div class="eh-prog" aria-label="Stage: ${esc(STAGES[STAGE_INDEX[p.status] ?? 0]?.label || "")}"><span style="width:${progressPct(p)}%"></span></div>
+            <p class="eh-mine-facts">${stage(p)}${steps.length ? `<span>${done} of ${steps.length} steps done</span>` : ""}${ed ? `<span>Editor: ${esc(ed.name)}</span>` : ""}${qN ? `<span class="eh-tag is-info">${plural(qN, "question")} for you</span>` : ""}${f && f.tone !== "muted" ? `<span class="eh-tag is-${f.tone}">${esc(f.text)}</span>` : ""}</p>
+          </div>
+          <span class="eh-chev">${ICON.chev}</span>
+        </li>`;
+      }).join("")}</ul>`;
+    return node;
+  }
+
+  function mySection(s) {
+    const list = sorted(pieces.filter((p) => p.section === s.id));
+    const waiting = openQs((m) => m.authorUid !== me.uid && (m.sectionId === s.id || list.some((p) => p.id === m.pieceId))).length;
+    const node = el("section", { class: "card" });
+    node.innerHTML = `
+      <div class="card-header eh-ch">
+        <div><h2 class="card-title">Your section: ${esc(s.name)}</h2><p class="card-subtitle">${plural(list.filter((p) => p.status !== "open").length, "piece")}${waiting ? ` · ${plural(waiting, "open question")}` : ""}</p></div>
+        ${waiting ? `<button type="button" class="btn btn-secondary btn-sm" data-go="talk">Answer questions</button>` : ""}
+      </div>
+      <ul class="eh-list">${list.map(pieceRow).join("")}</ul>`;
+    return node;
+  }
+
+  function timeline() {
+    const node = el("section", { class: "card" });
+    const dates = hub.dates || [];
+    const nextIdx = dates.findIndex((d) => daysUntil(d.end || d.date) >= 0);
+    const nxt = dates[nextIdx];
+    node.innerHTML = `
+      <div class="card-header eh-ch"><div><h2 class="card-title">Timeline</h2></div>${isAdmin ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-dates>${ICON.edit} Edit</button>` : ""}</div>
+      <div class="card-body">
+        <ol class="eh-tl">${dates.map((d, i) => {
+          const past = daysUntil(d.end || d.date) < 0;
+          return `<li class="${past ? "is-past" : ""}${i === nextIdx ? " is-next" : ""}${d.hard ? " is-hard" : ""}">
+            <span class="eh-tl-dot">${past ? ICON.check : ""}</span>
+            <span class="eh-tl-date">${esc(fmtDay(d.date, { month: "short", day: "numeric" }))}${d.end ? `–${esc(fmtDay(d.end, { month: "short", day: "numeric" }))}` : ""}</span>
+            <span class="eh-tl-label">${esc(d.label)}</span>
+            ${d.hard ? `<span class="eh-tl-hard">Hard deadline</span>` : ""}
+          </li>`;
+        }).join("")}</ol>
+        ${nxt?.detail ? `<div class="eh-tl-detail"><p class="eh-tl-detail-k">${daysUntil(nxt.date) <= 0 && nxt.end ? "Happening now" : `Next · ${esc(fmtDay(nxt.date, LONG))}`}</p><p><strong>${esc(nxt.label)}.</strong> ${esc(nxt.detail)}</p></div>` : ""}
+      </div>`;
+    return node;
+  }
+
+  function attention() {
+    const node = el("section", { class: "card" });
     const list = realPieces();
     const counts = STAGES.map((s) => list.filter((p) => (p.status || "idea") === s.id).length);
-    const open = live().filter((p) => p.status === "open");
-    const attention = [];
-    list.filter((p) => p.status === "idea").forEach((p) => attention.push({ p, text: "Proposal needed" }));
-    list.forEach((p) => { const f = flag(p); if (f && f.tone !== "muted") attention.push({ p, text: f.text, tone: f.tone }); });
-    const staleQs = openQs((m) => Date.now() - new Date(m.createdAt).getTime() > 2 * DAY);
+    const items = [];
+    live().filter((p) => p.status === "open").forEach((p) => items.push(`<li><span class="eh-tag is-warn">Open slot</span><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(section(p.section)?.name)}${p.title !== "Open slot" ? `: ${esc(p.title.replace(/^Open slot:\s*/i, ""))}` : ""}</button></li>`));
+    list.forEach((p) => { const f = flag(p); if (f) items.push(`<li><span class="eh-tag is-${f.tone}">${esc(f.text)}</span><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(clip(p.title, 64))}</button></li>`); });
+    const stale = openQs((m) => Date.now() - new Date(m.createdAt).getTime() > 2 * DAY).length;
+    if (stale) items.push(`<li><span class="eh-tag is-info">${plural(stale, "question")}</span><button type="button" class="eh-link" data-go="talk">unanswered for more than two days</button></li>`);
     node.innerHTML = `
-      <header class="eh-bh"><h2>Where the edition stands</h2></header>
-      <div class="eh-bar" role="img" aria-label="${esc(STAGES.map((s, i) => `${counts[i]} ${s.label}`).join(", "))}">
-        ${STAGES.map((s, i) => counts[i] ? `<span class="eh-bar-seg" data-stage="${s.id}" style="flex:${counts[i]}" title="${esc(`${s.label}: ${counts[i]}`)}"></span>` : "").join("")}
-      </div>
-      <ul class="eh-legend">${STAGES.map((s, i) => `<li data-stage="${s.id}"${counts[i] ? "" : ' class="is-zero"'}><span class="sw"></span>${esc(s.label)} <strong>${counts[i]}</strong></li>`).join("")}</ul>
-      <div class="eh-attn">
-        <h3 class="eh-h3">Needs attention</h3>
-        <ul class="eh-attn-list">
-          ${open.map((p) => `<li><span class="eh-flag is-warn">Open slot</span><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(p.title === "Open slot" ? `${section(p.section)?.name}: an op-ed or Q&A` : `${section(p.section)?.name}: ${p.title.replace(/^Open slot:\s*/i, "")}`)}</button></li>`).join("")}
-          ${attention.map(({ p, text, tone }) => `<li><span class="eh-flag is-${tone || "muted"}">${esc(text)}</span><button type="button" class="eh-link" data-piece="${esc(p.id)}">${esc(p.title)}</button> <span class="eh-muted">${esc(names(p.writers))}</span></li>`).join("")}
-          ${staleQs.length ? `<li><span class="eh-flag is-info">${plural(staleQs.length, "question")}</span><button type="button" class="eh-link" data-go="talk">waiting more than two days for an answer</button></li>` : ""}
-          ${!open.length && !attention.length && !staleQs.length ? `<li class="eh-muted">Nothing right now.</li>` : ""}
-        </ul>
+      <div class="card-header eh-ch"><div><h2 class="card-title">Where things stand</h2><p class="card-subtitle">${plural(list.length, "piece")} · ${plural(list.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.draft1).length, "first draft")} in</p></div></div>
+      <div class="card-body">
+        <div class="eh-bar" role="img" aria-label="${esc(STAGES.map((s, i) => `${counts[i]} ${s.label}`).join(", "))}">${STAGES.map((s, i) => counts[i] ? `<span data-stage="${s.id}" style="flex:${counts[i]}" title="${esc(`${s.label}: ${counts[i]}`)}"></span>` : "").join("")}</div>
+        <p class="eh-bar-key">${STAGES.map((s, i) => counts[i] ? `<span data-stage="${s.id}"><i></i>${esc(s.label)} ${counts[i]}</span>` : "").join("")}</p>
+        <ul class="eh-attn">${items.join("") || `<li class="eh-muted">Nothing needs attention.</li>`}</ul>
       </div>`;
     return node;
-  }
-
-  function guidanceBlock() {
-    const node = el("section", { class: "eh-block eh-guide" });
-    node.innerHTML = `
-      <header class="eh-bh"><h2>How to get it right</h2><p>From the editors, for everyone.</p></header>
-      <div class="eh-guide-grid">
-        <div class="eh-g eh-g-draft">
-          <h3 class="eh-h3">What your first draft needs</h3>
-          <ul class="eh-ticks">${(hub.firstDraft || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-        </div>
-        <div class="eh-g eh-g-fb">
-          <h3 class="eh-h3">Editors' feedback for everyone</h3>
-          <ol class="eh-fb">${(hub.feedback || []).map((f) => `<li><strong>${esc(f.title)}.</strong> ${esc(f.text)}</li>`).join("")}</ol>
-        </div>
-        <div class="eh-g">
-          <h3 class="eh-h3">Interview tips</h3>
-          <ul class="eh-ticks">${(hub.interviewTips || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-        </div>
-        <div class="eh-g">
-          <h3 class="eh-h3">Where your work goes</h3>
-          <dl class="eh-where">${(hub.whereWork || []).map((w) => `<dt>${esc(w.label)}</dt><dd>${esc(w.text)}</dd>`).join("")}</dl>
-          ${driveLinks()}
-        </div>
-      </div>`;
-    return node;
-  }
-  function driveLinks() {
-    const withLinks = (hub.sections || []).filter((s) => s.driveUrl);
-    if (!withLinks.length) return "";
-    return `<p class="eh-drive">${withLinks.map((s) => `<a class="btn btn-ghost btn-xs" href="${esc(s.driveUrl)}" target="_blank" rel="noopener">${ICON.drive} ${esc(s.name)} folder</a>`).join("")}</p>`;
   }
 
   function editorsDesk() {
-    const node = el("section", { class: "eh-block eh-desk" });
-    const can = canEdit();
-    const todos = hub.editorTodos || [], decisions = hub.decisions || [];
+    const node = el("section", { class: "card" });
+    const row = (t, key, attr) => `<li><label class="eh-check${t[key] ? " is-done" : ""}"><input type="checkbox" ${attr}="${esc(t.id)}" ${t[key] ? "checked" : ""}><span class="box">${ICON.check}</span><span class="txt">${esc(t.text)}</span></label></li>`;
     node.innerHTML = `
-      <header class="eh-bh"><h2>Editors' desk</h2><p>${can ? "Tick things off as you go. Everyone can see this." : "What the editors are working on and still deciding."}</p></header>
-      <div class="eh-desk-grid">
-        <div>
-          <h3 class="eh-h3">To do</h3>
-          <ul class="eh-checks">${todos.map((t) => `<li><label class="eh-check${t.done ? " is-done" : ""}"><input type="checkbox" data-todo="${esc(t.id)}" ${t.done ? "checked" : ""} ${can ? "" : "disabled"}><span class="box">${ICON.check}</span><span class="txt">${esc(t.text)}</span></label></li>`).join("")}</ul>
-        </div>
-        <div>
-          <h3 class="eh-h3">Still being decided</h3>
-          <ul class="eh-checks">${decisions.map((t) => `<li><label class="eh-check${t.resolved ? " is-done" : ""}"><input type="checkbox" data-decision="${esc(t.id)}" ${t.resolved ? "checked" : ""} ${can ? "" : "disabled"}><span class="box">${ICON.check}</span><span class="txt">${esc(t.text)}</span></label></li>`).join("")}</ul>
-        </div>
+      <div class="card-header eh-ch"><div><h2 class="card-title">Editors' desk</h2><p class="card-subtitle">Shared by the editors. Tick things off as you go.</p></div></div>
+      <div class="card-body">
+        <p class="section-title eh-st">To do</p>
+        <ul class="eh-checks">${(hub.editorTodos || []).map((t) => row(t, "done", "data-todo")).join("")}</ul>
+        <p class="section-title eh-st">Still deciding</p>
+        <ul class="eh-checks">${(hub.decisions || []).map((t) => row(t, "resolved", "data-decision")).join("")}</ul>
       </div>`;
     return node;
   }
 
-  // ── Sections & pieces
+  function guides() {
+    const node = el("section", { class: "card" });
+    const drive = (hub.sections || []).filter((s) => s.driveUrl);
+    node.innerHTML = `
+      <div class="card-header eh-ch"><div><h2 class="card-title">Guides</h2><p class="card-subtitle">From the editors, for everyone. Open one when you need it.</p></div></div>
+      <div class="eh-acc">
+        <details><summary><span>What your first draft needs</span>${ICON.down}</summary>
+          <ul class="eh-ticks">${(hub.firstDraft || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>
+        <details><summary><span>Editors' feedback for everyone</span>${ICON.down}</summary>
+          <ol class="eh-num">${(hub.feedback || []).map((f) => `<li><strong>${esc(f.title)}.</strong> ${esc(f.text)}</li>`).join("")}</ol></details>
+        <details><summary><span>Interview tips</span>${ICON.down}</summary>
+          <ul class="eh-ticks">${(hub.interviewTips || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ul></details>
+        <details><summary><span>Where your work goes</span>${ICON.down}</summary>
+          <dl class="eh-where">${(hub.whereWork || []).map((w) => `<dt>${esc(w.label)}</dt><dd>${esc(w.text)}</dd>`).join("")}</dl>
+          ${drive.length ? `<p class="eh-btnrow">${drive.map((s) => `<a class="btn btn-secondary btn-sm" href="${esc(s.driveUrl)}" target="_blank" rel="noopener">${ICON.drive} ${esc(s.name)} folder</a>`).join("")}</p>` : ""}</details>
+      </div>`;
+    return node;
+  }
+
+  // ── Pieces
   function matches(p) {
     if (view.filter === "mine" && !isMine(p) && !edits(section(p.section))) return false;
-    if (view.filter === "proposal" && p.status !== "idea") return false;
     if (view.filter === "open" && p.status !== "open") return false;
     if (!view.q) return true;
     const hay = [p.title, p.subtitle, p.format, names(p.writers), section(p.section)?.name, ...(p.interviews || []).map((i) => `${i.person} ${i.affiliation}`)].join(" ").toLowerCase();
     return hay.includes(view.q);
   }
 
-  function pieceRow(p, { compact = false } = {}) {
-    const f = flag(p);
-    const qN = openQs((m) => m.pieceId === p.id).length;
-    const nN = noteCount(p);
-    const mine = isMine(p);
+  function pieceRow(p) {
     if (p.status === "open") {
       return `<li class="eh-row is-open">
-        <div class="eh-row-main"><p class="eh-row-title">${esc(p.title)}</p>${p.subtitle ? `<p class="eh-row-sub">${esc(p.subtitle)}</p>` : ""}</div>
-        <div class="eh-row-side"><button type="button" class="btn btn-secondary btn-sm" data-pitch="${esc(p.section)}">Pitch for this slot</button>${canEdit() ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-piece="${esc(p.id)}">Fill it</button>` : ""}</div>
+        <div class="eh-row-main"><p class="eh-row-title">${esc(p.title === "Open slot" ? "Open slot" : p.title.replace(/^Open slot:\s*/i, "Open slot: "))}</p><p class="eh-meta">${esc(p.subtitle || "")}</p></div>
+        <div class="eh-row-side"><button type="button" class="btn btn-secondary btn-sm" data-pitch="${esc(p.section)}">Pitch an idea</button>${canEdit() ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-piece="${esc(p.id)}">Fill it</button>` : ""}</div>
       </li>`;
     }
-    return `<li class="eh-row${mine ? " is-mine" : ""}">
-      <button type="button" class="eh-row-hit" data-piece="${esc(p.id)}" aria-label="Open ${esc(p.title)}"></button>
+    const qN = openQs((m) => m.pieceId === p.id).length;
+    const f = flag(p);
+    return `<li class="eh-row${isMine(p) ? " is-mine" : ""}">
+      <button type="button" class="eh-hit" data-piece="${esc(p.id)}" aria-label="Open ${esc(p.title)}"></button>
       <div class="eh-row-main">
-        <p class="eh-row-title">${esc(p.title)}${mine ? ` <span class="eh-you">You</span>` : ""}</p>
-        ${!compact && p.subtitle ? `<p class="eh-row-sub">${esc(p.subtitle)}</p>` : ""}
-        <p class="eh-row-by">${(p.writers || []).map((w) => `<span class="eh-person sm">${avatar(w, 22)}${esc(w.name)}</span>`).join("")}${p.format ? `<span class="eh-fmt">${esc(p.format)}</span>` : ""}</p>
+        <p class="eh-row-title">${esc(p.title)}${isMine(p) ? ` <span class="eh-you">You</span>` : ""}</p>
+        <p class="eh-meta">${esc(names(p.writers))}${p.format ? ` · ${esc(p.format)}` : ""}</p>
       </div>
       <div class="eh-row-side">
-        ${statusPill(p)}
-        ${f && f.tone !== "muted" ? `<span class="eh-flag is-${f.tone}">${esc(f.text)}</span>` : ""}
+        ${f && f.tone !== "muted" ? `<span class="eh-tag is-${f.tone}">${esc(f.text)}</span>` : ""}
         ${qN ? `<span class="eh-count" title="${plural(qN, "open question")}">${ICON.q}${qN}</span>` : ""}
-        ${nN && !compact ? `<span class="eh-count" title="${plural(nN, "editor's note", "editors' notes")}">${ICON.notes}${nN}</span>` : ""}
-        <span class="eh-row-go" aria-hidden="true">${ICON.arrow}</span>
+        ${stage(p)}
+        <span class="eh-chev">${ICON.chev}</span>
       </div>
     </li>`;
   }
-  const noteCount = (p) => Object.values(p.notes || {}).reduce((n, a) => n + (a?.length || 0), 0) + (p.general?.length || 0);
 
-  function sectionsView() {
-    const wrap = el("div", { class: "eh-secs" });
+  function piecesView() {
+    const wrap = el("div", { class: "eh-stack" });
     const bar = el("div", { class: "eh-toolbar" });
     bar.innerHTML = `
       <label class="eh-search">${ICON.search}<span class="sr-only">Find a piece</span>
-        <input type="search" placeholder="Find a piece, writer or interviewee" value="${esc(view.q)}" data-keep="q" autocomplete="off"></label>
-      <div class="eh-chips" role="group" aria-label="Show">
-        ${[["all", "All"], ["mine", "Mine"], ["proposal", "Needs a proposal"], ["open", "Open slots"]].map(([id, l]) => `<button type="button" class="eh-chip${view.filter === id ? " is-on" : ""}" data-filter="${id}" aria-pressed="${view.filter === id}">${l}</button>`).join("")}
+        <input type="search" placeholder="Search pieces, writers, interviewees" value="${esc(view.q)}" data-keep="q" autocomplete="off"></label>
+      <div class="eh-seg is-sm" role="group" aria-label="Show">
+        ${[["all", "All"], ["mine", "Mine"], ["open", "Open slots"]].map(([id, l]) => `<button type="button" class="eh-seg-b${view.filter === id ? " is-on" : ""}" data-filter="${id}" aria-pressed="${view.filter === id}">${l}</button>`).join("")}
       </div>`;
-    bar.querySelector("input").addEventListener("input", (e) => { view.q = e.target.value.trim().toLowerCase(); renderListOnly(); });
-    wrap.appendChild(bar);
-    const list = el("div", { class: "eh-sec-list" });
-    wrap.appendChild(list);
-    const renderListOnly = () => { list.innerHTML = ""; fillSections(list); };
+    const list = el("div", { class: "eh-stack" });
+    bar.querySelector("input").addEventListener("input", (e) => { view.q = e.target.value.trim().toLowerCase(); list.innerHTML = ""; fillSections(list); });
+    wrap.append(bar, list);
     fillSections(list);
     return wrap;
   }
@@ -585,41 +527,32 @@ export async function mount(ctx, container) {
       const ps = sorted(pieces.filter((p) => p.section === s.id)).filter(matches);
       if ((view.q || view.filter !== "all") && !ps.length) return;
       shown += ps.length;
-      const node = el("section", { class: "eh-sec", id: `sec-${s.id}` });
       const count = pieces.filter((p) => p.section === s.id && p.status !== "open").length;
-      const openN = pieces.filter((p) => p.section === s.id && p.status === "open").length;
+      const node = el("section", { class: "card eh-sec", id: `sec-${s.id}` });
       node.innerHTML = `
-        <header class="eh-sec-head">
-          <span class="eh-sec-num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
-          <div class="eh-sec-titles">
-            <p class="eh-sec-kicker">The Future of Health is&hellip;</p>
-            <h2 class="eh-sec-name">${esc(s.name)}</h2>
-            <p class="eh-sec-count">${plural(count, "piece")}${openN ? ` &middot; ${plural(openN, "open slot")}` : ""}</p>
+        <div class="card-header eh-ch eh-sec-h">
+          <div class="eh-sec-t">
+            <p class="eh-sec-num">${String(i + 1).padStart(2, "0")}</p>
+            <div><h2 class="eh-sec-name">${esc(s.name)}</h2><p class="card-subtitle">${plural(count, "piece")}</p></div>
           </div>
-          <div class="eh-sec-editor">
-            ${s.editor ? `<span class="eh-person">${avatar(s.editor, 40)}<span><small>Section editor</small>${esc(s.editor.name)}</span></span>` : `<span class="eh-person"><span><small>Section editor</small>Not assigned yet</span></span>`}
-            <span class="eh-sec-actions">
-              ${s.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(s.driveUrl)}" target="_blank" rel="noopener">${ICON.drive} Drive folder</a>` : ""}
-              ${isAdmin ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-section="${esc(s.id)}">${ICON.edit} Edit</button>` : ""}
-            </span>
+          <div class="eh-sec-ed">
+            ${s.editor ? `<span class="eh-person">${avatar(s.editor, 30)}<span><small>Editor</small>${esc(s.editor.name)}</span></span>` : `<span class="eh-muted">No editor yet</span>`}
+            ${s.driveUrl ? `<a class="btn btn-ghost btn-sm" href="${esc(s.driveUrl)}" target="_blank" rel="noopener" aria-label="${esc(s.name)} Drive folder">${ICON.drive}</a>` : ""}
+            ${isAdmin ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-section="${esc(s.id)}" aria-label="Edit ${esc(s.name)}">${ICON.edit}</button>` : ""}
           </div>
-        </header>
-        <details class="eh-sec-about"${view.q ? "" : ""}>
-          <summary>About this section</summary>
-          <p>${esc(s.blurb || "")}</p>
-          ${s.belongs ? `<p class="eh-belongs"><strong>What belongs here.</strong> ${esc(s.belongs)}</p>` : ""}
-        </details>
-        <ul class="eh-rows">${ps.map((p) => pieceRow(p)).join("") || `<li class="eh-row is-empty">No pieces yet.</li>`}</ul>
-        ${canEdit() ? `<p class="eh-add"><button type="button" class="btn btn-ghost btn-sm" data-add-piece="${esc(s.id)}">${ICON.plus} Add a piece</button></p>` : ""}`;
+        </div>
+        <details class="eh-secabout"><summary>About this section ${ICON.down}</summary><p>${esc(s.blurb || "")}</p>${s.belongs ? `<p class="eh-belongs"><strong>What belongs here.</strong> ${esc(s.belongs)}</p>` : ""}</details>
+        <ul class="eh-list">${ps.map(pieceRow).join("") || `<li class="eh-row is-empty">No pieces yet.</li>`}</ul>
+        ${canEdit() ? `<div class="eh-card-foot"><button type="button" class="btn btn-ghost btn-sm" data-add-piece="${esc(s.id)}">${ICON.plus} Add a piece</button></div>` : ""}`;
       list.appendChild(node);
     });
     const held = sorted(pieces.filter((p) => p.section === "held")).filter(matches);
-    if (held.length && view.filter !== "open" && view.filter !== "proposal") {
-      const d = el("details", { class: "eh-held" });
-      d.innerHTML = `<summary>Held for a later edition <span class="eh-muted">&middot; ${held.length}</span></summary><ul class="eh-rows">${held.map((p) => pieceRow(p)).join("")}</ul>`;
+    if (held.length && view.filter === "all") {
+      const d = el("details", { class: "card eh-held" });
+      d.innerHTML = `<summary class="card-header eh-ch"><div><h2 class="card-title">Held for a later edition</h2><p class="card-subtitle">${plural(held.length, "piece")}</p></div>${ICON.down}</summary><ul class="eh-list">${held.map(pieceRow).join("")}</ul>`;
       list.appendChild(d);
     }
-    if (!shown && !held.length) list.innerHTML = `<div class="eh-empty sm"><p>Nothing matches. <button type="button" class="eh-link" data-filter="all" data-clear>Show everything</button></p></div>`;
+    if (!shown && !held.length) list.innerHTML = `<div class="card"><div class="card-empty">Nothing matches. <button type="button" class="eh-link" data-filter="all" data-clear>Show everything</button></div></div>`;
   }
 
   // ── a piece
@@ -627,172 +560,149 @@ export async function mount(ctx, container) {
     const s = section(p.section);
     const ed = editorOf(p);
     const wrap = el("div", { class: "eh-piece" });
-    const qThreads = threadOf((m) => m.pieceId === p.id);
-    const openN = qThreads.filter((m) => m.kind === "question" && !m.resolved).length;
+    const threads = threadOf((m) => m.pieceId === p.id);
+    const openN = threads.filter((m) => m.kind === "question" && !m.resolved).length;
     const prog = canProgress(p);
+    const steps = p.nextSteps || [];
+    const done = steps.filter((x) => x.done).length;
+    const first = hardDate("first-draft");
+    const i = STAGE_INDEX[p.status] ?? 0;
+    const firstDone = i >= STAGE_INDEX.draft1;
+    const fn = first ? daysUntil(first.date) : null;
     wrap.innerHTML = `
-      <button type="button" class="eh-back" data-go="sections">${ICON.back} All pieces</button>
+      <button type="button" class="eh-back" data-go="pieces">${ICON.back} All pieces</button>
       <header class="eh-ph">
-        <p class="eh-ph-kicker">${s ? `${esc(String(sectionIndex(s.id) + 1).padStart(2, "0"))} &middot; ${esc(s.name)}` : "Held for a later edition"}${p.format ? ` &middot; ${esc(p.format)}` : ""}</p>
-        <h2 class="eh-ph-title">${esc(p.title)}</h2>
-        ${p.subtitle ? `<p class="eh-ph-sub">${esc(p.subtitle)}</p>` : ""}
-        <div class="eh-ph-people">
-          ${(p.writers || []).map((w) => `<span class="eh-person">${avatar(w, 40)}<span><small>${(p.writers || []).length > 1 ? "Writer" : "Writer"}</small>${esc(w.name)}</span></span>`).join("")}
-          ${ed ? `<span class="eh-person">${avatar(ed, 40)}<span><small>Section editor</small>${esc(ed.name)}</span></span>` : ""}
+        <div class="eh-ph-main">
+          <p class="eh-eyebrow">${s ? esc(s.name) : "Held for a later edition"}${p.format ? ` · ${esc(p.format)}` : ""}</p>
+          <h1 class="eh-ph-title">${esc(p.title)}</h1>
+          ${p.subtitle ? `<p class="eh-ph-sub">${esc(p.subtitle)}</p>` : ""}
+          <div class="eh-people">
+            ${(p.writers || []).map((w) => `<span class="eh-person">${avatar(w, 36)}<span><small>Writer</small>${esc(w.name)}</span></span>`).join("")}
+            ${ed ? `<span class="eh-person">${avatar(ed, 36)}<span><small>Editor</small>${esc(ed.name)}</span></span>` : ""}
+          </div>
+          ${p.placement ? `<p class="eh-placement">${esc(p.placement)}</p>` : ""}
         </div>
-        ${p.placement ? `<p class="eh-placement">${esc(p.placement)}</p>` : ""}
         <div class="eh-ph-actions">
-          ${p.status !== "open" ? `<button type="button" class="btn btn-primary btn-sm" data-compose="question" data-for="${esc(p.id)}">${ICON.q} Ask a question</button>
-          <button type="button" class="btn btn-secondary btn-sm" data-compose="update" data-for="${esc(p.id)}">${ICON.note} Share an update</button>` : ""}
-          ${canEdit() ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-piece="${esc(p.id)}">${ICON.edit} Edit piece</button>` : isMine(p) ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-mine="${esc(p.id)}">${ICON.edit} Edit title & format</button>` : ""}
+          ${p.status !== "open" ? `<button type="button" class="btn btn-primary" data-compose="question" data-for="${esc(p.id)}">${ICON.q} Ask a question</button>
+          <button type="button" class="btn btn-secondary" data-compose="update" data-for="${esc(p.id)}">${ICON.note} Share an update</button>` : ""}
+          ${canEdit() ? `<button type="button" class="btn btn-ghost" data-edit-piece="${esc(p.id)}">${ICON.edit} Edit</button>` : isMine(p) ? `<button type="button" class="btn btn-ghost" data-edit-mine="${esc(p.id)}">${ICON.edit} Edit title</button>` : ""}
         </div>
       </header>
-      ${SPECIAL[p.status] ? "" : stepper(p, prog)}
-      <div class="eh-pgrid">
-        <div class="eh-pmain">
-          <div class="eh-subtabs" role="tablist">
-            <button type="button" role="tab" class="eh-subtab${view.pieceTab === "proposal" ? " is-on" : ""}" aria-selected="${view.pieceTab === "proposal"}" data-ptab="proposal">Proposal${noteCount(p) ? ` <span class="eh-tab-n">${noteCount(p)} notes</span>` : ""}</button>
-            <button type="button" role="tab" class="eh-subtab${view.pieceTab === "talk" ? " is-on" : ""}" aria-selected="${view.pieceTab === "talk"}" data-ptab="talk">Questions & updates${qThreads.length ? ` <span class="eh-tab-n${openN ? " is-alert" : ""}">${openN ? `${openN} open` : qThreads.length}</span>` : ""}</button>
-          </div>
-          <div class="eh-ptab-body"></div>
-        </div>
-        <aside class="eh-pside"></aside>
-      </div>`;
-    const body = wrap.querySelector(".eh-ptab-body");
+      ${SPECIAL[p.status] ? "" : `
+      <section class="eh-tiles is-sm" aria-label="Progress">
+        <article class="eh-tile">
+          <p class="eh-tile-k">Stage</p>
+          ${prog ? `<label class="eh-stage-pick"><span class="sr-only">Move this piece to</span><select data-stage-select="${esc(p.id)}">${STAGES.map((x) => `<option value="${x.id}"${x.id === (p.status || "idea") ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>${ICON.down}</label>` : `<p class="eh-tile-title">${esc(STAGES[i].label)}</p>`}
+          <div class="eh-prog"><span style="width:${progressPct(p)}%"></span></div>
+          <p class="eh-tile-sub">Step ${i + 1} of ${STAGES.length} · ${esc(STAGES[i].hint)}</p>
+        </article>
+        <article class="eh-tile">
+          <p class="eh-tile-k">Next steps</p>
+          <p class="eh-tile-title">${steps.length ? `${done} of ${steps.length} done` : "None yet"}</p>
+          <div class="eh-prog"><span style="width:${steps.length ? (done / steps.length) * 100 : 0}%"></span></div>
+          <button type="button" class="eh-tile-link" data-pv="steps">See steps ${ICON.chev}</button>
+        </article>
+        <article class="eh-tile">
+          <p class="eh-tile-k">First draft</p>
+          <p class="eh-tile-title${!firstDone && fn != null && fn <= 7 ? " is-soon" : ""}">${firstDone ? "In" : fn == null ? "—" : fn < 0 ? "Overdue" : `Due ${esc(inDays(fn))}`}</p>
+          <p class="eh-tile-sub">${first ? esc(fmtDay(first.date, LONG)) : ""}</p>
+          ${p.draftUrl ? `<a class="eh-tile-link" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">Open the draft ${ICON.chev}</a>` : prog ? `<button type="button" class="eh-tile-link" data-draft-link="${esc(p.id)}">Add the draft link ${ICON.chev}</button>` : ""}
+        </article>
+      </section>`}
+      <nav class="eh-seg eh-ptabs" aria-label="This piece">
+        ${[["proposal", "Proposal", noteCount(p) ? `${noteCount(p)} notes` : ""], ["steps", "Steps<span class=\"eh-wide\"> & interviews</span>", ""], ["talk", "Questions", threads.length ? (openN ? `${openN} open` : String(threads.length)) : ""]].map(([id, l, n]) => `
+          <button type="button" class="eh-seg-b${view.pieceTab === id ? " is-on" : ""}" data-pv="${id}" ${view.pieceTab === id ? 'aria-current="page"' : ""}>${l}${n ? `<span class="eh-badge${id === "talk" && openN ? " is-alert" : ""}">${n}</span>` : ""}</button>`).join("")}
+      </nav>
+      <div class="eh-pbody"></div>`;
+    const body = wrap.querySelector(".eh-pbody");
     if (view.pieceTab === "talk") {
-      body.appendChild(composer({ pieceId: p.id }));
-      body.appendChild(threadList(qThreads, { showContext: false, empty: "No questions or updates on this piece yet. Ask the first one." }));
-    } else body.appendChild(proposalView(p));
-    wrap.querySelector(".eh-pside").append(...sideCards(p, prog));
+      body.appendChild(composerCard({ pieceId: p.id }));
+      body.appendChild(threadCard(threads, { showContext: false, empty: "No questions or updates yet. Ask the first one." }));
+    } else if (view.pieceTab === "steps") body.appendChild(stepsView(p, prog));
+    else body.appendChild(proposalView(p));
     return wrap;
   }
 
-  function stepper(p, prog) {
-    const i = STAGE_INDEX[p.status] ?? 0;
-    return `<ol class="eh-stepper${prog ? " is-live" : ""}" aria-label="Progress">
-      ${STAGES.map((s, k) => `<li class="${k < i ? "is-done" : k === i ? "is-now" : ""}">
-        ${prog ? `<button type="button" data-stage="${s.id}" data-piece-id="${esc(p.id)}" ${k === i ? 'aria-current="step"' : ""} title="${esc(s.hint)}">` : `<span ${k === i ? 'aria-current="step"' : ""} title="${esc(s.hint)}">`}
-          <span class="dot">${k < i ? ICON.check : k + 1}</span><span class="lbl">${esc(s.label)}</span>
-        ${prog ? "</button>" : "</span>"}
-      </li>`).join("")}
-    </ol>${prog ? `<p class="eh-stepper-hint">Tap a stage to move the piece there. ${isMine(p) ? "Your editor sees the change in Questions & updates." : ""}</p>` : ""}`;
-  }
-
   function proposalView(p) {
-    const node = el("div", { class: "eh-prop-wrap" });
+    const node = el("section", { class: "card eh-doc" });
     const pr = p.proposal;
     const mine = isMine(p);
     const canProp = mine || canEdit();
     const nN = noteCount(p);
     if (!pr) {
-      node.innerHTML = `
-        <div class="eh-empty sm eh-noprop">
-          <h3>No proposal here yet.</h3>
-          <p>${esc(p.proposalNote || (p.status === "open" ? "This slot is open. Pitch for it, and the section editor will get back to you." : "Once the proposal is in, it shows here with the editors' notes."))}</p>
-          ${p.candidates?.length ? `<div class="eh-cands"><p class="eh-flabel">Ideas on the table</p><ul>${p.candidates.map((c) => `<li>${esc(c)}</li>`).join("")}</ul></div>` : ""}
-          ${canProp && p.status !== "open" ? `<button type="button" class="btn btn-primary" data-edit-proposal="${esc(p.id)}">${mine ? "Add your proposal" : "Add the proposal"}</button>` : ""}
-          ${p.status === "open" ? `<button type="button" class="btn btn-primary" data-pitch="${esc(p.section)}">Pitch for this slot</button>` : ""}
-        </div>`;
+      node.innerHTML = `<div class="eh-noprop">
+        <h2>No proposal here yet</h2>
+        <p>${esc(p.proposalNote || (p.status === "open" ? "This slot is open. Pitch an idea, and the section editor will get back to you." : "Once the proposal is in, it shows here with the editors' notes."))}</p>
+        ${p.candidates?.length ? `<p class="section-title eh-st">Ideas on the table</p><ul class="eh-ticks">${p.candidates.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
+        ${canProp && p.status !== "open" ? `<button type="button" class="btn btn-primary" data-edit-proposal="${esc(p.id)}">${mine ? "Add your proposal" : "Add the proposal"}</button>` : ""}
+        ${p.status === "open" ? `<button type="button" class="btn btn-primary" data-pitch="${esc(p.section)}">Pitch an idea</button>` : ""}
+      </div>`;
       return node;
     }
-    const by = names(p.writers);
-    const head = el("div", { class: "eh-prop-tools" });
-    head.innerHTML = `
-      <p class="eh-prop-by">Proposal by <strong>${esc(by)}</strong>${p.updatedByName && p.updatedAt && !/seeded/i.test(p.updatedByName) ? ` <span class="eh-muted">&middot; updated ${esc(fmtRelative(p.updatedAt))}</span>` : ""}</p>
-      <span class="eh-prop-ctl">
-        ${nN ? `<label class="eh-switch"><input type="checkbox" ${view.showNotes ? "checked" : ""} data-toggle-notes><span class="tr" aria-hidden="true"></span>Editors' notes <strong>${nN}</strong></label>` : ""}
-        ${canProp ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-proposal="${esc(p.id)}">${ICON.edit} Edit proposal</button>` : ""}
-      </span>`;
-    node.appendChild(head);
-    const art = el("article", { class: `eh-prop${view.showNotes ? "" : " hide-notes"}` });
     const valueOf = (k) => (k === "title" ? p.title : k === "subtitle" ? p.subtitle : k === "format" ? p.format : pr[k]);
     const notesFor = (k) => (p.notes?.[k] || []);
-    let html = "";
+    let html = `
+      <div class="card-header eh-ch">
+        <div><h2 class="card-title">Proposal by ${esc(names(p.writers))}</h2>${p.updatedAt && p.updatedByName && !/seeded/i.test(p.updatedByName) ? `<p class="card-subtitle">Updated ${esc(fmtRelative(p.updatedAt))}</p>` : ""}</div>
+        <div class="eh-doc-ctl">
+          ${nN ? `<label class="eh-switch"><input type="checkbox" ${view.showNotes ? "checked" : ""} data-toggle-notes><span class="tr" aria-hidden="true"></span>Editors' notes</label>` : ""}
+          ${canProp ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-proposal="${esc(p.id)}">${ICON.edit} Edit</button>` : ""}
+        </div>
+      </div>
+      <div class="eh-doc-body${view.showNotes ? "" : " hide-notes"}">`;
     for (const g of PROPOSAL) {
       const rows = g.fields.filter(([k]) => (valueOf(k) && String(valueOf(k)).trim() && !/^tbd\b/i.test(String(valueOf(k)).trim())) || notesFor(k).length);
       const lead = g.lead ? notesFor(g.lead) : [];
       if (!rows.length && !lead.length) continue;
-      html += `<section class="eh-pg"><h3 class="eh-pg-h">${esc(g.group)}</h3>`;
-      if (lead.length) html += notesHtml(lead);
+      html += `<section class="eh-pg"><h3 class="section-title">${esc(g.group)}</h3>${notesHtml(lead)}`;
       for (const [k, label] of rows) {
         const v = valueOf(k);
-        html += `<div class="eh-field">
+        html += `<div class="eh-field${k === "takeaway" ? " is-key" : ""}">
           <p class="eh-flabel">${esc(label)}</p>
-          ${v ? `<div class="eh-ftext${k === "takeaway" ? " is-key" : ""}">${rich(v)}</div>` : `<p class="eh-ftext is-blank">Left blank</p>`}
+          ${v ? `<div class="eh-ftext">${rich(v)}</div>` : `<p class="eh-ftext is-blank">Left blank</p>`}
           ${notesHtml(notesFor(k))}
         </div>`;
       }
       html += `</section>`;
     }
-    if (p.general?.length) {
-      html += `<section class="eh-pg eh-general"><h3 class="eh-pg-h">The editors' overall feedback</h3>${p.general.map((t) => `<blockquote class="eh-gnote">${rich(t)}</blockquote>`).join("")}</section>`;
-    }
-    art.innerHTML = html;
-    node.appendChild(art);
+    if (p.general?.length) html += `<section class="eh-pg eh-general"><h3 class="section-title">The editors' overall feedback</h3>${p.general.map((t) => `<div class="eh-gnote">${rich(t)}</div>`).join("")}</section>`;
+    html += `</div>`;
+    node.innerHTML = html;
     return node;
   }
   function notesHtml(list) {
     if (!list?.length) return "";
-    return `<div class="eh-notes">${list.map((t) => `<aside class="eh-note"><span class="eh-note-tag">Editor's note</span>${rich(t)}</aside>`).join("")}</div>`;
+    return `<div class="eh-notes">${list.map((t) => `<aside class="eh-note"><span class="eh-note-k">Editor's note</span>${rich(t)}</aside>`).join("")}</div>`;
   }
 
-  function sideCards(p, prog) {
-    const out = [];
-    const mine = isMine(p);
-    // Next steps
+  function stepsView(p, prog) {
+    const wrap = el("div", { class: "eh-grid-2" });
     const steps = p.nextSteps || [];
-    if (steps.length || canEdit()) {
-      const c = el("section", { class: "eh-card" });
-      const done = steps.filter((s) => s.done).length;
-      c.innerHTML = `
-        <header class="eh-card-h"><h3>Next steps</h3>${steps.length ? `<span class="eh-muted">${done}/${steps.length}</span>` : ""}</header>
-        ${steps.length ? `<div class="eh-meter"><span style="width:${(done / steps.length) * 100}%"></span></div>` : ""}
-        <ul class="eh-checks">${steps.map((s) => `<li><label class="eh-check${s.done ? " is-done" : ""}"><input type="checkbox" data-step="${esc(s.id)}" data-piece-id="${esc(p.id)}" ${s.done ? "checked" : ""} ${prog ? "" : "disabled"}><span class="box">${ICON.check}</span><span class="txt">${esc(s.text)}</span></label></li>`).join("") || `<li class="eh-muted">None yet.</li>`}</ul>
-        ${canEdit() ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-steps="${esc(p.id)}">${ICON.edit} Edit steps</button>` : ""}`;
-      out.push(c);
-    }
-    // Deadlines for this piece
-    if (!SPECIAL[p.status]) {
-      const hard = (hub.dates || []).filter((d) => d.hard);
-      const i = STAGE_INDEX[p.status] ?? 0;
-      const c = el("section", { class: "eh-card" });
-      c.innerHTML = `<header class="eh-card-h"><h3>Deadlines</h3></header>
-        <ul class="eh-dues">${hard.map((d) => {
-          const reached = (d.id === "first-draft" && i >= STAGE_INDEX.draft1) || (d.id === "final-draft" && i >= STAGE_INDEX.final);
-          const n = daysUntil(d.date);
-          return `<li class="${reached ? "is-done" : n < 0 ? "is-late" : n <= 7 ? "is-soon" : ""}"><span class="eh-due-l">${esc(d.label)}</span><span class="eh-due-d">${esc(fmtDay(d.date))}</span><span class="eh-due-n">${reached ? "Done" : esc(inDays(n))}</span></li>`;
-        }).join("")}
-          <li><span class="eh-due-l">Launch day</span><span class="eh-due-d">${esc(fmtDay(hub.launch))}</span><span class="eh-due-n">${esc(inDays(daysUntil(hub.launch)))}</span></li>
-        </ul>
-        ${p.draftUrl ? `<a class="btn btn-secondary btn-sm eh-block-btn" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">${ICON.drive} Open the draft</a>` : ""}
-        ${section(p.section)?.driveUrl ? `<a class="btn btn-ghost btn-sm eh-block-btn" href="${esc(section(p.section).driveUrl)}" target="_blank" rel="noopener">${ICON.drive} ${esc(section(p.section).name)} folder</a>` : ""}
-        ${prog ? `<button type="button" class="btn btn-ghost btn-xs" data-draft-link="${esc(p.id)}">${p.draftUrl ? "Change the draft link" : "Add a link to the draft"}</button>` : ""}`;
-      out.push(c);
-    }
-    // Interviews
+    const done = steps.filter((s) => s.done).length;
+    const a = el("section", { class: "card" });
+    a.innerHTML = `
+      <div class="card-header eh-ch"><div><h2 class="card-title">Next steps</h2><p class="card-subtitle">${steps.length ? `${done} of ${steps.length} done${prog ? ". Tick them off as you go." : ""}` : "None yet."}</p></div>
+        ${canEdit() ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-steps="${esc(p.id)}">${ICON.edit} Edit</button>` : ""}</div>
+      <div class="card-body"><ul class="eh-checks">${steps.map((s) => `<li><label class="eh-check${s.done ? " is-done" : ""}"><input type="checkbox" data-step="${esc(s.id)}" data-piece-id="${esc(p.id)}" ${s.done ? "checked" : ""} ${prog ? "" : "disabled"}><span class="box">${ICON.check}</span><span class="txt">${esc(s.text)}</span></label></li>`).join("") || `<li class="eh-muted">The editors haven't added steps yet.</li>`}</ul></div>`;
     const ivs = p.interviews || [];
-    if (ivs.length || prog) {
-      const c = el("section", { class: "eh-card" });
-      const lbl = { done: "Done", scheduled: "Scheduled", planned: "Planned", wanted: "Wanted" };
-      c.innerHTML = `<header class="eh-card-h"><h3>Interviews</h3></header>
-        <ul class="eh-ivs">${ivs.map((v) => `<li>
-          <span class="eh-iv-st is-${esc(v.status || "planned")}">${esc(lbl[v.status] || "Planned")}</span>
-          <p class="eh-iv-who">${esc(v.person)}</p>
-          ${v.affiliation ? `<p class="eh-iv-aff">${esc(v.affiliation)}</p>` : ""}
-          ${v.when ? `<p class="eh-iv-when">${esc(v.when)}</p>` : ""}
-          ${v.note ? `<p class="eh-iv-note">${esc(v.note)}</p>` : ""}
-        </li>`).join("") || `<li class="eh-muted">None listed.</li>`}</ul>
-        ${prog ? `<button type="button" class="btn btn-ghost btn-xs" data-edit-iv="${esc(p.id)}">${ICON.edit} ${ivs.length ? "Update interviews" : "Add an interview"}</button>` : ""}
-        ${ivs.length ? `<p class="eh-tip">Send your angle and questions to ${editorOf(p) ? esc(firstName(editorOf(p).name)) : "your editor"} before each interview, and ask permission to record.</p>` : ""}`;
-      out.push(c);
+    const lbl = { done: "Done", scheduled: "Scheduled", planned: "Planned", wanted: "Wanted" };
+    const b = el("section", { class: "card" });
+    b.innerHTML = `
+      <div class="card-header eh-ch"><div><h2 class="card-title">Interviews</h2><p class="card-subtitle">${ivs.length ? `Send your angle and questions to ${editorOf(p) ? esc(firstName(editorOf(p).name)) : "your editor"} first, and ask permission to record.` : "None listed yet."}</p></div>
+        ${prog ? `<button type="button" class="btn btn-ghost btn-sm" data-edit-iv="${esc(p.id)}">${ivs.length ? `${ICON.edit} Edit` : `${ICON.plus} Add`}</button>` : ""}</div>
+      <ul class="eh-list">${ivs.map((v) => `<li class="eh-iv">
+        <div><p class="eh-row-title">${esc(v.person)}</p><p class="eh-meta">${esc([v.affiliation, v.when].filter(Boolean).join(" · "))}</p>${v.note ? `<p class="eh-meta eh-iv-note">${esc(v.note)}</p>` : ""}</div>
+        <span class="eh-tag is-iv-${esc(v.status || "planned")}">${esc(lbl[v.status] || "Planned")}</span>
+      </li>`).join("")}</ul>`;
+    wrap.append(a, b);
+    const sd = section(p.section)?.driveUrl;
+    if (p.draftUrl || sd || prog) {
+      const c = el("section", { class: "card eh-span-2" });
+      c.innerHTML = `<div class="card-header eh-ch"><div><h2 class="card-title">The draft</h2><p class="card-subtitle">Upload it to your section's Drive folder as “Name_Title_Draft1”, then set the stage to First draft in.</p></div>
+        <div class="eh-btnrow">${p.draftUrl ? `<a class="btn btn-secondary btn-sm" href="${esc(p.draftUrl)}" target="_blank" rel="noopener">${ICON.link} Open the draft</a>` : ""}${sd ? `<a class="btn btn-ghost btn-sm" href="${esc(sd)}" target="_blank" rel="noopener">${ICON.drive} Section folder</a>` : ""}${prog ? `<button type="button" class="btn btn-ghost btn-sm" data-draft-link="${esc(p.id)}">${p.draftUrl ? "Change link" : `${ICON.plus} Add the link`}</button>` : ""}</div></div>`;
+      wrap.appendChild(c);
     }
-    if (mine && !SPECIAL[p.status]) {
-      const c = el("section", { class: "eh-card eh-card-quiet" });
-      c.innerHTML = `<header class="eh-card-h"><h3>Your first draft</h3></header>
-        <p class="eh-tip">Due ${esc(fmtDay((hub.dates || []).find((d) => d.id === "first-draft")?.date, { weekday: "long", month: "long", day: "numeric" }))}. Upload it to your section's Drive folder as “Name_Title_Draft1”, then move this piece to <em>First draft in</em>.</p>`;
-      out.push(c);
-    }
-    return out;
+    return wrap;
   }
 
   // ── Questions & updates
@@ -815,38 +725,37 @@ export async function mount(ctx, container) {
   function composer({ pieceId = "", sectionId = "", kind = "question", choose = false, compact = false, prefill = "", onSent = null } = {}) {
     const node = el("form", { class: `eh-compose${compact ? " is-compact" : ""}`, novalidate: "" });
     const key = `c:${pieceId || sectionId || "all"}:${choose ? "pick" : "fixed"}`;
-    let state = { kind, pieceId, sectionId };
+    const state = { kind, pieceId, sectionId };
     const kinds = ["question", "update", ...(isHubEditor() || isAdmin ? ["announcement"] : [])];
     const aboutOptions = () => `
       <option value="">The whole edition</option>
       <optgroup label="Sections">${(hub.sections || []).map((s) => `<option value="s:${esc(s.id)}"${state.sectionId === s.id && !state.pieceId ? " selected" : ""}>${esc(s.name)}</option>`).join("")}</optgroup>
       ${(hub.sections || []).map((s) => {
         const ps = sorted(pieces.filter((p) => p.section === s.id && p.status !== "open"));
-        return ps.length ? `<optgroup label="${esc(s.name)} pieces">${ps.map((p) => `<option value="p:${esc(p.id)}"${state.pieceId === p.id ? " selected" : ""}>${esc(p.title.length > 70 ? `${p.title.slice(0, 68)}…` : p.title)} (${esc(names(p.writers).split(" & ").map(firstName).join(" & "))})</option>`).join("")}</optgroup>` : "";
+        return ps.length ? `<optgroup label="${esc(s.name)}">${ps.map((p) => `<option value="p:${esc(p.id)}"${state.pieceId === p.id ? " selected" : ""}>${esc(clip(p.title, 64))} (${esc(firstNames(p.writers))})</option>`).join("")}</optgroup>` : "";
       }).join("")}`;
     const paint = () => {
       node.innerHTML = `
         <div class="eh-compose-top">
-          <div class="eh-seg" role="radiogroup" aria-label="Kind of post">
+          <div class="eh-seg is-sm" role="radiogroup" aria-label="Kind of post">
             ${kinds.map((k) => `<button type="button" role="radio" aria-checked="${state.kind === k}" class="eh-seg-b${state.kind === k ? " is-on" : ""}" data-kind="${k}">${KIND[k].label}</button>`).join("")}
           </div>
           ${choose ? `<label class="eh-about"><span>About</span><select data-about>${aboutOptions()}</select></label>` : ""}
         </div>
         <label class="sr-only" for="${esc(key)}">${esc(KIND[state.kind].verb)}</label>
-        <textarea id="${esc(key)}" rows="${compact ? 3 : 4}" maxlength="4000" placeholder="${esc(KIND[state.kind].ph)}" data-keep="${esc(key)}"></textarea>
+        <textarea id="${esc(key)}" rows="${compact ? 3 : 3}" maxlength="4000" placeholder="${esc(KIND[state.kind].ph)}" data-keep="${esc(key)}"></textarea>
         <div class="eh-compose-foot">
-          <p class="eh-to">Goes to: <strong>${esc(recipientsFor({ ...state }))}</strong> <span class="eh-muted">(bell notification)</span></p>
+          <p class="eh-to">Goes to <strong>${esc(recipientsFor({ ...state }))}</strong></p>
           <button type="submit" class="btn btn-primary btn-sm">${esc(KIND[state.kind].verb)}</button>
         </div>`;
-      const ta = node.querySelector("textarea");
-      ta.value = drafts.get(key) || prefill || "";
+      node.querySelector("textarea").value = drafts.get(key) || prefill || "";
     };
     paint();
     node.addEventListener("click", (e) => {
       const b = e.target.closest("[data-kind]");
       if (!b) return;
-      const text = node.querySelector("textarea").value;
-      state.kind = b.dataset.kind; drafts.set(key, text); paint();
+      drafts.set(key, node.querySelector("textarea").value);
+      state.kind = b.dataset.kind; paint();
       node.querySelector("textarea").focus();
     });
     node.addEventListener("change", (e) => {
@@ -869,6 +778,11 @@ export async function mount(ctx, container) {
       if (ok) { drafts.delete(key); ta.value = ""; toast(state.kind === "question" ? "Question sent." : "Posted.", "success"); onSent?.(); }
     });
     return node;
+  }
+  function composerCard(opts) {
+    const c = el("section", { class: "card eh-compose-card" });
+    c.appendChild(composer(opts));
+    return c;
   }
 
   async function post({ kind, text, pieceId = "", sectionId = "", parentId = "", auto = false }) {
@@ -893,30 +807,27 @@ export async function mount(ctx, container) {
   }
 
   function talkView() {
-    const wrap = el("div", { class: "eh-talk" });
-    const head = el("header", { class: "eh-bh" });
-    head.innerHTML = `<h2>Questions & updates</h2><p>Ask the editors or a writer anything about the edition, and share how your piece is going. People get a bell notification when a post is about them.</p>`;
-    wrap.appendChild(head);
-    wrap.appendChild(composer({ choose: true }));
-    const filters = el("div", { class: "eh-chips eh-talk-filters", role: "group", "aria-label": "Show" });
+    const wrap = el("div", { class: "eh-stack" });
+    wrap.appendChild(composerCard({ choose: true }));
     const all = threadOf(() => true);
     const open = all.filter((m) => m.kind === "question" && !m.resolved);
-    const mineF = all.filter((m) => m.authorUid === me.uid || pieces.some((p) => p.id === m.pieceId && (isMine(p) || edits(section(p.section)))) || (m.sectionId && !m.pieceId && edits(section(m.sectionId))));
-    const opts = [["all", "Everything", all.length], ["open", "Open questions", open.length], ["updates", "Updates", all.filter((m) => m.kind === "update").length], ["mine", "About me", mineF.length], ["announce", "Announcements", all.filter((m) => m.kind === "announcement").length]];
-    filters.innerHTML = opts.map(([id, l, n]) => `<button type="button" class="eh-chip${view.talkFilter === id ? " is-on" : ""}" data-tfilter="${id}" aria-pressed="${view.talkFilter === id}">${l}${n ? ` <span>${n}</span>` : ""}</button>`).join("");
-    wrap.appendChild(filters);
-    const list = { all, open, updates: all.filter((m) => m.kind === "update"), mine: mineF, announce: all.filter((m) => m.kind === "announcement") }[view.talkFilter] || all;
-    wrap.appendChild(threadList(list, { showContext: true, empty: view.talkFilter === "open" ? "No open questions. Everything's been answered." : "Nothing here yet." }));
+    const aboutMe = all.filter((m) => m.authorUid === me.uid || pieces.some((p) => p.id === m.pieceId && (isMine(p) || edits(section(p.section)))) || (m.sectionId && !m.pieceId && edits(section(m.sectionId))));
+    const updates = all.filter((m) => m.kind === "update" || m.kind === "announcement");
+    const sets = { all, open, mine: aboutMe, updates };
+    const bar = el("div", { class: "eh-toolbar" });
+    bar.innerHTML = `<div class="eh-seg is-sm" role="group" aria-label="Show">${[["all", "Everything", all.length], ["open", "Open questions", open.length], ["mine", "About me", aboutMe.length], ["updates", "Updates", updates.length]].map(([id, l, n]) => `<button type="button" class="eh-seg-b${view.talkFilter === id ? " is-on" : ""}" data-tfilter="${id}" aria-pressed="${view.talkFilter === id}">${l}${n ? `<span class="eh-badge">${n}</span>` : ""}</button>`).join("")}</div>`;
+    wrap.appendChild(bar);
+    wrap.appendChild(threadCard(sets[view.talkFilter] || all, { showContext: true, empty: view.talkFilter === "open" ? "No open questions. Everything has been answered." : "Nothing here yet. Ask a question or share an update above." }));
     return wrap;
   }
 
-  function threadList(list, { showContext = true, empty = "Nothing yet." } = {}) {
-    const ul = el("ul", { class: "eh-threads" });
-    if (!list.length) { ul.innerHTML = `<li class="eh-empty sm"><p>${esc(empty)}</p></li>`; return ul; }
+  function threadCard(list, { showContext = true, empty = "Nothing yet." } = {}) {
+    const c = el("section", { class: "card" });
+    if (!list.length) { c.innerHTML = `<div class="card-empty">${esc(empty)}</div>`; return c; }
     // Open questions first, then newest.
     const items = [...list].sort((a, b) => (Number(b.kind === "question" && !b.resolved) - Number(a.kind === "question" && !a.resolved)) || String(b.createdAt).localeCompare(String(a.createdAt)));
-    ul.innerHTML = items.map((m) => messageHtml(m, { showContext })).join("");
-    return ul;
+    c.innerHTML = `<ul class="eh-threads">${items.map((m) => messageHtml(m, { showContext })).join("")}</ul>`;
+    return c;
   }
 
   function messageHtml(m, { showContext = true, isReply = false } = {}) {
@@ -925,24 +836,23 @@ export async function mount(ctx, container) {
     const author = { name: m.authorName, slug: m.authorSlug };
     const isQ = m.kind === "question";
     const mineMsg = m.authorUid === me.uid;
-    const ctxLabel = p ? `<button type="button" class="eh-link" data-piece="${esc(p.id)}" data-ptab-go="talk">${esc(p.title.length > 64 ? `${p.title.slice(0, 62)}…` : p.title)}</button>` : s ? esc(s.name) : "The whole edition";
+    const ctxLabel = p ? `<button type="button" class="eh-link" data-piece="${esc(p.id)}" data-pv="talk">${esc(clip(p.title, 64))}</button>` : s ? esc(s.name) : "The whole edition";
     const replies = isReply ? [] : repliesTo(m.id);
     return `<li class="eh-msg${isQ && !m.resolved ? " is-open" : ""}${m.kind === "announcement" ? " is-announce" : ""}${m.auto ? " is-auto" : ""}${isReply ? " is-reply" : ""}" id="m-${esc(m.id)}">
       <div class="eh-msg-av">${avatar(author, isReply ? 28 : 36)}</div>
       <div class="eh-msg-body">
         <p class="eh-msg-head">
-          <strong>${esc(m.authorName || "Someone")}</strong>${m.authorRole ? `<span class="eh-msg-role">${esc(m.authorRole)}</span>` : ""}
-          ${isReply ? "" : `<span class="eh-kind is-${esc(m.kind)}${isQ && m.resolved ? " is-resolved" : ""}">${isQ ? (m.resolved ? `${ICON.check} Answered` : "Question") : esc(KIND[m.kind]?.label || "Update")}</span>`}
-          <time datetime="${esc(m.createdAt)}" title="${esc(new Date(m.createdAt).toLocaleString("en-US"))}">${esc(fmtRelative(m.createdAt))}${m.editedAt ? " (edited)" : ""}</time>
+          <strong>${esc(m.authorName || "Someone")}</strong>${m.authorRole ? `<span class="eh-muted">${esc(m.authorRole)}</span>` : ""}
+          ${isReply ? "" : `<span class="eh-tag is-k-${esc(m.kind)}${isQ && m.resolved ? " is-resolved" : ""}">${isQ ? (m.resolved ? `${ICON.check} Answered` : "Question") : esc(KIND[m.kind]?.label || "Update")}</span>`}
+          <time datetime="${esc(m.createdAt)}" title="${esc(new Date(m.createdAt).toLocaleString("en-US"))}">${esc(fmtRelative(m.createdAt))}${m.editedAt ? " · edited" : ""}</time>
         </p>
         ${showContext && !isReply ? `<p class="eh-msg-ctx">On ${ctxLabel}</p>` : ""}
-        <div class="eh-msg-text" data-text-of="${esc(m.id)}">${rich(m.text)}</div>
+        <div class="eh-msg-text">${rich(m.text)}</div>
         <div class="eh-msg-actions">
-          ${!isReply && !m.auto ? `<button type="button" class="eh-act" data-reply="${esc(m.id)}">Reply${replies.length ? ` (${replies.length})` : ""}</button>` : ""}
+          ${!isReply && !m.auto ? `<button type="button" class="eh-act" data-reply="${esc(m.id)}">Reply${replies.length ? ` · ${replies.length}` : ""}</button>` : ""}
           ${isQ && !isReply ? `<button type="button" class="eh-act" data-resolve="${esc(m.id)}" data-val="${m.resolved ? "0" : "1"}">${m.resolved ? "Reopen" : "Mark answered"}</button>` : ""}
           ${mineMsg && !m.auto ? `<button type="button" class="eh-act" data-edit-msg="${esc(m.id)}">Edit</button>` : ""}
           ${mineMsg || isAdmin ? `<button type="button" class="eh-act is-danger" data-del-msg="${esc(m.id)}">Delete</button>` : ""}
-          ${isQ && m.resolved && m.resolvedByName ? `<span class="eh-muted">Marked answered by ${esc(firstName(m.resolvedByName))}</span>` : ""}
         </div>
         ${replies.length ? `<ul class="eh-replies">${replies.map((r) => messageHtml(r, { showContext: false, isReply: true })).join("")}</ul>` : ""}
         ${isReply ? "" : `<div class="eh-reply-slot" data-reply-slot="${esc(m.id)}"></div>`}
@@ -958,20 +868,17 @@ export async function mount(ctx, container) {
     const key = `r:${id}`;
     const f = el("form", { class: "eh-reply-form" });
     f.innerHTML = `<label class="sr-only" for="${esc(key)}">Reply</label><textarea id="${esc(key)}" rows="2" maxlength="4000" placeholder="Write a reply" data-keep="${esc(key)}"></textarea>
-      <div class="eh-reply-foot">${m?.kind === "question" && !m.resolved ? `<label class="eh-inline-check"><input type="checkbox" checked data-and-resolve> Mark answered</label>` : "<span></span>"}<span><button type="button" class="btn btn-ghost btn-xs" data-cancel>Cancel</button><button type="submit" class="btn btn-primary btn-xs">Reply</button></span></div>`;
+      <div class="eh-reply-foot">${m?.kind === "question" && !m.resolved ? `<label class="eh-inline-check"><input type="checkbox" checked data-and-resolve> Mark answered</label>` : "<span></span>"}<span><button type="button" class="btn btn-ghost btn-sm" data-cancel>Cancel</button><button type="submit" class="btn btn-primary btn-sm">Reply</button></span></div>`;
     f.querySelector("textarea").value = drafts.get(key) || "";
     f.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); f.requestSubmit(); } });
-    f.querySelector("[data-cancel]").addEventListener("click", () => { drafts.delete(key); f.remove(); });
+    f.querySelector("[data-cancel]").addEventListener("click", () => { drafts.delete(key); openReplies.delete(id); f.remove(); });
     f.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = f.querySelector("textarea").value.trim();
       if (!text) return;
       const andResolve = f.querySelector("[data-and-resolve]")?.checked;
       const ok = await post({ kind: "reply", text, parentId: id, pieceId: m?.pieceId || "", sectionId: m?.sectionId || "" });
-      if (ok) {
-        drafts.delete(key);
-        if (andResolve) resolve(id, true);
-      }
+      if (ok) { drafts.delete(key); openReplies.delete(id); if (andResolve) resolve(id, true); }
     });
     slot.appendChild(f);
     f.querySelector("textarea").focus();
@@ -988,44 +895,39 @@ export async function mount(ctx, container) {
     } catch { toast("Couldn't update that question.", "error"); }
   }
 
-  // ── For social
+  // ── Social
   function socialView() {
-    const wrap = el("div", { class: "eh-social" });
+    const wrap = el("div", { class: "eh-stack" });
     const launchN = daysUntil(hub.launch);
-    const fin = (hub.dates || []).find((d) => d.id === "final-draft");
+    const fin = hardDate("final-draft");
     const list = sorted(realPieces());
     const tags = [...new Set(list.flatMap((p) => (p.interviews || []).filter((v) => v.status !== "wanted").map((v) => v.affiliation)).filter(Boolean).map((a) => a.replace(/^(Director|Head PI|Epidemiologist|Bioethicist|MD\/PhD, medical historian),?\s*/i, "")))];
+    const finals = list.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.final).length;
     wrap.innerHTML = `
-      <header class="eh-bh"><h2>For the social team</h2><p>Everything you need to plan the launch. Titles can still change until final drafts are in${fin ? ` (${esc(fmtDay(fin.date))})` : ""}, so check back before you design.</p></header>
-      <ul class="eh-glance">
-        <li><strong>${launchN > 0 ? launchN : 0}</strong><span>${launchN > 0 ? `days to launch (${esc(fmtDay(hub.launch))})` : "Launched"}</span></li>
-        <li><strong>${list.length}</strong><span>pieces in the lineup</span></li>
-        <li><strong>${(hub.sections || []).length}</strong><span>sections</span></li>
-        <li><strong>${list.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.final).length}</strong><span>final drafts in</span></li>
-      </ul>
-      <section class="eh-block">
-        <header class="eh-bh"><h3 class="eh-h3">Copy-ready lines</h3></header>
-        <ul class="eh-copy-list">
-          <li><p><strong>The theme.</strong> ${esc(hub.theme)} ${esc(hub.intro || "")}</p><button type="button" class="btn btn-ghost btn-xs" data-copy="${esc(`${hub.theme} ${hub.intro || ""}`)}">${ICON.copy} Copy</button></li>
-          ${(hub.sections || []).map((s) => `<li><p><strong>The Future of Health is ${esc(endStop(s.name))}</strong> ${esc(s.blurb || "")}</p><button type="button" class="btn btn-ghost btn-xs" data-copy="${esc(`The Future of Health is ${endStop(s.name)} ${s.blurb || ""}`)}">${ICON.copy} Copy</button></li>`).join("")}
-        </ul>
+      <section class="eh-tiles" aria-label="Launch">
+        <article class="eh-tile is-main"><p class="eh-tile-k">Launch</p><p class="eh-tile-big">${launchN > 0 ? `<span class="n">${launchN}</span><span class="u">days</span>` : `<span class="n">Live</span>`}</p><p class="eh-tile-sub">${esc(fmtDay(hub.launch, LONG))}</p></article>
+        <article class="eh-tile"><p class="eh-tile-k">In the lineup</p><p class="eh-tile-big"><span class="n">${list.length}</span><span class="u">pieces</span></p><p class="eh-tile-sub">Across ${plural((hub.sections || []).length, "section")}</p></article>
+        <article class="eh-tile"><p class="eh-tile-k">Final drafts in</p><p class="eh-tile-big"><span class="n">${finals}</span><span class="u">of ${list.length}</span></p><p class="eh-tile-sub">Titles can change until ${fin ? esc(fmtDay(fin.date, { month: "long", day: "numeric" })) : "final drafts"}</p></article>
       </section>
-      ${tags.length ? `<section class="eh-block"><header class="eh-bh"><h3 class="eh-h3">People and places to tag</h3><p>From the interviews so far. Confirm the right handles before posting.</p></header><p class="eh-tags">${tags.map((t) => `<span class="eh-tagchip">${esc(t)}</span>`).join("")}</p></section>` : ""}
-      <section class="eh-block">
-        <header class="eh-bh"><h3 class="eh-h3">The lineup</h3></header>
-        <div class="eh-lineup">${(hub.sections || []).map((s) => {
-          const ps = list.filter((p) => p.section === s.id);
-          if (!ps.length) return "";
-          return `<div class="eh-lu-sec"><h4 class="eh-lu-h">${esc(s.name)}</h4><ul class="eh-lu">${ps.map((p) => `
-            <li class="eh-lu-item">
-              <div class="eh-lu-top"><p class="eh-lu-title">${esc(p.title)}</p>${statusPill(p)}</div>
-              <p class="eh-lu-by">${esc(names(p.writers))}${p.format ? ` &middot; ${esc(p.format)}` : ""}</p>
-              ${p.subtitle ? `<p class="eh-lu-hook"><span>Hook</span>${esc(p.subtitle)} <button type="button" class="eh-act" data-copy="${esc(p.subtitle)}">${ICON.copy} Copy</button></p>` : ""}
-              ${p.proposal?.visuals ? `<p class="eh-lu-vis"><span>Visual ideas</span>${esc(p.proposal.visuals)}</p>` : ""}
-              ${(p.interviews || []).filter((v) => v.status !== "wanted").length ? `<p class="eh-lu-vis"><span>Featuring</span>${esc((p.interviews || []).filter((v) => v.status !== "wanted").map((v) => `${v.person}${v.affiliation ? ` (${v.affiliation})` : ""}`).join("; "))}</p>` : ""}
-            </li>`).join("")}</ul></div>`;
-        }).join("")}</div>
-      </section>`;
+      ${(hub.sections || []).map((s) => {
+        const ps = list.filter((p) => p.section === s.id);
+        if (!ps.length) return "";
+        return `<section class="card">
+          <div class="card-header eh-ch"><div><h2 class="card-title">${esc(s.name)}</h2><p class="card-subtitle">${plural(ps.length, "piece")}</p></div><button type="button" class="btn btn-ghost btn-sm" data-copy="${esc(`The Future of Health is ${endStop(s.name)} ${s.blurb || ""}`)}">${ICON.copy} Copy section blurb</button></div>
+          <ul class="eh-list">${ps.map((p) => `<li class="eh-lu">
+            <div class="eh-lu-top"><div><p class="eh-row-title">${esc(p.title)}</p><p class="eh-meta">${esc(names(p.writers))}${p.format ? ` · ${esc(p.format)}` : ""}</p></div>${stage(p)}</div>
+            ${p.subtitle ? `<div class="eh-hook"><p>${esc(p.subtitle)}</p><button type="button" class="btn btn-ghost btn-xs" data-copy="${esc(p.subtitle)}">${ICON.copy} Copy</button></div>` : ""}
+            ${p.proposal?.visuals || (p.interviews || []).some((v) => v.status !== "wanted") ? `<dl class="eh-lu-dl">
+              ${p.proposal?.visuals ? `<dt>Visual ideas</dt><dd>${esc(p.proposal.visuals)}</dd>` : ""}
+              ${(p.interviews || []).some((v) => v.status !== "wanted") ? `<dt>Featuring</dt><dd>${esc((p.interviews || []).filter((v) => v.status !== "wanted").map((v) => `${v.person}${v.affiliation ? ` (${v.affiliation})` : ""}`).join("; "))}</dd>` : ""}
+            </dl>` : ""}
+          </li>`).join("")}</ul>
+        </section>`;
+      }).join("")}
+      <div class="eh-grid-2">
+        <section class="card"><div class="card-header eh-ch"><div><h2 class="card-title">The theme</h2></div><button type="button" class="btn btn-ghost btn-sm" data-copy="${esc(`${hub.theme} ${hub.intro || ""}`)}">${ICON.copy} Copy</button></div><div class="card-body"><p class="eh-quote">${esc(hub.theme)} ${esc(hub.intro || "")}</p></div></section>
+        ${tags.length ? `<section class="card"><div class="card-header eh-ch"><div><h2 class="card-title">People and places to tag</h2><p class="card-subtitle">From the interviews so far. Check each handle before posting.</p></div></div><div class="card-body"><p class="eh-chips">${tags.map((t) => `<span class="eh-chip">${esc(t)}</span>`).join("")}</p></div></section>` : ""}
+      </div>`;
     return wrap;
   }
 
@@ -1101,7 +1003,7 @@ export async function mount(ctx, container) {
     const footer = [
       ...(isAdmin && !isNew ? [el("button", { type: "button", class: "btn btn-danger btn-sm eh-left", onclick: async () => {
         if (!(await confirmDialog(`Delete “${cur.title}” from this edition? Its questions and updates stay in the feed.`, { confirmText: "Delete", danger: true }))) return;
-        try { await deleteDoc(doc(db, "edition_hub", EDITION, "pieces", cur.id)); m.close(); go({ piece: null, tab: "sections" }); toast("Deleted."); } catch { toast("Couldn't delete it.", "error"); }
+        try { await deleteDoc(doc(db, "edition_hub", EDITION, "pieces", cur.id)); m.close(); go({ piece: null, tab: "pieces" }); toast("Deleted."); } catch { toast("Couldn't delete it.", "error"); }
       } }, "Delete")] : []),
       el("button", { type: "button", class: "btn btn-secondary", onclick: () => m.close() }, "Cancel"),
       el("button", { type: "button", class: "btn btn-primary", onclick: () => body.requestSubmit() }, isNew ? "Add piece" : "Save"),
@@ -1350,24 +1252,24 @@ export async function mount(ctx, container) {
     setTimeout(() => box.querySelector("textarea")?.focus(), 30);
   }
 
+
   // ── one click handler for the whole page
   root.addEventListener("click", async (e) => {
-    const t = e.target.closest("button, a, input");
+    const t = e.target.closest("button, a");
     if (!t || !root.contains(t)) return;
     const d = t.dataset;
     if (d.go) { go({ tab: d.go, piece: null }); return; }
-    if (d.piece) { go({ piece: d.piece, pieceTab: d.ptabGo === "talk" ? "talk" : "proposal" }); return; }
-    if (d.ptab) { view.pieceTab = d.ptab; go({}); return; }
+    if (d.piece) { go({ piece: d.piece, pieceTab: d.pv || "proposal" }); return; }
+    if (d.pv) { go({ pieceTab: d.pv }); return; }
     if (d.filter) { view.filter = d.filter; if (d.clear !== undefined) view.q = ""; render(); return; }
     if (d.tfilter) { view.talkFilter = d.tfilter; render(); return; }
-    if (d.ask) { composeModal({ pieceId: d.ask, kind: "question" }); return; }
     if (d.compose) { composeModal({ pieceId: d.for, kind: d.compose }); return; }
     if (d.pitch) { const s = section(d.pitch); composeModal({ sectionId: d.pitch, kind: "question", prefill: `I'd like to pitch for an open slot in ${s?.name || "this section"}. My idea: ` }); return; }
     if (d.reply) { openReplies.add(d.reply); openReply(d.reply); return; }
     if (d.resolve) { resolve(d.resolve, d.val === "1"); return; }
     if (d.editMsg) { editMessage(d.editMsg); return; }
     if (d.delMsg) {
-      if (!(await confirmDialog("Delete this post? Replies to it will lose their question.", { confirmText: "Delete", danger: true }))) return;
+      if (!(await confirmDialog("Delete this post? Its replies go with it from view.", { confirmText: "Delete", danger: true }))) return;
       if (!canWrite()) return;
       try { await deleteDoc(doc(db, "edition_hub", EDITION, "messages", d.delMsg)); } catch { toast("Couldn't delete it.", "error"); }
       return;
@@ -1383,32 +1285,29 @@ export async function mount(ctx, container) {
     if (d.editIv) { editInterviews(pieces.find((x) => x.id === d.editIv)); return; }
     if (d.editSteps) { editSteps(pieces.find((x) => x.id === d.editSteps)); return; }
     if (d.draftLink) { editDraftLink(pieces.find((x) => x.id === d.draftLink)); return; }
-    if (d.editSection !== undefined && d.editSection) { editSection(section(d.editSection)); return; }
+    if (d.editSection) { editSection(section(d.editSection)); return; }
     if (d.editDates !== undefined) { editDates(); return; }
-    if (d.stage && d.pieceId) {
-      const p = pieces.find((x) => x.id === d.pieceId);
-      if (!p || p.status === d.stage) return;
-      const label = STAGES[STAGE_INDEX[d.stage]].label;
-      savePiece(p.id, { status: d.stage }, { note: `Moved this piece to “${label}”.` });
-      return;
-    }
   });
   root.addEventListener("change", (e) => {
     const t = e.target;
-    if (t.matches("[data-toggle-notes]")) { view.showNotes = t.checked; root.querySelector(".eh-prop")?.classList.toggle("hide-notes", !t.checked); return; }
+    if (t.matches("[data-toggle-notes]")) { view.showNotes = t.checked; root.querySelector(".eh-doc-body")?.classList.toggle("hide-notes", !t.checked); return; }
+    if (t.matches("[data-stage-select]")) {
+      const p = pieces.find((x) => x.id === t.dataset.stageSelect);
+      if (!p || p.status === t.value) return;
+      savePiece(p.id, { status: t.value }, { note: `Moved this piece to “${STAGES[STAGE_INDEX[t.value]].label}”.` });
+      return;
+    }
     if (t.matches("[data-step]")) {
       const p = pieces.find((x) => x.id === t.dataset.pieceId);
       if (!p) return;
-      const steps = (p.nextSteps || []).map((s) => s.id === t.dataset.step ? { ...s, done: t.checked } : s);
-      savePiece(p.id, { nextSteps: steps });
+      savePiece(p.id, { nextSteps: (p.nextSteps || []).map((s) => s.id === t.dataset.step ? { ...s, done: t.checked } : s) });
       return;
     }
     if (t.matches("[data-todo]") || t.matches("[data-decision]")) {
       const isTodo = t.matches("[data-todo]");
       const key = isTodo ? "editorTodos" : "decisions";
       const id = isTodo ? t.dataset.todo : t.dataset.decision;
-      const list = (hub[key] || []).map((x) => x.id === id ? { ...x, [isTodo ? "done" : "resolved"]: t.checked } : x);
-      saveHub({ [key]: list });
+      saveHub({ [key]: (hub[key] || []).map((x) => x.id === id ? { ...x, [isTodo ? "done" : "resolved"]: t.checked } : x) });
     }
   });
 
@@ -1416,471 +1315,388 @@ export async function mount(ctx, container) {
   // reads the URL and paints from the cache at once.
 
   // Re-open reply boxes after a live re-render.
-  const mo = new MutationObserver(() => { openReplies.forEach((id) => { const slot = root.querySelector(`[data-reply-slot="${CSS.escape(id)}"]`); if (slot && !slot.firstChild && drafts.get(`r:${id}`)) openReply(id); }); });
+  const mo = new MutationObserver(() => { openReplies.forEach((id) => { const slot = root.querySelector(`[data-reply-slot="${CSS.escape(id)}"]`); if (slot && !slot.firstChild) openReply(id); }); });
   mo.observe(root, { childList: true });
 
   render();
 
   return () => {
     unsubs.forEach((u) => { try { u(); } catch {} });
-    clearInterval(heroTimer);
+    clearInterval(wordTimer);
     mo.disconnect();
+    document.body.classList.remove("eh-calm");
     container.classList.remove("eh-content");
   };
 }
 
 // ── styles
+// The Suite's own cards, buttons and type, set on a plain page: no seasonal
+// washes behind it, generous space, one accent (ink), color only for meaning.
 function injectStyle() {
   if (document.getElementById("eh-style")) return;
   const s = document.createElement("style");
   s.id = "eh-style";
   s.textContent = `
-.eh { --eh-gap: 28px; max-width: 1180px; margin: 0 auto; padding-bottom: 64px; color: var(--ink); }
+body.eh-calm, html[data-suite-theme] body.eh-calm { background: var(--surface-2); }
+body.eh-calm::before { display: none !important; }
+html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var(--surface-2) 88%, transparent); }
+
+.eh { max-width: 1080px; margin: 0 auto; padding: 8px 0 72px; color: var(--ink); }
 .eh .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.eh-muted { color: var(--muted); font-weight: 400; }
-.eh-link { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ink) 30%, transparent); text-underline-offset: 3px; cursor: pointer; text-align: left; }
+.eh button:focus-visible, .eh a:focus-visible, .eh select:focus-visible, .eh textarea:focus-visible, .eh input:focus-visible, .eh summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.eh .card + .card { margin-top: 0; }
+.eh-stack { display: flex; flex-direction: column; gap: 20px; }
+.eh-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.eh-span-2 { grid-column: 1 / -1; }
+.eh-muted { color: var(--muted); }
+.eh-link { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ink) 25%, transparent); text-underline-offset: 3px; }
 .eh-link:hover { text-decoration-color: var(--ink); }
-.eh button:focus-visible, .eh a:focus-visible, .eh input:focus-visible, .eh select:focus-visible, .eh textarea:focus-visible, .eh summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.eh .card-header.eh-ch { display: flex; flex-direction: row; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px; }
+.eh-ch > div:first-child { flex: 1 1 220px; min-width: 0; }
+.eh-ch > .btn, .eh-ch > .eh-doc-ctl, .eh-ch > .eh-btnrow { flex: none; margin-left: auto; width: auto; }
+.eh-st { margin: 0 0 8px; }
+.eh-st:not(:first-child) { margin-top: 22px; }
+.eh-btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.eh .btn { display: inline-flex; align-items: center; gap: 7px; }
+.eh .btn:not(.btn-sm):not(.btn-xs) { min-height: 42px; }
+.eh .btn-sm { min-height: 36px; }
 
-/* hero */
-.eh-hero { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, 1fr); gap: 40px; align-items: stretch; padding: 34px 0 30px; border-bottom: 1px solid var(--hairline); }
-.eh-kicker { margin: 0 0 14px; font: 600 11px/1 var(--font); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-.eh-theme { margin: 0; font: 600 clamp(30px, 4.2vw, 50px)/1.06 var(--serif); letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; }
-.eh-blank { display: inline-block; min-width: 4.2em; border-bottom: 3px solid var(--ink); padding: 0 .08em; margin: 0 .04em; line-height: 1.02; vertical-align: baseline; font-style: italic; }
-.eh-blank-word { display: inline-block; opacity: 0; transform: translateY(6px); transition: opacity .26s var(--ease-out), transform .26s var(--ease-out); white-space: nowrap; }
-.eh-blank-word.is-in { opacity: 1; transform: none; }
-.eh-intro { margin: 18px 0 0; max-width: 62ch; font: 400 15.5px/1.65 var(--serif); color: var(--ink-2); }
-.eh-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 20px 0 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); }
-.eh-facts strong { color: var(--ink); font-weight: 600; }
-.eh-next { position: relative; display: flex; flex-direction: column; justify-content: center; padding: 26px 26px 22px; border-radius: var(--radius-lg); background: var(--ink); color: var(--surface-2); box-shadow: var(--shadow-lg); overflow: hidden; }
-.eh-next::after { content: ""; position: absolute; inset: auto -40px -60px auto; width: 200px; height: 200px; border: 1px solid rgba(248,247,243,.08); transform: rotate(30deg); clip-path: polygon(25% 6%, 75% 6%, 100% 50%, 75% 94%, 25% 94%, 0 50%); pointer-events: none; }
-.eh-next-label { margin: 0; font: 600 10.5px/1 var(--font); letter-spacing: .16em; text-transform: uppercase; color: rgba(248,247,243,.62); }
-.eh-next-days { display: flex; align-items: baseline; gap: 8px; margin: 10px 0 2px; }
-.eh-next-days .n { font: 600 64px/0.95 var(--serif); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
-.eh-next-days .u { font-size: 15px; color: rgba(248,247,243,.7); }
-.eh-next-what { margin: 6px 0 0; font: 600 17px/1.3 var(--font); letter-spacing: -0.01em; }
-.eh-next-date { margin: 4px 0 0; font-size: 13px; color: rgba(248,247,243,.72); display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
-.eh-next .eh-hard { background: rgba(248,247,243,.14); color: var(--surface-2); }
-.eh-hard { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; background: var(--danger-soft); color: var(--danger); font: 600 10.5px/1.5 var(--font); letter-spacing: .04em; text-transform: uppercase; }
-.eh-now { display: inline-flex; padding: 2px 8px; border-radius: 999px; background: var(--info-soft); color: var(--info); font: 600 10.5px/1.5 var(--font); letter-spacing: .04em; text-transform: uppercase; }
-.eh-track { position: relative; height: 4px; margin: 34px 4px 8px; border-radius: 99px; background: rgba(248,247,243,.16); }
-.eh-track-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: rgba(248,247,243,.7); }
-.eh-track-dot { position: absolute; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--ink); border: 2px solid rgba(248,247,243,.75); }
-.eh-track-dot.is-hard { border-color: #f2b8b0; }
-.eh-track-dot.is-past { background: rgba(248,247,243,.75); }
-.eh-track-now { position: absolute; top: -26px; transform: translateX(-50%); font: 600 10px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--surface-2); }
-.eh-track-now::after { content: ""; position: absolute; left: 50%; top: 14px; width: 1px; height: 16px; background: var(--surface-2); }
-.eh-track-ends { display: flex; justify-content: space-between; font-size: 11px; color: rgba(248,247,243,.55); }
+/* header */
+.eh-head { padding: 28px 0 26px; }
+.eh-eyebrow { margin: 0 0 12px; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.eh-title { margin: 0; font: 600 clamp(30px, 4.4vw, 46px)/1.1 var(--font); letter-spacing: -0.035em; color: var(--ink); }
+.eh-blank { display: inline-block; min-width: 3.6em; padding: 0 .06em; border-bottom: 3px solid currentColor; line-height: 1.05; }
+.eh-word { display: inline-block; color: var(--muted); opacity: 0; transform: translateY(5px); transition: opacity .28s var(--ease-out), transform .28s var(--ease-out); white-space: nowrap; }
+.eh-word.is-in { opacity: 1; transform: none; }
+.eh-lede { margin: 14px 0 0; font-size: 15px; line-height: 1.6; color: var(--ink-2); }
+.eh-tabs { margin-top: 26px; }
 
-/* tabs */
-.eh-piece-mode .eh-tabs { margin-top: 18px; }
-.eh-tabs { position: sticky; top: var(--top-h, 72px); z-index: 5; display: flex; gap: 4px; margin: 0 0 var(--eh-gap); padding: 10px 0; background: color-mix(in srgb, var(--surface-2) 92%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--hairline-2); overflow-x: auto; scrollbar-width: none; }
-.eh-tabs::-webkit-scrollbar { display: none; }
-.eh-tab { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: none; color: var(--ink-2); font: 500 14px/1 var(--font); white-space: nowrap; cursor: pointer; transition: background .15s, color .15s; }
-.eh-tab:hover { background: rgba(15,23,42,.05); color: var(--ink); }
-.eh-tab.is-active { background: var(--ink); color: var(--surface-2); }
-.eh-tab-n { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; background: rgba(15,23,42,.07); color: var(--ink-2); font: 600 11px/1.4 var(--font); }
-.eh-tab.is-active .eh-tab-n { background: rgba(248,247,243,.18); color: var(--surface-2); }
-.eh-tab-n.is-alert { background: var(--warn-soft); color: var(--warn); }
-.eh-tab.is-active .eh-tab-n.is-alert { background: #f6ecd8; color: var(--warn); }
+/* segmented control */
+.eh-seg { display: inline-flex; gap: 2px; padding: 4px; border-radius: 14px; background: var(--surface-3); border: 1px solid var(--hairline-2); max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.eh-seg::-webkit-scrollbar { display: none; }
+.eh-seg-b { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 18px; border: 0; border-radius: 10px; background: none; font: 500 14px/1 var(--font); color: var(--ink-2); white-space: nowrap; cursor: pointer; transition: background .18s, color .18s, box-shadow .18s; }
+.eh-seg-b:hover { color: var(--ink); }
+.eh-seg-b.is-on { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(15,23,42,.08), 0 2px 8px -2px rgba(15,23,42,.10); }
+.eh-seg.is-sm .eh-seg-b { min-height: 34px; padding: 0 14px; font-size: 13px; }
+.eh-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; background: rgba(15,23,42,.08); font: 600 11px/1 var(--font); color: var(--ink-2); }
+.eh-badge.is-alert { background: var(--warn-soft); color: var(--warn); }
 
-/* blocks */
-.eh-block { padding: 0 0 var(--eh-gap); margin: 0 0 var(--eh-gap); border-bottom: 1px solid var(--hairline); }
-.eh-block:last-child { border-bottom: 0; }
-.eh-bh { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 6px 16px; margin: 0 0 16px; }
-.eh-bh h2 { margin: 0; font: 600 22px/1.2 var(--serif); letter-spacing: -0.015em; }
-.eh-bh p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 13.5px; max-width: 70ch; }
-.eh-h3 { margin: 0 0 12px; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-.eh-ov-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 48px; }
-.eh-ov-grid > .eh-block { border-bottom: 0; }
+/* tiles */
+.eh-tiles { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 20px; }
+.eh-tiles.is-sm { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 28px 0 0; }
+.eh-tile { display: flex; flex-direction: column; min-width: 0; padding: 22px 24px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow-sm); }
+.eh-tile.is-main { background: var(--ink); border-color: var(--ink); color: var(--surface-2); box-shadow: var(--shadow-md); }
+.eh-tile-k { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font: 600 11px/1.2 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.eh-tile.is-main .eh-tile-k { color: rgba(248,247,243,.6); }
+.eh-tile-big { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 0; }
+.eh-tile-big .n { font: 600 48px/1 var(--font); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.eh-tile-big .u { font-size: 15px; color: var(--muted); }
+.eh-tile.is-main .eh-tile-big .u { color: rgba(248,247,243,.65); }
+.eh-tile-big.is-soon .n { color: #f3c98b; }
+.eh-tile-title { margin: 10px 0 0; font: 600 17px/1.3 var(--font); letter-spacing: -0.015em; }
+.eh-tile-title.is-soon { color: var(--warn); }
+.eh-tile-sub { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.eh-tile.is-main .eh-tile-sub { color: rgba(248,247,243,.7); }
+.eh-tile-text { margin: 12px 0 0; font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+.eh-tile-link { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; margin-top: auto; padding: 14px 0 0; border: 0; background: none; font: 600 13px/1.3 var(--font); color: var(--ink); text-decoration: none; cursor: pointer; text-align: left; }
+.eh-tile-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.eh-tile-link svg { flex: none; transition: transform .2s var(--ease-out); }
+.eh-tile-link:hover svg { transform: translateX(2px); }
+.eh-hard { display: inline-flex; padding: 2px 8px; border-radius: 99px; background: var(--danger-soft); color: var(--danger); font: 600 10px/1.5 var(--font); letter-spacing: .06em; }
+.eh-tile.is-main .eh-hard { background: rgba(248,247,243,.14); color: var(--surface-2); }
+
+/* progress */
+.eh-prog { height: 4px; margin: 12px 0 0; border-radius: 99px; background: var(--paper-3); overflow: hidden; }
+.eh-prog span { display: block; height: 100%; border-radius: inherit; background: var(--ink); transition: width .4s var(--ease-out); }
+[data-stage="idea"] { --dot: #c9c4b6; } [data-stage="proposal"] { --dot: #a99f8a; } [data-stage="reporting"] { --dot: #8a93a3; } [data-stage="drafting"] { --dot: #5b6678; }
+[data-stage="draft1"] { --dot: #2e5a87; } [data-stage="editing"] { --dot: #24476b; } [data-stage="final"] { --dot: #2f6b4f; } [data-stage="ready"] { --dot: #0f172a; }
+.eh-stage { display: inline-flex; align-items: center; gap: 7px; font: 500 12.5px/1 var(--font); color: var(--ink-2); white-space: nowrap; }
+.eh-stage i { width: 8px; height: 8px; border-radius: 50%; background: var(--dot, var(--muted-2)); }
+.eh-stage.is-open { color: var(--warn); } .eh-stage.is-open i { background: none; border: 1.5px dashed var(--warn); }
+.eh-stage.is-held { color: var(--muted); }
+.eh-tag { display: inline-flex; align-items: center; gap: 4px; min-height: 22px; padding: 0 9px; border-radius: 99px; background: var(--surface-3); color: var(--ink-2); font: 600 11px/1 var(--font); white-space: nowrap; }
+.eh-tag.is-danger { background: var(--danger-soft); color: var(--danger); }
+.eh-tag.is-warn { background: var(--warn-soft); color: var(--warn); }
+.eh-tag.is-info, .eh-tag.is-k-update, .eh-tag.is-iv-scheduled { background: var(--info-soft); color: var(--info); }
+.eh-tag.is-muted { color: var(--muted); }
+.eh-tag.is-k-question { background: var(--warn-soft); color: var(--warn); }
+.eh-tag.is-resolved, .eh-tag.is-iv-done { background: var(--good-soft); color: var(--good); }
+.eh-tag.is-k-announcement { background: var(--ink); color: var(--surface-2); }
+.eh-tag.is-iv-wanted { background: var(--warn-soft); color: var(--warn); }
+.eh-you { display: inline-flex; vertical-align: 2px; padding: 1px 7px; border-radius: 99px; background: var(--ink); color: var(--surface-2); font: 600 10px/1.5 var(--font); letter-spacing: .06em; text-transform: uppercase; }
+.eh-count { display: inline-flex; align-items: center; gap: 4px; font: 600 12px/1 var(--font); color: var(--warn); }
 
 /* people */
 .eh-av { display: inline-flex; flex: none; align-items: center; justify-content: center; overflow: hidden; }
 .eh-av img { width: 100%; height: 100%; object-fit: contain; }
-.eh-av-init { background: var(--ink); color: var(--surface-2); font-weight: 600; letter-spacing: .02em; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%); }
-.eh-person { display: inline-flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; color: var(--ink); line-height: 1.25; }
+.eh-av-init { background: var(--ink); color: var(--surface-2); font-weight: 600; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%); }
+.eh-person { display: inline-flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; line-height: 1.25; }
 .eh-person small { display: block; font: 500 10.5px/1.3 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.eh-person.sm { gap: 6px; font-size: 12.5px; color: var(--ink-2); }
 
-/* for you */
-.eh-foryou { padding-bottom: 32px; }
-.eh-fy-group + .eh-fy-group { margin-top: 26px; }
-.eh-fy-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-.eh-fy-card { display: flex; flex-direction: column; gap: 10px; padding: 20px 20px 16px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
-.eh-fy-kicker { margin: 0; font: 600 10.5px/1.3 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.eh-fy-title { margin: 0; font: 600 18px/1.3 var(--serif); letter-spacing: -0.01em; }
-.eh-fy-title .eh-link { text-decoration: none; }
-.eh-fy-title .eh-link:hover { text-decoration: underline; }
-.eh-fy-meta { display: flex; flex-wrap: wrap; gap: 6px; }
-.eh-fy-next { margin: 2px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface-3); font-size: 13px; line-height: 1.5; color: var(--ink-2); }
-.eh-fy-next span { display: block; margin-bottom: 2px; font: 600 10.5px/1.3 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.eh-fy-next.is-done { background: var(--good-soft); color: var(--good); }
-.eh-fy-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 6px; }
-.eh-fy-actions { display: inline-flex; gap: 8px; }
-.eh-fy-social { margin: 0; font-size: 14px; color: var(--ink-2); }
-.eh-glance { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 var(--eh-gap); padding: 0; list-style: none; border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); }
-.eh-glance li { padding: 18px 18px 16px 0; }
-.eh-glance li + li { padding-left: 18px; border-left: 1px solid var(--hairline-2); }
-.eh-glance strong { display: block; font: 600 34px/1 var(--serif); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.eh-glance span { display: block; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+/* lists inside cards */
+.eh-list { margin: 0; padding: 0; list-style: none; }
+.eh-list > li { position: relative; border-top: 1px solid var(--hairline-2); }
+.eh-list > li:first-child { border-top: 0; }
+.eh-hit { position: absolute; inset: 0; z-index: 1; border: 0; background: none; cursor: pointer; }
+.eh-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; border-radius: 4px; }
+.eh-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; align-items: center; padding: 16px 24px; transition: background .15s; }
+.eh-row:has(.eh-hit):hover, .eh-mine:hover { background: var(--surface-3); }
+.eh-row .btn { position: relative; z-index: 2; }
+.eh-row-title { margin: 0; font: 600 15px/1.4 var(--font); letter-spacing: -0.01em; color: var(--ink); }
+.eh-meta { margin: 3px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.eh-row-side { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px 14px; }
+.eh-chev { display: inline-flex; color: var(--muted-2); transition: transform .2s var(--ease-out), color .2s; }
+.eh-row:hover .eh-chev, .eh-mine:hover .eh-chev { color: var(--ink); transform: translateX(2px); }
+.eh-row.is-open { background: color-mix(in srgb, var(--warn-soft) 45%, transparent); }
+.eh-row.is-open .eh-row-title { color: var(--warn); }
+.eh-row.is-empty { color: var(--muted); font-size: 13.5px; grid-template-columns: 1fr; }
+.eh-mine { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 20px 24px; transition: background .15s; }
+.eh-mine-title { margin: 4px 0 0; font: 600 17px/1.35 var(--font); letter-spacing: -0.015em; }
+.eh-mine .eh-prog { max-width: 420px; }
+.eh-mine-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+.eh-card-foot { padding: 10px 16px 12px; border-top: 1px solid var(--hairline-2); }
 
-/* mini stepper */
-.eh-mini { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.eh-mini li { flex: 1; height: 4px; border-radius: 99px; background: var(--paper-3); }
-.eh-mini li.is-done { background: var(--ink-2); }
-.eh-mini li.is-now { background: var(--ink); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 18%, transparent); }
+/* timeline */
+.eh-tl { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin: 0; padding: 0; list-style: none; }
+.eh-tl li { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 0 10px 0 0; }
+.eh-tl li::before { content: ""; position: absolute; top: 11px; left: 26px; right: 0; height: 2px; background: var(--paper-3); }
+.eh-tl li:last-child::before { display: none; }
+.eh-tl li.is-past::before { background: var(--ink); }
+.eh-tl-dot { position: relative; z-index: 1; display: grid; place-items: center; width: 24px; height: 24px; margin-bottom: 10px; border-radius: 50%; border: 2px solid var(--paper-3); background: var(--surface); color: var(--surface-2); }
+.eh-tl li.is-past .eh-tl-dot { background: var(--ink); border-color: var(--ink); }
+.eh-tl li.is-next .eh-tl-dot { border-color: var(--ink); box-shadow: 0 0 0 5px color-mix(in srgb, var(--ink) 10%, transparent); }
+.eh-tl li.is-next .eh-tl-dot::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+.eh-tl-date { font: 600 12px/1.3 var(--font); color: var(--muted); font-variant-numeric: tabular-nums; }
+.eh-tl-label { font: 600 13.5px/1.35 var(--font); color: var(--ink); padding-right: 8px; }
+.eh-tl li.is-past .eh-tl-label { color: var(--muted); }
+.eh-tl-hard { font: 600 10.5px/1.3 var(--font); letter-spacing: .04em; color: var(--danger); }
+.eh-tl-detail { margin: 22px 0 0; padding: 14px 16px; border-radius: 12px; background: var(--surface-3); font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+.eh-tl-detail p { margin: 0; }
+.eh-tl-detail-k { margin-bottom: 4px !important; font: 600 11px/1.2 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.eh-tl-detail strong { color: var(--ink); }
 
-/* pills + flags */
-.eh-pill { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--hairline); background: var(--surface); font: 600 11.5px/1 var(--font); color: var(--ink-2); white-space: nowrap; }
-.eh-pill[data-stage="idea"] { border-style: dashed; color: var(--muted); }
-.eh-pill[data-stage="draft1"], .eh-pill[data-stage="editing"] { background: var(--info-soft); border-color: transparent; color: var(--info); }
-.eh-pill[data-stage="final"], .eh-pill[data-stage="ready"] { background: var(--good-soft); border-color: transparent; color: var(--good); }
-.eh-pill.is-open { border-style: dashed; border-color: var(--warn); color: var(--warn); background: none; }
-.eh-pill.is-held { color: var(--muted); }
-.eh-flag { display: inline-flex; align-items: center; min-height: 24px; padding: 0 9px; border-radius: 999px; font: 600 11px/1 var(--font); white-space: nowrap; }
-.eh-flag.is-danger { background: var(--danger-soft); color: var(--danger); }
-.eh-flag.is-warn { background: var(--warn-soft); color: var(--warn); }
-.eh-flag.is-info { background: var(--info-soft); color: var(--info); }
-.eh-flag.is-muted { background: var(--surface-3); color: var(--muted); }
-.eh-you { display: inline-flex; vertical-align: 2px; padding: 1px 7px; border-radius: 99px; background: var(--ink); color: var(--surface-2); font: 600 10px/1.5 var(--font); letter-spacing: .06em; text-transform: uppercase; }
-.eh-fmt { font-size: 12px; color: var(--muted); }
-.eh-fmt::before { content: "\\00b7"; margin: 0 8px 0 2px; }
+/* where things stand */
+.eh-bar { display: flex; gap: 3px; height: 10px; }
+.eh-bar span { border-radius: 3px; background: var(--dot); min-width: 6px; }
+.eh-bar-key { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0 6px; font-size: 12px; color: var(--muted); }
+.eh-bar-key span { display: inline-flex; align-items: center; gap: 6px; }
+.eh-bar-key i { width: 8px; height: 8px; border-radius: 2px; background: var(--dot); }
+.eh-attn { margin: 12px 0 0; padding: 0; list-style: none; }
+.eh-attn li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 0; border-top: 1px solid var(--hairline-2); font-size: 13.5px; }
 
-/* dates */
-.eh-dl { margin: 0; padding: 0; list-style: none; }
-.eh-d { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid var(--hairline-2); }
-.eh-d:first-child { border-top: 0; padding-top: 4px; }
-.eh-d-cal { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 58px; border-radius: 12px; border: 1px solid var(--hairline); background: var(--surface); }
-.eh-d-cal .m { font: 600 10px/1 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.eh-d-cal .d { margin-top: 4px; font: 600 22px/1 var(--serif); font-variant-numeric: tabular-nums; }
-.eh-d.is-hard .eh-d-cal { border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
-.eh-d.is-next .eh-d-cal, .eh-d.is-now .eh-d-cal { background: var(--ink); border-color: var(--ink); color: var(--surface-2); }
-.eh-d.is-next .eh-d-cal .m, .eh-d.is-now .eh-d-cal .m { color: rgba(248,247,243,.7); }
-.eh-d.is-past { opacity: .5; }
-.eh-d-when { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0; font-size: 12.5px; color: var(--muted); }
-.eh-d-label { margin: 3px 0 0; font: 600 16px/1.35 var(--font); letter-spacing: -0.01em; }
-.eh-d-detail { margin: 4px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
-.eh-d-who { margin: 6px 0 0; font: 600 11px/1.3 var(--font); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-
-/* progress */
-.eh-bar { display: flex; gap: 3px; height: 14px; margin: 4px 0 14px; }
-.eh-bar-seg { border-radius: 4px; background: var(--seg); min-width: 8px; }
-[data-stage="idea"] { --seg: #d9d5ca; } [data-stage="proposal"] { --seg: #b9b3a5; } [data-stage="reporting"] { --seg: #8f97a5; } [data-stage="drafting"] { --seg: #5b6678; }
-[data-stage="draft1"] { --seg: #2e5a87; } [data-stage="editing"] { --seg: #24476b; } [data-stage="final"] { --seg: #2f6b4f; } [data-stage="ready"] { --seg: #0f172a; }
-.eh-legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; margin: 0 0 22px; padding: 0; list-style: none; font-size: 12.5px; color: var(--ink-2); }
-.eh-legend li { display: flex; align-items: center; gap: 8px; }
-.eh-legend li strong { margin-left: auto; font-variant-numeric: tabular-nums; }
-.eh-legend li.is-zero { color: var(--muted-2); }
-.eh-legend .sw { width: 10px; height: 10px; border-radius: 3px; background: var(--seg); }
-.eh-attn-list { margin: 0; padding: 0; list-style: none; }
-.eh-attn-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 9px 0; border-top: 1px solid var(--hairline-2); font-size: 13.5px; }
-.eh-attn-list li:first-child { border-top: 0; }
-
-/* guidance */
-.eh-guide-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px 48px; }
-.eh-ticks { margin: 0; padding: 0; list-style: none; }
-.eh-ticks li { position: relative; padding: 0 0 10px 24px; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
-.eh-ticks li::before { content: ""; position: absolute; left: 2px; top: 8px; width: 10px; height: 6px; border-left: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(-45deg); }
-.eh-fb { margin: 0; padding: 0; list-style: none; counter-reset: fb; }
-.eh-fb li { counter-increment: fb; position: relative; padding: 0 0 12px 34px; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
-.eh-fb li::before { content: counter(fb); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--hairline); display: grid; place-items: center; font: 600 11px/1 var(--font); color: var(--ink); }
-.eh-fb strong { color: var(--ink); }
-.eh-where { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; font-size: 14px; line-height: 1.55; }
-.eh-where dt { font-weight: 600; }
-.eh-where dd { margin: 0; color: var(--ink-2); }
-.eh-drive { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; }
-
-/* editors' desk */
-.eh-desk-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 48px; }
+/* checklists */
 .eh-checks { margin: 0; padding: 0; list-style: none; }
-.eh-checks li + li { margin-top: 2px; }
-.eh-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px 8px; margin: 0 -8px; border-radius: 10px; cursor: pointer; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
-.eh-check:hover { background: rgba(15,23,42,.04); }
+.eh-check { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; padding: 10px; margin: 0 -10px; border-radius: 10px; cursor: pointer; font-size: 14px; line-height: 1.5; color: var(--ink); }
+.eh-check:hover { background: var(--surface-3); }
 .eh-check input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.eh-check .box { flex: none; display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px; border: 1.5px solid color-mix(in srgb, var(--ink) 35%, transparent); background: var(--surface); color: transparent; transition: background .15s, border-color .15s; }
+.eh-check .box { flex: none; display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px; border: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent); background: var(--surface); color: transparent; transition: background .15s, border-color .15s; }
 .eh-check.is-done .box { background: var(--ink); border-color: var(--ink); color: var(--surface-2); }
-.eh-check.is-done .txt { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.eh-check.is-done .txt { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 50%, transparent); }
 .eh-check input:focus-visible + .box { outline: 2px solid var(--ink); outline-offset: 2px; }
-.eh-check input:disabled ~ .txt { cursor: default; }
 .eh-check:has(input:disabled) { cursor: default; }
 .eh-check:has(input:disabled):hover { background: none; }
 
+/* guides */
+.eh-acc details { border-top: 1px solid var(--hairline-2); }
+.eh-acc details:first-child { border-top: 0; }
+.eh-acc summary, .eh-secabout summary, .eh-held > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; list-style: none; cursor: pointer; }
+.eh-acc summary::-webkit-details-marker, .eh-secabout summary::-webkit-details-marker, .eh-held > summary::-webkit-details-marker { display: none; }
+.eh-acc summary { min-height: 56px; padding: 0 24px; font: 500 15px/1.3 var(--font); color: var(--ink); }
+.eh-acc summary:hover { background: var(--surface-3); }
+.eh-acc summary svg, .eh-secabout summary svg, .eh-held > summary > svg { flex: none; color: var(--muted); transition: transform .25s var(--ease-out); }
+.eh-acc details[open] summary svg, .eh-secabout[open] summary svg, .eh-held[open] > summary > svg { transform: rotate(180deg); }
+.eh-acc details > :not(summary) { margin: 0 24px 20px; }
+.eh-ticks { margin: 0; padding: 0; list-style: none; }
+.eh-ticks li { position: relative; padding: 0 0 10px 24px; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+.eh-ticks li::before { content: ""; position: absolute; left: 3px; top: 8px; width: 9px; height: 5px; border-left: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(-45deg); }
+.eh-num { margin: 0; padding: 0; list-style: none; counter-reset: n; }
+.eh-num li { counter-increment: n; position: relative; padding: 0 0 12px 34px; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+.eh-num li::before { content: counter(n); position: absolute; left: 0; top: 1px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); font: 600 11px/1 var(--font); color: var(--ink); }
+.eh-num strong { color: var(--ink); }
+.eh-where { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 18px; font-size: 14px; line-height: 1.55; }
+.eh-where dt { font-weight: 600; } .eh-where dd { margin: 0; color: var(--ink-2); }
+.eh-acc .eh-btnrow { margin-top: 14px; }
+
 /* sections */
-.eh-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 22px; }
+.eh-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .eh-search { position: relative; flex: 1 1 280px; display: flex; align-items: center; }
 .eh-search svg { position: absolute; left: 14px; color: var(--muted); pointer-events: none; }
-.eh-search input { width: 100%; min-height: 44px; padding: 0 14px 0 40px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); font: 400 14px var(--font); color: var(--ink); }
-.eh-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.eh-chip { min-height: 38px; padding: 0 14px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); font: 500 13px/1 var(--font); color: var(--ink-2); cursor: pointer; }
-.eh-chip span { margin-left: 4px; color: var(--muted); font-weight: 600; }
-.eh-chip:hover { border-color: color-mix(in srgb, var(--ink) 30%, transparent); }
-.eh-chip.is-on { background: var(--ink); border-color: var(--ink); color: var(--surface-2); }
-.eh-chip.is-on span { color: rgba(248,247,243,.7); }
-.eh-sec { padding: 6px 0 30px; margin-bottom: 30px; border-bottom: 1px solid var(--hairline); scroll-margin-top: 140px; }
-.eh-sec-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 20px; align-items: end; }
-.eh-sec-num { font: 600 44px/0.9 var(--serif); color: color-mix(in srgb, var(--ink) 18%, transparent); font-variant-numeric: tabular-nums; }
-.eh-sec-kicker { margin: 0 0 4px; font: 500 11px/1 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.eh-sec-name { margin: 0; font: 600 28px/1.1 var(--serif); letter-spacing: -0.02em; }
-.eh-sec-count { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
-.eh-sec-editor { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.eh-sec-actions { display: inline-flex; gap: 4px; }
-.eh-sec-about { margin: 16px 0 6px; }
-.eh-sec-about summary { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--ink-2); list-style: none; }
-.eh-sec-about summary::-webkit-details-marker { display: none; }
-.eh-sec-about summary::after { content: ""; width: 7px; height: 7px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .2s; }
-.eh-sec-about[open] summary::after { transform: rotate(225deg) translateY(-1px); }
-.eh-sec-about p { margin: 6px 0 0; max-width: 78ch; font: 400 15px/1.65 var(--serif); color: var(--ink-2); }
-.eh-belongs { padding: 12px 14px; border-left: 2px solid var(--ink); background: var(--surface-3); border-radius: 0 10px 10px 0; font-family: var(--font) !important; font-size: 13.5px !important; }
-.eh-rows { margin: 10px 0 0; padding: 0; list-style: none; }
-.eh-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 20px; align-items: center; padding: 16px 12px; margin: 0 -12px; border-top: 1px solid var(--hairline-2); border-radius: 12px; transition: background .15s; }
-.eh-row:first-child { border-top-color: transparent; }
-.eh-row:hover { background: rgba(15,23,42,.035); }
-.eh-row:hover + .eh-row { border-top-color: transparent; }
-.eh-row-hit { position: absolute; inset: 0; border: 0; background: none; border-radius: inherit; cursor: pointer; }
-.eh-row-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
-.eh-row-main, .eh-row-side { position: relative; pointer-events: none; }
-.eh-row-side .btn { pointer-events: auto; }
-.eh-row-title { margin: 0; font: 600 16px/1.35 var(--serif); letter-spacing: -0.005em; }
-.eh-row-sub { margin: 4px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 80ch; }
-.eh-row-by { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 8px 0 0; }
-.eh-row-side { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
-.eh-count { display: inline-flex; align-items: center; gap: 4px; font: 600 12px/1 var(--font); color: var(--muted); }
-.eh-row-go { display: inline-flex; color: var(--muted-2); transition: transform .2s var(--ease-out), color .2s; }
-.eh-row:hover .eh-row-go { color: var(--ink); transform: translateX(3px); }
-.eh-row.is-mine { background: color-mix(in srgb, var(--ink) 3%, transparent); }
-.eh-row.is-open { border: 1.5px dashed color-mix(in srgb, var(--warn) 45%, transparent); background: color-mix(in srgb, var(--warn-soft) 40%, transparent); margin: 10px -12px 0; }
-.eh-row.is-open + .eh-row { border-top-color: transparent; }
-.eh-row.is-open .eh-row-main { pointer-events: auto; }
-.eh-row.is-empty { color: var(--muted); font-size: 13.5px; grid-template-columns: 1fr; }
-.eh-add { margin: 10px 0 0; }
-.eh-held { margin-top: 6px; }
-.eh-held > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font: 600 14px var(--font); }
+.eh-search input { width: 100%; min-height: 44px; padding: 0 14px 0 40px; border: 1px solid var(--hairline); border-radius: 12px; background: var(--surface); font: 400 14px var(--font); color: var(--ink); }
+.eh-search input:focus { outline: none; border-color: color-mix(in srgb, var(--ink) 35%, transparent); box-shadow: var(--focus); }
+.eh-sec-h { align-items: center; }
+.eh-sec-t { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.eh-sec-num { margin: 0; font: 600 13px/1 var(--font); color: var(--muted-2); font-variant-numeric: tabular-nums; }
+.eh-sec-name { margin: 0; font: 600 20px/1.2 var(--font); letter-spacing: -0.025em; }
+.eh-sec-ed { display: flex; align-items: center; gap: 6px; }
+.eh-sec-ed .eh-person { margin-right: 6px; }
+.eh-secabout { border-bottom: 1px solid var(--hairline-2); }
+.eh-secabout summary { justify-content: flex-start; gap: 6px; min-height: 44px; padding: 0 24px; font-size: 13px; font-weight: 500; color: var(--muted); }
+.eh-secabout summary:hover { color: var(--ink); }
+.eh-secabout p { margin: 0 24px 14px; max-width: 76ch; font-size: 14px; line-height: 1.65; color: var(--ink-2); }
+.eh-belongs { padding: 12px 14px; border-radius: 10px; background: var(--surface-3); }
+.eh-held > summary { padding-right: 24px; }
 
-/* piece */
-.eh-back { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px 0 8px; margin: 0 0 14px -8px; border: 0; border-radius: 99px; background: none; font: 500 13px var(--font); color: var(--ink-2); cursor: pointer; }
-.eh-back:hover { background: rgba(15,23,42,.05); color: var(--ink); }
-.eh-ph { padding: 0 0 22px; }
-.eh-ph-kicker { margin: 0 0 10px; font: 600 11px/1.3 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-.eh-ph-title { margin: 0; max-width: 34ch; font: 600 clamp(26px, 3.4vw, 40px)/1.12 var(--serif); letter-spacing: -0.02em; text-wrap: balance; }
-.eh-ph-sub { margin: 12px 0 0; max-width: 70ch; font: 400 17px/1.55 var(--serif); color: var(--ink-2); font-style: italic; }
-.eh-ph-people { display: flex; flex-wrap: wrap; gap: 12px 28px; margin: 22px 0 0; }
-.eh-placement { display: inline-block; margin: 16px 0 0; padding: 6px 12px; border-radius: 999px; background: var(--surface-3); font-size: 12.5px; color: var(--ink-2); }
-.eh-ph-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
-.eh-ph-actions .btn, .eh-fy-actions .btn, .eh-sec-actions .btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
-.eh-stepper { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); margin: 6px 0 0; padding: 18px 0 0; list-style: none; border-top: 1px solid var(--hairline); }
-.eh-stepper li { position: relative; }
-.eh-stepper li::before { content: ""; position: absolute; top: 15px; left: calc(-50% + 18px); right: calc(50% + 18px); height: 2px; background: var(--paper-3); }
-.eh-stepper li:first-child::before { display: none; }
-.eh-stepper li.is-done::before, .eh-stepper li.is-now::before { background: var(--ink); }
-.eh-stepper button, .eh-stepper span[title] { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; min-height: 64px; padding: 0 2px; border: 0; background: none; font: inherit; color: var(--muted); text-align: center; }
-.eh-stepper.is-live button { cursor: pointer; border-radius: 12px; }
-.eh-stepper.is-live button:hover { background: rgba(15,23,42,.04); color: var(--ink); }
-.eh-stepper .dot { position: relative; z-index: 1; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--paper-3); background: var(--surface-2); font: 600 12px/1 var(--font); color: var(--muted); }
-.eh-stepper .lbl { font: 500 11.5px/1.25 var(--font); }
-.eh-stepper li.is-done .dot { background: var(--ink); border-color: var(--ink); color: var(--surface-2); }
-.eh-stepper li.is-now .dot { border-color: var(--ink); color: var(--ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ink) 12%, transparent); }
-.eh-stepper li.is-now .lbl { color: var(--ink); font-weight: 600; }
-.eh-stepper-hint { margin: 4px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
-.eh-pgrid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 40px; align-items: start; margin-top: 26px; }
-.eh-subtabs { display: flex; gap: 4px; margin: 0 0 22px; border-bottom: 1px solid var(--hairline); }
-.eh-subtab { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 14px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; background: none; font: 500 14px var(--font); color: var(--muted); cursor: pointer; }
-.eh-subtab:hover { color: var(--ink); }
-.eh-subtab.is-on { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
-.eh-pside { position: sticky; top: calc(var(--top-h, 72px) + 80px); display: flex; flex-direction: column; gap: 14px; }
-.eh-card { padding: 18px 18px 14px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); }
-.eh-card-quiet { background: var(--surface-3); border-color: transparent; }
-.eh-card-h { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 10px; }
-.eh-card-h h3 { margin: 0; font: 600 11px/1.2 var(--font); letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
-.eh-card .eh-check { font-size: 13.5px; }
-.eh-card > .btn { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; }
-.eh-meter { height: 4px; margin: 0 0 8px; border-radius: 99px; background: var(--paper-3); overflow: hidden; }
-.eh-meter span { display: block; height: 100%; background: var(--ink); border-radius: inherit; transition: width .3s var(--ease-out); }
-.eh-dues { margin: 0; padding: 0; list-style: none; }
-.eh-dues li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; padding: 9px 0; border-top: 1px solid var(--hairline-2); font-size: 13px; }
-.eh-dues li:first-child { border-top: 0; }
-.eh-due-l { font-weight: 600; }
-.eh-due-d { grid-column: 1; color: var(--muted); font-size: 12.5px; }
-.eh-due-n { grid-column: 2; grid-row: 1 / span 2; align-self: center; font: 600 12px var(--font); color: var(--ink-2); }
-.eh-dues li.is-soon .eh-due-n { color: var(--warn); }
-.eh-dues li.is-late .eh-due-n { color: var(--danger); }
-.eh-dues li.is-done .eh-due-n { color: var(--good); }
-.eh-block-btn { display: flex !important; justify-content: center; width: 100%; margin-top: 8px; }
-.eh-ivs { margin: 0; padding: 0; list-style: none; }
-.eh-ivs li { padding: 10px 0; border-top: 1px solid var(--hairline-2); }
-.eh-ivs li:first-child { border-top: 0; padding-top: 2px; }
-.eh-iv-st { display: inline-flex; padding: 1px 8px; border-radius: 99px; font: 600 10.5px/1.6 var(--font); letter-spacing: .04em; text-transform: uppercase; background: var(--surface-3); color: var(--muted); }
-.eh-iv-st.is-done { background: var(--good-soft); color: var(--good); }
-.eh-iv-st.is-scheduled { background: var(--info-soft); color: var(--info); }
-.eh-iv-st.is-wanted { background: var(--warn-soft); color: var(--warn); }
-.eh-iv-who { margin: 6px 0 0; font-weight: 600; font-size: 13.5px; }
-.eh-iv-aff, .eh-iv-when { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
-.eh-iv-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-2); font-style: italic; }
-.eh-tip { margin: 10px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted); }
-
-/* proposal */
-.eh-prop-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 18px; }
-.eh-prop-by { margin: 0; font-size: 13.5px; color: var(--ink-2); }
-.eh-prop-ctl { display: inline-flex; align-items: center; gap: 12px; }
-.eh-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; font-size: 13px; cursor: pointer; color: var(--ink-2); }
+/* a piece */
+.eh-back { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin: 18px 0 0 -10px; padding: 0 12px 0 8px; border: 0; border-radius: 10px; background: none; font: 500 13.5px var(--font); color: var(--ink-2); cursor: pointer; }
+.eh-back:hover { background: var(--surface-3); color: var(--ink); }
+.eh-ph { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 40px; align-items: start; padding: 18px 0 0; }
+.eh-ph-title { margin: 0; max-width: 30ch; font: 600 clamp(26px, 3.4vw, 36px)/1.15 var(--font); letter-spacing: -0.035em; text-wrap: balance; }
+.eh-ph-sub { margin: 14px 0 0; max-width: 64ch; font-size: 16px; line-height: 1.6; color: var(--ink-2); }
+.eh-people { display: flex; flex-wrap: wrap; gap: 14px 28px; margin: 22px 0 0; }
+.eh-placement { display: inline-block; margin: 16px 0 0; padding: 6px 12px; border-radius: 99px; background: var(--surface-3); font-size: 12.5px; color: var(--ink-2); }
+.eh-ph-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 200px; }
+.eh-stage-pick { position: relative; display: inline-flex; align-items: center; margin-top: 8px; align-self: flex-start; }
+.eh-stage-pick select { appearance: none; -webkit-appearance: none; min-height: 40px; padding: 0 36px 0 0; border: 0; background: none; font: 600 17px/1.3 var(--font); letter-spacing: -0.015em; color: var(--ink); cursor: pointer; }
+.eh-stage-pick svg { position: absolute; right: 8px; pointer-events: none; color: var(--muted); }
+.eh-stage-pick:hover select { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: color-mix(in srgb, var(--ink) 30%, transparent); }
+.eh-ptabs { margin: 28px 0 20px; }
+.eh-doc-ctl { display: flex; align-items: center; gap: 10px; }
+.eh-switch { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
 .eh-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .eh-switch .tr { position: relative; width: 34px; height: 20px; border-radius: 99px; background: var(--paper-3); transition: background .2s; }
-.eh-switch .tr::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(15,23,42,.2); transition: transform .2s var(--ease-out); }
+.eh-switch .tr::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(15,23,42,.25); transition: transform .2s var(--ease-out); }
 .eh-switch input:checked + .tr { background: var(--ink); }
 .eh-switch input:checked + .tr::after { transform: translateX(14px); }
 .eh-switch input:focus-visible + .tr { outline: 2px solid var(--ink); outline-offset: 2px; }
-.eh-pg { padding: 4px 0 18px; margin: 0 0 18px; border-bottom: 1px solid var(--hairline-2); }
-.eh-pg:last-child { border-bottom: 0; }
-.eh-pg-h { margin: 0 0 14px; font: 600 11px/1.2 var(--font); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-.eh-field { margin: 0 0 18px; }
-.eh-flabel { margin: 0 0 5px; font: 600 13px/1.3 var(--font); color: var(--ink); }
-.eh-ftext { font: 400 15.5px/1.7 var(--serif); color: var(--ink-2); max-width: 72ch; overflow-wrap: anywhere; }
-.eh-ftext p { margin: 0 0 8px; }
-.eh-ftext p:last-child { margin-bottom: 0; }
+.eh-doc-body { padding: 8px 32px 28px; }
+.eh-pg { padding: 22px 0 6px; border-top: 1px solid var(--hairline-2); }
+.eh-pg:first-child { border-top: 0; }
+.eh-pg > .section-title { margin: 0 0 16px; }
+.eh-field { margin: 0 0 22px; max-width: 70ch; }
+.eh-flabel { margin: 0 0 6px; font: 600 13px/1.3 var(--font); color: var(--muted); }
+.eh-ftext { font: 400 15.5px/1.7 var(--font); color: var(--ink); overflow-wrap: anywhere; }
+.eh-ftext p { margin: 0 0 8px; } .eh-ftext p:last-child { margin: 0; }
 .eh-ftext a, .eh-note a, .eh-gnote a, .eh-msg-text a { color: var(--info); }
-.eh-ftext.is-key { padding: 14px 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--hairline); color: var(--ink); }
-.eh-ftext.is-blank { font-family: var(--font); font-size: 13px; color: var(--muted-2); font-style: italic; }
-.eh-notes { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 0; max-width: 72ch; }
-.eh-note { position: relative; padding: 10px 14px 10px 16px; border-left: 3px solid var(--warn); border-radius: 0 10px 10px 0; background: var(--warn-soft); font-size: 13.5px; line-height: 1.6; color: #4a3612; }
+.eh-field.is-key .eh-ftext { padding: 16px 18px; border-radius: 12px; background: var(--surface-3); font-weight: 500; }
+.eh-ftext.is-blank { font-size: 13px; color: var(--muted-2); font-style: italic; }
+.eh-notes { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 0; }
+.eh-note { padding: 12px 14px 12px 16px; border-left: 3px solid #c99a3d; border-radius: 0 12px 12px 0; background: color-mix(in srgb, var(--warn-soft) 70%, var(--surface)); font-size: 13.5px; line-height: 1.6; color: #4a3612; }
 .eh-note p { margin: 0 0 6px; } .eh-note p:last-child { margin: 0; }
-.eh-note-tag { display: block; margin: 0 0 3px; font: 600 10px/1.3 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--warn); }
-.eh-prop.hide-notes .eh-notes, .eh-prop.hide-notes .eh-general { display: none; }
-.eh-general .eh-gnote { margin: 0 0 12px; padding: 14px 18px; border-radius: 12px; background: var(--surface-3); font: 400 15px/1.65 var(--serif); color: var(--ink-2); }
+.eh-note-k { display: block; margin: 0 0 3px; font: 600 10.5px/1.3 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--warn); }
+.eh-doc-body.hide-notes .eh-notes, .eh-doc-body.hide-notes .eh-general { display: none; }
+.eh-gnote { margin: 0 0 10px; padding: 14px 18px; border-radius: 12px; background: var(--surface-3); font-size: 14.5px; line-height: 1.65; color: var(--ink-2); max-width: 75ch; }
 .eh-gnote p { margin: 0 0 6px; } .eh-gnote p:last-child { margin: 0; }
-.eh-noprop { text-align: left; padding: 26px; border: 1.5px dashed var(--hairline); border-radius: var(--radius); }
-.eh-noprop h3 { margin: 0 0 6px; font: 600 18px/1.3 var(--serif); }
-.eh-noprop p { margin: 0 0 14px; color: var(--ink-2); font-size: 14px; }
-.eh-cands { margin: 0 0 16px; }
-.eh-cands ul { margin: 4px 0 0; padding-left: 18px; font: 400 15px/1.7 var(--serif); }
+.eh-noprop { padding: 40px 32px; }
+.eh-noprop h2 { margin: 0 0 8px; font: 600 20px/1.3 var(--font); letter-spacing: -0.02em; }
+.eh-noprop p { margin: 0 0 18px; max-width: 60ch; font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
+.eh-noprop .eh-ticks { margin-bottom: 18px; }
+.eh-iv { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px 24px; }
+.eh-iv-note { font-style: italic; }
 
-/* talk */
-.eh-compose { margin: 0 0 18px; padding: 16px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
-.eh-compose:focus-within { border-color: color-mix(in srgb, var(--ink) 35%, transparent); box-shadow: var(--shadow-md); }
-.modal .eh-compose { margin: 0; padding: 0; border: 0; box-shadow: none; background: none; }
-.eh-compose-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; }
-.eh-seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-3); }
-.eh-seg-b { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: none; font: 500 13px var(--font); color: var(--ink-2); cursor: pointer; }
-.eh-seg-b.is-on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(15,23,42,.12); font-weight: 600; }
+/* questions */
+.eh-compose-card { padding: 18px 20px; }
+.eh-compose-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 12px; }
 .eh-about { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
-.eh-about select { min-height: 40px; max-width: min(420px, 62vw); padding: 0 32px 0 12px; border: 1px solid var(--hairline); border-radius: 10px; background-color: var(--surface); font: 500 13px var(--font); color: var(--ink); }
-.eh-compose textarea { width: 100%; min-height: 96px; padding: 12px 14px; border: 1px solid var(--hairline); border-radius: 12px; background: var(--surface-2); font: 400 14.5px/1.55 var(--font); color: var(--ink); resize: vertical; }
-.eh-compose.is-compact textarea { min-height: 80px; }
-.eh-compose-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0 0; }
-.eh-compose-foot .btn { min-height: 40px; }
-.eh-to { margin: 0; font-size: 12.5px; color: var(--ink-2); }
-.eh-talk-filters { margin: 0 0 8px; }
+.eh-about select { width: auto; min-height: 38px; max-width: min(420px, 60vw); padding: 0 30px 0 12px; border: 1px solid var(--hairline); border-radius: 10px; background-color: var(--surface); font: 500 13px var(--font); color: var(--ink); }
+.eh-compose textarea { display: block; width: 100%; min-height: 92px; padding: 12px 14px; border: 1px solid var(--hairline); border-radius: 12px; background: var(--surface-2); font: 400 14.5px/1.55 var(--font); color: var(--ink); resize: vertical; transition: border-color .15s, box-shadow .15s; }
+.eh-compose textarea:focus { outline: none; border-color: color-mix(in srgb, var(--ink) 35%, transparent); box-shadow: var(--focus); background: var(--surface); }
+.eh-compose-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 0; }
+.eh-to { margin: 0; font-size: 12.5px; color: var(--muted); }
+.eh-to strong { color: var(--ink-2); font-weight: 600; }
+.modal .eh-compose { padding: 0; }
 .eh-threads { margin: 0; padding: 0; list-style: none; }
-.eh-msg { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 18px 0; border-top: 1px solid var(--hairline-2); }
+.eh-msg { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 14px; padding: 20px 24px; border-top: 1px solid var(--hairline-2); }
 .eh-threads > .eh-msg:first-child { border-top: 0; }
-.eh-msg.is-open > .eh-msg-body > .eh-msg-text { }
-.eh-msg.is-announce { padding: 18px 16px; margin: 6px 0; border: 0; border-radius: var(--radius); background: var(--ink); color: var(--surface-2); }
-.eh-msg.is-announce .eh-msg-head time, .eh-msg.is-announce .eh-msg-ctx, .eh-msg.is-announce .eh-msg-role, .eh-msg.is-announce .eh-muted { color: rgba(248,247,243,.65); }
-.eh-msg.is-announce .eh-msg-text { color: var(--surface-2); }
-.eh-msg.is-announce .eh-act { color: rgba(248,247,243,.8); }
-.eh-msg.is-announce .eh-link { color: var(--surface-2); }
-.eh-msg.is-auto .eh-msg-text { font-size: 13.5px; color: var(--muted); font-style: italic; }
+.eh-msg.is-open { box-shadow: inset 3px 0 0 #c99a3d; }
+.eh-msg.is-announce { background: var(--surface-3); }
+.eh-msg.is-auto .eh-msg-text { font-size: 13.5px; color: var(--muted); }
 .eh-msg-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-size: 13.5px; }
-.eh-msg-role { font-size: 12px; color: var(--muted); }
+.eh-msg-head .eh-muted { font-size: 12.5px; }
 .eh-msg-head time { margin-left: auto; font-size: 12px; color: var(--muted); }
-.eh-kind { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 99px; font: 600 10.5px/1.6 var(--font); letter-spacing: .05em; text-transform: uppercase; background: var(--surface-3); color: var(--ink-2); }
-.eh-kind.is-question { background: var(--warn-soft); color: var(--warn); }
-.eh-kind.is-question.is-resolved { background: var(--good-soft); color: var(--good); }
-.eh-kind.is-update { background: var(--info-soft); color: var(--info); }
-.eh-kind.is-announcement { background: rgba(248,247,243,.16); color: var(--surface-2); }
 .eh-msg-ctx { margin: 2px 0 0; font-size: 12.5px; color: var(--muted); }
-.eh-msg-text { margin: 8px 0 0; font-size: 14.5px; line-height: 1.6; color: var(--ink); overflow-wrap: anywhere; max-width: 75ch; }
+.eh-msg-text { margin: 8px 0 0; max-width: 72ch; font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere; }
 .eh-msg-text p { margin: 0 0 6px; } .eh-msg-text p:last-child { margin: 0; }
-.eh-msg-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; margin: 8px 0 0 -8px; font-size: 12.5px; }
-.eh-act { min-height: 34px; padding: 0 8px; border: 0; border-radius: 8px; background: none; font: 500 12.5px var(--font); color: var(--ink-2); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-.eh-act:hover { background: rgba(15,23,42,.05); color: var(--ink); }
-.eh-act.is-danger:hover { color: var(--danger); background: var(--danger-soft); }
-.eh-replies { margin: 12px 0 0; padding: 0 0 0 4px; list-style: none; border-left: 2px solid var(--hairline); }
-.eh-msg.is-reply { grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding: 10px 0 10px 14px; border-top: 0; }
-.eh-msg.is-reply .eh-msg-text { margin-top: 4px; font-size: 14px; }
-.eh-reply-form { margin: 10px 0 0; }
-.eh-reply-form textarea { width: 100%; min-height: 64px; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface); font: 400 14px/1.5 var(--font); resize: vertical; }
+.eh-msg-actions { display: flex; flex-wrap: wrap; gap: 2px; margin: 8px 0 0 -8px; }
+.eh-act { display: inline-flex; align-items: center; min-height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: none; font: 500 12.5px var(--font); color: var(--muted); cursor: pointer; }
+.eh-act:hover { background: var(--surface-3); color: var(--ink); }
+.eh-act.is-danger:hover { background: var(--danger-soft); color: var(--danger); }
+.eh-replies { margin: 14px 0 0; padding: 0; list-style: none; border-left: 2px solid var(--hairline); }
+.eh-msg.is-reply { grid-template-columns: 28px minmax(0, 1fr); gap: 10px; padding: 8px 0 8px 16px; border: 0; box-shadow: none; }
+.eh-msg.is-reply .eh-msg-text { margin-top: 3px; font-size: 14px; }
+.eh-reply-form { margin: 12px 0 0; }
+.eh-reply-form textarea { display: block; width: 100%; min-height: 64px; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface); font: 400 14px/1.5 var(--font); resize: vertical; }
+.eh-reply-form textarea:focus { outline: none; box-shadow: var(--focus); border-color: color-mix(in srgb, var(--ink) 35%, transparent); }
 .eh-reply-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
 .eh-reply-foot > span { display: inline-flex; gap: 6px; }
-.eh-inline-check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); cursor: pointer; min-height: 36px; }
+.eh-inline-check { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
 
 /* social */
-.eh-copy-list, .eh-lu { margin: 0; padding: 0; list-style: none; }
-.eh-copy-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--hairline-2); }
-.eh-copy-list li:first-child { border-top: 0; }
-.eh-copy-list p { margin: 0; font: 400 14.5px/1.6 var(--serif); color: var(--ink-2); max-width: 80ch; }
-.eh-copy-list strong { font-family: var(--font); color: var(--ink); }
-.eh-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
-.eh-tagchip { padding: 6px 12px; border-radius: 99px; border: 1px solid var(--hairline); background: var(--surface); font-size: 13px; }
-.eh-lineup { display: grid; gap: 26px; }
-.eh-lu-h { margin: 0 0 6px; font: 600 18px/1.2 var(--serif); }
-.eh-lu-item { padding: 14px 0; border-top: 1px solid var(--hairline-2); }
-.eh-lu-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 14px; }
-.eh-lu-title { margin: 0; font: 600 15.5px/1.35 var(--serif); }
-.eh-lu-by { margin: 4px 0 0; font-size: 12.5px; color: var(--muted); }
-.eh-lu-hook, .eh-lu-vis { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); max-width: 85ch; }
-.eh-lu-hook > span, .eh-lu-vis > span { display: inline-block; min-width: 92px; margin-right: 8px; font: 600 10.5px/1.6 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.eh-lu-hook .eh-act { min-height: 28px; vertical-align: middle; }
+.eh-lu { padding: 18px 24px; }
+.eh-lu-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.eh-hook { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 12px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--surface-3); }
+.eh-hook p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink); max-width: 72ch; }
+.eh-lu-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin: 12px 0 0; font-size: 13px; line-height: 1.55; }
+.eh-lu-dl dt { font: 600 11px/1.9 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.eh-lu-dl dd { margin: 0; color: var(--ink-2); }
+.eh-quote { margin: 0; font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
+.eh-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.eh-chip { padding: 7px 12px; border-radius: 99px; background: var(--surface-3); font-size: 13px; color: var(--ink); }
 
-/* forms */
+/* forms (modals) */
 .eh-form { display: flex; flex-direction: column; gap: 14px; }
 .eh-f { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; border: 0; padding: 0; margin: 0; }
 .eh-f-l { font: 600 12.5px var(--font); color: var(--ink); }
-.eh-f-h { font-size: 12.5px; color: var(--muted); margin: 0; }
+.eh-f-h { margin: 0; font-size: 12.5px; color: var(--muted); }
 .eh-f-row { display: flex; flex-wrap: wrap; gap: 12px; }
 .eh-f-row > .eh-f { flex: 1 1 180px; }
 .eh-form .input { width: 100%; }
 .eh-form textarea.input { resize: vertical; min-height: 64px; }
-.eh-fs { border: 1px solid var(--hairline); border-radius: 12px; padding: 14px 14px 10px; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.eh-fs { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 14px 14px 10px; border: 1px solid var(--hairline); border-radius: 12px; }
 .eh-fs legend { padding: 0 6px; font: 600 11px var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .eh-fs > .btn { align-self: flex-start; }
 .eh-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px 12px; max-height: 220px; overflow: auto; padding: 4px 2px; }
 .eh-pick-i { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13.5px; cursor: pointer; }
 .eh-left { margin-right: auto; }
 
-.eh-empty { padding: 60px 20px; text-align: center; }
-.eh-empty h2 { margin: 0 0 8px; font: 600 22px var(--serif); }
+.eh-empty { padding: 80px 20px; text-align: center; }
+.eh-empty h2 { margin: 0 0 8px; font: 600 22px var(--font); letter-spacing: -0.02em; }
 .eh-empty p { margin: 0; color: var(--muted); }
-.eh-empty.sm { padding: 26px 0; text-align: left; }
 
-@media (max-width: 1080px) {
-  .eh-pgrid { grid-template-columns: minmax(0, 1fr); }
-  .eh-pside { position: static; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-}
 @media (max-width: 960px) {
-  .eh-hero { grid-template-columns: minmax(0, 1fr); gap: 26px; padding-top: 18px; }
-  .eh-ov-grid, .eh-guide-grid, .eh-desk-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .eh-ov-grid > .eh-block { border-bottom: 1px solid var(--hairline); }
-  .eh-guide-grid { gap: 26px; }
-  .eh-desk-grid { gap: 20px; }
-  .eh-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .eh-glance li:nth-child(3) { padding-left: 0; border-left: 0; }
-  .eh-glance li:nth-child(n+3) { border-top: 1px solid var(--hairline-2); }
+  .eh-tiles, .eh-tiles.is-sm { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .eh-tiles > .is-main { grid-column: 1 / -1; }
+  .eh-tiles.is-sm > :first-child { grid-column: 1 / -1; }
+  .eh-grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .eh-ph { grid-template-columns: minmax(0, 1fr); }
+  .eh-ph-actions { flex-direction: row; flex-wrap: wrap; min-width: 0; }
+  .eh-tl { grid-auto-flow: row; grid-auto-columns: auto; gap: 0; }
+  .eh-tl li { display: grid; grid-template-columns: 24px 74px minmax(0, 1fr); column-gap: 14px; align-items: start; padding: 0 0 18px; }
+  .eh-tl li::before { top: 24px; bottom: 0; left: 11px; right: auto; width: 2px; height: auto; }
+  .eh-tl-dot { grid-row: 1 / span 2; margin: 0; }
+  .eh-tl-date { padding-top: 4px; }
+  .eh-tl-label { grid-column: 3; grid-row: 1; padding-top: 2px; }
+  .eh-tl-hard { grid-column: 3; }
 }
-@media (max-width: 720px) {
-  .eh { --eh-gap: 22px; }
-  .eh-sec-head { grid-template-columns: auto minmax(0, 1fr); }
-  .eh-sec-editor { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-  .eh-sec-num { font-size: 34px; }
-  .eh-sec-name { font-size: 24px; }
-  .eh-row { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 640px) {
+  .eh-head { padding-top: 14px; }
+  .eh-tiles { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .eh-tiles.is-sm { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .eh-tiles.is-sm .eh-tile { padding: 16px; }
+  .eh-wide { display: none; }
+  .eh-tile-big .n { font-size: 40px; }
+  .eh-seg:not(.is-sm) { display: flex; width: 100%; }
+  .eh-seg:not(.is-sm) .eh-seg-b { flex: 1 0 auto; padding: 0 12px; justify-content: center; }
+  .eh-row { grid-template-columns: minmax(0, 1fr); padding: 14px 18px; }
   .eh-row-side { justify-content: flex-start; }
-  .eh-row-go { display: none; }
-  .eh-stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 8px; }
-  .eh-stepper li:nth-child(5)::before { display: none; }
-  .eh-fy-list { grid-template-columns: minmax(0, 1fr); }
-  .eh-next-days .n { font-size: 52px; }
-  .eh-legend { grid-template-columns: minmax(0, 1fr); }
-  .eh-where { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-  .eh-where dd { margin-bottom: 10px; }
-  .eh-copy-list li { grid-template-columns: minmax(0, 1fr); }
-  .eh-copy-list li .btn { justify-self: start; }
+  .eh-row-side .eh-chev { display: none; }
+  .eh-mine { padding: 18px; }
+  .eh-sec-ed { width: 100%; }
+  .eh-doc-body { padding: 4px 18px 22px; }
+  .eh-msg { padding: 16px 18px; gap: 10px; grid-template-columns: 32px minmax(0, 1fr); }
   .eh-msg-head time { margin-left: 0; flex-basis: 100%; }
-  .eh-about { flex-basis: 100%; }
   .eh-about select { flex: 1; max-width: none; }
-  .eh-tabs { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
+  .eh-compose .eh-about { flex-basis: 100%; }
+  .eh-where, .eh-lu-dl { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .eh-where dd, .eh-lu-dl dd { margin-bottom: 8px; }
+  .eh-acc summary { padding: 0 18px; }
+  .eh-acc details > :not(summary) { margin: 0 18px 18px; }
+  .eh-lu, .eh-iv { padding: 16px 18px; }
+  .eh-hook { flex-direction: column; }
+  .eh-tl li { grid-template-columns: 24px 64px minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   .eh *, .eh *::before, .eh *::after { transition: none !important; animation: none !important; }
-  .eh-blank-word { opacity: 1; transform: none; }
+  .eh-word { opacity: 1; transform: none; }
 }
 `;
   document.head.appendChild(s);

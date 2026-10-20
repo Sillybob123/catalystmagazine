@@ -26,7 +26,7 @@ import {
 import { el, toast, initials, openModal } from "./ui.js";
 import { initNotificationBell } from "./notifications.js?v=notify-1";
 import { needsAgreement, showAgreementGate } from "./agreement.js?v=10";
-import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-8";
+import { initSuiteTheme, effectsMenuItemHtml, toggleEffectsForMe } from "./suite-theme.js?v=st-9";
 
 // Role → display label
 const ROLE_LABELS = {
@@ -248,7 +248,7 @@ const ROUTES = {
     icon: ICONS.home,
     roles: ["*"],
     group: "main",
-    loader: () => import("./overview.js?v=home-4"),
+    loader: () => import("./overview.js?v=home-5"),
   },
   // This edition — the planning hub for the edition in progress: proposals by
   // section, key dates, next steps, and questions & updates for everyone.
@@ -258,7 +258,7 @@ const ROUTES = {
     icon: ICONS.edition,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./edition-hub.js?v=1"),
+    loader: () => import("./edition-hub.js?v=2"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -544,7 +544,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-17"),
+    loader: () => import("./admin-import.js?v=theme-18"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
