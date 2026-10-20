@@ -675,6 +675,7 @@ function routeAlreadyVisible(route, userRole) {
 // list covers more than GRANTABLE_ROUTES (Story Tracker, Team tasks…).
 // Overview is never listed: it's everyone's home page.
 const LIMITABLE_ROUTES = [
+  { group: "Everyday", hash: "#/edition",        label: "This edition",       baseRoles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"] },
   { group: "Everyday", hash: "#/calendar",       label: "Editorial calendar", baseRoles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"] },
   { group: "Everyday", hash: "#/pipeline/all",   label: "Story Tracker",      baseRoles: ["*"] },
   { group: "Everyday", hash: "#/pipeline/mine",  label: "My assignments",     baseRoles: ["*"] },

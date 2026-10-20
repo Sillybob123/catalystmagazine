@@ -111,6 +111,12 @@ function shouldSkip(relativePath, dirent) {
     return true;
   }
 
+  // Edition planning folders (proposals, meeting transcripts) are private:
+  // gitignored, and never copied even by a local build.
+  if (/^Catalyst .*Edition/i.test(parts[0])) {
+    return true;
+  }
+
   if (excludedFiles.has(relativePath) || excludedFiles.has(baseName)) {
     return true;
   }

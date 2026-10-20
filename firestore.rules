@@ -273,6 +273,57 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---------- This edition (#/edition) ----------
+    // The planning hub for the edition in progress: edition_hub/{id} holds
+    // sections + their editors, key dates and guidance; pieces/ holds each
+    // piece with its proposal and the editors' notes; messages/ holds the
+    // questions and updates people post. Staff only (unpublished pitches).
+    //   • admins change anything
+    //   • section editors (hub.editorUids) edit any piece, and tick the
+    //     editors' to-dos / open decisions on the hub
+    //   • a piece's writers (piece.writerUids) update its progress, checklist,
+    //     interviews, title, format and their own proposal, never the
+    //     editors' notes, section or byline
+    match /edition_hub/{ed} {
+      function hubData() { return get(/databases/$(database)/documents/edition_hub/$(ed)).data; }
+      function isHubEditor() { return isStaff() && request.auth.uid in hubData().get('editorUids', []); }
+      function canSeeHub() { return isStaff() && notBlocked('#/edition'); }
+
+      allow read: if canSeeHub();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (canSeeHub() && isHubEditor()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['editorTodos', 'decisions', 'updatedAt', 'updatedByName']));
+
+      match /pieces/{pid} {
+        allow read: if canSeeHub();
+        allow create, delete: if isAdmin();
+        allow update: if isAdmin()
+          || (canSeeHub() && isHubEditor())
+          || (canSeeHub()
+              && request.auth.uid in resource.data.get('writerUids', [])
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                   ['status', 'nextSteps', 'interviews', 'proposal', 'title', 'subtitle', 'format', 'draftUrl',
+                    'updatedAt', 'updatedBy', 'updatedByName']));
+      }
+
+      match /messages/{mid} {
+        allow read: if canSeeHub();
+        allow create: if canSeeHub()
+          && request.resource.data.authorUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 4000
+          && request.resource.data.kind in ['question', 'update', 'reply', 'announcement']
+          && (request.resource.data.kind != 'announcement' || isAdmin() || isHubEditor());
+        allow update: if isAdmin()
+          || (canSeeHub() && resource.data.authorUid == request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt', 'resolved', 'resolvedAt', 'resolvedByName', 'pinned']))
+          || (canSeeHub()
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resolved', 'resolvedAt', 'resolvedByName']));
+        allow delete: if isAdmin() || (canSeeHub() && resource.data.authorUid == request.auth.uid);
+      }
+    }
+
     // ---------- public book-review submissions ("The Catalyzers") ----------
     // Reader-submitted book reviews. The ONLY write path is the server-side
     // POST /api/book-reviews/submit endpoint (Cloudflare Pages Function,

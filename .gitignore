@@ -84,3 +84,6 @@ build/
 
 # Removed-PII backup written by scripts/strip-story-pii.js (contains emails)
 scripts/.story-pii-backup.json
+
+# Edition planning material (proposals, meeting transcripts) — private, never pushed
+/Catalyst Winter Edition */

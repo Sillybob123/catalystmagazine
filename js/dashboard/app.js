@@ -58,6 +58,9 @@ const ICONS = {
   // Pin toggle — a thumbtack (outline = unpinned, filled via CSS = pinned)
   pin:         `<svg class="pin-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.6-2.4a2 2 0 0 1-.4-1.2V8a2 2 0 0 1 2-2h-14a2 2 0 0 1 2 2v5.4a2 2 0 0 1-.4 1.2z"/></svg>`,
 
+  // This edition — an open magazine (the edition being planned)
+  edition:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7 4.5 3 5v14c4-.5 7 0 9 1.5 2-1.5 5-2 9-1.5V5c-4-.5-7 0-9 1.5z"/><path d="M12 6.5V20"/><path d="M6 9h3M6 12h3M15 9h3M15 12h3"/></svg>`,
+
   // Writing
   // Submit a draft — a pen drafting a line
   pen:         `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
@@ -246,6 +249,16 @@ const ROUTES = {
     roles: ["*"],
     group: "main",
     loader: () => import("./overview.js?v=home-4"),
+  },
+  // This edition — the planning hub for the edition in progress: proposals by
+  // section, key dates, next steps, and questions & updates for everyone.
+  "#/edition": {
+    label: "This edition",
+    desc: "The edition we're making: every proposal by section and editor, the key dates, your next steps, and questions and updates.",
+    icon: ICONS.edition,
+    roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
+    group: "main",
+    loader: () => import("./edition-hub.js?v=1"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -474,7 +487,7 @@ const ROUTES = {
     icon: ICONS.shieldCheck,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-13"),
+    loader: () => import("./admin.js?v=wd-14"),
     mountKey: "articles",
   },
   // Submissions inbox — Join-the-Team applications + Article proposals
@@ -513,7 +526,7 @@ const ROUTES = {
     icon: ICONS.userCog,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-13"),
+    loader: () => import("./admin.js?v=wd-14"),
     mountKey: "users",
   },
   "#/admin/images": {
@@ -522,7 +535,7 @@ const ROUTES = {
     icon: ICONS.image,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin.js?v=wd-13"),
+    loader: () => import("./admin.js?v=wd-14"),
     mountKey: "images",
   },
   "#/admin/advanced": {
