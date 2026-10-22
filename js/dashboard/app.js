@@ -259,7 +259,7 @@ const ROUTES = {
     icon: ICONS.edition,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./edition-hub.js?v=10"),
+    loader: () => import("./edition-hub.js?v=11"),
   },
   "#/calendar": {
     label: "Editorial calendar",

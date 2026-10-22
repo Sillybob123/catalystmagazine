@@ -11,10 +11,6 @@
 //                and its questions
 //   • Questions  everything people have asked or shared; ask, update, reply,
 //                mark answered
-//   • Social     who on the social team is posting what before launch (their
-//                Planner assignments, each matched with a piece that fits), a
-//                suggested campaign on the edition's dates, teaser ideas for
-//                every piece (piece.social), and the rules for posting
 //
 // Data (Firestore, staff only — see firestore.rules "This edition"):
 //   edition_hub/{EDITION}            sections + editors, dates, guidance
@@ -33,7 +29,6 @@ import {
   collection, doc, onSnapshot, query, orderBy, limit, addDoc, updateDoc, deleteDoc, getDocs, setDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, fmtRelative, openModal, confirmDialog, slugify, initials } from "./ui.js";
-import { bestTimeAdvice, fmtClock, POST_TIMES, RESEARCHED } from "./post-times.js?v=1";
 
 // The edition this page plans. Point it at the next edition's hub doc when
 // that one is seeded.
@@ -71,7 +66,7 @@ const KIND = {
 
 // Kept between mounts, so coming back (or opening a piece from the bell)
 // paints at once while the live listeners catch up.
-const cache = { hub: null, pieces: null, messages: null, bios: null, staff: null, banners: null, social: null };
+const cache = { hub: null, pieces: null, messages: null, bios: null, staff: null, banners: null };
 
 const DAY = 86400000;
 const parseDay = (s) => { const [y, m, d] = String(s || "").split("-").map(Number); return y ? new Date(y, m - 1, d) : null; };
@@ -82,20 +77,7 @@ const LONG = { weekday: "long", month: "long", day: "numeric" };
 const sameName = (a, b) => !!a && !!b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 const firstName = (n) => String(n || "").trim().split(/\s+/)[0] || "Someone";
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-const endStop = (t) => (/[.?!]$/.test(String(t)) ? t : `${t}.`);
 const inDays = (n) => (n === 0 ? "today" : n === 1 ? "tomorrow" : n === -1 ? "yesterday" : n > 0 ? `in ${n} days` : `${-n} days ago`);
-const isoDay = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-const addDays = (s, n) => { const d = parseDay(s); d.setDate(d.getDate() + n); return isoDay(d); };
-// "Oct 30", "Thu Oct 30, 2pm" → the ISO day in the edition's season.
-const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-function whenToISO(when) {
-  const m = String(when || "").match(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b/i);
-  if (!m) return "";
-  const mon = MONTHS.indexOf(m[1].toLowerCase()), day = Number(m[2]), now = today();
-  let y = now.getFullYear();
-  if (new Date(y, mon, day) < new Date(now.getFullYear(), now.getMonth() - 6, 1)) y += 1;
-  return isoDay(new Date(y, mon, day));
-}
 const clip = (t, n) => (String(t).length > n ? `${String(t).slice(0, n - 1)}…` : String(t));
 
 // Escape, keep line breaks, and turn bare links into links.
@@ -131,14 +113,14 @@ export async function mount(ctx, container) {
   document.body.classList.add("eh-calm");
   container.classList.add("eh-content");
   const params = new URLSearchParams((location.hash.split("?")[1]) || "");
-  const TABS = ["overview", "pieces", "talk", "social"];
+  const TABS = ["overview", "pieces", "talk"];
   const tabParam = params.get("tab") === "sections" ? "pieces" : params.get("tab");
   const view = {
     tab: TABS.includes(tabParam) ? tabParam : "overview",
     piece: params.get("piece") || null,
     pieceTab: params.get("view") === "talk" ? "talk" : "",
     sec: params.get("sec") || "",
-    q: "", filter: "all", talkFilter: "all", showNotes: false, socWhen: "all",
+    q: "", filter: "all", talkFilter: "all", showNotes: false,
   };
   const me = { uid: ctx.user?.uid || "", name: ctx.profile?.name || ctx.user?.displayName || "" };
   const isAdmin = ctx.role === "admin";
@@ -153,7 +135,6 @@ export async function mount(ctx, container) {
   let hub = cache.hub, pieces = cache.pieces || [], messages = cache.messages || [];
   let bios = cache.bios || new Map();
   let banners = cache.banners || new Map();
-  let socialSlots = cache.social || [];
   const unsubs = [];
 
   container.innerHTML = "";
@@ -175,11 +156,6 @@ export async function mount(ctx, container) {
   unsubs.push(onSnapshot(collection(hubRef, "banners"), (s) => {
     banners = new Map(s.docs.map((d) => [d.id, d.data()])); cache.banners = banners; render();
   }, (err) => console.warn("[edition] banners", err?.message)));
-  // The social team's planned posts (the Planner's tracker; staff can read).
-  unsubs.push(onSnapshot(collection(db, "social_assignments"), (s) => {
-    socialSlots = s.docs.map((d) => ({ id: d.id, ...d.data() })); cache.social = socialSlots;
-    if (view.tab === "social" && !view.piece) render();
-  }, (err) => console.warn("[edition] social", err?.message)));
   if (!cache.bios) {
     getDocs(collection(db, "team_bios")).then((s) => {
       bios = new Map(s.docs.map((d) => [d.id, d.data()])); cache.bios = bios; render();
@@ -277,7 +253,6 @@ export async function mount(ctx, container) {
       root.appendChild(body);
       if (view.tab === "pieces") body.appendChild(piecesView());
       else if (view.tab === "talk") body.appendChild(talkView());
-      else if (view.tab === "social") body.appendChild(socialView());
       else body.appendChild(overviewView());
     }
     restoreFocus(focus);
@@ -310,7 +285,7 @@ export async function mount(ctx, container) {
       <h1 class="eh-title" aria-label="${esc(hub.theme || "The Future of Health is blank.")}">The Future of Health is <span class="eh-blank" aria-hidden="true"><span class="eh-word"></span></span><span class="eh-stop" aria-hidden="true">.</span></h1>
       <p class="eh-lede">${plural(total, "piece")} in ${plural((hub.sections || []).length, "section")}. Launches ${esc(fmtDay(hub.launch, LONG))}.</p>
       <nav class="eh-seg eh-tabs" aria-label="This edition">
-        ${[["overview", "Overview", ""], ["pieces", "Pieces", ""], ["talk", "Questions", open ? String(open) : ""], ["social", "Social", ""]].map(([id, l, n]) => `
+        ${[["overview", "Overview", ""], ["pieces", "Pieces", ""], ["talk", "Questions", open ? String(open) : ""]].map(([id, l, n]) => `
           <button type="button" class="eh-seg-b${view.tab === id ? " is-on" : ""}" data-go="${id}" ${view.tab === id ? 'aria-current="page"' : ""}>${l}${n ? `<span class="eh-badge">${n}</span>` : ""}</button>`).join("")}
       </nav>`;
     // The blank fills itself in with each section's name.
@@ -1187,276 +1162,6 @@ export async function mount(ctx, container) {
     } catch { toast("Couldn't update that question.", "error"); }
   }
 
-  // ── Social
-  // The social team's rundown for the edition: who's posting what between
-  // now and launch (their Planner assignments), a suggested campaign built
-  // around the edition's dates, and teaser ideas for every piece
-  // (piece.social, written per piece from its proposal and interviews).
-  const SOCIAL_ROLES = ["admin", "marketing", "social_media"];
-  const WHEN = {
-    now: { label: "Post now", tone: "good", hint: "Fine before the piece is written" },
-    interview: { label: "Around the interview", tone: "info", hint: "Tie it to the interview" },
-    final: { label: "After the final draft", tone: "sand", hint: `Needs the final draft` },
-    launch: { label: "Launch week", tone: "launch", hint: "For launch and after" },
-  };
-  const platformLabel = (p) => POST_TIMES[p]?.label || (p ? p[0].toUpperCase() + p.slice(1) : "");
-  const teasersOf = (p) => (p.social?.teasers || []).filter((t) => t.format !== "Wait");
-  const holdOf = (p) => (p.social?.teasers || []).find((t) => t.format === "Wait");
-  const bestAt = (platform, day) => { const a = bestTimeAdvice(platform, day); return a?.useTime ? `${fmtClock(a.useTime)} ET` : ""; };
-  const isTeaserSlot = (a) => /teaser|highlight/i.test(`${a.type} ${a.articleTitle}`) && !a.storyId;
-  const isWordSlot = (a) => /wacky\s*word/i.test(`${a.type} ${a.articleTitle}`);
-  const isFactSlot = (a) => /fun\s*fact/i.test(`${a.type} ${a.articleTitle}`);
-  const slotDone = (a) => a.status === "published" || a.status === "done";
-  // The series a post belongs to ("Fun Fact", not the tracker's "Other").
-  const slotName = (a) => (a.articleTitle && !/^(other|post)$/i.test(a.articleTitle) && (/^other$/i.test(a.type || "") || !a.type) ? a.articleTitle : a.type || a.articleTitle || "Post");
-
-  // Pieces taken in turn across the sections, so back-to-back posts don't
-  // all come from the same section.
-  function roundRobin(list) {
-    const bySec = (hub.sections || []).map((s) => list.filter((p) => p.section === s.id));
-    const out = [];
-    for (let i = 0; bySec.some((g) => g[i]); i++) bySec.forEach((g) => { if (g[i]) out.push(g[i]); });
-    return out;
-  }
-
-  // Which piece fits each of the team's planned posts: teaser slots before
-  // the final drafts get a piece with a "post now" idea, after them one with
-  // a final-draft idea; Wacky Word Wednesdays a word from a piece; Fun Fact
-  // Fridays a fact.
-  function suggestionsFor(slots) {
-    const fin = hardDate("final-draft")?.date || hub.launch;
-    const list = sorted(realPieces());
-    const pools = {
-      early: roundRobin(list.filter((p) => teasersOf(p).some((t) => t.when === "now" || t.when === "interview"))),
-      late: roundRobin(list.filter((p) => teasersOf(p).some((t) => t.when === "final" || t.when === "launch"))),
-      word: roundRobin(list.filter((p) => p.social?.word?.term)),
-      fact: roundRobin(list.filter((p) => p.social?.fact)),
-    };
-    const turn = { early: 0, late: 0, word: 0, fact: 0 };
-    const pick = (k) => { const pool = pools[k]; return pool.length ? pool[turn[k]++ % pool.length] : null; };
-    const out = new Map();
-    [...slots].sort((a, b) => String(a.deadline).localeCompare(String(b.deadline))).forEach((a) => {
-      if (slotDone(a)) return;
-      if (isWordSlot(a)) { const p = pick("word"); if (p) out.set(a.id, { p, text: `Word: ${p.social.word.term}`, copy: `${p.social.word.term}: ${p.social.word.hint}` }); return; }
-      if (isFactSlot(a)) { const p = pick("fact"); if (p) out.set(a.id, { p, text: `Fact: ${clip(p.social.fact, 90)}`, copy: p.social.fact }); return; }
-      if (isTeaserSlot(a)) {
-        const late = String(a.deadline) >= fin;
-        const p = pick(late ? "late" : "early");
-        if (!p) return;
-        const t = teasersOf(p).find((x) => (late ? ["final", "launch"] : ["now", "interview"]).includes(x.when)) || teasersOf(p)[0];
-        out.set(a.id, { p, text: `${t.format}: ${clip(t.idea, 90)}`, copy: t.idea });
-      }
-    });
-    return out;
-  }
-
-  function socialView() {
-    const wrap = el("div", { class: "eh-stack" });
-    const launchN = daysUntil(hub.launch);
-    const list = sorted(realPieces());
-    const now = isoDay(today());
-    const slots = socialSlots.filter((a) => a.deadline && a.deadline >= addDays(now, -7) && a.deadline <= addDays(hub.launch, 21));
-    const before = slots.filter((a) => a.deadline >= now && a.deadline < hub.launch && !slotDone(a));
-    const ideas = list.reduce((n, p) => n + teasersOf(p).length, 0);
-    const readyNow = list.reduce((n, p) => n + teasersOf(p).filter((t) => t.when === "now").length, 0);
-    const sugg = suggestionsFor(slots.filter((a) => a.deadline >= now));
-    const owners = [...new Set(before.flatMap((a) => (a.assignees?.length ? a.assignees : [{ name: a.assigneeName }]).map((x) => firstName(x.name))))];
-    const tiles = el("section", { class: "eh-tiles", "aria-label": "Social at a glance" });
-    tiles.innerHTML = `
-      <article class="eh-tile is-main"><p class="eh-tile-k">Launch</p><p class="eh-tile-big">${launchN > 0 ? `<span class="n">${launchN}</span><span class="u">days</span>` : `<span class="n">Live</span>`}</p><p class="eh-tile-sub">${esc(fmtDay(hub.launch, LONG))}</p></article>
-      <article class="eh-tile"><p class="eh-tile-k">Posts planned before launch</p><p class="eh-tile-big"><span class="n">${before.length}</span><span class="u">${before.length === 1 ? "post" : "posts"}</span></p><p class="eh-tile-sub">${before.length ? `By ${esc(owners.join(", ") || "the team")}` : "Nothing in the Planner yet"}</p></article>
-      <article class="eh-tile"><p class="eh-tile-k">Teaser ideas</p><p class="eh-tile-big"><span class="n">${ideas}</span><span class="u">for ${plural(list.filter((p) => teasersOf(p).length).length, "piece")}</span></p><p class="eh-tile-sub">${plural(readyNow, "idea")} you can post now</p></article>`;
-    wrap.appendChild(tiles);
-    wrap.appendChild(socialTeam(slots, sugg));
-    wrap.appendChild(socialCampaign());
-    wrap.appendChild(socialIdeas(list));
-    wrap.appendChild(socialToolkit(list));
-    return wrap;
-  }
-
-  // Who's on social: each person's planned posts, the next one first, with
-  // the piece that fits it.
-  function socialTeam(slots, sugg) {
-    const node = el("section", { class: "card" });
-    const now = isoDay(today());
-    const people = new Map();
-    slots.forEach((a) => (a.assignees?.length ? a.assignees : [{ id: a.assigneeId, name: a.assigneeName }]).forEach((x) => {
-      if (!x?.name) return;
-      const k = x.id || x.name;
-      if (!people.has(k)) people.set(k, { name: x.name, slots: [] });
-      people.get(k).slots.push(a);
-    }));
-    const team = [...people.values()].map((t) => ({ ...t, slots: t.slots.sort((a, b) => String(a.deadline).localeCompare(String(b.deadline))) }))
-      .sort((a, b) => String(a.slots.find((s) => s.deadline >= now)?.deadline || "9").localeCompare(String(b.slots.find((s) => s.deadline >= now)?.deadline || "9")));
-    const week = slots.filter((a) => a.deadline >= now && a.deadline <= addDays(now, 6) && !slotDone(a)).sort((a, b) => String(a.deadline).localeCompare(String(b.deadline)));
-    const planner = SOCIAL_ROLES.includes(ctx.role);
-    const slotRow = (a, { who = false, brief = false } = {}) => {
-      const s = sugg.get(a.id);
-      const n = daysUntil(a.deadline);
-      return `<li class="eh-so-slot${slotDone(a) ? " is-done" : ""}">
-        <time class="eh-so-date" datetime="${esc(a.deadline)}"><b>${esc(fmtDay(a.deadline, { month: "short", day: "numeric" }))}</b><span>${esc(fmtDay(a.deadline, { weekday: "short" }))}</span></time>
-        <div class="eh-so-slot-main">
-          <p class="eh-so-slot-t">${esc(slotName(a))}${who ? ` <span class="eh-muted">· ${esc(names(a.assignees?.length ? a.assignees : [{ name: a.assigneeName }]))}</span>` : ""}</p>
-          <p class="eh-meta">${esc(platformLabel(a.platform))}${slotDone(a) ? " · Posted" : n >= 0 ? ` · ${inDays(n)}` : ""}${!slotDone(a) && bestAt(a.platform, a.deadline) ? ` · best around ${esc(bestAt(a.platform, a.deadline))}` : ""}</p>
-          ${s && brief ? `<p class="eh-so-sugg"><span class="eh-so-sugg-k">Idea</span> <button type="button" class="eh-link" data-soc-jump="${esc(s.p.id)}">${esc(clip(s.p.title, 48))}</button></p>` : ""}
-          ${s && !brief ? `<p class="eh-so-sugg"><span class="eh-so-sugg-k">Idea from the edition</span> <button type="button" class="eh-link" data-soc-jump="${esc(s.p.id)}">${esc(clip(s.p.title, 60))}</button></p>
-            <p class="eh-so-sugg-t">${esc(s.text)} <button type="button" class="eh-act" data-copy="${esc(s.copy)}">${ICON.copy} Copy</button></p>` : ""}
-        </div>
-      </li>`;
-    };
-    node.innerHTML = `
-      <div class="card-header eh-ch"><div><h2 class="card-title">Who's on social</h2><p class="card-subtitle">Everyone's planned posts from now to launch, from the Planner, with a piece from the edition that fits each one.</p></div>
-        ${planner ? `<span class="eh-btnrow"><a class="btn btn-ghost btn-sm" href="#/planner">Open the Planner ${ICON.chev}</a><a class="btn btn-ghost btn-sm" href="#/marketing/social">Social media posts ${ICON.chev}</a></span>` : ""}</div>
-      ${week.length ? `<div class="eh-so-week"><p class="eh-so-k">This week</p><ul class="eh-so-slots">${week.map((a) => slotRow(a, { who: true })).join("")}</ul></div>` : ""}
-      ${team.length ? `<div class="eh-so-team">${team.map((t) => {
-        const up = t.slots.filter((a) => a.deadline >= now && !slotDone(a));
-        const done = t.slots.filter(slotDone).length;
-        const series = t.slots.map(slotName).filter((x, i, all) => all.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i);
-        const platforms = [...new Set(t.slots.map((a) => platformLabel(a.platform)).filter(Boolean))];
-        return `<article class="eh-so-person">
-          <header class="eh-so-person-h">${avatar({ name: t.name }, 44)}<div><p class="eh-row-title">${esc(t.name)}</p><p class="eh-meta">${esc(series.join(", "))}${platforms.length ? ` · ${esc(platforms.join(" and "))}` : ""}</p></div></header>
-          <p class="eh-so-count"><b>${up.filter((a) => a.deadline < hub.launch).length}</b> before launch${done ? ` · ${done} posted` : ""}</p>
-          ${up.length ? `<ul class="eh-so-slots">${up.slice(0, 3).map((a) => slotRow(a, { brief: true })).join("")}</ul>${up.length > 3 ? `<p class="eh-so-more">${plural(up.length - 3, "more post")} after ${esc(fmtDay(up[2].deadline, { month: "short", day: "numeric" }))}</p>` : ""}` : `<p class="eh-meta eh-so-none">Nothing planned from today.</p>`}
-        </article>`;
-      }).join("")}</div>` : `<div class="card-body"><p class="eh-muted">No social posts are planned for the edition yet.${planner ? ` Add them in the <a href="#/planner">Planner</a> and they'll show up here.` : ""}</p></div>`}`;
-    return node;
-  }
-
-  // A suggested campaign from today to launch, built on the edition's dates.
-  function socialCampaign() {
-    const now = isoDay(today());
-    const L = hub.launch;
-    const first = hardDate("first-draft")?.date;
-    const fin = hardDate("final-draft")?.date || addDays(L, -5);
-    const list = sorted(realPieces());
-    const steps = [];
-    // Interviews coming up: behind-the-scenes moments.
-    const ivs = list.flatMap((p) => (p.interviews || []).filter((v) => v.status === "scheduled").map((v) => ({ p, v, day: whenToISO(v.when) })))
-      .filter((x) => x.day && x.day >= now).sort((a, b) => a.day.localeCompare(b.day));
-    steps.push({
-      from: now, to: first ? addDays(first, -1) : addDays(L, -30), title: "Behind the scenes",
-      text: "Interviews and reporting are under way. Post the ideas marked Post now (polls, question stickers, hooks that don't give away the piece) and interview-day stories.",
-      list: ivs.map((x) => `${fmtDay(x.day, { month: "short", day: "numeric" })}: ${firstNames(x.p.writers)} interviews ${x.v.person}${x.v.affiliation ? ` (${x.v.affiliation})` : ""}`),
-      platform: "instagram",
-    });
-    if (first) steps.push({ from: first, title: "First drafts are in", text: "A short “writers at work” story: notes, laptops, the Drive folder. Show the work, not the words; drafts stay private until they're final.", platform: "instagram" });
-    // The section reveals: one Wednesday per section before launch week.
-    const weds = [];
-    for (let d = addDays(L, -1); weds.length < (hub.sections || []).length && d > now; d = addDays(d, -1)) if (parseDay(d).getDay() === 3) weds.unshift(d);
-    (hub.sections || []).slice(-weds.length || 0).forEach((s, i) => {
-      if (!weds[i]) return;
-      const n = list.filter((p) => p.section === s.id).length;
-      steps.push({
-        from: weds[i], title: `Reveal: The Future of Health is ${endStop(s.name)}`,
-        text: `Introduce the section and what its ${plural(n, "piece")} explore. Name the topics, not the titles (titles can change until the final drafts). ${s.editor ? `${s.editor.name} edits it; tag them if they're happy to be tagged.` : ""}`,
-        copy: `The Future of Health is ${endStop(s.name)} ${s.blurb || ""}`.trim(),
-        platform: "instagram", series: true,
-      });
-    });
-    // Countdown: a piece a day from the final drafts to launch.
-    const late = roundRobin(list.filter((p) => teasersOf(p).some((t) => t.when === "final" || t.when === "launch")));
-    const days = [];
-    for (let d = fin > now ? fin : now; d < L; d = addDays(d, 1)) days.push(d);
-    if (days.length && late.length) steps.push({
-      from: days[0], to: days[days.length - 1], title: "Countdown: a piece a day",
-      text: "One teaser a day from the final drafts. Quote cards and carousels work best; weekends are quieter, so use stories then.",
-      list: days.map((d, i) => { const p = late[i % late.length]; const t = teasersOf(p).find((x) => x.when === "final") || teasersOf(p)[0]; return `${fmtDay(d, { weekday: "short", month: "short", day: "numeric" })}: ${p.title} (${t.format.toLowerCase()})`; }),
-      platform: "instagram",
-    });
-    steps.push({
-      from: L, title: "Launch day", text: "The full lineup as an Instagram carousel (the cover, then one slide per section), a LinkedIn post on the theme, the newsletter, and the link in bio pointed at the edition.",
-      platform: "instagram", also: "linkedin", launch: true,
-    });
-    steps.push({ from: addDays(L, 1), to: addDays(L, 14), title: "Spotlights", text: "A story a weekday for two weeks: the launch ideas below (pull quotes, LinkedIn posts that tag the experts and their institutions), then reshare when the people we interviewed post about it.", platform: "linkedin" });
-
-    const node = el("section", { class: "card" });
-    const state = (s) => ((s.to || s.from) < now ? "past" : s.from <= now ? "now" : "next");
-    node.innerHTML = `
-      <div class="card-header eh-ch"><div><h2 class="card-title">The campaign</h2><p class="card-subtitle">A suggested run-up to launch, built on the edition's dates. Best times are Eastern, from our posting research.</p></div></div>
-      <ol class="eh-so-plan">${steps.map((s) => {
-        const st = state(s);
-        const time = bestAt(s.platform, s.from > now ? s.from : now);
-        const also = s.also ? bestAt(s.also, s.from) : "";
-        return `<li class="eh-so-step is-${st}${s.launch ? " is-launch" : ""}">
-          <div class="eh-so-when"><b>${esc(fmtDay(s.from, { month: "short", day: "numeric" }))}${s.to && s.to !== s.from ? `&ndash;${esc(fmtDay(s.to, parseDay(s.to).getMonth() === parseDay(s.from).getMonth() ? { day: "numeric" } : { month: "short", day: "numeric" }))}` : ""}</b><span>${st === "now" ? "Now" : esc(fmtDay(s.from, { weekday: "long" }))}</span></div>
-          <div class="eh-so-step-main">
-            <h3>${esc(s.title)}</h3>
-            <p>${esc(s.text)}</p>
-            ${s.list?.length ? `<ul class="eh-so-sub">${s.list.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
-            ${(time || also) && st !== "past" ? `<p class="eh-so-time">${time ? `${esc(platformLabel(s.platform))} around ${esc(time)}` : ""}${also ? ` · ${esc(platformLabel(s.also))} around ${esc(also)}` : ""}</p>` : ""}
-            ${s.copy ? `<div class="eh-hook"><p>${esc(s.copy)}</p><button type="button" class="btn btn-ghost btn-xs" data-copy="${esc(s.copy)}">${ICON.copy} Copy</button></div>` : ""}
-          </div>
-        </li>`;
-      }).join("")}</ol>`;
-    return node;
-  }
-
-  // Teaser ideas for every piece, by section.
-  function socialIdeas(list) {
-    const node = el("section", { class: "eh-stack" });
-    const f = view.socWhen || "all";
-    const keep = (t) => f === "all" || (f === "now" ? t.when === "now" || t.when === "interview" : t.when === "final" || t.when === "launch");
-    node.innerHTML = `
-      <div class="eh-so-ideas-h">
-        <div><h2 class="eh-so-h2">Teasers for every story</h2><p class="eh-meta">Ideas for each piece, from its proposal and interviews. Facts and quotes come from the writers' own work, so check each one with the writer before it goes out.</p></div>
-        <div class="eh-seg is-sm" role="group" aria-label="Show">${[["all", "All"], ["now", "Post now"], ["later", "Later"]].map(([id, l]) => `<button type="button" class="eh-seg-b${f === id ? " is-on" : ""}" data-soc-when="${id}" aria-pressed="${f === id}">${l}</button>`).join("")}</div>
-      </div>
-      ${(hub.sections || []).map((s) => {
-        const ps = list.filter((p) => p.section === s.id);
-        if (!ps.length) return "";
-        return `<section class="card">
-          <div class="card-header eh-ch"><div><h3 class="card-title">${esc(s.name)}</h3><p class="card-subtitle">${plural(ps.length, "piece")}${s.editor ? ` · edited by ${esc(s.editor.name)}` : ""}</p></div><button type="button" class="btn btn-ghost btn-sm" data-copy="${esc(`The Future of Health is ${endStop(s.name)} ${s.blurb || ""}`)}">${ICON.copy} Copy section blurb</button></div>
-          <ul class="eh-list">${ps.map((p) => {
-            const ts = teasersOf(p).filter(keep);
-            const hold = holdOf(p);
-            const featuring = (p.interviews || []).filter((v) => v.status !== "wanted");
-            const soc = p.social || {};
-            if (f !== "all" && !ts.length) return "";
-            return `<li class="eh-so-piece" id="soc-${esc(p.id)}">
-              <div class="eh-lu-top"><div><button type="button" class="eh-so-ptitle" data-piece="${esc(p.id)}">${esc(p.title)}</button><p class="eh-meta">${esc(names(p.writers))}${p.format ? ` · ${esc(p.format)}` : ""}</p></div>${stage(p)}</div>
-              ${soc.angle ? `<div class="eh-hook"><p><span class="eh-so-k">The angle</span>${esc(soc.angle)}</p><button type="button" class="btn btn-ghost btn-xs" data-copy="${esc(soc.angle)}">${ICON.copy} Copy</button></div>` : p.subtitle ? `<div class="eh-hook"><p>${esc(p.subtitle)}</p><button type="button" class="btn btn-ghost btn-xs" data-copy="${esc(p.subtitle)}">${ICON.copy} Copy</button></div>` : ""}
-              ${ts.length ? `<div class="eh-so-tgrid">${ts.map((t) => { const w = WHEN[t.when] || WHEN.final; return `<article class="eh-so-t">
-                <p class="eh-so-t-h"><span class="eh-so-t-f">${esc(t.format)}</span><span class="eh-muted">${esc(platformLabel(t.platform))}</span><span class="eh-so-when-tag is-${w.tone}">${esc(w.label)}</span></p>
-                <p class="eh-so-t-idea">${esc(t.idea)}</p>
-                ${t.check ? `<p class="eh-so-check"><b>Check first</b> ${esc(t.check)}</p>` : ""}
-                <button type="button" class="eh-act eh-so-t-copy" data-copy="${esc(t.idea)}">${ICON.copy} Copy idea</button>
-              </article>`; }).join("")}</div>` : ""}
-              ${hold && f === "all" ? `<p class="eh-so-hold">${esc(hold.idea)}</p>` : ""}
-              ${f === "all" && (soc.word || soc.fact || p.proposal?.visuals || featuring.length || soc.tags?.length) ? `<dl class="eh-lu-dl">
-                ${soc.word ? `<dt>Wacky word</dt><dd><b>${esc(soc.word.term)}</b>: ${esc(soc.word.hint)}</dd>` : ""}
-                ${soc.fact ? `<dt>Fun fact</dt><dd>${esc(soc.fact)}</dd>` : ""}
-                ${p.proposal?.visuals ? `<dt>Visual ideas</dt><dd>${esc(p.proposal.visuals)}</dd>` : ""}
-                ${featuring.length ? `<dt>Featuring</dt><dd>${esc(featuring.map((v) => `${v.person}${v.affiliation ? ` (${v.affiliation})` : ""}`).join("; "))}</dd>` : ""}
-                ${soc.tags?.length ? `<dt>Tag</dt><dd>${esc(soc.tags.join(", "))}</dd>` : ""}
-              </dl>` : ""}
-            </li>`;
-          }).join("")}</ul>
-        </section>`;
-      }).join("")}`;
-    return node;
-  }
-
-  // Before posting: the house rules, the best times, the theme and who to tag.
-  function socialToolkit(list) {
-    const node = el("div", { class: "eh-grid-2" });
-    const tags = [...new Set(list.flatMap((p) => p.social?.tags || []).concat(list.flatMap((p) => (p.interviews || []).filter((v) => v.status === "done" || v.status === "scheduled").map((v) => v.affiliation)).filter(Boolean)).map((a) => a.replace(/^(Director|Head PI|Epidemiologist|Bioethicist|MD\/PhD, medical historian),?\s*/i, "").replace(/\s*\(.*\)$/, "")))].sort();
-    node.innerHTML = `
-      <section class="card"><div class="card-header eh-ch"><div><h2 class="card-title">Before anything goes out</h2></div></div>
-        <div class="card-body"><ol class="eh-so-rules">
-          <li>Check facts, numbers and quotes with the writer. Until the final draft (${esc(fmtDay(hardDate("final-draft")?.date, { month: "long", day: "numeric" }))}), tease the question, not the findings.</li>
-          <li>Don't share draft text or proposals. They stay inside the Suite and the Drive.</li>
-          <li>Ask before tagging people we interviewed, and check every handle.</li>
-          <li>Label op-eds (Up for Debate) as opinion.</li>
-          <li>Add alt text to images, and captions to videos.</li>
-          <li>American spelling: color, center, behavior.</li>
-        </ol></div></section>
-      <section class="card"><div class="card-header eh-ch"><div><h2 class="card-title">Best times to post</h2><p class="card-subtitle">Eastern Time, from our ${esc(RESEARCHED)} research.</p></div></div>
-        <div class="card-body"><dl class="eh-lu-dl eh-so-times">${["instagram", "linkedin"].map((k) => `<dt>${esc(POST_TIMES[k].label)}</dt><dd>${esc(POST_TIMES[k].summary)}</dd>`).join("")}</dl></div></section>
-      <section class="card"><div class="card-header eh-ch"><div><h2 class="card-title">The theme</h2></div><button type="button" class="btn btn-ghost btn-sm" data-copy="${esc(`${hub.theme} ${hub.intro || ""}`)}">${ICON.copy} Copy</button></div><div class="card-body"><p class="eh-quote">${esc(hub.theme)} ${esc(hub.intro || "")}</p></div></section>
-      ${tags.length ? `<section class="card"><div class="card-header eh-ch"><div><h2 class="card-title">People and places to tag</h2><p class="card-subtitle">From the interviews and sources. Ask first, and check each handle.</p></div></div><div class="card-body"><p class="eh-chips">${tags.map((t) => `<span class="eh-chip">${esc(t)}</span>`).join("")}</p></div></section>` : ""}`;
-    return node;
-  }
-
   // ── writes
   async function savePiece(id, fields, { note } = {}) {
     if (!canWrite()) return false;
@@ -1787,13 +1492,6 @@ export async function mount(ctx, container) {
     const d = t.dataset;
     if (d.more !== undefined) { const c = t.closest(".eh-cell"); const open = c.classList.toggle("is-open"); t.textContent = open ? "Show less" : "Read more"; return; }
     if (d.go) { go({ tab: d.go, piece: null }); return; }
-    if (d.socWhen) { view.socWhen = d.socWhen; render(); return; }
-    if (d.socJump) {
-      if (view.socWhen !== "all") { view.socWhen = "all"; render(); }
-      const n = root.querySelector(`#soc-${CSS.escape(d.socJump)}`);
-      if (n) { n.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" }); n.classList.remove("is-flash"); void n.offsetWidth; n.classList.add("is-flash"); }
-      return;
-    }
     if (d.sec) { view.sec = d.sec; view.q = ""; view.filter = "all"; go({ tab: "pieces", piece: null }); return; }
     if (d.banner) { editBanner(section(d.banner)); return; }
     if (d.emailSec) { emailSection(section(d.emailSec)); return; }
@@ -1811,10 +1509,6 @@ export async function mount(ctx, container) {
       if (!(await confirmDialog("Delete this post? Its replies go with it from view.", { confirmText: "Delete", danger: true }))) return;
       if (!canWrite()) return;
       try { await deleteDoc(doc(db, "edition_hub", EDITION, "messages", d.delMsg)); } catch { toast("Couldn't delete it.", "error"); }
-      return;
-    }
-    if (d.copy !== undefined && t.tagName === "BUTTON") {
-      try { await navigator.clipboard.writeText(d.copy); toast("Copied.", "success", 1600); } catch { toast("Couldn't copy. Select the text instead.", "info"); }
       return;
     }
     if (d.editPiece) { editPiece(pieces.find((x) => x.id === d.editPiece)); return; }
@@ -2382,89 +2076,6 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-reply-foot > span { display: inline-flex; gap: 6px; }
 .eh-inline-check { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; font-size: 13px; color: var(--ink-2); cursor: pointer; }
 
-/* social */
-.eh-lu { padding: 18px 24px; }
-.eh-lu-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.eh-hook { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 12px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--surface-3); }
-.eh-hook p { margin: 0; font-size: 14px; line-height: 1.55; color: var(--ink); max-width: 72ch; }
-.eh-lu-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin: 12px 0 0; font-size: 13px; line-height: 1.55; }
-.eh-lu-dl dt { font: 600 11px/1.9 var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.eh-lu-dl dd { margin: 0; color: var(--ink-2); }
-.eh-quote { margin: 0; font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
-.eh-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
-.eh-chip { padding: 7px 12px; border-radius: 99px; background: var(--surface-3); font-size: 13px; color: var(--ink); }
-
-/* social: the team */
-.eh-so-k { display: block; margin: 0 0 4px; font: 600 10.5px/1.4 var(--font); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.eh-so-h2 { margin: 0; font: 600 22px/1.25 var(--font); letter-spacing: -0.02em; }
-.eh-so-week { margin: 0 24px 4px; padding: 14px 16px 6px; border-radius: 14px; background: #fbf6ec; border: 1px solid #eadbbd; }
-.eh-so-week .eh-so-k { color: #7a4f12; }
-.eh-so-team { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0; border-top: 1px solid var(--hairline-2); margin-top: 16px; }
-.eh-so-person { padding: 20px 24px 18px; border-left: 1px solid var(--hairline-2); min-width: 0; }
-.eh-so-person:first-child { border-left: 0; }
-.eh-so-person-h { display: flex; align-items: center; gap: 12px; }
-.eh-so-count { margin: 14px 0 6px; font-size: 13px; color: var(--muted); }
-.eh-so-count b { font: 600 22px/1 var(--font); letter-spacing: -0.02em; color: var(--ink); margin-right: 2px; font-variant-numeric: tabular-nums; }
-.eh-so-slots { margin: 0; padding: 0; list-style: none; }
-.eh-so-slot { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--hairline-2); }
-.eh-so-slots > .eh-so-slot:first-child { border-top: 0; }
-.eh-so-week .eh-so-slot { border-top-color: #eadbbd; }
-.eh-so-slot.is-done { opacity: .55; }
-.eh-so-date { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2; }
-.eh-so-date b { font: 600 14px/1.2 var(--font); font-variant-numeric: tabular-nums; }
-.eh-so-date span { font-size: 11.5px; color: var(--muted); }
-.eh-so-slot-t { margin: 0; font: 600 14px/1.35 var(--font); }
-.eh-so-slot .eh-meta { margin-top: 1px; font-size: 12.5px; }
-.eh-so-sugg { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; margin: 6px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
-.eh-so-sugg-k { padding: 2px 7px; border-radius: 6px; background: #f5ecd9; color: #7a4f12; font: 600 10.5px/1.5 var(--font); letter-spacing: .04em; }
-.eh-so-sugg-t { margin: 3px 0 0; max-width: 78ch; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
-.eh-so-sugg-t .eh-act { min-height: 28px; vertical-align: middle; }
-.eh-so-more, .eh-so-none { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
-
-/* social: the campaign */
-.eh-so-plan { margin: 0; padding: 4px 24px 22px; list-style: none; }
-.eh-so-step { position: relative; display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 20px; padding: 16px 0 16px; border-top: 1px solid var(--hairline-2); }
-.eh-so-step:first-child { border-top: 0; }
-.eh-so-step.is-past { opacity: .5; }
-.eh-so-when { display: flex; flex-direction: column; gap: 2px; }
-.eh-so-when b { font: 600 15px/1.3 var(--font); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.eh-so-when span { font-size: 12px; color: var(--muted); }
-.eh-so-step.is-now .eh-so-when span { align-self: flex-start; padding: 2px 8px; border-radius: 99px; background: #fbe6dc; color: #9a3412; font-weight: 600; }
-.eh-so-step.is-launch .eh-so-when b { color: #c2410c; }
-.eh-so-step-main h3 { margin: 0; font: 600 16px/1.35 var(--font); letter-spacing: -0.015em; }
-.eh-so-step-main > p { margin: 5px 0 0; max-width: 70ch; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
-.eh-so-sub { margin: 8px 0 0; padding: 0 0 0 18px; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
-.eh-so-time { display: inline-flex; margin: 10px 0 0; padding: 4px 10px; border-radius: 99px; background: var(--surface-3); font-size: 12.5px; color: var(--ink-2); }
-.eh-so-step .eh-hook { max-width: 72ch; }
-
-/* social: teasers */
-.eh-so-ideas-h { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; margin-top: 12px; }
-.eh-so-ideas-h > div:first-child { flex: 1 1 360px; }
-.eh-so-ideas-h .eh-meta { max-width: 68ch; margin-top: 6px; font-size: 13.5px; }
-.eh-so-piece { padding: 20px 24px; scroll-margin-top: 90px; transition: background .6s var(--ease-out); }
-.eh-so-piece.is-flash { animation: eh-so-flash 1.6s var(--ease-out); }
-@keyframes eh-so-flash { 0%, 30% { background: #fbf6ec; } 100% { background: transparent; } }
-.eh-so-ptitle { padding: 0; border: 0; background: none; font: 600 16px/1.4 var(--font); letter-spacing: -0.012em; color: var(--ink); text-align: left; cursor: pointer; }
-.eh-so-ptitle:hover { text-decoration: underline; text-underline-offset: 3px; }
-.eh-hook .eh-so-k { margin-bottom: 2px; }
-.eh-so-tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin: 14px 0 0; }
-.eh-so-t { display: flex; flex-direction: column; min-width: 0; padding: 14px 16px 8px; border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface); }
-.eh-so-t-h { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; font-size: 12px; }
-.eh-so-t-f { font: 600 13px/1.3 var(--font); color: var(--ink); }
-.eh-so-when-tag { margin-left: auto; padding: 2px 8px; border-radius: 99px; font: 600 10.5px/1.6 var(--font); white-space: nowrap; }
-.eh-so-when-tag.is-good { background: var(--good-soft); color: var(--good); }
-.eh-so-when-tag.is-info { background: var(--info-soft); color: var(--info); }
-.eh-so-when-tag.is-sand { background: #f5ecd9; color: #7a4f12; }
-.eh-so-when-tag.is-launch { background: #fbe6dc; color: #9a3412; }
-.eh-so-t-idea { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
-.eh-so-check { margin: 8px 0 0; padding: 7px 10px; border-radius: 10px; background: #fbf6ec; font-size: 12.5px; line-height: 1.5; color: #6b4a1a; }
-.eh-so-check b { display: block; font: 600 10.5px/1.5 var(--font); letter-spacing: .06em; text-transform: uppercase; color: #9a6a1f; }
-.eh-so-t-copy { align-self: flex-start; margin: auto 0 0 -8px; padding-top: 4px; }
-.eh-so-hold { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; border: 1px dashed var(--hairline); font-size: 13px; color: var(--muted); }
-.eh-so-rules { margin: 0; padding: 0 0 0 20px; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
-.eh-so-rules li + li { margin-top: 6px; }
-.eh-so-times dd { margin-bottom: 6px; }
-
 /* forms (modals) */
 .eh-form { display: flex; flex-direction: column; gap: 14px; }
 .eh-f { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; border: 0; padding: 0; margin: 0; }
@@ -2526,20 +2137,11 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
   .eh-msg-head time { margin-left: 0; flex-basis: 100%; }
   .eh-about select { flex: 1; max-width: none; }
   .eh-compose .eh-about { flex-basis: 100%; }
-  .eh-where, .eh-lu-dl { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-  .eh-where dd, .eh-lu-dl dd { margin-bottom: 8px; }
+  .eh-where { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .eh-where dd { margin-bottom: 8px; }
   .eh-acc summary { padding: 0 18px; }
   .eh-acc details > :not(summary) { margin: 0 18px 18px; }
-  .eh-lu, .eh-iv { padding: 16px 18px; }
-  .eh-so-piece { padding: 16px 18px; }
-  .eh-so-week { margin: 0 18px 4px; }
-  .eh-so-person { padding: 18px; border-left: 0; border-top: 1px solid var(--hairline-2); }
-  .eh-so-person:first-child { border-top: 0; }
-  .eh-so-plan { padding: 0 18px 16px; }
-  .eh-so-step { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .eh-so-when { flex-direction: row; align-items: baseline; gap: 8px; }
-  .eh-so-tgrid { grid-template-columns: minmax(0, 1fr); }
-  .eh-hook { flex-direction: column; }
+  .eh-iv { padding: 16px 18px; }
   .eh-tl li { grid-template-columns: 24px 64px minmax(0, 1fr); }
   .eh-pg-top { grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .eh-cells.is-2 { grid-template-columns: minmax(0, 1fr); }
