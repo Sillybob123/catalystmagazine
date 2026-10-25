@@ -465,12 +465,12 @@ export async function mount(ctx, container) {
     const node = el("section", { class: "card" });
     const row = (t, key, attr) => `<li><label class="eh-check${t[key] ? " is-done" : ""}"><input type="checkbox" ${attr}="${esc(t.id)}" ${t[key] ? "checked" : ""}><span class="box">${ICON.check}</span><span class="txt">${esc(t.text)}</span></label></li>`;
     node.innerHTML = `
-      <div class="card-header eh-ch"><div><h2 class="card-title">Editors' desk</h2><p class="card-subtitle">Shared by the editors. Tick things off as you go.</p></div></div>
+      <div class="card-header eh-ch"><div><h2 class="card-title">Editors' desk</h2><p class="card-subtitle">Shared by the editors. Tick things off as you go.</p></div><button type="button" class="btn btn-ghost btn-sm" data-edit-desk>${ICON.edit} Edit list</button></div>
       <div class="card-body eh-desk-cols">
         <div><p class="section-title eh-st">To do</p>
-        <ul class="eh-checks">${(hub.editorTodos || []).map((t) => row(t, "done", "data-todo")).join("")}</ul></div>
+        <ul class="eh-checks">${(hub.editorTodos || []).map((t) => row(t, "done", "data-todo")).join("") || `<li class="eh-muted">Nothing to do.</li>`}</ul></div>
         <div><p class="section-title eh-st">Still deciding</p>
-        <ul class="eh-checks">${(hub.decisions || []).map((t) => row(t, "resolved", "data-decision")).join("")}</ul></div>
+        <ul class="eh-checks">${(hub.decisions || []).map((t) => row(t, "resolved", "data-decision")).join("") || `<li class="eh-muted">Nothing open.</li>`}</ul></div>
       </div>`;
     return node;
   }
@@ -1418,6 +1418,61 @@ export async function mount(ctx, container) {
     });
   }
 
+  // The editors' desk: rewrite, reorder, add or remove to-dos and open
+  // decisions. Editors and admins (the rules allow editorTodos/decisions).
+  function editDesk() {
+    const lists = {
+      editorTodos: (hub.editorTodos || []).map((t) => ({ ...t })),
+      decisions: (hub.decisions || []).map((t) => ({ ...t })),
+    };
+    const DONE = { editorTodos: "done", decisions: "resolved" };
+    const body = el("form", { class: "eh-form eh-deskedit" });
+    const block = (key, title, addLabel, doneLabel) => `
+      <fieldset class="eh-fs"><legend>${title}</legend>
+        ${lists[key].map((t, i) => `<div class="eh-de-row">
+          <textarea class="input" name="${key}-${i}" rows="2" maxlength="400" aria-label="${title} ${i + 1}">${esc(t.text)}</textarea>
+          <div class="eh-de-tools">
+            <label class="eh-inline-check"><input type="checkbox" name="${key}-done-${i}" ${t[DONE[key]] ? "checked" : ""}> ${doneLabel}</label>
+            <span class="eh-de-move">
+              <button type="button" class="eh-act" data-up="${key}:${i}" ${i === 0 ? "disabled" : ""} aria-label="Move up">&uarr;</button>
+              <button type="button" class="eh-act" data-down="${key}:${i}" ${i === lists[key].length - 1 ? "disabled" : ""} aria-label="Move down">&darr;</button>
+              <button type="button" class="eh-act is-danger" data-rm="${key}:${i}">Remove</button>
+            </span>
+          </div>
+        </div>`).join("") || `<p class="eh-f-h">Nothing here.</p>`}
+        <span class="eh-btnrow"><button type="button" class="btn btn-secondary btn-sm" data-add="${key}">${ICON.plus} ${addLabel}</button>
+        ${lists[key].some((t) => t[DONE[key]]) ? `<button type="button" class="btn btn-ghost btn-sm" data-clear="${key}">Remove the ticked ones</button>` : ""}</span>
+      </fieldset>`;
+    const paint = () => { body.innerHTML = block("editorTodos", "To do", "Add a to-do", "Done") + block("decisions", "Still deciding", "Add a decision", "Decided"); };
+    const read = () => Object.keys(lists).forEach((key) => lists[key].forEach((t, i) => {
+      const txt = body.querySelector(`[name="${key}-${i}"]`), chk = body.querySelector(`[name="${key}-done-${i}"]`);
+      if (txt) t.text = txt.value.trim();
+      if (chk) t[DONE[key]] = chk.checked;
+    }));
+    paint();
+    body.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b || b.type === "submit") return;
+      read();
+      const [key, i] = String(b.dataset.up || b.dataset.down || b.dataset.rm || "").split(":");
+      const n = Number(i);
+      if (b.dataset.add) { const k = b.dataset.add; lists[k].push({ id: `${k === "decisions" ? "q" : "t"}${Date.now().toString(36)}`, text: "", [DONE[k]]: false }); paint(); body.querySelector(`[name="${k}-${lists[k].length - 1}"]`)?.focus(); return; }
+      if (b.dataset.clear) { lists[b.dataset.clear] = lists[b.dataset.clear].filter((t) => !t[DONE[b.dataset.clear]]); paint(); return; }
+      if (b.dataset.up && n > 0) { [lists[key][n - 1], lists[key][n]] = [lists[key][n], lists[key][n - 1]]; paint(); return; }
+      if (b.dataset.down && n < lists[key].length - 1) { [lists[key][n + 1], lists[key][n]] = [lists[key][n], lists[key][n + 1]]; paint(); return; }
+      if (b.dataset.rm) { lists[key].splice(n, 1); paint(); }
+    });
+    const m = openModal({ title: "Editors' desk", body, size: "wide", footer: [
+      el("button", { type: "button", class: "btn btn-secondary", onclick: () => m.close() }, "Cancel"),
+      el("button", { type: "button", class: "btn btn-primary", onclick: () => body.requestSubmit() }, "Save"),
+    ] });
+    body.addEventListener("submit", async (e) => {
+      e.preventDefault(); read();
+      const clean = (key) => lists[key].filter((t) => t.text).map((t) => ({ id: t.id, text: t.text, [DONE[key]]: !!t[DONE[key]] }));
+      if (await saveHub({ editorTodos: clean("editorTodos"), decisions: clean("decisions") })) { m.close(); toast("Editors' desk saved.", "success"); }
+    });
+  }
+
   function editDates() {
     const rows = (hub.dates || []).map((d) => ({ ...d }));
     const body = el("form", { class: "eh-form" });
@@ -1520,6 +1575,7 @@ export async function mount(ctx, container) {
     if (d.draftLink) { editDraftLink(pieces.find((x) => x.id === d.draftLink)); return; }
     if (d.editSection) { editSection(section(d.editSection)); return; }
     if (d.editDates !== undefined) { editDates(); return; }
+    if (d.editDesk !== undefined) { if (canEdit()) editDesk(); return; }
   });
   root.addEventListener("change", (e) => {
     const t = e.target;
@@ -1985,6 +2041,13 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-sechero-about p:not(.section-title) { margin: 0; font-size: 14px; line-height: 1.65; color: var(--ink-2); }
 .eh-desk-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 40px; }
 .eh-desk-cols .eh-st { margin-top: 0 !important; }
+.eh-de-row { display: flex; flex-direction: column; gap: 6px; padding: 0 0 12px; border-bottom: 1px solid var(--hairline-2); }
+.eh-de-row:last-of-type { border-bottom: 0; }
+.eh-deskedit textarea.input { min-height: 56px; }
+.eh-de-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+.eh-de-move { display: inline-flex; align-items: center; gap: 2px; }
+.eh-de-move .eh-act { min-width: 36px; min-height: 36px; justify-content: center; font-size: 14px; }
+.eh-de-move .eh-act:disabled { opacity: .35; cursor: default; background: none; }
 
 /* email the section */
 .eh-recips { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
