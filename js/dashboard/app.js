@@ -309,7 +309,7 @@ const ROUTES = {
     icon: ICONS.addressBook,
     roles: ["*"],
     group: "main",
-    loader: () => import("./directory.js?v=tm-3"),
+    loader: () => import("./directory.js?v=tm-4"),
   },
   "#/writer/draft": {
     label: "Write a draft",

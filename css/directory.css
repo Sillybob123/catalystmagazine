@@ -237,9 +237,31 @@
 .tm-mailer { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
 .tm-mail-field { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 22px; border-bottom: 1px solid var(--hairline-2); }
 .tm-mail-label { flex: none; width: 58px; font-size: 13.5px; color: var(--muted); }
-.tm-to-all { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; flex: 1; min-width: 0; padding: 8px 0; }
-.tm-chip-all { display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px 4px 8px; border-radius: 999px; background: color-mix(in srgb, #2f6fd6 10%, var(--surface)); color: #2259b8; font: 600 13px/1.5 var(--font); }
-.tm-chip-all svg { width: 15px; height: 15px; }
+/* Team email: who it goes to */
+.tm-mail-field.tm-aud-field { align-items: flex-start; }
+.tm-aud-field .tm-mail-label { padding-top: 16px; }
+.tm-aud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1; min-width: 0; padding: 10px 0; }
+.tm-aud-groups, .tm-aud-people { display: contents; }
+.tm-aud-chip { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 8px 0 12px; border: 1px solid var(--hairline); border-radius: 999px; background: var(--surface); cursor: pointer; font: 600 13px/1 var(--font); color: var(--ink-2); transition: background .15s, border-color .15s, color .15s; }
+.tm-aud-chip svg { width: 15px; height: 15px; }
+.tm-aud-chip:hover { border-color: color-mix(in srgb, var(--ink) 30%, transparent); color: var(--ink); }
+.tm-aud-chip[aria-pressed="true"] { background: color-mix(in srgb, #2f6fd6 10%, var(--surface)); border-color: color-mix(in srgb, #2f6fd6 35%, transparent); color: #2259b8; }
+.tm-aud-n { min-width: 22px; padding: 3px 6px; border-radius: 999px; background: var(--surface-3); font-size: 11.5px; text-align: center; font-variant-numeric: tabular-nums; }
+.tm-aud-chip[aria-pressed="true"] .tm-aud-n { background: color-mix(in srgb, #2f6fd6 16%, var(--surface)); }
+.tm-aud-chip:focus-visible, .tm-aud-person button:focus-visible, .tm-aud-hit:focus-visible { outline: none; box-shadow: var(--focus); }
+.tm-aud-person { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 0 4px 0 12px; border-radius: 999px; background: color-mix(in srgb, #2f6fd6 10%, var(--surface)); color: #2259b8; font: 600 13px/1 var(--font); }
+.tm-aud-person button { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; }
+.tm-aud-person button:hover { background: color-mix(in srgb, #2f6fd6 16%, var(--surface)); }
+.tm-aud-add { position: relative; flex: 1 1 180px; min-width: 160px; }
+.tm-shell .tm-aud-add input { width: 100%; min-height: 36px; font-size: 14px; font-weight: 400; }
+.tm-aud-res { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: min(320px, 80vw); margin: 0; padding: 6px; list-style: none; border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-lg); }
+.tm-aud-hit { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 6px 8px; border: 0; border-radius: 10px; background: none; cursor: pointer; text-align: left; font: inherit; color: var(--ink); }
+.tm-aud-hit:hover, .tm-aud-hit.is-first { background: var(--surface-3); }
+.tm-aud-hit > span:last-child { display: flex; flex-direction: column; min-width: 0; }
+.tm-aud-hit b { font-size: 14px; font-weight: 600; }
+.tm-aud-hit small { font-size: 12px; color: var(--muted); }
+.tm-aud-none { padding: 10px; font-size: 13px; color: var(--muted); }
+.tm-aud-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 6px 22px 6px 92px; border-bottom: 1px solid var(--hairline-2); font-size: 13px; color: var(--ink-2); }
 .tm-names { margin: 0; padding: 10px 22px 12px 92px; border-bottom: 1px solid var(--hairline-2); font-size: 13px; line-height: 1.6; color: var(--ink-2); background: var(--surface-2); }
 .tm-from { font-size: 14px; color: var(--ink); }
 .tm-shell .tm-mail-field input { flex: 1; min-width: 0; min-height: 48px; padding: 0; border: 0; background: none; box-shadow: none; font: 500 15px var(--font); color: var(--ink); }
@@ -324,6 +346,7 @@
   .tm-mail-field { padding: 0 14px; }
   .tm-mail-label { width: 52px; }
   .tm-names { padding-left: 14px; }
+  .tm-aud-sum { padding-left: 14px; padding-right: 14px; }
   .tm-toolbar { padding: 6px 8px; }
   .tm-editor { padding: 14px; }
   .tm-files { padding: 0 14px; }

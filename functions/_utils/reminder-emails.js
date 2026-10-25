@@ -1595,12 +1595,13 @@ export function announcementEmail({ title, message, link, senderName, siteUrl })
 // A teammate writes to the whole team from the Suite. bodyHtml is already
 // sanitized by the endpoint (a small allow-list of tags, links only http(s) /
 // mailto). The sender's name heads the message and replies go to them.
-export function teamBroadcastEmail({ senderName, senderRole, subject, bodyHtml, attachmentNames = [], recipientCount, siteUrl }) {
+export function teamBroadcastEmail({ senderName, senderRole, subject, bodyHtml, attachmentNames = [], recipientCount, siteUrl, audienceLabel = "" }) {
+  // audienceLabel: "the editors and the admins" for an email to part of the team; empty for everyone.
   const fromName = senderName || "A teammate";
   const archiveUrl = `${siteUrl}/admin/#/directory?view=team-emails`;
   const body = `
     <div style="margin:0 0 18px 0;padding:0 0 14px 0;border-bottom:1px solid ${COLORS.hairline};">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.muted};margin-bottom:6px;">Message to the whole team</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${COLORS.muted};margin-bottom:6px;">${audienceLabel ? `Message to ${escapeHtml(audienceLabel)}` : "Message to the whole team"}</div>
       <div style="font-size:15px;line-height:1.45;color:${COLORS.ink};"><strong>${escapeHtml(fromName)}</strong>${senderRole ? ` <span style="color:${COLORS.muted};">· ${escapeHtml(senderRole)}</span>` : ""}</div>
     </div>
     <div style="font-size:15px;line-height:1.65;color:${COLORS.inkSoft};">${bodyHtml}</div>
@@ -1610,12 +1611,12 @@ export function teamBroadcastEmail({ senderName, senderRole, subject, bodyHtml, 
       <div style="font-size:14px;line-height:1.6;color:${COLORS.ink};">${attachmentNames.map((n) => escapeHtml(n)).join("<br>")}</div>
     </div>` : ""}
     <p style="margin:26px 0 0 0;font-size:13px;line-height:1.6;color:${COLORS.muted};">
-      Sent by ${escapeHtml(fromName)} to everyone on the Catalyst team${recipientCount ? ` (${recipientCount} people)` : ""} from the Editorial Suite.
-      Reply to answer ${escapeHtml(String(fromName).split(/\s+/)[0])} directly, or reply all to answer the team.
+      Sent by ${escapeHtml(fromName)} to ${audienceLabel ? escapeHtml(audienceLabel) : "everyone on the Catalyst team"}${recipientCount ? ` (${recipientCount} ${recipientCount === 1 ? "person" : "people"})` : ""} from the Editorial Suite.
+      Reply to answer ${escapeHtml(String(fromName).split(/\s+/)[0])} directly, or reply all to answer ${audienceLabel ? "everyone it went to" : "the team"}.
       <a href="${escapeAttr(archiveUrl)}" style="color:${COLORS.ink};">See all team emails</a>
     </p>`;
   const subj = truncate(subject, 140);
-  return { subject: subj, html: shell({ title: subj, preheader: `From ${fromName} to the team`, body, siteUrl }) };
+  return { subject: subj, html: shell({ title: subj, preheader: `From ${fromName} to ${audienceLabel || "the team"}`, body, siteUrl }) };
 }
 
 // ─── Direct message (Directory chat → email) ─────────────────────────────────

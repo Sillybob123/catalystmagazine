@@ -1,19 +1,25 @@
-// /api/team/broadcast — email the whole team from Team & messages.
+// /api/team/broadcast — team emails from Team & messages.
 //
-// POST  Any staff member writes one email to everyone on the team. It goes
-//       out as a single message with the whole team on the To line (so
-//       "reply all" reaches everyone), from "<Name> via The Catalyst", with
+// POST  Any staff member writes one email to everyone on the team, or to some
+//       of it: any of the GROUPS below plus people picked by name. It goes
+//       out as a single message with every recipient on the To line (so
+//       "reply all" reaches them all), from "<Name> via The Catalyst", with
 //       Reply-To set to the sender. Formatted body (sanitized here), links and
-//       attachments. Everyone also gets a bell notification, and a copy is
+//       attachments. Recipients also get a bell notification, and a copy is
 //       kept in team_broadcasts for the in-Suite archive.
-//       Body: { clientId, subject, html, attachments?: [{ filename, contentType?, content: <base64> }] }
-// GET   The archive, newest first (staff only): { ok, items: [...] }.
+//       Body: { clientId, subject, html, attachments?: [{ filename, contentType?, content: <base64> }],
+//               to?: { all: true } | { groups: ["admin", "editor", …], ids: [uid, …] } }  (default: everyone)
+//       Recipients are always worked out here from the users collection, so
+//       the label on the email ("to the editors and the admins") is true.
+// GET   The archive, newest first (staff only): { ok, items: [...] }. An email
+//       sent to part of the team is listed only for its sender and the
+//       people it went to.
 //
 // team_broadcasts is only touched here (service account), so it needs no
 // client rules. Former members are excluded automatically: they're Readers.
 
 import { json, badRequest, serverError } from "../../_utils/http.js";
-import { firestoreGet, firestoreCreate, firestoreRunQuery } from "../../_utils/firebase.js";
+import { firestoreGet, firestoreCreate, firestoreRunQuery, fromFirestoreDoc } from "../../_utils/firebase.js";
 import { requireRole } from "../../_utils/auth.js";
 import { sendEmail } from "../../_utils/resend.js";
 import { teamBroadcastEmail } from "../../_utils/reminder-emails.js";
@@ -27,6 +33,18 @@ const MAX_FILES = 10;
 const MAX_BYTES = 10 * 1024 * 1024;      // all attachments together
 const COOLDOWN_MS = 60 * 1000;           // one team email a minute per person
 const BLOCKED_EXT = /\.(exe|bat|cmd|com|scr|msi|js|vbs|ps1|jar|sh|apk|dmg|app)$/i;
+// Groups a team email can go to (kept in step with AUDIENCE_GROUPS in
+// js/dashboard/directory.js).
+// "section" is the current edition's section editors (This edition's hub,
+// edition_hub/{CURRENT_EDITION}), not the Editor role, which most writers have.
+const CURRENT_EDITION = "winter-2027";   // keep in step with js/dashboard/edition-deadlines.js
+const GROUPS = {
+  admin: { phrase: "the admins", roles: ["admin"] },
+  section: { phrase: "the section editors", roles: [] },
+  editor: { phrase: "everyone with the Editor role", roles: ["editor"] },
+  writer: { phrase: "the writers", roles: ["writer"] },
+  social: { phrase: "the social & growth team", roles: ["social_media", "marketing", "newsletter_builder"] },
+};
 
 export const onRequestGet = async ({ request, env }) => {
   try {
@@ -35,9 +53,13 @@ export const onRequestGet = async ({ request, env }) => {
     const rows = await firestoreRunQuery(env, {
       from: [{ collectionId: "team_broadcasts" }],
       orderBy: [{ field: { fieldPath: "sentAt" }, direction: "DESCENDING" }],
-      limit: 40,
+      limit: 100,
     }).catch(() => []);
-    const items = rows.map((r) => ({
+    // Every account of the person asking, so an email to any of them shows.
+    const mine = await accountsOf(env, auth.uid);
+    const visible = rows.filter((r) => !Array.isArray(r.data.recipientIds) || r.data.senderId === auth.uid
+      || r.data.recipientIds.some((id) => mine.has(id))).slice(0, 40);
+    const items = visible.map((r) => ({
       id: r.id,
       subject: r.data.subject || "",
       html: r.data.html || "",
@@ -46,6 +68,7 @@ export const onRequestGet = async ({ request, env }) => {
       senderRole: r.data.senderRole || "",
       attachmentNames: Array.isArray(r.data.attachmentNames) ? r.data.attachmentNames : [],
       recipientCount: r.data.recipientCount || 0,
+      audience: r.data.audience || "everyone",
       sentAt: r.data.sentAt || "",
     }));
     return json({ ok: true, items });
@@ -87,7 +110,7 @@ export const onRequestPost = async ({ request, env }) => {
     // Double-click / retry guard, then a short per-person cooldown.
     if (clientId) {
       const existing = await firestoreGet(env, `team_broadcasts/${clientId}`).catch(() => null);
-      if (existing) return json({ ok: true, deduped: true, id: clientId, recipientCount: existing.recipientCount || 0 });
+      if (existing) return json({ ok: true, deduped: true, id: clientId, recipientCount: fromFirestoreDoc(existing).data.recipientCount || 0 });
     }
     const mine = await firestoreRunQuery(env, {
       from: [{ collectionId: "team_broadcasts" }],
@@ -97,9 +120,16 @@ export const onRequestPost = async ({ request, env }) => {
     const lastMs = Math.max(0, ...mine.map((r) => Date.parse(r.data.sentAt || "") || 0));
     if (Date.now() - lastMs < COOLDOWN_MS) return json({ ok: false, error: "You just emailed the team. Give it a minute before sending another." }, { status: 429 });
 
-    // Everyone on the team (every address on file), de-duplicated.
-    const team = await collectTeam(env);
-    if (!team.emails.length) return badRequest("No one on the team has an email on file.");
+    // Who it goes to: everyone, or the chosen groups and people, worked out
+    // from the team's accounts (every address on file, de-duplicated).
+    const to = body.to && typeof body.to === "object" ? body.to : { all: true };
+    const groups = to.all ? [] : (Array.isArray(to.groups) ? to.groups : []).map(String).filter((g) => GROUPS[g]);
+    const pickedIds = to.all ? [] : (Array.isArray(to.ids) ? to.ids : []).map(String).filter((x) => /^[A-Za-z0-9_-]{1,128}$/.test(x)).slice(0, 300);
+    const everyone = !!to.all || (!groups.length && !pickedIds.length);
+    if (!to.all && !groups.length && !pickedIds.length) return badRequest("Pick who the email goes to.");
+    const team = await collectTeam(env, everyone ? null : { groups, ids: pickedIds });
+    if (!team.emails.length) return badRequest(everyone ? "No one on the team has an email on file." : "None of the people you picked have an email on file.");
+    const audience = everyone ? "everyone" : team.label;
 
     const senderName = auth.name || auth.email || "A teammate";
     const senderRole = ROLE_LABEL[auth.role] || "";
@@ -108,6 +138,7 @@ export const onRequestPost = async ({ request, env }) => {
       senderName, senderRole, subject, bodyHtml: html,
       attachmentNames: attachments.map((a) => a.filename),
       recipientCount: team.people, siteUrl,
+      audienceLabel: everyone ? "" : audience,
     });
 
     // Resend takes up to 50 recipients per message.
@@ -116,7 +147,7 @@ export const onRequestPost = async ({ request, env }) => {
         to: team.emails.slice(i, i + 50),
         subject: subj,
         html: emailHtml,
-        text: `${senderName} wrote to the team:\n\n${text}\n\n— Sent from the Catalyst Editorial Suite. Reply to answer ${senderName}.`,
+        text: `${senderName} wrote to ${everyone ? "the team" : audience}:\n\n${text}\n\n— Sent from the Catalyst Editorial Suite. Reply to answer ${senderName}.`,
         replyTo: auth.email || env.MAIL_REPLY_TO || "stemcatalystmagazine@gmail.com",
         fromName: `${senderName} via The Catalyst`,
         attachments,
@@ -128,6 +159,9 @@ export const onRequestPost = async ({ request, env }) => {
       subject, html, senderId: auth.uid, senderName, senderRole,
       attachmentNames: attachments.map((a) => a.filename),
       recipientCount: team.people, emailCount: team.emails.length, sentAt,
+      audience,
+      // Only for emails to part of the team: who may see it in the archive.
+      ...(everyone ? {} : { recipientIds: team.ids, groups, pickedIds }),
     };
     let id = clientId;
     try {
@@ -135,9 +169,9 @@ export const onRequestPost = async ({ request, env }) => {
       id = id || (created?.name || "").split("/").pop() || created?.id || "";
     } catch (e) { console.warn("[team/broadcast] archive write failed", e?.message); }
 
-    await createNotifications(env, team.ids, {
+    await createNotifications(env, team.ids.filter((rid) => rid !== auth.uid), {
       type: "message",
-      title: `${senderName} emailed the team`,
+      title: everyone ? `${senderName} emailed the team` : `${senderName} emailed ${audience}`,
       body: subject,
       actorId: auth.uid,
       actorName: senderName,
@@ -152,37 +186,80 @@ export const onRequestPost = async ({ request, env }) => {
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-async function collectTeam(env) {
-  const emails = new Set();
-  const ids = new Set();
-  const people = new Set();
+// The team's active staff accounts. With `pick`, only the chosen groups
+// (by role) and people (by account id, widened to every account with the
+// same name or email, since some people have two), plus a plain-English
+// label for who that is.
+async function collectTeam(env, pick = null) {
+  const rows = [];
   for (const role of STAFF) {
-    let rows = [];
     try {
-      rows = await firestoreRunQuery(env, {
+      const found = await firestoreRunQuery(env, {
         from: [{ collectionId: "users" }],
         where: { fieldFilter: { field: { fieldPath: "role" }, op: "EQUAL", value: { stringValue: role } } },
         select: { fields: [{ fieldPath: "email" }, { fieldPath: "extraEmails" }, { fieldPath: "status" }, { fieldPath: "name" }] },
         limit: 300,
       });
+      for (const r of found) {
+        if (String(r.data?.status || "active") === "inactive") continue;
+        const email = String(r.data?.email || "").trim().toLowerCase();
+        if (!email) continue;
+        rows.push({ id: r.id, role, email, name: String(r.data?.name || "").trim(), extra: Array.isArray(r.data?.extraEmails) ? r.data.extraEmails : [] });
+      }
     } catch (err) {
       console.warn(`[team/broadcast] ${role} query failed`, err?.message);
-      continue;
-    }
-    for (const r of rows) {
-      if (String(r.data?.status || "active") === "inactive") continue;
-      const primary = String(r.data?.email || "").trim().toLowerCase();
-      if (!primary) continue;
-      ids.add(r.id);
-      people.add(String(r.data?.name || primary).trim().toLowerCase());
-      emails.add(primary);
-      for (const e of Array.isArray(r.data?.extraEmails) ? r.data.extraEmails : []) {
-        const x = String(e || "").trim().toLowerCase();
-        if (x.includes("@")) emails.add(x);
-      }
     }
   }
-  return { emails: [...emails], ids: [...ids], people: people.size };
+  const nameKey = (r) => (r.name || r.email).toLowerCase();
+  let chosen = rows;
+  let label = "everyone";
+  if (pick) {
+    const roles = new Set(pick.groups.flatMap((g) => GROUPS[g].roles));
+    let sectionIds = new Set(), sectionNames = new Set();
+    if (pick.groups.includes("section")) {
+      const raw = await firestoreGet(env, `edition_hub/${CURRENT_EDITION}`).catch(() => null);
+      const hub = raw ? fromFirestoreDoc(raw).data : null;
+      sectionIds = new Set(Array.isArray(hub?.editorUids) ? hub.editorUids : []);
+      sectionNames = new Set((Array.isArray(hub?.sections) ? hub.sections : []).map((x) => String(x?.editor?.name || "").trim().toLowerCase()).filter(Boolean));
+    }
+    const grouped = (r) => roles.has(r.role) || sectionIds.has(r.id) || sectionNames.has(nameKey(r));
+    const picked = rows.filter((r) => pick.ids.includes(r.id));
+    const names = new Set([...picked, ...rows.filter(grouped)].map(nameKey));
+    const emails = new Set(picked.map((r) => r.email));
+    chosen = rows.filter((r) => grouped(r) || names.has(nameKey(r)) || emails.has(r.email));
+    const inGroup = new Set(rows.filter(grouped).map(nameKey));
+    const extra = [...new Map(picked.filter((r) => !inGroup.has(nameKey(r))).map((r) => [nameKey(r), r.name || r.email])).values()];
+    const parts = pick.groups.map((g) => GROUPS[g].phrase);
+    if (extra.length > 3) parts.push(`${extra.length} more people`); else parts.push(...extra);
+    label = parts.length <= 1 ? (parts[0] || "") : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  }
+  const emails = new Set();
+  for (const r of chosen) {
+    emails.add(r.email);
+    for (const e of r.extra) { const x = String(e || "").trim().toLowerCase(); if (x.includes("@")) emails.add(x); }
+  }
+  return { emails: [...emails], ids: [...new Set(chosen.map((r) => r.id))], people: new Set(chosen.map(nameKey)).size, label };
+}
+
+// Every account id that belongs to the same person as `uid` (same name or
+// email), so archive visibility follows the person, not one account.
+async function accountsOf(env, uid) {
+  const out = new Set([uid]);
+  try {
+    const raw = await firestoreGet(env, `users/${uid}`);
+    const me = raw ? fromFirestoreDoc(raw).data : null;
+    const name = String(me?.name || "").trim().toLowerCase();
+    const email = String(me?.email || "").trim().toLowerCase();
+    if (!name && !email) return out;
+    const rows = await firestoreRunQuery(env, {
+      from: [{ collectionId: "users" }],
+      where: { fieldFilter: { field: { fieldPath: name ? "name" : "email" }, op: "EQUAL", value: { stringValue: name ? me.name : me.email } } },
+      select: { fields: [{ fieldPath: "name" }] },
+      limit: 10,
+    }).catch(() => []);
+    rows.forEach((r) => out.add(r.id));
+  } catch {}
+  return out;
 }
 
 // Keep a small set of formatting tags; every attribute is dropped except a

@@ -23,6 +23,7 @@ import {
   getDocs,
   limit,
   doc,
+  getDoc,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -31,6 +32,7 @@ import {
   arrayUnion,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, openModal, confirmDialog } from "./ui.js";
+import { CURRENT_EDITION } from "./edition-deadlines.js?v=1";
 
 const ROLE_META = {
   admin:              { label: "Admin",              group: "Leadership",      order: 1 },
@@ -130,8 +132,8 @@ export async function mount(ctx, container) {
       const teamRow = `<ul class="tm-rows tm-rows--pinned"><li><button type="button" class="tm-row tm-row--team${teamSel ? " is-selected" : ""}" data-team ${teamSel ? 'aria-current="true"' : ""}>
           <span class="tm-av tm-av--lg tm-av--team" aria-hidden="true">${ICON.megaphone}</span>
           <span class="tm-row-main">
-            <span class="tm-row-top"><span class="tm-row-name">Everyone on the team</span>${lastB ? `<time>${esc(fmtListTime(lastB.sentAt))}</time>` : ""}</span>
-            <span class="tm-row-sub">${lastB ? `${esc(String(lastB.senderName || "").split(/\s+/)[0])}: ${esc(lastB.subject)}` : "Email the whole team at once"}</span>
+            <span class="tm-row-top"><span class="tm-row-name">Team emails</span>${lastB ? `<time>${esc(fmtListTime(lastB.sentAt))}</time>` : ""}</span>
+            <span class="tm-row-sub">${lastB ? `${esc(String(lastB.senderName || "").split(/\s+/)[0])}: ${esc(lastB.subject)}` : "Email everyone, a group or a few people"}</span>
           </span>
         </button></li></ul>`;
       const rows = state.threads.map((t) => ({ t, p: personForThread(t) }))
@@ -269,7 +271,7 @@ export async function mount(ctx, container) {
       const everyone = !q || "everyone team all".includes(q) ? `
         <button type="button" class="tm-everyone" data-everyone>
           <span class="tm-av tm-av--lg tm-av--team" aria-hidden="true">${ICON.megaphone}</span>
-          <span class="tm-pick-text"><b>Everyone on the team</b><small>One email to all ${teamCount()} people, with your name on it</small></span>
+          <span class="tm-pick-text"><b>Team email</b><small>One email to everyone (${teamCount()} people), a group, or the people you pick</small></span>
           <span class="tm-pick-go" aria-hidden="true">${ICON.mail}</span>
         </button>` : "";
       results.innerHTML = everyone + (welcome && !q ? `<p class="tm-new-lede">Pick someone to start a conversation. They'll see it here and get it by email, so it's a quick way to ask a question or check in.</p>` : "")
@@ -295,6 +297,15 @@ export async function mount(ctx, container) {
   }
 
   // ── Team emails: the archive and the composer ──
+  // The current edition's section editors, for the "Section editors" group.
+  getDoc(doc(db, "edition_hub", CURRENT_EDITION)).then((snap) => {
+    const h = snap.data() || {};
+    state.sectionEditors = {
+      uids: new Set(h.editorUids || []),
+      names: new Set((h.sections || []).map((x) => String(x.editor?.name || "").trim().toLowerCase()).filter(Boolean)),
+    };
+    state.refreshAudience?.();
+  }).catch(() => {});
   const teamPeople = () => {
     const seen = new Set();
     return state.people.filter((p) => !p.manual && p.role !== "reader" && p.email && !seen.has(String(p.name || p.email).toLowerCase()) && seen.add(String(p.name || p.email).toLowerCase()));
@@ -315,8 +326,8 @@ export async function mount(ctx, container) {
       <header class="tm-chat-head tm-new-head">
         ${backBtn()}
         <span class="tm-av tm-av--team" aria-hidden="true">${ICON.megaphone}</span>
-        <span class="tm-head-text"><b>Everyone on the team</b><small>${teamCount()} people · team emails</small></span>
-        <button type="button" class="btn btn-primary btn-sm tm-head-cta" data-write>${ICON.compose}<span>Write to everyone</span></button>
+        <span class="tm-head-text"><b>Team emails</b><small>To everyone, a group, or the people you pick</small></span>
+        <button type="button" class="btn btn-primary btn-sm tm-head-cta" data-write>${ICON.compose}<span>Write a team email</span></button>
       </header>
       <div class="tm-new-body tm-archive" id="tm-archive"><div class="tm-list-note"><div class="spinner"></div></div></div>`;
     wireBack();
@@ -327,7 +338,7 @@ export async function mount(ctx, container) {
     const box = mainEl.querySelector("#tm-archive");
     const items = state.broadcasts || [];
     if (!items.length) {
-      box.innerHTML = `<div class="tm-placeholder"><span class="tm-empty-ic">${ICON.megaphone}</span><p class="tm-empty-title">No team emails yet</p><p>Need to reach everyone? Write one email and the whole team gets it, with your name on it. Replies come straight to you.</p><button type="button" class="btn btn-primary btn-sm" data-write2>${ICON.compose}Write to everyone</button></div>`;
+      box.innerHTML = `<div class="tm-placeholder"><span class="tm-empty-ic">${ICON.megaphone}</span><p class="tm-empty-title">No team emails yet</p><p>Write one email to the whole team, or just to the editors, the admins or the people you pick. It goes out with your name on it, and replies come straight to you.</p><button type="button" class="btn btn-primary btn-sm" data-write2>${ICON.compose}Write a team email</button></div>`;
       box.querySelector("[data-write2]").addEventListener("click", () => select({ kind: "broadcast" }));
       return;
     }
@@ -338,7 +349,7 @@ export async function mount(ctx, container) {
             ${avatar(b.senderName || "?")}
             <span class="tm-mail-head">
               <span class="tm-mail-top"><b>${esc(b.subject || "(no subject)")}</b><time>${esc(fmtListTime(b.sentAt))}</time></span>
-              <span class="tm-mail-from">${esc(b.senderName || "Someone")}${b.senderRole ? ` · ${esc(b.senderRole)}` : ""} to everyone${b.recipientCount ? ` (${b.recipientCount})` : ""}${b.attachmentNames?.length ? ` · ${ICON.clip}${b.attachmentNames.length}` : ""}</span>
+              <span class="tm-mail-from">${esc(b.senderName || "Someone")}${b.senderRole ? ` · ${esc(b.senderRole)}` : ""} to ${esc(b.audience || "everyone")}${b.recipientCount ? ` (${b.recipientCount})` : ""}${b.attachmentNames?.length ? ` · ${ICON.clip}${b.attachmentNames.length}` : ""}</span>
             </span>
           </summary>
           <div class="tm-mail-body">${b.html || ""}</div>
@@ -347,6 +358,19 @@ export async function mount(ctx, container) {
       </li>`).join("")}</ol>`;
   }
 
+  // Who a team email can go to: everyone, any of these groups, and/or people
+  // picked by name. The server works out the same list from the groups and
+  // ids (functions/api/team/broadcast.js, GROUPS there).
+  // "Section editors" are the editors of the edition in progress (This
+  // edition's hub), not the Editor role, which most writers have.
+  const AUDIENCE_GROUPS = [
+    { id: "admin", label: "Admins", phrase: "the admins", roles: ["admin"] },
+    { id: "section", label: "Section editors", phrase: "the section editors", roles: [] },
+    { id: "editor", label: "Editor role", phrase: "everyone with the Editor role", roles: ["editor"] },
+    { id: "writer", label: "Writers", phrase: "the writers", roles: ["writer"] },
+    { id: "social", label: "Social & growth", phrase: "the social & growth team", roles: ["social_media", "marketing", "newsletter_builder"] },
+  ];
+
   function renderBroadcastComposer() {
     const people = teamPeople();
     const meName = ctx.profile?.name || ctx.user.email || "You";
@@ -354,22 +378,42 @@ export async function mount(ctx, container) {
     let draft = {};
     try { draft = JSON.parse(localStorage.getItem(draftKey) || "{}"); } catch {}
     const files = [];
+    const saved = draft.to && !draft.to.all ? draft.to : null;   // who the unsent draft was going to
+    const aud = { all: !saved, groups: new Set(saved?.groups || []), ids: new Set(saved?.ids || []) };
+    const groupOf = (id) => AUDIENCE_GROUPS.find((g) => g.id === id);
+    const isSectionEditor = (p) => !!state.sectionEditors && (state.sectionEditors.uids.has(p.id) || state.sectionEditors.names.has(String(p.name || "").trim().toLowerCase()));
+    const inGroup = (g, p) => (g === "section" ? isSectionEditor(p) : !!groupOf(g)?.roles.includes(p.role));
+    const inGroups = (p) => [...aud.groups].some((g) => inGroup(g, p));
+    const recipients = () => (aud.all ? people : people.filter((p) => inGroups(p) || aud.ids.has(p.id)));
+    const andList = (xs) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+    const audienceLabel = () => {
+      if (aud.all) return "everyone on the team";
+      const parts = AUDIENCE_GROUPS.filter((g) => aud.groups.has(g.id)).map((g) => g.phrase);
+      const extra = people.filter((p) => aud.ids.has(p.id) && !inGroups(p)).map((p) => p.name || p.email);
+      if (extra.length > 3) parts.push(`${extra.length} more people`); else parts.push(...extra);
+      return andList(parts);
+    };
     const MAX = 10 * 1024 * 1024;
 
     mainEl.innerHTML = `
       <header class="tm-chat-head tm-new-head">
         ${backBtn()}
-        <h2 class="tm-new-title">Email the whole team</h2>
+        <h2 class="tm-new-title">Email the team</h2>
       </header>
       <form class="tm-mailer" id="tm-mailer" novalidate>
-        <div class="tm-mail-field">
+        <div class="tm-mail-field tm-aud-field">
           <span class="tm-mail-label">To</span>
-          <div class="tm-to-all">
-            <span class="tm-chip-all">${ICON.megaphone}Everyone on the team · ${people.length} people</span>
-            <button type="button" class="tm-link" data-show-names aria-expanded="false">Show names</button>
+          <div class="tm-aud">
+            <div class="tm-aud-groups" id="tm-aud-groups" role="group" aria-label="Send to"></div>
+            <div class="tm-aud-people" id="tm-aud-people"></div>
+            <div class="tm-aud-add">
+              <input type="text" id="tm-aud-q" placeholder="Add a person by name" autocomplete="off" aria-label="Add a person" aria-controls="tm-aud-res" aria-expanded="false">
+              <ul class="tm-aud-res" id="tm-aud-res" role="listbox" hidden></ul>
+            </div>
           </div>
         </div>
-        <p class="tm-names" id="tm-names" hidden>${people.map((p) => esc(p.name || p.email)).join(", ")}</p>
+        <div class="tm-aud-sum"><span id="tm-aud-sum"></span><button type="button" class="tm-link" data-show-names aria-expanded="false">Show names</button></div>
+        <p class="tm-names" id="tm-names" hidden></p>
         <div class="tm-mail-field">
           <span class="tm-mail-label">From</span>
           <span class="tm-from">${esc(meName)} <span class="tm-muted">via The Catalyst · replies come to you</span></span>
@@ -401,8 +445,8 @@ export async function mount(ctx, container) {
         </div>
         <ul class="tm-files" id="tm-file-list"></ul>
         <footer class="tm-mail-foot">
-          <p class="tm-mail-note" id="tm-mail-note">Everyone gets this by email, and it's kept here under Team emails.</p>
-          <button type="submit" class="btn btn-primary tm-send-all" id="tm-send-all">${ICON.send}<span>Send to ${people.length} people</span></button>
+          <p class="tm-mail-note" id="tm-mail-note">They get it by email, and it's kept here under Team emails for the people it went to.</p>
+          <button type="submit" class="btn btn-primary tm-send-all" id="tm-send-all">${ICON.send}<span>Send</span></button>
         </footer>
       </form>`;
     wireBack();
@@ -427,7 +471,64 @@ export async function mount(ctx, container) {
     });
 
     // Save the draft as you type, so nothing is lost if you leave the page.
-    const save = () => { try { localStorage.setItem(draftKey, JSON.stringify({ subject: subject.value, html: editor.innerHTML })); } catch {} };
+    const save = () => { try { localStorage.setItem(draftKey, JSON.stringify({ subject: subject.value, html: editor.innerHTML, to: { all: aud.all, groups: [...aud.groups], ids: [...aud.ids] } })); } catch {} };
+
+    // ── To: everyone, groups, and people by name
+    const audQ = mainEl.querySelector("#tm-aud-q");
+    const audRes = mainEl.querySelector("#tm-aud-res");
+    const drawGroups = () => {
+      mainEl.querySelector("#tm-aud-groups").innerHTML = `<button type="button" class="tm-aud-chip" data-aud="all">${ICON.megaphone}Everyone<span class="tm-aud-n">${people.length}</span></button>`
+        + AUDIENCE_GROUPS.map((g) => { const n = people.filter((p) => inGroup(g.id, p)).length; return n ? `<button type="button" class="tm-aud-chip" data-aud="${g.id}">${esc(g.label)}<span class="tm-aud-n">${n}</span></button>` : ""; }).join("");
+    };
+    const drawAudience = () => {
+      mainEl.querySelectorAll("[data-aud]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.aud === "all" ? aud.all : aud.groups.has(b.dataset.aud))));
+      const picked = people.filter((p) => aud.ids.has(p.id));
+      mainEl.querySelector("#tm-aud-people").innerHTML = picked.map((p) => `<span class="tm-aud-person">${esc(p.name || p.email)}<button type="button" data-unpick="${esc(p.id)}" aria-label="Remove ${esc(p.name || p.email)}">${ICON.x}</button></span>`).join("");
+      const list = recipients();
+      const n = list.length;
+      mainEl.querySelector("#tm-aud-sum").textContent = n ? `To ${audienceLabel()} · ${n} ${n === 1 ? "person" : "people"}` : "Pick everyone, a group or a person.";
+      mainEl.querySelector("#tm-names").textContent = list.map((p) => p.name || p.email).join(", ");
+      sendBtn.querySelector("span").textContent = n ? `Send to ${n} ${n === 1 ? "person" : "people"}` : "Send";
+      if (!ctx.isPreviewing) sendBtn.disabled = !n;
+    };
+    const drawResults = () => {
+      const q = audQ.value.trim().toLowerCase();
+      const already = new Set(recipients().map((p) => p.id));
+      const hits = q ? people.filter((p) => p.id !== me && !already.has(p.id) && `${p.name || ""} ${p.email || ""} ${roleLabel(p)}`.toLowerCase().includes(q)).slice(0, 6) : [];
+      audRes.innerHTML = hits.map((p, i) => `<li><button type="button" role="option" class="tm-aud-hit${i === 0 ? " is-first" : ""}" data-pick-aud="${esc(p.id)}">${avatar(p.name || p.email)}<span><b>${esc(p.name || p.email)}</b><small>${esc(roleLabel(p))}</small></span></button></li>`).join("")
+        || (q ? `<li class="tm-aud-none">${aud.all ? "Everyone is already on it." : `No one else matches “${esc(audQ.value.trim())}”.`}</li>` : "");
+      audRes.hidden = !q;
+      audQ.setAttribute("aria-expanded", String(!!q));
+    };
+    const pick = (id) => {
+      aud.all = false; aud.ids.add(id);
+      audQ.value = ""; drawResults(); drawAudience(); save(); audQ.focus();
+    };
+    mainEl.querySelector("#tm-aud-groups").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-aud]");
+      if (!b) return;
+      const g = b.dataset.aud;
+      if (g === "all") { aud.all = true; aud.groups.clear(); aud.ids.clear(); }
+      else { aud.all = false; aud.groups.has(g) ? aud.groups.delete(g) : aud.groups.add(g); }
+      drawAudience(); save();
+    });
+    mainEl.querySelector("#tm-aud-people").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-unpick]");
+      if (b) { aud.ids.delete(b.dataset.unpick); drawAudience(); save(); }
+    });
+    audRes.addEventListener("mousedown", (e) => e.preventDefault());
+    audRes.addEventListener("click", (e) => { const b = e.target.closest("[data-pick-aud]"); if (b) pick(b.dataset.pickAud); });
+    audQ.addEventListener("input", drawResults);
+    audQ.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); const f = audRes.querySelector("[data-pick-aud]"); if (f) pick(f.dataset.pickAud); }
+      if (e.key === "Escape") { audQ.value = ""; drawResults(); }
+      if (e.key === "Backspace" && !audQ.value && aud.ids.size) { aud.ids.delete([...aud.ids].pop()); drawAudience(); save(); }
+    });
+    audQ.addEventListener("blur", () => setTimeout(() => { audRes.hidden = true; audQ.setAttribute("aria-expanded", "false"); }, 120));
+    drawGroups();
+    drawAudience();
+    // The section editors arrive a moment after the page opens.
+    state.refreshAudience = () => { if (mainEl.contains(form)) { drawGroups(); drawAudience(); } };
     subject.addEventListener("input", save);
     editor.addEventListener("input", save);
 
@@ -511,7 +612,9 @@ export async function mount(ctx, container) {
       const text = editor.innerText.trim();
       if (!subj) { note.textContent = "Add a subject so people know what it's about."; subject.focus(); return; }
       if (!text) { note.textContent = "Write a message first."; editor.focus(); return; }
-      const ok = await confirmDialog(`Send “${subj}” to all ${people.length} people on the team?`, { confirmText: `Send to ${people.length} people` });
+      const n = recipients().length;
+      if (!n) { note.textContent = "Pick who it goes to first."; return; }
+      const ok = await confirmDialog(aud.all ? `Send “${subj}” to all ${n} people on the team?` : `Send “${subj}” to ${audienceLabel()} (${n} ${n === 1 ? "person" : "people"})?`, { confirmText: `Send to ${n} ${n === 1 ? "person" : "people"}` });
       if (!ok) return;
       sendBtn.disabled = true;
       sendBtn.querySelector("span").textContent = "Sending…";
@@ -520,18 +623,18 @@ export async function mount(ctx, container) {
         for (const f of files) attachments.push({ filename: f.name, contentType: f.type || "", content: await toBase64(f) });
         const clientId = draft.clientId || (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
         draft.clientId = clientId;
-        const res = await ctx.authedFetch("/api/team/broadcast", { method: "POST", body: JSON.stringify({ clientId, subject: subj, html: editor.innerHTML, attachments }) });
+        const res = await ctx.authedFetch("/api/team/broadcast", { method: "POST", body: JSON.stringify({ clientId, subject: subj, html: editor.innerHTML, attachments, to: aud.all ? { all: true } : { groups: [...aud.groups], ids: [...aud.ids] } }) });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) throw new Error(data.error || `Couldn't send (${res.status}).`);
         try { localStorage.removeItem(draftKey); } catch {}
-        ctx.toast?.(`Sent to ${data.recipientCount || people.length} people on the team.`, "success");
+        ctx.toast?.(`Sent to ${data.recipientCount || n} ${(data.recipientCount || n) === 1 ? "person" : "people"}.`, "success");
         state.broadcastsLoaded = false;
         await loadBroadcasts();
         select({ kind: "team" });
       } catch (err) {
         note.textContent = err.message || "Couldn't send. Try again.";
         sendBtn.disabled = false;
-        sendBtn.querySelector("span").textContent = `Send to ${people.length} people`;
+        drawAudience();
       }
     });
     setTimeout(() => (subject.value ? editor : subject).focus(), 0);
