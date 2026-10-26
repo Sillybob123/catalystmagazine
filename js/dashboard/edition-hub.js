@@ -373,49 +373,79 @@ export async function mount(ctx, container) {
   }
 
   // ── Activity: who has been working on what (editors and admins). A section
-  // editor sees their sections; admins see the whole edition.
+  // editor sees their sections; admins see the whole edition. Each entry has a
+  // kind (draft, proposal, message, interview, research, editor), given when
+  // it's logged or read from its wording.
+  const ACT_KINDS = {
+    draft: { label: "Drafts", icon: svg(`<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>`, 15) },
+    proposal: { label: "Proposals", icon: svg(`<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2h5c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/>`, 15) },
+    message: { label: "Messages", icon: svg(`<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>`, 15) },
+    interview: { label: "Interviews", icon: svg(`<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>`, 15) },
+    research: { label: "Research", icon: svg(`<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6"/>`, 15) },
+    editor: { label: "Editors", icon: svg(`<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>`, 15) },
+  };
+  const actKind = (a) => ACT_KINDS[a.kind] ? a.kind
+    : /^emailed the|^pinned|^posted/i.test(a.text || "") ? "editor"
+    : /draft/i.test(a.text || "") ? "draft"
+    : /proposal/i.test(a.text || "") ? "proposal"
+    : /interview/i.test(a.text || "") && !/replied/i.test(a.text || "") ? "interview"
+    : /replied|emailed|asked|wrote/i.test(a.text || "") ? "message"
+    : "research";
+
   function activityCard() {
     const node = el("section", { class: "card eh-act-card" });
     const mine = mySections();
     const scope = isAdmin || !mine.length ? null : new Set(mine.map((s) => s.id));
     const inScope = (secId) => !scope || scope.has(secId);
-    const items = activity.filter((a) => inScope(a.sectionId));
+    const all = activity.filter((a) => inScope(a.sectionId)).map((a) => ({ ...a, k: actKind(a) }));
+    const f = view.actKind && all.some((a) => a.k === view.actKind) ? view.actKind : "";
+    const items = f ? all.filter((a) => a.k === f) : all;
     const scopeName = scope ? mine.map((s) => s.name).join(" & ") : "The whole edition";
     const checked = hub.activityCheckedAt;
     const fresh = checked && (Date.now() - Date.parse(checked)) < 36 * 3600 * 1000;
-    const dayKey = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+    const dayKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
     const dayLabel = (iso) => {
-      const d = new Date(iso), t = today(), y = new Date(t.getTime() - DAY);
-      const k = dayKey(iso);
-      if (k === dayKey(t.toISOString())) return "Today";
-      if (k === dayKey(y.toISOString())) return "Yesterday";
+      const d = new Date(iso), t = today();
+      if (dayKey(d) === dayKey(t)) return "Today";
+      if (dayKey(d) === dayKey(new Date(t.getTime() - DAY))) return "Yesterday";
       return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
     };
-    const SRC = { drive: { icon: ICON.gdrive, label: "Drive" }, email: { icon: ICON.mail, label: "Email" }, suite: { icon: ICON.note, label: "Suite" }, meeting: { icon: ICON.note, label: "Meeting" } };
+    const SRC = { drive: { icon: ICON.gdrive, label: "Drive" }, email: { icon: ICON.mail, label: "Email" } };
+
+    // The week at a glance.
+    const weekAgo = new Date(Date.now() - 7 * DAY).toISOString();
+    const week = all.filter((a) => a.at >= weekAgo);
+    const scoped = realPieces().filter((p) => inScope(p.section));
+    const activePieces = new Set(week.map((a) => a.pieceId).filter(Boolean));
+    const people = new Set(week.filter((a) => a.k !== "editor").flatMap((a) => a.people || []));
+    const drafting = scoped.filter((p) => (STAGE_INDEX[p.status] ?? 0) >= STAGE_INDEX.drafting || p.draftUrl).length;
+    const quiet = sorted(scoped.filter((p) => !activePieces.has(p.id)));
+    const lastHeard = (p) => all.find((a) => a.pieceId === p.id)?.at;
+
     const shown = view.allActivity ? items : items.slice(0, 6);
     let lastDay = "";
     const rows = shown.map((a) => {
       const day = dayLabel(a.at);
-      const head = day !== lastDay ? `<li class="eh-act-day">${esc(day)}</li>` : "";
+      const head = day !== lastDay ? `<li class="eh-act-day"><span>${esc(day)}</span></li>` : "";
       lastDay = day;
       const p = a.pieceId ? pieces.find((x) => x.id === a.pieceId) : null;
-      const who = (a.people || []).join(" & ") || "Someone";
+      const sec = section(a.sectionId);
       const src = SRC[a.source] || null;
       const isNew = seenAt && a.at > seenAt;
-      return `${head}<li class="eh-act-row${isNew ? " is-new" : ""}">
-        ${avatar({ name: (a.people || [])[0] || who }, 30)}
+      return `${head}<li class="eh-act-row k-${a.k}${isNew ? " is-new" : ""}">
+        <span class="eh-act-ic" title="${esc(ACT_KINDS[a.k].label)}">${ACT_KINDS[a.k].icon}</span>
         <div class="eh-act-main">
-          <p class="eh-act-text"><b>${esc(who)}</b> ${esc(a.text || "")}</p>
-          <p class="eh-act-meta">${p ? `<button type="button" class="eh-act-piece" data-piece="${esc(p.id)}">${esc(clip(p.title, 70))}</button>` : a.pieceTitle ? `<span>${esc(clip(a.pieceTitle, 70))}</span>` : ""}${!scope || scope.size > 1 ? `<span>${esc(section(a.sectionId)?.name || "")}</span>` : ""}${src ? `<span class="eh-act-src">${src.icon}${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">${src.label}</a>` : src.label}</span>` : ""}<time datetime="${esc(a.at)}">${esc(new Date(a.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}</time></p>
+          <p class="eh-act-text"><b>${esc((a.people || []).join(" & ") || "Someone")}</b> ${esc(a.text || "")}${isNew ? ` <span class="eh-act-dot" aria-label="New since your last visit"></span>` : ""}</p>
+          <p class="eh-act-meta">
+            ${!scope || scope.size > 1 ? `<span class="eh-act-sec s-${esc(a.sectionId)}">${esc(sec?.name || "")}</span>` : ""}
+            ${p ? `<button type="button" class="eh-act-piece" data-piece="${esc(p.id)}">${esc(clip(p.title, 64))}</button>` : ""}
+            <span class="eh-act-when">${src ? `${src.icon}${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">${src.label}</a>` : src.label} · ` : ""}<time datetime="${esc(a.at)}">${esc(new Date(a.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}</time></span>
+          </p>
         </div>
-        ${isNew ? `<span class="eh-act-dot" aria-label="New since your last visit"></span>` : ""}
       </li>`;
     }).join("");
-    // Pieces with no news in a week (from what the inbox and Drive show).
-    const weekAgo = new Date(Date.now() - 7 * DAY).toISOString();
-    const active = new Set(items.filter((a) => a.at >= weekAgo).map((a) => a.pieceId));
-    const quiet = sorted(realPieces().filter((p) => inScope(p.section) && !active.has(p.id)));
-    const newCount = seenAt ? items.filter((a) => a.at > seenAt).length : 0;
+    const newCount = seenAt ? all.filter((a) => a.at > seenAt).length : 0;
+    const kinds = Object.keys(ACT_KINDS).filter((k) => all.some((a) => a.k === k));
     node.innerHTML = `
       <div class="eh-act-head">
         <div>
@@ -424,10 +454,20 @@ export async function mount(ctx, container) {
         </div>
         ${checked ? `<p class="eh-act-checked${fresh ? " is-fresh" : ""}" title="When the inbox and the Drive were last checked"><i></i>Checked ${esc(new Date(checked).toLocaleDateString("en-US", { month: "short", day: "numeric" }))}</p>` : ""}
       </div>
+      <dl class="eh-act-stats">
+        <div class="st-updates"><dt>Updates this week</dt><dd>${week.length}</dd></div>
+        <div class="st-people"><dt>People active</dt><dd>${people.size}</dd></div>
+        <div class="st-drafts"><dt>Drafts started</dt><dd>${drafting}<small>of ${scoped.length}</small></dd></div>
+        <div class="st-quiet"><dt>Quiet this week</dt><dd>${quiet.length}</dd></div>
+      </dl>
+      ${kinds.length > 1 ? `<div class="eh-act-filters" role="group" aria-label="Show">
+        <button type="button" class="eh-act-f${f ? "" : " is-on"}" data-act-kind="" aria-pressed="${!f}">All<span>${all.length}</span></button>
+        ${kinds.map((k) => `<button type="button" class="eh-act-f k-${k}${f === k ? " is-on" : ""}" data-act-kind="${k}" aria-pressed="${f === k}"><i></i>${ACT_KINDS[k].label}<span>${all.filter((a) => a.k === k).length}</span></button>`).join("")}
+      </div>` : ""}
       ${items.length ? `<ol class="eh-act-list">${rows}</ol>
         ${items.length > 6 ? `<button type="button" class="eh-act-more" data-all-activity>${view.allActivity ? "Show less" : `Show all ${items.length}`}</button>` : ""}`
         : `<p class="eh-act-empty">No activity yet. Updates from the inbox and the Drive will show up here.</p>`}
-      ${quiet.length ? `<div class="eh-act-quiet"><p class="eh-act-quiet-k">No news in the last week</p><p class="eh-act-quiet-v">${quiet.map((p) => `<button type="button" class="eh-act-qp" data-piece="${esc(p.id)}">${esc(firstNames(p.writers) || "Unassigned")}<span>${esc(clip(p.title, 42))}</span></button>`).join("")}</p></div>` : ""}`;
+      ${quiet.length ? `<div class="eh-act-quiet"><p class="eh-act-quiet-k">No news in the last week</p><ul class="eh-act-quiet-v">${quiet.map((p) => { const lh = lastHeard(p); return `<li><button type="button" class="eh-act-qp" data-piece="${esc(p.id)}">${avatar(p.writers?.[0] || { name: "?" }, 26)}<span class="t"><b>${esc(firstNames(p.writers) || "Unassigned")}</b><small>${esc(clip(p.title, 46))}</small></span><span class="h">${lh ? `Last heard ${esc(new Date(lh).toLocaleDateString("en-US", { month: "short", day: "numeric" }))}` : "Nothing yet"}</span></button></li>`; }).join("")}</ul></div>` : ""}`;
     // Mark everything as seen for next time.
     try { localStorage.setItem(seenKey, new Date().toISOString()); } catch {}
     return node;
@@ -1630,6 +1670,7 @@ export async function mount(ctx, container) {
     if (d.more !== undefined) { const c = t.closest(".eh-cell"); const open = c.classList.toggle("is-open"); t.textContent = open ? "Show less" : "Read more"; return; }
     if (d.go) { go({ tab: d.go, piece: null }); return; }
     if (d.allActivity !== undefined) { view.allActivity = !view.allActivity; render(); return; }
+    if (d.actKind !== undefined) { view.actKind = d.actKind; view.allActivity = false; render(); return; }
     if (d.sec) { view.sec = d.sec; view.q = ""; view.filter = "all"; go({ tab: "pieces", piece: null }); return; }
     if (d.banner) { editBanner(section(d.banner)); return; }
     if (d.emailSec) { emailSection(section(d.emailSec)); return; }
@@ -1757,46 +1798,99 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
 .eh-tile.is-past { opacity: .55; }
 .eh-tiles.is-sm { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 28px 0 0; }
-/* activity (editors and admins) */
-.eh-act-card { padding: 22px 24px 18px; }
+/* activity (editors and admins): one color per kind of update, one per section */
+.eh-act-card { --k-draft: #2f7d4f; --k-draft-bg: #e3f1e7; --k-proposal: #9a6a1f; --k-proposal-bg: #f6ebd5; --k-message: #2b5f9e; --k-message-bg: #e2ecf7;
+  --k-interview: #b4441b; --k-interview-bg: #fbe4da; --k-research: #2a7570; --k-research-bg: #dceeec; --k-editor: #4b5563; --k-editor-bg: #eceef1;
+  padding: 24px 26px 20px; }
 .eh-act-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.eh-act-title { display: flex; align-items: center; gap: 10px; margin: 0; font: 600 17px/1.3 var(--font); letter-spacing: -0.015em; }
-.eh-act-new { padding: 3px 9px; border-radius: 99px; background: #fbe6dc; color: #9a3412; font: 600 11px/1.3 var(--font); letter-spacing: 0; }
+.eh-act-title { display: flex; align-items: center; gap: 10px; margin: 0; font: 600 18px/1.3 var(--font); letter-spacing: -0.02em; }
+.eh-act-new { padding: 3px 10px; border-radius: 99px; background: #c2410c; color: #fff8f3; font: 600 11px/1.4 var(--font); letter-spacing: 0; }
 .eh-act-scope { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
-.eh-act-checked { display: inline-flex; flex: none; align-items: center; gap: 7px; margin: 2px 0 0; padding: 5px 11px; border-radius: 99px; background: var(--surface-3); font: 500 12px/1.2 var(--font); color: var(--ink-2); white-space: nowrap; }
-.eh-act-checked i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2, #b8b2a7); }
-.eh-act-checked.is-fresh i { background: #5f9a6b; box-shadow: 0 0 0 3px color-mix(in srgb, #5f9a6b 18%, transparent); }
-.eh-act-list { margin: 14px 0 0; padding: 0; list-style: none; }
-.eh-act-day { margin: 14px 0 4px; font: 600 10.5px/1.4 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.eh-act-checked { display: inline-flex; flex: none; align-items: center; gap: 7px; margin: 2px 0 0; padding: 6px 12px; border-radius: 99px; background: var(--surface-3); font: 500 12px/1.2 var(--font); color: var(--ink-2); white-space: nowrap; }
+.eh-act-checked i { width: 7px; height: 7px; border-radius: 50%; background: #b8b2a7; }
+.eh-act-checked.is-fresh { background: var(--k-draft-bg); color: var(--k-draft); }
+.eh-act-checked.is-fresh i { background: var(--k-draft); box-shadow: 0 0 0 3px color-mix(in srgb, var(--k-draft) 20%, transparent); }
+
+.eh-act-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 18px 0 0; }
+.eh-act-stats > div { min-width: 0; padding: 12px 14px; border-radius: 14px; }
+.eh-act-stats dt { font: 600 11px/1.3 var(--font); color: inherit; opacity: .8; }
+.eh-act-stats dd { display: flex; align-items: baseline; gap: 5px; margin: 6px 0 0; font: 600 26px/1 var(--font); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.eh-act-stats dd small { font: 500 12px var(--font); letter-spacing: 0; opacity: .75; }
+.st-updates { background: var(--k-message-bg); color: var(--k-message); }
+.st-people { background: var(--k-research-bg); color: var(--k-research); }
+.st-drafts { background: var(--k-draft-bg); color: var(--k-draft); }
+.st-quiet { background: var(--k-proposal-bg); color: var(--k-proposal); }
+
+.eh-act-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 0; }
+.eh-act-f { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 12px; border: 1px solid var(--hairline); border-radius: 99px; background: var(--surface); font: 500 12.5px/1 var(--font); color: var(--ink-2); cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+.eh-act-f i { width: 8px; height: 8px; border-radius: 50%; }
+.eh-act-f span { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.eh-act-f:hover { border-color: color-mix(in srgb, var(--ink) 28%, transparent); color: var(--ink); }
+.eh-act-f.is-on { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.eh-act-f.is-on span { color: inherit; opacity: .7; }
+.eh-act-f.k-draft i { background: var(--k-draft); } .eh-act-f.k-proposal i { background: var(--k-proposal); } .eh-act-f.k-message i { background: var(--k-message); }
+.eh-act-f.k-interview i { background: var(--k-interview); } .eh-act-f.k-research i { background: var(--k-research); } .eh-act-f.k-editor i { background: var(--k-editor); }
+.eh-act-f.is-on.k-draft { background: var(--k-draft); border-color: var(--k-draft); } .eh-act-f.is-on.k-proposal { background: var(--k-proposal); border-color: var(--k-proposal); }
+.eh-act-f.is-on.k-message { background: var(--k-message); border-color: var(--k-message); } .eh-act-f.is-on.k-interview { background: var(--k-interview); border-color: var(--k-interview); }
+.eh-act-f.is-on.k-research { background: var(--k-research); border-color: var(--k-research); } .eh-act-f.is-on.k-editor { background: var(--k-editor); border-color: var(--k-editor); }
+.eh-act-f.is-on i { background: currentColor; }
+
+/* the timeline */
+.eh-act-list { position: relative; margin: 18px 0 0; padding: 0; list-style: none; }
+.eh-act-list::before { content: ""; position: absolute; top: 34px; bottom: 18px; left: 15px; width: 2px; border-radius: 2px; background: var(--hairline-2); }
+.eh-act-day { position: relative; margin: 16px 0 6px; padding-left: 46px; }
 .eh-act-day:first-child { margin-top: 0; }
-.eh-act-row { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 9px 10px; margin: 0 -10px; border-radius: 12px; transition: background .15s; }
-.eh-act-row:hover { background: var(--surface-3); }
-.eh-act-row.is-new { background: #fbf6ec; }
-.eh-act-text { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); overflow-wrap: anywhere; }
+.eh-act-day span { font: 600 10.5px/1.4 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.eh-act-row { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 14px; align-items: start; padding: 8px 10px 8px 0; border-radius: 14px; }
+.eh-act-ic { position: relative; z-index: 1; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; box-shadow: 0 0 0 4px var(--surface); }
+.eh-act-row.k-draft .eh-act-ic { background: var(--k-draft-bg); color: var(--k-draft); }
+.eh-act-row.k-proposal .eh-act-ic { background: var(--k-proposal-bg); color: var(--k-proposal); }
+.eh-act-row.k-message .eh-act-ic { background: var(--k-message-bg); color: var(--k-message); }
+.eh-act-row.k-interview .eh-act-ic { background: var(--k-interview-bg); color: var(--k-interview); }
+.eh-act-row.k-research .eh-act-ic { background: var(--k-research-bg); color: var(--k-research); }
+.eh-act-row.k-editor .eh-act-ic { background: var(--k-editor-bg); color: var(--k-editor); }
+.eh-act-main { min-width: 0; padding: 5px 12px 7px; margin-left: -6px; border-radius: 12px; transition: background .15s; }
+.eh-act-row:hover .eh-act-main { background: var(--surface-3); }
+.eh-act-row.is-new .eh-act-main { background: #fbf6ec; }
+.eh-act-text { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
 .eh-act-text b { font-weight: 600; color: var(--ink); }
-.eh-act-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
-.eh-act-meta > * + *::before { content: ""; display: inline-block; width: 3px; height: 3px; margin: 0 10px 2px -6px; border-radius: 50%; background: currentColor; opacity: .45; vertical-align: middle; }
-.eh-act-piece { padding: 0; border: 0; background: none; font: 500 12.5px/1.4 var(--font); color: var(--ink-2); text-align: left; cursor: pointer; }
-.eh-act-piece:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-.eh-act-src { display: inline-flex; align-items: center; gap: 5px; }
-.eh-act-src .eh-gicon, .eh-act-src svg { width: 12px; height: 12px; }
-.eh-act-src a { color: inherit; text-decoration: none; }
-.eh-act-src a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-.eh-act-dot { width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: #c2410c; }
-.eh-act-more { display: inline-flex; align-items: center; min-height: 36px; margin: 6px 0 0 -10px; padding: 0 10px; border: 0; border-radius: 10px; background: none; font: 600 13px var(--font); color: var(--ink); cursor: pointer; }
+.eh-act-dot { display: inline-block; width: 7px; height: 7px; margin-left: 2px; border-radius: 50%; background: #c2410c; vertical-align: middle; }
+.eh-act-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 6px 0 0; font-size: 12.5px; color: var(--muted); }
+.eh-act-sec { padding: 2px 9px; border-radius: 99px; font: 600 11px/1.6 var(--font); white-space: nowrap; }
+.eh-act-sec.s-dc { background: #fbe6dc; color: #9a3412; }
+.eh-act-sec.s-prevention { background: #e2f0e6; color: #2f6b43; }
+.eh-act-sec.s-human { background: #e4eaf6; color: #3d5a99; }
+.eh-act-sec.s-debate { background: #f5ead6; color: #8a5a12; }
+.eh-act-piece { padding: 0; border: 0; background: none; font: 500 12.5px/1.4 var(--font); color: var(--ink-2); text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ink) 18%, transparent); text-underline-offset: 3px; }
+.eh-act-piece:hover { color: var(--ink); text-decoration-color: currentColor; }
+.eh-act-when { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.eh-act-when .eh-gicon, .eh-act-when svg { width: 12px; height: 12px; }
+.eh-act-when a { color: inherit; text-decoration: none; }
+.eh-act-when a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.eh-act-more { display: inline-flex; align-items: center; min-height: 36px; margin: 6px 0 0 36px; padding: 0 12px; border: 0; border-radius: 10px; background: none; font: 600 13px var(--font); color: var(--ink); cursor: pointer; }
 .eh-act-more:hover { background: var(--surface-3); }
-.eh-act-empty { margin: 14px 0 0; font-size: 13.5px; color: var(--muted); }
-.eh-act-quiet { margin: 14px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--hairline-2); }
-.eh-act-quiet-k { margin: 0 0 8px; font: 600 10.5px/1.4 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.eh-act-quiet-v { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
-.eh-act-qp { display: inline-flex; align-items: baseline; gap: 6px; min-height: 32px; padding: 6px 11px; border: 1px solid var(--hairline); border-radius: 99px; background: var(--surface); font: 600 12.5px/1.2 var(--font); color: var(--ink); cursor: pointer; }
-.eh-act-qp span { font-weight: 400; color: var(--muted); }
-.eh-act-qp:hover { border-color: color-mix(in srgb, var(--ink) 30%, transparent); }
-.eh-act-piece:focus-visible, .eh-act-qp:focus-visible, .eh-act-more:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-@media (max-width: 640px) {
-  .eh-act-card { padding: 18px 18px 14px; }
-  .eh-act-head { flex-direction: column; gap: 8px; }
+.eh-act-empty { margin: 16px 0 0; font-size: 13.5px; color: var(--muted); }
+
+/* quiet pieces */
+.eh-act-quiet { margin: 18px 0 0; padding: 14px 16px 16px; border-radius: 16px; background: #fbf6ec; border: 1px solid #eadbbd; }
+.eh-act-quiet-k { margin: 0 0 10px; font: 600 10.5px/1.4 var(--font); letter-spacing: .12em; text-transform: uppercase; color: #8a5a12; }
+.eh-act-quiet-v { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.eh-act-qp { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 2px 10px; align-items: center; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid #eadbbd; border-radius: 12px; background: var(--surface); text-align: left; cursor: pointer; transition: border-color .15s, transform .15s var(--ease-out); }
+.eh-act-qp:hover { border-color: #c99a3d; transform: translateY(-1px); }
+.eh-act-qp .t { display: flex; flex-direction: column; min-width: 0; }
+.eh-act-qp b { font: 600 13px/1.3 var(--font); color: var(--ink); }
+.eh-act-qp small { overflow: hidden; font-size: 12px; color: var(--muted); white-space: nowrap; text-overflow: ellipsis; }
+.eh-act-qp .h { grid-column: 2; font: 600 11px/1.3 var(--font); color: #9a6a1f; }
+.eh-act-piece:focus-visible, .eh-act-qp:focus-visible, .eh-act-more:focus-visible, .eh-act-f:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (max-width: 760px) {
+  .eh-act-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+@media (max-width: 640px) {
+  .eh-act-card { padding: 18px 16px 14px; }
+  .eh-act-head { flex-direction: column; gap: 8px; }
+  .eh-act-stats dd { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { .eh-act-qp:hover { transform: none; } }
 
 .eh-tile { display: flex; flex-direction: column; min-width: 0; padding: 22px 24px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow-sm); }
 .eh-tile.is-main { background: #fdf3ee; border-color: #f2cdbd; color: var(--ink); box-shadow: var(--shadow-md); }
