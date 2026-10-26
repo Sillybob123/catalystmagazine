@@ -315,6 +315,14 @@ service cloud.firestore {
           || (canSeeHub() && request.auth.uid in hubData().get('sectionEditors', {}).get(sid, []));
       }
 
+      // Who has been working on what, gathered from the team inbox and the
+      // Drive (Admin SDK writes only). Editors and admins read it; the page
+      // shows a section editor their own sections.
+      match /activity/{aid} {
+        allow read: if isAdmin() || (canSeeHub() && isHubEditor());
+        allow write: if false;
+      }
+
       match /messages/{mid} {
         allow read: if canSeeHub();
         allow create: if canSeeHub()

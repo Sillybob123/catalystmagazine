@@ -16,6 +16,9 @@
 //   edition_hub/{EDITION}            sections + editors, dates, guidance
 //   edition_hub/{EDITION}/pieces     one doc per piece (proposal, notes, status)
 //   edition_hub/{EDITION}/messages   questions, updates, replies, announcements
+//   edition_hub/{EDITION}/activity   who did what, gathered from the team inbox
+//                                    and the Drive (written with the Admin SDK);
+//                                    editors and admins only, shown on Overview
 // Seeded from the proposals by scripts/seed-edition-hub.mjs (the data file is
 // private, outside git). Posting also calls /api/edition/notify, which rings
 // the bell for the piece's writers and section editor.
@@ -66,7 +69,7 @@ const KIND = {
 
 // Kept between mounts, so coming back (or opening a piece from the bell)
 // paints at once while the live listeners catch up.
-const cache = { hub: null, pieces: null, messages: null, bios: null, staff: null, banners: null };
+const cache = { hub: null, pieces: null, messages: null, bios: null, staff: null, banners: null, activity: null };
 
 const DAY = 86400000;
 const parseDay = (s) => { const [y, m, d] = String(s || "").split("-").map(Number); return y ? new Date(y, m - 1, d) : null; };
@@ -106,6 +109,7 @@ const ICON = {
   ext: svg(`<path d="M7 17 17 7M8 7h9v9"/>`, 13),
   tracker: svg(`<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>`, 15),
   link: svg(`<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>`, 15),
+  mail: svg(`<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>`, 13),
 };
 
 export async function mount(ctx, container) {
@@ -135,7 +139,13 @@ export async function mount(ctx, container) {
   let hub = cache.hub, pieces = cache.pieces || [], messages = cache.messages || [];
   let bios = cache.bios || new Map();
   let banners = cache.banners || new Map();
+  let activity = cache.activity || [];
   const unsubs = [];
+  // When this person last saw the activity window, as it stood when the page
+  // opened: entries after it get a dot for this visit.
+  const seenKey = `eh.activitySeen.${ctx.user?.uid || ""}`;
+  let seenAt = "";
+  try { seenAt = localStorage.getItem(seenKey) || ""; } catch {}
 
   container.innerHTML = "";
   const root = el("div", { class: "eh" });
@@ -143,8 +153,18 @@ export async function mount(ctx, container) {
 
   // ── live data
   const hubRef = doc(db, "edition_hub", EDITION);
-  unsubs.push(onSnapshot(hubRef, (s) => { hub = s.exists() ? { id: s.id, ...s.data() } : null; cache.hub = hub; render(); },
-    (err) => fail(err)));
+  let activityOn = false;
+  unsubs.push(onSnapshot(hubRef, (s) => {
+    hub = s.exists() ? { id: s.id, ...s.data() } : null; cache.hub = hub;
+    // Editors and admins only (the rules agree), so subscribe once we know.
+    if (hub && !activityOn && canEdit()) {
+      activityOn = true;
+      unsubs.push(onSnapshot(query(collection(hubRef, "activity"), orderBy("at", "desc"), limit(300)), (a) => {
+        activity = a.docs.map((d) => ({ id: d.id, ...d.data() })); cache.activity = activity; render();
+      }, (err) => console.warn("[edition] activity", err?.message)));
+    }
+    render();
+  }, (err) => fail(err)));
   unsubs.push(onSnapshot(collection(hubRef, "pieces"), (s) => {
     pieces = s.docs.map((d) => ({ id: d.id, ...d.data() }));
     cache.pieces = pieces; render();
@@ -313,6 +333,7 @@ export async function mount(ctx, container) {
   function overviewView() {
     const wrap = el("div", { class: "eh-stack" });
     wrap.appendChild(nextUp());
+    if (canEdit()) wrap.appendChild(activityCard());
     // Pinned notes from the sections this person writes or edits in.
     const mySecIds = new Set([...mySections().map((s) => s.id), ...pieces.filter((p) => isMine(p)).map((p) => p.section)]);
     const notes = (hub.sections || []).filter((s) => mySecIds.has(s.id) && banners.get(s.id)?.text);
@@ -348,6 +369,67 @@ export async function mount(ctx, container) {
         <p class="eh-tile-sub">${esc(fmtDay(d.date, LONG))}</p>
       </article>`;
     }).join("");
+    return node;
+  }
+
+  // ── Activity: who has been working on what (editors and admins). A section
+  // editor sees their sections; admins see the whole edition.
+  function activityCard() {
+    const node = el("section", { class: "card eh-act-card" });
+    const mine = mySections();
+    const scope = isAdmin || !mine.length ? null : new Set(mine.map((s) => s.id));
+    const inScope = (secId) => !scope || scope.has(secId);
+    const items = activity.filter((a) => inScope(a.sectionId));
+    const scopeName = scope ? mine.map((s) => s.name).join(" & ") : "The whole edition";
+    const checked = hub.activityCheckedAt;
+    const fresh = checked && (Date.now() - Date.parse(checked)) < 36 * 3600 * 1000;
+    const dayKey = (iso) => { const d = new Date(iso); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+    const dayLabel = (iso) => {
+      const d = new Date(iso), t = today(), y = new Date(t.getTime() - DAY);
+      const k = dayKey(iso);
+      if (k === dayKey(t.toISOString())) return "Today";
+      if (k === dayKey(y.toISOString())) return "Yesterday";
+      return d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+    };
+    const SRC = { drive: { icon: ICON.gdrive, label: "Drive" }, email: { icon: ICON.mail, label: "Email" }, suite: { icon: ICON.note, label: "Suite" }, meeting: { icon: ICON.note, label: "Meeting" } };
+    const shown = view.allActivity ? items : items.slice(0, 6);
+    let lastDay = "";
+    const rows = shown.map((a) => {
+      const day = dayLabel(a.at);
+      const head = day !== lastDay ? `<li class="eh-act-day">${esc(day)}</li>` : "";
+      lastDay = day;
+      const p = a.pieceId ? pieces.find((x) => x.id === a.pieceId) : null;
+      const who = (a.people || []).join(" & ") || "Someone";
+      const src = SRC[a.source] || null;
+      const isNew = seenAt && a.at > seenAt;
+      return `${head}<li class="eh-act-row${isNew ? " is-new" : ""}">
+        ${avatar({ name: (a.people || [])[0] || who }, 30)}
+        <div class="eh-act-main">
+          <p class="eh-act-text"><b>${esc(who)}</b> ${esc(a.text || "")}</p>
+          <p class="eh-act-meta">${p ? `<button type="button" class="eh-act-piece" data-piece="${esc(p.id)}">${esc(clip(p.title, 70))}</button>` : a.pieceTitle ? `<span>${esc(clip(a.pieceTitle, 70))}</span>` : ""}${!scope || scope.size > 1 ? `<span>${esc(section(a.sectionId)?.name || "")}</span>` : ""}${src ? `<span class="eh-act-src">${src.icon}${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener">${src.label}</a>` : src.label}</span>` : ""}<time datetime="${esc(a.at)}">${esc(new Date(a.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }))}</time></p>
+        </div>
+        ${isNew ? `<span class="eh-act-dot" aria-label="New since your last visit"></span>` : ""}
+      </li>`;
+    }).join("");
+    // Pieces with no news in a week (from what the inbox and Drive show).
+    const weekAgo = new Date(Date.now() - 7 * DAY).toISOString();
+    const active = new Set(items.filter((a) => a.at >= weekAgo).map((a) => a.pieceId));
+    const quiet = sorted(realPieces().filter((p) => inScope(p.section) && !active.has(p.id)));
+    const newCount = seenAt ? items.filter((a) => a.at > seenAt).length : 0;
+    node.innerHTML = `
+      <div class="eh-act-head">
+        <div>
+          <h2 class="eh-act-title">Activity${newCount ? `<span class="eh-act-new">${newCount} new</span>` : ""}</h2>
+          <p class="eh-act-scope">${esc(scopeName)} · from the team inbox and the Drive</p>
+        </div>
+        ${checked ? `<p class="eh-act-checked${fresh ? " is-fresh" : ""}" title="When the inbox and the Drive were last checked"><i></i>Checked ${esc(new Date(checked).toLocaleDateString("en-US", { month: "short", day: "numeric" }))}</p>` : ""}
+      </div>
+      ${items.length ? `<ol class="eh-act-list">${rows}</ol>
+        ${items.length > 6 ? `<button type="button" class="eh-act-more" data-all-activity>${view.allActivity ? "Show less" : `Show all ${items.length}`}</button>` : ""}`
+        : `<p class="eh-act-empty">No activity yet. Updates from the inbox and the Drive will show up here.</p>`}
+      ${quiet.length ? `<div class="eh-act-quiet"><p class="eh-act-quiet-k">No news in the last week</p><p class="eh-act-quiet-v">${quiet.map((p) => `<button type="button" class="eh-act-qp" data-piece="${esc(p.id)}">${esc(firstNames(p.writers) || "Unassigned")}<span>${esc(clip(p.title, 42))}</span></button>`).join("")}</p></div>` : ""}`;
+    // Mark everything as seen for next time.
+    try { localStorage.setItem(seenKey, new Date().toISOString()); } catch {}
     return node;
   }
 
@@ -1547,6 +1629,7 @@ export async function mount(ctx, container) {
     const d = t.dataset;
     if (d.more !== undefined) { const c = t.closest(".eh-cell"); const open = c.classList.toggle("is-open"); t.textContent = open ? "Show less" : "Read more"; return; }
     if (d.go) { go({ tab: d.go, piece: null }); return; }
+    if (d.allActivity !== undefined) { view.allActivity = !view.allActivity; render(); return; }
     if (d.sec) { view.sec = d.sec; view.q = ""; view.filter = "all"; go({ tab: "pieces", piece: null }); return; }
     if (d.banner) { editBanner(section(d.banner)); return; }
     if (d.emailSec) { emailSection(section(d.emailSec)); return; }
@@ -1674,6 +1757,47 @@ html[data-suite-theme] body.eh-calm .topbar { background: color-mix(in srgb, var
 .eh-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
 .eh-tile.is-past { opacity: .55; }
 .eh-tiles.is-sm { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 28px 0 0; }
+/* activity (editors and admins) */
+.eh-act-card { padding: 22px 24px 18px; }
+.eh-act-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.eh-act-title { display: flex; align-items: center; gap: 10px; margin: 0; font: 600 17px/1.3 var(--font); letter-spacing: -0.015em; }
+.eh-act-new { padding: 3px 9px; border-radius: 99px; background: #fbe6dc; color: #9a3412; font: 600 11px/1.3 var(--font); letter-spacing: 0; }
+.eh-act-scope { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+.eh-act-checked { display: inline-flex; flex: none; align-items: center; gap: 7px; margin: 2px 0 0; padding: 5px 11px; border-radius: 99px; background: var(--surface-3); font: 500 12px/1.2 var(--font); color: var(--ink-2); white-space: nowrap; }
+.eh-act-checked i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-2, #b8b2a7); }
+.eh-act-checked.is-fresh i { background: #5f9a6b; box-shadow: 0 0 0 3px color-mix(in srgb, #5f9a6b 18%, transparent); }
+.eh-act-list { margin: 14px 0 0; padding: 0; list-style: none; }
+.eh-act-day { margin: 14px 0 4px; font: 600 10.5px/1.4 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.eh-act-day:first-child { margin-top: 0; }
+.eh-act-row { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 9px 10px; margin: 0 -10px; border-radius: 12px; transition: background .15s; }
+.eh-act-row:hover { background: var(--surface-3); }
+.eh-act-row.is-new { background: #fbf6ec; }
+.eh-act-text { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); overflow-wrap: anywhere; }
+.eh-act-text b { font-weight: 600; color: var(--ink); }
+.eh-act-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+.eh-act-meta > * + *::before { content: ""; display: inline-block; width: 3px; height: 3px; margin: 0 10px 2px -6px; border-radius: 50%; background: currentColor; opacity: .45; vertical-align: middle; }
+.eh-act-piece { padding: 0; border: 0; background: none; font: 500 12.5px/1.4 var(--font); color: var(--ink-2); text-align: left; cursor: pointer; }
+.eh-act-piece:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.eh-act-src { display: inline-flex; align-items: center; gap: 5px; }
+.eh-act-src .eh-gicon, .eh-act-src svg { width: 12px; height: 12px; }
+.eh-act-src a { color: inherit; text-decoration: none; }
+.eh-act-src a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.eh-act-dot { width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: #c2410c; }
+.eh-act-more { display: inline-flex; align-items: center; min-height: 36px; margin: 6px 0 0 -10px; padding: 0 10px; border: 0; border-radius: 10px; background: none; font: 600 13px var(--font); color: var(--ink); cursor: pointer; }
+.eh-act-more:hover { background: var(--surface-3); }
+.eh-act-empty { margin: 14px 0 0; font-size: 13.5px; color: var(--muted); }
+.eh-act-quiet { margin: 14px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--hairline-2); }
+.eh-act-quiet-k { margin: 0 0 8px; font: 600 10.5px/1.4 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.eh-act-quiet-v { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.eh-act-qp { display: inline-flex; align-items: baseline; gap: 6px; min-height: 32px; padding: 6px 11px; border: 1px solid var(--hairline); border-radius: 99px; background: var(--surface); font: 600 12.5px/1.2 var(--font); color: var(--ink); cursor: pointer; }
+.eh-act-qp span { font-weight: 400; color: var(--muted); }
+.eh-act-qp:hover { border-color: color-mix(in srgb, var(--ink) 30%, transparent); }
+.eh-act-piece:focus-visible, .eh-act-qp:focus-visible, .eh-act-more:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .eh-act-card { padding: 18px 18px 14px; }
+  .eh-act-head { flex-direction: column; gap: 8px; }
+}
+
 .eh-tile { display: flex; flex-direction: column; min-width: 0; padding: 22px 24px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow-sm); }
 .eh-tile.is-main { background: #fdf3ee; border-color: #f2cdbd; color: var(--ink); box-shadow: var(--shadow-md); }
 .eh-tile-k { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font: 600 11px/1.2 var(--font); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
