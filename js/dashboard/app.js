@@ -273,7 +273,7 @@ const ROUTES = {
     icon: ICONS.meeting,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./meeting.js?v=2"),
+    loader: () => import("./meeting.js?v=3"),
   },
   // When to meet — availability polls. In the sidebar only for admins and for
   // people invited to an open poll (navIf); the link works for all staff.
@@ -284,7 +284,7 @@ const ROUTES = {
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
     navIf: () => getActiveRole() === "admin" || state.meetInvited,
-    loader: () => import("./meet.js?v=1"),
+    loader: () => import("./meet.js?v=2"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -570,7 +570,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-21"),
+    loader: () => import("./admin-import.js?v=theme-22"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -625,15 +625,70 @@ function watchNavSettings() {
   } catch (e) { console.warn(e); }
 }
 
-// ---------- When to meet in the sidebar ----------
-// Shown while you're invited to an open poll (admins always see it).
+// ---------- When to meet: sidebar + the red "share your times" banner ----------
+// When to meet shows in the sidebar while you're invited to an open poll
+// (admins always see it). An urgent poll you haven't answered yet (e.g. you
+// missed the last meeting) puts a red banner at the top of every page and a
+// red dot on the sidebar link, until you mark your times. See meet.js.
+const meetState = { polls: [], answered: new Set(), respUnsubs: new Map() };
 function watchMeetInvites() {
   try {
     onSnapshot(query(collection(db, "meet_polls"), where("invitedUids", "array-contains", state.user.uid)), (snap) => {
-      const invited = snap.docs.some((d) => d.data().status !== "closed");
+      meetState.polls = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.status !== "closed");
+      const invited = meetState.polls.length > 0;
+      // Watch my own answer on each open poll.
+      const ids = new Set(meetState.polls.map((p) => p.id));
+      for (const [id, un] of meetState.respUnsubs) if (!ids.has(id)) { un(); meetState.respUnsubs.delete(id); meetState.answered.delete(id); }
+      for (const id of ids) {
+        if (meetState.respUnsubs.has(id)) continue;
+        meetState.respUnsubs.set(id, onSnapshot(doc(db, "meet_polls", id, "responses", state.user.uid), (r) => {
+          if (r.exists() && (r.data().slots || []).length) meetState.answered.add(id); else meetState.answered.delete(id);
+          paintMeetUrgent();
+        }, () => {}));
+      }
       if (invited !== !!state.meetInvited) { state.meetInvited = invited; renderSidebar(); }
+      paintMeetUrgent();
     }, (err) => console.warn("[dashboard] meet polls", err?.message));
   } catch (e) { console.warn(e); }
+}
+// Urgent polls still waiting on me, soonest deadline first.
+function meetUrgentPolls() {
+  return meetState.polls.filter((p) => p.urgent && !meetState.answered.has(p.id))
+    .sort((a, b) => String(a.answerBy || "9").localeCompare(String(b.answerBy || "9")));
+}
+function meetByText(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "") + " ET";
+}
+function paintMeetDot() {
+  const urgent = meetUrgentPolls();
+  document.querySelectorAll('.nav-link[data-route="#/meet"]').forEach((a) => {
+    let dot = a.querySelector(".nav-urgent-dot");
+    if (urgent.length && !dot) { dot = el("span", { class: "nav-urgent-dot", "aria-label": "Needs your answer" }); a.querySelector(".nav-link-label")?.after(dot); }
+    if (!urgent.length && dot) dot.remove();
+  });
+}
+function paintMeetUrgent() {
+  paintMeetDot();
+  const urgent = meetUrgentPolls();
+  // Banner: every page except the poll itself and the Meeting page (which shows its own).
+  const content = document.getElementById("content");
+  content?.querySelectorAll(":scope > .meet-urgent").forEach((b) => b.remove());
+  const hash = location.hash || "";
+  const p = urgent[0];
+  if (!p || !content || hash.startsWith(`#/meet?poll=${p.id}`) || hash.startsWith("#/meeting")) return;
+  const by = meetByText(p.answerBy);
+  const late = p.answerBy && Date.parse(p.answerBy) < Date.now();
+  const banner = el("div", { class: "meet-urgent", role: "alert" });
+  banner.innerHTML = `
+    <span class="meet-urgent-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M12 14v2"/><circle cx="12" cy="18.5" r=".6" fill="currentColor"/></svg></span>
+    <span class="meet-urgent-text"><strong></strong><span></span></span>
+    <a class="meet-urgent-btn" href="#/meet?poll=${encodeURIComponent(p.id)}">Mark when you're free</a>`;
+  banner.querySelector("strong").textContent = p.reason || "You missed our last meeting, so we need your availability.";
+  banner.querySelector(".meet-urgent-text > span").textContent = late
+    ? `This was due ${by}. Please add your times now so we can find a time to meet.`
+    : `Please mark when you're free${by ? ` by ${by}` : " as soon as you can"}. It takes a minute.`;
+  content.prepend(banner);
 }
 
 // ---------- auth bootstrap ----------
@@ -912,6 +967,7 @@ function renderSidebar() {
   nav.appendChild(frag);
   const here = (location.hash || "").split("?")[0];
   nav.querySelectorAll(".nav-link").forEach((a) => a.classList.toggle("active", a.dataset.route === here));
+  paintMeetDot();
 
   // Ensure a default route exists
   if (!location.hash) location.hash = "#/overview";
@@ -998,6 +1054,7 @@ async function handleRoute() {
     state.currentRoute = hash;
     state.currentModule = mod;
     injectPreviewBanner(content);
+    paintMeetUrgent();
     // "Edit my bio" links (emails, notifications) carry ?bio=1.
     if (/[?&]bio=1\b/.test(hash)) {
       history.replaceState(null, "", hashPath);

@@ -2005,16 +2005,23 @@ export function meetingEmail({ meeting, kind = "scheduled", recipientName = "", 
   return { subject, html: shell({ title: subject, preheader: when, body, siteUrl }) };
 }
 
-export function meetPollInviteEmail({ poll, recipientName = "", inviterName = "", siteUrl }) {
+// nudge: a follow-up to someone who hasn't answered yet. An urgent poll
+// (poll.urgent) leads with its reason and the answer-by time, in red.
+export function meetPollInviteEmail({ poll, recipientName = "", inviterName = "", siteUrl, nudge = false }) {
   const url = `${siteUrl}/admin/#/meet?poll=${encodeURIComponent(poll.id || "")}`;
   const first = String(recipientName || "").trim().split(/\s+/)[0];
+  const by = poll.answerBy ? `${new Date(poll.answerBy).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "")} ET` : "";
   const days = (poll.dates || []).map((d) => {
     const [y, m, dd] = String(d).split("-").map(Number);
     return new Date(Date.UTC(y, m - 1, dd, 12)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
   });
   const body = `
     <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">Hi ${escapeHtml(first || "there")},</p>
-    <p style="margin:10px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">We're finding a time to meet, and we'd love your availability. It takes a minute: open the link, then drag over every time you're free. Anything you leave blank counts as busy.</p>
+    ${poll.urgent ? `<div style="margin:14px 0 0 0;padding:14px 16px;border-radius:10px;background:#fdecea;border:1px solid #f3b8b0;border-left:5px solid #c4321f;">
+      <div style="font-size:15px;font-weight:700;line-height:1.45;color:#8f1d10;">${escapeHtml(poll.reason || "You missed our last meeting, so we need your availability.")}</div>
+      ${by ? `<div style="margin-top:4px;font-size:14px;line-height:1.5;color:#6e1a10;">Please mark when you're free by <b>${escapeHtml(by)}</b>.</div>` : ""}
+    </div>` : ""}
+    <p style="margin:14px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">${nudge ? "A quick follow-up: we haven't seen your times yet." : "We're finding a time to meet, and we'd love your availability."} It takes a minute: open the link, then drag over every time you're free. Anything you leave blank counts as busy.</p>
     <div style="margin:18px 0 0 0;background:#eef6f0;border:1px solid #cfe4d6;border-radius:12px;padding:18px 20px;">
       <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#2f7d4f;margin-bottom:6px;">When to meet</div>
       <div style="font-size:19px;font-weight:700;letter-spacing:-0.01em;line-height:1.35;color:${COLORS.ink};">${escapeHtml(poll.title || "Find a time to meet")}</div>
@@ -2023,6 +2030,8 @@ export function meetPollInviteEmail({ poll, recipientName = "", inviterName = ""
     </div>
     <div style="margin:22px 0 0 0;"><a href="${escapeAttr(url)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:600;font-size:14px;">Mark when you're free</a></div>
     <p style="margin:24px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">Thank you,<br><span style="color:${COLORS.ink};font-weight:600;">${escapeHtml(inviterName || "The Catalyst")}</span></p>`;
-  const subject = `When can you meet? ${truncate(poll.title || "", 60)}`.trim();
-  return { subject, html: shell({ title: subject, preheader: "Drag over the times you're free. It takes a minute.", body, siteUrl }) };
+  const subject = (nudge ? `Reminder: when can you meet? ${truncate(poll.title || "", 50)}`
+    : poll.urgent ? `Action needed: your availability${by ? ` by ${by}` : ""}`
+    : `When can you meet? ${truncate(poll.title || "", 60)}`).trim();
+  return { subject, html: shell({ title: subject, preheader: poll.urgent && by ? `Please mark when you're free by ${by}.` : "Drag over the times you're free. It takes a minute.", body, siteUrl }) };
 }

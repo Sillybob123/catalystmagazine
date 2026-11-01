@@ -12,7 +12,15 @@
 //     windows are listed below, and an admin can turn one into the next team
 //     meeting (#/meeting?poll=…&date=…&start=…&end=…).
 //
+// Urgent polls (e.g. for people who missed the last meeting) carry urgent,
+// reason and answerBy: until someone answers, the Suite shows them a red
+// banner on every page (app.js paintMeetUrgent), and the poll opens with it.
+// The results can be narrowed to an edition section, the section editors,
+// writers or admins (from This edition), and "Who's free when" shows each
+// person's day as a row.
+//
 // Data: meet_polls/{id} { title, note, dates: ["YYYY-MM-DD"], invitedUids,
+// urgent, reason, answerBy (UTC ISO), nudgedAt,
 // invitees: [{ name, uids }], status: open|closed, createdAt, createdBy… } and
 // meet_polls/{id}/responses/{uid} { uid, name, slots: ["YYYY-MM-DDTHH:MM"] }.
 // Rules: admins manage polls; invitees read the poll and all answers, and
@@ -20,10 +28,11 @@
 
 import { db, auth } from "../firebase-config.js";
 import {
-  collection, doc, onSnapshot, query, where, orderBy, addDoc, setDoc, updateDoc, deleteDoc, getDocs,
+  collection, doc, onSnapshot, query, where, orderBy, addDoc, setDoc, updateDoc, deleteDoc, getDocs, getDoc,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, confirmDialog } from "./ui.js";
 import { loadPeople, mountPeoplePicker, peopleUids, PICKER_CSS } from "./people-picker.js?v=1";
+import { CURRENT_EDITION } from "./edition-deadlines.js?v=1";
 
 const START = 8, END = 21, STEP = 30;   // 8:00 AM to 9:00 PM ET, half-hours
 const SLOTS = (() => { const a = []; for (let m = START * 60; m < END * 60; m += STEP) a.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`); return a; })();
@@ -31,8 +40,51 @@ const nextSlot = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); const t
 const clock = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return `${((h + 11) % 12) + 1}${m ? `:${String(m).padStart(2, "0")}` : ""} ${h < 12 ? "AM" : "PM"}`; };
 const range = (a, b) => { const x = clock(a), y = clock(b); return x.slice(-2) === y.slice(-2) ? `${x.slice(0, -3)}–${y}` : `${x}–${y}`; };
 const day = (iso, opts = { weekday: "short", month: "short", day: "numeric" }) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", opts);
+const tomorrowIso = () => { const d = new Date(); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+// Eastern wall time → UTC ISO (same as meeting.js).
+function etToUtcIso(date, hhmm) {
+  const [y, mo, d] = date.split("-").map(Number);
+  const [h, mi] = hhmm.split(":").map(Number);
+  const guess = Date.UTC(y, mo - 1, d, h, mi);
+  const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })
+    .formatToParts(new Date(guess)).map((p) => [p.type, p.value]));
+  return new Date(guess + (guess - Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute))).toISOString();
+}
+const byText = (iso) => iso ? `${new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "")} ET` : "";
+const REASON = "You missed our last meeting, so we need your availability.";
+
+// Groups to narrow the results by: each section of the edition in progress
+// (its editor + writers, from This edition), section editors, writers, admins.
+let groupsCache = null;
+async function loadGroups() {
+  if (groupsCache) return groupsCache;
+  const [team, hub, pieces] = await Promise.all([
+    loadPeople().catch(() => []),
+    getDoc(doc(db, "edition_hub", CURRENT_EDITION)).catch(() => null),
+    getDocs(collection(db, "edition_hub", CURRENT_EDITION, "pieces")).catch(() => null),
+  ]);
+  const low = (x) => String(x || "").trim().toLowerCase();
+  const h = hub?.data?.() || {};
+  const sections = (h.sections || []).map((sec) => ({ id: sec.id, name: sec.name, names: new Set([low(sec.editor?.name)].filter(Boolean)), uids: new Set(sec.editor?.uids || []) }));
+  const writers = { names: new Set(), uids: new Set() };
+  pieces?.forEach((d) => {
+    const pc = d.data();
+    const sec = sections.find((x) => x.id === pc.section);
+    (pc.writers || []).forEach((w) => { if (w?.name) { sec?.names.add(low(w.name)); writers.names.add(low(w.name)); } });
+    (pc.writerUids || []).forEach((u) => { sec?.uids.add(u); writers.uids.add(u); });
+  });
+  const roleOf = new Map(team.map((p) => [low(p.name), p]));
+  const inSet = (set) => (p) => set.names.has(low(p.name)) || p.uids.some((u) => set.uids.has(u));
+  groupsCache = [
+    ...sections.map((sec) => ({ id: `s:${sec.id}`, label: sec.name, test: inSet(sec) })),
+    { id: "editors", label: "Section editors", test: (p) => !!roleOf.get(low(p.name))?.sectionEditor || sections.some((sec) => [...sec.names][0] === low(p.name)) },
+    { id: "writers", label: "Writers", test: inSet(writers) },
+    { id: "admins", label: "Admins", test: (p) => !!roleOf.get(low(p.name))?.roles?.has("admin") },
+  ];
+  return groupsCache;
+}
 
 // ─── the page ───────────────────────────────────────────────────────────────
 export async function mount(ctx, container) {
@@ -60,11 +112,14 @@ export async function mount(ctx, container) {
       await Promise.all(polls.map(async (p) => {
         try { const r = await getDocs(collection(db, "meet_polls", p.id, "responses")); p.responses = r.size; if (r.docs.some((d) => d.id === meUid)) answered.add(p.id); } catch { p.responses = 0; }
       }));
-      const open = polls.filter((p) => p.status !== "closed"), closed = polls.filter((p) => p.status === "closed");
-      const card = (p) => `<button type="button" class="mt-pollcard" data-open="${esc(p.id)}">
-        <span class="mt-pollcard-main"><b>${esc(p.title || "Find a time")}</b><small>${esc((p.dates || []).map((d) => day(d)).join(" · "))}</small></span>
-        <span class="mt-pollcard-side">${p.status === "closed" ? `<span class="mt-chip">Closed</span>` : answered.has(p.id) ? `<span class="mt-chip is-good">You've answered</span>` : `<span class="mt-chip is-todo">Add your times</span>`}<small>${p.responses || 0} of ${(p.invitees || []).length} answered</small></span>
+      const open = polls.filter((p) => p.status !== "closed").sort((a, b) => Number(!!b.urgent && !answered.has(b.id)) - Number(!!a.urgent && !answered.has(a.id))), closed = polls.filter((p) => p.status === "closed");
+      const card = (p) => {
+        const hot = p.urgent && p.status !== "closed" && !answered.has(p.id) && (p.invitedUids || []).includes(meUid);
+        return `<button type="button" class="mt-pollcard${hot ? " is-urgent" : ""}" data-open="${esc(p.id)}">
+        <span class="mt-pollcard-main">${hot ? `<em>${esc(p.reason || REASON)}</em>` : ""}<b>${esc(p.title || "Find a time")}</b><small>${esc((p.dates || []).map((d) => day(d)).join(" · "))}${p.answerBy ? ` · answer by ${esc(byText(p.answerBy))}` : ""}</small></span>
+        <span class="mt-pollcard-side">${p.status === "closed" ? `<span class="mt-chip">Closed</span>` : answered.has(p.id) ? `<span class="mt-chip is-good">You've answered</span>` : hot ? `<span class="mt-chip is-urgent">Needed from you</span>` : `<span class="mt-chip is-todo">Add your times</span>`}<small>${p.responses || 0} of ${(p.invitees || []).length} answered</small></span>
       </button>`;
+      };
       root.innerHTML = `
         <header class="mt-head"><h1>When to meet</h1><p>Mark the times you're free, and see when everyone else is. ${isAdmin ? `Create a new one in <a href="#/admin/advanced?tool=meet">Advanced tools → When to meet</a>.` : ""}</p></header>
         ${open.length ? `<div class="mt-pollcards">${open.map(card).join("")}</div>` : `<div class="mt-empty"><p>No open polls right now.</p></div>`}
@@ -76,6 +131,30 @@ export async function mount(ctx, container) {
   // One poll: your grid, everyone's heatmap, the best windows.
   function pollView(id) {
     let poll = null, responses = new Map(), mine = null, dirty = false, saveTimer = null, tab = "mine";
+    let groups = [], filter = "all", hidden = new Set(), whoDay = "";
+    loadGroups().then((g) => { groups = g; if (poll) { paintFilters(); paintGroup(); } }).catch(() => {});
+    // One delegated listener for the whole poll view (render() rebuilds the DOM).
+    root.addEventListener("click", async (e) => {
+      const f = e.target.closest("[data-filter]");
+      if (f) { filter = f.dataset.filter; paintFilters(); paintGroup(); return; }
+      const h = e.target.closest("[data-hide]");
+      if (h) { const n = h.dataset.hide; hidden.has(n) ? hidden.delete(n) : hidden.add(n); paintFilters(); paintGroup(); return; }
+      if (e.target.closest("[data-unhide]")) { hidden.clear(); paintFilters(); paintGroup(); return; }
+      const wd = e.target.closest("[data-whoday]");
+      if (wd) { whoDay = wd.dataset.whoday; paintByWho(shown(), [...(poll.dates || [])].sort()); return; }
+      const nb = e.target.closest("[data-nudge]");
+      if (nb) {
+        const uids = JSON.parse(nb.dataset.uids || "[]");
+        if (!uids.length || !(await confirmDialog(`Email and notify the ${nb.textContent.match(/\d+/)?.[0] || ""} people who haven't answered yet?`, { confirmText: "Send nudge" }))) return;
+        nb.disabled = true;
+        try {
+          const res = await ctx.authedFetch("/api/meet/notify", { method: "POST", body: JSON.stringify({ pollId: id, nudgeUids: uids }) });
+          const data = await res.json().catch(() => ({}));
+          toast(res.ok ? `Nudged ${plural(data.emailed || 0, "person", "people")}.` : (data.error || "Couldn't send the nudge."), res.ok ? "success" : "error");
+        } catch { toast("Couldn't send the nudge.", "error"); }
+        nb.disabled = false;
+      }
+    });
     root.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>`;
     unsubs.push(onSnapshot(doc(db, "meet_polls", id), (s) => { poll = s.exists() ? { id: s.id, ...s.data() } : null; render(); },
       () => { root.innerHTML = `<div class="mt-empty"><h2>You're not invited to this one.</h2><p><a href="#/meet">See your polls</a></p></div>`; }));
@@ -107,6 +186,32 @@ export async function mount(ctx, container) {
       return list;
     }
 
+    // Everyone in the current view: the chosen group, minus anyone hidden.
+    function shown() {
+      const g = groups.find((x) => x.id === filter);
+      return people().filter((p) => (!g || g.test(p)) && !hidden.has(p.name));
+    }
+
+    function paintFilters() {
+      const box = root.querySelector(".mt-filters");
+      if (!box || !poll) return;
+      const all = people();
+      const chips = [{ id: "all", label: "Everyone", n: all.length }, ...groups.map((g) => ({ id: g.id, label: g.label, n: all.filter(g.test).length }))].filter((c) => c.id === "all" || c.n);
+      if (chips.length < 2 && !hidden.size) { box.innerHTML = ""; return; }
+      box.innerHTML = `<span class="mt-filters-label">Show</span>${chips.map((c) => `<button type="button" class="mt-fchip${filter === c.id ? " is-on" : ""}" data-filter="${esc(c.id)}" aria-pressed="${filter === c.id}">${esc(c.label)}<span>${c.n}</span></button>`).join("")}${hidden.size ? `<button type="button" class="mt-link" data-unhide>Show ${hidden.size} hidden</button>` : ""}`;
+    }
+
+    // Red box for an urgent poll you haven't answered; a thank-you once you have.
+    function paintUrgent() {
+      const box = root.querySelector(".mt-urgentbox");
+      if (!box || !poll) return;
+      const invited = (poll.invitedUids || []).includes(meUid);
+      if (!poll.urgent || !invited || poll.status === "closed") { box.innerHTML = ""; return; }
+      if (mine && mine.size) { box.innerHTML = `<div class="mt-done">Thank you, your times are in. We'll set a time and let you know.</div>`; return; }
+      const late = poll.answerBy && Date.parse(poll.answerBy) < Date.now();
+      box.innerHTML = `<div class="mt-urgent"><b>${esc(poll.reason || REASON)}</b><span>${late ? `This was due ${esc(byText(poll.answerBy))}. Please add your times now.` : poll.answerBy ? `Please mark when you're free by ${esc(byText(poll.answerBy))}.` : "Please mark when you're free as soon as you can."} Drag over the times below.</span></div>`;
+    }
+
     function render() {
       if (!poll) { root.innerHTML = `<div class="mt-empty"><h2>This poll is gone.</h2><p><a href="#/meet">See your polls</a></p></div>`; return; }
       if (!mine) mine = new Set(responses.get(meUid)?.slots || []);
@@ -116,9 +221,11 @@ export async function mount(ctx, container) {
         <header class="mt-head">
           <div class="mt-head-row"><h1>${esc(poll.title || "Find a time")}</h1>${poll.status === "closed" ? `<span class="mt-chip">Closed</span>` : ""}</div>
           ${poll.note ? `<p class="mt-note">${esc(poll.note)}</p>` : ""}
-          <p class="mt-sub">${esc(dates.map((d) => day(d, { weekday: "long", month: "short", day: "numeric" })).join(" · "))} · 8 AM–9 PM, Eastern Time</p>
-          ${isAdmin ? `<div class="mt-admin"><button type="button" class="btn btn-ghost btn-sm" data-status>${poll.status === "closed" ? "Reopen the poll" : "Close the poll"}</button></div>` : ""}
+          <p class="mt-sub">${esc(dates.map((d) => day(d, { weekday: "long", month: "short", day: "numeric" })).join(" · "))} · 8 AM–9 PM, Eastern Time${poll.answerBy ? ` · Answer by ${esc(byText(poll.answerBy))}` : ""}</p>
+          ${isAdmin ? `<div class="mt-admin"><button type="button" class="btn btn-ghost btn-sm" data-status>${poll.status === "closed" ? "Reopen the poll" : "Close the poll"}</button><button type="button" class="btn btn-secondary btn-sm" data-nudge hidden></button></div>` : ""}
         </header>
+        <div class="mt-urgentbox" aria-live="polite"></div>
+        <div class="mt-filters" role="group" aria-label="Show availability for"></div>
         <div class="mt-tabs" role="tablist"><button type="button" role="tab" data-tab="mine" aria-selected="${tab === "mine"}">Your times</button><button type="button" role="tab" data-tab="group" aria-selected="${tab === "group"}">Everyone</button></div>
         <div class="mt-panels" data-tab-now="${tab}">
           <section class="mt-panel mt-panel-mine">
@@ -134,7 +241,9 @@ export async function mount(ctx, container) {
           </section>
         </div>
         <section class="mt-best"></section>
+        <section class="mt-bywho"></section>
         <section class="mt-who"></section>`;
+      paintFilters();
       paintGroup();
       wire();
     }
@@ -162,7 +271,7 @@ export async function mount(ctx, container) {
     function paintGroup() {
       if (!poll || !root.querySelector(".mt-groupgrid")) return;
       const dates = [...(poll.dates || [])].sort();
-      const ppl = people(), total = ppl.length || 1;
+      const ppl = shown(), total = ppl.length || 1;
       const count = (k) => ppl.filter((p) => p.slots.has(k)).length;
       const g = root.querySelector(".mt-groupgrid");
       g.innerHTML = grid(dates, "group");
@@ -174,7 +283,31 @@ export async function mount(ctx, container) {
       });
       root.querySelector(".mt-legend").innerHTML = `<span>0/${total}</span><i></i><span>${total}/${total} free</span>`;
       paintBest(ppl, dates, total);
-      paintWho(ppl);
+      paintByWho(ppl, dates);
+      paintWho(people());
+      paintUrgent();
+      const nb = root.querySelector("[data-nudge]");
+      if (nb) {
+        const waiting = people().filter((p) => !p.answered && p.uids.length);
+        nb.hidden = !waiting.length || poll.status === "closed";
+        nb.textContent = `Nudge the ${waiting.length} who haven't answered`;
+        nb.dataset.uids = JSON.stringify(waiting.flatMap((p) => p.uids));
+      }
+    }
+
+    // Who's free when: one row per person for a chosen day.
+    function paintByWho(ppl, dates) {
+      const box = root.querySelector(".mt-bywho");
+      if (!box) return;
+      if (!dates.includes(whoDay)) whoDay = dates[0] || "";
+      const rows = [...ppl].sort((a, b) => b.slots.size - a.slots.size || a.name.localeCompare(b.name));
+      box.innerHTML = `<h2 class="mt-h2">Who's free when</h2>
+        <div class="mt-daytabs">${dates.map((d) => `<button type="button" class="mt-fchip${d === whoDay ? " is-on" : ""}" data-whoday="${d}" aria-pressed="${d === whoDay}">${esc(day(d))}</button>`).join("")}</div>
+        ${rows.length ? `<div class="mt-tl-wrap"><div class="mt-tl" style="--n:${SLOTS.length}">
+          <div class="mt-tl-name"></div>${SLOTS.map((t) => `<div class="mt-tl-h">${t.endsWith(":00") && Number(t.slice(0, 2)) % 2 === 0 ? esc(clock(t).replace(" ", "\u00a0")) : ""}</div>`).join("")}
+          ${rows.map((p) => `<div class="mt-tl-name${p.answered ? "" : " is-none"}" title="${esc(p.name)}">${esc(p.name)}${p.answered ? "" : " <small>no answer</small>"}</div>${SLOTS.map((t) => `<div class="mt-tl-c${p.slots.has(`${whoDay}T${t}`) ? " is-on" : ""}${t.endsWith(":00") ? " is-hour" : ""}" title="${esc(`${p.name}: ${clock(t)}`)}"></div>`).join("")}`).join("")}
+          <div class="mt-tl-name mt-tl-total">Free</div>${SLOTS.map((t) => { const n = rows.filter((p) => p.slots.has(`${whoDay}T${t}`)).length; return `<div class="mt-tl-n${n === rows.length && n ? " is-all" : ""}">${n || ""}</div>`; }).join("")}
+        </div></div>` : `<p class="mt-hint">No one in this group.</p>`}`;
     }
 
     // The best windows: runs of half-hours where the same people are free.
@@ -208,11 +341,11 @@ export async function mount(ctx, container) {
     function paintWho(ppl) {
       const box = root.querySelector(".mt-who");
       const done = ppl.filter((p) => p.answered).length;
-      box.innerHTML = `<h2 class="mt-h2">Who's answered <span>${done} of ${ppl.length}</span></h2><p class="mt-people">${ppl.map((p) => `<span class="mt-person${p.answered ? " is-done" : ""}">${p.answered ? "&#10003; " : ""}${esc(p.name)}</span>`).join("")}</p>`;
+      box.innerHTML = `<h2 class="mt-h2">Who's answered <span>${done} of ${ppl.length}</span></h2><p class="mt-people">${ppl.map((p) => `<button type="button" class="mt-person${p.answered ? " is-done" : ""}${hidden.has(p.name) ? " is-hidden" : ""}" data-hide="${esc(p.name)}" aria-pressed="${!hidden.has(p.name)}" title="${hidden.has(p.name) ? "Show" : "Hide"} ${esc(p.name)} in the results">${p.answered ? "&#10003; " : ""}${esc(p.name)}</button>`).join("")}</p><p class="mt-hint">Tap a name to leave them out of the results (or bring them back).</p>`;
     }
 
     function info(k) {
-      const ppl = people();
+      const ppl = shown();
       const free = ppl.filter((p) => p.slots.has(k)).map((p) => p.name);
       const busy = ppl.filter((p) => !p.slots.has(k)).map((p) => p.name);
       const box = root.querySelector(".mt-info");
@@ -305,13 +438,25 @@ export async function mountMeetTool(ctx, root, paneHeader) {
   box.innerHTML = `
     <form class="mt-form" novalidate>
       <label class="mt-f"><span>Title</span><input class="input" name="title" maxlength="120" value="Catch-up meeting" required></label>
-      <label class="mt-f"><span>Note (optional)</span><textarea class="input" name="note" rows="2" maxlength="600" placeholder="For anyone who missed Sunday's meeting: let's find a time this week."></textarea></label>
+      <label class="mt-f"><span>Note (optional)</span><textarea class="input" name="note" rows="2" maxlength="600" placeholder="First drafts are due Wednesday, so let's catch up before then."></textarea></label>
+      <fieldset class="mt-urgentset">
+        <label class="mt-check"><input type="checkbox" name="urgent" checked> <span><b>Urgent</b>: show it in red at the top of their Suite until they answer</span></label>
+        <div class="mt-urgentfields">
+          <label class="mt-f"><span>Why (shown in red)</span><input class="input" name="reason" maxlength="160" value="${esc(REASON)}"></label>
+          <div class="mt-f2">
+            <label class="mt-f"><span>Answer by (day)</span><input class="input" type="date" name="byDay" value="${esc(tomorrowIso())}"></label>
+            <label class="mt-f"><span>Time (ET)</span><input class="input" type="time" name="byTime" step="900" value="21:00"></label>
+          </div>
+        </div>
+      </fieldset>
       <div class="mt-f"><span>Days</span><div class="mt-cal"></div><div class="mt-daychips"></div></div>
       <div class="mt-f"><span>Who's invited</span><div class="mt-picker"></div></div>
       <div class="mt-form-foot"><span class="mt-form-msg" aria-live="polite"></span><button type="submit" class="btn btn-primary">Create and invite</button></div>
     </form>`;
   const form = box.querySelector("form");
   const msg = box.querySelector(".mt-form-msg");
+  const syncUrgent = () => { box.querySelector(".mt-urgentfields").hidden = !form.urgent.checked; };
+  form.urgent.addEventListener("change", syncUrgent);
   const cal = box.querySelector(".mt-cal");
   const chips = box.querySelector(".mt-daychips");
   const paintCal = () => {
@@ -342,19 +487,26 @@ export async function mountMeetTool(ctx, root, paneHeader) {
     if (!title) { msg.textContent = "Add a title."; return; }
     if (!dates.size) { msg.textContent = "Pick at least one day."; return; }
     if (!names.size) { msg.textContent = "Invite at least one person."; return; }
+    const urgent = form.urgent.checked;
+    let answerBy = "";
+    if (form.byDay.value && form.byTime.value) {
+      answerBy = etToUtcIso(form.byDay.value, form.byTime.value);
+      if (Date.parse(answerBy) <= Date.now()) { msg.textContent = "The answer-by time has already passed."; return; }
+    }
     const btn = form.querySelector('[type="submit"]'); btn.disabled = true; msg.textContent = "Creating…";
     try {
       const invitees = people.filter((p) => names.has(p.name)).map((p) => ({ name: p.name, uids: p.uids }));
       const ref = await addDoc(collection(db, "meet_polls"), {
         title, note: form.note.value.trim(), dates: [...dates].sort(), startHour: START, endHour: END, slotMinutes: STEP,
         invitedUids: peopleUids(people, names), invitees, status: "open",
+        urgent, reason: urgent ? (form.reason.value.trim() || REASON) : "", answerBy,
         createdAt: new Date().toISOString(), createdBy: ctx.user?.uid || "", createdByName: ctx.profile?.name || "",
       });
       msg.textContent = "Sending invites…";
       const res = await ctx.authedFetch("/api/meet/notify", { method: "POST", body: JSON.stringify({ pollId: ref.id }) });
       const data = await res.json().catch(() => ({}));
       toast(res.ok ? `Poll created. Invited ${plural(invitees.length, "person", "people")}${data.failed ? ` (${data.failed} email${data.failed === 1 ? "" : "s"} failed)` : ""}.` : "Poll created, but the invites didn't send. Use Resend invites.", res.ok ? "success" : "info");
-      dates.clear(); names.clear(); form.reset(); form.title.value = "Catch-up meeting"; paintCal();
+      dates.clear(); names.clear(); form.reset(); form.title.value = "Catch-up meeting"; syncUrgent(); paintCal();
       mountPeoplePicker(box.querySelector(".mt-picker"), people, names);
       msg.textContent = "";
     } catch (err) {
@@ -369,7 +521,7 @@ export async function mountMeetTool(ctx, root, paneHeader) {
     const polls = s.docs.map((d) => ({ id: d.id, ...d.data() }));
     await Promise.all(polls.map(async (p) => { try { p.responses = (await getDocs(collection(db, "meet_polls", p.id, "responses"))).size; } catch { p.responses = 0; } }));
     list.innerHTML = polls.length ? `<h3 class="mt-h2">Your polls</h3><ul class="mt-rows">${polls.map((p) => `<li class="mt-row">
-      <div><b>${esc(p.title)}</b><small>${esc((p.dates || []).map((d) => day(d)).join(" · "))} · ${p.responses} of ${(p.invitees || []).length} answered${p.status === "closed" ? " · closed" : ""}</small></div>
+      <div><b>${esc(p.title)}</b>${p.urgent ? ` <span class="mt-chip is-urgent">Urgent</span>` : ""}<small>${esc((p.dates || []).map((d) => day(d)).join(" · "))} · ${p.responses} of ${(p.invitees || []).length} answered${p.answerBy ? ` · answer by ${esc(byText(p.answerBy))}` : ""}${p.status === "closed" ? " · closed" : ""}</small></div>
       <div class="mt-row-actions"><a class="btn btn-secondary btn-sm" href="#/meet?poll=${esc(p.id)}">Open</a>
       <button type="button" class="btn btn-ghost btn-sm" data-resend="${esc(p.id)}">Resend invites</button>
       <button type="button" class="btn btn-ghost btn-sm" data-toggle="${esc(p.id)}" data-status="${esc(p.status || "open")}">${p.status === "closed" ? "Reopen" : "Close"}</button>
@@ -463,6 +615,42 @@ function injectStyle() {
 .mt-people { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
 .mt-person { padding: 6px 11px; border-radius: 99px; background: var(--surface-3); font-size: 13px; color: var(--muted); }
 .mt-person.is-done { background: #e3f1e7; color: #2f7d4f; font-weight: 600; }
+.mt-chip.is-urgent { background: #fdecea; color: #b42318; }
+.mt-pollcard.is-urgent { border: 1px solid #f3b8b0; border-left: 5px solid #c4321f; background: #fff5f3; }
+.mt-pollcard em { font-style: normal; font: 700 12.5px/1.4 var(--font); color: #b42318; }
+.mt-urgent { display: flex; flex-direction: column; gap: 3px; margin: 0 0 18px; padding: 14px 18px; border-radius: 14px; background: #fdecea; border: 1px solid #f3b8b0; border-left: 5px solid #c4321f; color: #6e1a10; font-size: 14px; line-height: 1.5; }
+.mt-urgent b { font-size: 16px; color: #8f1d10; }
+.mt-done { margin: 0 0 18px; padding: 12px 16px; border-radius: 14px; background: #e3f1e7; color: #245f3c; font: 600 14px/1.5 var(--font); }
+.mt-admin { display: flex; flex-wrap: wrap; gap: 8px; }
+.mt-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 14px; }
+.mt-filters-label { font: 600 12px var(--font); color: var(--muted); margin-right: 4px; text-transform: uppercase; letter-spacing: .08em; }
+.mt-fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 13px; border: 1px solid var(--hairline); border-radius: 99px; background: var(--surface); font: 500 13px var(--font); color: var(--ink-2); cursor: pointer; }
+.mt-fchip span { font-size: 11.5px; color: var(--muted); }
+.mt-fchip:hover { border-color: color-mix(in srgb, var(--ink) 28%, transparent); }
+.mt-fchip.is-on { background: #2f7d4f; border-color: #2f7d4f; color: #f4fbf6; font-weight: 600; }
+.mt-fchip.is-on span { color: #d4ecdc; }
+.mt-fchip:focus-visible, .mt-person:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+button.mt-person { border: 0; font: inherit; font-size: 13px; cursor: pointer; min-height: 32px; }
+.mt-person.is-hidden { opacity: .45; text-decoration: line-through; }
+.mt-daytabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.mt-tl-wrap { overflow-x: auto; padding: 14px 16px 10px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface); }
+.mt-tl { display: grid; grid-template-columns: minmax(120px, 170px) repeat(var(--n), minmax(16px, 1fr)); row-gap: 4px; min-width: 620px; }
+.mt-tl-h { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: visible; height: 16px; }
+.mt-tl-name { padding-right: 10px; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; align-self: center; }
+.mt-tl-name.is-none { color: var(--muted); font-weight: 500; }
+.mt-tl-name small { font-size: 11px; font-weight: 500; }
+.mt-tl-c { height: 22px; background: var(--surface-2); border-left: 1px dotted var(--hairline-2); }
+.mt-tl-c.is-hour { border-left: 1px solid var(--hairline); }
+.mt-tl-c.is-on { background: #3f8f5c; border-left-color: rgba(255,255,255,.25); }
+.mt-tl-total { color: var(--muted); font-weight: 600; font-size: 12px; padding-top: 4px; }
+.mt-tl-n { font-size: 11px; color: var(--muted); text-align: center; padding-top: 4px; }
+.mt-tl-n.is-all { color: #2f7d4f; font-weight: 700; }
+.mt-urgentset { margin: 0; padding: 12px 14px; border: 1px solid #f3b8b0; border-radius: 14px; background: #fff5f3; display: flex; flex-direction: column; gap: 10px; }
+.mt-urgentfields { display: flex; flex-direction: column; gap: 10px; }
+.mt-urgentfields[hidden] { display: none; }
+.mt-check { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 14px; cursor: pointer; }
+.mt-check b { color: #b42318; }
+.mt-f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 /* Advanced tools */
 .mt-form { display: flex; flex-direction: column; gap: 16px; max-width: 720px; }
 .mt-f { display: flex; flex-direction: column; gap: 6px; } .mt-f > span { font: 600 12.5px var(--font); color: var(--ink); }

@@ -23,7 +23,7 @@
 
 import { db } from "../firebase-config.js";
 import {
-  collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, getDoc,
+  collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, getDoc, query, where,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, openModal, confirmDialog } from "./ui.js";
 import { loadPeople, mountPeoplePicker, peopleUids, PICKER_CSS } from "./people-picker.js?v=1";
@@ -76,12 +76,30 @@ export async function mount(ctx, container) {
   const root = el("div", { class: "mg" });
   container.innerHTML = "";
   container.appendChild(root);
-  let meetings = [], tick = null;
+  let meetings = [], tick = null, urgent = [], loaded = false;
   root.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>`;
   const unsub = onSnapshot(collection(db, "meetings"), (s) => {
     meetings = s.docs.map((d) => ({ id: d.id, ...d.data() }));
+    loaded = true;
     render();
   }, () => { root.innerHTML = `<div class="mg-empty"><p>Couldn't load meetings.</p></div>`; });
+  // Urgent When to meet polls still waiting on me (e.g. I missed the last
+  // meeting): they come first on this page, in red.
+  const meUid = ctx.user?.uid || "";
+  const answered = new Map();
+  const unsubPolls = meUid ? onSnapshot(query(collection(db, "meet_polls"), where("invitedUids", "array-contains", meUid)), (s) => {
+    const open = s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.urgent && p.status !== "closed");
+    for (const [pid, un] of answered) if (!open.some((p) => p.id === pid)) { un.off(); answered.delete(pid); }
+    open.forEach((p) => {
+      if (answered.has(p.id)) return;
+      const rec = { done: false, off: () => {} };
+      answered.set(p.id, rec);
+      rec.off = onSnapshot(doc(db, "meet_polls", p.id, "responses", meUid), (r) => { rec.done = r.exists() && (r.data().slots || []).length > 0; refreshUrgent(); }, () => {});
+    });
+    urgent = open; refreshUrgent();
+  }, () => {}) : () => {};
+  function refreshUrgent() { urgent = urgent.filter(Boolean); if (loaded) render(); }
+
   root.addEventListener("click", (e) => {
     if (e.target.closest("[data-new]")) editMeeting(null);
     const b = e.target.closest("[data-edit]");
@@ -102,7 +120,7 @@ export async function mount(ctx, container) {
     history.replaceState(null, "", "#/meeting");
     editMeeting(null, preset);
   }
-  return () => { unsub(); clearInterval(tick); };
+  return () => { unsub(); unsubPolls(); answered.forEach((r) => r.off()); clearInterval(tick); };
 
   function render() {
     const now = Date.now();
@@ -118,6 +136,7 @@ export async function mount(ctx, container) {
         <div><h1>Meeting</h1><p>When we're meeting next, what we'll cover, and how to join.</p></div>
         ${isAdmin ? `<button type="button" class="btn btn-primary" data-new>Set the next meeting</button>` : ""}
       </header>
+      ${urgentCards()}
       ${next ? nextCard(next, now) : `<section class="mg-none"><h2>No meeting on the calendar yet.</h2><p>${isAdmin ? "Set the next one. You can publish it quietly or email everyone, and send a reminder whenever you like." : "When the next one is set, it shows up here, usually with an email and a reminder before."}</p></section>`}
       ${drafts.length ? `<h2 class="mg-h2">Drafts <span>only admins see these</span></h2><ul class="mg-rows">${drafts.map((m) => row(m, "draft")).join("")}</ul>` : ""}
       ${later.length ? `<h2 class="mg-h2">Also coming up</h2><ul class="mg-rows">${later.map((m) => row(m)).join("")}</ul>` : ""}
@@ -127,6 +146,21 @@ export async function mount(ctx, container) {
         <p class="mg-why-foot">Can't make it? Tell your section editor before the meeting so they can catch you up.</p>
       </section>
       ${past.length ? `<h2 class="mg-h2">Past meetings</h2><ul class="mg-rows">${past.map((m) => row(m, "past")).join("")}</ul>` : ""}`;
+  }
+
+  function urgentCards() {
+    const waiting = urgent.filter((p) => !answered.get(p.id)?.done);
+    return waiting.map((p) => {
+      const by = p.answerBy ? new Date(p.answerBy).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "") + " ET" : "";
+      const late = p.answerBy && Date.parse(p.answerBy) < Date.now();
+      return `<section class="mg-urgent" role="alert">
+        <span class="mg-urgent-tag">First, before the next meeting</span>
+        <h2>${esc(p.reason || "You missed our last meeting, so we need your availability.")}</h2>
+        <p>${late ? `This was due ${esc(by)}. Please add your times now` : by ? `Please mark when you're free by <b>${esc(by)}</b>` : "Please mark when you're free as soon as you can"}, so we can catch you up.</p>
+        ${p.note ? `<p class="mg-urgent-note">${esc(p.note)}</p>` : ""}
+        <a class="mg-urgent-btn" href="#/meet?poll=${esc(p.id)}">Mark when you're free</a>
+      </section>`;
+    }).join("");
   }
 
   function nextCard(m, now) {
@@ -397,6 +431,14 @@ function injectStyle() {
 .mg-aud { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
 .mg-aud label { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
 .mg-picker { margin-top: 6px; }
+.mg-urgent { margin: 0 0 18px; padding: 22px 26px; border-radius: 20px; background: #fdecea; border: 1px solid #f3b8b0; border-left: 6px solid #c4321f; color: #6e1a10; }
+.mg-urgent-tag { display: inline-flex; padding: 4px 12px; border-radius: 99px; background: #b42318; color: #fff8f6; font: 700 11.5px/1.5 var(--font); letter-spacing: .02em; }
+.mg-urgent h2 { margin: 12px 0 0; font: 600 clamp(19px, 2.4vw, 23px)/1.3 var(--font); letter-spacing: -0.02em; color: #8f1d10; }
+.mg-urgent p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.6; }
+.mg-urgent .mg-urgent-note { margin-top: 4px; color: #8a3b30; white-space: pre-wrap; }
+.mg-urgent-btn { display: inline-flex; align-items: center; min-height: 44px; margin-top: 14px; padding: 0 20px; border-radius: 999px; background: #b42318; color: #fff8f6; font: 600 14px var(--font); text-decoration: none; }
+.mg-urgent-btn:hover { background: #962012; }
+.mg-urgent-btn:focus-visible { outline: 2px solid #6e1a10; outline-offset: 2px; }
 .mg-check { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 14px; cursor: pointer; }
 .mg-remind { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed #e3cfa5; }
 .mg-remind .btn { min-height: 40px; }
