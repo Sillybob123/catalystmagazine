@@ -1957,14 +1957,19 @@ function gcalLink(m) {
 
 const WHY_ATTEND = "Our meetings are where the edition comes together: deadlines get set, pieces get feedback, and each section plans its next steps. Being there, on time, means you hear decisions first-hand, get help before you're stuck, and keep your editor and co-writers in the loop. If you can't make it, let your section editor know ahead of time.";
 
-// kind: "scheduled" (first publish), "updated" (republished with changes), "reminder" (about a day before)
-export function meetingEmail({ meeting, kind = "scheduled", recipientName = "", siteUrl }) {
+// kind: "scheduled" (first publish), "updated" (republished with changes),
+// "reminder" (the automatic one a day before, or one an admin sends or
+// schedules). `message` is an optional line from the admin, shown up top.
+export function meetingEmail({ meeting, kind = "scheduled", recipientName = "", siteUrl, message = "" }) {
   const when = meetingWhenText(meeting);
   const pageUrl = `${siteUrl}/admin/#/meeting`;
   const first = String(recipientName || "").trim().split(/\s+/)[0];
-  // A reminder for a meeting later today says "today", not "tomorrow".
+  // A reminder says "today", "tomorrow", or "on Sunday" (Eastern dates).
   const etToday = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-  const dayWord = meeting.date === etToday ? "today" : "tomorrow";
+  const daysOut = Math.round((Date.parse(`${meeting.date}T12:00:00Z`) - Date.parse(`${etToday}T12:00:00Z`)) / 86400000);
+  const weekday = meeting.date ? new Date(`${meeting.date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" }) : "";
+  const dayWord = daysOut <= 0 ? "today" : daysOut === 1 ? "tomorrow" : daysOut < 7 ? `on ${weekday}` : "coming up";
+  const dayCap = daysOut <= 0 ? "Today" : daysOut === 1 ? "Tomorrow" : "Reminder";
   const lead = {
     scheduled: "Our next team meeting is set. Here's everything you need:",
     updated: "Our next team meeting has been updated. Here are the latest details:",
@@ -1983,6 +1988,7 @@ export function meetingEmail({ meeting, kind = "scheduled", recipientName = "", 
     </div>
     ${agenda.length ? `<div style="margin:20px 0 0 0;font-size:13px;font-weight:700;color:${COLORS.ink};">On the agenda</div>
     <ul style="margin:8px 0 0 0;padding-left:20px;font-size:15px;line-height:1.65;color:${COLORS.inkSoft};">${agenda.map((a) => `<li>${escapeHtml(a)}</li>`).join("")}</ul>` : ""}
+    ${message ? `<p style="margin:14px 0 0 0;padding:12px 14px;border-left:3px solid #c98a2b;background:#fbf6ec;font-size:15px;line-height:1.6;color:${COLORS.ink};white-space:pre-wrap;">${escapeHtml(message)}</p>` : ""}
     ${meeting.note ? `<p style="margin:16px 0 0 0;font-size:15px;line-height:1.65;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(meeting.note)}</p>` : ""}
     <div style="margin:22px 0 0 0;">
       ${meeting.link ? `<a href="${escapeAttr(meeting.link)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600;font-size:14px;margin:0 8px 8px 0;">Join the meeting</a>` : ""}
@@ -1994,7 +2000,7 @@ export function meetingEmail({ meeting, kind = "scheduled", recipientName = "", 
       <div style="font-size:14px;line-height:1.6;color:${COLORS.inkSoft};">${escapeHtml(WHY_ATTEND)}</div>
     </div>
     <p style="margin:24px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">See you there,<br><span style="color:${COLORS.ink};font-weight:600;">The Catalyst</span></p>`;
-  const prefix = { scheduled: "Team meeting", updated: "Updated: team meeting", reminder: `${dayWord === "today" ? "Today" : "Tomorrow"}: team meeting` }[kind] || "Team meeting";
+  const prefix = { scheduled: "Team meeting", updated: "Updated: team meeting", reminder: `${dayCap}: team meeting` }[kind] || "Team meeting";
   const subject = `${prefix}, ${when}`;
   return { subject, html: shell({ title: subject, preheader: when, body, siteUrl }) };
 }

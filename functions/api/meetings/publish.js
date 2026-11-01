@@ -23,10 +23,10 @@ export const onRequestPost = async ({ request, env }) => {
     if (!raw) return badRequest("That meeting doesn't exist.");
     const meeting = { id: meetingId, ...fromFirestoreDoc(raw).data };
     if (!meeting.date || !meeting.start || !meeting.end || !meeting.startsAt) return badRequest("The meeting needs a date and times.");
-    const kind = meeting.publishedAt ? "updated" : "scheduled";
+    const kind = meeting.emailedAt ? "updated" : "scheduled";   // published quietly before? Still the first email
     const now = new Date().toISOString();
     await firestoreUpdate(env, `meetings/${meetingId}`, { status: "published", publishedAt: meeting.publishedAt || now, emailedAt: now });
-    const result = await emailMeeting(env, meeting, kind, { actorId: auth.uid, actorName: auth.name || "" });
+    const result = await emailMeeting(env, meeting, kind, { actorId: auth.uid, actorName: auth.name || "", tag: now });
     await firestoreUpdate(env, `meetings/${meetingId}`, { emailedCount: result.emailed }).catch(() => {});
     return json({ ok: true, kind, ...result });
   } catch (err) {

@@ -273,7 +273,7 @@ const ROUTES = {
     icon: ICONS.meeting,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./meeting.js?v=1"),
+    loader: () => import("./meeting.js?v=2"),
   },
   // When to meet — availability polls. In the sidebar only for admins and for
   // people invited to an open poll (navIf); the link works for all staff.

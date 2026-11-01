@@ -15,6 +15,9 @@
 // Data: meetings/{id} { title, date "YYYY-MM-DD", start "HH:MM", end, startsAt,
 // endsAt (UTC ISO), link, agenda, note, audience: all|people, invitedUids,
 // invitees: [{ name, uids }], status: draft|published|cancelled, pollId,
+// autoReminder (default on: the email about a day before), reminders:
+// [{ id, at, message, by, byName, sentAt }] (scheduled by an admin, sent by
+// the cron), lastReminderAt,
 // createdAt, createdBy, publishedAt, emailedAt, remindedFor }.
 // Rules: staff read, admins write.
 
@@ -62,6 +65,9 @@ function countdown(m, now = Date.now()) {
   const days = Math.round(hrs / 24);
   return { text: days === 1 ? "Tomorrow" : `In ${days} days` };
 }
+// "Sat, Nov 7, 6 PM ET" for a UTC ISO time.
+const whenShort = (iso) => `${new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "")} ET`;
+const ICON_BELL = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:6px;vertical-align:-2px"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
 const safeLink = (u) => /^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : "";
 
 export async function mount(ctx, container) {
@@ -80,6 +86,8 @@ export async function mount(ctx, container) {
     if (e.target.closest("[data-new]")) editMeeting(null);
     const b = e.target.closest("[data-edit]");
     if (b) editMeeting(meetings.find((m) => m.id === b.dataset.edit));
+    const r = e.target.closest("[data-remind]");
+    if (r) remindDialog(meetings.find((m) => m.id === r.dataset.remind));
   });
 
   tick = setInterval(() => { if (document.contains(root)) render(); }, 60000);
@@ -110,7 +118,7 @@ export async function mount(ctx, container) {
         <div><h1>Meeting</h1><p>When we're meeting next, what we'll cover, and how to join.</p></div>
         ${isAdmin ? `<button type="button" class="btn btn-primary" data-new>Set the next meeting</button>` : ""}
       </header>
-      ${next ? nextCard(next, now) : `<section class="mg-none"><h2>No meeting on the calendar yet.</h2><p>${isAdmin ? "Set the next one and everyone it's for gets an email, then a reminder the day before." : "You'll get an email as soon as the next one is set, and a reminder the day before."}</p></section>`}
+      ${next ? nextCard(next, now) : `<section class="mg-none"><h2>No meeting on the calendar yet.</h2><p>${isAdmin ? "Set the next one. You can publish it quietly or email everyone, and send a reminder whenever you like." : "When the next one is set, it shows up here, usually with an email and a reminder before."}</p></section>`}
       ${drafts.length ? `<h2 class="mg-h2">Drafts <span>only admins see these</span></h2><ul class="mg-rows">${drafts.map((m) => row(m, "draft")).join("")}</ul>` : ""}
       ${later.length ? `<h2 class="mg-h2">Also coming up</h2><ul class="mg-rows">${later.map((m) => row(m)).join("")}</ul>` : ""}
       <section class="mg-why">
@@ -138,6 +146,7 @@ export async function mount(ctx, container) {
           ${isAdmin ? `<button type="button" class="btn btn-ghost" data-edit="${esc(m.id)}">Edit</button>` : ""}
         </div>
         ${link ? `<p class="mg-linktext">${esc(link)}</p>` : ""}
+        ${isAdmin ? reminderStrip(m) : ""}
       </div>
       <div class="mg-next-side">
         ${agenda.length ? `<h3>On the agenda</h3><ol class="mg-agenda">${agenda.map((a) => `<li>${esc(a)}</li>`).join("")}</ol>` : `<h3>On the agenda</h3><p class="mg-muted">The agenda will be posted here.</p>`}
@@ -145,6 +154,17 @@ export async function mount(ctx, container) {
         <p class="mg-for">${who ? `For: ${esc(who.join(", "))}` : "For the whole team"}</p>
       </div>
     </section>`;
+  }
+
+  // Admins: what's been sent and what's coming, plus Remind everyone.
+  function reminderStrip(m) {
+    const pending = (m.reminders || []).filter((r) => !r.sentAt).sort((a, b) => a.at.localeCompare(b.at));
+    const bits = [];
+    if (!m.emailedAt && !m.lastReminderAt) bits.push("Published quietly: no one has been emailed yet");
+    if (m.lastReminderAt) bits.push(`Last reminder ${whenShort(m.lastReminderAt)}`);
+    if (pending.length) bits.push(`Scheduled: ${pending.map((r) => whenShort(r.at)).join(", ")}`);
+    bits.push(m.autoReminder === false ? "Automatic day-before reminder off" : m.remindedFor === m.startsAt ? "Day-before reminder done" : "Automatic reminder a day before");
+    return `<div class="mg-remind"><button type="button" class="btn btn-secondary btn-sm" data-remind="${esc(m.id)}">${ICON_BELL}Remind everyone</button><p>${bits.map(esc).join(" · ")}</p></div>`;
   }
 
   function row(m, kind = "") {
@@ -173,7 +193,8 @@ export async function mount(ctx, container) {
         <div class="mg-aud"><label><input type="radio" name="audience" value="all" ${m.audience !== "people" ? "checked" : ""}> The whole team</label><label><input type="radio" name="audience" value="people" ${m.audience === "people" ? "checked" : ""}> Only some people</label></div>
         <div class="mg-picker" ${m.audience === "people" ? "" : "hidden"}></div>
       </div>
-      <p class="mg-form-msg" aria-live="polite">${m.status === "published" ? "This meeting is published. Saving and emailing sends everyone an updated email." : "Publishing emails everyone it's for, and they get a reminder about a day before."}</p>`;
+      <label class="mg-check"><input type="checkbox" name="autoReminder" ${m.autoReminder === false ? "" : "checked"}> Send the automatic reminder email about a day before</label>
+      <p class="mg-form-msg" aria-live="polite">${m.status === "published" ? "This meeting is published. You can save quietly or email everyone the update." : "Publish it quietly (it shows on the Meeting page, no emails) or publish and email everyone it's for. You can send a reminder any time after."}</p>`;
     const names = new Set((m.invitees || []).map((p) => p.name));
     let people = [];
     const pickerBox = body.querySelector(".mg-picker");
@@ -194,16 +215,20 @@ export async function mount(ctx, container) {
       const chosen = people.length ? people.filter((p) => names.has(p.name)).map((p) => ({ name: p.name, uids: p.uids })) : (m.invitees || []);
       v.invitees = audience === "people" ? chosen : [];
       v.invitedUids = audience === "people" ? (people.length ? peopleUids(people, names) : [...new Set(chosen.flatMap((p) => p.uids || []))]) : [];
+      v.autoReminder = f("autoReminder").checked;
       if (m.startsAt && m.startsAt !== v.startsAt) v.remindedFor = "";   // new time, new reminder
       return { v };
     };
-    const save = async (publish) => {
+    // mode: "draft" (not published), "quiet" (published, no emails), "email".
+    const save = async (mode) => {
+      const publish = mode === "email";
+      const goLive = mode !== "draft";
       const { v, err } = read();
       if (err) { msg.textContent = err; msg.classList.add("is-err"); return; }
-      if (publish && Date.parse(v.endsAt) < Date.now()) { msg.textContent = "That time has already passed."; msg.classList.add("is-err"); return; }
+      if (goLive && Date.parse(v.endsAt) < Date.now()) { msg.textContent = "That time has already passed."; msg.classList.add("is-err"); return; }
       buttons.forEach((b) => { b.disabled = true; });
       msg.classList.remove("is-err");
-      msg.textContent = publish ? "Publishing and emailing…" : "Saving…";
+      msg.textContent = publish ? "Publishing and emailing…" : goLive ? "Publishing…" : "Saving…";
       try {
         let id = cur?.id;
         if (isNew) {
@@ -212,12 +237,15 @@ export async function mount(ctx, container) {
         } else {
           await updateDoc(doc(db, "meetings", id), { ...v, updatedAt: new Date().toISOString() });
         }
+        if (goLive && !publish && m.status !== "published") {
+          await updateDoc(doc(db, "meetings", id), { status: "published", publishedAt: m.publishedAt || new Date().toISOString() });
+        }
         if (publish) {
           const res = await ctx.authedFetch("/api/meetings/publish", { method: "POST", body: JSON.stringify({ meetingId: id }) });
           const data = await res.json().catch(() => ({}));
           if (!res.ok) throw new Error(data.error || "publish failed");
           toast(`${data.kind === "updated" ? "Updated" : "Published"}. Emailed ${data.emailed || 0} ${data.emailed === 1 ? "person" : "people"}${data.failed ? ` (${data.failed} failed)` : ""}.`, "success");
-        } else toast("Saved.", "success");
+        } else toast(goLive && m.status !== "published" ? "Published. No one was emailed." : "Saved. No one was emailed.", "success");
         modal.close();
       } catch (e2) {
         console.warn("[meeting] save", e2);
@@ -238,10 +266,80 @@ export async function mount(ctx, container) {
       }
       modal.close();
     } }, published ? "Cancel meeting" : "Delete"));
-    if (!published) buttons.push(el("button", { class: "btn btn-secondary", onclick: () => save(false) }, "Save draft"));
-    if (published) buttons.push(el("button", { class: "btn btn-secondary", onclick: () => save(false) }, "Save without emailing"));
-    buttons.push(el("button", { class: "btn btn-primary", onclick: () => save(true) }, published ? "Save and email the update" : "Publish and email"));
+    if (!published) buttons.push(el("button", { class: "btn btn-ghost", onclick: () => save("draft") }, "Save draft"));
+    buttons.push(el("button", { class: "btn btn-secondary", onclick: () => save("quiet") }, published ? "Save without emailing" : "Publish without emailing"));
+    buttons.push(el("button", { class: "btn btn-primary", onclick: () => save("email") }, published ? "Save and email the update" : "Publish and email"));
     const modal = openModal({ title: isNew ? "Set the next meeting" : "Edit meeting", body, footer: buttons, size: "wide" });
+  }
+
+  // Remind everyone: send now, or schedule one (Eastern Time) for the cron.
+  function remindDialog(m) {
+    if (!m) return;
+    const startDay = m.date;
+    const dayBefore = (() => { const d = new Date(`${m.date}T12:00:00`); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+    const reminders = [...(m.reminders || [])].sort((a, b) => a.at.localeCompare(b.at));
+    const body = el("div", { class: "mg-form" });
+    const paint = () => {
+      body.innerHTML = `
+        <p class="mg-r-lead">For <b>${esc(m.title || "Team meeting")}</b>, ${esc(shortDay(m.date))} · ${esc(range(m.start, m.end))} ET. It goes to ${m.audience === "people" ? esc((m.invitees || []).map((p) => p.name).join(", ")) : "the whole team"} by email and as a notification.</p>
+        <div class="mg-aud mg-r-when">
+          <label><input type="radio" name="when" value="now" checked> Send now</label>
+          <label><input type="radio" name="when" value="later"> Schedule it</label>
+        </div>
+        <div class="mg-f3 mg-r-at" hidden>
+          <label class="mg-f"><span>Day</span><input class="input" type="date" name="rday" value="${esc(dayBefore)}" max="${esc(startDay)}"></label>
+          <label class="mg-f"><span>Time (ET)</span><input class="input" type="time" name="rtime" step="900" value="${esc(m.start || "18:00")}"></label>
+        </div>
+        <label class="mg-f"><span>Add a note (optional)</span><textarea class="input" name="rmsg" rows="2" maxlength="600" placeholder="Bring one question about your draft."></textarea></label>
+        ${reminders.length ? `<div class="mg-f"><span>Reminders</span><ul class="mg-r-list">${reminders.map((r) => `<li><span>${r.sentAt ? `Sent ${esc(whenShort(r.sentAt))}` : `Scheduled for ${esc(whenShort(r.at))}`}${r.message ? ` · “${esc(r.message.length > 60 ? r.message.slice(0, 60) + "…" : r.message)}”` : ""}</span>${r.sentAt ? "" : `<button type="button" class="btn btn-ghost btn-sm" data-unschedule="${esc(r.id)}">Remove</button>`}</li>`).join("")}</ul></div>` : ""}
+        <label class="mg-check"><input type="checkbox" name="auto" ${m.autoReminder === false ? "" : "checked"}> Also send the automatic reminder about a day before${m.remindedFor === m.startsAt ? " (done)" : ""}</label>
+        <p class="mg-form-msg" aria-live="polite"></p>`;
+    };
+    paint();
+    body.addEventListener("change", async (e) => {
+      if (e.target.name === "when") body.querySelector(".mg-r-at").hidden = e.target.value !== "later";
+      if (e.target.name === "auto") {
+        try { await updateDoc(doc(db, "meetings", m.id), { autoReminder: e.target.checked }); m.autoReminder = e.target.checked; toast(e.target.checked ? "Automatic reminder on." : "Automatic reminder off.", "success"); }
+        catch { toast("Couldn't change that.", "error"); }
+      }
+    });
+    body.addEventListener("click", async (e) => {
+      const b = e.target.closest("[data-unschedule]"); if (!b) return;
+      const next = (m.reminders || []).filter((r) => r.id !== b.dataset.unschedule);
+      try { await updateDoc(doc(db, "meetings", m.id), { reminders: next }); m.reminders = next; reminders.splice(0, reminders.length, ...next.sort((a, c) => a.at.localeCompare(c.at))); paint(); toast("Reminder removed.", "success"); }
+      catch { toast("Couldn't remove it.", "error"); }
+    });
+    const go = el("button", { class: "btn btn-primary", onclick: async () => {
+      const msg = body.querySelector(".mg-form-msg");
+      const later = body.querySelector('[name="when"]:checked').value === "later";
+      const message = body.querySelector('[name="rmsg"]').value.trim();
+      msg.classList.remove("is-err");
+      go.disabled = true;
+      try {
+        if (later) {
+          const day = body.querySelector('[name="rday"]').value, time = body.querySelector('[name="rtime"]').value;
+          if (!day || !time) throw new Error("Pick a day and time.");
+          const at = etToUtcIso(day, time);
+          if (Date.parse(at) <= Date.now()) throw new Error("Pick a time in the future, or Send now.");
+          if (Date.parse(at) >= Date.parse(m.startsAt)) throw new Error("Pick a time before the meeting starts.");
+          const r = { id: `r${Date.now().toString(36)}`, at, message, by: ctx.user?.uid || "", byName: ctx.profile?.name || "", sentAt: "" };
+          await updateDoc(doc(db, "meetings", m.id), { reminders: [...(m.reminders || []), r] });
+          toast(`Reminder scheduled for ${whenShort(at)}.`, "success");
+        } else {
+          msg.textContent = "Sending…";
+          const res = await ctx.authedFetch("/api/meetings/remind", { method: "POST", body: JSON.stringify({ meetingId: m.id, message }) });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Couldn't send the reminder.");
+          toast(`Reminder sent to ${data.emailed || 0} ${data.emailed === 1 ? "person" : "people"}${data.failed ? ` (${data.failed} failed)` : ""}.`, "success");
+        }
+        modal.close();
+      } catch (err) {
+        msg.textContent = err.message || "Something went wrong."; msg.classList.add("is-err");
+        go.disabled = false;
+      }
+    } }, "Send reminder");
+    body.addEventListener("change", (e) => { if (e.target.name === "when") go.textContent = e.target.value === "later" ? "Schedule reminder" : "Send reminder"; });
+    const modal = openModal({ title: "Remind everyone", body, footer: [el("button", { class: "btn btn-secondary", onclick: () => modal.close() }, "Close"), go] });
   }
 }
 
@@ -299,6 +397,13 @@ function injectStyle() {
 .mg-aud { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
 .mg-aud label { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
 .mg-picker { margin-top: 6px; }
+.mg-check { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 14px; cursor: pointer; }
+.mg-remind { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed #e3cfa5; }
+.mg-remind .btn { min-height: 40px; }
+.mg-remind p { margin: 0; font-size: 12.5px; line-height: 1.5; color: #7a6a4f; flex: 1 1 220px; }
+.mg-r-lead { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+.mg-r-list { margin: 0; padding: 0; list-style: none; }
+.mg-r-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--hairline-2); font-size: 13.5px; }
 .mg-form-msg { margin: 0; font-size: 13px; color: var(--muted); }
 .mg-form-msg.is-err { color: #b4441b; font-weight: 600; }
 .modal-footer .mg-del { margin-right: auto; color: #b4441b; }
