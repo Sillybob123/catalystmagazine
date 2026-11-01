@@ -33,7 +33,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, openModal, confirmDialog } from "./ui.js";
 import { loadPeople, mountPeoplePicker, peopleUids, PICKER_CSS } from "./people-picker.js?v=1";
-import { mountPoll } from "./meet.js?v=3";
+import { mountPoll } from "./meet.js?v=4";
 
 const WHY = [
   "We're a team, and we count on each other. Editors need you there to give feedback and plan the section. Admins need you there to keep the edition on track. And the other writers need you there too, to talk through their pieces and help when someone's stuck, the same way they'll help you.",

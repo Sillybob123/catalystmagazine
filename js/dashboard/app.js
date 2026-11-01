@@ -273,7 +273,7 @@ const ROUTES = {
     icon: ICONS.meeting,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./meeting.js?v=5"),
+    loader: () => import("./meeting.js?v=6"),
   },
   // When to meet polls live on the Meeting page now; old #/meet links
   // (emails, notifications) redirect there. Not in the sidebar.
@@ -284,7 +284,7 @@ const ROUTES = {
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
     hidden: true,
-    loader: () => import("./meet.js?v=3"),
+    loader: () => import("./meet.js?v=4"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -570,7 +570,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-23"),
+    loader: () => import("./admin-import.js?v=theme-24"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -683,7 +683,7 @@ function paintMeetUrgent() {
   const late = p.answerBy && Date.parse(p.answerBy) < Date.now();
   const banner = el("div", { class: "meet-urgent", role: "alert" });
   banner.innerHTML = `
-    <span class="meet-urgent-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M12 14v2"/><circle cx="12" cy="18.5" r=".6" fill="currentColor"/></svg></span>
+    <span class="meet-urgent-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h5"/><circle cx="16" cy="16" r="6"/><path d="M16 14v2.2l1.5 1"/></svg></span>
     <span class="meet-urgent-text"><strong></strong><span></span></span>
     <a class="meet-urgent-btn" href="#/meeting?poll=${encodeURIComponent(p.id)}">Mark when you're free</a>`;
   banner.querySelector("strong").textContent = p.reason || "You missed our last meeting, so we need your availability.";

@@ -56,6 +56,8 @@ function etToUtcIso(date, hhmm) {
 }
 const byText = (iso) => iso ? `${new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "")} ET` : "";
 const REASON = "You missed our last meeting, so we need your availability.";
+// Heatmap green for a share of people free (0–1).
+const heat = (pct) => `rgba(46, 139, 87, ${(0.2 + 0.8 * pct).toFixed(3)})`;
 
 // Groups to narrow the results by: each section of the edition in progress
 // (its editor + writers, from This edition), section editors, writers, admins.
@@ -115,8 +117,12 @@ export function mountPoll(ctx, container, id) {
     let poll = null, responses = new Map(), mine = null, dirty = false, saveTimer = null, tab = "mine";
     let groups = [], filter = "all", hidden = new Set(), whoDay = "";
     loadGroups().then((g) => { groups = g; if (poll) { paintFilters(); paintGroup(); } }).catch(() => {});
+    const onScroll = () => hideTip();
+    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    unsubs.push(() => window.removeEventListener("scroll", onScroll, { capture: true }));
     // One delegated listener for the whole poll view (render() rebuilds the DOM).
     root.addEventListener("click", async (e) => {
+        if (!e.target.closest(".mt-groupgrid")) hideTip();
       const f = e.target.closest("[data-filter]");
       if (f) { filter = f.dataset.filter; paintFilters(); paintGroup(); return; }
       const h = e.target.closest("[data-hide]");
@@ -202,17 +208,21 @@ export function mountPoll(ctx, container, id) {
         <div class="mt-tabs" role="tablist"><button type="button" role="tab" data-tab="mine" aria-selected="${tab === "mine"}">Your times</button><button type="button" role="tab" data-tab="group" aria-selected="${tab === "group"}">Everyone</button></div>
         <div class="mt-panels" data-tab-now="${tab}">
           <section class="mt-panel mt-panel-mine">
-            <div class="mt-panel-h"><h2>Your availability</h2><span class="mt-save" aria-live="polite"></span></div>
-            <p class="mt-hint">${editable() ? "Drag over every time you're free. Drag again to unmark. Blank means busy." : poll.status === "closed" ? "This poll is closed." : "You're previewing someone else, so you can't mark times."}</p>
+            <div class="mt-panel-h">
+              <div><h2>Your times</h2><p class="mt-panel-sub">${editable() ? "Drag across the times you're free." : poll.status === "closed" ? "This poll is closed." : "Previewing, so you can't mark times."}</p></div>
+              <div class="mt-panel-tools"><span class="mt-save" aria-live="polite"></span>${editable() ? `<button type="button" class="mt-textbtn" data-clear>Clear</button>` : ""}</div>
+            </div>
             ${grid(dates, "mine")}
-            ${editable() ? `<button type="button" class="mt-link" data-clear>Clear my times</button>` : ""}
           </section>
           <section class="mt-panel mt-panel-group">
-            <div class="mt-panel-h"><h2>Everyone's availability</h2><span class="mt-legend"></span></div>
-            <p class="mt-hint mt-info">Hover over or tap a time to see who's free.</p>
+            <div class="mt-panel-h">
+              <div><h2>Everyone</h2><p class="mt-panel-sub">Darker green, more people free.</p></div>
+              <div class="mt-panel-tools mt-legend" aria-hidden="true"></div>
+            </div>
             <div class="mt-groupgrid"></div>
           </section>
         </div>
+        <div class="mt-tip" role="tooltip" hidden></div>
         <section class="mt-best"></section>
         <section class="mt-bywho"></section>
         <section class="mt-who"></section>`;
@@ -222,7 +232,7 @@ export function mountPoll(ctx, container, id) {
     }
 
     function grid(dates, kind) {
-      const head = `<div class="mt-corner"></div>${dates.map((d) => `<div class="mt-dh"><b>${esc(day(d, { weekday: "short" }))}</b><span>${esc(day(d, { month: "short", day: "numeric" }))}</span></div>`).join("")}`;
+      const head = `<div class="mt-corner"></div>${dates.map((d) => `<div class="mt-dh"><span>${esc(day(d, { weekday: "short" }))}</span><b>${esc(day(d, { month: "short", day: "numeric" }))}</b></div>`).join("")}`;
       const rows = SLOTS.map((t) => `<div class="mt-th${t.endsWith(":00") ? "" : " is-half"}">${t.endsWith(":00") ? esc(clock(t)) : ""}</div>${dates.map((d) => {
         const k = `${d}T${t}`;
         return kind === "mine"
@@ -251,10 +261,10 @@ export function mountPoll(ctx, container, id) {
       g.querySelectorAll("[data-k]").forEach((c) => {
         const n = count(c.dataset.k), pct = n / total;
         c.dataset.n = n;
-        if (n) { c.style.background = `rgba(47, 125, 79, ${(0.14 + 0.8 * pct).toFixed(3)})`; if (pct > 0.55) c.classList.add("is-deep"); }
+        if (n) { c.style.background = heat(pct); if (pct > 0.55) c.classList.add("is-deep"); }
         c.setAttribute("aria-label", `${day(c.dataset.k.slice(0, 10))} ${clock(c.dataset.k.slice(11))}: ${n} of ${total} free`);
       });
-      root.querySelector(".mt-legend").innerHTML = `<span>0/${total}</span><i></i><span>${total}/${total} free</span>`;
+      root.querySelector(".mt-legend").innerHTML = `<span>0</span>${[0, 0.25, 0.5, 0.75, 1].map((x) => `<i style="background:${x ? heat(x) : "var(--mt-empty)"}"></i>`).join("")}<span>${total}</span>`;
       paintBest(ppl, dates, total);
       paintByWho(ppl, dates);
       paintWho(people());
@@ -321,8 +331,21 @@ export function mountPoll(ctx, container, id) {
       const ppl = shown();
       const free = ppl.filter((p) => p.slots.has(k)).map((p) => p.name);
       const busy = ppl.filter((p) => !p.slots.has(k)).map((p) => p.name);
-      const box = root.querySelector(".mt-info");
-      box.innerHTML = `<b>${esc(day(k.slice(0, 10), { weekday: "long", month: "short", day: "numeric" }))}, ${esc(range(k.slice(11), nextSlot(k.slice(11))))}</b> · ${free.length} of ${ppl.length} free<br><span class="mt-info-free">Free: ${esc(free.join(", ") || "no one")}</span>${busy.length ? `<br><span class="mt-info-busy">Not free: ${esc(busy.join(", "))}</span>` : ""}`;
+      const tip = root.querySelector(".mt-tip");
+      const cell = root.querySelector(`.mt-groupgrid [data-k="${k}"]`);
+      if (!tip || !cell) return;
+      tip.innerHTML = `<div class="mt-tip-h"><b>${esc(day(k.slice(0, 10), { weekday: "short", month: "short", day: "numeric" }))}</b><span>${esc(range(k.slice(11), nextSlot(k.slice(11))))}</span></div>
+        <div class="mt-tip-n"><strong>${free.length}</strong> of ${ppl.length} free</div>
+        ${free.length ? `<ul class="mt-tip-list is-free">${free.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+        ${busy.length ? `<ul class="mt-tip-list">${busy.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}`;
+      tip.hidden = false;
+      const r = cell.getBoundingClientRect(), t = tip.getBoundingClientRect();
+      const left = Math.min(Math.max(8, r.left + r.width / 2 - t.width / 2), innerWidth - t.width - 8);
+      const above = r.top - t.height - 10;
+      tip.style.left = `${left}px`;
+      tip.style.top = `${above > 8 ? above : r.bottom + 10}px`;
+    }
+    function hideTip() { const tip = root.querySelector(".mt-tip"); if (tip) tip.hidden = true;
     }
 
     function save() {
@@ -378,8 +401,10 @@ export function mountPoll(ctx, container, id) {
           if (e.key === " " || e.key === "Enter") { e.preventDefault(); dirty = true; mode = !mine.has(cells[i].dataset.k); apply(cells[i]); paintGroup(); save(); }
         });
       }
-      root.querySelector(".mt-groupgrid").addEventListener("mouseover", (e) => { const c = e.target.closest("[data-k]"); if (c) info(c.dataset.k); });
-      root.querySelector(".mt-groupgrid").addEventListener("click", (e) => { const c = e.target.closest("[data-k]"); if (c) info(c.dataset.k); });
+      const gg = root.querySelector(".mt-groupgrid");
+      gg.addEventListener("mouseover", (e) => { const c = e.target.closest("[data-k]"); if (c) info(c.dataset.k); });
+      gg.addEventListener("mouseleave", hideTip);
+      gg.addEventListener("click", (e) => { const c = e.target.closest("[data-k]"); if (c) { e.stopPropagation(); info(c.dataset.k); } });
       root.querySelector("[data-clear]")?.addEventListener("click", async () => {
         if (!mine.size || !(await confirmDialog("Clear all of your times?", { confirmText: "Clear" }))) return;
         mine.clear(); dirty = true; render(); save();
@@ -560,30 +585,44 @@ function injectStyle() {
 .mt-tabs { display: none; gap: 4px; padding: 4px; margin: 0 0 12px; border-radius: 12px; background: var(--surface-3); }
 .mt-tabs button { flex: 1; min-height: 40px; border: 0; border-radius: 9px; background: none; font: 500 14px var(--font); color: var(--ink-2); cursor: pointer; }
 .mt-tabs button[aria-selected="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: var(--shadow-sm); }
-.mt-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
-.mt-panel { min-width: 0; padding: 18px 18px 14px; border: 1px solid var(--hairline); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-sm); }
-.mt-panel-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 6px; }
-.mt-panel-h h2 { margin: 0; font: 600 16px/1.3 var(--font); letter-spacing: -0.01em; }
-.mt-save { font-size: 12.5px; color: #2f7d4f; font-weight: 600; }
-.mt-legend { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
-.mt-legend i { width: 72px; height: 10px; border-radius: 99px; background: linear-gradient(90deg, rgba(47,125,79,.14), rgba(47,125,79,.94)); }
-.mt-info { min-height: 62px; }
-.mt-info b { color: var(--ink); }
-.mt-info-free { color: #2f7d4f; } .mt-info-busy { color: var(--muted); }
-.mt-grid { display: grid; grid-template-columns: 50px repeat(var(--cols), minmax(46px, 1fr)); overflow-x: auto; padding-bottom: 10px; user-select: none; -webkit-user-select: none; }
+.mt-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: stretch; }
+.mt-panel { --mt-empty: #f1eee8; min-width: 0; display: flex; flex-direction: column; padding: 22px 22px 18px; border-radius: 22px; background: #fffdf9; border: 1px solid rgba(15, 23, 42, 0.06); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.05); }
+.mt-panel-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; min-height: 52px; margin-bottom: 14px; }
+.mt-panel-h h2 { margin: 0; font: 600 17px/1.25 var(--font); letter-spacing: -0.02em; color: var(--ink); }
+.mt-panel-sub { margin: 4px 0 0; font-size: 13px; line-height: 1.4; color: var(--muted); }
+.mt-panel-tools { display: flex; align-items: center; gap: 10px; flex: none; padding-top: 1px; }
+.mt-save { font-size: 12px; font-weight: 500; color: #2e8b57; }
+.mt-textbtn { min-height: 32px; padding: 0 12px; border: 0; border-radius: 99px; background: rgba(15, 23, 42, 0.05); font: 500 12.5px var(--font); color: var(--ink-2); cursor: pointer; transition: background .15s; }
+.mt-textbtn:hover { background: rgba(15, 23, 42, 0.09); }
+.mt-textbtn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.mt-legend { gap: 3px; font-size: 11px; color: var(--muted); }
+.mt-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.mt-legend span { margin: 0 3px; }
+.mt-grid { display: grid; grid-template-columns: 44px repeat(var(--cols), minmax(40px, 1fr)); column-gap: 5px; row-gap: 2px; overflow-x: auto; padding: 0 0 10px; user-select: none; -webkit-user-select: none; }
 .mt-grid.is-edit { touch-action: none; cursor: pointer; }
-.mt-corner { position: sticky; left: 0; background: var(--surface); }
-.mt-dh { display: flex; flex-direction: column; align-items: center; padding: 0 2px 8px; font-size: 11.5px; color: var(--muted); line-height: 1.3; }
-.mt-dh b { font-size: 12.5px; color: var(--ink); }
-.mt-th { position: sticky; left: 0; z-index: 1; background: var(--surface); padding-right: 8px; font-size: 11px; line-height: 1; color: var(--muted); text-align: right; transform: translateY(-5px); }
-.mt-cell { height: 20px; border-left: 1px solid var(--hairline-2); border-top: 1px dotted var(--hairline-2); background: var(--surface-2); }
-.mt-cell.is-hour { border-top: 1px solid var(--hairline); }
-.mt-grid[data-grid="mine"] .mt-cell.is-on { background: #3f8f5c; border-top-color: rgba(255,255,255,.18); }
-.mt-grid.is-edit .mt-cell:hover { box-shadow: inset 0 0 0 2px color-mix(in srgb, #2f7d4f 55%, transparent); }
-.mt-cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.mt-corner { position: sticky; left: 0; background: #fffdf9; }
+.mt-dh { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 0 0 10px; line-height: 1.2; }
+.mt-dh span { font: 600 10.5px var(--font); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mt-dh b { font: 600 13.5px var(--font); color: var(--ink); letter-spacing: -0.01em; }
+.mt-th { position: sticky; left: 0; z-index: 1; align-self: start; padding-right: 6px; background: #fffdf9; font-size: 10.5px; line-height: 1; color: var(--muted); text-align: right; transform: translateY(-50%); white-space: nowrap; }
+.mt-cell { height: 17px; border-radius: 4px; background: var(--mt-empty); transition: background-color .12s ease; }
+.mt-cell.is-hour { margin-top: 0; }
+.mt-grid[data-grid="mine"] .mt-cell.is-on { background: #2e8b57; }
+.mt-grid.is-edit .mt-cell:hover { box-shadow: inset 0 0 0 1.5px rgba(46, 139, 87, .7); }
+.mt-cell:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .mt-th-end { height: 0; }
 .mt-end { height: 0; }
-.mt-heat:hover { box-shadow: inset 0 0 0 2px var(--ink); }
+.mt-heat { cursor: default; }
+.mt-heat:hover { box-shadow: inset 0 0 0 1.5px rgba(15, 23, 42, .55); }
+.mt-tip { position: fixed; z-index: 60; width: 220px; max-height: 320px; overflow: auto; padding: 12px 14px; border-radius: 14px; background: #fffdf9; border: 1px solid rgba(15, 23, 42, 0.08); box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14); pointer-events: none; }
+.mt-tip-h { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.mt-tip-h b { color: var(--ink); font-weight: 600; }
+.mt-tip-n { margin: 6px 0 8px; font-size: 13px; color: var(--ink-2); }
+.mt-tip-n strong { font-size: 18px; color: var(--ink); letter-spacing: -0.02em; }
+.mt-tip-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
+.mt-tip-list li::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #d6d1c7; vertical-align: 1px; }
+.mt-tip-list.is-free { color: var(--ink); margin-bottom: 8px; }
+.mt-tip-list.is-free li::before { background: #2e8b57; }
 .mt-wins { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .mt-win { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) auto; align-items: center; gap: 10px 16px; padding: 12px 16px; border: 1px solid var(--hairline); border-radius: 14px; background: var(--surface); }
 .mt-win-when { display: flex; flex-direction: column; gap: 2px; } .mt-win-when b { font-size: 14.5px; } .mt-win-when span { font-size: 13px; color: var(--ink-2); }
