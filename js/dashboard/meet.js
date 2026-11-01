@@ -1,12 +1,14 @@
-// When to meet (#/meet): availability polls, like when2meet.
+// When to meet: availability polls, like when2meet. They live on the
+// Meeting page (meeting.js embeds mountPoll for each poll you're invited to);
+// the old #/meet links redirect there.
 //
 //   • Admins create a poll in Advanced tools → When to meet (mountMeetTool):
 //     a title, the days, and who's invited. /api/meet/notify then emails and
 //     bells everyone invited.
-//   • Invitees see this page in their sidebar (app.js shows it while they have
-//     an open poll). On a poll they drag over the half-hours they're free,
-//     8 AM to 9 PM Eastern; anything left blank counts as busy. Their answer
-//     saves as they go.
+//   • Invitees see it on their Meeting page, and Meeting jumps to the top of
+//     their sidebar in red until they answer (app.js). They drag over the
+//     half-hours they're free, 8 AM to 9 PM Eastern; anything left blank
+//     counts as busy. Their answer saves as they go.
 //   • Beside it, everyone's answers as a heatmap: the more people free, the
 //     deeper the green. Hover a cell to see who's free and who isn't. The best
 //     windows are listed below, and an admin can turn one into the next team
@@ -14,7 +16,7 @@
 //
 // Urgent polls (e.g. for people who missed the last meeting) carry urgent,
 // reason and answerBy: until someone answers, the Suite shows them a red
-// banner on every page (app.js paintMeetUrgent), and the poll opens with it.
+// banner on every page (app.js paintMeetUrgent) and a red note on the poll.
 // The results can be narrowed to an edition section, the section editors,
 // writers or admins (from This edition), and "Who's free when" shows each
 // person's day as a row.
@@ -86,47 +88,27 @@ async function loadGroups() {
   return groupsCache;
 }
 
-// ─── the page ───────────────────────────────────────────────────────────────
+// ─── #/meet: old links (emails, notifications) → the Meeting page ───────────
 export async function mount(ctx, container) {
+  const pollId = new URLSearchParams(location.hash.split("?")[1] || "").get("poll");
+  location.replace(`#/meeting${pollId ? `?poll=${encodeURIComponent(pollId)}` : ""}`);
+  return () => {};
+}
+
+// ─── one poll, embedded in the Meeting page ─────────────────────────────────
+// Returns a cleanup function.
+export function mountPoll(ctx, container, id) {
   injectStyle();
-  const params = new URLSearchParams(location.hash.split("?")[1] || "");
-  const pollId = params.get("poll");
   const isAdmin = ctx.role === "admin";
   const meUid = ctx.user?.uid || "";
   const meName = ctx.profile?.name || ctx.user?.displayName || "";
   const canWrite = () => auth.currentUser && auth.currentUser.uid === meUid;
-  const root = el("div", { class: "mt" });
+  const root = el("div", { class: "mt is-embedded" });
   container.innerHTML = "";
   container.appendChild(root);
   const unsubs = [];
-  if (!pollId) listView(); else pollView(pollId);
+  pollView(id);
   return () => unsubs.forEach((u) => { try { u(); } catch {} });
-
-  // All polls for admins; the ones you're invited to for everyone else.
-  function listView() {
-    root.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>`;
-    const q = isAdmin ? query(collection(db, "meet_polls"), orderBy("createdAt", "desc")) : query(collection(db, "meet_polls"), where("invitedUids", "array-contains", meUid));
-    unsubs.push(onSnapshot(q, async (s) => {
-      const polls = s.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-      const answered = new Set();
-      await Promise.all(polls.map(async (p) => {
-        try { const r = await getDocs(collection(db, "meet_polls", p.id, "responses")); p.responses = r.size; if (r.docs.some((d) => d.id === meUid)) answered.add(p.id); } catch { p.responses = 0; }
-      }));
-      const open = polls.filter((p) => p.status !== "closed").sort((a, b) => Number(!!b.urgent && !answered.has(b.id)) - Number(!!a.urgent && !answered.has(a.id))), closed = polls.filter((p) => p.status === "closed");
-      const card = (p) => {
-        const hot = p.urgent && p.status !== "closed" && !answered.has(p.id) && (p.invitedUids || []).includes(meUid);
-        return `<button type="button" class="mt-pollcard${hot ? " is-urgent" : ""}" data-open="${esc(p.id)}">
-        <span class="mt-pollcard-main">${hot ? `<em>${esc(p.reason || REASON)}</em>` : ""}<b>${esc(p.title || "Find a time")}</b><small>${esc((p.dates || []).map((d) => day(d)).join(" · "))}${p.answerBy ? ` · answer by ${esc(byText(p.answerBy))}` : ""}</small></span>
-        <span class="mt-pollcard-side">${p.status === "closed" ? `<span class="mt-chip">Closed</span>` : answered.has(p.id) ? `<span class="mt-chip is-good">You've answered</span>` : hot ? `<span class="mt-chip is-urgent">Needed from you</span>` : `<span class="mt-chip is-todo">Add your times</span>`}<small>${p.responses || 0} of ${(p.invitees || []).length} answered</small></span>
-      </button>`;
-      };
-      root.innerHTML = `
-        <header class="mt-head"><h1>When to meet</h1><p>Mark the times you're free, and see when everyone else is. ${isAdmin ? `Create a new one in <a href="#/admin/advanced?tool=meet">Advanced tools → When to meet</a>.` : ""}</p></header>
-        ${open.length ? `<div class="mt-pollcards">${open.map(card).join("")}</div>` : `<div class="mt-empty"><p>No open polls right now.</p></div>`}
-        ${closed.length ? `<h2 class="mt-h2">Closed</h2><div class="mt-pollcards">${closed.map(card).join("")}</div>` : ""}`;
-    }, () => { root.innerHTML = `<div class="mt-empty"><p>You don't have any polls to answer.</p></div>`; }));
-    root.addEventListener("click", (e) => { const b = e.target.closest("[data-open]"); if (b) location.hash = `#/meet?poll=${b.dataset.open}`; });
-  }
 
   // One poll: your grid, everyone's heatmap, the best windows.
   function pollView(id) {
@@ -157,7 +139,7 @@ export async function mount(ctx, container) {
     });
     root.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>`;
     unsubs.push(onSnapshot(doc(db, "meet_polls", id), (s) => { poll = s.exists() ? { id: s.id, ...s.data() } : null; render(); },
-      () => { root.innerHTML = `<div class="mt-empty"><h2>You're not invited to this one.</h2><p><a href="#/meet">See your polls</a></p></div>`; }));
+      () => { root.innerHTML = `<div class="mt-empty"><p>You're not invited to this one.</p></div>`; }));
     unsubs.push(onSnapshot(collection(db, "meet_polls", id, "responses"), (s) => {
       responses = new Map(s.docs.map((d) => [d.id, d.data()]));
       if (!dirty) { mine = new Set(responses.get(meUid)?.slots || []); paintMine(); }
@@ -201,30 +183,21 @@ export async function mount(ctx, container) {
       box.innerHTML = `<span class="mt-filters-label">Show</span>${chips.map((c) => `<button type="button" class="mt-fchip${filter === c.id ? " is-on" : ""}" data-filter="${esc(c.id)}" aria-pressed="${filter === c.id}">${esc(c.label)}<span>${c.n}</span></button>`).join("")}${hidden.size ? `<button type="button" class="mt-link" data-unhide>Show ${hidden.size} hidden</button>` : ""}`;
     }
 
-    // Red box for an urgent poll you haven't answered; a thank-you once you have.
-    function paintUrgent() {
-      const box = root.querySelector(".mt-urgentbox");
-      if (!box || !poll) return;
-      const invited = (poll.invitedUids || []).includes(meUid);
-      if (!poll.urgent || !invited || poll.status === "closed") { box.innerHTML = ""; return; }
-      if (mine && mine.size) { box.innerHTML = `<div class="mt-done">Thank you, your times are in. We'll set a time and let you know.</div>`; return; }
-      const late = poll.answerBy && Date.parse(poll.answerBy) < Date.now();
-      box.innerHTML = `<div class="mt-urgent"><b>${esc(poll.reason || REASON)}</b><span>${late ? `This was due ${esc(byText(poll.answerBy))}. Please add your times now.` : poll.answerBy ? `Please mark when you're free by ${esc(byText(poll.answerBy))}.` : "Please mark when you're free as soon as you can."} Drag over the times below.</span></div>`;
-    }
+    // The Meeting page's header for this poll carries the red call to action
+    // and the thank-you (meeting.js), so nothing extra here.
+    function paintUrgent() {}
 
     function render() {
-      if (!poll) { root.innerHTML = `<div class="mt-empty"><h2>This poll is gone.</h2><p><a href="#/meet">See your polls</a></p></div>`; return; }
+      if (!poll) { root.innerHTML = `<div class="mt-empty"><p>This poll was deleted.</p></div>`; return; }
       if (!mine) mine = new Set(responses.get(meUid)?.slots || []);
       const dates = [...(poll.dates || [])].sort();
       root.innerHTML = `
-        <a class="mt-back" href="#/meet">&larr; All polls</a>
         <header class="mt-head">
-          <div class="mt-head-row"><h1>${esc(poll.title || "Find a time")}</h1>${poll.status === "closed" ? `<span class="mt-chip">Closed</span>` : ""}</div>
+          <div class="mt-head-row"><h3>${esc(poll.title || "Find a time")}</h3>${poll.status === "closed" ? `<span class="mt-chip">Closed</span>` : ""}</div>
           ${poll.note ? `<p class="mt-note">${esc(poll.note)}</p>` : ""}
           <p class="mt-sub">${esc(dates.map((d) => day(d, { weekday: "long", month: "short", day: "numeric" })).join(" · "))} · 8 AM–9 PM, Eastern Time${poll.answerBy ? ` · Answer by ${esc(byText(poll.answerBy))}` : ""}</p>
           ${isAdmin ? `<div class="mt-admin"><button type="button" class="btn btn-ghost btn-sm" data-status>${poll.status === "closed" ? "Reopen the poll" : "Close the poll"}</button><button type="button" class="btn btn-secondary btn-sm" data-nudge hidden></button></div>` : ""}
         </header>
-        <div class="mt-urgentbox" aria-live="polite"></div>
         <div class="mt-filters" role="group" aria-label="Show availability for"></div>
         <div class="mt-tabs" role="tablist"><button type="button" role="tab" data-tab="mine" aria-selected="${tab === "mine"}">Your times</button><button type="button" role="tab" data-tab="group" aria-selected="${tab === "group"}">Everyone</button></div>
         <div class="mt-panels" data-tab-now="${tab}">
@@ -427,7 +400,7 @@ export async function mount(ctx, container) {
 // ─── Advanced tools → When to meet ──────────────────────────────────────────
 export async function mountMeetTool(ctx, root, paneHeader) {
   injectStyle();
-  root.innerHTML = paneHeader("When to meet", "Find a time that works, like when2meet. Pick the days and who's invited: they get an email and a notification, and a When to meet page in their sidebar where they drag over the times they're free (8 AM–9 PM Eastern). You'll see the best times as answers come in, and can turn one into the next meeting.")
+  root.innerHTML = paneHeader("When to meet", "Find a time that works, like when2meet. Pick the days and who's invited: they get an email and a notification, and the poll shows up on their Meeting page, where they drag over the times they're free (8 AM–9 PM Eastern). Until they answer, Meeting sits at the top of their sidebar in red. Only the people you invite see it. You'll see the best times as answers come in, and can turn one into the next meeting.")
     + `<div class="mt-tool"><div class="mt-loading">Loading the team&hellip;</div></div><div class="mt-toollist"></div>`;
   const box = root.querySelector(".mt-tool");
   let people = [];
@@ -440,7 +413,7 @@ export async function mountMeetTool(ctx, root, paneHeader) {
       <label class="mt-f"><span>Title</span><input class="input" name="title" maxlength="120" value="Catch-up meeting" required></label>
       <label class="mt-f"><span>Note (optional)</span><textarea class="input" name="note" rows="2" maxlength="600" placeholder="First drafts are due Wednesday, so let's catch up before then."></textarea></label>
       <fieldset class="mt-urgentset">
-        <label class="mt-check"><input type="checkbox" name="urgent" checked> <span><b>Urgent</b>: show it in red at the top of their Suite until they answer</span></label>
+        <label class="mt-check"><input type="checkbox" name="urgent" checked> <span><b>Urgent</b>: also show a red banner on every page of their Suite until they answer</span></label>
         <div class="mt-urgentfields">
           <label class="mt-f"><span>Why (shown in red)</span><input class="input" name="reason" maxlength="160" value="${esc(REASON)}"></label>
           <div class="mt-f2">
@@ -522,7 +495,7 @@ export async function mountMeetTool(ctx, root, paneHeader) {
     await Promise.all(polls.map(async (p) => { try { p.responses = (await getDocs(collection(db, "meet_polls", p.id, "responses"))).size; } catch { p.responses = 0; } }));
     list.innerHTML = polls.length ? `<h3 class="mt-h2">Your polls</h3><ul class="mt-rows">${polls.map((p) => `<li class="mt-row">
       <div><b>${esc(p.title)}</b>${p.urgent ? ` <span class="mt-chip is-urgent">Urgent</span>` : ""}<small>${esc((p.dates || []).map((d) => day(d)).join(" · "))} · ${p.responses} of ${(p.invitees || []).length} answered${p.answerBy ? ` · answer by ${esc(byText(p.answerBy))}` : ""}${p.status === "closed" ? " · closed" : ""}</small></div>
-      <div class="mt-row-actions"><a class="btn btn-secondary btn-sm" href="#/meet?poll=${esc(p.id)}">Open</a>
+      <div class="mt-row-actions"><a class="btn btn-secondary btn-sm" href="#/meeting?poll=${esc(p.id)}">Open</a>
       <button type="button" class="btn btn-ghost btn-sm" data-resend="${esc(p.id)}">Resend invites</button>
       <button type="button" class="btn btn-ghost btn-sm" data-toggle="${esc(p.id)}" data-status="${esc(p.status || "open")}">${p.status === "closed" ? "Reopen" : "Close"}</button>
       <button type="button" class="btn btn-ghost btn-sm" data-del="${esc(p.id)}">Delete</button></div>
@@ -557,7 +530,10 @@ function injectStyle() {
   s.textContent = PICKER_CSS + `
 .mt { max-width: 1120px; margin: 0 auto; padding: 0 0 64px; color: var(--ink); }
 .mt-head { padding: 4px 0 18px; }
-.mt-head h1 { margin: 0; font: 600 clamp(26px, 3.4vw, 34px)/1.15 var(--font); letter-spacing: -0.03em; }
+.mt-head h1, .mt-head h3 { margin: 0; font: 600 clamp(26px, 3.4vw, 34px)/1.15 var(--font); letter-spacing: -0.03em; }
+.mt.is-embedded { max-width: none; padding: 0; }
+.mt.is-embedded .mt-head { padding: 0 0 14px; }
+.mt.is-embedded .mt-head h3 { font-size: 19px; letter-spacing: -0.015em; }
 .mt-head p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.6; color: var(--ink-2); max-width: 70ch; }
 .mt-head-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .mt-note { white-space: pre-wrap; }

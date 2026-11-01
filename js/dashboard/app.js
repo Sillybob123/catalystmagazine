@@ -273,18 +273,18 @@ const ROUTES = {
     icon: ICONS.meeting,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./meeting.js?v=3"),
+    loader: () => import("./meeting.js?v=4"),
   },
-  // When to meet — availability polls. In the sidebar only for admins and for
-  // people invited to an open poll (navIf); the link works for all staff.
+  // When to meet polls live on the Meeting page now; old #/meet links
+  // (emails, notifications) redirect there. Not in the sidebar.
   "#/meet": {
     label: "When to meet",
     desc: "Mark the times you're free so we can find a time that works for everyone.",
     icon: ICONS.meet,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    navIf: () => getActiveRole() === "admin" || state.meetInvited,
-    loader: () => import("./meet.js?v=2"),
+    hidden: true,
+    loader: () => import("./meet.js?v=3"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -570,7 +570,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-22"),
+    loader: () => import("./admin-import.js?v=theme-23"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -625,65 +625,67 @@ function watchNavSettings() {
   } catch (e) { console.warn(e); }
 }
 
-// ---------- When to meet: sidebar + the red "share your times" banner ----------
-// When to meet shows in the sidebar while you're invited to an open poll
-// (admins always see it). An urgent poll you haven't answered yet (e.g. you
-// missed the last meeting) puts a red banner at the top of every page and a
-// red dot on the sidebar link, until you mark your times. See meet.js.
-const meetState = { polls: [], answered: new Set(), respUnsubs: new Map() };
+// ---------- When to meet: the sidebar call to action + the red banner ----------
+// Polls live on the Meeting page. While you're invited to an open poll you
+// haven't answered, Meeting moves to the very top of the sidebar and flashes
+// red (and the phone menu button gets a red dot). An urgent poll also puts a
+// red banner on every page except Meeting. Both go away once you mark your
+// times. See meet.js / meeting.js.
+const meetState = { polls: [], answered: new Set(), checked: new Set(), respUnsubs: new Map() };
 function watchMeetInvites() {
   try {
     onSnapshot(query(collection(db, "meet_polls"), where("invitedUids", "array-contains", state.user.uid)), (snap) => {
       meetState.polls = snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.status !== "closed");
-      const invited = meetState.polls.length > 0;
       // Watch my own answer on each open poll.
       const ids = new Set(meetState.polls.map((p) => p.id));
-      for (const [id, un] of meetState.respUnsubs) if (!ids.has(id)) { un(); meetState.respUnsubs.delete(id); meetState.answered.delete(id); }
+      for (const [id, un] of meetState.respUnsubs) if (!ids.has(id)) { un(); meetState.respUnsubs.delete(id); meetState.answered.delete(id); meetState.checked.delete(id); }
       for (const id of ids) {
         if (meetState.respUnsubs.has(id)) continue;
         meetState.respUnsubs.set(id, onSnapshot(doc(db, "meet_polls", id, "responses", state.user.uid), (r) => {
           if (r.exists() && (r.data().slots || []).length) meetState.answered.add(id); else meetState.answered.delete(id);
+          meetState.checked.add(id);
           paintMeetUrgent();
         }, () => {}));
       }
-      if (invited !== !!state.meetInvited) { state.meetInvited = invited; renderSidebar(); }
       paintMeetUrgent();
     }, (err) => console.warn("[dashboard] meet polls", err?.message));
   } catch (e) { console.warn(e); }
 }
-// Urgent polls still waiting on me, soonest deadline first.
+// Open polls still waiting on me (only once we've checked my answer).
+function meetWaiting() {
+  return meetState.polls.filter((p) => meetState.checked.has(p.id) && !meetState.answered.has(p.id));
+}
+// Urgent ones, soonest deadline first.
 function meetUrgentPolls() {
-  return meetState.polls.filter((p) => p.urgent && !meetState.answered.has(p.id))
+  return meetWaiting().filter((p) => p.urgent)
     .sort((a, b) => String(a.answerBy || "9").localeCompare(String(b.answerBy || "9")));
 }
 function meetByText(iso) {
   if (!iso) return "";
   return new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "") + " ET";
 }
-function paintMeetDot() {
-  const urgent = meetUrgentPolls();
-  document.querySelectorAll('.nav-link[data-route="#/meet"]').forEach((a) => {
-    let dot = a.querySelector(".nav-urgent-dot");
-    if (urgent.length && !dot) { dot = el("span", { class: "nav-urgent-dot", "aria-label": "Needs your answer" }); a.querySelector(".nav-link-label")?.after(dot); }
-    if (!urgent.length && dot) dot.remove();
-  });
+// Re-draw the sidebar when "you owe an answer" turns on or off.
+function paintMeetNav() {
+  const n = meetWaiting().length;
+  document.body.classList.toggle("meet-needs", n > 0);
+  if (n !== (state.meetNeeds || 0)) { state.meetNeeds = n; renderSidebar(); }
 }
 function paintMeetUrgent() {
-  paintMeetDot();
+  paintMeetNav();
   const urgent = meetUrgentPolls();
   // Banner: every page except the poll itself and the Meeting page (which shows its own).
   const content = document.getElementById("content");
   content?.querySelectorAll(":scope > .meet-urgent").forEach((b) => b.remove());
   const hash = location.hash || "";
   const p = urgent[0];
-  if (!p || !content || hash.startsWith(`#/meet?poll=${p.id}`) || hash.startsWith("#/meeting")) return;
+  if (!p || !content || hash.startsWith("#/meeting") || hash.startsWith("#/meet")) return;
   const by = meetByText(p.answerBy);
   const late = p.answerBy && Date.parse(p.answerBy) < Date.now();
   const banner = el("div", { class: "meet-urgent", role: "alert" });
   banner.innerHTML = `
     <span class="meet-urgent-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M12 14v2"/><circle cx="12" cy="18.5" r=".6" fill="currentColor"/></svg></span>
     <span class="meet-urgent-text"><strong></strong><span></span></span>
-    <a class="meet-urgent-btn" href="#/meet?poll=${encodeURIComponent(p.id)}">Mark when you're free</a>`;
+    <a class="meet-urgent-btn" href="#/meeting?poll=${encodeURIComponent(p.id)}">Mark when you're free</a>`;
   banner.querySelector("strong").textContent = p.reason || "You missed our last meeting, so we need your availability.";
   banner.querySelector(".meet-urgent-text > span").textContent = late
     ? `This was due ${by}. Please add your times now so we can find a time to meet.`
@@ -905,10 +907,13 @@ function renderSidebar() {
   const nav = document.getElementById("nav");
 
   const byGroup = new Map();
+  // Owe an answer on a When to meet poll? Meeting goes to the very top, in red.
+  const meetAlert = (state.meetNeeds || 0) > 0 && ROUTES["#/meeting"] && isRouteAllowed("#/meeting", ROUTES["#/meeting"]);
   for (const [hash, route] of Object.entries(ROUTES)) {
     if (!isRouteAllowed(hash, route)) continue;
     if (route.hidden || isNavHidden(hash)) continue;
     if (route.navIf && !route.navIf()) continue;
+    if (meetAlert && hash === "#/meeting") continue;
     const g = route.group || "main";
     if (!byGroup.has(g)) byGroup.set(g, []);
     byGroup.get(g).push({ hash, ...route });
@@ -917,10 +922,20 @@ function renderSidebar() {
   // Only keep pins that are real, visible, allowed routes (a role change or a
   // removed route shouldn't leave a dangling pin). Preserve pin order.
   const pinnedHashes = state.pins.filter(
-    (h) => ROUTES[h] && !ROUTES[h].hidden && !isNavHidden(h) && (!ROUTES[h].navIf || ROUTES[h].navIf()) && isRouteAllowed(h, ROUTES[h]) && h !== "#/overview");
+    (h) => ROUTES[h] && !ROUTES[h].hidden && !isNavHidden(h) && (!ROUTES[h].navIf || ROUTES[h].navIf()) && isRouteAllowed(h, ROUTES[h]) && h !== "#/overview" && !(meetAlert && h === "#/meeting"));
   const defaultPins = new Set(defaultPinsForActive());
 
   const frag = document.createDocumentFragment();
+
+  if (meetAlert) {
+    const group = el("div", { class: "nav-group nav-group-alert" });
+    const link = el("a", { class: "nav-link nav-link-alert", href: "#/meeting", "data-route": "#/meeting" });
+    link.innerHTML = `${ICONS.meeting}<span class="nav-link-label">Meeting<small>Add your times</small></span><span class="nav-alert-dot" aria-hidden="true"></span>`;
+    link.title = "We need your availability. Open Meeting and mark when you're free.";
+    link.setAttribute("aria-label", "Meeting: we need your availability");
+    group.appendChild(link);
+    frag.appendChild(group);
+  }
 
   // "Pinned" group at the very top — role defaults (locked) + the user's own.
   if (pinnedHashes.length) {
@@ -967,7 +982,6 @@ function renderSidebar() {
   nav.appendChild(frag);
   const here = (location.hash || "").split("?")[0];
   nav.querySelectorAll(".nav-link").forEach((a) => a.classList.toggle("active", a.dataset.route === here));
-  paintMeetDot();
 
   // Ensure a default route exists
   if (!location.hash) location.hash = "#/overview";

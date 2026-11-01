@@ -1955,7 +1955,7 @@ function gcalLink(m) {
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 
-const WHY_ATTEND = "Our meetings are where the edition comes together: deadlines get set, pieces get feedback, and each section plans its next steps. Being there, on time, means you hear decisions first-hand, get help before you're stuck, and keep your editor and co-writers in the loop. If you can't make it, let your section editor know ahead of time.";
+const WHY_ATTEND = "We're a team, and we count on each other. Editors need you there for feedback and planning, admins need you there to keep the edition on track, and the other writers need you there to talk through their pieces and help when someone's stuck. Please come on time and ready to pitch in. If you really can't make it, tell your section editor ahead of time.";
 
 // kind: "scheduled" (first publish), "updated" (republished with changes),
 // "reminder" (the automatic one a day before, or one an admin sends or
@@ -1996,7 +1996,7 @@ export function meetingEmail({ meeting, kind = "scheduled", recipientName = "", 
       <a href="${escapeAttr(pageUrl)}" style="display:inline-block;background:#ffffff;color:${COLORS.ink};text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;border:1px solid ${COLORS.hairline};margin:0 0 8px 0;">See it in the Suite</a>
     </div>
     <div style="margin:22px 0 0 0;padding:14px 16px;border-radius:10px;background:${COLORS.footerBg};border:1px solid ${COLORS.hairline};">
-      <div style="font-size:12px;font-weight:700;color:${COLORS.ink};margin-bottom:4px;">Why it matters</div>
+      <div style="font-size:12px;font-weight:700;color:${COLORS.ink};margin-bottom:4px;">Why showing up matters</div>
       <div style="font-size:14px;line-height:1.6;color:${COLORS.inkSoft};">${escapeHtml(WHY_ATTEND)}</div>
     </div>
     <p style="margin:24px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">See you there,<br><span style="color:${COLORS.ink};font-weight:600;">The Catalyst</span></p>`;
@@ -2008,7 +2008,7 @@ export function meetingEmail({ meeting, kind = "scheduled", recipientName = "", 
 // nudge: a follow-up to someone who hasn't answered yet. An urgent poll
 // (poll.urgent) leads with its reason and the answer-by time, in red.
 export function meetPollInviteEmail({ poll, recipientName = "", inviterName = "", siteUrl, nudge = false }) {
-  const url = `${siteUrl}/admin/#/meet?poll=${encodeURIComponent(poll.id || "")}`;
+  const url = `${siteUrl}/admin/#/meeting?poll=${encodeURIComponent(poll.id || "")}`;
   const first = String(recipientName || "").trim().split(/\s+/)[0];
   const by = poll.answerBy ? `${new Date(poll.answerBy).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "")} ET` : "";
   const days = (poll.dates || []).map((d) => {

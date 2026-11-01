@@ -9,8 +9,14 @@
 //     notification); publishing again after a change sends an "updated" email.
 //     The cron sends a reminder about a day before
 //     (functions/_utils/meeting-reminders.js).
-//   • When to meet hands off here: #/meeting?poll=…&date=…&start=…&end=…
-//     opens the form filled in with that time and the poll's people.
+//   • When to meet polls live here too, only for the people invited (and
+//     admins): each poll is embedded (meet.js mountPoll). One that still needs
+//     your times comes first, in red, and is open; once you've answered it
+//     folds to a green line. #/meeting?poll=<id> opens and scrolls to it.
+//     The sidebar moves Meeting to the top and flashes it red while you owe
+//     an answer (app.js).
+//   • An admin turning a poll's time into a meeting comes back here with
+//     #/meeting?poll=…&date=…&start=…&end=…, which opens the form filled in.
 //
 // Data: meetings/{id} { title, date "YYYY-MM-DD", start "HH:MM", end, startsAt,
 // endsAt (UTC ISO), link, agenda, note, audience: all|people, invitedUids,
@@ -27,11 +33,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { el, esc, toast, openModal, confirmDialog } from "./ui.js";
 import { loadPeople, mountPeoplePicker, peopleUids, PICKER_CSS } from "./people-picker.js?v=1";
+import { mountPoll } from "./meet.js?v=3";
 
 const WHY = [
-  ["Decisions happen here", "Deadlines, section plans and changes to the edition are settled in the meeting. Being there means you hear them first-hand."],
-  ["Get unstuck early", "Bring the question you're stuck on. It's the fastest way to get help from your editor and the rest of the team."],
-  ["Keep your section moving", "Your editor and co-writers plan around what you share. Showing up on time keeps everyone in step."],
+  "We're a team, and we count on each other. Editors need you there to give feedback and plan the section. Admins need you there to keep the edition on track. And the other writers need you there too, to talk through their pieces and help when someone's stuck, the same way they'll help you.",
+  "So please come on time, come ready to share where your piece is, and come ready to pitch in on someone else's.",
 ];
 
 // Eastern wall time → UTC ISO (handles daylight saving).
@@ -67,38 +73,100 @@ function countdown(m, now = Date.now()) {
 }
 // "Sat, Nov 7, 6 PM ET" for a UTC ISO time.
 const whenShort = (iso) => `${new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "")} ET`;
+const ICON_CAL = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>`;
 const ICON_BELL = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-right:6px;vertical-align:-2px"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`;
 const safeLink = (u) => /^https?:\/\//i.test(String(u || "").trim()) ? String(u).trim() : "";
 
 export async function mount(ctx, container) {
   injectStyle();
   const isAdmin = ctx.role === "admin";
+  const meUid = ctx.user?.uid || "";
+  const params = new URLSearchParams(location.hash.split("?")[1] || "");
+  const askedPoll = params.get("date") ? "" : (params.get("poll") || "");
   const root = el("div", { class: "mg" });
   container.innerHTML = "";
   container.appendChild(root);
-  let meetings = [], tick = null, urgent = [], loaded = false;
-  root.innerHTML = `<div class="loading-state"><div class="spinner"></div>Loading&hellip;</div>`;
+  root.innerHTML = `
+    <header class="mg-head">
+      <div><h1>Meeting</h1><p>When we're meeting next, what we'll cover, and how to join.</p></div>
+      ${isAdmin ? `<button type="button" class="btn btn-primary" data-new>Set the next meeting</button>` : ""}
+    </header>
+    <div class="mg-polls"></div>
+    <div class="mg-main"><div class="loading-state"><div class="spinner"></div>Loading&hellip;</div></div>`;
+  const pollsEl = root.querySelector(".mg-polls");
+  const mainEl = root.querySelector(".mg-main");
+  let meetings = [], tick = null;
   const unsub = onSnapshot(collection(db, "meetings"), (s) => {
     meetings = s.docs.map((d) => ({ id: d.id, ...d.data() }));
-    loaded = true;
     render();
-  }, () => { root.innerHTML = `<div class="mg-empty"><p>Couldn't load meetings.</p></div>`; });
-  // Urgent When to meet polls still waiting on me (e.g. I missed the last
-  // meeting): they come first on this page, in red.
-  const meUid = ctx.user?.uid || "";
-  const answered = new Map();
-  const unsubPolls = meUid ? onSnapshot(query(collection(db, "meet_polls"), where("invitedUids", "array-contains", meUid)), (s) => {
-    const open = s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.urgent && p.status !== "closed");
-    for (const [pid, un] of answered) if (!open.some((p) => p.id === pid)) { un.off(); answered.delete(pid); }
-    open.forEach((p) => {
+  }, () => { mainEl.innerHTML = `<div class="mg-empty"><p>Couldn't load meetings.</p></div>`; });
+
+  // ── When to meet polls: the ones I'm invited to (admins: all open ones). ──
+  // Kept outside mainEl, which re-renders every minute, so a poll you're
+  // dragging on is never rebuilt.
+  let polls = [];
+  const answered = new Map();      // pollId -> { done, off }
+  const entries = new Map();       // pollId -> { sec, head, body, open, cleanup }
+  let scrolled = false;
+  const pollQuery = isAdmin ? collection(db, "meet_polls") : query(collection(db, "meet_polls"), where("invitedUids", "array-contains", meUid));
+  const unsubPolls = meUid ? onSnapshot(pollQuery, (s) => {
+    polls = s.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.status !== "closed" || p.id === askedPoll);
+    for (const [pid, rec] of answered) if (!polls.some((p) => p.id === pid)) { rec.off(); answered.delete(pid); }
+    polls.filter(invited).forEach((p) => {
       if (answered.has(p.id)) return;
-      const rec = { done: false, off: () => {} };
+      const rec = { done: false, checked: false, off: () => {} };
       answered.set(p.id, rec);
-      rec.off = onSnapshot(doc(db, "meet_polls", p.id, "responses", meUid), (r) => { rec.done = r.exists() && (r.data().slots || []).length > 0; refreshUrgent(); }, () => {});
+      rec.off = onSnapshot(doc(db, "meet_polls", p.id, "responses", meUid), (r) => { rec.done = r.exists() && (r.data().slots || []).length > 0; rec.checked = true; paintPolls(); }, () => { rec.checked = true; paintPolls(); });
     });
-    urgent = open; refreshUrgent();
+    paintPolls();
   }, () => {}) : () => {};
-  function refreshUrgent() { urgent = urgent.filter(Boolean); if (loaded) render(); }
+  function invited(p) { return (p.invitedUids || []).includes(meUid); }
+  function needs(p) { return invited(p) && p.status !== "closed" && !answered.get(p.id)?.done; }
+  const byLong = (iso) => iso ? `${new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "")} ET` : "";
+  const daysText = (p) => (p.dates || []).slice().sort().map((d) => new Date(`${d}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })).join(" · ");
+
+  function pollHead(p, open) {
+    const by = byLong(p.answerBy);
+    const late = p.answerBy && Date.parse(p.answerBy) < Date.now();
+    if (needs(p)) {
+      return `<span class="mg-urgent-tag">${p.urgent ? "First, before the next meeting" : "Needed from you"}</span>
+        <h2>${esc(p.urgent ? (p.reason || "You missed our last meeting, so we need your availability.") : `When can you meet? ${p.title || ""}`.trim())}</h2>
+        <p>${late ? `This was due ${esc(by)}. Please add your times now.` : by ? `Please mark when you're free by <b>${esc(by)}</b>.` : "Please mark when you're free as soon as you can."} Drag over the times below. It takes a minute.</p>`;
+    }
+    const toggle = `<button type="button" class="btn btn-ghost btn-sm" data-poll-toggle="${esc(p.id)}" aria-expanded="${open}">${open ? "Hide" : invited(p) ? "Change your times or see everyone's" : "See the answers"}</button>`;
+    if (invited(p)) {
+      return `<div class="mg-pollrow"><span class="mg-pollrow-ico" aria-hidden="true">&#10003;</span><div><b>Your times are in</b><small>${esc(p.title || "When to meet")} · ${esc(daysText(p))}${p.status === "closed" ? " · closed" : ""}</small></div>${toggle}</div>`;
+    }
+    return `<div class="mg-pollrow"><span class="mg-pollrow-ico is-admin" aria-hidden="true">${ICON_CAL}</span><div><b>When to meet: ${esc(p.title || "")}</b><small>${esc(daysText(p))}${p.answerBy ? ` · answer by ${esc(byLong(p.answerBy))}` : ""}${p.status === "closed" ? " · closed" : ""} · you're not invited, admins can see it</small></div>${toggle}</div>`;
+  }
+
+  function paintPolls() {
+    const rank = (p) => (needs(p) ? (p.urgent ? 0 : 1) : invited(p) ? 2 : 3);
+    // Wait until we know whether I've answered, so it opens (or not) correctly.
+    const list = polls.filter((p) => !invited(p) || answered.get(p.id)?.checked).sort((a, b) => rank(a) - rank(b) || String(a.answerBy || "9").localeCompare(String(b.answerBy || "9")));
+    for (const [pid, e] of entries) if (!list.some((p) => p.id === pid)) { e.cleanup?.(); e.sec.remove(); entries.delete(pid); }
+    list.forEach((p) => {
+      let e = entries.get(p.id);
+      if (!e) {
+        e = { sec: el("section", { class: "mg-poll", "data-poll": p.id }), head: el("div", { class: "mg-poll-head" }), body: el("div", { class: "mg-poll-body" }), open: needs(p) || p.id === askedPoll, cleanup: null };
+        e.sec.append(e.head, e.body);
+        entries.set(p.id, e);
+      }
+      if (needs(p)) e.open = true;
+      e.sec.className = `mg-poll ${needs(p) ? "is-needs" : invited(p) ? "is-done" : "is-admin"}`;
+      e.sec.setAttribute("role", needs(p) ? "alert" : "region");
+      e.head.innerHTML = pollHead(p, e.open);
+      if (e.open && !e.cleanup) e.cleanup = mountPoll(ctx, e.body, p.id);
+      if (!e.open && e.cleanup) { e.cleanup(); e.cleanup = null; e.body.innerHTML = ""; }
+      e.body.hidden = !e.open;
+      pollsEl.appendChild(e.sec);   // keeps order; moving a node keeps what's inside it
+    });
+    if (askedPoll && !scrolled && entries.get(askedPoll)) {
+      scrolled = true;
+      requestAnimationFrame(() => entries.get(askedPoll)?.sec.scrollIntoView({ behavior: "smooth", block: "start" }));
+      history.replaceState(null, "", "#/meeting");
+    }
+  }
 
   root.addEventListener("click", (e) => {
     if (e.target.closest("[data-new]")) editMeeting(null);
@@ -106,12 +174,13 @@ export async function mount(ctx, container) {
     if (b) editMeeting(meetings.find((m) => m.id === b.dataset.edit));
     const r = e.target.closest("[data-remind]");
     if (r) remindDialog(meetings.find((m) => m.id === r.dataset.remind));
+    const t = e.target.closest("[data-poll-toggle]");
+    if (t) { const en = entries.get(t.dataset.pollToggle); if (en) { en.open = !en.open; paintPolls(); } }
   });
 
   tick = setInterval(() => { if (document.contains(root)) render(); }, 60000);
 
   // Coming from When to meet with a time picked.
-  const params = new URLSearchParams(location.hash.split("?")[1] || "");
   if (isAdmin && params.get("date")) {
     let preset = { date: params.get("date"), start: params.get("start") || "18:00", end: params.get("end") || "19:00", pollId: params.get("poll") || "" };
     if (preset.pollId) {
@@ -120,7 +189,7 @@ export async function mount(ctx, container) {
     history.replaceState(null, "", "#/meeting");
     editMeeting(null, preset);
   }
-  return () => { unsub(); unsubPolls(); answered.forEach((r) => r.off()); clearInterval(tick); };
+  return () => { unsub(); unsubPolls(); answered.forEach((r) => r.off()); entries.forEach((e) => e.cleanup?.()); clearInterval(tick); };
 
   function render() {
     const now = Date.now();
@@ -131,36 +200,15 @@ export async function mount(ctx, container) {
     const drafts = isAdmin ? meetings.filter((m) => m.status === "draft").sort((a, b) => String(a.startsAt || "").localeCompare(String(b.startsAt || ""))) : [];
     const past = visible.filter((m) => m.status === "published" && m.endsAt && Date.parse(m.endsAt) <= now).sort((a, b) => b.startsAt.localeCompare(a.startsAt)).slice(0, 8);
 
-    root.innerHTML = `
-      <header class="mg-head">
-        <div><h1>Meeting</h1><p>When we're meeting next, what we'll cover, and how to join.</p></div>
-        ${isAdmin ? `<button type="button" class="btn btn-primary" data-new>Set the next meeting</button>` : ""}
-      </header>
-      ${urgentCards()}
+    mainEl.innerHTML = `
       ${next ? nextCard(next, now) : `<section class="mg-none"><h2>No meeting on the calendar yet.</h2><p>${isAdmin ? "Set the next one. You can publish it quietly or email everyone, and send a reminder whenever you like." : "When the next one is set, it shows up here, usually with an email and a reminder before."}</p></section>`}
       ${drafts.length ? `<h2 class="mg-h2">Drafts <span>only admins see these</span></h2><ul class="mg-rows">${drafts.map((m) => row(m, "draft")).join("")}</ul>` : ""}
       ${later.length ? `<h2 class="mg-h2">Also coming up</h2><ul class="mg-rows">${later.map((m) => row(m)).join("")}</ul>` : ""}
       <section class="mg-why">
-        <h2 class="mg-h2">Why it matters to be there</h2>
-        <div class="mg-why-grid">${WHY.map(([h, p], i) => `<div class="mg-why-item mg-why-${i}"><b>${esc(h)}</b><p>${esc(p)}</p></div>`).join("")}</div>
-        <p class="mg-why-foot">Can't make it? Tell your section editor before the meeting so they can catch you up.</p>
+        <h2 class="mg-h2">Why showing up matters</h2>
+        <div class="mg-why-card">${WHY.map((t) => `<p>${esc(t)}</p>`).join("")}<p class="mg-why-foot">If you really can't make it, tell your section editor ahead of time so they can catch you up.</p></div>
       </section>
       ${past.length ? `<h2 class="mg-h2">Past meetings</h2><ul class="mg-rows">${past.map((m) => row(m, "past")).join("")}</ul>` : ""}`;
-  }
-
-  function urgentCards() {
-    const waiting = urgent.filter((p) => !answered.get(p.id)?.done);
-    return waiting.map((p) => {
-      const by = p.answerBy ? new Date(p.answerBy).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).replace(":00", "") + " ET" : "";
-      const late = p.answerBy && Date.parse(p.answerBy) < Date.now();
-      return `<section class="mg-urgent" role="alert">
-        <span class="mg-urgent-tag">First, before the next meeting</span>
-        <h2>${esc(p.reason || "You missed our last meeting, so we need your availability.")}</h2>
-        <p>${late ? `This was due ${esc(by)}. Please add your times now` : by ? `Please mark when you're free by <b>${esc(by)}</b>` : "Please mark when you're free as soon as you can"}, so we can catch you up.</p>
-        ${p.note ? `<p class="mg-urgent-note">${esc(p.note)}</p>` : ""}
-        <a class="mg-urgent-btn" href="#/meet?poll=${esc(p.id)}">Mark when you're free</a>
-      </section>`;
-    }).join("");
   }
 
   function nextCard(m, now) {
@@ -411,14 +459,10 @@ function injectStyle() {
 .mg-note { margin: 14px 0 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; }
 .mg-for { margin: 16px 0 0; font-size: 12.5px; color: var(--muted); }
 .mg-muted { margin: 0; font-size: 14px; color: var(--muted); }
-.mg-why-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.mg-why-item { padding: 16px 18px; border-radius: 14px; }
-.mg-why-item b { display: block; font-size: 14.5px; margin-bottom: 4px; }
-.mg-why-item p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
-.mg-why-0 { background: #e2ecf7; } .mg-why-0 b { color: #2b5f9e; }
-.mg-why-1 { background: #e3f1e7; } .mg-why-1 b { color: #2f7d4f; }
-.mg-why-2 { background: #fbe4da; } .mg-why-2 b { color: #b4441b; }
-.mg-why-foot { margin: 12px 0 0; font-size: 13.5px; color: var(--muted); }
+.mg-why-card { padding: 20px 24px; border-radius: 16px; background: #f6efe3; border: 1px solid #eadbbd; max-width: 760px; }
+.mg-why-card p { margin: 0; font-size: 15px; line-height: 1.7; color: var(--ink); }
+.mg-why-card p + p { margin-top: 10px; }
+.mg-why-card .mg-why-foot { font-size: 13.5px; color: #7a6a4f; }
 .mg-rows { margin: 0; padding: 0; list-style: none; }
 .mg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--hairline-2); }
 .mg-row b { font-size: 14.5px; } .mg-row small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
@@ -431,14 +475,25 @@ function injectStyle() {
 .mg-aud { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
 .mg-aud label { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
 .mg-picker { margin-top: 6px; }
-.mg-urgent { margin: 0 0 18px; padding: 22px 26px; border-radius: 20px; background: #fdecea; border: 1px solid #f3b8b0; border-left: 6px solid #c4321f; color: #6e1a10; }
+.mg-polls { display: flex; flex-direction: column; gap: 12px; margin: 0 0 18px; }
+.mg-polls:empty { display: none; }
+.mg-poll { border-radius: 20px; border: 1px solid var(--hairline); background: var(--surface); scroll-margin-top: 80px; }
+.mg-poll-body { padding: 4px 22px 18px; }
+.mg-poll.is-needs { background: #fdecea; border: 1px solid #f3b8b0; border-left: 6px solid #c4321f; color: #6e1a10; }
+.mg-poll.is-needs .mg-poll-head { padding: 22px 24px 14px; }
+.mg-poll.is-needs .mg-poll-body { padding: 0 14px 14px; }
+.mg-poll.is-needs .mg-poll-body .mt-panel, .mg-poll.is-needs .mg-poll-body .mt-win, .mg-poll.is-needs .mg-poll-body .mt-tl-wrap { border-color: #f0c7c0; }
+.mg-poll.is-needs .mt-head h3 { color: var(--ink); }
+.mg-poll.is-done { background: #eef6f0; border-color: #cfe4d6; }
+.mg-pollrow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 18px; }
+.mg-pollrow > div { flex: 1 1 220px; display: flex; flex-direction: column; gap: 2px; }
+.mg-pollrow b { font-size: 14.5px; } .mg-pollrow small { font-size: 12.5px; color: var(--muted); }
+.mg-pollrow-ico { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #2f7d4f; color: #f4fbf6; font-weight: 700; flex: none; }
+.mg-pollrow-ico.is-admin { background: var(--surface-3); color: var(--ink-2); }
+.mg-poll-head > .mg-urgent-tag + h2 { margin-top: 12px; }
+.mg-poll-head h2 { margin: 0; font: 600 clamp(19px, 2.4vw, 23px)/1.3 var(--font); letter-spacing: -0.02em; color: #8f1d10; }
+.mg-poll-head p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.6; }
 .mg-urgent-tag { display: inline-flex; padding: 4px 12px; border-radius: 99px; background: #b42318; color: #fff8f6; font: 700 11.5px/1.5 var(--font); letter-spacing: .02em; }
-.mg-urgent h2 { margin: 12px 0 0; font: 600 clamp(19px, 2.4vw, 23px)/1.3 var(--font); letter-spacing: -0.02em; color: #8f1d10; }
-.mg-urgent p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.6; }
-.mg-urgent .mg-urgent-note { margin-top: 4px; color: #8a3b30; white-space: pre-wrap; }
-.mg-urgent-btn { display: inline-flex; align-items: center; min-height: 44px; margin-top: 14px; padding: 0 20px; border-radius: 999px; background: #b42318; color: #fff8f6; font: 600 14px var(--font); text-decoration: none; }
-.mg-urgent-btn:hover { background: #962012; }
-.mg-urgent-btn:focus-visible { outline: 2px solid #6e1a10; outline-offset: 2px; }
 .mg-check { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 14px; cursor: pointer; }
 .mg-remind { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 18px; padding-top: 16px; border-top: 1px dashed #e3cfa5; }
 .mg-remind .btn { min-height: 40px; }
@@ -453,7 +508,6 @@ function injectStyle() {
   .mg-next { grid-template-columns: minmax(0, 1fr); }
   .mg-next-side { border-left: 0; border-top: 1px solid #eadbbd; }
   .mg-next-main, .mg-next-side { padding: 22px 20px; }
-  .mg-why-grid { grid-template-columns: minmax(0, 1fr); }
   .mg-f3 { grid-template-columns: 1fr 1fr; } .mg-f3 > :first-child { grid-column: 1 / -1; }
 }
 `;

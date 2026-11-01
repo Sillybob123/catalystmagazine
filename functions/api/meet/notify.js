@@ -2,7 +2,7 @@
 //
 // Invites people to a When-to-meet poll (Advanced tools → When to meet). The
 // Suite writes the poll (meet_polls/{id}, admins only), then calls this: each
-// invitee gets an email and a bell notification that opens #/meet?poll=<id>.
+// invitee gets an email and a bell notification that opens the poll on the Meeting page (#/meeting?poll=<id>).
 // Admins only. Idempotent per poll and person (dedupe ids on the bell; the
 // email is skipped for anyone already emailed for this poll).
 // With nudgeUids (the people who haven't answered, from the Suite), only they
@@ -44,7 +44,7 @@ export const onRequestPost = async ({ request, env }) => {
       if ((!nudge && already.has(p.name)) || !p.emails.length) continue;
       try {
         const { subject, html } = meetPollInviteEmail({ poll, recipientName: p.name, inviterName, siteUrl, nudge });
-        await sendEmail(env, { to: p.emails, subject, html, text: `${inviterName} is finding a time to meet: ${poll.title}. Mark when you're free: ${siteUrl}/admin/#/meet?poll=${pollId}`, fromName: "The Catalyst" });
+        await sendEmail(env, { to: p.emails, subject, html, text: `${inviterName} is finding a time to meet: ${poll.title}. Mark when you're free: ${siteUrl}/admin/#/meeting?poll=${pollId}`, fromName: "The Catalyst" });
         emailed++; if (!emailedNames.includes(p.name)) emailedNames.push(p.name);
       } catch (e) { failed++; console.warn("[meet/notify] email failed", p.name, e?.message); }
     }
@@ -56,7 +56,7 @@ export const onRequestPost = async ({ request, env }) => {
       body: `${poll.urgent && poll.reason ? `${poll.reason} ` : ""}${by ? `Mark your times by ${by}.` : "Drag over the times you're free (8 AM–9 PM ET)."}`,
       actorId: auth.uid,
       actorName: inviterName,
-      actionHash: `#/meet?poll=${pollId}`,
+      actionHash: `#/meeting?poll=${pollId}`,
     }, (rid) => nudge ? `meet_${pollId}_nudge${stamp.replace(/[^0-9]/g, "")}_${rid}` : `meet_${pollId}_${rid}`).catch(() => 0);
     await firestoreUpdate(env, `meet_polls/${pollId}`, { emailedNames, notifiedAt: stamp, ...(nudge ? { nudgedAt: stamp } : {}) }).catch(() => {});
     return json({ ok: true, emailed, failed, notified: belled, people: people.length });

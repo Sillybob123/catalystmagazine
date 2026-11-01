@@ -2138,4 +2138,16 @@ body.ds-lock .toast-stack { z-index: 1100; }
 .meet-urgent-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: #b42318; color: #fff8f6; font: 600 14px var(--font); text-decoration: none; white-space: nowrap; }
 .meet-urgent-btn:hover { background: #962012; }
 .meet-urgent-btn:focus-visible { outline: 2px solid #6e1a10; outline-offset: 2px; }
-.nav-urgent-dot { width: 8px; height: 8px; margin-left: 6px; border-radius: 50%; background: #c4321f; box-shadow: 0 0 0 3px rgba(196, 50, 31, .18); flex: none; }
+/* Meeting at the top of the sidebar, flashing red, while you owe When to meet times (app.js renderSidebar) */
+.nav-group-alert { margin-bottom: 10px; }
+.nav-link.nav-link-alert { position: relative; background: #fdecea; color: #8f1d10; border: 1px solid #f3b8b0; font-weight: 600; animation: nav-alert-pulse 1.6s ease-in-out infinite; }
+.nav-link.nav-link-alert .icon { color: #b42318; }
+.nav-link.nav-link-alert .nav-link-label { display: flex; flex-direction: column; line-height: 1.2; }
+.nav-link.nav-link-alert .nav-link-label small { font-size: 11px; font-weight: 600; color: #b42318; margin-top: 2px; }
+.nav-link.nav-link-alert:hover, .nav-link.nav-link-alert.active { background: #f9d6d0; color: #6e1a10; }
+.nav-alert-dot { width: 9px; height: 9px; margin-left: auto; border-radius: 50%; background: #c4321f; flex: none; animation: nav-alert-dot 1.6s ease-in-out infinite; }
+@keyframes nav-alert-pulse { 0%, 100% { background: #fdecea; box-shadow: 0 0 0 0 rgba(196, 50, 31, 0); } 50% { background: #f8cdc6; box-shadow: 0 0 0 4px rgba(196, 50, 31, .16); } }
+@keyframes nav-alert-dot { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .7; } }
+body.meet-needs #hamburger { position: relative; }
+body.meet-needs #hamburger::after { content: ""; position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: #c4321f; box-shadow: 0 0 0 2px var(--surface, #fbf9f4); }
+@media (prefers-reduced-motion: reduce) { .nav-link.nav-link-alert, .nav-alert-dot { animation: none; } .nav-link.nav-link-alert { background: #f8cdc6; } }
