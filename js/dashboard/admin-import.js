@@ -17,6 +17,7 @@ import { el, esc, toast, slugify, confirmDialog } from "./ui.js";
 import { mountCoverPromptTool } from "./cover-prompt.js?v=6";
 import { mountAgreementTool } from "./agreement.js?v=10";
 import { mountThemePicker } from "./suite-theme.js?v=st-10";
+import { mountMeetTool } from "./meet.js?v=1";
 
 // A user is "recently joined" if their account was created within this many
 // days. The welcome email panel surfaces these at the top so the admin can fire
@@ -59,6 +60,14 @@ const TOOLS = [
     danger: "writes",
     iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="M5.5 8h1M5.5 11h1M5.5 14h1"/></svg>`,
     mount: mountSidebarTool,
+  },
+  {
+    id: "meet",
+    label: "When to meet",
+    summary: "Find a time that works, like when2meet: pick the days and who's invited; they mark when they're free.",
+    danger: "writes",
+    iconSvg: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M7.5 14h3v3h-3zM13.5 14h3v3h-3z"/></svg>`,
+    mount: (ctx, root) => { let off = null, gone = false; mountMeetTool(ctx, root, paneHeader).then((f) => { if (gone && f) f(); else off = f; }); return () => { gone = true; if (off) off(); }; },
   },
   {
     id: "announce",

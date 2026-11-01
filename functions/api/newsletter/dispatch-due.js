@@ -19,6 +19,7 @@ import {
 } from "../../_utils/firebase.js";
 import { dispatchCampaign } from "../../_utils/newsletter-send.js";
 import { flushActivityQueues } from "../../_utils/activity-digest.js";
+import { sendDueMeetingReminders } from "../../_utils/meeting-reminders.js";
 
 export const onRequestPost = async ({ request, env }) => {
   try {
@@ -122,7 +123,15 @@ export const onRequestPost = async ({ request, env }) => {
       activity = { error: err?.message || String(err) };
     }
 
-    return json({ ok: true, dispatched, skipped, processed: dispatched.length, activity });
+    // And the "meeting is tomorrow" reminders (Suite → Meeting). Best-effort.
+    let meetings = null;
+    try {
+      meetings = await sendDueMeetingReminders(env);
+    } catch (err) {
+      meetings = { error: err?.message || String(err) };
+    }
+
+    return json({ ok: true, dispatched, skipped, processed: dispatched.length, activity, meetings });
   } catch (err) {
     return serverError(err);
   }

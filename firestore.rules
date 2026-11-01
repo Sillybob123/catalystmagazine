@@ -340,6 +340,33 @@ service cloud.firestore {
       }
     }
 
+    // ---------- When to meet (#/meet) ----------
+    // Availability polls. Admins create and manage them (Advanced tools →
+    // When to meet); the people invited (invitedUids, all of a person's
+    // accounts) can see the poll and everyone's answers, and write only their
+    // own answer, while the poll is open.
+    match /meet_polls/{pid} {
+      function pollData() { return get(/databases/$(database)/documents/meet_polls/$(pid)).data; }
+      allow read: if isAdmin() || (isStaff() && request.auth.uid in resource.data.invitedUids);
+      allow create, update, delete: if isAdmin();
+      match /responses/{uid} {
+        allow read: if isAdmin() || (isStaff() && request.auth.uid in pollData().get('invitedUids', []));
+        allow create, update: if request.auth != null && request.auth.uid == uid
+          && (isAdmin() || request.auth.uid in pollData().get('invitedUids', []))
+          && pollData().get('status', 'open') == 'open'
+          && request.resource.data.slots is list && request.resource.data.slots.size() <= 2000;
+        allow delete: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      }
+    }
+
+    // ---------- Team meetings (#/meeting) ----------
+    // The next meeting and past ones. Everyone on staff reads; admins write.
+    // Emails go out from /api/meetings/publish and the cron reminder.
+    match /meetings/{mid} {
+      allow read: if isStaff();
+      allow create, update, delete: if isAdmin();
+    }
+
     // ---------- public book-review submissions ("The Catalyzers") ----------
     // Reader-submitted book reviews. The ONLY write path is the server-side
     // POST /api/book-reviews/submit endpoint (Cloudflare Pages Function,

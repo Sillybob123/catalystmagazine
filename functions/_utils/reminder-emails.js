@@ -1925,3 +1925,98 @@ export function bioDecisionEmail({ name, approved, bio, note, slug, siteUrl }) {
   const preheader = approved ? "It's on the About page and your writer page now." : "An editor left a note on what to change.";
   return { subject, html: shell({ title: subject, preheader, body, siteUrl }) };
 }
+
+// ─── Meetings (Suite → Meeting) and When-to-meet polls ──────────────────────
+// Times are Eastern Time; a meeting stores its ET date ("2026-11-08") and
+// times ("18:00") for display, plus startsAt/endsAt (UTC) for the calendar
+// link and the reminder.
+
+function clock12(hhmm) {
+  const [h, m] = String(hhmm || "").split(":").map(Number);
+  if (Number.isNaN(h)) return "";
+  return `${((h + 11) % 12) + 1}:${String(m || 0).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}
+export function meetingWhenText(m) {
+  const [y, mo, d] = String(m.date || "").split("-").map(Number);
+  const day = y ? new Date(Date.UTC(y, mo - 1, d, 12)).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }) : "";
+  const a = clock12(m.start), b = clock12(m.end);
+  const sameHalf = a.slice(-2) === b.slice(-2);
+  return `${day} · ${sameHalf ? a.replace(/ (AM|PM)$/, "") : a}–${b} ET`;
+}
+function gcalLink(m) {
+  const fmt = (iso) => String(iso || "").replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const q = new URLSearchParams({
+    action: "TEMPLATE",
+    text: m.title || "Catalyst team meeting",
+    dates: `${fmt(m.startsAt)}/${fmt(m.endsAt)}`,
+    details: [m.agenda || "", m.link ? `Join: ${m.link}` : ""].filter(Boolean).join("\n\n"),
+    location: m.link || "",
+  });
+  return `https://calendar.google.com/calendar/render?${q}`;
+}
+
+const WHY_ATTEND = "Our meetings are where the edition comes together: deadlines get set, pieces get feedback, and each section plans its next steps. Being there, on time, means you hear decisions first-hand, get help before you're stuck, and keep your editor and co-writers in the loop. If you can't make it, let your section editor know ahead of time.";
+
+// kind: "scheduled" (first publish), "updated" (republished with changes), "reminder" (about a day before)
+export function meetingEmail({ meeting, kind = "scheduled", recipientName = "", siteUrl }) {
+  const when = meetingWhenText(meeting);
+  const pageUrl = `${siteUrl}/admin/#/meeting`;
+  const first = String(recipientName || "").trim().split(/\s+/)[0];
+  // A reminder for a meeting later today says "today", not "tomorrow".
+  const etToday = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const dayWord = meeting.date === etToday ? "today" : "tomorrow";
+  const lead = {
+    scheduled: "Our next team meeting is set. Here's everything you need:",
+    updated: "Our next team meeting has been updated. Here are the latest details:",
+    reminder: `A quick reminder: our team meeting is ${dayWord}.`,
+  }[kind] || "";
+  const label = { scheduled: "Meeting confirmed", updated: "Meeting updated", reminder: `Reminder: ${dayWord}` }[kind] || "Team meeting";
+  const agenda = String(meeting.agenda || "").split(/\n+/).map((s) => s.replace(/^[-•*]\s*/, "").trim()).filter(Boolean);
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">Hi ${escapeHtml(first || "there")},</p>
+    <p style="margin:10px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">${escapeHtml(lead)}</p>
+    <div style="margin:18px 0 0 0;background:#fbf6ec;border:1px solid #eadbbd;border-radius:12px;padding:18px 20px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#8a5a12;margin-bottom:6px;">${escapeHtml(label)}</div>
+      <div style="font-size:19px;font-weight:700;letter-spacing:-0.01em;line-height:1.35;color:${COLORS.ink};">${escapeHtml(meeting.title || "Catalyst team meeting")}</div>
+      <div style="margin-top:6px;font-size:15px;line-height:1.5;color:${COLORS.ink};">${escapeHtml(when)}</div>
+      ${meeting.link ? `<div style="margin-top:4px;font-size:13px;line-height:1.5;color:${COLORS.muted};word-break:break-all;">${escapeHtml(meeting.link)}</div>` : ""}
+    </div>
+    ${agenda.length ? `<div style="margin:20px 0 0 0;font-size:13px;font-weight:700;color:${COLORS.ink};">On the agenda</div>
+    <ul style="margin:8px 0 0 0;padding-left:20px;font-size:15px;line-height:1.65;color:${COLORS.inkSoft};">${agenda.map((a) => `<li>${escapeHtml(a)}</li>`).join("")}</ul>` : ""}
+    ${meeting.note ? `<p style="margin:16px 0 0 0;font-size:15px;line-height:1.65;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(meeting.note)}</p>` : ""}
+    <div style="margin:22px 0 0 0;">
+      ${meeting.link ? `<a href="${escapeAttr(meeting.link)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600;font-size:14px;margin:0 8px 8px 0;">Join the meeting</a>` : ""}
+      <a href="${escapeAttr(gcalLink(meeting))}" style="display:inline-block;background:#ffffff;color:${COLORS.ink};text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;border:1px solid ${COLORS.hairline};margin:0 8px 8px 0;">Add to Google Calendar</a>
+      <a href="${escapeAttr(pageUrl)}" style="display:inline-block;background:#ffffff;color:${COLORS.ink};text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;border:1px solid ${COLORS.hairline};margin:0 0 8px 0;">See it in the Suite</a>
+    </div>
+    <div style="margin:22px 0 0 0;padding:14px 16px;border-radius:10px;background:${COLORS.footerBg};border:1px solid ${COLORS.hairline};">
+      <div style="font-size:12px;font-weight:700;color:${COLORS.ink};margin-bottom:4px;">Why it matters</div>
+      <div style="font-size:14px;line-height:1.6;color:${COLORS.inkSoft};">${escapeHtml(WHY_ATTEND)}</div>
+    </div>
+    <p style="margin:24px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">See you there,<br><span style="color:${COLORS.ink};font-weight:600;">The Catalyst</span></p>`;
+  const prefix = { scheduled: "Team meeting", updated: "Updated: team meeting", reminder: `${dayWord === "today" ? "Today" : "Tomorrow"}: team meeting` }[kind] || "Team meeting";
+  const subject = `${prefix}, ${when}`;
+  return { subject, html: shell({ title: subject, preheader: when, body, siteUrl }) };
+}
+
+export function meetPollInviteEmail({ poll, recipientName = "", inviterName = "", siteUrl }) {
+  const url = `${siteUrl}/admin/#/meet?poll=${encodeURIComponent(poll.id || "")}`;
+  const first = String(recipientName || "").trim().split(/\s+/)[0];
+  const days = (poll.dates || []).map((d) => {
+    const [y, m, dd] = String(d).split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, dd, 12)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+  });
+  const body = `
+    <p style="margin:0 0 4px 0;font-size:15px;line-height:1.5;color:${COLORS.ink};">Hi ${escapeHtml(first || "there")},</p>
+    <p style="margin:10px 0 0 0;font-size:15px;line-height:1.6;color:${COLORS.inkSoft};">We're finding a time to meet, and we'd love your availability. It takes a minute: open the link, then drag over every time you're free. Anything you leave blank counts as busy.</p>
+    <div style="margin:18px 0 0 0;background:#eef6f0;border:1px solid #cfe4d6;border-radius:12px;padding:18px 20px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#2f7d4f;margin-bottom:6px;">When to meet</div>
+      <div style="font-size:19px;font-weight:700;letter-spacing:-0.01em;line-height:1.35;color:${COLORS.ink};">${escapeHtml(poll.title || "Find a time to meet")}</div>
+      <div style="margin-top:6px;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">${escapeHtml(days.join(" · "))} · between 8 AM and 9 PM ET</div>
+      ${poll.note ? `<div style="margin-top:8px;font-size:14px;line-height:1.6;color:${COLORS.inkSoft};white-space:pre-wrap;">${escapeHtml(poll.note)}</div>` : ""}
+    </div>
+    <div style="margin:22px 0 0 0;"><a href="${escapeAttr(url)}" style="display:inline-block;background:${COLORS.accent};color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:600;font-size:14px;">Mark when you're free</a></div>
+    <p style="margin:24px 0 0 0;font-size:14px;line-height:1.55;color:${COLORS.inkSoft};">Thank you,<br><span style="color:${COLORS.ink};font-weight:600;">${escapeHtml(inviterName || "The Catalyst")}</span></p>`;
+  const subject = `When can you meet? ${truncate(poll.title || "", 60)}`.trim();
+  return { subject, html: shell({ title: subject, preheader: "Drag over the times you're free. It takes a minute.", body, siteUrl }) };
+}

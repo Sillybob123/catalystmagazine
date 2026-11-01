@@ -22,6 +22,8 @@ import {
   getDocs,
   serverTimestamp,
   onSnapshot,
+  query,
+  where,
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import { el, toast, initials, openModal } from "./ui.js";
@@ -119,6 +121,8 @@ const ICONS = {
   // Advanced tools — a wrench
   wrench:      `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`,
   // Activity — pulse line
+  meeting:     `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M14.5 14.6A4.5 4.5 0 0 1 21 18.5"/></svg>`,
+  meet:        `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M7.5 14h3v3h-3zM13.5 14h3v3h-3z"/></svg>`,
   activity:    `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
   // Admin: Submissions — an inbox tray
   inbox:       `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
@@ -260,6 +264,27 @@ const ROUTES = {
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
     loader: () => import("./edition-hub.js?v=14"),
+  },
+  // Meeting — the next team meeting for everyone (admins set and publish it;
+  // emails go out on publish and a reminder about a day before).
+  "#/meeting": {
+    label: "Meeting",
+    desc: "When we're meeting next, the agenda, and how to join. You get an email when it's set and a reminder the day before.",
+    icon: ICONS.meeting,
+    roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
+    group: "main",
+    loader: () => import("./meeting.js?v=1"),
+  },
+  // When to meet — availability polls. In the sidebar only for admins and for
+  // people invited to an open poll (navIf); the link works for all staff.
+  "#/meet": {
+    label: "When to meet",
+    desc: "Mark the times you're free so we can find a time that works for everyone.",
+    icon: ICONS.meet,
+    roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
+    group: "main",
+    navIf: () => getActiveRole() === "admin" || state.meetInvited,
+    loader: () => import("./meet.js?v=1"),
   },
   "#/calendar": {
     label: "Editorial calendar",
@@ -545,7 +570,7 @@ const ROUTES = {
     icon: ICONS.wrench,
     roles: ["admin"],
     group: "admin",
-    loader: () => import("./admin-import.js?v=theme-20"),
+    loader: () => import("./admin-import.js?v=theme-21"),
     mountKey: "advanced",
   },
   "#/admin/activity": {
@@ -597,6 +622,17 @@ function watchNavSettings() {
       navHidden = new Set(Array.isArray(snap.data()?.hidden) ? snap.data().hidden : []);
       renderSidebar();
     }, (err) => console.warn("[dashboard] sidebar settings", err?.message));
+  } catch (e) { console.warn(e); }
+}
+
+// ---------- When to meet in the sidebar ----------
+// Shown while you're invited to an open poll (admins always see it).
+function watchMeetInvites() {
+  try {
+    onSnapshot(query(collection(db, "meet_polls"), where("invitedUids", "array-contains", state.user.uid)), (snap) => {
+      const invited = snap.docs.some((d) => d.data().status !== "closed");
+      if (invited !== !!state.meetInvited) { state.meetInvited = invited; renderSidebar(); }
+    }, (err) => console.warn("[dashboard] meet polls", err?.message));
   } catch (e) { console.warn(e); }
 }
 
@@ -652,6 +688,7 @@ onAuthStateChanged(auth, async (user) => {
   paintUserChip();
   renderSidebar();
   watchNavSettings();
+  watchMeetInvites();
   attachGlobalHandlers();
   try { initSuiteTheme(); } catch (e) { console.warn("[dashboard] theme init failed", e); }   // seasonal theme (Advanced tools)
   window.addEventListener("hashchange", handleRoute);
@@ -816,6 +853,7 @@ function renderSidebar() {
   for (const [hash, route] of Object.entries(ROUTES)) {
     if (!isRouteAllowed(hash, route)) continue;
     if (route.hidden || isNavHidden(hash)) continue;
+    if (route.navIf && !route.navIf()) continue;
     const g = route.group || "main";
     if (!byGroup.has(g)) byGroup.set(g, []);
     byGroup.get(g).push({ hash, ...route });
@@ -824,7 +862,7 @@ function renderSidebar() {
   // Only keep pins that are real, visible, allowed routes (a role change or a
   // removed route shouldn't leave a dangling pin). Preserve pin order.
   const pinnedHashes = state.pins.filter(
-    (h) => ROUTES[h] && !ROUTES[h].hidden && !isNavHidden(h) && isRouteAllowed(h, ROUTES[h]) && h !== "#/overview");
+    (h) => ROUTES[h] && !ROUTES[h].hidden && !isNavHidden(h) && (!ROUTES[h].navIf || ROUTES[h].navIf()) && isRouteAllowed(h, ROUTES[h]) && h !== "#/overview");
   const defaultPins = new Set(defaultPinsForActive());
 
   const frag = document.createDocumentFragment();
