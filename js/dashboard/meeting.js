@@ -205,8 +205,8 @@ export async function mount(ctx, container) {
       ${drafts.length ? `<h2 class="mg-h2">Drafts <span>only admins see these</span></h2><ul class="mg-rows">${drafts.map((m) => row(m, "draft")).join("")}</ul>` : ""}
       ${later.length ? `<h2 class="mg-h2">Also coming up</h2><ul class="mg-rows">${later.map((m) => row(m)).join("")}</ul>` : ""}
       <section class="mg-why">
-        <h2 class="mg-h2">Why showing up matters</h2>
-        <div class="mg-why-card">${WHY.map((t) => `<p>${esc(t)}</p>`).join("")}<p class="mg-why-foot">If you really can't make it, tell your section editor ahead of time so they can catch you up.</p></div>
+        <h2>Why showing up matters</h2>
+        <div class="mg-why-text">${WHY.map((t) => `<p>${esc(t)}</p>`).join("")}<p class="mg-why-foot">If you really can't make it, tell your section editor ahead of time so they can catch you up.</p></div>
       </section>
       ${past.length ? `<h2 class="mg-h2">Past meetings</h2><ul class="mg-rows">${past.map((m) => row(m, "past")).join("")}</ul>` : ""}`;
   }
@@ -459,10 +459,12 @@ function injectStyle() {
 .mg-note { margin: 14px 0 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); white-space: pre-wrap; }
 .mg-for { margin: 16px 0 0; font-size: 12.5px; color: var(--muted); }
 .mg-muted { margin: 0; font-size: 14px; color: var(--muted); }
-.mg-why-card { padding: 20px 24px; border-radius: 16px; background: #f6efe3; border: 1px solid #eadbbd; max-width: 760px; }
-.mg-why-card p { margin: 0; font-size: 15px; line-height: 1.7; color: var(--ink); }
-.mg-why-card p + p { margin-top: 10px; }
-.mg-why-card .mg-why-foot { font-size: 13.5px; color: #7a6a4f; }
+.mg-why { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 2.2fr); gap: 12px 40px; margin-top: 24px; padding: 28px 30px; border-radius: 20px; background: #f6efe3; border: 1px solid #eadbbd; }
+.mg-why h2 { margin: 0; font: 600 20px/1.3 var(--font); letter-spacing: -0.02em; color: var(--ink); }
+.mg-why-text { max-width: 68ch; }
+.mg-why-text p { margin: 0; font-size: 15px; line-height: 1.7; color: var(--ink); }
+.mg-why-text p + p { margin-top: 12px; }
+.mg-why-text .mg-why-foot { font-size: 13.5px; color: #7a6a4f; }
 .mg-rows { margin: 0; padding: 0; list-style: none; }
 .mg-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--hairline-2); }
 .mg-row b { font-size: 14.5px; } .mg-row small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
@@ -505,6 +507,7 @@ function injectStyle() {
 .mg-form-msg.is-err { color: #b4441b; font-weight: 600; }
 .modal-footer .mg-del { margin-right: auto; color: #b4441b; }
 @media (max-width: 820px) {
+  .mg-why { grid-template-columns: minmax(0, 1fr); padding: 22px 20px; }
   .mg-next { grid-template-columns: minmax(0, 1fr); }
   .mg-next-side { border-left: 0; border-top: 1px solid #eadbbd; }
   .mg-next-main, .mg-next-side { padding: 22px 20px; }

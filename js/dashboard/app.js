@@ -273,7 +273,7 @@ const ROUTES = {
     icon: ICONS.meeting,
     roles: ["admin", "editor", "writer", "marketing", "newsletter_builder", "social_media"],
     group: "main",
-    loader: () => import("./meeting.js?v=4"),
+    loader: () => import("./meeting.js?v=5"),
   },
   // When to meet polls live on the Meeting page now; old #/meet links
   // (emails, notifications) redirect there. Not in the sidebar.
