@@ -51,7 +51,10 @@
   --fore: max(1.2px, 1.15cqw);           /* depth of the page block at the fore-edge (a slim glossy issue) */
   --foot: max(1px, .75cqw);              /* at the fore-edge corner; nothing at the spine */
   content: ""; position: absolute; z-index: -1; pointer-events: none;
-  left: 0; top: 0; right: calc(-1 * var(--fore)); bottom: calc(-1 * var(--foot));
+  /* inset at the spine and the head: the block only needs to show past the
+     fore-edge and the foot. Flush at 0/0 its square white corner peeked out
+     from under the cover's rounded top-left and bottom-left corners. */
+  left: max(2px, .9cqw); top: max(2px, .9cqw); right: calc(-1 * var(--fore)); bottom: calc(-1 * var(--foot));
   border-radius: 0 1.5px 2px 0;
   /* cover's top right corner, down the fore-edge, back along the foot to the spine */
   clip-path: polygon(0 0, calc(100% - var(--fore)) 0, 100% calc(var(--foot) * .85), 100% 100%, 0 calc(100% - var(--foot)));
