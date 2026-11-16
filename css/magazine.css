@@ -23,8 +23,10 @@
 }
 
 /* the pages sit outside the cover's box, so the cover no longer clips;
-   the artwork keeps the rounded corners itself */
-.ea-cover, .wx-cover, .ed-cover { overflow: visible !important; isolation: isolate; }
+   the artwork keeps the rounded corners itself. No fill behind the art:
+   a white one showed as a hairline at the anti-aliased (rounded, often
+   tilted) corners, worst at the spine where the edge is shaded. */
+.ea-cover, .wx-cover, .ed-cover { overflow: visible !important; isolation: isolate; background-color: transparent !important; }
 .ea-cover .art, .wx-cover img.art, .ed-cover__art { border-radius: inherit; }
 .ea-cover-lines::before, .wx-cover-lines::before { border-radius: 0 0 3px 3px; }
 /* the cover lines carry their own white fade (a ::before at z-index -1): keep it

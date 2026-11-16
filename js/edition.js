@@ -330,10 +330,11 @@
     document.querySelectorAll('[data-wx-count]').forEach(function (el) {
       el.textContent = n + (n === 1 ? ' story' : ' stories');
     });
-    // cover lines: the first three stories
+    // cover lines: the stories marked data-cover, else the first three
     var lines = document.querySelector('.wx-cover-lines');
     if (lines) {
-      lines.innerHTML = stories().slice(0, 3).map(function (s) {
+      var onCover = stories().filter(function (s) { return s.hasAttribute('data-cover'); });
+      lines.innerHTML = (onCover.length ? onCover : stories()).slice(0, 3).map(function (s) {
         var k = s.querySelector('.wx-story-kicker'), h = s.querySelector('h3');
         return h ? '<p><span>' + esc(k ? k.textContent : 'Inside') + '</span>' + esc(h.textContent) + '</p>' : '';
       }).join('');
@@ -456,7 +457,7 @@
           '<h3 id="wx-lock-title">' + esc(get('h3')) + '</h3>' +
           (by ? '<p class="wx-lock-by">' + esc(by) + '</p>' : '') +
           (get('.wx-story-dek') ? '<p class="wx-lock-blurb">' + esc(get('.wx-story-dek')) + '</p>' : '') +
-          '<p class="wx-lock-note">This story is part of the ' + esc(ed) + ' edition, out in ' + esc(UPCOMING) + '. Come back then to read it, or subscribe and we&rsquo;ll send the edition when it&rsquo;s released.</p>' +
+          '<p class="wx-lock-note">This story is part of the ' + esc(ed) + ' edition, out ' + (/\d/.test(UPCOMING) ? 'on ' : 'in ') + esc(UPCOMING) + '. Come back then to read it, or subscribe and we&rsquo;ll send the edition when it&rsquo;s released.</p>' +
           '<div class="wx-lock-actions"><button type="button" class="wx-btn wx-btn-light" data-wx-subscribe>Subscribe</button>' +
           '<button type="button" class="wx-btn wx-btn-line" data-wx-close>Close</button></div>' +
         '</div>';

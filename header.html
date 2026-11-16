@@ -1,3 +1,51 @@
+<!-- Announcement bar: the next edition. Shown by setupAnnounce() in js/layout.js
+     (hidden on its own preview page, after a reader closes it, and after
+     data-until). On data-launch it switches to its "out now" wording. -->
+<div class="announce" id="site-announce" hidden data-key="winter-2027" data-launch="2026-12-15T00:00:00-05:00" data-until="2027-01-20T00:00:00-05:00" data-skip="/edition-winter">
+    <a class="announce-link" href="/edition-winter">
+        <span class="announce-k" data-out="Out now">Coming December 15</span>
+        <span class="announce-rule" aria-hidden="true"></span>
+        <span class="announce-t"><span class="announce-long" data-out="The Winter 2027 edition is here. What is the future of health?">Our Winter 2027 edition asks: what is the future of health?</span><span class="announce-short" data-out="Winter 2027 is out">Winter 2027, out Dec 15</span></span>
+        <span class="announce-cta"><span data-out="Read it">Take a sneak peek</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+    <button class="announce-x" type="button" aria-label="Hide this announcement"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+</div>
+<style>
+    /* the bar sits above the floating header; setupAnnounce() moves the header
+       down by the bar's height and lets it rise back as the bar scrolls away */
+    .announce { position: absolute; top: 0; left: 0; right: 0; z-index: 999; height: 44px;
+        display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 52px;
+        background: #0f172a; color: #e8edf4; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .announce[hidden] { display: none; }
+    .announce-link { display: inline-flex; align-items: center; gap: 14px; min-height: 44px; min-width: 0; color: inherit; text-decoration: none; }
+    .announce-k { flex: none; font-size: 10.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #a9c4dd; }
+    .announce-rule { flex: none; width: 1px; height: 14px; background: rgba(232, 237, 244, .28); }
+    .announce-t { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        font-family: 'Source Serif Pro', Georgia, 'Times New Roman', serif; font-style: italic; font-size: 15px; color: #f3f6fa; }
+    .announce-short { display: none; }
+    .announce-cta { flex: none; display: inline-flex; align-items: center; gap: 6px; padding-bottom: 1px;
+        font-size: 13px; font-weight: 500; border-bottom: 1px solid rgba(232, 237, 244, .45); transition: border-color .2s; }
+    .announce-cta svg { width: 14px; height: 14px; transition: transform .3s cubic-bezier(.22, 1, .36, 1); }
+    .announce-link:hover .announce-cta { border-color: #f3f6fa; }
+    .announce-link:hover .announce-cta svg { transform: translateX(3px); }
+    .announce-x { position: absolute; right: 8px; top: 0; width: 44px; height: 44px; display: grid; place-items: center;
+        padding: 0; border: 0; background: none; color: rgba(232, 237, 244, .6); cursor: pointer; border-radius: 10px; }
+    .announce-x svg { width: 16px; height: 16px; }
+    .announce-x:hover { color: #f3f6fa; }
+    .announce-link:focus-visible, .announce-x:focus-visible { outline: 2px solid #a9c4dd; outline-offset: -2px; border-radius: 6px; }
+    /* the header follows the bar (translate set per frame by layout.js), so it must not animate it */
+    html.has-announce .header { transition-property: background, box-shadow, border-color; }
+    html.has-announce body:not([data-page="home"]) { padding-top: var(--announce-h, 44px); }
+    @media (max-width: 760px) {
+        .announce { padding: 0 44px 0 16px; justify-content: flex-start; }
+        .announce-link { gap: 10px; }
+        .announce-k, .announce-rule, .announce-long { display: none; }
+        .announce-short { display: inline; font-size: 14px; }
+        .announce-cta { font-size: 12.5px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .announce-cta svg { transition: none; } }
+</style>
+
 <!-- Header -->
 <header class="header">
     <div class="container nav-container">

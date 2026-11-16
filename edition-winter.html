@@ -13,26 +13,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <!-- Remove this line when the winter edition launches -->
     <meta name="robots" content="noindex, nofollow">
-    <title>The Winter 2027 Edition (Preview): Medical Innovation in the Capital | The Catalyst Magazine</title>
-    <meta name="description" content="A sneak peek at The Catalyst's Winter 2027 edition, out December 2026: Medical Innovation in the Capital, stories from the labs, clinics and classrooms where Washington is building the next generation of medicine.">
+    <title>The Winter 2027 Edition (Preview): The Future of Health Is ______ | The Catalyst Magazine</title>
+    <meta name="description" content="A sneak peek at The Catalyst's Winter 2027 edition, out December 15. The future of health is ______: decided in D.C.? Prevention? Human? Up for debate? Four sections of reporting from the labs, clinics and offices shaping medicine in Washington.">
     <meta name="theme-color" content="#0b1526">
     <link rel="canonical" href="https://www.catalyst-magazine.com/edition-winter">
 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="The Catalyst Magazine">
-    <meta property="og:title" content="The Winter Edition 2027: Medical Innovation in the Capital">
-    <meta property="og:description" content="A sneak peek at the Winter 2027 edition, out December 2026: stories from the labs, clinics and classrooms building the next generation of medicine.">
+    <meta property="og:title" content="The Winter 2027 Edition: The Future of Health Is ______">
+    <meta property="og:description" content="A sneak peek at the Winter 2027 edition, out December 15: stories from the labs, clinics and classrooms building the next generation of medicine.">
     <meta property="og:image" content="https://www.catalyst-magazine.com/edition-art/winter/og.jpg?v=2">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="The Winter 2027 edition of The Catalyst, Medical Innovation in the Capital: the edition cover over the U.S. Capitol on a snowy night.">
+    <meta property="og:image:alt" content="The Winter 2027 edition of The Catalyst, The Future of Health Is ______: the edition cover over the U.S. Capitol on a snowy night.">
     <meta property="og:url" content="https://www.catalyst-magazine.com/edition-winter">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="The Winter 2027 Edition: Medical Innovation in the Capital">
-    <meta name="twitter:description" content="A sneak peek at the Winter 2027 edition of The Catalyst, out December 2026.">
+    <meta name="twitter:title" content="The Winter 2027 Edition: The Future of Health Is ______">
+    <meta name="twitter:description" content="A sneak peek at the Winter 2027 edition of The Catalyst, out December 15.">
     <meta name="twitter:image" content="https://www.catalyst-magazine.com/edition-art/winter/og.jpg?v=2">
-    <meta name="twitter:image:alt" content="The Winter 2027 edition of The Catalyst, Medical Innovation in the Capital: the edition cover over the U.S. Capitol on a snowy night.">
+    <meta name="twitter:image:alt" content="The Winter 2027 edition of The Catalyst, The Future of Health Is ______: the edition cover over the U.S. Capitol on a snowy night.">
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -44,8 +44,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
 
     <!-- first screen: the cover and the night backdrop -->
-    <link rel="preload" as="image" href="/edition-art/winter/cover-1100.webp?v=1"
-          imagesrcset="/edition-art/winter/cover-700.webp?v=1 700w, /edition-art/winter/cover-1100.webp?v=1 1100w"
+    <link rel="preload" as="image" href="/edition-art/winter/cover-2027-1100.webp?v=3"
+          imagesrcset="/edition-art/winter/cover-2027-700.webp?v=3 700w, /edition-art/winter/cover-2027-1100.webp?v=3 1100w"
           imagesizes="(max-width: 899px) 62vw, 360px" fetchpriority="high">
     <link rel="preload" as="image" href="/edition-art/winter/hero-1600.webp?v=2" media="(min-width: 900px)"
           imagesrcset="/edition-art/winter/hero-1600.webp?v=2 1600w, /edition-art/winter/hero-2600.webp?v=2 2600w" imagesizes="100vw">
@@ -53,7 +53,7 @@
           imagesrcset="/edition-art/winter/hero-tall-800.webp?v=1 800w, /edition-art/winter/hero-tall-1200.webp?v=1 1200w" imagesizes="100vw">
 
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
-    <link rel="stylesheet" href="/css/magazine.css?v=7">
+    <link rel="stylesheet" href="/css/magazine.css?v=8">
     <link rel="stylesheet" href="/css/edition.css?v=16">
     <style>
       /* Winter: a night hero over a light frost page */
@@ -97,13 +97,40 @@
         to   { transform: scale(1.045) translate3d(-0.6%, -0.4%, 0); }
       }
       @media (max-width: 899px) { body.wx-winter { --wx-fade-h-m: 170px; } }
+
+      /* Contents by section: "The future of health is …" heads each of the
+         four sections, four covers across (two on tablets and phones) */
+      body.wx-winter .wx-grid-parts { --cols: 4; row-gap: clamp(36px, 4vw, 56px); justify-content: flex-start; }
+      .wx-part {
+        flex: 0 0 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 6px 18px;
+        margin: clamp(10px, 2vw, 28px) 0 calc(-1 * clamp(8px, 1.4vw, 20px)); padding-top: 16px; border-top: 1px solid var(--wx-ink);
+      }
+      .wx-part:first-child { margin-top: 0; }
+      .wx-part-no { font: 500 13px/1 var(--wx-sans); letter-spacing: .12em; color: var(--wx-muted); font-variant-numeric: tabular-nums; }
+      .wx-part-t { margin: 0; font: 700 clamp(22px, 2.3vw, 32px)/1.1 var(--wx-sans); letter-spacing: -0.025em; color: var(--wx-ink); }
+      .wx-part-t em { font: italic 400 1.06em/1 var(--wx-serif); letter-spacing: -0.01em; color: var(--wx-accent); }
+      .wx-part-n { font: 600 11px/1.3 var(--wx-sans); letter-spacing: .18em; text-transform: uppercase; color: var(--wx-muted); white-space: nowrap; }
+      @media (max-width: 1023px) { body.wx-winter .wx-grid-parts { --cols: 2; } }
+      /* the previews: the art shows (a faint frost at the foot); the lock and the veiled teaser say it isn't out yet */
+      body.wx-winter.wx-upcoming .wx-story-img img { filter: none; transform: none; }
+      body.wx-winter.wx-upcoming .wx-story-img::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+        background: linear-gradient(180deg, rgba(243,246,248,0) 55%, rgba(243,246,248,.22)); }
+      /* the edition title's blank: a drawn line after "is" */
+      body.wx-winter #wx-title .wx-blank { display: inline-block; width: 1.5em; height: .8em; margin-left: .14em; vertical-align: baseline;
+        border-bottom: .075em solid var(--wx-accent); }
+      body.wx-winter .wx-lock { left: 12px; top: 12px; transform: none; min-height: 32px; padding: 0 12px; }
+      @media (max-width: 560px) {
+        .wx-part { grid-template-columns: auto minmax(0, 1fr); }
+        .wx-part-n { display: none; }
+        .wx-part-t { font-size: 21px; }
+      }
     </style>
 </head>
 <!-- data-edition must match the edition's name in the Story Tracker
      (Admin → Story Tracker → Manage editions). Stories published in that
      edition are added below the cards written on this page. -->
 <body class="wx wx-winter" data-page="edition" data-suppress-welcome="1"
-      data-edition="Winter 2027" data-upcoming="December 2026" data-weather="snow">
+      data-edition="Winter 2027" data-upcoming="December 15" data-weather="snow">
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TV2SBHW5"
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
@@ -127,29 +154,22 @@
             <div class="wx-wrap wx-hero-grid">
                 <div class="wx-hero-copy">
                     <p class="wx-kicker wx-rise">The Winter Edition &middot; 2027</p>
-                    <h1 id="wx-title" class="wx-rise" style="--d:.08s">Medical Innovation <em>in the Capital.</em></h1>
-                    <p class="lede wx-rise" style="--d:.18s">Stories from the labs, clinics and classrooms where Washington is building the next generation of medicine.</p>
+                    <h1 id="wx-title" class="wx-rise" style="--d:.08s">The future of health <span style="white-space:nowrap">is<span class="wx-blank" aria-label="blank"></span></span></h1>
+                    <p class="lede wx-rise" style="--d:.18s">Decided in D.C.? Prevention? Human? Up for debate? Four sections, four answers, from the labs, clinics and offices where Washington is shaping the next generation of medicine.</p>
                     <div class="wx-actions wx-rise" style="--d:.28s">
                         <a class="wx-btn wx-btn-light" href="#stories">Preview the edition
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
                         </a>
-                        <span class="wx-meta"><span data-wx-count>13 stories</span> &middot; Out December 2026</span>
+                        <span class="wx-meta"><span data-wx-count>14 stories</span> &middot; Out December 15</span>
                     </div>
                 </div>
 
                 <div class="wx-cover-wrap">
-                    <figure class="wx-cover">
-                        <img class="art" alt="The Winter Edition cover: a pen-and-ink drawing of the frozen Reflecting Pool looking toward the Washington Monument, the cracks in the ice branching like neurons."
-                             src="/edition-art/winter/cover-1100.webp?v=1"
-                             srcset="/edition-art/winter/cover-700.webp?v=1 700w, /edition-art/winter/cover-1100.webp?v=1 1100w, /edition-art/winter/cover-1600.webp?v=1 1600w"
+                    <figure class="wx-cover is-printed">
+                        <img class="art" alt="Cover of The Catalyst Magazine, Winter 2027: The future of health is … Decided in D.C.? Prevention? Human? Up for debate?"
+                             src="/edition-art/winter/cover-2027-1100.webp?v=3"
+                             srcset="/edition-art/winter/cover-2027-700.webp?v=3 700w, /edition-art/winter/cover-2027-1100.webp?v=3 1100w, /edition-art/winter/cover-2027-1600.webp?v=3 1600w"
                              sizes="(max-width: 899px) 62vw, 360px" width="1100" height="1473" fetchpriority="high" decoding="async">
-                        <div class="wx-cover-mast">
-                            <img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234">
-                            <div class="wx-cover-dateline" aria-hidden="true"><span>Winter 2027</span><span>Washington, D.C.</span></div>
-                        </div>
-                        <p class="wx-cover-title" aria-hidden="true">Medical Innovation in the Capital</p>
-                        <!-- filled with the first three stories below -->
-                        <div class="wx-cover-lines" aria-hidden="true" hidden></div>
                     </figure>
                 </div>
             </div>
@@ -162,149 +182,146 @@
         <section class="wx-stories" id="stories" aria-labelledby="wx-stories-title">
             <div class="wx-wrap">
                 <header class="wx-sec-head">
-                    <div class="wx-folio"><span>The Winter Edition</span><span>Contents</span><span data-wx-count>13 stories</span></div>
+                    <div class="wx-folio"><span>The Winter Edition</span><span>Contents</span><span data-wx-count>14 stories</span></div>
                     <div class="wx-sec-grid">
                         <h2 id="wx-stories-title">Inside <em>this edition.</em></h2>
-                        <p class="intro">Researchers, clinicians and engineers across the District, and the ideas they are testing this season.</p>
+                        <p class="intro">Four sections, one question. Researchers, clinicians and students across the District, and the ideas they are testing this season.</p>
                     </div>
                 </header>
 
-                <div class="wx-grid" id="wx-stories">
-                    <!-- ====================================================
-                         SAMPLE STORIES (for layout only: invented titles and
-                         writers). Replace each with a real story: change the
-                         link, image, section, title, teaser and byline.
-                         The first card is shown large. To add a story, copy
-                         one <article class="wx-story">…</article> block.
-                         Cover images are portrait (4:5).
-                         ==================================================== -->
+                <div class="wx-grid wx-grid-parts" id="wx-stories">
+                    <!-- The Winter 2027 pieces, by section (working titles; update them as
+                         the drafts settle). Art: /edition-art/winter/2027/, one editorial
+                         collage per piece, one palette per section. data-cover marks the three
+                         stories named on the cover. -->
+                    <div class="wx-part"><span class="wx-part-no">01</span><h3 class="wx-part-t">The future of health is <em>decided in D.C.?</em></h3><span class="wx-part-n">4 stories</span></div>
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-1-900.webp?v=1" srcset="/edition-art/winter/story-1-480.webp?v=1 480w, /edition-art/winter/story-1-900.webp?v=1 900w, /edition-art/winter/story-1-1300.webp?v=1 1300w" sizes="(max-width: 1023px) 100vw, 800px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Feature</p>
-                            <h3>The AI Listening for Heart Failure</h3>
-                            <p class="wx-story-dek">Clinicians are testing software that flags early signs of heart failure from a few seconds of heart sounds. The harder question is who it might miss.</p>
-                            <p class="wx-story-by">By Maya Lindqvist <span>&middot; 8 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/pediatric-cancer-900.webp?v=3" srcset="/edition-art/winter/2027/pediatric-cancer-480.webp?v=3 480w, /edition-art/winter/2027/pediatric-cancer-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Decided in D.C.</p>
+                            <h3>From Novel Therapies to Clinical Trials</h3>
+                            <p class="wx-story-dek">How a pediatric oncologist at Children&rsquo;s National is developing new treatments for rare childhood cancers, a few miles from where the funding decisions are made.</p>
+                            <p class="wx-story-by">By Jada Traynor <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-2-900.webp?v=1" srcset="/edition-art/winter/story-2-480.webp?v=1 480w, /edition-art/winter/story-2-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Profile</p>
-                            <h3>Engineering Cartilage From Scratch</h3>
-                            <p class="wx-story-dek">A bioengineering lab is printing living scaffolds that could one day repair worn-out knees.</p>
-                            <p class="wx-story-by">By Daniel Okafor <span>&middot; 6 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/before-the-breakthrough-900.webp?v=3" srcset="/edition-art/winter/2027/before-the-breakthrough-480.webp?v=3 480w, /edition-art/winter/2027/before-the-breakthrough-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Decided in D.C.</p>
+                            <h3>Before the Breakthrough</h3>
+                            <p class="wx-story-dek">Before a discovery can reach patients, a panel of scientists decides whether it gets a chance. Inside the NIH&rsquo;s Center for Scientific Review.</p>
+                            <p class="wx-story-by">By Shraddha Pandya <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-3-900.webp?v=1" srcset="/edition-art/winter/story-3-480.webp?v=1 480w, /edition-art/winter/story-3-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Feature</p>
-                            <h3>Health Care on Wheels in Wards 7 and 8</h3>
-                            <p class="wx-story-dek">Mobile clinics are bringing screenings and follow-up care to the neighborhoods with the fewest hospitals.</p>
-                            <p class="wx-story-by">By Priya Raman <span>&middot; 7 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/the-access-gap-900.webp?v=3" srcset="/edition-art/winter/2027/the-access-gap-480.webp?v=3 480w, /edition-art/winter/2027/the-access-gap-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Decided in D.C.</p>
+                            <h3>The Access Gap</h3>
+                            <p class="wx-story-dek">As changes to Medicaid reach the District, who will be able to benefit from the future of medicine?</p>
+                            <p class="wx-story-by">By Shraddha Pandya <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-4-900.webp?v=1" srcset="/edition-art/winter/story-4-480.webp?v=1 480w, /edition-art/winter/story-4-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Interview</p>
-                            <h3>A Stroke Scanner Small Enough for an Ambulance</h3>
-                            <p class="wx-story-dek">Portable brain imaging could move stroke diagnosis out of the hospital and into the first minutes of care.</p>
-                            <p class="wx-story-by">By Elena Marsh <span>&middot; 5 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/doctor-doctors-900.webp?v=3" srcset="/edition-art/winter/2027/doctor-doctors-480.webp?v=3 480w, /edition-art/winter/2027/doctor-doctors-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Decided in D.C.</p>
+                            <h3>Training the Doctor-Doctors of D.C.</h3>
+                            <p class="wx-story-dek">Georgetown&rsquo;s MD/PhD program is now the capital&rsquo;s first funded by the NIH to train physician-scientists.</p>
+                            <p class="wx-story-by">By Aidan Schurr <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
+                    <div class="wx-part"><span class="wx-part-no">02</span><h3 class="wx-part-t">The future of health is <em>prevention?</em></h3><span class="wx-part-n">4 stories</span></div>
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-5-900.webp?v=1" srcset="/edition-art/winter/story-5-480.webp?v=1 480w, /edition-art/winter/story-5-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Feature</p>
-                            <h3>Keeping Vaccines Cold, Mile by Mile</h3>
-                            <p class="wx-story-dek">The logistics and chemistry behind getting temperature-sensitive vaccines to every clinic in the city.</p>
-                            <p class="wx-story-by">By Jonah Weiss <span>&middot; 6 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/beyond-just-hormones-900.webp?v=3" srcset="/edition-art/winter/2027/beyond-just-hormones-480.webp?v=3 480w, /edition-art/winter/2027/beyond-just-hormones-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Prevention</p>
+                            <h3>Beyond &ldquo;Just Hormones&rdquo;</h3>
+                            <p class="wx-story-dek">In Dr. Jessica Mong&rsquo;s lab, researchers are tracing how ovarian hormones shape sleep across a lifetime.</p>
+                            <p class="wx-story-by">By Ginger Taurek <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-6-900.webp?v=1" srcset="/edition-art/winter/story-6-480.webp?v=1 480w, /edition-art/winter/story-6-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Interview</p>
-                            <h3>Training Surgeons on Robots Before Patients</h3>
-                            <p class="wx-story-dek">Inside a simulation lab where residents learn to operate through a robot&rsquo;s instruments.</p>
-                            <p class="wx-story-by">By Sofia Alvarez <span>&middot; 5 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/check-it-out-900.webp?v=3" srcset="/edition-art/winter/2027/check-it-out-480.webp?v=3 480w, /edition-art/winter/2027/check-it-out-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Prevention</p>
+                            <h3>Check It Out!</h3>
+                            <p class="wx-story-dek">A mobile unit brings drug checking, wound care and testing to the Baltimore neighborhoods hit hardest by overdose.</p>
+                            <p class="wx-story-by">By Cameron Fields <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
-                    <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-7-900.webp?v=1" srcset="/edition-art/winter/story-7-480.webp?v=1 480w, /edition-art/winter/story-7-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Feature</p>
-                            <h3>What Wastewater Tells Us About a City&rsquo;s Health</h3>
-                            <p class="wx-story-dek">Sampling the sewers has become one of the fastest ways to see an outbreak coming.</p>
-                            <p class="wx-story-by">By Nadia Brooks <span>&middot; 7 min read</span></p>
+                    <article class="wx-story" data-cover>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/pesticides-and-parkinsons-900.webp?v=3" srcset="/edition-art/winter/2027/pesticides-and-parkinsons-480.webp?v=3 480w, /edition-art/winter/2027/pesticides-and-parkinsons-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Prevention</p>
+                            <h3>Pesticides and Parkinson&rsquo;s</h3>
+                            <p class="wx-story-dek">A Georgetown neuroscientist on the herbicide paraquat, the brain cells it harms, and the debate over banning it.</p>
+                            <p class="wx-story-by">By Izzy Lubinsky <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-8-900.webp?v=1" srcset="/edition-art/winter/story-8-480.webp?v=1 480w, /edition-art/winter/story-8-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Profile</p>
-                            <h3>The Search for a Better Sickle Cell Treatment</h3>
-                            <p class="wx-story-dek">Gene therapies are changing what a diagnosis means, and researchers are working to make them reachable.</p>
-                            <p class="wx-story-by">By Samuel Adeyemi <span>&middot; 8 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/the-disease-we-almost-left-behind-900.webp?v=3" srcset="/edition-art/winter/2027/the-disease-we-almost-left-behind-480.webp?v=3 480w, /edition-art/winter/2027/the-disease-we-almost-left-behind-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Prevention</p>
+                            <h3>The Disease We Almost Left Behind</h3>
+                            <p class="wx-story-dek">Measles is back in the United States. What its return reveals about preventing the next outbreak.</p>
+                            <p class="wx-story-by">By Shraddha Pandya <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
+                    <div class="wx-part"><span class="wx-part-no">03</span><h3 class="wx-part-t">The future of health is <em>human?</em></h3><span class="wx-part-n">2 stories</span></div>
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-9-900.webp?v=1" srcset="/edition-art/winter/story-9-480.webp?v=1 480w, /edition-art/winter/story-9-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Feature</p>
-                            <h3>Insulin Pumps That Adjust on Their Own</h3>
-                            <p class="wx-story-dek">Closed-loop systems pair a sensor and a pump so blood sugar can be managed with fewer decisions.</p>
-                            <p class="wx-story-by">By Grace Liu <span>&middot; 6 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/the-architecture-of-medical-decisions-900.webp?v=3" srcset="/edition-art/winter/2027/the-architecture-of-medical-decisions-480.webp?v=3 480w, /edition-art/winter/2027/the-architecture-of-medical-decisions-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Human?</p>
+                            <h3>The Architecture of Medical Decisions</h3>
+                            <p class="wx-story-dek">As AI moves from taking notes in the exam room to making calls of its own, bioethicists ask how medical decisions should be designed.</p>
+                            <p class="wx-story-by">By Sienna Halstead and Liam Halstead <span>&middot; Feature</span></p>
                         </a>
                     </article>
-
-                    <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-10-900.webp?v=1" srcset="/edition-art/winter/story-10-480.webp?v=1 480w, /edition-art/winter/story-10-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Feature</p>
-                            <h3>The Hospital Comes Home</h3>
-                            <p class="wx-story-dek">Remote monitoring and home visits are letting some patients recover in their own beds.</p>
-                            <p class="wx-story-by">By Theo Martins <span>&middot; 6 min read</span></p>
+                    <article class="wx-story" data-cover>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/what-does-a-computer-see-900.webp?v=3" srcset="/edition-art/winter/2027/what-does-a-computer-see-480.webp?v=3 480w, /edition-art/winter/2027/what-does-a-computer-see-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Human?</p>
+                            <h3>What Does a Computer See?</h3>
+                            <p class="wx-story-dek">An interactive look at how computer vision reads a medical image, and where it can go wrong.</p>
+                            <p class="wx-story-by">By Aidan Brown <span>&middot; Explainer</span></p>
                         </a>
                     </article>
-
+                    <div class="wx-part"><span class="wx-part-no">04</span><h3 class="wx-part-t">The future of health is <em>up for debate?</em></h3><span class="wx-part-n">4 stories</span></div>
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-11-900.webp?v=1" srcset="/edition-art/winter/story-11-480.webp?v=1 480w, /edition-art/winter/story-11-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Op-Ed</p>
-                            <h3>Clinical Trials Take Too Long. They Don&rsquo;t Have To.</h3>
-                            <p class="wx-story-dek">Smarter trial design could bring treatments to patients years sooner without cutting corners.</p>
-                            <p class="wx-story-by">By Hannah Kowalski <span>&middot; 4 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/medicalizing-end-of-life-care-900.webp?v=3" srcset="/edition-art/winter/2027/medicalizing-end-of-life-care-480.webp?v=3 480w, /edition-art/winter/2027/medicalizing-end-of-life-care-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Up for Debate</p>
+                            <h3>Medicalizing End-of-Life Care</h3>
+                            <p class="wx-story-dek">Our fear of death shapes how we treat the dying. An argument for talking about the end sooner.</p>
+                            <p class="wx-story-by">By Sienna Halstead <span>&middot; Op-Ed</span></p>
                         </a>
                     </article>
-
-                    <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-12-900.webp?v=1" srcset="/edition-art/winter/story-12-480.webp?v=1 480w, /edition-art/winter/story-12-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Profile</p>
-                            <h3>The Students Taking On Antibiotic Resistance</h3>
-                            <p class="wx-story-dek">Undergraduate researchers are screening soil and seawater for the next generation of antibiotics.</p>
-                            <p class="wx-story-by">By Marcus Bell <span>&middot; 5 min read</span></p>
+                    <article class="wx-story" data-cover>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/the-illusion-of-care-900.webp?v=3" srcset="/edition-art/winter/2027/the-illusion-of-care-480.webp?v=3 480w, /edition-art/winter/2027/the-illusion-of-care-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Up for Debate</p>
+                            <h3>The Illusion of Care</h3>
+                            <p class="wx-story-dek">Why would a patient trust a chatbot with their health? What AI&rsquo;s simulated empathy says about modern medicine.</p>
+                            <p class="wx-story-by">By Jada Traynor <span>&middot; Op-Ed</span></p>
                         </a>
                     </article>
-
                     <article class="wx-story">
-                        <a href="/articles">
-                            <div class="wx-story-img"><img src="/edition-art/winter/story-13-900.webp?v=1" srcset="/edition-art/winter/story-13-480.webp?v=1 480w, /edition-art/winter/story-13-900.webp?v=1 900w" sizes="(max-width: 1023px) 50vw, 400px" alt="" width="900" height="1117" loading="lazy" decoding="async"></div>
-                            <p class="wx-story-kicker">Feature</p>
-                            <h3>The Search for a Flu Vaccine That Lasts</h3>
-                            <p class="wx-story-dek">Researchers are designing vaccines that target the parts of the virus that barely change from year to year.</p>
-                            <p class="wx-story-by">By Leah Goldberg <span>&middot; 7 min read</span></p>
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/the-people-well-never-meet-900.webp?v=3" srcset="/edition-art/winter/2027/the-people-well-never-meet-480.webp?v=3 480w, /edition-art/winter/2027/the-people-well-never-meet-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Up for Debate</p>
+                            <h3>The People We&rsquo;ll Never Meet</h3>
+                            <p class="wx-story-dek">We will spend almost anything to rescue someone we can see, and almost nothing to save someone we can&rsquo;t.</p>
+                            <p class="wx-story-by">By Lori Preci <span>&middot; Op-Ed</span></p>
+                        </a>
+                    </article>
+                    <article class="wx-story">
+                        <a href="/edition-winter#stories">
+                            <div class="wx-story-img"><img src="/edition-art/winter/2027/the-drugs-we-already-have-900.webp?v=3" srcset="/edition-art/winter/2027/the-drugs-we-already-have-480.webp?v=3 480w, /edition-art/winter/2027/the-drugs-we-already-have-900.webp?v=3 900w" sizes="(max-width: 1023px) 50vw, 300px" alt="" width="900" height="1125" loading="lazy" decoding="async"></div>
+                            <p class="wx-story-kicker">Up for Debate</p>
+                            <h3>The Drugs We Already Have</h3>
+                            <p class="wx-story-dek">AI can find new uses for old drugs. The harder problem is who will pay to prove they work.</p>
+                            <p class="wx-story-by">By Liam Halstead <span>&middot; Op-Ed</span></p>
                         </a>
                     </article>
                 </div>
@@ -330,7 +347,7 @@
 
     <div id="site-footer"></div>
 
-    <script defer src="/js/layout.js?v=20261012-popup"></script>
-    <script defer src="/js/edition.js?v=17"></script>
+    <script defer src="/js/layout.js?v=20261115-announce"></script>
+    <script defer src="/js/edition.js?v=18"></script>
 </body>
 </html>

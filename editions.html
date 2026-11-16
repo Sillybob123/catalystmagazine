@@ -38,7 +38,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Source+Serif+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
-    <link rel="stylesheet" href="/css/magazine.css?v=7">
+    <link rel="stylesheet" href="/css/magazine.css?v=8">
     <style>
       /* ============================================================
          THE EDITIONS — the archive of every edition. Same paper, ink
@@ -318,6 +318,7 @@
       .ea-teaser__kicker svg, .ea-teaser__inside svg { width: 14px; height: 14px; flex: none; }
       .ea-teaser__title { font: 700 clamp(22px, 2.3vw, 30px)/1.12 var(--sans); letter-spacing: -0.025em; }
       .ea-teaser__title em { font: italic 400 1em/1.1 var(--serif); letter-spacing: -0.01em; color: #dbe9f5; }
+      .blank-line { display: inline-block; width: 1.8em; height: .8em; margin-left: .2em; vertical-align: baseline; border-bottom: .08em solid currentColor; }
       .ea-teaser__dek { max-width: 600px; font: 400 16px/1.55 var(--serif); color: rgba(243,247,251,.78); }
       .ea-teaser__inside { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 4px; font: 500 13px/1.4 var(--sans); color: rgba(243,247,251,.62); }
       .ea-teaser__inside span { display: inline-flex; align-items: center; gap: 6px; }
@@ -442,11 +443,9 @@
                         </div>
                     </a></li>
                     <!-- Winter 2027: hidden for now. To restore: remove this comment wrapper and set --i to the next number.
-                    <li><a class="ea-fan-item" href="#winter-2027" data-caption="Winter 2027 &middot; Coming December 2026|Medical Innovation in the Capital" style="--i:5" aria-label="Winter 2027, coming december 2026: Medical Innovation in the Capital">
+                    <li><a class="ea-fan-item" href="#winter-2027" data-caption="Winter 2027 &middot; Out December 15|The Future of Health Is ______" style="--i:5" aria-label="Winter 2027, out December 15: The future of health is …">
                         <div class="ea-cover" style="--acc:#3b6e8f">
-                            <img class="art" src="/edition-art/winter/cover-700.webp?v=1" alt="Cover of The Catalyst Magazine, Winter 2027 edition: Medical Innovation in the Capital" width="700" height="937" decoding="async">
-                            <div class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Winter 2027</span><span>No. 06</span></div></div>
-                            <p class="ea-cover-title">Medical Innovation in the Capital</p>
+                            <img class="art" src="/edition-art/winter/cover-2027-700.webp?v=3" alt="Cover of The Catalyst Magazine, Winter 2027: The future of health is … Decided in D.C.? Prevention? Human? Up for debate?" width="700" height="938" decoding="async">
                         </div>
                     </a></li>
                     -->
@@ -472,16 +471,14 @@
                     <span class="ea-teaser__bg" style="background-image:url('/edition-art/winter/hero-1600.webp?v=2')" aria-hidden="true"></span>
                     <span class="ea-teaser__cover" aria-hidden="true">
                         <span class="ea-cover" style="--acc:#3b6e8f">
-                            <img class="art" src="/edition-art/winter/cover-700.webp?v=1" alt="Cover of The Catalyst Magazine, Winter 2027 edition: Medical Innovation in the Capital" width="700" height="937" loading="lazy" decoding="async">
-                            <div class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline"><span>Winter 2027</span><span>No. 06</span></div></div>
-                            <span class="ea-cover-title">Medical Innovation in the Capital</span>
+                            <img class="art" src="/edition-art/winter/cover-2027-700.webp?v=3" alt="Cover of The Catalyst Magazine, Winter 2027: The future of health is … Decided in D.C.? Prevention? Human? Up for debate?" width="700" height="938" loading="lazy" decoding="async">
                         </span>
                     </span>
                     <span class="ea-teaser__text">
-                        <span class="ea-teaser__kicker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>A sneak peek &middot; Out December 2026</span>
-                        <span class="ea-teaser__title">The Winter 2027 Edition. <em>Medical Innovation in the Capital.</em></span>
-                        <span class="ea-teaser__dek">Stories from the labs, clinics and classrooms where Washington is building the next generation of medicine.</span>
-                        <span class="ea-teaser__inside"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>The AI Listening for Heart Failure</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Engineering Cartilage From Scratch</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Health Care on Wheels in Wards 7 and 8</span></span>
+                        <span class="ea-teaser__kicker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>A sneak peek &middot; Out December 15</span>
+                        <span class="ea-teaser__title">The Winter 2027 Edition. <em>The future of health <span style="white-space:nowrap">is<span class="blank-line" aria-label="blank"></span></span></em></span>
+                        <span class="ea-teaser__dek">Four sections, one question: what is the future of health? Stories from the labs, clinics and offices where Washington is shaping the next generation of medicine.</span>
+                        <span class="ea-teaser__inside"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Pesticides and Parkinson&rsquo;s</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>What Does a Computer See?</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>The Illusion of Care</span></span>
                     </span>
                     <span class="ea-teaser__cta">Get a sneak peek<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
                 </a>
@@ -749,35 +746,32 @@
                 <div class="ea-banner">
                     <img src="/edition-art/winter/hero-1600.webp?v=2" srcset="/edition-art/winter/hero-900.webp?v=2 900w, /edition-art/winter/hero-1600.webp?v=2 1600w, /edition-art/winter/hero-2600.webp?v=2 2600w" sizes="100vw"
                          alt="" width="1600" height="679" loading="lazy" decoding="async">
-                    <div class="ea-banner-label ea-wrap"><span>No. 06 &middot; Winter 2027</span><span class="ea-badge">Coming December 2026</span></div>
+                    <div class="ea-banner-label ea-wrap"><span>No. 06 &middot; Winter 2027</span><span class="ea-badge">Out December 15</span></div>
                 </div>
                 <div class="ea-wrap ea-ed-grid">
                     <div class="ea-ed-coverwrap" data-reveal>
                         <a class="ea-ed-cover" href="/edition-winter" aria-label="Preview the Winter 2027 edition">
                             <figure class="ea-cover">
-                                <img class="art" src="/edition-art/winter/cover-1100.webp?v=1" srcset="/edition-art/winter/cover-700.webp?v=1 700w, /edition-art/winter/cover-1100.webp?v=1 1100w"
+                                <img class="art" src="/edition-art/winter/cover-2027-1100.webp?v=3" srcset="/edition-art/winter/cover-2027-700.webp?v=3 700w, /edition-art/winter/cover-2027-1100.webp?v=3 1100w"
                                      sizes="(max-width: 899px) 58vw, 380px" width="1100" height="1473" loading="lazy" decoding="async"
-                                     alt="The Winter 2027 cover: a pen-and-ink drawing of the frozen Reflecting Pool looking toward the Washington Monument.">
-                                <div class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span>Winter 2027</span><span>Washington, D.C.</span></div></div>
-                                <p class="ea-cover-title" aria-hidden="true">Medical Innovation in the Capital</p>
-                                <div class="ea-cover-lines" aria-hidden="true"><p><span>Feature</span>The AI Listening for Heart Failure</p><p><span>Profile</span>Engineering Cartilage From Scratch</p></div>
+                                     alt="Cover of The Catalyst Magazine, Winter 2027: The future of health is … Decided in D.C.? Prevention? Human? Up for debate?">
                             </figure>
                         </a>
                     </div>
                     <div class="ea-ed-copy" data-reveal style="--d:.1s">
                         <p class="ea-kicker ea-ed-kicker">Winter 2027 &middot; Medicine</p>
-                        <h2 id="winter-2027-title">Medical Innovation <em>in the Capital.</em></h2>
+                        <h2 id="winter-2027-title">The future of health <em style="white-space:nowrap">is<span class="blank-line" aria-label="blank"></span></em></h2>
                         <p class="ea-ed-dek">Stories from the labs, clinics and classrooms where Washington is building the next generation of medicine.</p>
                         <ul class="ea-ed-inside" aria-label="A preview of this edition">
-                            <li><span>Feature</span><b>The AI Listening for Heart Failure</b></li>
-                            <li><span>Profile</span><b>Engineering Cartilage From Scratch</b></li>
-                            <li><span>Feature</span><b>Health Care on Wheels in Wards 7 and 8</b></li>
+                            <li><span>Prevention</span><b>Pesticides and Parkinson&rsquo;s</b></li>
+                            <li><span>Human?</span><b>What Does a Computer See?</b></li>
+                            <li><span>Up for Debate</span><b>The Illusion of Care</b></li>
                         </ul>
                         <div class="ea-ed-foot">
                             <a class="ea-btn" href="/edition-winter">Preview the edition
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                             </a>
-                            <span class="ea-ed-meta">13 stories &middot; Out December 2026</span>
+                            <span class="ea-ed-meta">14 stories &middot; Out December 15</span>
                         </div>
                     </div>
                 </div>
@@ -807,7 +801,7 @@
 
     <div id="site-footer"></div>
 
-    <script defer src="/js/layout.js?v=20261012-popup"></script>
+    <script defer src="/js/layout.js?v=20261115-announce"></script>
     <script>
       (function () {
         var body = document.body;

@@ -93,7 +93,7 @@
     <!-- Shared site stylesheet: the real header, footer and newsletter modal -->
     <link rel="stylesheet" href="/css/styles.css?v=20260925-review">
     <!-- page edges behind the magazine covers -->
-    <link rel="stylesheet" href="/css/magazine.css?v=7">
+    <link rel="stylesheet" href="/css/magazine.css?v=8">
 
     <style>
       /* ============================================================
@@ -238,7 +238,7 @@
         }
       }
       .hero-copy {
-        left: var(--edge); top: calc(var(--nav-h) + clamp(24px, 8vh, 96px));
+        left: var(--edge); top: calc(var(--nav-h) + var(--announce-h, 0px) + clamp(24px, 8vh, 96px));
         max-width: min(560px, 42vw);
       }
       /* keep the wash off the Monument, which sits just right of the copy */
@@ -506,6 +506,7 @@
       .peek-kicker { font: 600 11px/1.2 var(--sans); letter-spacing: .2em; text-transform: uppercase; color: #a8cde8; }
       .peek-title { font: 700 clamp(19px, 1.7vw, 24px)/1.15 var(--sans); letter-spacing: -0.02em; }
       .peek-title em { font: italic 400 1em/1.1 var(--serif); color: #dbe9f5; }
+      .blank-line { display: inline-block; width: 1.8em; height: .8em; margin-left: .2em; vertical-align: baseline; border-bottom: .08em solid currentColor; }
       .peek-dek { font: 400 15px/1.5 var(--serif); color: rgba(243,247,251,.75); }
       .peek-cta { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 999px; white-space: nowrap; background: #f3f7fb; color: #0b1526; font: 600 14px/1 var(--sans); }
       .peek-cta svg { width: 16px; height: 16px; transition: transform .3s var(--ease-out); }
@@ -535,6 +536,115 @@
         .ce-cover .ea-cover, .shelf .ea-cover, .peek-bg, .peek-cover { transition: none; }
       }
 
+
+      /* ============================================================
+         NEXT EDITION — the Winter 2027 teaser (hand-written; swap it
+         for the next edition when one is announced). A light, frosted
+         spread: "The future of health is ___" with the four sections as
+         a contents list (one collage each), the cover on the right.
+         ============================================================ */
+      .nx { --winter: #2f5d86; position: relative; padding: clamp(72px, 9vw, 128px) 0;
+        background: linear-gradient(180deg, var(--paper) 0, #edf1f3 16%, #edf1f3 84%, var(--paper) 100%); }
+      .nx-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(40px, 6vw, 104px); align-items: center; }
+      .nx-kicker { display: flex; align-items: center; gap: 12px; margin: 0 0 22px;
+        font: 600 12px/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--winter); }
+      .nx-kicker::before { content: ""; width: 22px; height: 1px; background: currentColor; }
+      .nx-kicker i { width: 1px; height: 12px; background: currentColor; opacity: .4; }
+      .nx-title { margin: 0; max-width: 15ch; font: 700 clamp(36px, 4.6vw, 66px)/1.02 var(--sans); letter-spacing: -0.035em; color: var(--ink); }
+      /* clip-path, not overflow:hidden: an overflow box takes its bottom edge as the
+         baseline and rides high; this keeps the words on the line's baseline */
+      .nx-blank { position: relative; display: inline-grid; vertical-align: baseline; padding: 0 .04em .1em; margin-left: .02em;
+        clip-path: inset(0 -.2em 0 -.2em);
+        background: linear-gradient(currentColor, currentColor) 0 100% / 100% 2px no-repeat; color: var(--winter); }
+      .nx-blank > span { grid-area: 1 / 1; font: italic 400 1.04em/1.1 var(--serif); letter-spacing: -0.01em; white-space: nowrap;
+        transform: translateY(105%); opacity: 0; transition: transform .7s var(--ease-out), opacity .5s; }
+      .nx-blank > span.is-on { transform: none; opacity: 1; }
+      .nx-blank > span.is-off { transform: translateY(-105%); opacity: 0; }
+      .nx-dek { margin: 22px 0 0; max-width: 50ch; font: 400 clamp(17px, 1.3vw, 19px)/1.6 var(--serif); color: var(--ink-2); }
+      .nx-parts { list-style: none; margin: clamp(28px, 3vw, 40px) 0 0; padding: 0; border-top: 1px solid var(--ink); counter-reset: nxp; }
+      .nx-parts li { border-bottom: 1px solid var(--hair); }
+      .nx-parts a { display: grid; grid-template-columns: 30px 52px minmax(0, 1fr) auto; align-items: center; gap: 16px; min-height: 44px; padding: 12px 0; }
+      .nx-pn { font: 500 13px/1 var(--sans); color: var(--muted); font-variant-numeric: tabular-nums; }
+      .nx-pi { width: 52px; aspect-ratio: 4 / 5; border-radius: 3px; overflow: hidden; background: #e3e7ea; box-shadow: 0 1px 2px rgba(15,23,42,.12); }
+      .nx-pi img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease-out); }
+      .nx-pt { font: 600 clamp(17px, 1.3vw, 19px)/1.25 var(--sans); letter-spacing: -0.01em; color: var(--ink); }
+      .nx-pt em { color: var(--winter); }
+      .nx-pc { font: 600 11px/1.2 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+      .nx-parts a:hover .nx-pi img, .nx-parts li.is-on .nx-pi img { transform: scale(1.08); }
+      .nx-parts li.is-on .nx-pn { color: var(--ink); }
+      .nx-parts a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+      .nx-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: clamp(28px, 3vw, 40px); }
+      .nx-art { justify-self: center; width: min(100%, 380px); text-align: center; }
+      .nx-cover { display: block; transform: rotate(1.6deg); transition: transform .6s var(--ease-out); }
+      .nx-cover .ea-cover { display: block; }
+      .nx-cover .ea-cover { box-shadow: 0 2px 6px rgba(15,23,42,.14), 0 50px 90px -36px rgba(30,60,90,.55); }
+      .nx-cover:hover { transform: rotate(0deg) translateY(-6px); }
+      .nx-cover:focus-visible { outline: 2px solid var(--ink); outline-offset: 6px; }
+      .nx-when { margin: clamp(26px, 3vw, 36px) 0 0; display: grid; justify-items: center; gap: 8px; }
+      .nx-when b { font: 400 clamp(46px, 4.4vw, 64px)/.86 var(--serif); letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: lining-nums; }
+      .nx-when span { font: 600 11px/1.2 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+
+      /* The hero's countdown to the next edition: a hairline, a label and a
+         sneak-peek link, then days / hours / minutes / seconds in the serif.
+         Desktop: top right, level with the kicker (the drawing moves down to
+         make room); phones: under the button in the copy. */
+      .hc-desk { display: none; }
+      .hero-count {
+        display: block; padding-top: 14px; border-top: 1px solid var(--ink); color: var(--ink);
+        opacity: 0; transform: translateY(12px); transition: opacity .7s .42s, transform .7s .42s var(--ease-out);
+      }
+      .is-loaded .hero-count { opacity: 1; transform: none; }
+      .hc-top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+        font: 600 11px/1.3 var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+      .hc-short { display: none; }
+      .hc-link { flex: none; display: inline-flex; align-items: center; gap: 6px; color: var(--ink); letter-spacing: .12em; }
+      .hc-link svg { width: 14px; height: 14px; transition: transform .3s var(--ease-out); }
+      .hero-count:hover .hc-link svg { transform: translateX(3px); }
+      .hero-count:hover .hc-link { color: var(--signal); }
+      .hc-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+      .hc-row > span { display: grid; gap: 8px; padding: 0 clamp(10px, 1.1vw, 16px); border-left: 1px solid var(--hair); }
+      .hc-row > span:first-child { padding-left: 0; border-left: 0; }
+      .hc-row b { display: block; font: 400 clamp(36px, 3.2vw, 50px)/.86 var(--serif); letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums lining-nums; color: var(--ink); }
+      .hc-row b.tick { animation: hcTick .5s var(--ease-out); }
+      .hc-row > span:last-child b { color: var(--signal); }
+      .hc-row i { font: 600 10.5px/1 var(--sans); font-style: normal; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+      .hero-count:focus-visible { outline: 2px solid var(--ink); outline-offset: 6px; border-radius: 2px; }
+      @keyframes hcTick { from { opacity: .25; transform: translateY(-.12em); } to { opacity: 1; transform: none; } }
+      .hc-copy { margin-top: 20px; }
+      .is-out-hero .hc-row { display: none; }
+      @media (min-width: 761px) and (min-aspect-ratio: 9/10) {
+        .hc-desk { display: block; position: absolute; z-index: 3; width: min(380px, 31vw);
+          top: calc(var(--nav-h) + var(--announce-h, 0px) + clamp(24px, 8vh, 96px));
+          right: calc((100% - min(100% - 64px, 1400px)) / 2 + 36px); will-change: transform, opacity; }
+        .hc-desk::before { content: ""; position: absolute; z-index: -1; inset: -36px -40px -40px -48px; pointer-events: none;
+          background: radial-gradient(ellipse 62% 64% at 52% 48%, rgba(248,247,243,.96) 52%, rgba(248,247,243,0) 82%); }
+        .hc-copy { display: none; }
+      }
+      /* light ink snow over the hero drawing (winter only; see the script) */
+      .hero-snow { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
+
+      @media (max-width: 960px) {
+        .nx-grid { grid-template-columns: 1fr; }
+        .nx-art { order: -1; width: min(56vw, 260px); }
+      }
+      @media (max-width: 760px) {
+        .nx-parts a { grid-template-columns: 24px 44px minmax(0, 1fr); gap: 12px; }
+        .nx-pi { width: 44px; }
+        .nx-pc { display: none; }
+        .nx-actions .hb-btn { flex: 1 1 100%; }
+        /* phones: the countdown takes the second button's place */
+        .hb-actions .hb-btn-line { display: none; }
+        .hc-row b { font-size: clamp(32px, 9.5vw, 42px); }
+        .hc-long { display: none; } .hc-short { display: inline; }
+      }
+      @media (max-width: 760px) and (max-height: 760px) { .hc-copy { display: none; } .hb-actions .hb-btn-line { display: inline-flex; } }   /* short phones: the copy is already full */
+      @media (prefers-reduced-motion: reduce) {
+        .nx-cover, .nx-blank > span, .nx-pi img, .hero-count, .hc-link svg { transition: none; }
+        .hc-row b.tick { animation: none; }
+        .hero-count { opacity: 1; transform: none; }
+        .hero-snow { display: none; }
+      }
 
       /* ---------- in-page menu ----------
          Desktop: a rail of ticks in the right margin, the current section's
@@ -754,6 +864,7 @@
         <section class="scene scene-mall" id="top" data-scene="mall" aria-labelledby="hero-title">
             <div class="stage">
                 <canvas class="seq" aria-hidden="true"></canvas>
+                <canvas class="hero-snow" aria-hidden="true"></canvas>
                 <p class="sr-only">A pen-and-ink drawing of the National Mall, from the Washington Monument to the U.S. Capitol, draws itself as you scroll.</p>
 
                 <div class="scene-copy hero-copy" id="hero-copy">
@@ -769,6 +880,27 @@
                         </a>
                         <a href="#edition" class="hb-btn hb-btn-line">The current edition</a>
                     </div>
+                    <a class="hero-count hc-copy" href="/edition-winter" aria-label="The Winter 2027 edition, out December 15. Take a sneak peek.">
+                        <span class="hc-top"><span data-out="Winter 2027 is out"><span class="hc-long">The Winter 2027 edition arrives in</span><span class="hc-short">Winter 2027 arrives in</span></span><span class="hc-link"><span data-out="Read it">Sneak peek</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+                        <span class="hc-row" aria-hidden="true">
+                            <span><b data-hc="d">&ndash;&ndash;</b><i>Days</i></span>
+                            <span><b data-hc="h">&ndash;&ndash;</b><i>Hours</i></span>
+                            <span><b data-hc="m">&ndash;&ndash;</b><i>Minutes</i></span>
+                            <span><b data-hc="s">&ndash;&ndash;</b><i>Seconds</i></span>
+                        </span>
+                    </a>
+                </div>
+                <!-- desktop: the countdown to the next edition, top right (fades with the copy) -->
+                <div class="hc-desk" id="hc-desk">
+                    <a class="hero-count" href="/edition-winter" aria-label="The Winter 2027 edition, out December 15. Take a sneak peek.">
+                        <span class="hc-top"><span data-out="Winter 2027 is out"><span class="hc-long">The Winter 2027 edition arrives in</span><span class="hc-short">Winter 2027 arrives in</span></span><span class="hc-link"><span data-out="Read it">Sneak peek</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+                        <span class="hc-row" aria-hidden="true">
+                            <span><b data-hc="d">&ndash;&ndash;</b><i>Days</i></span>
+                            <span><b data-hc="h">&ndash;&ndash;</b><i>Hours</i></span>
+                            <span><b data-hc="m">&ndash;&ndash;</b><i>Minutes</i></span>
+                            <span><b data-hc="s">&ndash;&ndash;</b><i>Seconds</i></span>
+                        </span>
+                    </a>
                 </div>
                 <!-- desktop: once the drawing settles on the Capitol, the
                      Catalyst mark draws itself beside it (its orbits echo
@@ -825,6 +957,37 @@
             </div>
         </section>
 
+        <!-- ================ NEXT EDITION — Winter 2027 teaser (hand-written; update when the next edition is announced) ================ -->
+        <section class="nx" id="next-edition" aria-labelledby="nx-title" data-launch="2026-12-15T00:00:00-05:00">
+            <div class="wrap nx-grid">
+                <div class="nx-copy" data-reveal>
+                    <p class="nx-kicker"><span data-out="Out now">The next edition</span><i aria-hidden="true"></i>Winter 2027</p>
+                    <h2 class="nx-title" id="nx-title">The future of health is <span class="nx-blank" id="nx-blank" aria-hidden="true"><span class="is-on">decided in D.C.?</span><span>prevention?</span><span>human?</span><span>up for debate?</span></span><span class="sr-only">&hellip; decided in D.C.? Prevention? Human? Up for debate?</span></h2>
+                    <p class="nx-dek">Four sections, one question, and a season of reporting from the labs, clinics and offices shaping medicine in Washington.</p>
+                    <ol class="nx-parts" aria-label="The four sections of the Winter 2027 edition">
+                            <li data-i="0"><a href="/edition-winter#stories"><span class="nx-pn">01</span><span class="nx-pi"><img src="/edition-art/winter/2027/the-access-gap-480.webp?v=3" alt="" width="480" height="600" loading="lazy" decoding="async"></span><span class="nx-pt">The future of health is <em>decided in D.C.?</em></span><span class="nx-pc">4 stories</span></a></li>
+                            <li data-i="1"><a href="/edition-winter#stories"><span class="nx-pn">02</span><span class="nx-pi"><img src="/edition-art/winter/2027/pesticides-and-parkinsons-480.webp?v=3" alt="" width="480" height="600" loading="lazy" decoding="async"></span><span class="nx-pt">The future of health is <em>prevention?</em></span><span class="nx-pc">4 stories</span></a></li>
+                            <li data-i="2"><a href="/edition-winter#stories"><span class="nx-pn">03</span><span class="nx-pi"><img src="/edition-art/winter/2027/what-does-a-computer-see-480.webp?v=3" alt="" width="480" height="600" loading="lazy" decoding="async"></span><span class="nx-pt">The future of health is <em>human?</em></span><span class="nx-pc">2 stories</span></a></li>
+                            <li data-i="3"><a href="/edition-winter#stories"><span class="nx-pn">04</span><span class="nx-pi"><img src="/edition-art/winter/2027/the-people-well-never-meet-480.webp?v=3" alt="" width="480" height="600" loading="lazy" decoding="async"></span><span class="nx-pt">The future of health is <em>up for debate?</em></span><span class="nx-pc">4 stories</span></a></li>
+                    </ol>
+                    <div class="nx-actions">
+                        <a class="hb-btn hb-btn-ink" href="/edition-winter"><span data-out="Read the edition">Take a sneak peek</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                        <a class="hb-btn hb-btn-line" href="#newsletter">Get it in your inbox</a>
+                    </div>
+                </div>
+                <div class="nx-art" data-reveal style="--delay:.08s">
+                    <a class="nx-cover" href="/edition-winter" aria-label="Preview the Winter 2027 edition: The future of health is …">
+                        <span class="ea-cover">
+                            <img class="art" src="/edition-art/winter/cover-2027-700.webp?v=3" alt="" width="700" height="938" loading="lazy" decoding="async">
+                        </span>
+                    </a>
+                    <p class="nx-when"><b>12.15</b><span data-out="Out now">Out December 15</span></p>
+                </div>
+            </div>
+        </section>
+
         <!-- ================ THE CURRENT EDITION (from /edition-art/editions.json) ================ -->
         <section class="ce" id="edition" aria-labelledby="ce-title" hidden>
             <div class="ce-banner" aria-hidden="true"><img id="ce-banner" alt="" loading="lazy" decoding="async"></div>
@@ -873,14 +1036,12 @@
                         <span class="peek-bg" aria-hidden="true"></span>
                         <span class="peek-cover" aria-hidden="true">
                             <span class="ea-cover">
-                                <img class="art" src="/edition-art/winter/cover-700.webp?v=1" alt="Cover of The Catalyst Magazine, Winter 2027 edition: Medical Innovation in the Capital" width="700" height="937" loading="lazy" decoding="async">
-                                <span class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234"><span class="ea-dateline"><span>Winter 2027</span><span>No. 06</span></span></span>
-                                <span class="ea-cover-title">Medical Innovation in the Capital</span>
+                                <img class="art" src="/edition-art/winter/cover-2027-700.webp?v=3" alt="" width="700" height="938" loading="lazy" decoding="async">
                             </span>
                         </span>
                         <span class="peek-text">
-                            <span class="peek-kicker">Coming December 2026</span>
-                            <span class="peek-title">The Winter 2027 Edition. <em>Medical Innovation in the Capital.</em></span>
+                            <span class="peek-kicker">Out December 15</span>
+                            <span class="peek-title">The Winter 2027 Edition. <em>The future of health <span style="white-space:nowrap">is<span class="blank-line" aria-label="blank"></span></span></em></span>
                             <span class="peek-dek">The labs, clinics and classrooms where Washington is building the next generation of medicine.</span>
                         </span>
                         <span class="peek-cta">A sneak peek <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
@@ -1035,6 +1196,7 @@
     <!-- in-page menu: a rail in the right margin (desktop), a small bar at the foot of the screen (phones) -->
     <nav class="pnav" id="pnav" aria-label="On this page" hidden>
         <a href="#latest" data-sec="latest"><span class="pn-l">Latest</span><i aria-hidden="true"></i></a>
+        <a href="#next-edition" data-sec="next-edition"><span class="pn-l">Winter 2027</span><i aria-hidden="true"></i></a>
         <a href="#edition" data-sec="edition"><span class="pn-l">This edition</span><i aria-hidden="true"></i></a>
         <a href="#editions" data-sec="editions"><span class="pn-l">Editions</span><i aria-hidden="true"></i></a>
         <a href="#search" data-sec="search"><span class="pn-l">Search</span><i aria-hidden="true"></i></a>
@@ -1045,7 +1207,7 @@
 
     <div id="site-footer"></div>
 
-    <script src="/js/layout.js?v=20261012-popup" defer></script>
+    <script src="/js/layout.js?v=20261115-announce" defer></script>
     <script src="/js/brain-teaser-case.js?v=2" defer></script>
     <script>
     /* The Vault band: this fortnight's case from the riddle schedule, a countdown,
@@ -1295,6 +1457,7 @@
          ============================================================ */
       var heroCopy = document.getElementById('hero-copy');
       var cue = document.getElementById('scroll-cue');
+      var hcDesk = document.getElementById('hc-desk');
 
       // Brand block: the logo wipes in, "The latest stories" follows,
       // then the block shrinks up to the top-left of the page, where the
@@ -1357,10 +1520,12 @@
       // width min(100% - 64px, 1400px)) and a line just clear of the copy.
       var heroFrameKey = '', heroFrameVal = null;
       function heroFrame(vw, vh) {
-        var key = vw + '|' + vh;
+        var key = vw + '|' + vh + '|' + heroCopy.offsetTop;
         if (key !== heroFrameKey) {
           var rg = document.createRange(); rg.selectNodeContents(heroCopy);
-          heroFrameVal = { right: vw / 2 + Math.min(vw - 64, 1400) / 2, clear: rg.getBoundingClientRect().right + 28, top: heroCopy.offsetTop };
+          var hcd = document.getElementById('hc-desk');
+          heroFrameVal = { right: vw / 2 + Math.min(vw - 64, 1400) / 2, clear: rg.getBoundingClientRect().right + 28, top: heroCopy.offsetTop,
+            drop: hcd && hcd.offsetParent ? hcd.offsetHeight + 28 : 0 };   // the countdown sits top right; the drawing starts under it
           heroFrameKey = key;
         }
         return heroFrameVal;
@@ -1409,9 +1574,12 @@
             // otherwise run into the copy
             var F = heroFrame(vw, vh);
             var w0 = Math.min(vw * 0.96, vh * 1.78);
-            var w2 = Math.max(w0 * 0.45, Math.min(w0, (F.right - F.clear) / 0.56)), h2 = w2 * AR;
-            // the drawing's top (plate y ≈ 0.19) sits just under the top of the copy
-            R = { w: w2, h: h2, x: F.right - 0.96 * w2, y: F.top + 36 - 0.19 * h2, k: 1.55 * w0 / w2 };
+            var w2 = Math.max(w0 * 0.45, Math.min(w0, (F.right - F.clear) / 0.56));
+            // below the countdown, the drawing (content plate y ≈ 0.19–0.90) must still end above the fold
+            w2 = Math.max(w0 * 0.45, Math.min(w2, (vh - 28 - (F.top + 36 + F.drop)) / (0.71 * AR)));
+            var h2 = w2 * AR;
+            // the drawing's top (plate y ≈ 0.19) sits just under the top of the copy (under the countdown)
+            R = { w: w2, h: h2, x: F.right - 0.96 * w2, y: F.top + 36 + F.drop - 0.19 * h2, k: 1.55 * w0 / w2 };
           }
           if (!portrait()) {
             // desktop: ease toward the Capitol and settle it on the left
@@ -1445,6 +1613,7 @@
           heroCopy.style.opacity = String(1 - out);
           heroCopy.style.transform = 'translate3d(0,' + (-out * 50) + 'px,0)';
           heroCopy.style.visibility = out >= 1 ? 'hidden' : '';
+          if (hcDesk) { hcDesk.style.opacity = heroCopy.style.opacity; hcDesk.style.transform = heroCopy.style.transform; hcDesk.style.visibility = heroCopy.style.visibility; }
         }
       });
 
@@ -2115,6 +2284,127 @@
         countEl.textContent = 'Articles unavailable right now';
         grid.innerHTML = '';
       });
+    })();
+    </script>
+    <script>
+    /* Next edition (Winter 2027): the hero countdowns to 12.15 (desktop top
+       right + phones in the copy), the rotating blank in #next-edition with
+       its section row lit, and light ink snow over the hero drawing. On the
+       day everything with data-out switches to its "out" wording. Replace
+       when the next edition is announced. */
+    (function () {
+      var sec = document.getElementById('next-edition');
+      if (!sec) return;
+      var REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // ---- countdown, then "Out now"
+      var launch = Date.parse(sec.dataset.launch), timer = 0, units = { d: [], h: [], m: [], s: [] };
+      document.querySelectorAll('.hero-count b[data-hc]').forEach(function (b) { (units[b.dataset.hc] || []).push(b); });
+      function goOut() {
+        document.documentElement.classList.add('is-out-hero');
+        document.querySelectorAll('#next-edition [data-out], .hero-count [data-out]').forEach(function (el) { el.textContent = el.dataset.out; });
+      }
+      function pad(n) { return (n < 10 ? '0' : '') + n; }
+      function put(u, v) {
+        v = String(v);
+        units[u].forEach(function (b) {
+          if (b.textContent === v) return;
+          var first = /–/.test(b.textContent);
+          b.textContent = v;
+          if (!first && b.offsetParent) { b.classList.remove('tick'); void b.offsetWidth; b.classList.add('tick'); }
+        });
+      }
+      function tick() {
+        var left = launch - Date.now();
+        if (left <= 0) { clearInterval(timer); goOut(); return; }
+        var s = Math.floor(left / 1000), d = Math.floor(s / 86400); s -= d * 86400;
+        var h = Math.floor(s / 3600); s -= h * 3600;
+        var m = Math.floor(s / 60); s -= m * 60;
+        put('d', d < 100 ? pad(d) : d); put('h', pad(h)); put('m', pad(m)); put('s', pad(s));
+      }
+      if (isNaN(launch)) document.querySelectorAll('.hero-count').forEach(function (c) { c.hidden = true; });
+      else { tick(); timer = setInterval(tick, 1000); }
+
+      // ---- the blank: the four sections, one at a time, its row in the list lit
+      //      (paused off screen, in a background tab and on hover/focus)
+      var blank = document.getElementById('nx-blank');
+      var rows = sec.querySelectorAll('.nx-parts li');
+      function light(i) { rows.forEach(function (r, k) { r.classList.toggle('is-on', k === i); }); }
+      if (blank && blank.children.length > 1) {
+        var words = blank.children, i = 0, onScreen = false, held = false;
+        light(0);
+        setInterval(function () {
+          if (!onScreen || held || document.hidden) return;
+          var cur = words[i]; i = (i + 1) % words.length; var nxt = words[i];
+          cur.classList.remove('is-on'); cur.classList.add('is-off');
+          nxt.classList.remove('is-off'); nxt.classList.add('is-on');
+          light(i);
+          setTimeout(function () { cur.classList.remove('is-off'); }, 760);
+        }, 2800);
+        if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { onScreen = es[0].isIntersecting; }).observe(blank);
+        else onScreen = true;
+        var copy = sec.querySelector('.nx-copy') || sec;
+        ['mouseenter', 'focusin'].forEach(function (t) { copy.addEventListener(t, function () { held = true; }); });
+        ['mouseleave', 'focusout'].forEach(function (t) { copy.addEventListener(t, function () { held = false; }); });
+      }
+
+      // ---- light ink snow over the hero drawing: a few dozen grey flakes, a
+      //      quarter of them drawn as tiny six-armed crystals. Runs only while
+      //      the hero is on screen; off with reduced motion. Winter only:
+      //      remove it (and .hero-snow) when the winter edition gives way.
+      var snow = document.querySelector('.hero-snow');
+      if (snow && !REDUCED && snow.getContext) {
+        var ctx = snow.getContext('2d'), flakes = [], W = 0, H = 0, run = false, prev = 0, raf2 = 0;
+        var DPR = 1;   // tiny grey flakes: full resolution would only cost frames
+        var fit = function () {
+          var r = snow.getBoundingClientRect(); W = r.width; H = r.height;
+          snow.width = Math.round(W * DPR); snow.height = Math.round(H * DPR);
+          ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+          var n = W < 700 ? 14 : 28;
+          while (flakes.length < n) flakes.push(make(true));
+          flakes.length = n;
+        };
+        var make = function (anywhere) {
+          var z = Math.random();
+          return { x: Math.random() * W, y: anywhere ? Math.random() * H : -12, z: z, r: 0.9 + z * 2.4,
+            vy: 9 + z * 24, ph: Math.random() * 6.283, sw: 0.35 + Math.random() * 0.7,
+            star: z > 0.72, rot: Math.random() * 6.283, a: 0.14 + z * 0.3 };
+        };
+        var frame = function (t) {
+          raf2 = 0; if (!run) return;
+          var dt = Math.min(0.05, (t - (prev || t)) / 1000); prev = t;
+          ctx.clearRect(0, 0, W, H);
+          for (var i = 0; i < flakes.length; i++) {
+            var f = flakes[i];
+            f.y += f.vy * dt; f.ph += f.sw * dt; f.x += Math.sin(f.ph) * (6 + f.z * 8) * dt; f.rot += 0.2 * dt;
+            if (f.y > H + 12) { flakes[i] = make(false); continue; }
+            ctx.globalAlpha = f.a;
+            if (f.star) {
+              ctx.strokeStyle = '#334155'; ctx.lineWidth = 0.7; ctx.beginPath();
+              for (var k = 0; k < 3; k++) {
+                var ang = f.rot + k * 1.0472, dx = Math.cos(ang) * f.r * 2.1, dy = Math.sin(ang) * f.r * 2.1;
+                ctx.moveTo(f.x - dx, f.y - dy); ctx.lineTo(f.x + dx, f.y + dy);
+              }
+              ctx.stroke();
+            } else {
+              ctx.fillStyle = '#334155'; ctx.beginPath(); ctx.arc(f.x, f.y, f.r * 0.62, 0, 6.283); ctx.fill();
+            }
+          }
+          raf2 = requestAnimationFrame(frame);
+        };
+        var setRun = function (on) {
+          on = on && !document.hidden;
+          if (on === run) return; run = on; prev = 0;
+          if (run && !raf2) raf2 = requestAnimationFrame(frame);
+        };
+        fit();
+        window.addEventListener('resize', function () { fit(); }, { passive: true });
+        var hero = document.getElementById('top');
+        if (hero && 'IntersectionObserver' in window) new IntersectionObserver(function (es) { setRun(es[0].isIntersecting); }).observe(hero);
+        else setRun(true);
+        document.addEventListener('visibilitychange', function () { setRun(!document.hidden && hero && hero.getBoundingClientRect().bottom > 0); });
+      }
+
     })();
     </script>
 </body>

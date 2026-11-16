@@ -116,6 +116,7 @@ window.layoutReady = Promise.all([
     loadFragment('site-header', headerPath),
     loadFragment('site-footer', footerPath)
 ]).then(() => {
+    setupAnnounce();
     setupNewsletterModal();
     setupMobileNav();
     setupNavFitGuard();
@@ -320,6 +321,62 @@ function setupNewsletterModal() {
 // and never appears on editorial / staff pages. Markup is injected here (not
 // in header.html) because dev tools like Live Server mangle HTML fragments
 // that contain multiple SVGs.
+// The announcement bar above the header (#site-announce in header.html): the
+// next edition. Hidden on the page it links to, once a reader closes it, and
+// after data-until; from data-launch it shows its "out now" wording. While it
+// is on screen the floating header sits just below it and rises back to its
+// usual place as the bar scrolls away.
+function setupAnnounce() {
+    const bar = document.getElementById('site-announce');
+    if (!bar) return;
+    const now = Date.now();
+    const launch = Date.parse(bar.dataset.launch || '');
+    const until = Date.parse(bar.dataset.until || '');
+    const key = 'catalyst.announce.' + (bar.dataset.key || 'next');
+    const skip = (bar.dataset.skip || '').replace(/\/$/, '');
+    const here = location.pathname.replace(/\.html$/, '').replace(/\/$/, '');
+    let closed = false;
+    try { closed = localStorage.getItem(key) === '1'; } catch (e) { /* private mode */ }
+    if (closed || (skip && here === skip) || (!isNaN(until) && now >= until)) { bar.remove(); return; }
+    if (!isNaN(launch) && now >= launch) {
+        bar.querySelectorAll('[data-out]').forEach(el => { el.textContent = el.dataset.out; });
+    }
+
+    const root = document.documentElement;
+    const header = document.querySelector('#site-header .header');
+    let h = 0, raf = 0, last = -1;
+    // Moves only the header (no root custom property per frame: that would
+    // restyle the whole page on every scroll).
+    const place = () => {
+        raf = 0;
+        const off = Math.max(0, h - window.scrollY);
+        if (off === last || !header) return;
+        last = off;
+        header.style.translate = off ? `0 ${off}px` : '';
+    };
+    const measure = () => {
+        const nh = bar.offsetHeight;
+        if (nh !== h) { h = nh; root.style.setProperty('--announce-h', h + 'px'); }
+        last = -1;
+        place();
+    };
+    bar.hidden = false;
+    root.classList.add('has-announce');
+    measure();
+    window.dispatchEvent(new Event('resize'));   // let pages that lay out around the bar re-measure once
+    window.addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(place); }, { passive: true });
+    window.addEventListener('resize', measure, { passive: true });
+
+    bar.querySelector('.announce-x')?.addEventListener('click', () => {
+        try { localStorage.setItem(key, '1'); } catch (e) { /* private mode */ }
+        root.classList.remove('has-announce');
+        root.style.removeProperty('--announce-h');
+        if (header) header.style.translate = '';
+        bar.remove();
+        window.dispatchEvent(new Event('resize'));   // pages that lay out around the bar (the homepage hero) re-measure
+    });
+}
+
 function setupWelcomePopup() {
     if (isEditorial) return;
 
