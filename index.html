@@ -80,6 +80,21 @@
     }
     </script>
 
+    <script>
+    /* the band's landmark for this visit, picked here so its picture starts loading before the
+       stylesheets have arrived (the band script below takes the pick): the Capitol on a first
+       visit, then any other one than last time; ?hero=lincoln shows that one */
+    (function () {
+      var F = { capitol: 'dome', jefferson: 'jefferson', lincoln: 'lincoln', loc: 'loc', castle: 'castle' }, last = null, id = 'capitol';
+      try { last = localStorage.getItem('catalyst.band.hero'); } catch (e) {}
+      if (last && F[last]) { var ids = Object.keys(F).filter(function (k) { return k !== last; }); id = ids[Math.floor(Math.random() * ids.length)]; }
+      var ask = /[?&]hero=(\w+)/.exec(location.search); if (ask && F[ask[1]]) id = ask[1];
+      window.catalystHeroPick = id;
+      var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = '/beta/masthead/scene/' + F[id] + '.webp';
+      l.setAttribute('fetchpriority', 'high'); document.head.appendChild(l);
+    })();
+    </script>
+    <link rel="preload" as="image" href="/beta/masthead/scene/tree.webp" imagesrcset="/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w" imagesizes="(max-width: 1000px) 360px, 720px" media="(min-width: 761px)">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
@@ -441,6 +456,7 @@
       /* the cherry tree: its trunk cut by the band's left edge, one limb over the headline. Placed by the
          band script from the headline (desktop) or the scene (tablets); a slow breeze from the trunk's base */
       .sc-tree { position: absolute; z-index: 7; left: 0; top: 0; width: 720px; pointer-events: none; }
+      .sc-tree picture { display: block; }   /* phones get a blank pixel instead of the tree (it is hidden there) */
       .sc-tree img { display: block; width: 100%; height: auto; transform-origin: 6% 100%; }
       .band.go .sc-tree img { animation: breeze 9s ease-in-out infinite alternate; }
       @keyframes breeze { from { transform: rotate(-0.35deg); } to { transform: rotate(0.45deg); } }
@@ -770,8 +786,9 @@
         padding: clamp(22px, 2.6vw, 30px) clamp(22px, 3vw, 40px); border-radius: 10px; background: #0b1526; color: #f3f7fb;
         box-shadow: 0 2px 6px rgba(11,21,38,.15), 0 40px 80px -40px rgba(11,21,38,.6);
       }
-      .peek-bg { position: absolute; inset: 0; z-index: -2; background: url('/edition-art/winter/hero-1600.webp?v=2') 70% 55% / cover; transition: transform 1.4s var(--ease-out); }
+      .peek-bg { position: absolute; inset: 0; z-index: -2; background: 70% 55% / cover; transition: transform 1.4s var(--ease-out); }
       .peek::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(11,21,38,.97) 0%, rgba(11,21,38,.88) 45%, rgba(11,21,38,.5) 100%); }
+      .peek.near .peek-bg { background-image: url('/edition-art/winter/hero-1600.webp?v=2'); }
       .peek:hover .peek-bg { transform: scale(1.04); }
       .peek-cover { display: block; width: clamp(78px, 7vw, 104px); transform: rotate(-4deg); transition: transform .6s var(--ease-out); }
       .peek:hover .peek-cover { transform: rotate(-1deg) translateY(-5px); }
@@ -1123,7 +1140,7 @@
                             <svg class="sc-orb sc-orb-f" id="orb-f" aria-hidden="true" focusable="false"><path pathLength="1"/></svg>
                         </div>
                     </div>
-                    <div class="sc-tree" aria-hidden="true"><img src="/beta/masthead/scene/tree.webp" alt="" width="1440" height="860" decoding="async"></div>
+                    <div class="sc-tree" aria-hidden="true"><picture><source media="(max-width: 760px)" srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><img src="/beta/masthead/scene/tree.webp" srcset="/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w" sizes="(max-width: 1000px) 360px, 720px" alt="" width="1440" height="860" decoding="async"></picture></div>
                 </div>
             </header>
             <script>/* the landmark for this visit, picked before the first paint: the Capitol on a first
@@ -1146,10 +1163,13 @@
                 castle: ['The Smithsonian Castle', 'National Mall, Washington, D.C. · 1855',
                   'Paid for by James Smithson, a British chemist who never visited America but left his fortune for “the increase and diffusion of knowledge.” His crypt is inside the Castle.']
               };
-              var K = 'catalyst.band.hero', last = null, id = 'capitol';
-              try { last = localStorage.getItem(K); } catch (e) {}
-              if (last && H[last]) { var ids = Object.keys(H).filter(function (k) { return k !== last; }); id = ids[Math.floor(Math.random() * ids.length)]; }
-              var ask = /[?&]hero=(\w+)/.exec(location.search); if (ask && H[ask[1]]) id = ask[1];   // ?hero=lincoln shows that one
+              var K = 'catalyst.band.hero', last = null, id = window.catalystHeroPick;   // picked in the head, so the picture is already on its way
+              if (!H[id]) {
+                id = 'capitol';
+                try { last = localStorage.getItem(K); } catch (e) {}
+                if (last && H[last]) { var ids = Object.keys(H).filter(function (k) { return k !== last; }); id = ids[Math.floor(Math.random() * ids.length)]; }
+                var ask = /[?&]hero=(\w+)/.exec(location.search); if (ask && H[ask[1]]) id = ask[1];   // ?hero=lincoln shows that one
+              }
               try { localStorage.setItem(K, id); } catch (e) {}
               var h = H[id], band = document.getElementById('band');
               band.setAttribute('data-hero', id); band.classList.add('js');
@@ -1494,7 +1514,7 @@
                 <a class="ce-cover" id="ce-cover-link" data-reveal>
                     <figure class="ea-cover" id="ce-cover">
                         <img class="art" id="ce-art" alt="" loading="lazy" decoding="async">
-                        <div class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234"><div class="ea-dateline" aria-hidden="true"><span id="ce-date"></span><span>Washington, D.C.</span></div></div>
+                        <div class="ea-mast"><img src="/edition-art/winter/masthead.webp?v=1" alt="" width="1400" height="234" loading="lazy" decoding="async"><div class="ea-dateline" aria-hidden="true"><span id="ce-date"></span><span>Washington, D.C.</span></div></div>
                         <p class="ea-cover-title" id="ce-cover-title" aria-hidden="true"></p>
                         <div class="ea-cover-lines" id="ce-cover-lines" aria-hidden="true"></div>
                     </figure>
@@ -2002,11 +2022,20 @@
 
       var scenes = [library, tidal];
 
+      // which drawings are within reach of the screen: the loop below reads their position only
+      // then, so it never forces a style and layout pass in the frames the band above animates
+      var near = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { e.target.near = e.isIntersecting; });
+      }, { rootMargin: '200px 0px' }) : null;
+      scenes.forEach(function (s) { if (near) near.observe(s.el); else s.el.near = true; });
+
       function tick(time) {
         if (siteHeader) siteHeader.classList.toggle('scrolled', window.scrollY > 50);
         var vh = window.innerHeight;
         for (var i = 0; i < scenes.length; i++) {
-          var s = scenes[i], r = s.el.getBoundingClientRect();
+          var s = scenes[i];
+          if (!s.el.near) continue;
+          var r = s.el.getBoundingClientRect();
           if (r.bottom < -50 || r.top > vh + 50) continue;
           if (s.auto) {
             if (!s.t0 && s.ready && r.top < vh * (portrait() ? 0.7 : 0.6)) s.t0 = time;   // well into view
@@ -2721,9 +2750,13 @@
             layout();
             band.classList.add('go');
             T0 = T; tick();
-            // read each picture's outline for the pointer (the landmark tightly, the objects a little grown)
-            heroMask = alphaMask(heroImg, 160, 1);
-            st.forEach(function (o) { o.mask = alphaMask(o.el.firstChild, 72, 3); silhouette(o); });
+            // read each picture's outline for the pointer (the landmark tightly, the objects a little grown),
+            // one picture per task after the entrance's first frame, so the reading never holds up the
+            // animation (the objects only fade in from .35s, by when all four are done)
+            var jobs = [function () { heroMask = alphaMask(heroImg, 160, 1); }].concat(st.map(function (o) {
+              return function () { o.mask = alphaMask(o.el.firstChild, 72, 3); silhouette(o); };
+            }));
+            (function next() { var j = jobs.shift(); if (j) setTimeout(function () { j(); next(); }, 16); })();
             if (REDUCED) draw();
           });
         }
@@ -3446,6 +3479,15 @@
         ['mouseenter', 'focusin'].forEach(function (t) { copy.addEventListener(t, function () { held = true; }); });
         ['mouseleave', 'focusout'].forEach(function (t) { copy.addEventListener(t, function () { held = false; }); });
       }
+    })();
+    /* the Winter 2027 peek card's background picture loads only as the card comes near */
+    (function () {
+      var cards = [].slice.call(document.querySelectorAll('.peek'));
+      if (!('IntersectionObserver' in window)) { cards.forEach(function (c) { c.classList.add('near'); }); return; }
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('near'); io.unobserve(e.target); } });
+      }, { rootMargin: '800px 0px' });
+      cards.forEach(function (c) { io.observe(c); });
     })();
     </script>
 </body>

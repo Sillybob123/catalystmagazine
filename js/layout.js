@@ -89,7 +89,7 @@ async function loadFragment(targetId, path) {
             <header class="header">
                 <div class="container nav-container">
                     <a href="/" class="logo" aria-label="The Catalyst Magazine — home">
-                        <img src="/WebLogo.png" alt="The Catalyst Magazine" width="240" height="42">
+                        <img src="/WebLogo.webp" alt="The Catalyst Magazine" width="240" height="42">
                     </a>
                     <nav class="nav-menu" aria-label="Primary">
                         <a href="/" class="nav-link">Home</a>
@@ -417,7 +417,7 @@ function setupWelcomePopup() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
             <div class="welcome-popup-masthead">
-                <img src="/WebLogo.png" alt="The Catalyst" class="welcome-popup-logo" width="600" height="107" loading="lazy" decoding="async">
+                <img src="/WebLogo.webp" alt="The Catalyst" class="welcome-popup-logo" width="600" height="107" loading="lazy" decoding="async">
             </div>
             <h2 class="welcome-popup-title" id="welcome-popup-title">Stories that spark <em>scientific curiosity.</em></h2>
             <p class="welcome-popup-subtitle">Thoughtful reporting, D.C. STEM spotlights, and behind-the-scenes interviews — delivered with care, never spam.</p>
