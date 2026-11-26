@@ -14,8 +14,8 @@ Winter 2027 is the first. The next edition only needs a new entry in
 | File | What it does |
 |---|---|
 | `edition-art/hero-announcements.json` | The entries. The only file to edit for a new edition. |
-| `js/hero-announcement.js` | Picks the entry for today (Eastern time), fills the panel and the ticket, centres the panel, runs the countdown and the phase changes, draws the particles, builds the glass's refraction filter and moves its rim light, and tells the band's script what changed (`window.catalystScene.announce`). |
-| `css/hero-announcement.css` | The glass panel, the ticket, the particle layers and their responsive and reduced-motion rules. |
+| `js/hero-announcement.js` | Picks the entry for today (Eastern time), fills the panel and the card, centres the panel, runs the countdown and the phase changes, draws the particles, builds the glass's refraction filter and moves its rim light, and tells the band's script what changed (`window.catalystScene.announce`). |
+| `css/hero-announcement.css` | The glass panel, the edition card, the particle layers and their responsive and reduced-motion rules. |
 | `index.html` (assembled) | Its head holds a copy of the pick function and of the entries, so the season, palettes, tree and panel are decided **before the first paint** (no flash of spring before winter). The band's script (`scene.js` in the compose parts) lays the scene out beside the panel and leaves the Monument out. |
 | `js/layout.js` | `setupAnnounce()` leaves the site-wide bar off on the homepage while the panel is up. |
 
@@ -51,7 +51,7 @@ being right from the start.
   "paletteEvery": 12,               // seconds per palette: 8 held + the band's 4s fade
   "palettes": [ { "name": "midnight", "g": "oklch(30% .047 252.9)", "c": "oklch(91.7% .011 234.8)" }, … ],
   "text": "#f6efe4",                // --t: the band's type, orbit lines (at 32%) and the panel's cream
-  "accent": "#f4b9a4"               // the rotating blank and the ticket's "19 days"
+  "accent": "#f4b9a4"               // the rotating blank and the card's lead line
 }
 ```
 
@@ -157,7 +157,7 @@ tile's SVG shapes (an ellipse or a small path, in the season's colours), and nam
 ## The panel
 
 From 1001px the panel sits at the right of the band; at 1000px and under its content moves to the
-"ticket", a glass row under the subtitle.
+edition card (below): at the foot of the band on tablets, under the first story on phones.
 
 - **Place.** Its right edge is on the nav pill's right edge. It is centred vertically between the
   bottom of the nav pill and the band's bottom edge, with equal gaps (`placePanel()` measures both,
@@ -190,9 +190,37 @@ move. Because the centre depends on where the headline ends, the scene waits for
 (at most 1.2s, while the landmark's picture is still loading anyway) before it is shown, so it
 never shifts.
 
+### The edition card (1000px and under)
+
+Two copies of one card, filled alike by the script; CSS shows one. Its height is fixed (164, or
+104 from 601px, where it is all on one row), so filling it moves nothing.
+
+- **Tablets (761–1000px): `#ha-ticket`** (after `.band-grid`, inside `.band-in`), a floating glass
+  card at the band's foot, over the scene's last 16px, with 18px of band under it; the gutter's
+  width (at most 720), radius 22.
+- **Phones (760px and under): `#ha-card`**, in Latest stories between the first story
+  (`#ls-lead`) and the side column, at John's ask (Nov 26): solid in the season's first colour
+  (`--ha-ink` and `--ha-accent`, set on it by the script, since the band's colours don't reach
+  it), radius 18, no refraction. The band there is the season alone, and on all stacked widths
+  the headline and subtitle are centred.
+- **Content**: the cover (46×62) and three lines (kicker with the date, the title, "The future of
+  health is" with the rotating blank) on top; under a hairline, the countdown and a "Sneak peek"
+  pill (40px, 44px hit area). After launch the button fills the row. Under 390px the countdown and
+  the button tighten, under 360 the cover and the lead shrink, and under 350 the countdown drops
+  its seconds. The lead line is hidden if it would not fit on one line.
+- **The scene sinks into the tablet card.** The band script reads the card's top edge (`sinkY` in the scene
+  script) and masks the landmark, the next landmark during a change and the sun from there: a
+  34px fade under the frosted glass (Safari, Firefox), a hard edge under the refracting glass
+  (Chromium, `.ha-lens`), which would bend a fade into a smudge. The orbit is placed so the front
+  objects stay 12px or more above the card.
+- **Phone scene** (no card in the band): the headline in two lines with the subtitle under it, the scene
+  `clamp(250px, 64vw, 360px)` tall, the landmark centred (the wide ones at least 60% of the
+  width), a rounder orbit (ry .34 of rx) whose objects keep 10px from the screen's edges and are
+  at most a quarter of its width.
+
 ## The glass
 
-The panel and the ticket are liquid glass: nearly clear, with the light living in a 1–2px edge.
+The panel and the card are liquid glass: nearly clear, with the light living in a 1–2px edge.
 
 - **Refraction (Chrome and Edge).** An SVG displacement filter with chromatic aberration, in
   `backdrop-filter: blur(1px) url(…#displace) blur(3px) brightness(1.12) saturate(1.6)`. The filter
@@ -219,7 +247,7 @@ The panel and the ticket are liquid glass: nearly clear, with the light living i
   (strongest at the edges and corners); off it, both go back to rest. Each frame A turns the short
   way by .045 of the gap (at most 2.2° a frame, so corner to corner takes about 1.5s round the rim),
   i eases by .035 and the panel floats up to 1.2px toward the pointer. The loop writes the two CSS
-  variables and a transform, reads no layout, and stops once settled. Touch screens, the ticket and
+  variables and a transform, reads no layout, and stops once settled. Touch screens, the card and
   reduced motion stay at rest. Under "reduce transparency" the glass is solid.
 
 `?glass=frost` shows Chrome what Safari draws; `?glass=url` forces the refraction.

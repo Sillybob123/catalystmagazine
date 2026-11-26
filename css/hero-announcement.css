@@ -138,35 +138,85 @@
 .ha-panel.ha-tight .ha-count, .ha-panel.ha-tight .ha-secs { margin-top: calc(14 * var(--u)) !important; }
 .ha-panel.ha-tight .ha-btn { margin-top: calc(14 * var(--u)); }
 
-/* ---------- 1000px and down: the ticket, one glass row under the subtitle ---------- */
+/* ---------- 1000px and down: the edition card ----------
+   From 761 to 1000px (#ha-ticket) a floating glass card over the scene's last 16px: the landmark
+   and the setting sun fade out into it from its top edge (the band script masks them), so they
+   seem to stand in the glass and sink into it at a landmark change. On phones (#ha-card) the same
+   card sits in Latest stories, under the first story, solid in the season's first colour (--ha-ink,
+   set by the script), and the band keeps only the season. Cover and three lines on top; the
+   countdown and the button below (after launch, the button alone). Its height is fixed, so filling
+   it moves nothing. From 601px it is all on one line. */
 .ha-ticket { display: none; }
 @media (max-width: 1000px) {
-  [data-hero-panel] .ha-ticket { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; width: fit-content; max-width: 100%; box-sizing: border-box;
-    min-height: 64px; margin-top: 16px; padding: 8px 8px 8px 10px; border-radius: 14px; color: #f6efe4;
-    opacity: 0; transition: opacity .8s cubic-bezier(.22, 1, .36, 1);
+  [data-hero-panel] .ha-ticket { display: block; position: relative; z-index: 8; isolation: isolate; box-sizing: border-box;
+    width: calc(100% - 2 * var(--gutter, 18px)); max-width: 720px; height: 164px; margin: -16px auto 0; padding: 16px 16px 16px 18px;
+    border-radius: 22px; color: #f6efe4; opacity: 0; transition: opacity .8s cubic-bezier(.22, 1, .36, 1);
     background: var(--ha-tint); box-shadow: var(--ha-shade);
     -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(1.06); backdrop-filter: blur(14px) saturate(150%) brightness(1.06); }
   [data-hero-panel] .ha-ticket.on { opacity: 1; }
 }
-.ha-ticket > :not(.ha-glass) { position: relative; z-index: 2; }
-.ha-tcover { flex: none; width: 36px; height: 48px; border-radius: 2px; overflow: hidden; transform: rotate(-3deg);
-  box-shadow: 0 6px 14px rgba(4, 8, 18, .35), 0 0 0 1px rgba(246, 239, 228, .18); }
-.ha-tcover img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.ha-ttext { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.ha-tl1 { font: 600 12px / 1.2 var(--sans, 'Poppins', sans-serif); letter-spacing: -.01em; white-space: nowrap; }
-.ha-acc { color: var(--ha-accent, #f4b9a4); }
-.ha-tl2 { font: 400 12px / 1.2 var(--serif, 'Source Serif Pro', serif); color: rgba(246, 239, 228, .82); white-space: nowrap; overflow: hidden; }
+@media (min-width: 761px) and (max-width: 1000px) {
+  [data-hero-panel] .ha-card { display: none; }
+  [data-hero-panel] .band-in { padding-bottom: 18px; }   /* the band's ground under the card */
+}
+.ha-card { --u: 1px; }   /* outside the band: the design pixel the band's rules count in */
+.ha-card .ha-tbtn { color: #1c2f45; }   /* over the stories' "a { color: inherit }" and their blue focus ring */
+.ha-card .ha-tbtn:focus-visible { outline: 2px solid #f6efe4; outline-offset: 3px; border-radius: 999px; }
+@media (max-width: 760px) {
+  [data-hero-panel] .band .ha-ticket { display: none; }
+  [data-hero-panel] .ha-card { width: 100%; max-width: none; margin: 0; border-radius: 18px;
+    background: var(--ha-ink, oklch(30% .047 252.9)); -webkit-backdrop-filter: none; backdrop-filter: none;
+    box-shadow: inset 0 1px 0 rgba(246, 239, 228, .08), 0 18px 36px -12px rgba(14, 22, 38, .34), 0 2px 6px rgba(14, 22, 38, .1); }
+}
+@media (min-width: 601px) and (max-width: 1000px) {
+  [data-hero-panel] .ha-ticket { height: 104px; padding: 16px 16px 16px 20px; }
+}
+.ha-tin { position: relative; z-index: 2; height: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 1fr;
+  grid-template-areas: "cv tx" "row row"; column-gap: 16px; align-items: center; }
+.ha-tcover { grid-area: cv; display: block; perspective: 320px; }
+.ha-ticket .ha-cv { width: 46px; height: 62px; }
+.ha-ttext { grid-area: tx; min-width: 0; }
+.ha-tk { font: 500 8.5px / 1.2 var(--sans, 'Poppins', sans-serif); letter-spacing: .22em; text-transform: uppercase; color: rgba(246, 239, 228, .68); white-space: nowrap; }
+.ha-tt { margin-top: 5px !important; font: 600 20px / 1.05 var(--sans, 'Poppins', sans-serif); letter-spacing: -.03em; color: #f6efe4; }
+.ha-tl2 { margin-top: 6px !important; font: 400 13px / 1.2 var(--serif, 'Source Serif Pro', serif); color: rgba(246, 239, 228, .9); white-space: nowrap; overflow: hidden; }
 .ha-tl2[hidden] { display: none; }
-.ha-tl2 .ha-blanks { display: inline-grid; vertical-align: bottom; }
-.ha-tbtn { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; box-sizing: border-box; padding: 0 14px 0 16px;
-  border-radius: 999px; background: rgba(246, 239, 228, .94); color: #1c2f45; text-decoration: none;
-  font: 600 13px / 1 var(--sans, 'Poppins', sans-serif); white-space: nowrap; }
-.ha-tbtn svg { width: 15px; height: 15px; }
+.ha-trow { grid-area: row; align-self: end; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-top: 12px; border-top: 1px solid rgba(246, 239, 228, .13); }
+.ha-ticket .ha-count { margin: 0; gap: 6px; justify-content: flex-start; }
+.ha-ticket .ha-cell { min-width: 30px; }
+.ha-ticket .ha-cell b { font-size: 20px; }
+.ha-ticket .ha-cell small { margin-top: 4px; font-size: 7px; }
+.ha-ticket .ha-colon { font-size: 17px; line-height: 20px; }
+.ha-tbtn { position: relative; flex: none; display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; height: 40px; box-sizing: border-box;
+  padding: 0 14px 0 18px; border-radius: 999px; background: rgba(246, 239, 228, .94); color: #1c2f45; text-decoration: none;
+  font: 600 13px / 1 var(--sans, 'Poppins', sans-serif); letter-spacing: -.01em; white-space: nowrap; }
+.ha-tbtn::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }   /* a 44px hit area */
+.ha-tbtn svg { width: 16px; height: 16px; flex: none; }
+.ha-trow.out .ha-tbtn { flex: 1; }
+@media (max-width: 389px) {   /* small phones: a tighter countdown and button, so the row fits */
+  .ha-ticket .ha-count { gap: 4px; }
+  .ha-ticket .ha-cell { min-width: 26px; }
+  .ha-tbtn { gap: 6px; padding: 0 12px 0 15px; }
+}
+@media (max-width: 359px) {   /* a smaller cover and lead, so the lead keeps its one line */
+  .ha-ticket .ha-cv { width: 40px; height: 54px; }
+  .ha-tin { column-gap: 12px; }
+  .ha-tl2 { font-size: 12px; }
+}
+@media (max-width: 349px) {   /* the smallest: days, hours and minutes */
+  .ha-ticket .ha-count > :nth-child(n+6) { display: none; }
+}
+@media (min-width: 601px) and (max-width: 1000px) {
+  .ha-tin { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: 1fr; grid-template-areas: "cv tx row"; }
+  .ha-trow { align-self: center; padding: 0 0 0 22px; border-top: 0; border-left: 1px solid rgba(246, 239, 228, .13); height: 62px; gap: 18px; }
+  .ha-trow.out .ha-tbtn { flex: none; }
+}
 
 /* ---------- reduced transparency: solid glass ---------- */
 @media (prefers-reduced-transparency: reduce) {
   .ha-panel, [data-hero-panel] .ha-ticket { -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
     background: color-mix(in oklch, var(--g) 80%, #f6efe4 20%); }
+  [data-hero-panel] .ha-card { background: var(--ha-ink, oklch(30% .047 252.9)); }   /* already solid, outside the band */
 }
 
 /* ---------- reduced motion: still snow, no fades (the script keeps the rim light at rest) ---------- */

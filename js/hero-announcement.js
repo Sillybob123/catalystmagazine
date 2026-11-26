@@ -5,12 +5,15 @@
    For an upcoming edition the band wears the edition's season (its palettes, a seasonal version
    of the tree, falling snow) and a glass panel on the right shows the edition, a live countdown
    and a sneak-peek link. From launch the panel says "Out now"; when the dates pass, the band is
-   itself again. Below 1001px the panel becomes a one-row "ticket" under the subtitle.
+   itself again. From 761 to 1000px the panel becomes a glass card at the foot of the band, over
+   the scene's floor (the "ticket"; the band script fades the landmark and the sun into it); on
+   phones the same card sits in Latest stories, under the first story, in the edition's colours
+   (#ha-card), and the band is the season alone.
 
    The pick (between the pick markers) is also copied into the page's head when the page is
    assembled, together with the entries, so the first paint already wears the season and the band
    script lays the scene out round the panel from the start. This file then fills the panel and
-   the ticket, starts the particles, runs the countdown and the phase changes, and reads the
+   the cards, starts the particles, runs the countdown and the phase changes, and reads the
    entries file again in case it changed after the page was assembled.
 
    It talks to the band script through window.catalystScene.announce(). The countdown is a
@@ -94,8 +97,9 @@
   var list = cur.list || [];
   var skew = cur.skew || 0;
   function now() { return Date.now() + skew; }
-  var panelEl = doc.getElementById('ha-panel'), ticketEl = doc.getElementById('ha-ticket');
-  var fx = null, fxKind = '', countT = 0, phaseT = 0, cells = null, tdays = null;
+  var panelEl = doc.getElementById('ha-panel'), ticketEl = doc.getElementById('ha-ticket'), cardEl = doc.getElementById('ha-card');
+  var cardsEl = [ticketEl, cardEl].filter(Boolean);   // the card in the band (761-1000px) and the one in the stories (phones)
+  var fx = null, fxKind = '', countT = 0, phaseT = 0, cells = null;
 
   // ---------- particles ----------
   // Each kind is a list of layers; a layer is a square tile of small shapes that falls one tile
@@ -187,7 +191,7 @@
   })();
   var RINGS = '<span class="ha-glass" aria-hidden="true"><i class="ha-r1"></i><i class="ha-r2"></i><i class="ha-r3"></i><span class="ha-r4"><i></i></span></span>';
   function lens(el) {
-    if (!el || !LENS) return;
+    if (!el || !LENS || el === cardEl) return;   // the stories' card is solid: nothing behind it to bend
     var w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
     if (!w || !h) return;
     var r = Math.round(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0), sig = w + 'x' + h + 'r' + r;
@@ -291,15 +295,19 @@
       (w.note ? '<p class="ha-note">' + esc(w.note) + '</p>' : '') + '</div></div>' +
       '<p class="ha-lead">' + esc(e.lead) + ' ' + blanks(e) + '</p>';
     if (!out) {
-      var unit = [['d', 'Days'], ['h', 'Hrs'], ['m', 'Min']].concat(REDUCED ? [] : [['s', 'Sec']]);
-      h += '<div class="ha-count" aria-hidden="true">' + unit.map(function (u, i) {
-        return (i ? '<i class="ha-colon">:</i>' : '') + '<span class="ha-cell"><b data-u="' + u[0] + '">00</b><small>' + u[1] + '</small></span>';
-      }).join('') + '</div><p class="ha-sr">Out ' + esc(etDate(launch, { month: 'long', day: 'numeric', year: 'numeric' })) + '</p>';
+      h += countHTML() + '<p class="ha-sr">Out ' + esc(etDate(launch, { month: 'long', day: 'numeric', year: 'numeric' })) + '</p>';
     } else {
       h += '<ul class="ha-secs">' + (e.blanks || []).map(function (b) { return '<li><a href="' + esc(e.link) + '#stories">' + esc(cap(b)) + '</a></li>'; }).join('') + '</ul>';
     }
     h += '<a class="ha-btn" href="' + esc(e.link) + '"><span>' + esc(w.cta) + '</span>' + ARROW + '</a></div>';
     return h;
+  }
+  // the countdown: days, hours, minutes and seconds (no seconds under reduced motion), filled by count()
+  function countHTML() {
+    var unit = [['d', 'Days'], ['h', 'Hrs'], ['m', 'Min']].concat(REDUCED ? [] : [['s', 'Sec']]);
+    return '<div class="ha-count" aria-hidden="true">' + unit.map(function (u, i) {
+      return (i ? '<i class="ha-colon">:</i>' : '') + '<span class="ha-cell"><b data-u="' + u[0] + '">00</b><small>' + u[1] + '</small></span>';
+    }).join('') + '</div>';
   }
   // the countdown's colons are Poppins Light, which the page doesn't load: just that one glyph, once
   function colonFont() {
@@ -309,37 +317,52 @@
     l.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@300&text=%3A&display=swap';
     doc.head.appendChild(l);
   }
-  // ---------- the ticket (1000px and down) ----------
+  // ---------- the ticket: the card at the foot of the band (1000px and down) ----------
+  // the cover and three lines (kicker and date, title, "The future of health is ___"); the countdown
+  // and the button under them (after launch, the button alone)
   function ticketHTML(r) {
-    var e = r.entry, out = r.panel === 'after';
-    return RINGS + '<span class="ha-tcover" aria-hidden="true"><img src="' + esc(e.cover) + '" alt="" width="36" height="48" decoding="async"></span>' +
-      '<span class="ha-ttext"><span class="ha-tl1">' + esc(e.title) + ' &middot; <span class="ha-acc" data-days>' + (out ? 'Out now' : '') + '</span></span>' +
-      '<span class="ha-tl2">' + esc(e.lead) + ' ' + blanks(e) + '</span></span>' +
-      '<a class="ha-tbtn" href="' + esc(e.link) + '">' + (out ? 'Read it' : 'Sneak peek') + ARROW + '</a>';
+    var e = r.entry, out = r.panel === 'after', w = out ? e.after : e.before, launch = Date.parse(e.launch);
+    return RINGS + '<div class="ha-tin">' +
+      '<a class="ha-tcover" href="' + esc(e.link) + '" tabindex="-1" aria-hidden="true"><span class="ha-cv">' +
+      '<img src="' + esc(e.cover) + '" alt="" width="46" height="62" decoding="async"><i class="ha-spine"></i><i class="ha-gloss"></i></span></a>' +
+      '<div class="ha-ttext"><p class="ha-tk">' + esc(w.kicker) + (out ? '' : ' &middot; ' + esc(etDate(launch, { month: 'short', day: 'numeric' }))) + '</p>' +
+      '<p class="ha-tt">' + esc(e.title) + '</p>' +
+      '<p class="ha-tl2">' + esc(e.lead) + ' ' + blanks(e) + '</p></div>' +
+      '<div class="ha-trow' + (out ? ' out' : '') + '">' + (out ? '' : countHTML()) +
+      '<a class="ha-tbtn" href="' + esc(e.link) + '"><span>' + esc(out ? w.cta : 'Sneak peek') + '</span>' + ARROW + '</a></div>' +
+      (out ? '' : '<p class="ha-sr">Out ' + esc(etDate(launch, { month: 'long', day: 'numeric', year: 'numeric' })) + '</p>') + '</div>';
   }
   function render(r) {
-    clearTimeout(countT); cells = tdays = null;
+    clearTimeout(countT); cells = null;
     if (!r.panel) {
-      [panelEl, ticketEl].forEach(function (el) { if (el) { el.classList.remove('on'); el.innerHTML = ''; } });
+      [panelEl].concat(cardsEl).forEach(function (el) { if (el) { el.classList.remove('on'); el.innerHTML = ''; } });
       return;
     }
     var e = r.entry, launch = Date.parse(e.launch);
     if (panelEl) {
       panelEl.setAttribute('aria-label', 'The ' + e.title + ' edition, ' + (r.panel === 'after' ? 'out now' : 'out ' + etDate(launch, { month: 'long', day: 'numeric' })));
       panelEl.innerHTML = panelHTML(r);
-      cells = {}; [].forEach.call(panelEl.querySelectorAll('.ha-count b'), function (b) { cells[b.getAttribute('data-u')] = b; });
     }
-    if (ticketEl) {
-      ticketEl.setAttribute('aria-label', 'The ' + e.title + ' edition');
-      ticketEl.innerHTML = ticketHTML(r);
-      tdays = r.panel === 'before' ? ticketEl.querySelector('[data-days]') : null;
+    cardsEl.forEach(function (el) {
+      el.setAttribute('aria-label', 'The ' + e.title + ' edition, ' + (r.panel === 'after' ? 'out now' : 'out ' + etDate(launch, { month: 'long', day: 'numeric' })));
+      el.innerHTML = ticketHTML(r);
+    });
+    if (cardEl) {   // outside the band: the season's first colour and its accent, set on the card itself
+      var p0 = (e.palettes || [])[0];
+      cardEl.style.setProperty('--ha-ink', p0 ? p0.g : '');
+      cardEl.style.setProperty('--ha-accent', e.accent || '#f4b9a4');
     }
-    rotate(panelEl); rotate(ticketEl);
+    // the countdown's cells, in the panel and the cards alike
+    cells = {};
+    [panelEl].concat(cardsEl).forEach(function (el) {
+      if (el) [].forEach.call(el.querySelectorAll('.ha-count b'), function (b) { var u = b.getAttribute('data-u'); (cells[u] = cells[u] || []).push(b); });
+    });
+    rotate(panelEl); cardsEl.forEach(rotate);
     if (r.panel === 'before') { count(); colonFont(); }
-    fitTicket(); placePanel(); lens(panelEl); lens(ticketEl); rest(ticketEl);
+    fitTicket(); placePanel(); lens(panelEl); lens(ticketEl); cardsEl.forEach(rest);
     if (panelEl) { lit.a = lit.ta = REST.a; lit.i = lit.ti = REST.i; lit.x = lit.y = lit.tx = lit.ty = 0; litPaint(); }
     requestAnimationFrame(function () {
-      [panelEl, ticketEl].forEach(function (el) { if (el) el.classList.add('on'); });
+      [panelEl].concat(cardsEl).forEach(function (el) { if (el) el.classList.add('on'); });
     });
   }
   // the blank after "The future of health is": one every 3s, fading in and out as it rises
@@ -359,12 +382,14 @@
       ], { duration: 3000 * n, delay: 3000 * i, iterations: Infinity, fill: 'backwards' });   // easing per step: on the options it would bend the whole 12s
     });
   }
-  // on a narrow screen the ticket's second line goes if it would not fit on one line
+  // on a narrow screen a card's lead line goes if it would not fit on one line
   function fitTicket() {
-    var l2 = ticketEl && ticketEl.querySelector('.ha-tl2');
-    if (!l2) return;
-    l2.hidden = false;
-    if (l2.scrollWidth > l2.clientWidth + 1) l2.hidden = true;
+    cardsEl.forEach(function (el) {
+      var l2 = el.querySelector('.ha-tl2');
+      if (!l2) return;
+      l2.hidden = false;
+      if (l2.scrollWidth > l2.clientWidth + 1) l2.hidden = true;
+    });
   }
   window.addEventListener('resize', fitTicket, { passive: true });
 
@@ -374,8 +399,7 @@
     var e = cur.entry, ms = left(e);
     if (ms <= 0) { phase(); return; }
     var s = Math.floor(ms / 1000), v = { d: String(Math.floor(s / 86400)), h: two(Math.floor(s / 3600) % 24), m: two(Math.floor(s / 60) % 60), s: two(s % 60) };
-    if (cells) Object.keys(cells).forEach(function (k) { if (cells[k].textContent !== v[k]) cells[k].textContent = v[k]; });
-    if (tdays) { var dd = Math.ceil(ms / 86400000), t = dd + (dd === 1 ? ' day' : ' days'); if (tdays.textContent !== t) tdays.textContent = t; }
+    if (cells) Object.keys(cells).forEach(function (k) { cells[k].forEach(function (b) { if (b.textContent !== v[k]) b.textContent = v[k]; }); });
     var step = REDUCED ? 60000 - ms % 60000 : ms % 1000 || 1000;
     countT = setTimeout(count, step + 20);
   }

@@ -544,23 +544,23 @@
         .band-lede { margin-top: calc(16 * var(--u)); font-size: calc(18 * var(--u)); }
       }
 
-      /* --- tablets: the scene goes under the copy, full width --- */
+      /* --- tablets and phones: the headline over two lines with its subtitle, then the scene, full
+             width, its landmark standing on the band's bottom edge (or, while an edition takes the band
+             over, sinking into the glass card at its foot: css/hero-announcement.css) --- */
       @media (max-width: 1000px) {
         .band { --band-h: auto; }
         .band-in { height: auto; }
-        .band-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; height: auto; }
-        .band-copy { padding: 14px 0 0; }
-        .band-lede { margin-top: 10px; }
-        .scene { height: clamp(240px, 34vw, 290px); }
+        .band-grid { grid-template-columns: minmax(0, 1fr); gap: 6px; height: auto; }
+        .band-copy { padding: 26px 0 0; text-align: center; }   /* stacked: the headline and subtitle centred over the scene */
+        .band-h { font-size: clamp(38px, 7.4vw, 64px); line-height: 1; letter-spacing: -0.04em; text-wrap: balance; }
+        .band-lede { margin: 14px auto 0; max-width: 32ch; font-size: clamp(15px, .6vw + 13px, 19px); line-height: 1.4; opacity: .86; text-wrap: balance; }
+        .scene { height: clamp(300px, 40vw, 400px); }
         .sc-tree { display: none; }
       }
-
-      /* --- phones: copy then a 216px scene --- */
       @media (max-width: 760px) {
-        .band-copy { padding-top: 14px; }
-        .band-h { font-size: 34px; line-height: 1.04; }
-        .band-lede { display: none; }
-        .scene { height: 216px; }
+        .band-copy { padding-top: 22px; }
+        .band-h { font-size: clamp(38px, 10.6vw, 60px); }
+        .scene { height: clamp(250px, 64vw, 360px); }
       }
 
       /* --- reduced motion: a still, composed band; everything else in its final state --- */
@@ -1187,7 +1187,6 @@
                         <div class="band-copy">
                             <h1 class="band-h" id="front-title"><span class="sr-only">The Catalyst Magazine: </span>STEM in the Nation&rsquo;s <em>Capital.</em></h1>
                             <p class="band-lede">Student science journalism from Washington, D.C.</p>
-                            <div class="ha-ticket" id="ha-ticket" role="group"></div>
                         </div>
                         <div class="scene" id="scene" role="group" aria-label="Science topics">
                             <div class="sc-sun" aria-hidden="true"><i></i></div>
@@ -1204,7 +1203,10 @@
                             <svg class="sc-orb sc-orb-f" id="orb-f" aria-hidden="true" focusable="false"><path pathLength="1"/></svg>
                         </div>
                     </div>
-                    <!-- an edition's takeover (js/hero-announcement.js): the glass panel on the right from 1001px, the ticket under the subtitle below that -->
+                    <!-- an edition's takeover (js/hero-announcement.js): the glass panel on the right from 1001px; from 761 to 1000px a
+                         glass card at the foot of the band, over the scene's floor, that the landmark and the sun sink into (on phones
+                         the card is in Latest stories instead, #ha-card) -->
+                    <div class="ha-ticket" id="ha-ticket" role="group"></div>
                     <section class="ha-panel" id="ha-panel"></section>
                     <div class="sc-tree" aria-hidden="true"><picture><source media="(max-width: 1000px)" srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><img sizes="(min-width: 1441px) 50vw, 720px" alt="" width="1440" height="860" decoding="async"></picture></div>
                 </div>
@@ -1509,6 +1511,8 @@
                                 </div>
                             </div>
                         </article>
+                        <!-- phones: the edition's card (js/hero-announcement.js, css/hero-announcement.css), under the first story -->
+                        <div class="ha-ticket ha-card" id="ha-card" role="group"></div>
                         <div class="ls-side" id="ls-side" aria-busy="true">
                             <article class="ls-card"><div class="ls-a" aria-hidden="true">
                                 <div class="fig sk"></div>
@@ -2193,10 +2197,10 @@
            than a narrow dome, narrower than a broad front and rising over its roofline, so it never
            shows as slivers at the building's sides. */
         var HEROES = {
-          capitol:   { ar: 424 / 620, vis: .73, cut: .11, oy: .51, pvis: .77, pcut: .06, sd: 1.28, sy: .93 },
+          capitol:   { ar: 424 / 620, vis: .73, cut: .11, oy: .51, pvis: .86, pcut: .06, sd: 1.28, sy: .93 },
           jefferson: { ar: 760 / 480, vis: .6,  cut: .06, oy: .5,  pvis: .5,  pcut: .04, sd: 1.35, sy: .4 },
           lincoln:   { ar: 880 / 373, vis: .46, cut: .04, oy: .46, pvis: .38, pcut: .03, sd: 1.5,  sy: .32 },
-          loc:       { ar: 497 / 620, vis: .77, cut: .1,  oy: .55, pvis: .78, pcut: .06, sd: 1.23, sy: .94 },
+          loc:       { ar: 497 / 620, vis: .77, cut: .1,  oy: .55, pvis: .86, pcut: .06, sd: 1.23, sy: .94 },
           castle:    { ar: 820 / 446, vis: .6,  cut: .05, oy: .5,  pvis: .52, pcut: .04, sd: 1.05, sy: .45 }
         };
         var id = band.getAttribute('data-hero') || 'capitol';
@@ -2270,11 +2274,11 @@
           var hh = H * vis / (1 - cut), hw = hh * c.ar;
           var x = room.x, gap = room.gap, rmax = Math.min(x - room.l, room.r - x) - room.half;
           var r = Math.max(hw / 2 + gap, room.rmin);
-          if (r > rmax) { r = Math.max(rmax, 40); var hw2 = 2 * (r - gap); if (hw > hw2) { hw = hw2; hh = hw / c.ar; } }
-          var hy = H - hh * (1 - cut), ryy = r * (P ? .225 : .17);   // beside the panel a rounder orbit, so it reads in depth
+          if (r > rmax) { r = Math.max(rmax, 40); var hw2 = Math.max(2 * (r - gap), phone ? W * .6 : 0); if (hw > hw2) { hw = hw2; hh = hw / c.ar; } }   // phones: the wide landmarks keep .6 of the width (the objects pass behind or in front of their ends)
+          var hy = H - hh * (1 - cut), ryy = r * (P ? .225 : phone ? .34 : .17);   // beside the panel and on phones a rounder orbit, so it reads in depth
           var reach = Math.abs(r * SA) + ryy + Math.min(room.halfH, H * .17);
           // (the front objects stay 14px clear of the band's bottom edge beside the panel)
-          var oc = Math.max(reach + 4, Math.min(hy + hh * oy, H - reach - (P ? 14 : 2)));
+          var oc = Math.max(reach + 4, Math.min(hy + hh * oy, H - reach - floorPad));
           return { k: k, hx: x - hw / 2, hy: hy, hw: hw, hh: hh, cx: x, cy: oc, rx: r, ry: ryy, mon: room.mon,
             sun: { x: x, y: hy + hh * sy, d: hh * sd } };
         }
@@ -2292,12 +2296,12 @@
           // each object's size: data-z is the square root of its area, in scene heights; the widest is
           // at most .39 of the band's height (a little larger on smaller scenes, so each still reads)
           pm = panelOn && !stack && !!panelEl && panelEl.offsetWidth > 0;
-          zk = phone ? 1.3 : stack ? 1.1 : pm ? 1.27 : .86;   // beside the panel: full size, as on a phone
+          zk = phone ? .92 : stack ? 1.1 : pm ? 1.27 : .86;   // beside the panel: full size
           st.forEach(function (o) { sizeOb(o); });
           // the widest object at an end of the orbit (beside the panel, the widest any object can be,
           // so the gaps hold at every point of the loop whichever objects come round)
           // (beside the panel: at the ends of the orbit an object is drawn at .86 of its size, plus a margin)
-          var half = H * (phone ? .5 : pm ? .503 : .39) / 2 * (pm ? .88 : .86), halfH = H * .17;
+          var half = phone ? objCap() / 2 * .9 : H * (pm ? .503 : .39) / 2 * (pm ? .88 : .86), halfH = H * .17;
           // the tree (desktop only): from the headline
           var tip = -1e4;
           if (tree && !stack) {
@@ -2323,10 +2327,15 @@
             tree.style.width = tw + 'px'; tree.style.left = tl.toFixed(1) + 'px'; tree.style.top = tt.toFixed(1) + 'px';
             tip = tl + tw * .975 - sx;   // the limb's tip, in scene coordinates
           }
+          // the edition's glass card under the scene (1000px and down): it covers the scene's last few
+          // pixels, and the landmark and the sun fade out into it from its top edge (draw(), sinkMask)
+          var tk = stack && panelOn ? document.getElementById('ha-ticket') : null, tr = tk && tk.offsetHeight ? tk.getBoundingClientRect() : null;
+          sinkY = tr ? tr.top - sr.top + 3 : null; card = tr ? tk : null;
+          floorPad = tr ? H - sinkY + 12 : pm ? 14 : 2;
           var mw, mh, mx;
           if (phone) {
             mon.style.display = 'none';
-            room = { x: W * .5, l: -sx + 4, r: BW - sx - 4, gap: Math.max(40, W * .12), rmin: W * .4, half: half, halfH: halfH, mon: 0 };
+            room = { x: W * .5, l: -sx + 10, r: BW - sx - 10, gap: Math.max(32, W * .085), rmin: W * .4, half: half, halfH: halfH, mon: 0 };
           } else if (pm) {
             // the panel takes the right end and the Monument stays out: the landmark stands midway
             // between the end of the headline and the panel; the orbit and half the widest object stay
@@ -2409,18 +2418,21 @@
         }
 
         var zk = .86;
+        // the widest an object can be: on phones a quarter of the width (the scene is tall there, and
+        // the orbit has to fit across the screen), beside the panel half the band, else .39 of it
+        function objCap() { return phone ? Math.min(H * .5, W * .25) : H * (pm ? .503 : .39); }
         function sizeOb(o) {
           var im = o.el.firstChild, ar = im.getAttribute('width') / im.getAttribute('height'), z = H * zk * (+o.el.getAttribute('data-z') || .24);
           o.w = z * Math.sqrt(ar);
           o.h = z / Math.sqrt(ar);
-          var cap = H * (phone ? .5 : pm ? .503 : .39);
+          var cap = objCap();
           if (o.w > cap) { o.h *= cap / o.w; o.w = cap; }
           o.el.style.width = im.style.width = o.w + 'px'; o.el.style.height = im.style.height = o.h + 'px';
           o.cut.setAttribute('width', o.w.toFixed(1)); o.cut.setAttribute('height', o.h.toFixed(1));
         }
         // an object's size for a picture from the bank (the same rule), without touching the page
         function sizeOf(k) {
-          var wh = bank.size(k), ar = wh[0] / wh[1], z = H * zk * bank.z(k), w = z * Math.sqrt(ar), h = z / Math.sqrt(ar), cap = H * (phone ? .5 : pm ? .503 : .39);
+          var wh = bank.size(k), ar = wh[0] / wh[1], z = H * zk * bank.z(k), w = z * Math.sqrt(ar), h = z / Math.sqrt(ar), cap = objCap();
           if (w > cap) { h *= cap / w; w = cap; }
           return [w, h];
         }
@@ -2440,7 +2452,23 @@
 
         // during a change: the landmarks' offsets and opacities, and the sun's move from one landmark's
         // disc to the next (a transform of a disc laid out at the larger of the two)
-        var heroDy = 0, ghostDy = 0, monDx = 0, heroA = 1, ghostA = 0, sunT = '', sunBase = null;
+        var heroDy = 0, ghostDy = 0, monDx = 0, heroA = 1, ghostA = 0, sunT = '', sunTy = 0, sunK = 1, sunBase = null;
+        // the edition card's top edge, in scene pixels (null: no card), and the room the front objects keep above the floor
+        var sinkY = null, floorPad = 2, SINKF = 34, masks = {}, card = null;
+        // the landmark (and the sun) fade out over 34px from the card's top edge, so they seem to stand in
+        // the glass and sink into it at a change; worked out in each picture's own pixels, before its
+        // transform (top: its laid-out top; dy: its offsets; k: its scale about its centre). Under the
+        // refracting glass (.ha-lens, Chromium) the lens would bend that faded strip into a smudge, so
+        // there they stop at the card's edge
+        function sinkMask(el, top, h, dy, k, key) {
+          var v = '';
+          if (sinkY != null) {
+            var sharp = card && card.classList.contains('ha-lens'), y0 = sharp ? sinkY - 4 : sinkY, f = sharp ? 3 : SINKF;
+            var yl = k === 1 ? y0 - top - dy : (y0 - top - h / 2 - dy) / k + h / 2;
+            if (yl < h) v = 'linear-gradient(#000 ' + yl.toFixed(1) + 'px, transparent ' + (yl + f / k).toFixed(1) + 'px)';
+          }
+          if (masks[key] !== v) { masks[key] = v; el.style.webkitMaskImage = el.style.maskImage = v; }
+        }
         function sunAt(s) { sunBase = s; place(sun, s.x - s.d / 2, s.y - s.d / 2, s.d, s.d); }
         function draw() {
           var px = par.x, py = par.y * .6;
@@ -2452,6 +2480,12 @@
           if (chg) {
             heroBox.style.opacity = heroA.toFixed(3);
             ghost.style.translate = heroBox.style.translate; ghost.style.transform = 'translateY(' + ghostDy.toFixed(1) + 'px)'; ghost.style.opacity = ghostA.toFixed(3);
+          }
+          if (sinkY != null || masks.h) {
+            var st0 = heroBox.style, ss = sun.style;
+            sinkMask(heroBox, parseFloat(st0.top), parseFloat(st0.height), py * 5 + heroDy, 1, 'h');
+            if (chg) sinkMask(ghost, parseFloat(ghost.style.top), parseFloat(ghost.style.height), py * 5 + ghostDy, 1, 'g');
+            sinkMask(sun, parseFloat(ss.top), parseFloat(ss.height), py * 3 + sunTy, sunK, 's');
           }
           orbB.style.translate = orbF.style.translate = px * 8 + 'px ' + py * 8 + 'px';
           if (tree) tree.style.translate = px * 6 + 'px ' + py * 1.5 + 'px';
@@ -2573,6 +2607,7 @@
           monDx = lerp(c.g0.mon, c.g1.mon, g) - c.g1.mon;
           var a = c.g0.sun, b = c.g1.sun, x = lerp(a.x, b.x, g), y = lerp(a.y, b.y, g), d = lerp(a.d, b.d, g);
           sunT = 'translate(' + (x - sunBase.x).toFixed(1) + 'px,' + (y - sunBase.y).toFixed(1) + 'px) scale(' + (d / sunBase.d).toFixed(4) + ')';
+          sunTy = y - sunBase.y; sunK = d / sunBase.d;
         }
         // the change's timings (seconds): the old landmark sinks for out; the new one rises from
         // in for inT; the sun, the orbit and the Monument glide from glide for glideT
@@ -2606,7 +2641,7 @@
         }
         function finish(c) {
           chg = null; G = c.g1; cx = G.cx; cy = G.cy; rx = G.rx; ry = G.ry; orbit();
-          heroDy = ghostDy = monDx = 0; heroA = 1; sunT = ''; sunAt(G.sun);
+          heroDy = ghostDy = monDx = 0; heroA = 1; sunT = ''; sunTy = 0; sunK = 1; sunAt(G.sun);
           heroBox.style.opacity = ''; heroBox.style.transform = '';
           ghost.style.display = 'none'; ghost.style.transform = ''; ghost.style.opacity = 0;
           draw();
