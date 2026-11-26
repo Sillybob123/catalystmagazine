@@ -94,7 +94,7 @@
       l.setAttribute('fetchpriority', 'high'); document.head.appendChild(l);
     })();
     </script>
-    <link rel="preload" as="image" href="/beta/masthead/scene/tree.webp" imagesrcset="/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w" imagesizes="(max-width: 1000px) 360px, 720px" media="(min-width: 761px)">
+    <link rel="preload" as="image" href="/beta/masthead/scene/tree.webp" imagesrcset="/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w" imagesizes="(min-width: 1441px) 50vw, 720px" media="(min-width: 1001px)">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
@@ -454,14 +454,13 @@
       .oc-more:hover svg { transform: translateX(3px); }
       .oc-a:focus-visible, .oc-more:focus-visible { outline: 2px solid #0d5eaf; outline-offset: 3px; }
       /* the cherry tree: its trunk cut by the band's left edge, one limb over the headline. Placed by the
-         band script from the headline (desktop) or the scene (tablets); a slow breeze from the trunk's base */
+         band script from the headline; a slow breeze from the trunk's base. Desktop only: under the copy (tablets
+         and phones) the top of the picture would show as a straight cut through the blossoms */
       .sc-tree { position: absolute; z-index: 7; left: 0; top: 0; width: 720px; pointer-events: none; }
-      .sc-tree picture { display: block; }   /* phones get a blank pixel instead of the tree (it is hidden there) */
+      .sc-tree picture { display: block; }   /* tablets and phones get a blank pixel instead of the tree (it is hidden there) */
       .sc-tree img { display: block; width: 100%; height: auto; transform-origin: 6% 100%; }
       .band.go .sc-tree img { animation: breeze 9s ease-in-out infinite alternate; }
       @keyframes breeze { from { transform: rotate(-0.35deg); } to { transform: rotate(0.45deg); } }
-      /* wider than 1440 the trunk stands inside the band: its cut side fades into the ground */
-      .sc-tree.inset { -webkit-mask-image: linear-gradient(to right, transparent, #000 7%); mask-image: linear-gradient(to right, transparent, #000 7%); }
 
       /* entrance (the band script adds .go): the landmark rises 36px, the Monument
          follows 200ms later, the sun grows from .94, the orbit draws on, the tree
@@ -481,6 +480,18 @@
       .band.go .sc-orb-f path { transition-delay: .75s; }
       .band.go .sc-tree { opacity: 1; rotate: 0deg; transition: opacity .8s ease .3s, rotate 1.2s var(--ease-out) .3s; }
 
+      /* --- wider than 1440: the 1440 design scaled to the screen. --u is one design pixel: the
+             smaller of the width's and the height's scale against 1440 x 900, from 1 to 1.6. The
+             band's column, height, headline and gaps grow by it; the scene sizes everything from the
+             band's height, and the band script widens its frame and the tree by the same amount --- */
+      @media (min-width: 1441px) {
+        .band { --u: clamp(1px, min(100vw / 1440, 100vh / 900), 1.6px); --band-h: clamp(300px, 38vh, calc(360 * var(--u))); }
+        .band .band-grid { max-width: calc(1280 * var(--u)); padding: 0 calc(64 * var(--u)); gap: min(2.6vw, calc(40 * var(--u))); }
+        .band-copy { top: calc(26 * var(--u)); }
+        .band-h { font-size: min(3.8vw, calc(56 * var(--u))); }
+        .band-lede { margin-top: calc(16 * var(--u)); font-size: calc(18 * var(--u)); }
+      }
+
       /* --- tablets: the scene goes under the copy, full width --- */
       @media (max-width: 1000px) {
         .band { --band-h: auto; }
@@ -489,6 +500,7 @@
         .band-copy { padding: 14px 0 0; }
         .band-lede { margin-top: 10px; }
         .scene { height: clamp(240px, 34vw, 290px); }
+        .sc-tree { display: none; }
       }
 
       /* --- phones: copy then a 216px scene --- */
@@ -497,7 +509,6 @@
         .band-h { font-size: 34px; line-height: 1.04; }
         .band-lede { display: none; }
         .scene { height: 216px; }
-        .sc-tree { display: none; }   /* no room beside the orbit on a phone */
       }
 
       /* --- reduced motion: a still, composed band; everything else in its final state --- */
@@ -1140,7 +1151,7 @@
                             <svg class="sc-orb sc-orb-f" id="orb-f" aria-hidden="true" focusable="false"><path pathLength="1"/></svg>
                         </div>
                     </div>
-                    <div class="sc-tree" aria-hidden="true"><picture><source media="(max-width: 760px)" srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><img src="/beta/masthead/scene/tree.webp" srcset="/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w" sizes="(max-width: 1000px) 360px, 720px" alt="" width="1440" height="860" decoding="async"></picture></div>
+                    <div class="sc-tree" aria-hidden="true"><picture><source media="(max-width: 1000px)" srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><img src="/beta/masthead/scene/tree.webp" srcset="/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w" sizes="(min-width: 1441px) 50vw, 720px" alt="" width="1440" height="860" decoding="async"></picture></div>
                 </div>
             </header>
             <script>/* the landmark for this visit, picked before the first paint: the Capitol on a first
@@ -2197,25 +2208,38 @@
           // the scene's place in the band, read once per resize
           var br = band.getBoundingClientRect(), ir = bandIn.getBoundingClientRect(), sr = sc.getBoundingClientRect();
           var BW = br.width, sx = sr.left - br.left, sy = sr.top - ir.top;
-          var Wv = Math.min(BW, 1440), off = (BW - Wv) / 2;
+          // wider than 1440 the band's column grows with the screen (--u in the band's CSS): the frame
+          // the scene is laid out in grows with it (kk: the column against its 1152 at 1440)
+          var cr0 = copy.getBoundingClientRect(), kk = !stack && BW > 1440 ? Math.max(1, (sr.right - cr0.left) / 1152) : 1;
+          var Wv = Math.min(BW, 1440 * kk), off = (BW - Wv) / 2;
           // each object's size: data-z is the square root of its area, in scene heights; the widest is
           // at most .39 of the band's height (a little larger on smaller scenes, so each still reads)
           zk = phone ? 1.3 : stack ? 1.1 : .86;
           st.forEach(function (o) { sizeOb(o); });
           var half = H * (phone ? .5 : .39) / 2 * .86, halfH = H * .17;   // the widest object at an end of the orbit
-          // the tree: from the headline on desktop, in the scene's top-left corner on tablets
+          // the tree (desktop only): from the headline
           var tip = -1e4;
-          if (tree && !phone) {
-            var tw, tl, tt;
-            if (!stack) {
-              var cr = copy.getBoundingClientRect(), s0;
-              tw = Math.min(720, BW * .5); s0 = tw / 720;
-              tl = cr.left - br.left - 184 * s0; tt = cr.top - ir.top - 204 * s0 - 4;
-            } else {
-              tw = Math.round(Math.min(380, BW * .36)); tl = -tw * .1; tt = sy - 6;   // the trunk just off the left edge: the limb comes in over the scene
+          if (tree && !stack) {
+            var tw, tl, tt, cr = copy.getBoundingClientRect(), s0;
+            tw = Math.min(720 * kk, BW * .5); s0 = tw / 720;
+            tl = cr.left - br.left - 184 * s0;
+            // on a screen wider than the design's shape (wider than 16:10 past 1440) the headline sits
+            // further in than the trunk can reach: the trunk stays cut by the band's left edge, as at
+            // 1440, and the tree grows (up to 1.3 times) so its limb still reaches over the headline
+            var pinned = tl > -40 * s0;
+            if (pinned) {
+              var tip0 = tl + tw * .975, tw0 = tw;
+              tl = -40 * s0; tw = Math.min(Math.max(tw0, (tip0 - tl) / .975), tw0 * 1.3); s0 = tw / 720; tl = -40 * s0;
+            }
+            tt = cr.top - ir.top - 204 * s0 - 4;
+            // pinned, a different stretch of the limb hangs over the headline: raise or lower the tree so
+            // its lowest blossoms over each line clear the capitals as they do at 1440 (16 design pixels,
+            // the breeze included), and never so low that the top of the picture shows
+            if (pinned) {
+              var fit = clearance(tl + br.left, tt + ir.top, s0) - 16 * kk;
+              tt += fit < 0 ? fit : Math.min(fit, Math.max(0, br.top - 2 - (tt + ir.top)));   // up to clear them; down only while the picture's top stays above the band's
             }
             tree.style.width = tw + 'px'; tree.style.left = tl.toFixed(1) + 'px'; tree.style.top = tt.toFixed(1) + 'px';
-            tree.classList.toggle('inset', tl > 0);
             tip = tl + tw * .975 - sx;   // the limb's tip, in scene coordinates
           }
           var mw, mh, mx;
@@ -2248,6 +2272,28 @@
           orbit();
           draw();
           band.classList.add('laid');   // shown from here on: nothing in the scene moves after its first paint
+        }
+
+        // the tree picture's lowest blossom in each 16px column of its 1440 pixels (picture pixels), and
+        // the headline's clearance under it: the least gap, in page pixels, between a line's capitals
+        // and the blossoms over that line, the picture's left at x, its top at y, drawn at scale s
+        var TREE_LOW = [859,859,859,859,859,859,859,776,559,505,464,464,461,455,449,375,368,361,361,357,348,373,392,398,398,392,383,347,301,296,281,264,260,259,258,258,299,295,308,304,303,298,302,302,293,310,308,305,297,252,254,257,256,294,301,302,291,279,313,333,347,346,344,341,339,340,334,309,252,239,236,244,248,260,269,284,381,429,438,443,444,443,436,428,432,448,437,278,273,275];
+        function clearance(x, y, s) {
+          var least = 1e4, h = copy.querySelector('.band-h'), w = document.createTreeWalker(h, NodeFilter.SHOW_TEXT), n;
+          while ((n = w.nextNode())) {
+            if (n.parentNode.closest && n.parentNode.closest('.sr-only')) continue;
+            var rg = document.createRange(); rg.selectNodeContents(n);
+            [].forEach.call(rg.getClientRects(), function (q) {
+              if (q.width < 4) return;
+              var cap = q.top + q.height * .25, c0 = Math.max(0, Math.floor((q.left - x) / (s / 2) / 16)), c1 = Math.min(89, Math.ceil((q.right - x) / (s / 2) / 16));
+              for (var c = c0; c <= c1; c++) {
+                if (TREE_LOW[c] < 0) continue;
+                var low = y + (TREE_LOW[c] + Math.max(0, (c * 16 - 86) * .00785)) * s / 2;   // the breeze tips the limb down up to 0.45 degrees
+                least = Math.min(least, cap - low);
+              }
+            });
+          }
+          return least;
         }
 
         var zk = .86;
