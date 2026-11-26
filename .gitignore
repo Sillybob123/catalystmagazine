@@ -71,6 +71,7 @@ build/
 !/beta/articles/*.mp4
 !/beta/book-reviews/*.mp4
 !/beta/brain-teaser/*.mp4
+!/beta/masthead/*.mp4
 
 # Local source PNGs for hero book covers — converted to /images/book-reviews/*.webp
 # which is what actually ships. Keep the heavy originals out of the repo.
@@ -87,3 +88,10 @@ scripts/.story-pii-backup.json
 
 # Edition planning material (proposals, meeting transcripts) — private, never pushed
 /Catalyst Winter Edition */
+
+# Private design references (screenshots of other magazines; show personal browser chrome)
+Article Cover Examples/
+Social Post Guide/
+
+# home-new masthead: raw Higgsfield downloads and working files (large, not shipped)
+/beta/masthead/source/

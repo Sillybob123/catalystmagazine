@@ -553,5 +553,17 @@ function setupWelcomePopup() {
         }
         open();
     };
+    // <body data-welcome="scroll"> (opt-in, home-new only): wait until the
+    // reader has scrolled past 60% of the page instead of using the timer.
+    if (document.body.dataset.welcome === 'scroll' && !forceShow) {
+        const onScroll = () => {
+            const room = document.documentElement.scrollHeight - window.innerHeight;
+            if (room <= 0 || window.scrollY / room < 0.6) return;
+            window.removeEventListener('scroll', onScroll);
+            tryOpen();
+        };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        return;
+    }
     setTimeout(tryOpen, openDelay);
 }

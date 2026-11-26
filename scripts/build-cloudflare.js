@@ -70,7 +70,8 @@ const shippedVideoPatterns = [
   /^edition-art\/[^/]+\/[^/]+\.mp4$/,
   /^beta\/articles\/[^/]+\.mp4$/,
   /^beta\/book-reviews\/[^/]+\.mp4$/,
-  /^beta\/brain-teaser\/[^/]+\.mp4$/
+  /^beta\/brain-teaser\/[^/]+\.mp4$/,
+  /^beta\/masthead\/[^/]+\.mp4$/
 ];
 
 // Credentials must never reach the public bundle, even when they sit in the
@@ -108,6 +109,11 @@ function shouldSkip(relativePath, dirent) {
   }
 
   if (parts.some((part) => excludedDirectories.has(part))) {
+    return true;
+  }
+
+  // The masthead's raw generations and working files stay out of the bundle.
+  if (parts[0] === "beta" && parts[1] === "masthead" && parts[2] === "source") {
     return true;
   }
 
