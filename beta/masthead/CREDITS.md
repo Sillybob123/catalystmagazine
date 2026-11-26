@@ -265,6 +265,7 @@ tree replaced the branch. Jobs, prompts and costs are in `GENERATIONS.md` (8 cre
 | `spike.webp` | A museum model of the SARS-CoV-2 spike trimer (prefusion 2P form) | 047f508b | EMDB-21375, the cryo-EM map of [PDB 6VSB](https://www.ebi.ac.uk/pdbe/entry/pdb/6vsb), as shown on PDBj EM Navigator | Wrapp et al., *Science* 2020 | EMDB and PDB data: CC0. The PDBj snapshot page states no licence of its own; it was used only for shape |
 | `hpv.webp` | A museum model of the HPV16 L1 virus-like particle (T=7, 72 capsomeres) | 8cc16cd7 | `source/scene/hpv-t7-geometry.png`, a geometry drawing made here with `hpv-t7-geometry.py`, checked against EMDB-5932 / [PDB 3J6R](https://www.ebi.ac.uk/pdbe/entry/pdb/3j6r) on PDBj | Catalyst (drawing); Cardone et al. 2014 (map) | Drawing: ours. EMDB and PDB data: CC0 |
 | `tree.webp` | The framing Yoshino cherry tree on the left of the band | 6b81207e (from the Nov 26 hero mockup; no new credits) | none | — | — |
+| `tree-winter.webp`, `tree-winter-720.webp` | The same tree in winter (bare, snow on the limbs, a few early blossoms), swapped in by the Winter 2027 takeover of the band (`edition-art/HERO-ANNOUNCEMENT.md`) | 4660d7c8, an edit of 66a96217, itself an edit of 6b81207e (logged in `GENERATIONS.md`; cut here, no new credits) | 6b81207e | — | — |
 
 The previous `spike.webp` and `hpv.webp` stay in the round-6 and round-7 rebuild commands for the
 record; their source PNGs are still in `source/scene/gen/`. `blossoms.webp` is no longer used by the
@@ -276,6 +277,7 @@ Rebuild, from the repo root, with `G=beta/masthead/source/scene/gen`, `O=beta/ma
 python3 scripts/make-scene.py $G/spike2-047f508b.png $O/spike.webp --size 260 --largest
 python3 scripts/make-scene.py $G/hpv2-8cc16cd7.png   $O/hpv.webp   --size 240 --largest
 python3 -I beta/masthead/source/scene/key-tree.py $G/tree-frame.png $O/tree.webp
+python3 -I beta/masthead/source/scene/key-tree.py $G/tree-winter.png $O/tree-winter.webp --bg auto
 python3 -I beta/masthead/source/scene/hpv-t7-geometry.py beta/masthead/source/scene/hpv-t7-geometry.png
 ```
 
@@ -337,3 +339,11 @@ colour) and the site fonts (Poppins, Source Serif Pro), in palette 1 (maroon and
 `source/og/og-card.html`; render with `NODE_PATH=$(npm root -g) node beta/masthead/source/og/render-og.js "" out.png`
 while a local server on port 8765 serves the repo root, then scale to 1200 x 630 (Lanczos) and save
 as JPEG quality 88. The old preview, `og-home.jpg` (the pen-and-ink Mall), stays for the old homepage.
+
+## Code: the liquid glass of the edition panel (`js/hero-announcement.js`)
+
+The refraction filter of the homepage's edition panel and ticket (`lgMap()` / `lgFilter()`) is
+adapted from `getDisplacementMap` and `getDisplacementFilter` in
+[nikdelvin/liquid-glass](https://github.com/nikdelvin/liquid-glass) (`src/utils/liquidGlass.ts`),
+MIT License, Copyright (c) 2025 Nikita Stadnik. The licence notice is kept in a comment at the top
+of the script. The look follows kube.io's *Liquid Glass in the Browser*; no code was copied from it.

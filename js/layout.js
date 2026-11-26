@@ -329,7 +329,8 @@ function setupNewsletterModal() {
 function setupAnnounce() {
     const bar = document.getElementById('site-announce');
     if (!bar) return;
-    const now = Date.now();
+    // on the homepage a preview date (?announce-date=, js/hero-announcement.js) applies to the bar too
+    const now = Date.now() + ((window.catalystAnnounce && window.catalystAnnounce.skew) || 0);
     const launch = Date.parse(bar.dataset.launch || '');
     const until = Date.parse(bar.dataset.until || '');
     const key = 'catalyst.announce.' + (bar.dataset.key || 'next');
@@ -337,7 +338,9 @@ function setupAnnounce() {
     const here = location.pathname.replace(/\.html$/, '').replace(/\/$/, '');
     let closed = false;
     try { closed = localStorage.getItem(key) === '1'; } catch (e) { /* private mode */ }
-    if (closed || (skip && here === skip) || (!isNaN(until) && now >= until)) { bar.remove(); return; }
+    // the homepage hero carries this announcement itself while its panel is up (js/hero-announcement.js)
+    const inHero = document.documentElement.getAttribute('data-skip-announce') === (bar.dataset.key || 'next');
+    if (closed || inHero || (skip && here === skip) || (!isNaN(until) && now >= until)) { bar.remove(); return; }
     if (!isNaN(launch) && now >= launch) {
         bar.querySelectorAll('[data-out]').forEach(el => { el.textContent = el.dataset.out; });
     }

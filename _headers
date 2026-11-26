@@ -59,3 +59,8 @@
 /edition-art/editions.json
   ! Cache-Control
   Cache-Control: public, max-age=300, must-revalidate
+
+# And the homepage band's edition takeovers (js/hero-announcement.js re-reads it on every visit).
+/edition-art/hero-announcements.json
+  ! Cache-Control
+  Cache-Control: public, max-age=300, must-revalidate

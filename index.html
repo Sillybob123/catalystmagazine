@@ -94,7 +94,58 @@
       l.setAttribute('fetchpriority', 'high'); document.head.appendChild(l);
     })();
     </script>
-    <link rel="preload" as="image" href="/beta/masthead/scene/tree.webp" imagesrcset="/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w" imagesizes="(min-width: 1441px) 50vw, 720px" media="(min-width: 1001px)">
+    <link rel="stylesheet" href="/css/hero-announcement.css">
+    <script>
+    /* an edition's takeover of the band, picked before the first paint (js/hero-announcement.js;
+       the entries are edition-art/hero-announcements.json, copied in when the page is assembled) */
+    (function () {
+      // The entry for now: the first whose theme dates contain the moment (the dates carry their
+        // Eastern Time offset). ?announce=<id> forces one, ?announce=off turns the mode off, and
+        // ?announce-date=2026-12-20 pretends it is noon of that day in Eastern Time.
+        // Returns { entry, theme, panel: 'before' | 'after' | '', skew: pretend minus real time in ms }.
+        function pickAnnouncement(list, search, real) {
+          var none = { entry: null, theme: false, panel: '', skew: 0 };
+          if (!list || !list.length || /[?&]announce=off\b/.test(search)) return none;
+          var now = real, d = /[?&]announce-date=([0-9T:.+-]+)/.exec(search);
+          if (d) { var t = Date.parse(d[1].indexOf('T') > 0 ? d[1] : d[1] + 'T12:00:00-05:00'); if (!isNaN(t)) now = t; }
+          var force = /[?&]announce=([\w-]+)/.exec(search), e = null;
+          for (var i = 0; i < list.length && !e; i++) {
+            var x = list[i];
+            if (force ? x.id === force[1] : now >= Date.parse(x.themeFrom) && now < Date.parse(x.themeTo)) e = x;
+          }
+          if (!e) return none;
+          var panel = '';
+          if (now < Date.parse(e.panelTo) && (force || now >= Date.parse(e.panelFrom))) panel = now < Date.parse(e.launch) ? 'before' : 'after';
+          return { entry: e, theme: true, panel: panel, skew: now - real };
+        }
+        // Puts the pick on the page: the season and phase on <html>, the season's palettes as the band's
+        // palette table (the band's registered colours, so they fade as the band's own do), and which
+        // tree to show. Returns the tree picture.
+        function announceHead(r, doc) {
+          var root = doc.documentElement, e = r.entry, st = doc.getElementById('ha-pal');
+          ['data-season', 'data-hero-panel', 'data-skip-announce'].forEach(function (a) { root.removeAttribute(a); });
+          if (st) st.parentNode.removeChild(st);
+          if (!r.theme) return '/beta/masthead/scene/tree.webp';
+          var css = '', sel = '[data-season="' + e.season + '"] .band';
+          (e.palettes || []).forEach(function (p, i) { css += sel + '[data-p="' + i + '"]{--g:' + p.g + ';--c:' + p.c + ';--t:' + (e.text || '#f6efe4') + '}'; });
+          css += sel + '{--ha-accent:' + (e.accent || '#f4b9a4') + '}';
+          st = doc.createElement('style'); st.id = 'ha-pal'; st.textContent = css; doc.head.appendChild(st);
+          root.setAttribute('data-season', e.season);
+          if (r.panel) { root.setAttribute('data-hero-panel', r.panel); root.setAttribute('data-skip-announce', e.id); }
+          return e.tree || '/beta/masthead/scene/tree.webp';
+        }
+        // a tree picture and its 720px copy, as a srcset
+        function treeSet(src) { return src.replace(/\.webp(\?|$)/, '-720.webp$1') + ' 720w, ' + src + ' 1440w'; }
+      var A = [{"id":"winter-2027","edition":"winter-2027","season":"winter","themeFrom":"2026-11-26T00:00:00-05:00","themeTo":"2027-03-01T00:00:00-05:00","panelFrom":"2026-11-26T00:00:00-05:00","launch":"2026-12-15T00:00:00-05:00","panelTo":"2027-01-20T00:00:00-05:00","number":"06","title":"Winter 2027","lead":"The future of health is","blanks":["decided in D.C.?","prevention?","human?","up for debate?"],"cover":"/edition-art/winter/cover-2027-700.webp?v=3","link":"/edition-winter","before":{"kicker":"Next edition","note":"Out December 15","cta":"Take a sneak peek"},"after":{"kicker":"Out now","note":"Read it now","cta":"Read the edition"},"tree":"/beta/masthead/scene/tree-winter.webp","particles":"snow","paletteEvery":12,"palettes":[{"name":"midnight","g":"oklch(30% .047 252.9)","c":"oklch(91.7% .011 234.8)"},{"name":"cobalt","g":"oklch(37.2% .08 255.5)","c":"oklch(93.6% .011 243.7)"},{"name":"evergreen","g":"oklch(32.4% .036 184.3)","c":"oklch(93.1% .013 159.9)"},{"name":"glacier","g":"oklch(37.7% .049 217.8)","c":"oklch(92.2% .017 201.4)"},{"name":"twilight","g":"oklch(34.4% .042 276.6)","c":"oklch(91.9% .008 337.4)"}],"text":"#f6efe4","accent":"#f4b9a4"}];
+      var r = pickAnnouncement(A, location.search, Date.now());
+      r.list = A; window.catalystAnnounce = r;
+      var tree = announceHead(r, document);
+      window.catalystTreeSet = treeSet(tree);
+      var l = document.createElement('link'); l.rel = 'preload'; l.as = 'image'; l.href = tree;
+      l.setAttribute('imagesrcset', window.catalystTreeSet); l.setAttribute('imagesizes', '(min-width: 1441px) 50vw, 720px'); l.media = '(min-width: 1001px)';
+      document.head.appendChild(l);
+    })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
@@ -344,6 +395,7 @@
         --g: oklch(37.7% 0.131 22.8); --c: oklch(68.8% 0.133 35.8); --t: oklch(95.5% 0.016 79.4);   /* 1 maroon #78171e, coral #e07a5f, #f6efe4 */
         --fade: 4s cubic-bezier(.45, 0, .55, 1);
         --band-h: clamp(300px, 38vh, 360px);
+        --u: 1px;   /* one design pixel: grows past 1440 (below) */
         position: relative; z-index: 20; isolation: isolate; overflow: hidden; overflow: clip;   /* z-index: an open card reaches past the band's bottom, over the stories */
         /* the ground runs up behind the announcement bar and the floating header */
         padding-top: calc(var(--nav-h) + var(--announce-h, 0px) + 6px);
@@ -1135,6 +1187,7 @@
                         <div class="band-copy">
                             <h1 class="band-h" id="front-title"><span class="sr-only">The Catalyst Magazine: </span>STEM in the Nation&rsquo;s <em>Capital.</em></h1>
                             <p class="band-lede">Student science journalism from Washington, D.C.</p>
+                            <div class="ha-ticket" id="ha-ticket" role="group"></div>
                         </div>
                         <div class="scene" id="scene" role="group" aria-label="Science topics">
                             <div class="sc-sun" aria-hidden="true"><i></i></div>
@@ -1151,7 +1204,9 @@
                             <svg class="sc-orb sc-orb-f" id="orb-f" aria-hidden="true" focusable="false"><path pathLength="1"/></svg>
                         </div>
                     </div>
-                    <div class="sc-tree" aria-hidden="true"><picture><source media="(max-width: 1000px)" srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><img src="/beta/masthead/scene/tree.webp" srcset="/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w" sizes="(min-width: 1441px) 50vw, 720px" alt="" width="1440" height="860" decoding="async"></picture></div>
+                    <!-- an edition's takeover (js/hero-announcement.js): the glass panel on the right from 1001px, the ticket under the subtitle below that -->
+                    <section class="ha-panel" id="ha-panel"></section>
+                    <div class="sc-tree" aria-hidden="true"><picture><source media="(max-width: 1000px)" srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><img sizes="(min-width: 1441px) 50vw, 720px" alt="" width="1440" height="860" decoding="async"></picture></div>
                 </div>
             </header>
             <script>/* the landmark for this visit, picked before the first paint: the Capitol on a first
@@ -1199,12 +1254,17 @@
             /* the colours for this visit: any of the five palettes except last visit's (?pal=2 picks one) */
             (function (band, K) {
               var last = null; try { last = localStorage.getItem(K); } catch (e) {}
-              var lp = last === null ? -1 : +last, p = Math.floor(Math.random() * (lp >= 0 ? 4 : 5));
+              var A = window.catalystAnnounce, n = A && A.theme && A.entry.palettes ? A.entry.palettes.length : 5;   // a season's own palettes (js/hero-announcement.js)
+              var lp = last === null || +last >= n ? -1 : +last, p = Math.floor(Math.random() * (lp >= 0 ? n - 1 : n));
               if (lp >= 0 && p >= lp) p++;
-              var ask = /[?&]pal=([0-4])\b/.exec(location.search); if (ask) p = +ask[1];
+              var ask = /[?&]pal=([0-9])\b/.exec(location.search); if (ask && +ask[1] < n) p = +ask[1];
               try { localStorage.setItem(K, p); } catch (e) {}
               band.setAttribute('data-p', p);
             })(document.getElementById('band'), 'catalyst.band.pal');
+            /* the tree's picture: the season's own while an edition's takeover is on (picked in the head) */
+            (function (img) {
+              if (img) img.setAttribute('srcset', window.catalystTreeSet || '/beta/masthead/scene/tree-720.webp 720w, /beta/masthead/scene/tree.webp 1440w');
+            })(document.querySelector('#band .sc-tree img'));
             /* the three objects on the orbit: discoveries and research from the D.C. area that changed
                the world, three of the thirty on each visit, never one that was shown last visit, and
                never two alike: each comes from a different group of look-alikes (GR: one spacecraft at
@@ -1408,7 +1468,10 @@
                if the bar doesn't show */
             (function (root, K) {
               var was = null; try { was = localStorage.getItem(K); } catch (e) {}
-              if (was !== '0') root.style.setProperty('--announce-h', (+was || 44) + 'px');
+              // (not while the band's own panel says the same thing: the bar stays off, js/layout.js; nor
+              // after the panel, in the season's last weeks: the bar for that edition ends with it)
+              var A = window.catalystAnnounce, after = A && A.theme && !A.panel;
+              if (was !== '0' && !after && !root.hasAttribute('data-skip-announce')) root.style.setProperty('--announce-h', (+was || 44) + 'px');
               var keep = function (v) { try { localStorage.setItem(K, v); } catch (e) {} };
               document.addEventListener('DOMContentLoaded', function () {
                 (window.layoutReady || Promise.resolve()).then(function () {
@@ -1420,6 +1483,7 @@
                 });
               });
             })(document.documentElement, 'catalyst.band.bar');</script>
+            <script src="/js/hero-announcement.js" defer></script>
 
             <!-- Latest stories: the lead (story 1); a side column (story 2 as a card, 3 and 4 as
                  rows); the spotlight band, the newest remaining story that editions.json lists in an
@@ -2112,6 +2176,13 @@
         var mqStack = window.matchMedia('(max-width: 1000px)');
         var TAU = Math.PI * 2, TILT = 6 * Math.PI / 180, CA = Math.cos(TILT), SA = Math.sin(TILT);   // the orbit dips 6 degrees to the right
         var LAP = 48, CYCLE = 30, NPAL = 5;   // seconds per lap; seconds per landmark (and palette)
+        // an edition's takeover (js/hero-announcement.js, picked in the head): its own palettes, which
+        // move on every palEvery seconds instead of with the landmark, and on desktop the glass panel
+        // at the right end of the band, which the scene centres itself beside (pm, set by layout).
+        // While a takeover is on (theme), the Monument stays out of the scene.
+        var ann = window.catalystAnnounce || null, panelEl = document.getElementById('ha-panel');
+        var panelOn = !!(ann && ann.panel), themeOn = !!(ann && ann.theme), palEvery = ann && ann.theme ? +ann.entry.paletteEvery || 0 : 0, palT = 0, pm = false;
+        if (ann && ann.theme && ann.entry.palettes) NPAL = ann.entry.palettes.length || 5;
 
         /* Each landmark's place in the scene, in band heights (H): vis is how high it reaches above the
            band's bottom edge, cut the share of the picture left below that edge, oy the orbit's centre
@@ -2190,16 +2261,22 @@
            .46; the orbit is the landmark's half-width plus 70px (the Capitol's at least .161), and the
            orbit with the objects on it stays between the tree's tip and the Monument. */
         function geom(k) {
-          var c = HEROES[k], vis = phone ? c.pvis : c.vis, cut = phone ? c.pcut : c.cut;
+          var c = HEROES[k], vis = phone ? c.pvis : c.vis, cut = phone ? c.pcut : c.cut, P = pm ? 1 : 0, oy = c.oy, sy = c.sy, sd = c.sd;
+          // beside the panel (the approved mockup, a 1440 band with 286px below the nav: the Capitol
+          // 214 x 313, its top 20px under the nav and 47px of it below the edge; the sun 380 across,
+          // its centre 12px below the edge; the orbit 160 x 36 through y 192): every landmark taller by
+          // the same share, never closer than 7% of the band to the nav
+          if (P) { vis = Math.min(vis * 1.274, .93); cut *= 1.36; oy += .04; sy -= .042; sd *= .948; }
           var hh = H * vis / (1 - cut), hw = hh * c.ar;
           var x = room.x, gap = room.gap, rmax = Math.min(x - room.l, room.r - x) - room.half;
           var r = Math.max(hw / 2 + gap, room.rmin);
           if (r > rmax) { r = Math.max(rmax, 40); var hw2 = 2 * (r - gap); if (hw > hw2) { hw = hw2; hh = hw / c.ar; } }
-          var hy = H - hh * (1 - cut), ryy = r * .17;
+          var hy = H - hh * (1 - cut), ryy = r * (P ? .225 : .17);   // beside the panel a rounder orbit, so it reads in depth
           var reach = Math.abs(r * SA) + ryy + Math.min(room.halfH, H * .17);
-          var oc = Math.max(reach + 4, Math.min(hy + hh * c.oy, H - reach - 2));
+          // (the front objects stay 14px clear of the band's bottom edge beside the panel)
+          var oc = Math.max(reach + 4, Math.min(hy + hh * oy, H - reach - (P ? 14 : 2)));
           return { k: k, hx: x - hw / 2, hy: hy, hw: hw, hh: hh, cx: x, cy: oc, rx: r, ry: ryy, mon: room.mon,
-            sun: { x: x, y: hy + hh * c.sy, d: hh * c.sd } };
+            sun: { x: x, y: hy + hh * sy, d: hh * sd } };
         }
 
         function layout() {
@@ -2214,9 +2291,13 @@
           var Wv = Math.min(BW, 1440 * kk), off = (BW - Wv) / 2;
           // each object's size: data-z is the square root of its area, in scene heights; the widest is
           // at most .39 of the band's height (a little larger on smaller scenes, so each still reads)
-          zk = phone ? 1.3 : stack ? 1.1 : .86;
+          pm = panelOn && !stack && !!panelEl && panelEl.offsetWidth > 0;
+          zk = phone ? 1.3 : stack ? 1.1 : pm ? 1.27 : .86;   // beside the panel: full size, as on a phone
           st.forEach(function (o) { sizeOb(o); });
-          var half = H * (phone ? .5 : .39) / 2 * .86, halfH = H * .17;   // the widest object at an end of the orbit
+          // the widest object at an end of the orbit (beside the panel, the widest any object can be,
+          // so the gaps hold at every point of the loop whichever objects come round)
+          // (beside the panel: at the ends of the orbit an object is drawn at .86 of its size, plus a margin)
+          var half = H * (phone ? .5 : pm ? .503 : .39) / 2 * (pm ? .88 : .86), halfH = H * .17;
           // the tree (desktop only): from the headline
           var tip = -1e4;
           if (tree && !stack) {
@@ -2246,6 +2327,25 @@
           if (phone) {
             mon.style.display = 'none';
             room = { x: W * .5, l: -sx + 4, r: BW - sx - 4, gap: Math.max(40, W * .12), rmin: W * .4, half: half, halfH: halfH, mon: 0 };
+          } else if (pm) {
+            // the panel takes the right end and the Monument stays out: the landmark stands midway
+            // between the end of the headline and the panel; the orbit and half the widest object stay
+            // 28px clear of the headline and 26px clear of the panel (geom scales the landmark down
+            // rather than squeezing them)
+            mon.style.display = 'none';
+            var pr = panelEl.getBoundingClientRect(), L = textEnd() - br.left + 28 * kk - sx, R = pr.left - br.left - 26 * kk - sx;
+            room = { x: (L + R) / 2, l: L, r: R, gap: Wv * 53 / 1440, rmin: Wv * .111, half: half, halfH: halfH, mon: 0 };
+          } else if (themeOn && !stack) {
+            // the season's look without the panel: the scene where it always is, without the Monument
+            mon.style.display = 'none';
+            var lx0 = off + Wv * .68 - sx;
+            room = { x: lx0, l: tip + 12, r: off + Wv * .97 - sx, gap: Wv * 70 / 1440, rmin: Wv * .161, half: half, halfH: halfH, mon: 0 };
+          } else if (themeOn) {
+            // stacked under the copy, in the season's look: no Monument; the landmark moves to the middle
+            // and keeps the room it had beside the Monument, on both sides
+            mon.style.display = 'none';
+            var dx = W * .35 - H * .0644 - 12;
+            room = { x: W * .5, l: W * .5 - dx, r: W * .5 + dx, gap: Wv * 70 / 1440, rmin: 0, half: half, halfH: halfH, mon: 0 };
           } else {
             mon.style.display = '';
             mh = H * .92; mw = mh * 70 / 500;
@@ -2271,28 +2371,40 @@
           cutBg.setAttribute('x', -W); cutBg.setAttribute('y', -H); cutBg.setAttribute('width', 3 * W); cutBg.setAttribute('height', 3 * H);
           orbit();
           draw();
+          // beside the panel the landmark is centred on the headline's end, which moves when the web fonts
+          // arrive: the scene stays hidden until they have (at most 1.2s), so it never shifts once shown
+          if (pm && !fontsIn) {
+            if (!fontsWait) { fontsWait = true; var fin = function () { if (!fontsIn) { fontsIn = true; layout(); } }; document.fonts.ready.then(fin); setTimeout(fin, 1200); }
+            return;
+          }
           band.classList.add('laid');   // shown from here on: nothing in the scene moves after its first paint
         }
+        var fontsIn = !document.fonts || document.fonts.status === 'loaded', fontsWait = false;
 
         // the tree picture's lowest blossom in each 16px column of its 1440 pixels (picture pixels), and
         // the headline's clearance under it: the least gap, in page pixels, between a line's capitals
         // and the blossoms over that line, the picture's left at x, its top at y, drawn at scale s
         var TREE_LOW = [859,859,859,859,859,859,859,776,559,505,464,464,461,455,449,375,368,361,361,357,348,373,392,398,398,392,383,347,301,296,281,264,260,259,258,258,299,295,308,304,303,298,302,302,293,310,308,305,297,252,254,257,256,294,301,302,291,279,313,333,347,346,344,341,339,340,334,309,252,239,236,244,248,260,269,284,381,429,438,443,444,443,436,428,432,448,437,278,273,275];
-        function clearance(x, y, s) {
-          var least = 1e4, h = copy.querySelector('.band-h'), w = document.createTreeWalker(h, NodeFilter.SHOW_TEXT), n;
+        function headLines() {   // the headline's line boxes (page coordinates), without the hidden prefix
+          var out = [], h = copy.querySelector('.band-h'), w = document.createTreeWalker(h, NodeFilter.SHOW_TEXT), n;
           while ((n = w.nextNode())) {
             if (n.parentNode.closest && n.parentNode.closest('.sr-only')) continue;
             var rg = document.createRange(); rg.selectNodeContents(n);
-            [].forEach.call(rg.getClientRects(), function (q) {
-              if (q.width < 4) return;
-              var cap = q.top + q.height * .25, c0 = Math.max(0, Math.floor((q.left - x) / (s / 2) / 16)), c1 = Math.min(89, Math.ceil((q.right - x) / (s / 2) / 16));
-              for (var c = c0; c <= c1; c++) {
-                if (TREE_LOW[c] < 0) continue;
-                var low = y + (TREE_LOW[c] + Math.max(0, (c * 16 - 86) * .00785)) * s / 2;   // the breeze tips the limb down up to 0.45 degrees
-                least = Math.min(least, cap - low);
-              }
-            });
+            [].forEach.call(rg.getClientRects(), function (q) { if (q.width >= 4) out.push(q); });
           }
+          return out;
+        }
+        function textEnd() { return Math.max.apply(null, headLines().map(function (q) { return q.right; }).concat([copy.getBoundingClientRect().left])); }
+        function clearance(x, y, s) {
+          var least = 1e4;
+          headLines().forEach(function (q) {
+            var cap = q.top + q.height * .25, c0 = Math.max(0, Math.floor((q.left - x) / (s / 2) / 16)), c1 = Math.min(89, Math.ceil((q.right - x) / (s / 2) / 16));
+            for (var c = c0; c <= c1; c++) {
+              if (TREE_LOW[c] < 0) continue;
+              var low = y + (TREE_LOW[c] + Math.max(0, (c * 16 - 86) * .00785)) * s / 2;   // the breeze tips the limb down up to 0.45 degrees
+              least = Math.min(least, cap - low);
+            }
+          });
           return least;
         }
 
@@ -2301,14 +2413,14 @@
           var im = o.el.firstChild, ar = im.getAttribute('width') / im.getAttribute('height'), z = H * zk * (+o.el.getAttribute('data-z') || .24);
           o.w = z * Math.sqrt(ar);
           o.h = z / Math.sqrt(ar);
-          var cap = H * (phone ? .5 : .39);
+          var cap = H * (phone ? .5 : pm ? .503 : .39);
           if (o.w > cap) { o.h *= cap / o.w; o.w = cap; }
           o.el.style.width = im.style.width = o.w + 'px'; o.el.style.height = im.style.height = o.h + 'px';
           o.cut.setAttribute('width', o.w.toFixed(1)); o.cut.setAttribute('height', o.h.toFixed(1));
         }
         // an object's size for a picture from the bank (the same rule), without touching the page
         function sizeOf(k) {
-          var wh = bank.size(k), ar = wh[0] / wh[1], z = H * zk * bank.z(k), w = z * Math.sqrt(ar), h = z / Math.sqrt(ar), cap = H * (phone ? .5 : .39);
+          var wh = bank.size(k), ar = wh[0] / wh[1], z = H * zk * bank.z(k), w = z * Math.sqrt(ar), h = z / Math.sqrt(ar), cap = H * (phone ? .5 : pm ? .503 : .39);
           if (w > cap) { h *= cap / w; w = cap; }
           return [w, h];
         }
@@ -2397,6 +2509,12 @@
             ang -= spd * TAU / LAP * dt;
             st.forEach(function (o, i) { o.e = ease(Math.min(Math.max((T - T0 - .35 - i * .08) / .9, 0), 1)); });
             landmarks(dt);
+            // a takeover's palettes move on every palEvery seconds (8s held, then the 4s fade), never
+            // starting within 2s of a landmark change: one due then waits until the landmark has risen
+            if (palEvery) {
+              palT += dt;
+              if (palT >= palEvery && !chg && heroT < CYCLE - 2) { palT = 0; pal = (pal + 1) % NPAL; band.setAttribute('data-p', pal); }
+            }
             swaps(dt);
           }
           st.forEach(function (o, i) {
@@ -2469,7 +2587,7 @@
           heroA = c.end || u >= 1 ? 0 : 1;
           ghostDy = d1 * Math.pow(1 - v, 4);                                // the new one rises, slowing to a stop
           ghostA = t >= CH.in ? 1 : 0;
-          if (!c.pal && t >= .6) { c.pal = true; pal = (pal + 1) % NPAL; band.setAttribute('data-p', pal); }
+          if (!palEvery && !c.pal && t >= .6) { c.pal = true; pal = (pal + 1) % NPAL; band.setAttribute('data-p', pal); }
           if (!c.rose && t >= CH.in) {   // the new landmark is the one on stage now: its card, label and outline
             c.rose = true; id = c.to; heroMask = c.mask; G = c.g1;
             band.setAttribute('data-hero', id); heroes.show(id);
@@ -2789,7 +2907,7 @@
         // ---- pause off screen and in a background tab
         if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { onScreen = es[0].isIntersecting; if (onScreen) tick(); else { closeCard(true); stop(); } }).observe(band);
         document.addEventListener('visibilitychange', function () { if (document.hidden) stop(); else tick(); });
-        if ('ResizeObserver' in window) { var ro = new ResizeObserver(function () { layout(); }); ro.observe(sc); ro.observe(copy); }
+        if ('ResizeObserver' in window) { var ro = new ResizeObserver(function () { layout(); }); ro.observe(sc); ro.observe(copy); if (panelEl) ro.observe(panelEl); }
         else window.addEventListener('resize', layout);
         layout();
 
@@ -2838,6 +2956,12 @@
           cards.slice(0, HI).forEach(enrich);
           if (hover > -1) placeCard();
         };
+        // the takeover's switch (js/hero-announcement.js): the panel on or off, the palettes' clock
+        api.announce = function (o) {
+          palEvery = +o.palEvery || 0; NPAL = +o.npal || 5; pal = pal % NPAL;
+          if (!!o.panel !== panelOn || !!o.theme !== themeOn) { panelOn = !!o.panel; themeOn = !!o.theme; layout(); }
+        };
+        window.catalystScene = api;
         return api;
       })();
 

@@ -1,0 +1,177 @@
+/* ============================================================
+   Hero announcement mode (js/hero-announcement.js; guide: edition-art/HERO-ANNOUNCEMENT.md).
+   The glass panel, the ticket, the particle layers and their responsive rules. The season's
+   palettes come from the entry (edition-art/hero-announcements.json) and are written into the
+   page as the band's palette table, so they fade like the band's own.
+   Sizes are the approved 1440 mockup's, in design pixels: var(--u) is 1px up to 1440 and grows
+   with the band past it (the band's CSS).
+   ============================================================ */
+
+/* the moment an entry changes while the page is open: straight to the new colours */
+.band.ha-snap, .band.ha-snap .sc-sun i, .band.ha-snap .sc-orb path { transition: none !important; }
+
+/* ---------- particles: above the tree, below the copy, the panel and the cards ---------- */
+.ha-fx { position: absolute; inset: 0; z-index: 7; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity 1.2s ease;
+  /* thinned to about 12% behind the headline and subtitle (the ellipse follows the copy) */
+  -webkit-mask-image: radial-gradient(var(--hrx, 0px) var(--hry, 0px) at var(--hx, -999px) var(--hy, -999px), rgba(0, 0, 0, .12) 0%, rgba(0, 0, 0, .12) 72%, #000 100%);
+  mask-image: radial-gradient(var(--hrx, 0px) var(--hry, 0px) at var(--hx, -999px) var(--hy, -999px), rgba(0, 0, 0, .12) 0%, rgba(0, 0, 0, .12) 72%, #000 100%); }
+.ha-fx.on { opacity: 1; }
+/* each layer: a tile repeated over an area larger than the band, turned by the slant and moved down
+   one tile per cycle, so the loop has no seam */
+.ha-fx i { position: absolute; left: -20%; top: -40%; width: 140%; height: 180%; background-repeat: repeat;
+  background-size: var(--tile) var(--tile); will-change: transform;
+  animation: ha-fall 30s linear infinite; }
+@keyframes ha-fall {
+  from { transform: rotate(var(--slant)) translate3d(0, calc(-1 * var(--tile)), 0); }
+  to   { transform: rotate(var(--slant)) translate3d(0, 0, 0); }
+}
+
+/* ---------- the glass (the panel and the ticket) ----------
+   Nearly clear: a light tint, a soft drop shadow, a lens's shading inside its edge. The backdrop is
+   blurred here; where url() works in backdrop-filter the script swaps in the refracting filter. */
+.ha-panel, .ha-ticket {
+  --ha-tint: linear-gradient(160deg, rgba(246, 239, 228, .13), rgba(246, 239, 228, .04) 42%, rgba(246, 239, 228, .07));
+  --ha-shade: 0 1px 0 rgba(255, 255, 255, .06), 0 22px 46px rgba(4, 8, 18, .3), 0 4px 12px rgba(4, 8, 18, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 12px 22px -16px rgba(255, 255, 255, .28),
+    inset 0 -14px 22px -16px rgba(255, 255, 255, .12), inset 0 0 0 .5px rgba(255, 255, 255, .06);
+}
+/* the rings, each a transparent border shown through a padding-box mask, so its inner corners follow
+   the radius too: 1 a neutral rim, brighter at the top left, with a faint pastel cast; 2 the white
+   light, centred on angle --ha-a (a dim second arc opposite); 3 a thin prism fringe beside it;
+   4 the same spectrum, soft, on a 9px band inside the edge */
+.ha-glass { position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; }
+.ha-glass i, .ha-r4 { position: absolute; inset: 0; border-radius: inherit; }
+.ha-glass i { box-sizing: border-box; border: 1px solid transparent;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0); }
+.ha-glass .ha-r1 {
+  background: linear-gradient(140deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .14) 34%, rgba(255, 255, 255, .06) 58%, rgba(255, 255, 255, .26)) border-box,
+    conic-gradient(from 200deg, rgba(255, 170, 200, .22), rgba(170, 190, 255, .22), rgba(170, 255, 225, .2), rgba(255, 235, 170, .22), rgba(255, 170, 200, .22)) border-box; }
+.ha-glass .ha-r2 { border-width: 1.5px; opacity: calc(.3 + .6 * var(--ha-i, .22));
+  background: conic-gradient(from calc(var(--ha-a, -42) * 1deg - 70deg) at 50% 50%, transparent 0deg, rgba(255, 255, 255, .55) 45deg,
+    rgba(255, 255, 255, .95) 70deg, rgba(255, 255, 255, .55) 95deg, transparent 140deg, transparent 195deg, rgba(255, 255, 255, .3) 250deg, transparent 305deg) border-box; }
+.ha-glass .ha-r3, .ha-r4 i {
+  background: conic-gradient(from calc(var(--ha-a, -42) * 1deg - 34deg) at 50% 50%, rgba(255, 80, 90, 0) 0deg, rgba(255, 80, 90, .85) 10deg,
+    rgba(255, 150, 60, .85) 17deg, rgba(255, 226, 90, .8) 24deg, rgba(120, 235, 170, .8) 32deg, rgba(70, 200, 255, .85) 41deg,
+    rgba(110, 110, 255, .85) 50deg, rgba(190, 90, 255, .8) 58deg, rgba(190, 90, 255, 0) 68deg, transparent 360deg) border-box; }
+.ha-glass .ha-r3 { border-width: 2px; filter: blur(.4px); opacity: calc(.75 * var(--ha-i, .22)); }
+.ha-r4 { filter: blur(5px); mix-blend-mode: screen; opacity: calc(.32 * var(--ha-i, .22)); }
+.ha-glass .ha-r4 i { border-width: 9px; }
+
+/* ---------- the panel (1001px and up): on the nav pill's right edge, centred under the nav ---------- */
+.ha-panel { display: none; position: absolute; z-index: 8; box-sizing: border-box;
+  right: max(32px, calc((100% - 1400px) / 2));   /* on the nav pill's right edge */
+  top: calc((100% - 242 * var(--u)) / 2);          /* until the script centres it between the nav and the band's edge */
+  width: calc(272 * var(--u)); height: calc(242 * var(--u)); padding: calc(18 * var(--u)) calc(18 * var(--u)) calc(16 * var(--u));
+  border-radius: calc(20 * var(--u)); color: #f6efe4; opacity: 0; transition: opacity .8s cubic-bezier(.22, 1, .36, 1);
+  background: var(--ha-tint); box-shadow: var(--ha-shade);
+  -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(1.06); backdrop-filter: blur(14px) saturate(150%) brightness(1.06); }
+@media (min-width: 1001px) { [data-hero-panel] .ha-panel { display: block; } }
+.ha-panel.on, .ha-ticket.on { opacity: 1; }
+.ha-panel p, .ha-ticket p, .ha-secs { margin: 0; }
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .ha-panel, .ha-ticket { background: color-mix(in oklch, var(--g) 78%, #f6efe4 22%); }
+}
+
+.ha-col { position: relative; z-index: 2; display: flex; flex-direction: column; height: 100%; }
+.ha-top { display: flex; align-items: center; gap: calc(16 * var(--u)); }
+
+/* the cover: a plain magazine, turned a little on its spine */
+.ha-cover { flex: none; display: block; perspective: 380px; border-radius: 3px; }
+.ha-cv { position: relative; display: block; width: calc(58 * var(--u)); height: calc(78 * var(--u)); overflow: hidden;
+  transform: rotateY(-17deg) rotateZ(-1.5deg); transform-origin: 0 50%; border-radius: 2px 3px 3px 2px; background: rgba(246, 239, 228, .1);
+  box-shadow: 0 1px 1px rgba(4, 8, 18, .3), 0 5px 9px rgba(4, 8, 18, .22), 9px 16px 26px rgba(4, 8, 18, .38); }
+.ha-cv img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ha-spine { position: absolute; left: 0; top: 0; bottom: 0; width: 8px;
+  background: linear-gradient(90deg, rgba(10, 12, 20, .34), rgba(10, 12, 20, .08) 45%, rgba(255, 255, 255, .22) 62%, transparent); }
+.ha-gloss { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .35);
+  background: linear-gradient(118deg, rgba(255, 255, 255, .26) 0%, transparent 36%, transparent 72%, rgba(255, 255, 255, .07) 100%); }
+
+.ha-lines { min-width: 0; }
+.ha-kicker { font: 500 calc(8.5 * var(--u)) / 1.2 var(--sans, 'Poppins', sans-serif); letter-spacing: .22em; text-transform: uppercase; color: rgba(246, 239, 228, .68); }
+.ha-title { margin-top: calc(8 * var(--u)) !important; font: 600 calc(20 * var(--u)) / 1.05 var(--sans, 'Poppins', sans-serif); letter-spacing: -.03em; color: #f6efe4; }
+.ha-note { margin-top: calc(8 * var(--u)) !important; font: italic 400 calc(12.5 * var(--u)) / 1.2 var(--serif, 'Source Serif Pro', serif); color: rgba(246, 239, 228, .78); }
+.ha-lead { margin-top: calc(14 * var(--u)) !important; font: 400 calc(13 * var(--u)) / 1.2 var(--serif, 'Source Serif Pro', serif); color: rgba(246, 239, 228, .9); white-space: nowrap; }
+.ha-blanks { display: inline-grid; vertical-align: top; }
+/* the four blanks share one cell, so nothing reflows as they turn */
+.ha-blanks > span { grid-area: 1 / 1; opacity: 0; font-style: italic; color: var(--ha-accent, #f4b9a4); white-space: nowrap; }
+
+.ha-count { display: flex; justify-content: space-between; align-items: flex-start; margin-top: calc(13 * var(--u)); }
+.ha-cell { display: flex; flex-direction: column; align-items: center; min-width: calc(34 * var(--u)); }
+.ha-cell b { font: 500 calc(24 * var(--u)) / 1 var(--sans, 'Poppins', sans-serif); font-variant-numeric: tabular-nums; letter-spacing: -.02em; color: #f6efe4; }
+.ha-cell small { margin-top: calc(5 * var(--u)); font: 500 calc(7.5 * var(--u)) / 1 var(--sans, 'Poppins', sans-serif); letter-spacing: .22em; text-transform: uppercase; color: rgba(246, 239, 228, .55); padding-left: .22em; }
+.ha-colon { font: 300 calc(21 * var(--u)) / 1 var(--sans, 'Poppins', sans-serif); font-style: normal; color: rgba(246, 239, 228, .35); }
+.ha-sr, .ha-panel .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* after launch: the four sections, two to a line */
+.ha-secs { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: calc(4 * var(--u)) calc(10 * var(--u)); margin-top: calc(10 * var(--u)) !important; }
+.ha-secs li { display: flex; }   /* the row is the link's own height, so the button keeps its 11px */
+.ha-secs a { display: inline-block; padding: calc(3 * var(--u)) 0; font: 500 calc(11 * var(--u)) / 1.25 var(--sans, 'Poppins', sans-serif); color: rgba(246, 239, 228, .8); text-decoration: none; }
+.ha-secs a:hover { color: #f6efe4; text-decoration: underline; text-underline-offset: 3px; }
+
+.ha-btn { position: relative; flex: none; margin-top: auto; height: calc(38 * var(--u)); box-sizing: border-box;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 calc(14 * var(--u)) 0 calc(16 * var(--u));
+  border-radius: 999px; background: rgba(246, 239, 228, .94); color: #1c2f45; text-decoration: none;
+  font: 600 calc(13 * var(--u)) / 1 var(--sans, 'Poppins', sans-serif); letter-spacing: -.01em;
+  transition: background-color .2s ease; }
+.ha-btn::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: max(44px, 100%); transform: translateY(-50%); }   /* a 44px hit area */
+.ha-btn svg { width: calc(16 * var(--u)); height: calc(16 * var(--u)); flex: none; transition: transform .2s ease; }
+.ha-btn:hover { background: #f6efe4; }
+.ha-btn:hover svg { transform: translateX(3px); }
+
+/* keyboard: visible rings on the glass */
+.ha-cover:focus-visible, .ha-btn:focus-visible, .ha-secs a:focus-visible, .ha-tbtn:focus-visible {
+  outline: 2px solid #f6efe4; outline-offset: 3px; }
+
+/* ---------- the compact panel: from 1001 to 1180px (the nav pill is 16px from the edge there), and
+   wherever the full panel and two 18px gaps don't fit under the nav (.ha-tight, set by the script) ---------- */
+@media (min-width: 1001px) and (max-width: 1180px) {
+  .ha-panel { width: 248px; right: 16px; height: auto; }
+  .ha-panel .ha-cv { width: 48px; height: 64px; }
+  .ha-panel .ha-lead { display: none; }
+  .ha-panel .ha-count, .ha-panel .ha-secs { margin-top: 14px !important; }
+  .ha-panel .ha-btn { margin-top: 14px; }
+}
+.ha-panel.ha-tight { width: calc(248 * var(--u)); height: auto; }
+.ha-panel.ha-tight .ha-cv { width: calc(48 * var(--u)); height: calc(64 * var(--u)); }
+.ha-panel.ha-tight .ha-lead { display: none; }
+.ha-panel.ha-tight .ha-count, .ha-panel.ha-tight .ha-secs { margin-top: calc(14 * var(--u)) !important; }
+.ha-panel.ha-tight .ha-btn { margin-top: calc(14 * var(--u)); }
+
+/* ---------- 1000px and down: the ticket, one glass row under the subtitle ---------- */
+.ha-ticket { display: none; }
+@media (max-width: 1000px) {
+  [data-hero-panel] .ha-ticket { position: relative; isolation: isolate; display: flex; align-items: center; gap: 12px; width: fit-content; max-width: 100%; box-sizing: border-box;
+    min-height: 64px; margin-top: 16px; padding: 8px 8px 8px 10px; border-radius: 14px; color: #f6efe4;
+    opacity: 0; transition: opacity .8s cubic-bezier(.22, 1, .36, 1);
+    background: var(--ha-tint); box-shadow: var(--ha-shade);
+    -webkit-backdrop-filter: blur(14px) saturate(150%) brightness(1.06); backdrop-filter: blur(14px) saturate(150%) brightness(1.06); }
+  [data-hero-panel] .ha-ticket.on { opacity: 1; }
+}
+.ha-ticket > :not(.ha-glass) { position: relative; z-index: 2; }
+.ha-tcover { flex: none; width: 36px; height: 48px; border-radius: 2px; overflow: hidden; transform: rotate(-3deg);
+  box-shadow: 0 6px 14px rgba(4, 8, 18, .35), 0 0 0 1px rgba(246, 239, 228, .18); }
+.ha-tcover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ha-ttext { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ha-tl1 { font: 600 12px / 1.2 var(--sans, 'Poppins', sans-serif); letter-spacing: -.01em; white-space: nowrap; }
+.ha-acc { color: var(--ha-accent, #f4b9a4); }
+.ha-tl2 { font: 400 12px / 1.2 var(--serif, 'Source Serif Pro', serif); color: rgba(246, 239, 228, .82); white-space: nowrap; overflow: hidden; }
+.ha-tl2[hidden] { display: none; }
+.ha-tl2 .ha-blanks { display: inline-grid; vertical-align: bottom; }
+.ha-tbtn { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; box-sizing: border-box; padding: 0 14px 0 16px;
+  border-radius: 999px; background: rgba(246, 239, 228, .94); color: #1c2f45; text-decoration: none;
+  font: 600 13px / 1 var(--sans, 'Poppins', sans-serif); white-space: nowrap; }
+.ha-tbtn svg { width: 15px; height: 15px; }
+
+/* ---------- reduced transparency: solid glass ---------- */
+@media (prefers-reduced-transparency: reduce) {
+  .ha-panel, [data-hero-panel] .ha-ticket { -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    background: color-mix(in oklch, var(--g) 80%, #f6efe4 20%); }
+}
+
+/* ---------- reduced motion: still snow, no fades (the script keeps the rim light at rest) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ha-fx i { animation: none; }
+  .ha-fx, .ha-panel, .ha-ticket, [data-hero-panel] .ha-ticket { transition: none; }
+  .ha-btn, .ha-btn svg { transition: none; }
+}

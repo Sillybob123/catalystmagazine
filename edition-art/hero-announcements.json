@@ -1,0 +1,32 @@
+[
+  {
+    "id": "winter-2027",
+    "edition": "winter-2027",
+    "season": "winter",
+    "themeFrom": "2026-11-26T00:00:00-05:00",
+    "themeTo":   "2027-03-01T00:00:00-05:00",
+    "panelFrom": "2026-11-26T00:00:00-05:00",
+    "launch":    "2026-12-15T00:00:00-05:00",
+    "panelTo":   "2027-01-20T00:00:00-05:00",
+    "number": "06",
+    "title": "Winter 2027",
+    "lead": "The future of health is",
+    "blanks": ["decided in D.C.?", "prevention?", "human?", "up for debate?"],
+    "cover": "/edition-art/winter/cover-2027-700.webp?v=3",
+    "link": "/edition-winter",
+    "before": { "kicker": "Next edition", "note": "Out December 15", "cta": "Take a sneak peek" },
+    "after":  { "kicker": "Out now", "note": "Read it now", "cta": "Read the edition" },
+    "tree": "/beta/masthead/scene/tree-winter.webp",
+    "particles": "snow",
+    "paletteEvery": 12,
+    "palettes": [
+      { "name": "midnight",  "g": "oklch(30% .047 252.9)",  "c": "oklch(91.7% .011 234.8)" },
+      { "name": "cobalt",    "g": "oklch(37.2% .08 255.5)", "c": "oklch(93.6% .011 243.7)" },
+      { "name": "evergreen", "g": "oklch(32.4% .036 184.3)", "c": "oklch(93.1% .013 159.9)" },
+      { "name": "glacier",   "g": "oklch(37.7% .049 217.8)", "c": "oklch(92.2% .017 201.4)" },
+      { "name": "twilight",  "g": "oklch(34.4% .042 276.6)", "c": "oklch(91.9% .008 337.4)" }
+    ],
+    "text": "#f6efe4",
+    "accent": "#f4b9a4"
+  }
+]
