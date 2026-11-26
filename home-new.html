@@ -370,15 +370,21 @@
         -webkit-mask: url(/beta/masthead/scene/monument.webp) 0 0 / 100% 100%; mask: url(/beta/masthead/scene/monument.webp) 0 0 / 100% 100%; }
       .sc-orb { z-index: 2; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
       .sc-orb path { fill: none; stroke: var(--t); stroke-opacity: .3; stroke-width: 1.25; stroke-linecap: round; }
-      .sc-hero { z-index: 4; }
+      /* the landmark is a button too (its own card); pointer hits on the scene are tested against each
+         picture's outline by the band script, so the pictures themselves never catch the pointer */
+      .sc-hero { z-index: 4; padding: 0; border: 0; background: none; font: inherit; color: inherit; pointer-events: none; }
+      .sc-hero:focus-visible { outline: 2px solid var(--t); outline-offset: 6px; border-radius: 8px; }
       .sc-hero img { display: block; width: 100%; height: 100%; }
+      .scene { touch-action: pan-y; }
+      .band.hot { cursor: pointer; }
+      .band.hot.dragging { cursor: grabbing; }
       /* a soft contact shadow where the landmark meets the band's bottom edge */
       .sc-hero::after { content: ""; position: absolute; left: 6%; right: 6%; bottom: -14px; height: 28px; border-radius: 50%;
         background: oklch(18% 0.02 30 / .35); filter: blur(12px); z-index: -1; }
       .sc-orb-f { z-index: 5; }
       .ob[hidden] { display: none; }
       .ob { z-index: 3; display: block; width: 10px; height: 10px; padding: 0; border: 0; border-radius: 8px; background: none;
-        font: inherit; color: inherit; cursor: grab; touch-action: pan-y;
+        font: inherit; color: inherit; pointer-events: none; touch-action: pan-y;
         -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; will-change: transform; }
       .ob.front { z-index: 6; }
       .ob img { display: block; width: 100%; height: 100%; pointer-events: none;
@@ -402,6 +408,9 @@
       .oc-where { font: 500 12.5px/1.35 var(--sans); color: var(--g); }
       .oc-name { margin-top: 3px !important; font: 600 19px/1.2 var(--sans); letter-spacing: -0.015em; color: var(--ink); text-wrap: balance; }
       .oc-blurb { margin-top: 7px !important; font: 400 14.5px/1.5 var(--serif); color: var(--ink-2); text-wrap: pretty; }
+      .oc-dmv { margin-top: 9px !important; padding: 8px 10px; border-radius: 8px; font: 400 13.5px/1.45 var(--sans); color: var(--ink-2);
+        background: color-mix(in oklch, var(--g) 8%, transparent); text-wrap: pretty; }
+      .oc-dmv b { font-weight: 600; color: var(--g); }
       .oc-rel { margin-top: 13px !important; padding-top: 11px; border-top: 1px solid oklch(25% 0.02 30 / .1);
         font: 500 12.5px/1.3 var(--sans); color: var(--muted); }
       .oc-list { list-style: none; margin: 2px 0 0; padding: 0; }
@@ -1095,7 +1104,8 @@
                             <div class="ocard" id="oc1" role="group"></div>
                             <button class="ob" type="button" hidden aria-expanded="false" aria-controls="oc2"><img alt="" draggable="false" decoding="async"></button>
                             <div class="ocard" id="oc2" role="group"></div>
-                            <div class="sc-hero"><img id="sc-hero" alt="" decoding="async"><noscript><img src="/beta/masthead/scene/dome.webp" alt="The U.S. Capitol dome" width="424" height="620"></noscript></div>
+                            <button class="sc-hero" type="button" aria-expanded="false" aria-controls="och"><img id="sc-hero" alt="" decoding="async"><noscript><img src="/beta/masthead/scene/dome.webp" alt="The U.S. Capitol dome" width="424" height="620"></noscript></button>
+                            <div class="ocard" id="och" role="group"></div>
                             <svg class="sc-orb sc-orb-f" id="orb-f" aria-hidden="true" focusable="false"><path pathLength="1"/></svg>
                         </div>
                     </div>
@@ -1108,6 +1118,19 @@
               var H = { capitol: ['dome', 424, 620, 'The U.S. Capitol dome'], jefferson: ['jefferson', 760, 480, 'The Jefferson Memorial'],
                         lincoln: ['lincoln', 880, 373, 'The Lincoln Memorial'], loc: ['loc', 497, 620, 'The Library of Congress dome'],
                         castle: ['castle', 820, 446, 'The Smithsonian Castle'] };
+              // the landmark's own card: where and when, then a short note on the building and its science
+              var C = {
+                capitol: ['The U.S. Capitol', 'Capitol Hill, Washington, D.C. · dome finished 1866',
+                  'The cast-iron dome went up during the Civil War. Samuel Morse sent the first telegraph message from inside the building in 1844, and Congress still votes here on the budgets of NIH, NASA and the National Science Foundation.'],
+                jefferson: ['The Jefferson Memorial', 'Tidal Basin, Washington, D.C. · 1943',
+                  'Dedicated on the 200th anniversary of Thomas Jefferson’s birth. Jefferson was a keen amateur scientist: he kept weather records for decades, collected fossils and led the American Philosophical Society.'],
+                lincoln: ['The Lincoln Memorial', 'National Mall, Washington, D.C. · 1922',
+                  'Its 36 columns stand for the states in the Union when Lincoln died. In 1863, in the middle of the Civil War, Lincoln signed the law that created the National Academy of Sciences, which still advises the country on science.'],
+                loc: ['The Library of Congress', 'Capitol Hill, Washington, D.C. · 1897',
+                  'The Jefferson Building’s gilded dome carries the Torch of Learning. After the British burned the first collection in 1814, the library started again with Jefferson’s own 6,487 books; today it is the largest library in the world.'],
+                castle: ['The Smithsonian Castle', 'National Mall, Washington, D.C. · 1855',
+                  'Paid for by James Smithson, a British chemist who never visited America but left his fortune for “the increase and diffusion of knowledge.” His crypt is inside the Castle.']
+              };
               var K = 'catalyst.band.hero', last = null, id = 'capitol';
               try { last = localStorage.getItem(K); } catch (e) {}
               if (last && H[last]) { var ids = Object.keys(H).filter(function (k) { return k !== last; }); id = ids[Math.floor(Math.random() * ids.length)]; }
@@ -1117,6 +1140,10 @@
               band.setAttribute('data-hero', id); band.classList.add('js');
               img.width = h[1]; img.height = h[2]; img.alt = h[3];
               img.src = '/beta/masthead/scene/' + h[0] + '.webp';
+              var c = C[id], btn = img.parentNode, card = document.getElementById('och');
+              btn.setAttribute('aria-label', c[0]);
+              card.setAttribute('aria-labelledby', 'ochn');
+              card.innerHTML = '<p class="oc-where">' + c[1] + '</p><p class="oc-name" id="ochn">' + c[0] + '</p><p class="oc-blurb" style="padding-bottom:12px">' + c[2] + '</p>';
             })(document.getElementById('sc-hero'));
             /* the colours for this visit: any of the five palettes except last visit's (?pal=2 picks one) */
             (function (band, K) {
@@ -1217,6 +1244,29 @@
                   'A car-sized, eight-rotor lander led by APL that will hop from place to place across Saturn’s moon Titan, looking for the chemistry that came before life.',
                   ['titan', 'davinci'], 'space', 260, 216, .25]
               };
+              // each one's link to the D.C. area, shown in its card as "The D.C. link"
+              var D = {
+                dart: 'Designed, built and flown from mission control at Johns Hopkins APL in Laurel, Md., between D.C. and Baltimore.',
+                parker: 'Built at Johns Hopkins APL in Laurel, Md., which also runs it from its mission control there.',
+                webb: 'Its mirror and science instruments were put together at NASA Goddard in Greenbelt, Md., just outside D.C., and it is run from Baltimore.',
+                andromeda: 'Measured at Carnegie’s Department of Terrestrial Magnetism in Northwest D.C. by Vera Rubin, who earned her Ph.D. at Georgetown.',
+                gps: 'Invented at the Naval Research Laboratory on the Potomac in Southwest D.C., where Roger Easton worked.',
+                hela: 'Taken at Johns Hopkins Hospital in Baltimore from Henrietta Lacks, who lived in Turner Station, Md.',
+                spike: 'Designed at the NIH Vaccine Research Center in Bethesda, Md., a Red Line ride from downtown D.C.',
+                code: 'Read in a lab on the NIH campus in Bethesda, Md.',
+                clock: 'Built at the National Bureau of Standards on Connecticut Avenue in D.C. The bureau, now NIST, later moved to Gaithersburg, Md.',
+                telegraph: 'Sent from the old Supreme Court chamber inside the U.S. Capitol to the Mount Clare station in Baltimore.',
+                vanguard: 'Designed and built at the Naval Research Laboratory in Southwest D.C.',
+                phobos: 'Found from the Naval Observatory’s first home in Foggy Bottom, D.C. Today the observatory’s grounds hold the vice president’s house.',
+                newhorizons: 'Built, and flown to Pluto from mission control, at Johns Hopkins APL in Laurel, Md.',
+                aerodrome: 'Launched from a houseboat on the Potomac near Quantico, Va., by the head of the Smithsonian himself.',
+                photophone: 'Sent between two buildings in downtown D.C.: the Franklin School on 13th Street and Bell’s lab on L Street.',
+                hpv: 'Developed at the National Cancer Institute on the NIH campus in Bethesda, Md.',
+                hubble: 'Its spacecraft is run from NASA Goddard in Greenbelt, Md., and its science from the Space Telescope Science Institute in Baltimore.',
+                kilogram: 'Measured on NIST’s Kibble balance in Gaithersburg, Md., where K20, the U.S. kilogram, is kept.',
+                robot: 'Developed by Axel Krieger’s team at Johns Hopkins University in Baltimore.',
+                dragonfly: 'Being designed and built at Johns Hopkins APL in Laurel, Md., which will also fly it.'
+              };
               var ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
               var last = []; try { last = (localStorage.getItem(K) || '').split(','); } catch (e) {}
               var ids = Object.keys(B), fresh = ids.filter(function (k) { return last.indexOf(k) < 0; }), pick = [];
@@ -1229,8 +1279,9 @@
               var ask = /[?&]obs=([\w,]+)/.exec(location.search);
               if (ask) { var q = ask[1].split(',').filter(function (k) { return B[k]; }); if (q.length === 3) pick = q; }
               try { localStorage.setItem(K, pick.join(',')); } catch (e) {}
-              pick.forEach(function (k, i) {
-                var b = B[k], el = els[i], im = el.firstChild, card = el.nextElementSibling;
+              // fills an object and its card (also used by the band script when an object turns into another)
+              function fill(el, k) {
+                var b = B[k], im = el.firstChild, card = el.nextElementSibling;
                 el.setAttribute('data-id', k); el.setAttribute('data-z', b[7]);
                 el.setAttribute('aria-label', b[0]);
                 im.width = b[5]; im.height = b[6]; im.src = '/beta/masthead/scene/' + k + '.webp';
@@ -1238,13 +1289,16 @@
                 card.innerHTML = '<p class="oc-where">' + b[1] + '</p>' +
                   '<p class="oc-name" id="' + card.id + 'n">' + b[0] + '</p>' +
                   '<p class="oc-blurb">' + b[2] + '</p>' +
+                  '<p class="oc-dmv"><b>The D.C. link:</b> ' + D[k] + '</p>' +
                   '<p class="oc-rel" id="' + card.id + 'r">Related in Catalyst</p>' +
                   '<ul class="oc-list" aria-labelledby="' + card.id + 'r">' + b[3].map(function (a) {
                     return '<li><a class="oc-a" href="/article/' + A[a][0] + '" data-slug="' + A[a][0] + '"><span class="oc-tx"><span class="oc-t">' + A[a][1] + '</span></span></a></li>';
                   }).join('') + '</ul>' +
                   '<a class="oc-more" href="/articles?topic=' + b[4] + '">More ' + b[4] + ' stories ' + ARROW + '</a>';
                 el.hidden = false;
-              });
+              }
+              pick.forEach(function (k, i) { fill(els[i], k); });
+              window.catalystBand = { ids: ids, fill: fill, size: function (k) { return [B[k][5], B[k][6]]; } };
             })(document.querySelectorAll('#scene .ob'), 'catalyst.band.obs');
             /* the announcement bar comes in with the header, after the first paint, and would push the
                page down: keep its room from the start (its height last time, else 44px), and give it back
@@ -1934,6 +1988,10 @@
         var orbB = document.getElementById('orb-b'), orbF = document.getElementById('orb-f');
         var obs = [].slice.call(sc.querySelectorAll('.ob:not([hidden])'));
         var cards = obs.map(function (el) { return el.nextElementSibling; });   // each object's card follows it
+        // the landmark is the last item, with its own card
+        var heroBtn = sc.querySelector('.sc-hero'), HI = obs.length, its = obs.concat([heroBtn]);
+        cards.push(document.getElementById('och'));
+        var bank = window.catalystBand || null, heroMask = null;
         var mqStack = window.matchMedia('(max-width: 1000px)');
         var TAU = Math.PI * 2, TILT = -8 * Math.PI / 180, CA = Math.cos(TILT), SA = Math.sin(TILT);
         var LAP = 48, HOLD = 13, NPAL = 5;   // seconds per lap; 9s held + 4s crossfade per palette
@@ -1944,11 +2002,11 @@
            half-width as a share of the scene width; sun: disc centre x, centre y and diameter in
            scene heights; mon: the Monument's x (0 hides it); p*: the same on phones. */
         var HEROES = {
-          capitol:   { ar: 424 / 620, top: .15, x: .57, oy: .64, rx: .34, sun: [.69, .02, 1.04], mon: .27, pt: .13, prx: .44 },
-          jefferson: { ar: 760 / 480, top: .3,  x: .55, oy: .5,  rx: .4,  sun: [.7, .04, 1.02],  mon: .14, pt: .4,  prx: .47, pmon: 0 },
-          lincoln:   { ar: 880 / 373, top: .44, x: .55, oy: .46, rx: .44, sun: [.72, .1, 1],     mon: .12, pt: .52, prx: .48, pmon: 0 },
-          loc:       { ar: 497 / 620, top: .13, x: .57, oy: .58, rx: .34, sun: [.7, .02, 1.04],  mon: .26, pt: .12, prx: .44 },
-          castle:    { ar: 820 / 446, top: .3,  x: .55, oy: .52, rx: .42, sun: [.73, .04, 1.02], mon: .12, pt: .38, prx: .47, pmon: 0 }
+          capitol:   { ar: 424 / 620, top: .15, x: .57, oy: .64, rx: .34, sun: [.69, .02, 1.04], mon: .09, pt: .13, prx: .44 },
+          jefferson: { ar: 760 / 480, top: .3,  x: .55, oy: .5,  rx: .4,  sun: [.7, .04, 1.02],  mon: .05, pt: .4,  prx: .47, pmon: 0 },
+          lincoln:   { ar: 880 / 373, top: .44, x: .55, oy: .46, rx: .44, sun: [.72, .1, 1],     mon: .04, pt: .52, prx: .48, pmon: 0 },
+          loc:       { ar: 497 / 620, top: .13, x: .57, oy: .58, rx: .34, sun: [.7, .02, 1.04],  mon: .09, pt: .12, prx: .44 },
+          castle:    { ar: 820 / 446, top: .3,  x: .55, oy: .52, rx: .42, sun: [.73, .04, 1.02], mon: .04, pt: .38, prx: .47, pmon: 0 }
         };
         var id = band.getAttribute('data-hero') || 'capitol', cfg = HEROES[id] || HEROES.capitol;
         // the objects' start angles: one in front, two behind (their sizes come with them, data-z)
@@ -1960,7 +2018,7 @@
         var onScreen = true, hover = -1, drag = null, blockClick = false, pinned = false, closeT = 0, quiet = false;
         var par = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0 };
         var st = obs.map(function (el, i) {
-          return { el: el, w: 0, h: 0, x: 0, y: 0, ox: 0, oy: 0, vx: 0, vy: 0, hs: 1, e: REDUCED ? 1 : 0, f: 1, cfg: OB[i] };
+          return { el: el, w: 0, h: 0, x: 0, y: 0, ox: 0, oy: 0, vx: 0, vy: 0, hs: 1, e: REDUCED ? 1 : 0, f: 1, cfg: OB[i], m: 1, sw: null, mask: null };
         });
         if (!(window.CSS && CSS.registerProperty)) band.classList.add('no-prop');
 
@@ -1979,19 +2037,14 @@
           place(sun, W * (phone ? .86 : stack ? .92 : cfg.sun[0]) - d / 2, H * (stack ? .42 : cfg.sun[1]) - d / 2, d, d);
           var mx = phone && cfg.pmon === 0 ? 0 : cfg.mon, mh = H * .7, mwid = mh * 70 / 500;
           mon.style.display = mx ? '' : 'none';
-          if (mx) place(mon, W * (phone ? .16 : mx) - mwid / 2, H - mh + 2, mwid, mh);
+          if (mx) place(mon, W * (phone ? .1 : mx) - mwid / 2, H - mh + 2, mwid, mh);
           if (br) br.style.top = phone ? sc.offsetTop + 8 + 'px' : '';
           rx = W * (phone ? cfg.prx : cfg.rx); ry = rx * .21;
           // each object's size: data-z is the square root of its area, in scene heights (a little
           // larger on smaller scenes, so each still reads at a glance)
-          var zk = phone ? 1.42 : stack ? 1.26 : 1.15, half = 0;
-          st.forEach(function (o) {
-            var im = o.el.firstChild, ar = im.getAttribute('width') / im.getAttribute('height'), z = H * zk * (+o.el.getAttribute('data-z') || .24);
-            o.w = z * Math.sqrt(ar);
-            o.h = z / Math.sqrt(ar);
-            o.el.style.width = im.style.width = o.w + 'px'; o.el.style.height = im.style.height = o.h + 'px';
-            half = Math.max(half, o.h / 2);
-          });
+          zk = phone ? 1.42 : stack ? 1.26 : 1.15;
+          var half = 0;
+          st.forEach(function (o) { sizeOb(o); half = Math.max(half, o.h / 2); });
           // the orbit round the landmark, kept inside the band with the objects on it
           var reach = Math.abs(rx * SA) + ry + Math.min(half, H * .17);
           cx = hx + hw / 2; cy = Math.max(reach + 4, Math.min(hy + hh * cfg.oy, H - reach - 2));
@@ -1999,6 +2052,14 @@
           arc(orbF, 'M' + (cx + rx) + ' ' + cy + 'A' + rx + ' ' + ry + ' 0 0 1 ' + (cx - rx) + ' ' + cy);
           draw();
           band.classList.add('laid');   // shown from here on: nothing in the scene moves after its first paint
+        }
+
+        var zk = 1.15;
+        function sizeOb(o) {
+          var im = o.el.firstChild, ar = im.getAttribute('width') / im.getAttribute('height'), z = H * zk * (+o.el.getAttribute('data-z') || .24);
+          o.w = z * Math.sqrt(ar);
+          o.h = z / Math.sqrt(ar);
+          o.el.style.width = im.style.width = o.w + 'px'; o.el.style.height = im.style.height = o.h + 'px';
         }
 
         function ease(t) { return 1 - Math.pow(1 - t, 3); }
@@ -2018,9 +2079,9 @@
             var th = ang + o.cfg.a + (1 - o.e) * .9, s = Math.sin(th), lx = rx * Math.cos(th), ly = ry * s;
             var x = cx + lx * CA - ly * SA, y = cy + lx * SA + ly * CA, f = (s + 1) / 2;
             o.f = f; o.x = x; o.y = y;
-            var k = (.72 + .28 * f) * o.hs;
+            var k = (.72 + .28 * f) * o.hs * (.8 + .2 * o.m);
             o.el.style.transform = 'translate(' + (x - o.w / 2 + o.ox + px * 8).toFixed(1) + 'px,' + (y - o.h / 2 + o.oy + py * 8).toFixed(1) + 'px) scale(' + k.toFixed(3) + ')';
-            o.el.style.opacity = ((.82 + .18 * f) * o.e).toFixed(3);
+            o.el.style.opacity = ((.82 + .18 * f) * o.e * o.m).toFixed(3);
             o.el.classList.toggle('front', s > 0 || drag && drag.i === i);
           });
           if (hover > -1) placeCard();
@@ -2037,6 +2098,7 @@
             st.forEach(function (o, i) { o.e = ease(Math.min(Math.max((T - T0 - .35 - i * .08) / .9, 0), 1)); });
             palT += dt;
             if (palT >= HOLD) { palT = 0; pal = (pal + 1) % NPAL; band.setAttribute('data-p', pal); }
+            swaps();
           }
           st.forEach(function (o, i) {
             o.hs += ((hover === i || drag && drag.i === i ? 1.06 : 1) - o.hs) * (1 - Math.exp(-dt / .1));
@@ -2044,33 +2106,80 @@
           });
           spring(par, 6, par.tx, par.ty, dt);
           draw();
+          if (ptr && hover < 0 && !drag) track();   // an object gliding under a still pointer opens its card
           tick();
+        }
+
+        // ---- now and then an object turns into another discovery from the bank. It happens as it passes
+        //      behind the middle of the landmark: it fades and shrinks a little on the way in, changes out of
+        //      sight, and comes out the other side as the new one. One change every ~20s, never the object
+        //      whose card is open; the next picture is loaded (and its outline read) before it is needed.
+        var EVERY = 20, WIN = .55, nextSwap = 12, pend = null, seen = obs.map(function (el) { return el.getAttribute('data-id'); });
+        function wrap(a) { a = (a % TAU + TAU) % TAU; return a > Math.PI ? a - TAU : a; }
+        function swaps() {
+          if (!bank) return;
+          if (!pend && T - T0 > nextSwap) {
+            var shown = obs.map(function (el) { return el.getAttribute('data-id'); });
+            var pool = bank.ids.filter(function (k) { return seen.indexOf(k) < 0; });
+            if (!pool.length) { seen = shown.slice(); pool = bank.ids.filter(function (k) { return shown.indexOf(k) < 0; }); }
+            var k = pool[Math.floor(Math.random() * pool.length)], im = new Image();
+            pend = { k: k, img: im, ready: false };
+            im.src = '/beta/masthead/scene/' + k + '.webp';
+            var p0 = pend;
+            (im.decode ? im.decode() : Promise.resolve()).then(function () { p0.mask = alphaMask(im, 72, 3); p0.ready = true; }, function () { if (pend === p0) { pend = null; nextSwap = T - T0 + EVERY; } });
+          }
+          st.forEach(function (o, i) {
+            var d = wrap(ang + o.cfg.a + (1 - o.e) * .9 - 1.5 * Math.PI);   // 0: right behind the middle of the landmark
+            if (!o.sw) {
+              if (pend && pend.ready && d > 0 && d < WIN && hover !== i && !(drag && drag.i === i) && o.e > .99) { o.sw = pend; o.sw.done = false; pend = null; }
+              else return;
+            }
+            o.m = Math.min(Math.abs(d) / WIN, 1); o.m = o.m * o.m * (3 - 2 * o.m);
+            if (!o.sw.done && d <= 0) {
+              o.sw.done = true; seen.push(o.sw.k);
+              bank.fill(o.el, o.sw.k); o.mask = o.sw.mask; sizeOb(o); enrich(cards[i]);
+            }
+            if (o.sw.done && d < -WIN) { o.sw = null; o.m = 1; nextSwap = T - T0 + EVERY; }
+            else if (!o.sw.done && d > WIN) { if (!pend) pend = o.sw; o.sw = null; o.m = 1; }
+          });
         }
         function tick() { if (!raf && !REDUCED && onScreen && !document.hidden) { if (!last) last = performance.now(); raf = requestAnimationFrame(frame); } }
         function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0; }
 
         // ---- the card: where and when, what it did, and Catalyst stories on the same ground.
-        //      It opens on hover (and stays while the pointer is on the object or the card), on
+        //      It opens on hover (and stays while the pointer is on the item or its card), on
         //      keyboard focus (Tab then walks into its links), or on a tap; a click pins it open.
-        //      Esc, a tap or click elsewhere, or leaving both object and card puts it away. It is
+        //      Esc, a tap or click elsewhere, or leaving both item and card puts it away. It is
         //      fixed to the viewport, so it can reach past the band's clipped edge.
+        //      The items are the three objects and the landmark. The pictures never catch the
+        //      pointer themselves: every hit is tested against the picture's own outline (its
+        //      alpha, read once when it loads), front to back, so a pointer over the empty corner
+        //      of one picture reaches whatever is drawn behind it.
+        function itemRect(i) { return (i === HI ? heroImg : obs[i]).getBoundingClientRect(); }
         function placeCard() {
-          var o = st[hover], card = cards[hover];
-          if (!o || !card) return;
+          var card = cards[hover];
+          if (hover < 0 || !card) return;
           var r = sc.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = window.innerHeight;
           var hdr = document.querySelector('.header');   // looked up each time: layout.js adds the header after this runs
           var top0 = Math.max(8, (hdr ? hdr.getBoundingClientRect().bottom : 0) + 8);
           card.style.maxHeight = Math.max(160, vh - top0 - 8) + 'px';   // short screens: the card scrolls inside
-          var cw = card.offsetWidth, ch = card.offsetHeight, gap = 12;
-          var k = (.72 + .28 * o.f) * o.hs, hw = o.w * k / 2, hh = o.h * k / 2;
-          var ox = r.left + o.x + o.ox + par.x * 8, oy = r.top + o.y + o.oy + par.y * .6 * 8;   // the object's centre, as draw() places it
+          var cw = card.offsetWidth, ch = card.offsetHeight, gap = 12, ox, oy, hw, hh;
+          if (hover === HI) {
+            // the landmark: beside its upper half (the picture runs to the band's bottom edge)
+            var b = heroImg.getBoundingClientRect();
+            ox = b.left + b.width / 2; oy = b.top + b.height * .4; hw = b.width * .4; hh = b.height * .4;
+          } else {
+            var o = st[hover], k = (.72 + .28 * o.f) * o.hs * (.8 + .2 * o.m);
+            hw = o.w * k / 2; hh = o.h * k / 2;
+            ox = r.left + o.x + o.ox + par.x * 8; oy = r.top + o.y + o.oy + par.y * .6 * 8;   // the object's centre, as draw() places it
+          }
           var x, y, right = ox + hw + gap, left = ox - hw - gap - cw;
           if (vw >= 760 && (right + cw <= vw - 8 || left >= 8)) {
             // beside it: toward the middle of the scene, else whichever side has room
             x = (ox < r.left + r.width / 2 || left < 8) && right + cw <= vw - 8 ? right : left;
             y = oy - ch / 2;
           } else {
-            // phones: centred across the screen, above the object when there's room under the header, else below
+            // phones: centred across the screen, above the item when there's room under the header, else below
             x = (vw - cw) / 2;
             y = oy - hh - gap - ch >= top0 ? oy - hh - gap - ch : oy + hh + gap;
           }
@@ -2079,74 +2188,166 @@
           y = Math.max(top0, Math.min(y, vh - ch - 8));
           card.style.transform = 'translate(' + Math.round(x) + 'px,' + Math.round(y) + 'px)';
         }
-        function shut(i) { obs[i].setAttribute('aria-expanded', 'false'); cards[i].classList.remove('on'); }
+        function shut(i) { its[i].setAttribute('aria-expanded', 'false'); cards[i].classList.remove('on'); }
         function openCard(i) {
-          clearTimeout(closeT);
+          clearClose();
           if (hover !== i) { if (hover > -1) shut(hover); hover = i; pinned = false; }
-          obs[i].setAttribute('aria-expanded', 'true');
+          its[i].setAttribute('aria-expanded', 'true');
           placeCard(); cards[i].classList.add('on');
           tick();
         }
+        function clearClose() { clearTimeout(closeT); closeT = 0; }
         function closeCard(now) {
-          clearTimeout(closeT);
-          var go = function () { if (hover < 0) return; shut(hover); hover = -1; pinned = false; tick(); };
-          if (now) go(); else closeT = setTimeout(go, 280);   // time to cross from the object to its card
+          clearClose();
+          var go = function () { closeT = 0; if (hover < 0) return; shut(hover); hover = -1; pinned = false; tick(); };
+          if (now) go(); else closeT = setTimeout(go, 220);   // time to cross from the item to its card
         }
-        function inside(i, node) { return !!node && (obs[i].contains(node) || cards[i].contains(node)); }
-        var downType = 'mouse';
+        function inside(i, node) { return !!node && (its[i].contains(node) || cards[i].contains(node)); }
+        function inCard(node) { for (var i = 0; i < cards.length; i++) if (cards[i].contains(node)) return i; return -1; }
+
+        // ---- outlines: each picture's alpha on a small grid, grown by a few cells for thin parts (antennas)
+        function alphaMask(im, n, grow) {
+          try {
+            var iw = im.naturalWidth, ih = im.naturalHeight; if (!iw || !ih) return null;
+            var s = n / Math.max(iw, ih), w = Math.max(1, Math.round(iw * s)), h = Math.max(1, Math.round(ih * s));
+            var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+            var cx2 = cv.getContext('2d', { willReadFrequently: true }); cx2.drawImage(im, 0, 0, w, h);
+            var px = cx2.getImageData(0, 0, w, h).data, a = new Uint8Array(w * h), g = new Uint8Array(w * h);
+            for (var j = 0; j < w * h; j++) a[j] = px[j * 4 + 3] > 90 ? 1 : 0;
+            for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+              if (!a[y * w + x]) continue;
+              for (var dy = -grow; dy <= grow; dy++) for (var dx = -grow; dx <= grow; dx++) {
+                var X = x + dx, Y = y + dy;
+                if (X >= 0 && Y >= 0 && X < w && Y < h && dx * dx + dy * dy <= grow * grow) g[Y * w + X] = 1;
+              }
+            }
+            return { w: w, h: h, a: g };
+          } catch (e) { return null; }
+        }
+        function onMask(m, r, x, y, inset) {
+          if (x < r.left || x >= r.right || y < r.top || y >= r.bottom) return false;
+          if (!m) {   // outline not read yet: the middle of the box
+            var ix = r.width * inset, iy = r.height * inset;
+            return x >= r.left + ix && x < r.right - ix && y >= r.top + iy && y < r.bottom - iy;
+          }
+          var u = Math.min(m.w - 1, Math.floor((x - r.left) / r.width * m.w)), v = Math.min(m.h - 1, Math.floor((y - r.top) / r.height * m.h));
+          return m.a[v * m.w + u] === 1;
+        }
+        function hitAt(x, y) {
+          // front to back: the objects on the near side of the orbit, the landmark, then the far side
+          var live = st.map(function (o, i) { return i; }).filter(function (i) { return st[i].e * st[i].m > .4; });
+          live.sort(function (a, b) { return st[b].f - st[a].f; });
+          for (var n = 0; n < live.length; n++) {
+            var i = live[n];
+            if (st[i].f < .5) continue;
+            if (onMask(st[i].mask, obs[i].getBoundingClientRect(), x, y, .18)) return i;
+          }
+          if (onMask(heroMask, heroImg.getBoundingClientRect(), x, y, .2)) return HI;
+          for (n = 0; n < live.length; n++) {
+            i = live[n];
+            if (st[i].f >= .5) continue;
+            if (onMask(st[i].mask, obs[i].getBoundingClientRect(), x, y, .18)) return i;
+          }
+          return -1;
+        }
+        // the strip between an open item and its card: crossing it keeps the card, even over another item
+        function inCorridor(p) {
+          if (hover < 0) return false;
+          var c = cards[hover].getBoundingClientRect(), a = itemRect(hover), x0, x1;
+          if (!c.width) return false;
+          if (c.left >= a.left + a.width / 2) { x0 = a.left + a.width / 2; x1 = c.left; }
+          else if (c.right <= a.left + a.width / 2) { x0 = c.right; x1 = a.left + a.width / 2; }
+          else return false;
+          return p.x >= x0 && p.x <= x1 && p.y >= Math.max(c.top, a.top - 24) && p.y <= Math.min(c.bottom, a.bottom + 24);
+        }
+
+        var downType = 'mouse', ptr = null, press = null;
         function touchy() { return downType === 'touch' || downType === 'pen'; }
+        // where the mouse is, against the scene: opens the item under it at once, keeps the card while
+        // the pointer is on it (or on the way to it), and puts it away a moment after the pointer leaves
+        function track() {
+          if (!ptr || drag) return;
+          var t = ptr.t, ci = inCard(t);
+          if (ci > -1) { if (ci === hover) clearClose(); band.classList.remove('hot'); return; }
+          var h = t && band.contains(t) ? hitAt(ptr.x, ptr.y) : -1;
+          band.classList.toggle('hot', h > -1);
+          if (h === hover) { if (h > -1) clearClose(); return; }
+          if (h > -1) {
+            if (hover > -1 && (pinned || inCorridor(ptr))) return;
+            openCard(h);
+          } else if (hover > -1 && !pinned && !closeT && !inCorridor(ptr)) closeCard();
+        }
+        document.addEventListener('pointermove', function (e) {
+          if (drag && e.pointerId === drag.id) {
+            var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+            if (!drag.moved && dx * dx + dy * dy > 36) { drag.moved = true; band.classList.add('dragging'); try { band.setPointerCapture(e.pointerId); } catch (x) {} }
+            if (drag.moved) { var o = st[drag.i]; o.ox = drag.ox + dx; o.oy = drag.oy + dy; o.vx = o.vy = 0; tick(); }
+            return;
+          }
+          if (e.pointerType !== 'mouse') return;
+          downType = 'mouse';
+          ptr = { x: e.clientX, y: e.clientY, t: e.target };
+          track();
+        }, { passive: true });
+        document.documentElement.addEventListener('mouseleave', function () {
+          ptr = null; band.classList.remove('hot');
+          if (hover > -1 && !pinned && !drag) closeCard();
+        });
         document.addEventListener('keydown', function (e) {
           downType = 'key';
           if ((e.key === 'Escape' || e.key === 'Esc') && hover > -1) {
             var i = hover, back = inside(i, document.activeElement);
             closeCard(true);
-            if (back) { quiet = true; obs[i].focus(); quiet = false; }
+            if (back) { quiet = true; its[i].focus(); quiet = false; }
           }
         });
         document.addEventListener('pointerdown', function (e) {
-          if (hover > -1 && !inside(hover, e.target)) closeCard(true);
+          downType = e.pointerType;
+          var h = inCard(e.target) < 0 && band.contains(e.target) ? hitAt(e.clientX, e.clientY) : -1;
+          press = { h: h, id: e.pointerId };
+          if (hover > -1 && !inside(hover, e.target) && h !== hover) closeCard(true);
+          // an object can be dragged off the orbit; it glides back on a soft spring. Under 6px it is a click.
+          if (h > -1 && h < HI && !REDUCED && !e.button) drag = { i: h, id: e.pointerId, x: e.clientX, y: e.clientY, ox: st[h].ox, oy: st[h].oy, moved: false };
         }, { passive: true });
+        function endDrag(e) {
+          if (!drag || e.pointerId !== drag.id) return;
+          if (drag.moved) { blockClick = e.type === 'pointerup'; setTimeout(function () { blockClick = false; }, 400); }
+          band.classList.remove('dragging'); drag = null;
+          if (e.pointerType === 'mouse') { ptr = { x: e.clientX, y: e.clientY, t: document.elementFromPoint(e.clientX, e.clientY) }; if (!pinned) track(); }
+          tick();
+        }
+        document.addEventListener('pointerup', endDrag); document.addEventListener('pointercancel', endDrag);
+        // a click or tap on an item: open and pin its card, or put it away if it was already pinned
+        band.addEventListener('click', function (e) {
+          if (blockClick) { blockClick = false; return; }
+          if (inCard(e.target) > -1 || (e.target.closest && e.target.closest('.ob, .sc-hero'))) return;   // keyboard presses are handled below
+          var h = hitAt(e.clientX, e.clientY);
+          if (h < 0) return;
+          if (hover === h && (pinned || touchy())) { closeCard(true); return; }
+          openCard(h); pinned = true;
+        });
         window.addEventListener('scroll', function () { if (hover > -1) placeCard(); }, { passive: true });
         window.addEventListener('resize', function () { if (hover > -1) placeCard(); }, { passive: true });
 
         cards.forEach(function (card, i) {
-          card.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse' && hover === i) clearTimeout(closeT); });
-          card.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && hover === i && !pinned) closeCard(); });
+          card.addEventListener('pointerleave', function (e) {
+            if (e.pointerType !== 'mouse' || hover !== i || pinned) return;
+            var h = hitAt(e.clientX, e.clientY);
+            if (h === i) return;
+            if (h > -1) openCard(h); else closeCard();
+          });
           card.addEventListener('focusout', function (e) { if (hover === i && !pinned && !inside(i, e.relatedTarget)) closeCard(true); });
         });
 
-        obs.forEach(function (el, i) {
-          el.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') openCard(i); });
-          el.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && !drag && hover === i && !pinned) closeCard(); });
+        // the keyboard: each item is a button; focus opens its card, Enter or Space pins or closes it
+        its.forEach(function (el, i) {
           el.addEventListener('focus', function () { if (downType === 'key' && !quiet) openCard(i); });
           el.addEventListener('focusout', function (e) { if (hover === i && !pinned && downType === 'key' && !inside(i, e.relatedTarget)) closeCard(true); });
-          el.addEventListener('dragstart', function (e) { e.preventDefault(); });
-          // a click or tap: open and pin it, or put it away if it was already pinned (Enter and Space too)
           el.addEventListener('click', function (e) {
-            if (blockClick) { blockClick = false; return; }
-            if (hover === i && (pinned || touchy() || downType === 'key')) { closeCard(true); return; }
+            if (e.detail !== 0 && downType !== 'key') return;   // pointer clicks never land here (the pictures don't catch the pointer)
+            if (hover === i && pinned) { closeCard(true); return; }
             openCard(i); pinned = true;
           });
-          // drag it off the orbit; it glides back on a soft spring. Under 6px it is a click.
-          el.addEventListener('pointerdown', function (e) {
-            downType = e.pointerType;
-            if (REDUCED || e.button) return;
-            drag = { i: i, id: e.pointerId, x: e.clientX, y: e.clientY, ox: st[i].ox, oy: st[i].oy, moved: false };
-          });
-          el.addEventListener('pointermove', function (e) {
-            if (!drag || drag.i !== i || e.pointerId !== drag.id) return;
-            var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-            if (!drag.moved && dx * dx + dy * dy > 36) { drag.moved = true; el.classList.add('drag'); try { el.setPointerCapture(e.pointerId); } catch (x) {} }
-            if (drag.moved) { var o = st[i]; o.ox = drag.ox + dx; o.oy = drag.oy + dy; o.vx = o.vy = 0; tick(); }
-          });
-          var end = function (e) {
-            if (!drag || drag.i !== i || e.pointerId !== drag.id) return;
-            if (drag.moved) { blockClick = e.type === 'pointerup'; setTimeout(function () { blockClick = false; }, 400); }
-            el.classList.remove('drag'); drag = null;
-            if (e.pointerType === 'mouse' && !el.matches(':hover') && !pinned) closeCard();
-            tick();
-          };
-          el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
         });
 
         // ---- parallax: the pointer across the band moves each layer by its depth
@@ -2177,26 +2378,34 @@
             layout();
             band.classList.add('go');
             T0 = T; tick();
+            // read each picture's outline for the pointer (the landmark tightly, the objects a little grown)
+            heroMask = alphaMask(heroImg, 160, 1);
+            st.forEach(function (o) { o.mask = alphaMask(o.el.firstChild, 72, 3); });
             if (REDUCED) draw();
           });
         }
         setTimeout(start, Math.max(0, 800 - performance.now()));
         api.go = start;
-        api.stories = function (list) {
-          var by = {};
-          list.forEach(function (s) { by[s.slug] = s; });
-          cards.forEach(function (card) {
-            [].slice.call(card.querySelectorAll('.oc-a')).forEach(function (a) {
-              var s = by[a.getAttribute('data-slug')], li = a.parentNode;
-              if (!s) { li.parentNode.removeChild(li); return; }
-              a.href = '/article/' + encodeURIComponent(s.slug);   // the plain link (no #edition=)
-              a.querySelector('.oc-t').textContent = s.title;
-              var d = lsDate(s);
-              a.querySelector('.oc-tx').insertAdjacentHTML('beforeend', '<span class="oc-d">' + esc(catLabel(s.cat)) + (d ? ' &middot; ' + esc(d) : '') + '</span>');
-              a.insertAdjacentHTML('afterbegin', '<span class="oc-th"><img src="' + esc(sized(s.img, 96)) + '" alt="" width="44" height="44" decoding="async" onerror="this.parentNode.remove()"></span>');
-            });
-            if (!card.querySelector('.oc-a')) { var r = card.querySelector('.oc-rel'), l = card.querySelector('.oc-list'); if (r) r.remove(); if (l) l.remove(); }
+        // the cards' story links get the live titles, dates and thumbnails once the stories load
+        // (and again for a card whose object has just turned into another)
+        var byStory = null;
+        function enrich(card) {
+          if (!byStory) return;
+          [].slice.call(card.querySelectorAll('.oc-a')).forEach(function (a) {
+            var s = byStory[a.getAttribute('data-slug')], li = a.parentNode;
+            if (!s) { li.parentNode.removeChild(li); return; }
+            a.href = '/article/' + encodeURIComponent(s.slug);   // the plain link (no #edition=)
+            a.querySelector('.oc-t').textContent = s.title;
+            var d = lsDate(s);
+            a.querySelector('.oc-tx').insertAdjacentHTML('beforeend', '<span class="oc-d">' + esc(catLabel(s.cat)) + (d ? ' &middot; ' + esc(d) : '') + '</span>');
+            a.insertAdjacentHTML('afterbegin', '<span class="oc-th"><img src="' + esc(sized(s.img, 96)) + '" alt="" width="44" height="44" decoding="async" onerror="this.parentNode.remove()"></span>');
           });
+          if (!card.querySelector('.oc-a')) { var r = card.querySelector('.oc-rel'), l = card.querySelector('.oc-list'); if (r) r.remove(); if (l) l.remove(); }
+        }
+        api.stories = function (list) {
+          byStory = {};
+          list.forEach(function (s) { byStory[s.slug] = s; });
+          cards.slice(0, HI).forEach(enrich);
           if (hover > -1) placeCard();
         };
         return api;
