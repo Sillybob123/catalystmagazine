@@ -44,6 +44,7 @@ const excludedFiles = new Set([
   "firebase.json",
   "DEPLOYMENT-GUIDE.md",
   // Internal scratch / legacy files that were being served publicly.
+  "homeold.html",   // the previous homepage, kept locally only (gitignored)
   "index_backup.html",
   "email_fixed_1.html",
   "gameexample.html",

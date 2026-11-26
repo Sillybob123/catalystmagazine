@@ -184,7 +184,7 @@ Licences were read from each file page on Nov 26, 2026.
 | `andromeda.webp` | The Andromeda galaxy, in a round field | a11d9081 | [NASA Image Library: PIA04921](https://images.nasa.gov/details/PIA04921) (GALEX ultraviolet view, used for shape only) | NASA/JPL-Caltech | Public domain (NASA) |
 | `gps.webp` | A GPS Block IIF satellite | f0186b08 | [Commons: GPS Satellite NASA art-iif.jpg](https://commons.wikimedia.org/wiki/File:GPS_Satellite_NASA_art-iif.jpg) | NASA | Public domain (PD-USGov-NASA) |
 | `hela.webp` | HeLa cells under a fluorescence microscope | eb7f56d7 | [Commons: HeLa-III.jpg](https://commons.wikimedia.org/wiki/File:HeLa-III.jpg) | National Institutes of Health | Public domain (PD-USGov) |
-| `spike.webp` | A 3D-printed coronavirus spike protein | d519580a | [Commons: 3D Print of MERS-CoV Spike (49468660051).jpg](https://commons.wikimedia.org/wiki/File:3D_Print_of_MERS-CoV_Spike_(49468660051).jpg), NIAID Flickr | NIAID | CC BY 2.0 |
+| `spike.webp` (replaced in brief v6, see the last section) | A 3D-printed coronavirus spike protein | d519580a | [Commons: 3D Print of MERS-CoV Spike (49468660051).jpg](https://commons.wikimedia.org/wiki/File:3D_Print_of_MERS-CoV_Spike_(49468660051).jpg), NIAID Flickr | NIAID | CC BY 2.0 |
 | `clock.webp` | The NBS ammonia atomic clock, 1949 | 04f604ad | NBS photograph of the 1949 clock, as reproduced at [circuitousroot.com](https://circuitousroot.com/oldstuff/gallery-of-antiquarian-technology/horology/nbs-atomic-clock/index.html) (imported to Higgsfield by URL) | National Bureau of Standards | Public domain (U.S. government work) |
 | `code.webp` | Nirenberg's genetic code chart | 84eed3c9 | none: drawn from descriptions of the chart (the photos of the real chart are restricted) | — | — |
 
@@ -231,12 +231,13 @@ Licences were read from each file page or record on Nov 26, 2026.
 | `newhorizons.webp` | NASA's New Horizons spacecraft | bdb7864e | [Commons: New Horizons.jpg](https://commons.wikimedia.org/wiki/File:New_Horizons.jpg) (drawing; its label was painted out before upload) | NASA | Public domain (PD-USGov-NASA) |
 | `aerodrome.webp` | Langley's Aerodrome No. 5, 1896 | 2da93618 | Smithsonian Open Access image NASM-A19050001000-NASM2018-10245 (National Air and Space Museum object A19050001000) | Smithsonian National Air and Space Museum | CC0 |
 | `photophone.webp` | Bell's photophone receiver, 1880 | c92c79f1 | [Commons: Photophony1.jpg](https://commons.wikimedia.org/wiki/File:Photophony1.jpg) (19th-century engraving) | Unknown | Public domain (PD-US) |
-| `hpv.webp` | A 3D-printed HPV virus-like particle | bebdb969 | none: drawn from a description of the particle | — | — |
+| `hpv.webp` (replaced in brief v6, see the last section) | A 3D-printed HPV virus-like particle | bebdb969 | none: drawn from a description of the particle | — | — |
 
 Notes:
 - All five references are public domain or CC0. The bank's two references that are not public
   domain are round 4's KUKA arm behind `robot.webp` (CC BY-SA 3.0), now shown as the STAR card,
-  and the round-6 spike (CC BY 2.0, NIAID).
+  and the round-6 spike (CC BY 2.0, NIAID). The v6 spike below replaced that one, so only the KUKA
+  arm is left.
 - The HPV model is a likeness of an NIH-style printed particle, not a copy of a specific model.
 - The card facts were checked on Nov 26, 2026 against the Naval Research Laboratory, NASA,
   Johns Hopkins APL and Johns Hopkins University, the Smithsonian, NIST, the National Cancer
@@ -253,3 +254,86 @@ python3 scripts/make-scene.py $G/aerodrome-a1.png   $O/aerodrome.webp   --size 3
 python3 scripts/make-scene.py $G/photophone-a1.png  $O/photophone.webp  --size 260 --mask $G/photophone-a1-mask.png --largest
 python3 scripts/make-scene.py $G/hpv-a1.png         $O/hpv.webp         --size 240 --mask $G/hpv-a1-mask.png --largest
 ```
+
+## Brief v6: the hero band (`beta/masthead/scene/`, internal record; nothing is credited on the page)
+
+Nov 26, 2026. Two bank objects were remade as matte plaster museum models, and the framing cherry
+tree replaced the branch. Jobs, prompts and costs are in `GENERATIONS.md` (8 credits).
+
+| File | What it is | Job | Reference | Author | Licence of the reference |
+|---|---|---|---|---|---|
+| `spike.webp` | A museum model of the SARS-CoV-2 spike trimer (prefusion 2P form) | 047f508b | EMDB-21375, the cryo-EM map of [PDB 6VSB](https://www.ebi.ac.uk/pdbe/entry/pdb/6vsb), as shown on PDBj EM Navigator | Wrapp et al., *Science* 2020 | EMDB and PDB data: CC0. The PDBj snapshot page states no licence of its own; it was used only for shape |
+| `hpv.webp` | A museum model of the HPV16 L1 virus-like particle (T=7, 72 capsomeres) | 8cc16cd7 | `source/scene/hpv-t7-geometry.png`, a geometry drawing made here with `hpv-t7-geometry.py`, checked against EMDB-5932 / [PDB 3J6R](https://www.ebi.ac.uk/pdbe/entry/pdb/3j6r) on PDBj | Catalyst (drawing); Cardone et al. 2014 (map) | Drawing: ours. EMDB and PDB data: CC0 |
+| `tree.webp` | The framing Yoshino cherry tree on the left of the band | 6b81207e (from the Nov 26 hero mockup; no new credits) | none | — | — |
+
+The previous `spike.webp` and `hpv.webp` stay in the round-6 and round-7 rebuild commands for the
+record; their source PNGs are still in `source/scene/gen/`. `blossoms.webp` is no longer used by the
+page but is kept.
+
+Rebuild, from the repo root, with `G=beta/masthead/source/scene/gen`, `O=beta/masthead/scene`:
+
+```
+python3 scripts/make-scene.py $G/spike2-047f508b.png $O/spike.webp --size 260 --largest
+python3 scripts/make-scene.py $G/hpv2-8cc16cd7.png   $O/hpv.webp   --size 240 --largest
+python3 -I beta/masthead/source/scene/key-tree.py $G/tree-frame.png $O/tree.webp
+python3 -I beta/masthead/source/scene/hpv-t7-geometry.py beta/masthead/source/scene/hpv-t7-geometry.png
+```
+
+## Round 8 (v7 bank +10): ten DMV inventions and finds (`beta/masthead/scene/`, internal record; nothing is credited on the page)
+
+Nov 26, 2026. Ten objects added to the orbit bank (now thirty). Jobs, prompts and costs are in
+`GENERATIONS.md` (36 credits). Nine are generated from a reference photo or from a description; the
+first digital image is the real NIST scan in a frame drawn here.
+
+| File | What it is | Job | Reference | Licence of the reference |
+|---|---|---|---|---|
+| `firstimage.webp` | Russell Kirsch's 1957 scan of his son, framed | none (local) | `NBSFirstScanImage.jpg` (NIST), kept as `source/scene/ref/NBSFirstScanImage.png` | Public domain (U.S. government work) |
+| `reflector.webp` | The Apollo 11 Laser Ranging Retroreflector (likeness of the same 100-cube design) | d47cb271 | NASA AS14-67-09386 (Apollo 14 LRRR), cropped | Public domain (NASA) |
+| `ctscan.webp` | The ACTA whole-body CT scanner (descriptive likeness) | 20c485b6 | none | — |
+| `capitalsaurus.webp` | A theropod tail vertebra like the Capitalsaurus find (descriptive likeness) | 19fcc5fe | none | — |
+| `gramophone.webp` | An early hand-turned Berliner-type gramophone | 87405dab | Wikimedia Commons, "Kämmer and Reinhardt Gramophone.jpg" | Not verified: the Commons file page could not be reached from here (429). Used only for shape |
+| `weber.webp` | A Weber bar gravitational-wave detector (descriptive likeness) | b65c5a7f | none | — |
+| `beast.webp` | The Johns Hopkins Beast (descriptive likeness) | 6a8d98a1 | none | — |
+| `icd.webp` | An early-style implantable defibrillator (descriptive likeness) | d1b3192a | Wikimedia Commons, "Implantable cardioverter-defibrillator.jpg", cropped | Not verified (429). Used only for the case's materials; the shape is described, not copied |
+| `radar.webp` | A CXAM-type "bedspring" Navy radar antenna, descendant of NRL's pulse radar | d8ccf749 (two copied shapes painted out locally) | Wikimedia Commons, "CXAM radar on USS Yorktown (CV-5) in June 1942.jpg" | Public domain (U.S. Navy photo) |
+| `lasercool.webp` | A laser-cooling atom trap (likeness) | 1e37737e | Wikimedia Commons, "Cold atoms experiment 04.JPG" | Not verified (429). Used only for shape |
+
+Card facts were checked against: NIST (first digital image, 50th-anniversary release; NBS history),
+UMD (Today.umd.edu and CMNS on the lunar retroreflector and Carroll Alley), Georgetown University
+Medical Center and the Lemelson Center (Ledley, ACTA), Library of Congress blogs and Smithsonian
+Magazine (Capitalsaurus), Library of Congress (Berliner papers and gramophone), APS News, APS
+Physics Focus "A Fleeting Detection of Gravitational Waves" and Physics Today (Weber), the Computer
+History Museum and History of Information (the Beast: 1961, no computer, photocells, black wall
+outlets, sonar), the Heart Rhythm Society 40th-anniversary pages and Johns Hopkins Medicine
+(Mirowski, Mower, Levi Watkins, 1980), NRL and Patriots Point (Page, pulse radar, 1934, USS Leary),
+and the Nobel Prize site (Phillips, 1997). Some of these pages could only be seen through search
+results from here; the APS, HRS, CHM and History of Information pages were read in full.
+
+Rebuild, from the repo root, with `G=beta/masthead/source/scene/gen`, `O=beta/masthead/scene`
+(the radar mask is hand-edited, see GENERATIONS.md; the others were written by make-scene.py):
+
+```
+python3 scripts/make-scene.py $G/refl-d47cb271.png  $O/reflector.webp     --size 300 --mask $G/refl-d47cb271-mask.png --largest
+python3 scripts/make-scene.py $G/ct-20c485b6.png    $O/ctscan.webp        --size 300 --mask $G/ct-20c485b6-mask.png --largest
+python3 scripts/make-scene.py $G/capsaur-19fcc5fe.png $O/capitalsaurus.webp --crop 0,0,2336,1462 --size 260 --mask $G/capsaur-19fcc5fe-mask.png --largest
+python3 scripts/make-scene.py $G/gramo-87405dab.png $O/gramophone.webp    --size 270 --mask $G/gramo-87405dab-mask.png --largest
+python3 scripts/make-scene.py $G/weber-b65c5a7f.png $O/weber.webp         --size 380 --mask $G/weber-b65c5a7f-mask.png --largest
+python3 scripts/make-scene.py $G/beast-6a8d98a1.png $O/beast.webp         --size 270 --mask $G/beast-6a8d98a1-mask.png --largest
+python3 scripts/make-scene.py $G/icd-d1b3192a.png   $O/icd.webp           --size 250 --mask $G/icd-d1b3192a-mask.png --largest
+python3 scripts/make-scene.py $G/radar-d8ccf749-fix.png $O/radar.webp     --size 280 --mask $G/radar-d8ccf749-fix-mask3.png --largest
+python3 scripts/make-scene.py $G/laser-1e37737e.png $O/lasercool.webp     --size 300 --mask $G/laser-1e37737e-mask.png --largest
+# the first digital image: frame the scan, then split it into an alpha mask and an RGB on gray (200,198,194)
+python3 -I beta/masthead/source/scene/frame-firstimage.py beta/masthead/source/scene/ref/NBSFirstScanImage.png $G/firstimage-frame.png
+python3 -I -c "from PIL import Image; im=Image.open('$G/firstimage-frame.png'); im.getchannel('A').save('$G/firstimage-frame-mask.png'); bg=Image.new('RGBA',im.size,(200,198,194,255)); bg.alpha_composite(im); bg.convert('RGB').save('$G/firstimage-frame-rgb.png')"
+python3 scripts/make-scene.py $G/firstimage-frame-rgb.png $O/firstimage.webp --size 250 --mask $G/firstimage-frame-mask.png
+```
+
+## The homepage's link preview (`og-home-orbit.jpg`, repo root)
+
+Nov 26, 2026, when the new page became the homepage. No new generation and no outside material: it
+is drawn from the band's own pictures (`tree.webp`, `dome.webp`, `monument.webp`, `reflector.webp`,
+`webb.webp`, `gramophone.webp`), the site's logo (`WebLogo.png`, recoloured to the band's paper
+colour) and the site fonts (Poppins, Source Serif Pro), in palette 1 (maroon and coral). Source:
+`source/og/og-card.html`; render with `NODE_PATH=$(npm root -g) node beta/masthead/source/og/render-og.js "" out.png`
+while a local server on port 8765 serves the repo root, then scale to 1200 x 630 (Lanczos) and save
+as JPEG quality 88. The old preview, `og-home.jpg` (the pen-and-ink Mall), stays for the old homepage.

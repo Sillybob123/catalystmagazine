@@ -29,6 +29,10 @@
 /edition-overview        /editions                 301
 /edition-overview.html   /editions                 301
 
+# ------ The /home-new draft became the homepage (2026-11-26) ------
+/home-new                /                         301
+/home-new.html           /                         301
+
 # ------ /investors → /sponsors (renamed 2026-05-08) ---------
 /investors               /sponsors                 301
 /investors.html          /sponsors                 301

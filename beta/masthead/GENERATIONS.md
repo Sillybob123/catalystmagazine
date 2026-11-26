@@ -295,3 +295,145 @@ only…").
 - **aerodrome** (3:2): Samuel Langley's Aerodrome No. 5 of 1896, the steam-powered model flying machine kept at the Smithsonian's National Air and Space Museum, true to the parts shown in the reference: a slim, pointed metal body with a polished brass and copper steam engine and boiler visible in its open frame, two pairs of large white fabric wings with thin wooden ribs, one pair at the front and one pair behind it in tandem, both spread wide and flat like a dragonfly's, two wooden propellers on either side of the body between the wing pairs, and a cross-shaped white fabric tail at the back, all held together with thin wire bracing. Seen whole in a front three-quarter view from slightly below, floating freely, the whole machine including every wingtip and the tail in frame. No ceiling, no hanging wires, no water.
 - **photophone** (3:4): Alexander Graham Bell's photophone receiver of 1880, true to the instrument in the engraving in the reference, as a real 19th-century scientific instrument in a museum: a large, shallow parabolic reflector of polished silvered brass about two feet across, mounted on a slender dark iron stand with a tripod foot, a small round selenium cell held at the focus in the middle of the dish, and a thin cloth-covered cord running from it, the reflector tilted slightly toward the camera, seen in three-quarter view, the whole instrument in frame. Leave out the people, the battery box and the garden of the engraving.
 - **hpv** (1:1): A 3D-printed scientific model of a human papillomavirus particle, the empty virus-like shell used in HPV vaccines, of the kind printed at the National Institutes of Health: a round ball built from 72 raised, star-shaped, five-lobed protein knobs packed in an even icosahedral pattern, each knob a small five-pointed rosette, the bumpy surface detailed and crisp, matte printed plastic with fine layer texture, the knobs a soft coral pink and the gaps between them deep teal, the ball resting on a small round wooden stand. Seen straight-on, the whole model and its stand in frame.
+
+### Hero polish: cherry tree for the left side (chat mockup, Nov 26 02:20 UTC)
+
+John asked for a subtle, clean cherry tree on the left of the band instead of the branch. One
+call, 2 variants, no reference. Same recipe (asset prompt + "Isolated on a seamless plain
+light-gray studio background, for clean cutting." + light block + anti-AI block). Prompt: one young
+Yoshino cherry tree in full bloom, short dark leaning trunk, open umbrella-shaped canopy with gaps,
+whole tree in frame, trunk ends cleanly at the bottom, nothing else.
+
+| # | Date (UTC) | Asset | Job ID(s) | Settings | Credits |
+|---|---|---|---|---|---|
+| 1 | Nov 26 02:20 | cherry tree (2 variants) | b2920dec (tree 1, curved lean), 29287b3b (tree 2, umbrella) | 1:1, 2k, high | 4 |
+
+The mockup cut-outs were made from 800px captures; for the site, download the 2048px originals and
+run them through scripts/make-scene.py (fine twigs need a careful mask).
+| 2 | Nov 26 02:28 | framing cherry tree (2 variants, 16:9): trunk cut off by the left edge, one long limb arching right across the top | 6b81207e (USED in the mockup: sparse, level limb), e82f7e8a (denser near the trunk) | 16:9, 2k, high | 4 |
+
+Mockup placement (1440 band): 6b81207e at 720px wide, left -40, top -32, so the trunk is cut by the
+left edge and the limb runs between the menu and the headline, its tip ending just left of the
+Monument; headline moved down to top 164 so no blossom touches the type. Slow breeze: rotate
+-0.35deg to 0.45deg over 9s around the trunk base.
+
+## Brief v6: the hero band (John, Nov 26 02:48 UTC)
+
+The 80-credit v5 cap was used up; John's v6 brief approved 16 credits for two images only (spike
+and HPV), 2 variants per attempt, at most 2 attempts each. The tree below cost nothing new.
+
+### The two virus models, remade as matte museum models (Nov 26 03:02 UTC)
+
+References, imported into Higgsfield with media_import_url (RCSB's own image URLs returned 404 to
+the importer, and RCSB, PDBe and PDBj are blocked from the build container):
+- spike: the EMDB-21375 map (the cryo-EM map of PDB 6VSB, Wrapp et al., Science 2020) as shown on
+  PDBj EM Navigator, `pdbj.org/emnavi/data/emdb/media/21375/snapl1.jpg` (media 75a9e9e1). The PDBe
+  ribbon image of 6VSB (d3728cd6) was imported too, for checking only.
+- hpv: a geometry drawing made here (media 6db85b37, beta/masthead/source/scene/hpv-t7-geometry.png):
+  the T=7 lattice (h=2, k=1) by the Caspar-Klug construction, 72 five-lobed capsomeres, 12 with five
+  neighbours and 60 with six (counted by the script), each with a central channel, on a plain gray
+  ball. Checked against the EMDB-5932 map of PDB 3J6R (the HPV16 capsid, Cardone et al. 2014) on PDBj
+  (media f8e3ad33, 7b739743).
+
+Each prompt = the asset prompt below + "Use the reference only for accurate shape, proportions and
+details; re-photograph it in the light described here. Isolated on a seamless plain light-gray
+studio background, for clean cutting." + the shared light block + the anti-AI block, verbatim.
+gpt_image_2_6, quality high, 2k.
+
+| # | Date (UTC) | Asset | Job ID(s) | Settings | Quote | Credits |
+|---|---|---|---|---|---|---|
+| 1 | Nov 26 03:02 | spike, attempt 1 (2 variants) | 047f508b (USED), 3a9dd8af | 3:4, ref EMD-21375 | -JheYv5V | 4 |
+| 2 | Nov 26 03:02 | hpv, attempt 1 (2 variants) | 8cc16cd7 (USED), 24b6ef6a | 1:1, ref T=7 drawing | JQMgHUEt | 4 |
+
+**Spent under v6: 8 of 16 credits** (balance 869.86 before, 861.86 after). No second attempt needed.
+
+Checked at 100% (Nov 26, 03:06 UTC):
+- spike 047f508b: one tall club-shaped trimer in a single off-white plaster-like material; the wide
+  S1 head with the N-terminal domains bulging on both sides; exactly one receptor-binding domain
+  raised at the top; the S2 stalk narrowing below; small branched glycans on the surface; no stand.
+  3a9dd8af is just as accurate but rounder; 047f508b shows the domains more clearly.
+- hpv 8cc16cd7: five-lobed star capsomeres, each with a small central channel, narrow grooves between
+  them, laid out like the reference lattice; no colour, no stand. Where two stars touch the edge is a
+  little flat (it follows the drawing); at 240px this does not show. 24b6ef6a has flatter relief and
+  some stars read as six-lobed, so it was not used.
+
+Asset prompts:
+- **spike** (3:4): A museum-grade scientific model of the SARS-CoV-2 spike protein trimer in its prefusion-stabilized “2P” form, the design made at the NIH Vaccine Research Center and used in the mRNA vaccines, true to the cryo-EM structure in the reference (PDB 6VSB), made as one solid piece in a single material: off-white plaster with a fine, slightly granular matte surface, like a white nylon powder 3D print, unpainted, no color anywhere. The shape: three intertwined protein chains form one tall, club-like trimer, about twice as tall as it is wide. At the top, a wide, lumpy S1 head: the three N-terminal domains bulge out on the outer sides, and the three receptor-binding domains sit on top in the middle, exactly ONE of them raised up and tipped outward above the others, the other two lying down. Below the head, the S2 stalk narrows into a slender, slightly twisted column toward the bottom end. Small branched glycan stubs stud the surface. A molecular surface of soft, rounded atomic lumps, like a cryo-EM map printed in plaster: not ribbons, not tubes, not a virus ball with spikes. Upright, seen from the side, shown on its own with no stand and no base, the whole model in frame. Like an object from a museum's science collection photographed for its catalogue.
+- **hpv** (1:1): A museum-grade scientific model of the HPV16 L1 virus-like particle, the empty papillomavirus shell behind the HPV vaccine developed at the National Cancer Institute, true to the capsid geometry in the reference, made as one solid piece in a single material: off-white plaster with a fine, slightly granular matte surface, like a white nylon powder 3D print, unpainted, no color anywhere. A near-spherical T=7 icosahedral shell made of exactly 72 star-shaped capsomeres (L1 pentamers), arranged exactly as in the reference: 12 of them have five neighbours, at the twelve five-fold corners, and the other 60 have six. Each capsomere is a raised, rounded five-lobed star, like a plump five-petalled flower, with a small round channel in its centre; neighbouring stars sit close together, separated only by narrow grooves, their lobes reaching toward each other. No spikes, no knobs, no ball-and-stick, no ribbons, no fuzz. Seen straight on, shown on its own with no stand and no base, the whole particle in frame. Like an object from a museum's science collection photographed for its catalogue.
+
+Cut-outs (from the repo root, `G=beta/masthead/source/scene/gen`, `O=beta/masthead/scene`); the
+raw downloads are `$G/spike2-047f508b.png` and `$G/hpv2-8cc16cd7.png`:
+
+```
+python3 scripts/make-scene.py $G/spike2-047f508b.png $O/spike.webp --size 260 --largest
+python3 scripts/make-scene.py $G/hpv2-8cc16cd7.png   $O/hpv.webp   --size 240 --largest
+```
+
+spike.webp is now 170 x 260 (was 181 x 260) and hpv.webp 233 x 240 (was 199 x 240, with its stand);
+B in home-new.html has the new sizes. data-z is unchanged.
+
+### The framing cherry tree, cut out (no new generation)
+
+6b81207e, downloaded at 2688 x 1520 to `$G/tree-frame.png`. make-scene.py (birefnet-general) left gray
+haze in the gaps between the blossom clusters and cut the trunk off halfway down, so the tree is
+keyed off its flat background instead: `python3 -I beta/masthead/source/scene/key-tree.py
+$G/tree-frame.png $O/tree.webp` (the steps are in the script). 1440 x 860, 154 KB (about 159 KB once delivery adds its C2PA content-credentials chunk, as it does to every image in the folder): fine twigs kept,
+the gaps fully transparent, the trunk solid to the left edge, the same crop as the mockup.
+
+
+## Round 8 (v7 bank +10): ten new DMV objects for the orbit
+
+Nov 26, 2026. John approved the ten (12:40 UTC) and the 36-credit quote. Rule for new objects: an
+invention, experiment or find *made* in the D.C. area. Model `gpt_image_2_6`, quality high, 2k,
+2 variants per job (4 credits each). The first digital image needed no generation: it is the real
+NIST scan, framed locally (`source/scene/frame-firstimage.py`).
+
+| # | Date (UTC) | Asset | Job ID(s) | Settings | Quote | Credits |
+|---|---|---|---|---|---|---|
+| 1 | Nov 26 12:49 | reflector | d47cb271 (USED), a84eddbf | 4:3, ref b9a8fcc3 (crop of NASA AS14-67-09386) | oUQQGD5C | 4 |
+| 2 | Nov 26 12:49 | ctscan | 20c485b6 (USED), 68cebee1 | 4:3, no ref | Hbhvc7zr | 4 |
+| 3 | Nov 26 12:49 | capitalsaurus | 19fcc5fe (USED), e89c5a82 | 4:3, no ref | JBg7noPE | 4 |
+| 4 | Nov 26 12:50 | gramophone | 87405dab (USED), d1693b29 | 3:4, ref 0c650741 (Commons, Kämmer and Reinhardt gramophone) | OAbj8uRu | 4 |
+| 5 | Nov 26 12:50 | weber | b65c5a7f (USED), 0e6f048e | 16:9, no ref | MAFSADEX | 4 |
+| 6 | Nov 26 12:50 | beast | 6a8d98a1 (USED), e2f6ac94 | 3:4, no ref | 1zqfNpC- | 4 |
+| 7 | Nov 26 12:51 | icd | d1b3192a (USED), b17c37e5 | 1:1, ref 94f5aff4 (Commons ICD photo, crop) | ko8lCgPD | 4 |
+| 8 | Nov 26 12:51 | radar | d8ccf749 (USED), 2c859d9e | 1:1, ref 1ee58d51 (Commons, CXAM on USS Yorktown, US Navy) | FUYX5eT_ | 4 |
+| 9 | Nov 26 12:52 | lasercool | 1e37737e (USED), 58a044ab | 4:3, ref 98f25897 (Commons, cold-atoms experiment) | WXTsmeI5 | 4 |
+
+**Spent: 36 of 36 credits** (balance 861.86 before, 825.86 after). No second attempts.
+
+Imports (no credits): b235f80b `NBSFirstScanImage.jpg` (NIST, public domain; used for the framed
+print), d5bb0181 NASA AS14-67-09386 full frame, b8e8d4c9 and ac276916 (looked at, not used).
+
+Picks and fixes:
+- weber: 0e6f048e had a wire running out of frame; b65c5a7f is whole.
+- icd: b17c37e5 copied the brand text on the reference case ("VITALITY AVT GUIDANT"), so it was not
+  used; d1b3192a has no text.
+- radar: d8ccf749 copied two round signal shapes from the ship photo onto the mesh. They were
+  painted out locally with mesh from 190px to the side (feathered circles at (1437,665) r72 and
+  (1450,1200) r75), saved as `radar-d8ccf749-fix.png`. rembg left the mesh patchy, so the mask was
+  edited: `-fix-mask2.png` clears `[572:, :440]` except the lever at `[1130:1250, 325:445]`, and
+  `-fix-mask3.png` adds the panel polygon (585,592) (1535,524) (1535,1360) (585,1408) filled solid.
+- Descriptive likenesses, not copies of one surviving unit: ctscan, capitalsaurus, weber, beast,
+  icd (an early-style case), radar (a CXAM-type "bedspring" antenna, the production descendant of
+  NRL's pulse radar). The reflector follows the Apollo 14 unit, the same 100-cube design as Apollo 11's.
+
+Every prompt is the asset prompt below plus the shared block of earlier rounds, verbatim (the
+no-reference prompts drop its first sentence). Two exceptions: the laser prompt replaces "No glow, no
+bloom, no light rays," with "No bloom, no light rays, no laser beams drawn in the air,", and the ICD
+prompt's reference sentence reads "Use the reference only for the materials and finish of the case
+and connector block; re-photograph it in the light described here." The full prompts are kept in
+`source/scene/ref/round8-prompts.json`.
+
+Asset prompts:
+- **reflector** (4:3): The Apollo 11 Laser Ranging Retroreflector, the experiment led by Carroll Alley of the University of Maryland, true to the reference, which shows the identical Apollo 14 unit: a square, flat aluminum panel set with a grid of 100 round fused-silica corner-cube reflectors in ten neat rows of ten, each a small clear glass disc in its own round socket, the panel's edges in bright silver-white metal, tilted up at an angle on its white folding support legs and base frame with small handles, seen in three-quarter view from slightly above, the whole instrument in frame, clean, as a museum object. No Moon surface, no dust, no footprints, no stars.
+- **ctscan** (4:3): The ACTA scanner, the first whole-body CT scanner, built by Robert Ledley at Georgetown University in 1973, as it might stand in a museum of American history: a large upright 1970s medical machine, a squarish gantry housing of painted steel panels in an off-white 1970s hospital finish with rounded corners and a round opening through its middle, a long padded patient table with a dark vinyl cushion on a steel base sliding into the opening from the front, a few small switches and indicator lamps on a side panel, seen in three-quarter view from the front, the whole machine and table in frame.
+- **capitalsaurus** (4:3): A single fossil tail vertebra of a large meat-eating dinosaur, of the kind found in Washington, D.C., in 1898 and named Capitalsaurus: the spool-shaped body of the vertebra (the centrum), slightly pinched at the waist with flared, concave ends, the broken bases of its upper spine and side processes still attached, heavy mineralized fossil bone in dark chocolate brown and black with paler tan patches, a few old cracks and pits, resting on a small plain museum specimen block, seen in three-quarter side view, the whole fossil in frame, as a museum specimen.
+- **gramophone** (3:4): An early hand-turned gramophone of the kind Emile Berliner invented in Washington, D.C., in 1887, true to the antique in the reference: a small black-painted wooden base with fine gold pinstriping, a flat turntable covered in green felt holding a flat disc record, a crank and brass gear wheels on the side, a slender arm carrying the sound box and needle, and a tall flared metal horn rising from it, dark outside and polished brass inside, seen in three-quarter view, the whole machine including the full horn in frame.
+- **weber** (16:9): A Weber bar, the first gravitational-wave detector, built by Joseph Weber at the University of Maryland in the 1960s: a large solid cylinder of bare aluminum lying on its side, about three times as long as it is wide, its surface dull brushed silver with faint machining marks, a narrow band of small square piezoelectric crystals glued in a ring around its middle with fine wires leading away from them, resting in a simple steel cradle on two padded supports, seen in three-quarter side view from slightly above, the whole bar and cradle in frame, as a museum object.
+- **beast** (3:4): The Johns Hopkins Beast, the self-charging mobile robot built at the Johns Hopkins Applied Physics Laboratory in Maryland in the early 1960s, as a museum object: a squat, round-shouldered cylindrical body about waist high in painted light metal on a low wheeled base with small rubber treads, two round sonar transducer discs mounted on its front like a pair of eyes, a small cluster of photocell sensors on top, and a short boom arm at the front ending in a two-pronged electrical plug, exposed wiring and rivets, seen in three-quarter view, the whole robot in frame.
+- **icd** (1:1): The first automatic implantable defibrillator, developed in Baltimore by Michel Mirowski's team and first implanted in a patient in 1980: a thick, rounded, palm-sized case of polished titanium, bulkier and boxier than the modern device in the reference, with a clear epoxy connector block on its top edge, and two thin insulated leads plugged into it that curl loosely away from it in gentle loops, seen in three-quarter view, the whole device and its leads in frame, as a museum object.
+- **radar** (1:1): An early U.S. Navy search radar antenna of the late 1930s, the bedspring type that grew out of the Naval Research Laboratory's pulse radar, true to the antenna in the reference: a large, flat, square lattice frame of riveted steel angle bars holding rows of short horizontal dipole elements in front of a fine wire-mesh reflector screen, mounted on a short steel pedestal, painted Navy gray, seen in three-quarter view from slightly below, the whole antenna and pedestal in frame, as a museum object. No ship, no mast, no flag, no sky.
+- **lasercool** (4:3): A laser-cooling atom trap of the kind William Phillips's group used at NIST in Gaithersburg, Maryland, true to the apparatus in the reference: a small clear glass vacuum cell between two round copper magnet coils, held by black anodized optical mounts and polished steel flanges, and in the middle of the cell a tiny, softly lit orange-red cloud of laser-cooled atoms, seen in three-quarter view, the whole apparatus in frame, as a museum object.
+
+Cut-outs and rebuild commands are in `CREDITS.md` (round 8).

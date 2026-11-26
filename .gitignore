@@ -95,3 +95,8 @@ Social Post Guide/
 
 # home-new masthead: raw Higgsfield downloads and working files (large, not shipped)
 /beta/masthead/source/
+
+# The previous homepage (until Nov 26, 2026). Kept on disk as the base the new
+# homepage is assembled from (beta/masthead/source/compose/assemble.py), never
+# pushed or served. homepage-previous.html is the one before it.
+/homeold.html
