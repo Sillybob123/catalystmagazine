@@ -2077,8 +2077,9 @@
          picked for this visit by the inline script after the band; a
          setting sun behind the landmark, the Monument on its right, the
          objects on a tilted orbit round the landmark, and a cherry tree
-         reaching over the headline. Every 30s the next landmark fades in
-         over the old one, with the next palette and its own sun.
+         reaching over the headline. Every 30s the landmark sinks below the
+         band's edge and the next one rises in its place, with the next
+         palette and its own sun.
          One rAF loop moves transforms and opacity only; it stops off
          screen and in a background tab. Reduced motion: a still frame
          in this visit's palette and landmark, no parallax, no drag.
@@ -2363,10 +2364,11 @@
         }
 
         // ---- a new landmark every 30 seconds: this visit's first, then the other four in a random
-        //      order, no repeat until all five have shown. The change takes 2.4s and never leaves the
-        //      sun bare: the next landmark comes in over the old one (fading in from 0.1s to 1.4s and
-        //      rising a few pixels), the old one goes only once it is covered (0.8s to 2.0s, settling
-        //      a little), and the sun eases to the new landmark's size and place the whole time. At
+        //      order, no repeat until all five have shown. The change takes 1.65s and nothing fades:
+        //      the landmark sinks below the band's bottom edge (0 to 0.6s, gathering speed, like a set
+        //      lowered under the stage), and the next one rises from it just as the last of the old one
+        //      goes (0.6s to 1.65s, slowing to a stop). Between them the sun stands alone on the
+        //      horizon for a moment, easing to the new landmark's size and place (0.25s to 1.45s). At
         //      0.6s the next palette starts its 4s crossfade; the orbit and the Monument glide to
         //      their new places, the objects never stopping. The next picture is loaded into the
         //      layer it comes in on, decoded and its outline read about 5s ahead, and the button
@@ -2397,31 +2399,37 @@
           nextHero = null; heroT = 0;
           chg = { t: 0, from: id, to: k, g0: G, g1: geom(k), mask: n.mask, pal: false, rose: false, end: false };
           place(ghost, chg.g1.hx, chg.g1.hy, chg.g1.hw, chg.g1.hh);
-          ghostA = 0; ghostDy = H * .05; heroA = 1; heroDy = 0;
+          ghostA = 0; ghostDy = H; heroA = 1; heroDy = 0;
           ghost.style.opacity = 0; ghost.style.display = 'block';
           sunAt(chg.g0.sun.d >= chg.g1.sun.d ? chg.g0.sun : chg.g1.sun);
         }
         function glide() {
-          var c = chg, g = smooth(c.t / 2.4);
+          var c = chg, g = smooth((c.t - CH.glide) / CH.glideT);
           cx = lerp(c.g0.cx, c.g1.cx, g); cy = lerp(c.g0.cy, c.g1.cy, g); rx = lerp(c.g0.rx, c.g1.rx, g); ry = lerp(c.g0.ry, c.g1.ry, g);
           monDx = lerp(c.g0.mon, c.g1.mon, g) - c.g1.mon;
           var a = c.g0.sun, b = c.g1.sun, x = lerp(a.x, b.x, g), y = lerp(a.y, b.y, g), d = lerp(a.d, b.d, g);
           sunT = 'translate(' + (x - sunBase.x).toFixed(1) + 'px,' + (y - sunBase.y).toFixed(1) + 'px) scale(' + (d / sunBase.d).toFixed(4) + ')';
         }
+        // the change's timings (seconds): the old landmark sinks for out; the new one rises from
+        // in for inT; the sun, the orbit and the Monument glide from glide for glideT
+        var CH = { out: .6, in: .6, inT: 1.05, glide: .25, glideT: 1.2, end: 1.65 };
         function step(dt) {
-          var c = chg; c.t = Math.min(c.t + dt, 2.4);
-          var t = c.t, r = H * .05;
-          ghostA = smooth((t - .1) / 1.3);                               // the next landmark comes in over the old one
-          ghostDy = r * (1 - ease(clamp((t - .1) / 1.8, 0, 1)));         // rising a few pixels as it does
-          heroA = c.end ? 0 : 1 - smooth((t - .8) / 1.2);                // the old one goes once it is covered
-          heroDy = c.end ? 0 : r * .8 * smooth((t - .5) / 1.7);          // settling a little
+          var c = chg; c.t = Math.min(c.t + dt, CH.end);
+          var t = c.t, u = clamp(t / CH.out, 0, 1), v = clamp((t - CH.in) / CH.inT, 0, 1);
+          // each drop is the picture's height above the band's bottom edge, plus room for the parallax,
+          // so the top of the picture is just under the edge at the far end
+          var d0 = H - c.g0.hy + 16, d1 = H - c.g1.hy + 16;
+          heroDy = c.end ? 0 : d0 * u * u;                                  // the old landmark sinks, gathering speed
+          heroA = c.end || u >= 1 ? 0 : 1;
+          ghostDy = d1 * Math.pow(1 - v, 4);                                // the new one rises, slowing to a stop
+          ghostA = t >= CH.in ? 1 : 0;
           if (!c.pal && t >= .6) { c.pal = true; pal = (pal + 1) % NPAL; band.setAttribute('data-p', pal); }
-          if (!c.rose && t >= .8) {   // the new landmark is the stronger picture now: its card, label and outline
+          if (!c.rose && t >= CH.in) {   // the new landmark is the one on stage now: its card, label and outline
             c.rose = true; id = c.to; heroMask = c.mask; G = c.g1;
             band.setAttribute('data-hero', id); heroes.show(id);
           }
           glide(); orbit();
-          if (t >= 2.4 && !c.end) {
+          if (t >= CH.end && !c.end) {
             // the button takes the new picture, hidden under the layer showing it, and that layer goes
             // only once the button's copy is decoded: the swap can never show an empty frame
             c.end = true; heroA = 0; heroDy = 0;
