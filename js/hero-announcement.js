@@ -206,30 +206,34 @@
   }
 
   // The rim light: A, its angle (0 at the top, clockwise), and i, its strength. At rest it sits at
-  // the top left. A pointer over the panel draws it round the rim toward itself, the short way and
-  // at most 2.2 degrees a frame (one corner to the opposite one in about 1.5s, gliding round the
-  // edge), brighter near the edges and corners, and the panel leans up to 1.2px toward it. The loop
-  // writes three custom properties and a transform, reads nothing, and stops once all is still.
+  // the top left. A pointer over the panel turns it toward itself the short way, closing 40% of the
+  // gap a frame at 60fps (the same speed at any frame rate), so it keeps up with the pointer like a
+  // light caught in real glass (most of the way there in a tenth of a second); brighter near the edges and
+  // corners, and the panel leans up to 1.2px toward it. When the pointer leaves, it drifts back to
+  // rest more gently (12% a frame, about half a second). The loop writes three custom properties and
+  // a transform, reads nothing, and stops once all is still.
   // Touch screens and reduced motion keep it at rest; so does the ticket.
   var REST = { a: -42, i: .22 }, HOVER = window.matchMedia('(hover: hover) and (pointer: fine)');
   function rest(el) {
     if (!el) return;
     el.style.setProperty('--ha-a', REST.a); el.style.setProperty('--ha-i', REST.i);
   }
-  var lit = { a: REST.a, i: REST.i, x: 0, y: 0, ta: REST.a, ti: REST.i, tx: 0, ty: 0, raf: 0, box: null, on: false };
+  var lit = { a: REST.a, i: REST.i, x: 0, y: 0, ta: REST.a, ti: REST.i, tx: 0, ty: 0, raf: 0, box: null, on: false, t: 0 };
   function litPaint() {
     var s = panelEl.style;
     s.setProperty('--ha-a', lit.a.toFixed(2)); s.setProperty('--ha-i', lit.i.toFixed(3));
     s.transform = Math.abs(lit.x) + Math.abs(lit.y) > .005 ? 'translate(' + lit.x.toFixed(2) + 'px,' + lit.y.toFixed(2) + 'px)' : '';
   }
-  function litFrame() {
-    var d = ((lit.ta - lit.a) % 360 + 540) % 360 - 180;
-    lit.a += Math.max(-2.2, Math.min(2.2, d * .045));
+  function litFrame(now) {
+    var f = lit.t ? Math.min(4, (now - lit.t) / (1000 / 60)) : 1;   // frames at 60fps since the last one
+    lit.t = now;
+    var k = 1 - Math.pow(lit.on ? .6 : .88, f), d = ((lit.ta - lit.a) % 360 + 540) % 360 - 180;
+    lit.a += d * k;
     lit.a = ((lit.a + 540) % 360) - 180;
-    lit.i += (lit.ti - lit.i) * .035;
-    lit.x += (lit.tx - lit.x) * .04; lit.y += (lit.ty - lit.y) * .04;
+    lit.i += (lit.ti - lit.i) * k;
+    lit.x += (lit.tx - lit.x) * k; lit.y += (lit.ty - lit.y) * k;
     if (Math.abs(d) < .05 && Math.abs(lit.ti - lit.i) < .002 && Math.abs(lit.tx - lit.x) < .01 && Math.abs(lit.ty - lit.y) < .01) {
-      lit.a = lit.ta; lit.i = lit.ti; lit.x = lit.tx; lit.y = lit.ty; lit.raf = 0; litPaint(); return;
+      lit.a = lit.ta; lit.i = lit.ti; lit.x = lit.tx; lit.y = lit.ty; lit.raf = 0; lit.t = 0; litPaint(); return;
     }
     litPaint();
     lit.raf = requestAnimationFrame(litFrame);
@@ -241,9 +245,9 @@
     if (dx * dx + dy * dy > 36) lit.ta = Math.atan2(dx, -dy) * 180 / Math.PI;   // not within 6px of the centre
     lit.ti = .42 + .58 * Math.max(0, 1 - Math.max(0, Math.min(x, w - x, y, h - y)) / (.28 * Math.min(w, h)));
     lit.tx = Math.max(-1, Math.min(1, dx / (w / 2))) * 1.2; lit.ty = Math.max(-1, Math.min(1, dy / (h / 2))) * 1.2;
-    litGo();
+    lit.on = true; litGo();
   }
-  function litRest() { lit.ta = REST.a; lit.ti = REST.i; lit.tx = lit.ty = 0; lit.box = null; litGo(); }
+  function litRest() { lit.ta = REST.a; lit.ti = REST.i; lit.tx = lit.ty = 0; lit.box = null; lit.on = false; litGo(); }
   if (panelEl && !REDUCED) {
     panelEl.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch' && HOVER.matches) litAim(e.clientX, e.clientY); });
     panelEl.addEventListener('pointerleave', function (e) { if (e.pointerType !== 'touch') litRest(); });

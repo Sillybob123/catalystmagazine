@@ -244,10 +244,13 @@ The panel and the card are liquid glass: nearly clear, with the light living in 
   4. a faint inner colour band: the same spectrum on a 9px ring, blurred 5px, screen (.32·i).
 - **Motion.** A is the light's angle (0 at the top, clockwise), i its strength; at rest A = −42,
   i = .22. Over the panel the pointer sets A (from the centre; ignored within 6px of it) and i
-  (strongest at the edges and corners); off it, both go back to rest. Each frame A turns the short
-  way by .045 of the gap (at most 2.2° a frame, so corner to corner takes about 1.5s round the rim),
-  i eases by .035 and the panel floats up to 1.2px toward the pointer. The loop writes the two CSS
-  variables and a transform, reads no layout, and stops once settled. Touch screens, the card and
+  (strongest at the edges and corners); off it, both go back to rest. While the pointer is over the
+  panel, each frame A turns the short way by 40% of the gap, i and the panel's lean (up to 1.2px
+  toward the pointer) close 40% of theirs too, measured against a 60fps frame so a 120Hz screen
+  moves no faster: the light keeps up with the pointer like real glass (most of the way there in a
+  tenth of a second; John found the old 2.2° a frame too slow). Off the panel it drifts back to
+  rest at 12% a frame (about half a second). The loop writes the two CSS variables and a
+  transform, reads no layout, and stops once settled. Touch screens, the card and
   reduced motion stay at rest. Under "reduce transparency" the glass is solid.
 
 `?glass=frost` shows Chrome what Safari draws; `?glass=url` forces the refraction.

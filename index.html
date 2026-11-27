@@ -505,6 +505,47 @@
       .oc-more svg { width: 14px; height: 14px; transition: transform .2s var(--ease-out); }
       .oc-more:hover svg { transform: translateX(3px); }
       .oc-a:focus-visible, .oc-more:focus-visible { outline: 2px solid #0d5eaf; outline-offset: 3px; }
+      /* the X: a small round button in the card's corner (44px to tap, 26px to see); phones and touch screens only */
+      .oc-x { display: none; position: absolute; top: 3px; right: 3px; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 999px;
+        background: none; color: var(--ink-2); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+      .oc-x::before { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: oklch(25% 0.02 30 / .07);
+        transition: background-color .15s var(--ease-out); }
+      .oc-x svg { position: relative; display: block; width: 13px; height: 13px; margin: auto; }
+      .oc-x:hover::before, .oc-x:active::before { background: oklch(25% 0.02 30 / .14); }
+      .oc-x:focus-visible { outline: 2px solid #0d5eaf; outline-offset: -5px; }
+      .oc-scrim { display: none; }
+      @media (hover: none), (max-width: 759.98px) {
+        .oc-x { display: grid; place-items: center; }
+        .oc-where, .oc-name { padding-right: 28px; }
+        .oc-where { text-wrap: balance; }
+      }
+      /* phones: a compact card (smaller type, one-line stories, "More" beside "Related"), over a soft shade
+         that dims the page while a tapped card is open; a tap on the shade, or the X, puts it away */
+      @media (max-width: 759.98px) {
+        .scene > .oc-scrim { display: block; position: fixed; inset: 0; z-index: 9; cursor: pointer;
+          background: oklch(17% 0.035 255 / .38); -webkit-tap-highlight-color: transparent;
+          opacity: 0; visibility: hidden; transition: opacity .2s var(--ease-out), visibility 0s linear .2s; }
+        .scene > .oc-scrim.on { opacity: 1; visibility: visible; transition: opacity .2s var(--ease-out), visibility 0s; }
+        .ocard { z-index: 10; width: min(360px, calc(100vw - 40px)); padding: 12px 14px 2px; border-radius: 14px;
+          display: flex; flex-wrap: wrap; align-content: flex-start;
+          box-shadow: 0 1px 2px oklch(15% 0.02 30 / .1), 0 18px 44px -14px oklch(15% 0.02 30 / .5); }
+        .ocard > * { flex: 0 0 100%; min-width: 0; }
+        .oc-where { font-size: 11px; line-height: 1.3; }
+        .oc-name { margin-top: 2px !important; font-size: 16.5px; line-height: 1.22; }
+        .oc-blurb { margin-top: 4px !important; font-size: 13px; line-height: 1.42; }
+        #och .oc-blurb { padding-bottom: 10px !important; }
+        .oc-dmv { margin-top: 7px !important; padding: 5px 8px; border-radius: 7px; font-size: 12px; line-height: 1.38; }
+        .oc-rel, .oc-more { margin-top: 8px !important; min-height: 44px; padding-top: 0; border-top: 1px solid oklch(25% 0.02 30 / .1); }
+        .oc-rel { flex: 1 1 auto; display: flex; align-items: center; font-size: 11.5px; }
+        .oc-more { flex: none; display: flex; gap: 5px; font-size: 12px; border-radius: 0; }
+        .oc-more svg { width: 13px; height: 13px; }
+        .oc-list { order: 1; margin: -2px 0 6px; }
+        .oc-a { gap: 10px; min-height: 44px; padding: 2px 0; }
+        .oc-th { width: 36px; height: 36px; border-radius: 5px; }
+        .oc-t { -webkit-line-clamp: 1; font-size: 13px; }
+        .oc-d { font-size: 11px; }
+        .oc-more:focus-visible { outline-offset: -2px; }
+      }
       /* the cherry tree: its trunk cut by the band's left edge, one limb over the headline. Placed by the
          band script from the headline; a slow breeze from the trunk's base. Desktop only: under the copy (tablets
          and phones) the top of the picture would show as a straight cut through the blossoms */
@@ -572,8 +613,8 @@
         .band.js .sc-orb path { stroke-dashoffset: 0; transition: none; }
         .band.go .sc-tree img { animation: none; }
         .ob { cursor: pointer; }
-        .ocard, .ocard.on { translate: none; transition: none; }
-        .oc-more svg { transition: none; }
+        .ocard, .ocard.on, .scene > .oc-scrim, .scene > .oc-scrim.on { translate: none; transition: none; }
+        .oc-more svg, .oc-x::before { transition: none; }
       }
 
       /* ============================================================
@@ -1214,6 +1255,8 @@
             <script>/* the landmark for this visit, picked before the first paint: the Capitol on a first
                visit, after that any of the others, never the one shown last time. The band script
                then shows the other four in turn, 30 seconds each (window.catalystHeroes). */
+            // the small close button at the top of every card (shown on phones and touch screens)
+            window.catalystCloseX = '<button class="oc-x" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M7 7l10 10M17 7L7 17"/></svg></button>';
             (function (img) {
               var H = { capitol: ['dome', 424, 620, 'The U.S. Capitol dome'], jefferson: ['jefferson', 760, 480, 'The Jefferson Memorial'],
                         lincoln: ['lincoln', 880, 373, 'The Lincoln Memorial'], loc: ['loc', 497, 620, 'The Library of Congress dome'],
@@ -1248,7 +1291,7 @@
                 var c = C[k], btn = img.parentNode, card = document.getElementById('och');
                 btn.setAttribute('aria-label', c[0]);
                 card.setAttribute('aria-labelledby', 'ochn');
-                card.innerHTML = '<p class="oc-where">' + c[1] + '</p><p class="oc-name" id="ochn">' + c[0] + '</p><p class="oc-blurb" style="padding-bottom:12px">' + c[2] + '</p>';
+                card.innerHTML = window.catalystCloseX + '<p class="oc-where">' + c[1] + '</p><p class="oc-name" id="ochn">' + c[0] + '</p><p class="oc-blurb" style="padding-bottom:12px">' + c[2] + '</p>';
               }
               show(id);
               window.catalystHeroes = { H: H, C: C, first: id, show: show };
@@ -1450,7 +1493,7 @@
                 el.setAttribute('aria-label', b[0]);
                 im.width = b[5]; im.height = b[6]; im.src = '/beta/masthead/scene/' + k + '.webp?v=' + V;   // /beta is cached for a year: bump V when a picture is replaced
                 card.setAttribute('aria-labelledby', card.id + 'n');
-                card.innerHTML = '<p class="oc-where">' + b[1] + '</p>' +
+                card.innerHTML = window.catalystCloseX + '<p class="oc-where">' + b[1] + '</p>' +
                   '<p class="oc-name" id="' + card.id + 'n">' + b[0] + '</p>' +
                   '<p class="oc-blurb">' + b[2] + '</p>' +
                   '<p class="oc-dmv"><b>The D.C. link:</b> ' + D[k] + '</p>' +
@@ -1485,7 +1528,7 @@
                 });
               });
             })(document.documentElement, 'catalyst.band.bar');</script>
-            <script src="/js/hero-announcement.js?v=8839c400" defer></script>
+            <script src="/js/hero-announcement.js?v=f06cbb09" defer></script>
 
             <!-- Latest stories: the lead (story 1); a side column (story 2 as a card, 3 and 4 as
                  rows); the spotlight band, the newest remaining story that editions.json lists in an
@@ -2176,6 +2219,8 @@
         // the landmark is the last item, with its own card
         var heroBtn = sc.querySelector('.sc-hero'), HI = obs.length, its = obs.concat([heroBtn]);
         cards.push(document.getElementById('och'));
+        // phones: a soft shade behind a card opened by a tap; a tap on it puts the card away
+        var scrim = document.createElement('div'); scrim.className = 'oc-scrim'; scrim.setAttribute('aria-hidden', 'true'); sc.appendChild(scrim);
         var bank = window.catalystBand || null, heroes = window.catalystHeroes || null, heroMask = null;
         var mqStack = window.matchMedia('(max-width: 1000px)');
         var TAU = Math.PI * 2, TILT = 6 * Math.PI / 180, CA = Math.cos(TILT), SA = Math.sin(TILT);   // the orbit dips 6 degrees to the right
@@ -2769,15 +2814,16 @@
         function shut(i) { its[i].setAttribute('aria-expanded', 'false'); cards[i].classList.remove('on'); }
         function openCard(i) {
           clearClose();
-          if (hover !== i) { if (hover > -1) shut(hover); hover = i; pinned = false; }
+          if (hover !== i) { if (hover > -1) shut(hover); hover = i; pinned = false; scrim.classList.remove('on'); }
           its[i].setAttribute('aria-expanded', 'true');
           placeCard(); cards[i].classList.add('on');
           tick();
         }
+        function pin() { pinned = true; scrim.classList.add('on'); }
         function clearClose() { clearTimeout(closeT); closeT = 0; }
         function closeCard(now) {
           clearClose();
-          var go = function () { closeT = 0; if (hover < 0) return; shut(hover); hover = -1; pinned = false; tick(); };
+          var go = function () { closeT = 0; if (hover < 0) return; shut(hover); hover = -1; pinned = false; scrim.classList.remove('on'); tick(); };
           if (now) go(); else closeT = setTimeout(go, 220);   // time to cross from the item to its card
         }
         function inside(i, node) { return !!node && (its[i].contains(node) || cards[i].contains(node)); }
@@ -2903,7 +2949,7 @@
           var h = hitAt(e.clientX, e.clientY);
           if (h < 0) return;
           if (hover === h && (pinned || touchy())) { closeCard(true); return; }
-          openCard(h); pinned = true;
+          openCard(h); pin();
         });
         window.addEventListener('scroll', function () { if (hover > -1) placeCard(); }, { passive: true });
         window.addEventListener('resize', function () { if (hover > -1) placeCard(); }, { passive: true });
@@ -2916,6 +2962,14 @@
             if (h > -1) openCard(h); else closeCard();
           });
           card.addEventListener('focusout', function (e) { if (hover === i && !pinned && !inside(i, e.relatedTarget)) closeCard(true); });
+          // the X (phones and touch screens): put the card away; from the keyboard, back to its item
+          card.addEventListener('click', function (e) {
+            if (!e.target.closest || !e.target.closest('.oc-x') || hover !== i) return;
+            var key = downType === 'key';
+            closeCard(true);
+            if (key) { quiet = true; its[i].focus(); quiet = false; }
+            else if (card.contains(document.activeElement)) document.activeElement.blur();
+          });
         });
 
         // the keyboard: each item is a button; focus opens its card, Enter or Space pins or closes it
@@ -2925,7 +2979,7 @@
           el.addEventListener('click', function (e) {
             if (e.detail !== 0 && downType !== 'key') return;   // pointer clicks never land here (the pictures don't catch the pointer)
             if (hover === i && pinned) { closeCard(true); return; }
-            openCard(i); pinned = true;
+            openCard(i); pin();
           });
         });
 
